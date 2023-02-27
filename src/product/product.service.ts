@@ -30,5 +30,14 @@ export class ProductService {
     return product;
   }
 
-  async findAllProducts() {}
+  async findAllProducts(): Promise<ProductModel[]> {
+    const products = await this.productRepository.findAll();
+    if (!products) {
+      throw new HttpException(
+        'По вашему запросу ничего не найдено',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    return products;
+  }
 }

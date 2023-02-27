@@ -31,13 +31,15 @@ export class ProductController {
 
   @HttpCode(200)
   @Get('/getone/:id([0-9]+)')
-  getOne(@Param('id') id: string) {
+  getOne(@Param('id') id: string): Promise<ProductModel> {
     return this.productService.findOneProduct(id);
   }
 
   @HttpCode(200)
   @Get('/getall')
-  getAll() {}
+  getAll(): Promise<ProductModel[]> {
+    return this.productService.findAllProducts();
+  }
 
   @HttpCode(200) // Если создает новый ресурс то 201, Если обновляет имеющийся то 200
   @Put('/update/:id([0-9]+)')
