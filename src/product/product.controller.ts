@@ -45,7 +45,9 @@ export class ProductController {
   @Put('/update/:id([0-9]+)')
   update() {}
 
-  @HttpCode(200)
+  @HttpCode(204)
   @Delete('/delete/:id([0-9]+)')
-  delete() {}
+  delete(@Param('id') id: string) {
+    return this.productService.removeProduct(id);
+  }
 }
