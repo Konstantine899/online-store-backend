@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  Param,
   Post,
   Put,
   UploadedFile,
@@ -29,12 +30,14 @@ export class ProductController {
   }
 
   @HttpCode(200)
-  @Get('/getall')
-  getAll() {}
+  @Get('/getone/:id([0-9]+)')
+  getOne(@Param('id') id: string) {
+    return this.productService.findOneProduct(id);
+  }
 
   @HttpCode(200)
-  @Get('/getone/:id([0-9]+)')
-  getOne() {}
+  @Get('/getall')
+  getAll() {}
 
   @HttpCode(200) // Если создает новый ресурс то 201, Если обновляет имеющийся то 200
   @Put('/update/:id([0-9]+)')
