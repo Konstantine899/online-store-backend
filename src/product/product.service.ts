@@ -40,4 +40,25 @@ export class ProductService {
     }
     return products;
   }
+
+  async removeProduct(id: string): Promise<boolean> {
+    const findProduct = await this.productRepository.findByPk(id);
+    if (!findProduct) {
+      throw new HttpException(
+        'Удаляемый продукт не найден в Базе Данных',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    const removedFile = await this.fileService.removeFile(findProduct.image);
+    const removedProduct = await this.productRepository.destroy({
+      where: { id },
+    });
+    if (!removedFile || !removedProduct) {
+      throw new HttpException(
+        'При удалении продукта произошла ошибка',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+    return true;
+  }
 }

@@ -23,4 +23,17 @@ export class FileService {
       );
     }
   }
+
+  async removeFile(fileName: string): Promise<boolean> {
+    try {
+      const filePath = path.resolve(__dirname, '..', 'static');
+      fs.rmSync(path.join(filePath, fileName));
+      return true;
+    } catch (error) {
+      throw new HttpException(
+        'При удалении файла в файловой системе произошла непредвиденная ошибка',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }
