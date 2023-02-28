@@ -61,4 +61,22 @@ export class ProductService {
     }
     return true;
   }
+
+  async updateProduct(
+    id: string,
+    dto: CreateProductDto,
+    image: Express.Multer.File,
+  ) {
+    const findProduct = await this.productRepository.findByPk(id);
+    const updatedImage = await this.fileService.updateFile(
+      findProduct.image,
+      image,
+    );
+    return await findProduct.update({
+      ...dto,
+      name: dto.name,
+      price: dto.price,
+      image: updatedImage,
+    });
+  }
 }

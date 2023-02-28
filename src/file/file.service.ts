@@ -36,4 +36,29 @@ export class FileService {
       );
     }
   }
+
+  async updateFile(
+    oldFile: string,
+    newFile: Express.Multer.File,
+  ): Promise<string> {
+    try {
+      // Удаляю старый файл
+      const filePath = path.resolve(__dirname, '..', 'static');
+      fs.rmSync(path.join(filePath, oldFile));
+
+      // генерирую новый файл
+      const extension = newFile.originalname
+        .split('.')
+        .filter(Boolean)
+        .splice(1);
+      const newFileName = `${uuid.v4()}.${extension}`;
+      fs.writeFileSync(path.join(filePath, newFileName), newFile.buffer); // записываю файл
+      return newFileName;
+    } catch (error) {
+      throw new HttpException(
+        'Произошла непредвиденная ошибка',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

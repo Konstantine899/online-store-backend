@@ -43,9 +43,16 @@ export class ProductController {
 
   @HttpCode(200) // Если создает новый ресурс то 201, Если обновляет имеющийся то 200
   @Put('/update/:id([0-9]+)')
-  update() {}
+  @UseInterceptors(FileInterceptor('image'))
+  update(
+    @Param('id') id: string,
+    @Body() dto: CreateProductDto,
+    @UploadedFile() image: Express.Multer.File,
+  ) {
+    return this.productService.updateProduct(id, dto, image);
+  }
 
-  @HttpCode(204)
+  @HttpCode(200)
   @Delete('/delete/:id([0-9]+)')
   delete(@Param('id') id: string) {
     return this.productService.removeProduct(id);
