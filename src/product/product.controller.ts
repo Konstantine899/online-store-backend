@@ -5,10 +5,13 @@ import {
   Get,
   HttpCode,
   Param,
+  ParseIntPipe,
   Post,
   Put,
   UploadedFile,
   UseInterceptors,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductService } from './product.service';
@@ -18,9 +21,9 @@ import { FileInterceptor } from '@nestjs/platform-express';
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
-
-  @HttpCode(201)
   @Post('/create')
+  @HttpCode(201)
+  @UsePipes(ValidationPipe)
   @UseInterceptors(FileInterceptor('image'))
   create(
     @Body() dto: CreateProductDto,
@@ -31,7 +34,7 @@ export class ProductController {
 
   @HttpCode(200)
   @Get('/getone/:id([0-9]+)')
-  getOne(@Param('id') id: string): Promise<ProductModel> {
+  getOne(@Param('id', ParseIntPipe) id: number): Promise<ProductModel> {
     return this.productService.findOneProduct(id);
   }
 
@@ -45,7 +48,7 @@ export class ProductController {
   @Put('/update/:id([0-9]+)')
   @UseInterceptors(FileInterceptor('image'))
   update(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: CreateProductDto,
     @UploadedFile() image: Express.Multer.File,
   ) {
@@ -54,7 +57,7 @@ export class ProductController {
 
   @HttpCode(200)
   @Delete('/delete/:id([0-9]+)')
-  delete(@Param('id') id: string) {
+  delete(@Param('id', ParseIntPipe) id: number) {
     return this.productService.removeProduct(id);
   }
 }

@@ -12,13 +12,17 @@ interface UserCreationAttributes {
 export class ProductModel extends Model<ProductModel, UserCreationAttributes> {
   @Column({
     type: DataType.INTEGER,
-    unique: true,
+    unique: { name: 'id', msg: 'Поле id должно быть уникальным' },
     primaryKey: true,
     autoIncrement: true,
   })
   id: number;
 
-  @Column({ type: DataType.STRING, unique: true, allowNull: false })
+  @Column({
+    type: DataType.STRING,
+    unique: { name: 'name', msg: 'Поле name должно быть уникальным' },
+    allowNull: false,
+  })
   name: string;
 
   @Column({ type: DataType.INTEGER, allowNull: false })

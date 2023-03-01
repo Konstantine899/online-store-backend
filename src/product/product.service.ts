@@ -15,11 +15,12 @@ export class ProductService {
     dto: CreateProductDto,
     image: Express.Multer.File,
   ): Promise<ProductModel> {
+    console.log('PRICE', typeof dto.price);
     const fileName = await this.fileService.createFile(image);
     return await this.productRepository.create({ ...dto, image: fileName });
   }
 
-  async findOneProduct(id: string): Promise<ProductModel> {
+  async findOneProduct(id: number): Promise<ProductModel> {
     const product = await this.productRepository.findByPk(id);
     if (!product) {
       throw new HttpException(
@@ -41,7 +42,7 @@ export class ProductService {
     return products;
   }
 
-  async removeProduct(id: string): Promise<boolean> {
+  async removeProduct(id: number): Promise<boolean> {
     const findProduct = await this.productRepository.findByPk(id);
     if (!findProduct) {
       throw new HttpException(
@@ -63,7 +64,7 @@ export class ProductService {
   }
 
   async updateProduct(
-    id: string,
+    id: number,
     dto: CreateProductDto,
     image: Express.Multer.File,
   ) {
