@@ -44,8 +44,9 @@ export class ProductController {
     return this.productService.findAllProducts();
   }
 
-  @HttpCode(200) // Если создает новый ресурс то 201, Если обновляет имеющийся то 200
   @Put('/update/:id([0-9]+)')
+  @HttpCode(200) // Если создает новый ресурс то 201, Если обновляет имеющийся то 200
+  @UsePipes(ValidationPipe)
   @UseInterceptors(FileInterceptor('image'))
   update(
     @Param('id', ParseIntPipe) id: number,

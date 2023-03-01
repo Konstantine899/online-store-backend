@@ -25,7 +25,7 @@ export class ProductModel extends Model<ProductModel, UserCreationAttributes> {
   })
   name: string;
 
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.FLOAT, allowNull: false })
   price: number;
 
   @Column({ type: DataType.INTEGER, defaultValue: 0 })
