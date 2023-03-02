@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Column, DataType, Model, Table } from 'sequelize-typescript';
 
-interface UserCreationAttributes {
+interface IUserCreationAttributes {
   name: string;
   price: number;
   image: string;
@@ -9,19 +9,19 @@ interface UserCreationAttributes {
 
 @Injectable()
 @Table({ tableName: 'product' })
-export class ProductModel extends Model<ProductModel, UserCreationAttributes> {
+export class ProductModel extends Model<ProductModel, IUserCreationAttributes> {
   @Column({
-    type: DataType.INTEGER,
-    unique: { name: 'id', msg: 'Поле id должно быть уникальным' },
-    primaryKey: true,
-    autoIncrement: true,
+	type: DataType.INTEGER,
+	unique: { name: 'id', msg: 'Поле id должно быть уникальным' },
+	primaryKey: true,
+	autoIncrement: true,
   })
   id: number;
 
   @Column({
-    type: DataType.STRING,
-    unique: { name: 'name', msg: 'Поле name должно быть уникальным' },
-    allowNull: false,
+	type: DataType.STRING,
+	unique: { name: 'name', msg: 'Поле name должно быть уникальным' },
+	allowNull: false,
   })
   name: string;
 
