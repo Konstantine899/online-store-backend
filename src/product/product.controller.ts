@@ -17,13 +17,14 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { ProductService } from './product.service';
 import { ProductModel } from './product.model';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CustomValidationPipe } from '../pipes/custom-validation-pipe';
 
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
   @Post('/create')
   @HttpCode(201)
-  @UsePipes(ValidationPipe)
+  @UsePipes(CustomValidationPipe)
   @UseInterceptors(FileInterceptor('image'))
   create(
     @Body() dto: CreateProductDto,
