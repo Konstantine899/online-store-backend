@@ -67,7 +67,7 @@ export class ProductService {
     id: number,
     dto: CreateProductDto,
     image: Express.Multer.File,
-  ) {
+  ): Promise<ProductModel> {
     const findProduct = await this.productRepository.findByPk(id);
     const updatedImage = await this.fileService.updateFile(
       findProduct.image,
