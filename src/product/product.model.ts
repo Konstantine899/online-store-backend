@@ -12,7 +12,7 @@ interface IUserCreationAttributes {
 export class ProductModel extends Model<ProductModel, IUserCreationAttributes> {
   @Column({
 	type: DataType.INTEGER,
-	unique: { name: 'id', msg: 'Поле id должно быть уникальным' },
+	unique: true,
 	primaryKey: true,
 	autoIncrement: true,
   })
@@ -20,7 +20,7 @@ export class ProductModel extends Model<ProductModel, IUserCreationAttributes> {
 
   @Column({
 	type: DataType.STRING,
-	unique: { name: 'name', msg: 'Поле name должно быть уникальным' },
+	unique: true,
 	allowNull: false,
   })
   name: string;

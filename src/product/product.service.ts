@@ -68,6 +68,9 @@ export class ProductService {
 	image: Express.Multer.File,
   ): Promise<ProductModel> {
 	const findProduct = await this.productRepository.findByPk(id);
+	if (!findProduct) {
+		throw new HttpException('Продукт не найден', HttpStatus.NOT_FOUND);
+	}
 	const updatedImage = await this.fileService.updateFile(
 		findProduct.image,
 		image,
