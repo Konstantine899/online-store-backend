@@ -10,17 +10,20 @@ import { Request, Response } from 'express';
 @Catch(UniqueConstraintError)
 export class SequelizeUniqueConstraintException implements ExceptionFilter {
   catch(exception: UniqueConstraintError, host: ArgumentsHost) {
-	const context = host.switchToHttp();
-	const response = context.getResponse<Response>();
-	const request = context.getRequest<Request>();
-	const { url } = request;
-	const { name } = exception;
-	const errorResponse = {
-		path: url,
-		timestamp: new Date().toISOString(),
-		message: name,
-	};
+    const context = host.switchToHttp();
+    const response = context.getResponse<Response>();
+    const request = context.getRequest<Request>();
+    const { url, path } = request;
+    const { name, message, fields } = exception;
+    const errorResponse = {
+      url: url,
+      path: path,
+      type: message,
+      name: name,
+      fields: fields,
+      timestamp: new Date().toISOString(),
+    };
 
-	response.status(HttpStatus.BAD_REQUEST).json(errorResponse);
+    response.status(HttpStatus.BAD_REQUEST).json(errorResponse);
   }
 }
