@@ -9,7 +9,6 @@ import {
   Post,
   Put,
   UploadedFile,
-  UseFilters,
   UseInterceptors,
   UsePipes,
   ValidationPipe,
@@ -18,10 +17,8 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { ProductService } from './product.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductModel } from './product.model';
-import { SequelizeUniqueConstraintException } from '../exceptions/sequelize-unique-constraint.exception';
 
 @Controller('product')
-@UseFilters(SequelizeUniqueConstraintException)
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
   @Post('/create')
