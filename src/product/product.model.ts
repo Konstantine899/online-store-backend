@@ -11,17 +11,17 @@ interface IUserCreationAttributes {
 @Table({ tableName: 'product' })
 export class ProductModel extends Model<ProductModel, IUserCreationAttributes> {
   @Column({
-	type: DataType.INTEGER,
-	unique: true,
-	primaryKey: true,
-	autoIncrement: true,
+    type: DataType.INTEGER,
+    unique: true,
+    primaryKey: true,
+    autoIncrement: true,
   })
   id: number;
 
   @Column({
-	type: DataType.STRING,
-	unique: true,
-	allowNull: false,
+    type: DataType.STRING,
+    unique: true,
+    allowNull: false,
   })
   name: string;
 
