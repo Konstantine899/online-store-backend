@@ -12,14 +12,13 @@ export class CustomNotFoundExceptionFilter implements ExceptionFilter {
 	const { url, path } = context.getRequest<Request>();
 	const response = context.getResponse<Response>();
 	const statusCode = exception.getStatus();
-	const message = exception.message;
-	const name = exception.name;
+	const { message, name } = exception;
 
 	response.status(statusCode).json({
+		statusCode: statusCode,
 		url: url,
 		path: path,
 		name: name,
-		statusCode: statusCode,
 		message: message,
 	});
   }
