@@ -9,6 +9,8 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { CategoryModule } from './category/category.module';
 import * as path from 'path';
 import { CategoryModel } from './category/category-model';
+import { BrandModule } from './brand/brand.module';
+import { BrandModel } from './brand/brand.model';
 
 @Module({
   imports: [
@@ -21,12 +23,13 @@ import { CategoryModel } from './category/category-model';
 		username: 'Konstantine899',
 		password: '4343',
 		database: 'online-store',
-		models: [ProductModel, CategoryModel],
+		models: [ProductModel, CategoryModel, BrandModel],
 		autoLoadModels: true, // автоматическая загрузка моделей
 	}),
 	ProductModule,
 	FileModule,
 	CategoryModule,
+	BrandModule,
   ],
   controllers: [],
   providers: [],
