@@ -12,11 +12,11 @@ async function bootstrap() {
   app.setGlobalPrefix('online-store');
   app.useGlobalPipes(...[new CustomValidationPipe()]);
   app.useGlobalFilters(
-    ...[
-      new SequelizeUniqueConstraintExceptionFilter(),
-      new SequelizeDatabaseErrorExceptionFilter(),
-      new CustomNotFoundExceptionFilter(),
-    ],
+	...[
+		new SequelizeUniqueConstraintExceptionFilter(),
+		new SequelizeDatabaseErrorExceptionFilter(),
+		new CustomNotFoundExceptionFilter(),
+	],
   );
   await app.listen(PORT, () => console.log(`Server started on port = ${PORT}`));
 }
