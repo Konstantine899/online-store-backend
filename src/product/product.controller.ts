@@ -40,12 +40,20 @@ export class ProductController {
   async getAll(): Promise<ProductModel[]> {
 	return this.productService.findAllProducts();
   }
+
   @HttpCode(200)
   @Get('/all/brandId/:brandId([0-9]+)')
   async getAllByBrand(
 	@Param('brandId', ParseIntPipe) brandId: number,
   ): Promise<ProductModel[]> {
 	return this.productService.findAllByBrandId(brandId);
+  }
+  @HttpCode(200)
+  @Get('/all/categoryId/:categoryId([0-9]+)')
+  async getAllByCategory(
+	@Param('categoryId', ParseIntPipe) categoryId: number,
+  ): Promise<ProductModel[]> {
+	return this.productService.findAllByCategoryId(categoryId);
   }
 
   @Put('/update/:id([0-9]+)')
