@@ -1,5 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { Column, DataType, Model, Table } from 'sequelize-typescript';
+import {
+  BelongsTo,
+  Column,
+  DataType,
+  ForeignKey,
+  Model,
+  Table,
+} from 'sequelize-typescript';
+import { CategoryModel } from '../category/category-model';
+import { BrandModel } from '../brand/brand.model';
 
 interface IUserCreationAttributes {
   name: string;
@@ -33,4 +42,18 @@ export class ProductModel extends Model<ProductModel, IUserCreationAttributes> {
 
   @Column({ type: DataType.STRING, allowNull: false })
   image: string;
+
+  @ForeignKey(() => CategoryModel)
+  @Column({ type: DataType.INTEGER })
+  categoryId: number;
+
+  @BelongsTo(() => CategoryModel)
+  category: CategoryModel;
+
+  @ForeignKey(() => BrandModel)
+  @Column({ type: DataType.INTEGER })
+  brandId: number;
+
+  @BelongsTo(() => BrandModel)
+  brand: BrandModel;
 }
