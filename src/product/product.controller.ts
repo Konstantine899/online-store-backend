@@ -40,6 +40,13 @@ export class ProductController {
   async getAll(): Promise<ProductModel[]> {
 	return this.productService.findAllProducts();
   }
+  @HttpCode(200)
+  @Get('/all/brandId/:brandId([0-9]+)')
+  async getAllByBrand(
+	@Param('brandId', ParseIntPipe) brandId: number,
+  ): Promise<ProductModel[]> {
+	return this.productService.findAllByBrandId(brandId);
+  }
 
   @Put('/update/:id([0-9]+)')
   @HttpCode(200) // Если создает новый ресурс то 201, Если обновляет имеющийся то 200
