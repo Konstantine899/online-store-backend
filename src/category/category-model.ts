@@ -1,5 +1,6 @@
-import { Column, DataType, Model, Table } from 'sequelize-typescript';
+import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
 import { Injectable } from '@nestjs/common';
+import { ProductModel } from '../product/product.model';
 
 interface ICategoryCreationAttributes {
   name: string;
@@ -25,4 +26,7 @@ export class CategoryModel extends Model<
 	allowNull: false,
   })
   name: string;
+
+  @HasMany(() => ProductModel, { onDelete: 'RESTRICT' })
+  products: ProductModel[];
 }
