@@ -60,6 +60,18 @@ export class ProductService {
 	return allProductsByCategoryId;
   }
 
+  async findAllByBrandIdAndCategoryId(
+	brandId: number,
+	categoryId: number,
+  ): Promise<ProductModel[]> {
+	const allProductsByBrandIdAndCategoryId =
+		await this.productRepository.findAll({ where: { brandId, categoryId } });
+	if (!allProductsByBrandIdAndCategoryId) {
+		throw new NotFoundException('Не найдено');
+	}
+	return allProductsByBrandIdAndCategoryId;
+  }
+
   async removeProduct(id: number): Promise<boolean> {
 	const findProduct = await this.productRepository.findByPk(id);
 	if (!findProduct) {

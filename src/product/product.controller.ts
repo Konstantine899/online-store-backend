@@ -56,6 +56,18 @@ export class ProductController {
 	return this.productService.findAllByCategoryId(categoryId);
   }
 
+  @HttpCode(200)
+  @Get('/all/brandId/:brandId([0-9]+)/categoryId/:categoryId([0-9]+)')
+  async getAllByBrandAndCategory(
+	@Param('brandId', ParseIntPipe) brandId: number,
+	@Param('categoryId', ParseIntPipe) categoryId: number,
+  ): Promise<ProductModel[]> {
+	return this.productService.findAllByBrandIdAndCategoryId(
+		brandId,
+		categoryId,
+	);
+  }
+
   @Put('/update/:id([0-9]+)')
   @HttpCode(200) // Если создает новый ресурс то 201, Если обновляет имеющийся то 200
   @UseInterceptors(FileInterceptor('image'))
