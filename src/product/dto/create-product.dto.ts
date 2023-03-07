@@ -14,4 +14,10 @@ export class CreateProductDto {
   )
   @Transform(({ value }): number => Number.parseFloat(value))
   readonly price: number;
+
+  @Transform(({ value }): number => Number.parseFloat(value))
+  readonly brandId: number;
+
+  @Transform(({ value }): number => Number.parseFloat(value))
+  readonly categoryId: number;
 }

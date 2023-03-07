@@ -44,14 +44,14 @@ export class ProductModel extends Model<ProductModel, IUserCreationAttributes> {
   image: string;
 
   @ForeignKey(() => CategoryModel)
-  @Column({ type: DataType.INTEGER })
+  @Column({ type: DataType.INTEGER, allowNull: false })
   categoryId: number;
 
   @BelongsTo(() => CategoryModel)
   category: CategoryModel;
 
   @ForeignKey(() => BrandModel)
-  @Column({ type: DataType.INTEGER })
+  @Column({ type: DataType.INTEGER, allowNull: false })
   brandId: number;
 
   @BelongsTo(() => BrandModel)
