@@ -8,6 +8,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { ProductModel } from './product.model';
 import { CreateProductDto } from './dto/create-product.dto';
 import { FileService } from '../file/file.service';
+import { ProductPropertyModel } from '../product-property/product-property.model';
 
 @Injectable()
 export class ProductService {
@@ -25,7 +26,10 @@ export class ProductService {
   }
 
   async findOneProduct(id: number): Promise<ProductModel> {
-	const product = await this.productRepository.findByPk(id);
+	const product = await this.productRepository.findOne({
+		where: { id },
+		include: [{ model: ProductPropertyModel }],
+	});
 	if (!product) {
 		throw new NotFoundException('Не найдено');
 	}

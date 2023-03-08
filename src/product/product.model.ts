@@ -4,11 +4,13 @@ import {
   Column,
   DataType,
   ForeignKey,
+  HasMany,
   Model,
   Table,
 } from 'sequelize-typescript';
 import { CategoryModel } from '../category/category-model';
 import { BrandModel } from '../brand/brand.model';
+import { ProductPropertyModel } from '../product-property/product-property.model';
 
 interface IUserCreationAttributes {
   name: string;
@@ -56,4 +58,7 @@ export class ProductModel extends Model<ProductModel, IUserCreationAttributes> {
 
   @BelongsTo(() => BrandModel)
   brand: BrandModel;
+
+  @HasMany(() => ProductPropertyModel, { onDelete: 'CASCADE' })
+  properties: ProductPropertyModel[];
 }
