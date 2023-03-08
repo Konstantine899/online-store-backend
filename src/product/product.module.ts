@@ -6,12 +6,18 @@ import { ProductModel } from './product.model';
 import { FileModule } from '../file/file.module';
 import { CategoryModel } from '../category/category-model';
 import { BrandModel } from '../brand/brand.model';
+import { ProductPropertyModel } from '../product-property/product-property.model';
 
 @Module({
   providers: [ProductService],
   controllers: [ProductController],
   imports: [
-	SequelizeModule.forFeature([ProductModel, CategoryModel, BrandModel]),
+	SequelizeModule.forFeature([
+		ProductModel,
+		CategoryModel,
+		BrandModel,
+		ProductPropertyModel,
+	]),
 	FileModule,
   ],
 })

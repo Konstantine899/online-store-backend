@@ -11,6 +11,8 @@ import * as path from 'path';
 import { CategoryModel } from './category/category-model';
 import { BrandModule } from './brand/brand.module';
 import { BrandModel } from './brand/brand.model';
+import { ProductPropertyModule } from './product-property/product-property.module';
+import { ProductPropertyModel } from './product-property/product-property.model';
 
 @Module({
   imports: [
@@ -23,13 +25,14 @@ import { BrandModel } from './brand/brand.model';
 		username: 'Konstantine899',
 		password: '4343',
 		database: 'online-store',
-		models: [ProductModel, CategoryModel, BrandModel],
+		models: [ProductModel, CategoryModel, BrandModel, ProductPropertyModel],
 		autoLoadModels: true, // автоматическая загрузка моделей
 	}),
 	ProductModule,
 	FileModule,
 	CategoryModule,
 	BrandModule,
+	ProductPropertyModule,
   ],
   controllers: [],
   providers: [],
