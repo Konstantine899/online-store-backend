@@ -1,5 +1,13 @@
-import { Column, DataType, Model, Table } from 'sequelize-typescript';
+import {
+  BelongsToMany,
+  Column,
+  DataType,
+  Model,
+  Table,
+} from 'sequelize-typescript';
 import { Injectable } from '@nestjs/common';
+import { UserRoleModel } from '../role/user-role.model';
+import { RoleModel } from '../role/role.model';
 
 interface IUserCreationAttributes {
   email: string;
@@ -20,4 +28,8 @@ export class UserModel extends Model<UserModel, IUserCreationAttributes> {
 
   @Column({ type: DataType.STRING, defaultValue: 'USER' })
   role: string;
+
+  // Многие ко многим через промежуточную таблицу UserRoleModel
+  @BelongsToMany(() => RoleModel, () => UserRoleModel)
+  roles: RoleModel[];
 }
