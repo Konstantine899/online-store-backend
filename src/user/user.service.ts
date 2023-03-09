@@ -25,7 +25,8 @@ export class UserService {
 		HttpStatus.INTERNAL_SERVER_ERROR,
 		);
 	}
-	await user.$set('roles', [role.id]); // #set перезаписываю поле
+	await user.$set('roles', [role.id]); // #set перезаписываю поле только в БД
+	user.roles = [role]; // Добавляю roles в сам объект user
 	return user;
   }
 
@@ -35,6 +36,13 @@ export class UserService {
 		throw new NotFoundException('Не найдено');
 	}
 	return user;
+  }
+
+  async findUserByEmail(email: string): Promise<UserModel> {
+	return this.userRepository.findOne({
+		where: { email },
+		include: { all: true },
+	});
   }
 
   async findAll(): Promise<UserModel[]> {
