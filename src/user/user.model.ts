@@ -26,9 +26,6 @@ export class UserModel extends Model<UserModel, IUserCreationAttributes> {
   @Column({ type: DataType.STRING })
   password: string;
 
-  @Column({ type: DataType.STRING, defaultValue: 'USER' })
-  role: string;
-
   // Многие ко многим через промежуточную таблицу UserRoleModel
   @BelongsToMany(() => RoleModel, () => UserRoleModel)
   roles: RoleModel[];
