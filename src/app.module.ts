@@ -18,6 +18,7 @@ import { UserModel } from './user/user.model';
 import { RoleModule } from './role/role.module';
 import { RoleModel } from './role/role.model';
 import { UserRoleModel } from './role/user-role.model';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { UserRoleModel } from './role/user-role.model';
 	ProductPropertyModule,
 	UserModule,
 	RoleModule,
+	AuthModule,
   ],
   controllers: [],
   providers: [],
