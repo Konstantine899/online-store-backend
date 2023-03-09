@@ -13,26 +13,35 @@ import { BrandModule } from './brand/brand.module';
 import { BrandModel } from './brand/brand.model';
 import { ProductPropertyModule } from './product-property/product-property.module';
 import { ProductPropertyModel } from './product-property/product-property.model';
+import { UserModule } from './user/user.module';
+import { UserModel } from './user/user.model';
 
 @Module({
   imports: [
-	ServeStaticModule.forRoot({ rootPath: path.resolve(__dirname, 'static') }),
-	ConfigModule.forRoot({ envFilePath: `.${process.env.NODE_ENV}.env` }),
-	SequelizeModule.forRoot({
-		dialect: 'mysql',
-		host: 'localhost',
-		port: 3306,
-		username: 'Konstantine899',
-		password: '4343',
-		database: 'online-store',
-		models: [ProductModel, CategoryModel, BrandModel, ProductPropertyModel],
-		autoLoadModels: true, // автоматическая загрузка моделей
-	}),
-	ProductModule,
-	FileModule,
-	CategoryModule,
-	BrandModule,
-	ProductPropertyModule,
+    ServeStaticModule.forRoot({ rootPath: path.resolve(__dirname, 'static') }),
+    ConfigModule.forRoot({ envFilePath: `.${process.env.NODE_ENV}.env` }),
+    SequelizeModule.forRoot({
+      dialect: 'mysql',
+      host: 'localhost',
+      port: 3306,
+      username: 'Konstantine899',
+      password: '4343',
+      database: 'online-store',
+      models: [
+        ProductModel,
+        CategoryModel,
+        BrandModel,
+        ProductPropertyModel,
+        UserModel,
+      ],
+      autoLoadModels: true, // автоматическая загрузка моделей
+    }),
+    ProductModule,
+    FileModule,
+    CategoryModule,
+    BrandModule,
+    ProductPropertyModule,
+    UserModule,
   ],
   controllers: [],
   providers: [],
