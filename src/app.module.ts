@@ -15,6 +15,9 @@ import { ProductPropertyModule } from './product-property/product-property.modul
 import { ProductPropertyModel } from './product-property/product-property.model';
 import { UserModule } from './user/user.module';
 import { UserModel } from './user/user.model';
+import { RoleModule } from './role/role.module';
+import { RoleModel } from './role/role.model';
+import { UserRoleModel } from './role/user-role.model';
 
 @Module({
   imports: [
@@ -33,6 +36,8 @@ import { UserModel } from './user/user.model';
 		BrandModel,
 		ProductPropertyModel,
 		UserModel,
+		RoleModel,
+		UserRoleModel,
 		],
 		autoLoadModels: true, // автоматическая загрузка моделей
 	}),
@@ -42,6 +47,7 @@ import { UserModel } from './user/user.model';
 	BrandModule,
 	ProductPropertyModule,
 	UserModule,
+	RoleModule,
   ],
   controllers: [],
   providers: [],
