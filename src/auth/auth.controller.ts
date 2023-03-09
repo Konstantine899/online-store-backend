@@ -11,4 +11,9 @@ export class AuthController {
   async registration(@Body() dto: CreateUserDto): Promise<string> {
 	return this.authService.registration(dto);
   }
+  @HttpCode(200)
+  @Post('/login')
+  async login(@Body() dto: CreateUserDto) {
+	return this.authService.login(dto);
+  }
 }
