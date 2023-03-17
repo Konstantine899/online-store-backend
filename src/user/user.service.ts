@@ -13,7 +13,7 @@ export class UserService {
 
   async create(dto: CreateUserDto): Promise<UserModel> {
     const user = await this.userRepository.createUser(dto);
-    const role = await this.roleService.findOne('USER');
+    const role = await this.roleService.findRole('USER');
     await user.$set('roles', [role.id]); // #set перезаписываю поле только в БД
     user.roles = [role]; // Добавляю roles в сам объект user
     return user.save();
@@ -45,7 +45,7 @@ export class UserService {
 
   async update(id: number, dto: CreateUserDto): Promise<UserModel> {
     const user = await this.findUserById(id);
-    const role = await this.roleService.findOne('USER');
+    const role = await this.roleService.findRole('USER');
     const updateUser = await user.update({
       ...dto,
       email: dto.email,
