@@ -29,8 +29,11 @@ export class UserRepository {
 
   public async updateUser(id: number, dto: CreateUserDto): Promise<UserModel> {
 	const user = await this.findUserById(id);
-	if (!user) {
-		throw new NotFoundException(`Пользователь не найден`);
+	const findEmail = await this.findUserByEmail(dto.email);
+	if (findEmail) {
+		throw new BadRequestException(
+		`Пользователь с таким email: ${dto.email} уже существует`,
+		);
 	}
 	return user.update({
 		...dto,
@@ -40,7 +43,11 @@ export class UserRepository {
   }
 
   public async findUserById(id: number): Promise<UserModel> {
-	return this.userRepository.findByPk(id);
+	const user = await this.userRepository.findByPk(id);
+	if (!user) {
+		throw new NotFoundException('Пользователь не найден');
+	}
+	return user;
   }
 
   public async findUserByEmail(email: string): Promise<UserModel> {
@@ -55,6 +62,10 @@ export class UserRepository {
   }
 
   public async removeUser(id: number) {
-	return this.userRepository.destroy({ where: { id } });
+	const user = await this.findUserById(id);
+	if (!user) {
+		throw new NotFoundException(`Пользователь не найден`);
+	}
+	return this.userRepository.destroy({ where: { id: user.id } });
   }
 }

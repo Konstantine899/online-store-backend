@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UserModel } from './user.model';
 import { CreateUserDto } from './dto/create-user.dto';
 import { RoleService } from '../role/role.service';
@@ -20,27 +20,15 @@ export class UserService {
   }
 
   async findUserById(id: number): Promise<UserModel | null> {
-	const user = await this.userRepository.findUserById(id);
-	if (!user) {
-		throw new NotFoundException('Пользователь не найден');
-	}
-	return user;
+	return this.userRepository.findUserById(id);
   }
 
   async findUserByEmail(email: string): Promise<UserModel> {
-	const userEmail = this.userRepository.findUserByEmail(email);
-	if (!userEmail) {
-		throw new NotFoundException('Такой email не найден');
-	}
-	return userEmail;
+	return this.userRepository.findUserByEmail(email);
   }
 
   async findAllUsers(): Promise<UserModel[]> {
-	const users = await this.userRepository.findAllUsers();
-	if (!users) {
-		throw new NotFoundException('Пользователи не найдены');
-	}
-	return users;
+	return this.userRepository.findAllUsers();
   }
 
   async update(id: number, dto: CreateUserDto): Promise<UserModel> {
@@ -52,8 +40,7 @@ export class UserService {
   }
 
   async remove(id: number): Promise<boolean> {
-	const userId = await this.findUserById(id);
-	await this.userRepository.removeUser(userId.id);
+	await this.userRepository.removeUser(id);
 	return true;
   }
 }
