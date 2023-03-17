@@ -5,7 +5,6 @@ import {
   Model,
   Table,
 } from 'sequelize-typescript';
-import { Injectable } from '@nestjs/common';
 import { UserRoleModel } from '../role/user-role.model';
 import { RoleModel } from '../role/role.model';
 
@@ -14,7 +13,6 @@ interface IUserCreationAttributes {
   password: string;
 }
 
-@Injectable()
 @Table({ tableName: 'user' })
 export class UserModel extends Model<UserModel, IUserCreationAttributes> {
   @Column({ type: DataType.INTEGER, primaryKey: true, autoIncrement: true })
