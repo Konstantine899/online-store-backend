@@ -20,38 +20,40 @@ import { RoleModel } from './role/role.model';
 import { UserRoleModel } from './role/user-role.model';
 import { AuthModule } from './auth/auth.module';
 import { TokenModule } from './token/token.module';
+import { RefreshTokenModel } from './token/refresh-token.model';
 
 @Module({
   imports: [
-	ServeStaticModule.forRoot({ rootPath: path.resolve(__dirname, 'static') }),
-	ConfigModule.forRoot({ envFilePath: `.${process.env.NODE_ENV}.env` }),
-	SequelizeModule.forRoot({
-		dialect: 'mysql',
-		host: 'localhost',
-		port: 3306,
-		username: 'Konstantine899',
-		password: '4343',
-		database: 'online-store',
-		models: [
-		ProductModel,
-		CategoryModel,
-		BrandModel,
-		ProductPropertyModel,
-		UserModel,
-		RoleModel,
-		UserRoleModel,
-		],
-		autoLoadModels: true, // автоматическая загрузка моделей
-	}),
-	ProductModule,
-	FileModule,
-	CategoryModule,
-	BrandModule,
-	ProductPropertyModule,
-	UserModule,
-	RoleModule,
-	AuthModule,
-	TokenModule,
+    ServeStaticModule.forRoot({ rootPath: path.resolve(__dirname, 'static') }),
+    ConfigModule.forRoot({ envFilePath: `.${process.env.NODE_ENV}.env` }),
+    SequelizeModule.forRoot({
+      dialect: 'mysql',
+      host: 'localhost',
+      port: 3306,
+      username: 'Konstantine899',
+      password: '4343',
+      database: 'online-store',
+      models: [
+        ProductModel,
+        CategoryModel,
+        BrandModel,
+        ProductPropertyModel,
+        UserModel,
+        RoleModel,
+        UserRoleModel,
+        RefreshTokenModel,
+      ],
+      autoLoadModels: true, // автоматическая загрузка моделей
+    }),
+    ProductModule,
+    FileModule,
+    CategoryModule,
+    BrandModule,
+    ProductPropertyModule,
+    UserModule,
+    RoleModule,
+    AuthModule,
+    TokenModule,
   ],
   controllers: [],
   providers: [],
