@@ -6,15 +6,15 @@ import {
 } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
-import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UserModel } from '../user/user.model';
+import { TokenService } from '../token/token.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
-    private readonly jwtService: JwtService,
+    private readonly tokenService: TokenService,
   ) {}
 
   async registration(dto: CreateUserDto): Promise<string> {
@@ -30,17 +30,12 @@ export class AuthService {
       ...dto,
       password: hashPassword,
     });
-    return this.generateToken(user);
+    return this.tokenService.generateAccessToken(user);
   }
 
   async login(dto: CreateUserDto): Promise<string> {
     const user = await this.validateUser(dto);
-    return this.generateToken(user);
-  }
-
-  private async generateToken(user: UserModel): Promise<string> {
-    const payload = { id: user.id, email: user.email, roles: user.roles };
-    return this.jwtService.sign(payload);
+    return this.tokenService.generateAccessToken(user);
   }
 
   private async validateUser(dto: CreateUserDto): Promise<UserModel> {

@@ -19,6 +19,7 @@ import { RoleModule } from './role/role.module';
 import { RoleModel } from './role/role.model';
 import { UserRoleModel } from './role/user-role.model';
 import { AuthModule } from './auth/auth.module';
+import { TokenModule } from './token/token.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { AuthModule } from './auth/auth.module';
 	UserModule,
 	RoleModule,
 	AuthModule,
+	TokenModule,
   ],
   controllers: [],
   providers: [],
