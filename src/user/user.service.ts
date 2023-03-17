@@ -44,16 +44,11 @@ export class UserService {
   }
 
   async update(id: number, dto: CreateUserDto): Promise<UserModel> {
-	const user = await this.findUserById(id);
+	const user = await this.userRepository.updateUser(id, dto);
 	const role = await this.roleService.findRole('USER');
-	const updateUser = await user.update({
-		...dto,
-		email: dto.email,
-		password: dto.password,
-	});
 	await user.$set('roles', [role.id]); // #set перезаписываю поле
 	user.roles = [role];
-	return updateUser.save();
+	return user;
   }
 
   async remove(id: number): Promise<boolean> {
