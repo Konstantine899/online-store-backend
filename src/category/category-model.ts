@@ -1,13 +1,11 @@
 import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
-import { Injectable } from '@nestjs/common';
 import { ProductModel } from '../product/product.model';
 
 interface ICategoryCreationAttributes {
   name: string;
 }
 
-@Injectable()
-@Table({ tableName: 'category' })
+@Table({ tableName: 'category', underscored: true })
 export class CategoryModel extends Model<
   CategoryModel,
   ICategoryCreationAttributes

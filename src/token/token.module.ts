@@ -6,11 +6,11 @@ import { RefreshTokenModel } from './refresh-token.model';
 
 @Module({
   imports: [
-    JwtModule.register({
-      secret: process.env.JWT_PRIVATE_KEY || 'SECRET',
-      signOptions: { expiresIn: '24h' }, // время жизни токена
-    }),
-    SequelizeModule.forFeature([RefreshTokenModel]),
+	JwtModule.register({
+		secret: process.env.JWT_PRIVATE_KEY || 'SECRET',
+		signOptions: { expiresIn: '24h' }, // время жизни токена
+	}),
+	SequelizeModule.forFeature([RefreshTokenModel]),
   ],
   providers: [TokenService],
   exports: [TokenService],

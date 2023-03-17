@@ -11,10 +11,10 @@ import { UserModel } from '../user/user.model';
 @Table({ tableName: 'refresh_token', underscored: true })
 export class RefreshTokenModel extends Model<RefreshTokenModel> {
   @Column({
-    type: DataType.INTEGER,
-    unique: true,
-    primaryKey: true,
-    autoIncrement: true,
+	type: DataType.INTEGER,
+	unique: true,
+	primaryKey: true,
+	autoIncrement: true,
   })
   id: number;
 

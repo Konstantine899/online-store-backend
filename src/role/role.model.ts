@@ -5,18 +5,16 @@ import {
   Model,
   Table,
 } from 'sequelize-typescript';
-import { Injectable } from '@nestjs/common';
 import { UserModel } from '../user/user.model';
 import { UserRoleModel } from './user-role.model';
 
-@Injectable()
-@Table({ tableName: 'role' })
+@Table({ tableName: 'role', underscored: true })
 export class RoleModel extends Model<RoleModel> {
   @Column({
-    type: DataType.INTEGER,
-    unique: true,
-    autoIncrement: true,
-    primaryKey: true,
+	type: DataType.INTEGER,
+	unique: true,
+	autoIncrement: true,
+	primaryKey: true,
   })
   id: number;
 

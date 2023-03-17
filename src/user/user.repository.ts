@@ -7,29 +7,29 @@ Injectable();
 
 export class UserRepository {
   constructor(
-    @InjectModel(UserModel) private userRepository: typeof UserModel,
+	@InjectModel(UserModel) private userRepository: typeof UserModel,
   ) {}
 
   public async createUser(dto: CreateUserDto): Promise<UserModel> {
-    return await this.userRepository.create(dto);
+	return this.userRepository.create(dto);
   }
 
   public async findUserById(id: number): Promise<UserModel> {
-    return await this.userRepository.findByPk(id);
+	return this.userRepository.findByPk(id);
   }
 
   public async findUserByEmail(email: string): Promise<UserModel> {
-    return await this.userRepository.findOne({
-      where: { email },
-      include: { all: true },
-    });
+	return this.userRepository.findOne({
+		where: { email },
+		include: { all: true },
+	});
   }
 
   public async findAllUsers() {
-    return await this.userRepository.findAll({ include: { all: true } });
+	return this.userRepository.findAll({ include: { all: true } });
   }
 
   public async removeUser(id: number) {
-    return await this.userRepository.destroy({ where: { id } });
+	return this.userRepository.destroy({ where: { id } });
   }
 }

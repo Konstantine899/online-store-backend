@@ -15,7 +15,7 @@ interface IUserCreationAttributes {
   password: string;
 }
 
-@Table({ tableName: 'user' })
+@Table({ tableName: 'user', underscored: true })
 export class UserModel extends Model<UserModel, IUserCreationAttributes> {
   @Column({ type: DataType.INTEGER, primaryKey: true, autoIncrement: true })
   id: number;
@@ -32,8 +32,8 @@ export class UserModel extends Model<UserModel, IUserCreationAttributes> {
 
   //У одного пользователя могут быть несколько refresh tokens
   @HasMany(() => RefreshTokenModel, {
-    onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
+	onDelete: 'CASCADE',
+	onUpdate: 'CASCADE',
   })
   refresh_tokens: RefreshTokenModel[];
 }

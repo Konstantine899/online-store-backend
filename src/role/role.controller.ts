@@ -10,12 +10,12 @@ export class RoleController {
   @HttpCode(201)
   @Post()
   async create(@Body() dto: CreateRoleDto): Promise<RoleModel> {
-    return this.roleService.create(dto);
+	return this.roleService.create(dto);
   }
 
   @HttpCode(200)
   @Get('/:role')
   async getOne(@Param('role') role: string): Promise<RoleModel> {
-    return this.roleService.findRole(role);
+	return this.roleService.findRole(role);
   }
 }

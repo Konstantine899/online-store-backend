@@ -7,7 +7,7 @@ export class CreateUserDto {
 
   @IsNotEmpty({ message: 'Укажите пароль' })
   @MinLength(6, {
-    message: 'Пароль пользователя должен быть не менее 6 символов',
+	message: 'Пароль пользователя должен быть не менее 6 символов',
   })
   readonly password: string;
 }
