@@ -26,7 +26,7 @@ export class RefreshTokenModel extends Model<RefreshTokenModel> {
 
   @ForeignKey(() => UserModel)
   @Column({ type: DataType.INTEGER })
-  userId: number;
+  user_id: number;
 
   // У одного refresh token может быть только один пользователь
   @BelongsTo(() => UserModel)

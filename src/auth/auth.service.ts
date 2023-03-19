@@ -10,6 +10,15 @@ import * as bcrypt from 'bcrypt';
 import { UserModel } from '../user/user.model';
 import { TokenService } from '../token/token.service';
 
+export interface IAuthPayload {
+  user: UserModel;
+  payload: {
+	type: string;
+	accessToken: string;
+	refreshToken?: string;
+  };
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -17,7 +26,9 @@ export class AuthService {
 	private readonly tokenService: TokenService,
   ) {}
 
-  async registration(dto: CreateUserDto): Promise<string> {
+  public async registration(
+	dto: CreateUserDto,
+  ): Promise<{ status: string; data: IAuthPayload }> {
 	const candidate = await this.userService.findUserByEmail(dto.email);
 	if (candidate) {
 		throw new HttpException(
@@ -25,31 +36,74 @@ export class AuthService {
 		HttpStatus.BAD_REQUEST,
 		);
 	}
-	const hashPassword = await bcrypt.hash(dto.password, 5);
-	const user = await this.userService.create({
-		...dto,
-		password: hashPassword,
-	});
-	return this.tokenService.generateAccessToken(user);
+	const user = await this.userService.create(dto);
+	const accessToken = await this.tokenService.generateAccessToken(user);
+	const refreshToken = await this.tokenService.generateRefreshToken(
+		user,
+		60 * 60 * 24 * 30,
+	);
+	const payload = this.buildResponsePayload(user, accessToken, refreshToken);
+	return {
+		status: 'success',
+		data: payload,
+	};
   }
 
-  async login(dto: CreateUserDto): Promise<string> {
+  async login(
+	dto: CreateUserDto,
+  ): Promise<{ status: string; data: IAuthPayload }> {
 	const user = await this.validateUser(dto);
-	return this.tokenService.generateAccessToken(user);
+	const accessToken = await this.tokenService.generateAccessToken(user);
+	const refreshToken = await this.tokenService.generateRefreshToken(
+		user,
+		60 * 60 * 24 * 30,
+	);
+	const payload = this.buildResponsePayload(user, accessToken, refreshToken);
+	return {
+		status: 'success',
+		data: payload,
+	};
+  }
+
+  public async updateAccessToken(
+	refreshToken: string,
+  ): Promise<{ status: string; data: IAuthPayload }> {
+	const { user, accessToken } =
+		await this.tokenService.createAccessTokenFromRefreshToken(refreshToken);
+	const payload = this.buildResponsePayload(user, accessToken);
+	return {
+		status: 'success',
+		data: payload,
+	};
+  }
+
+  public buildResponsePayload(
+	user: UserModel,
+	accessToken: string,
+	refreshToken?: string,
+  ): IAuthPayload {
+	return {
+		user,
+		payload: {
+		type: 'bearer',
+		accessToken,
+		...(refreshToken ? { refreshToken } : {}),
+		},
+	};
   }
 
   private async validateUser(dto: CreateUserDto): Promise<UserModel> {
 	const user = await this.userService.findUserByEmail(dto.email);
 	if (!user) {
 		throw new UnauthorizedException({
-		message: 'Не корректный email или пароль',
+		message: 'Не корректный email',
 		});
 	}
 	const password = await bcrypt.compare(dto.password, user.password); // сравниваю пароли
 
 	if (!password) {
 		throw new UnauthorizedException({
-		message: 'Не корректный email или пароль',
+		message: 'Не корректный пароль',
 		});
 	}
 	return user;
