@@ -5,17 +5,17 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { RefreshTokenModel } from './refresh-token.model';
 import { RefreshTokenRepository } from './refresh-token.repository';
 import { UserModule } from '../user/user.module';
+import { JwtStrategy } from './jwt.strategy';
+import { JwtGuard } from './jwt.guard';
+import { jwtConfig } from '../config/jwt.config';
 
 @Module({
   imports: [
-    JwtModule.register({
-      secret: process.env.JWT_PRIVATE_KEY || 'SECRET',
-      signOptions: { expiresIn: '24h' }, // время жизни токена
-    }),
-    SequelizeModule.forFeature([RefreshTokenModel]),
-    UserModule,
+	JwtModule.registerAsync(jwtConfig),
+	SequelizeModule.forFeature([RefreshTokenModel]),
+	UserModule,
   ],
-  providers: [TokenService, RefreshTokenRepository],
-  exports: [TokenService],
+  providers: [TokenService, RefreshTokenRepository, JwtStrategy, JwtGuard],
+  exports: [TokenService, JwtStrategy, JwtGuard],
 })
 export class TokenModule {}

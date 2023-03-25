@@ -1,12 +1,25 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { IAuthPayload, AuthService } from './auth.service';
 import { RegisterRequestDto } from './dto/register-request.dto';
 import { LoginRequestDto } from './dto/login-request-dto';
 import { RefreshRequestDto } from './dto/refresh-request.dto';
+import { UserService } from '../user/user.service';
+import { JwtGuard } from '../token/jwt.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+	private readonly authService: AuthService,
+	private readonly userService: UserService,
+  ) {}
 
   @HttpCode(201)
   @Post('/registration')
@@ -29,5 +42,16 @@ export class AuthController {
 	@Body() dto: RefreshRequestDto,
   ): Promise<{ status: string; data: IAuthPayload }> {
 	return this.authService.updateAccessToken(dto.refreshToken);
+  }
+
+  @Get('/me')
+  @UseGuards(JwtGuard)
+  public async getUser(@Req() request) {
+	const { id } = request.user;
+	const user = await this.userService.findUserById(id);
+	return {
+		status: 'success',
+		data: user,
+	};
   }
 }
