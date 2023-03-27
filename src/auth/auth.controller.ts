@@ -13,6 +13,8 @@ import { LoginRequestDto } from './dto/login-request-dto';
 import { RefreshRequestDto } from './dto/refresh-request.dto';
 import { UserService } from '../user/user.service';
 import { JwtGuard } from '../token/jwt.guard';
+import { RoleGuard } from '../role/role.guard';
+import { Roles } from './decorators/roles-auth.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -44,8 +46,10 @@ export class AuthController {
 	return this.authService.updateAccessToken(dto.refreshToken);
   }
 
-  @Get('/me')
+  @Roles('ADMIN')
   @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
+  @Get('/me')
   public async getUser(@Req() request) {
 	const { id } = request.user;
 	const user = await this.userService.findUserById(id);

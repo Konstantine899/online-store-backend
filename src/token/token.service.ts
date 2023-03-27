@@ -5,12 +5,17 @@ import { SignOptions, TokenExpiredError } from 'jsonwebtoken';
 import { RefreshTokenRepository } from './refresh-token.repository';
 import { UserRepository } from '../user/user.repository';
 import { RefreshTokenModel } from './refresh-token.model';
+import { RoleModel } from '../role/role.model';
 
 export interface IRefreshTokenPayload {
   sub: number;
   email: string;
 
   jti: number;
+}
+
+export interface IAccessTokenPayload {
+  roles: RoleModel[];
 }
 
 @Injectable()
@@ -22,10 +27,11 @@ export class TokenService {
   ) {}
 
   public async generateAccessToken(user: UserModel): Promise<string> {
+	const payload: IAccessTokenPayload = { roles: user.roles };
 	const options: SignOptions = {
 		subject: String(user.id),
 	};
-	return this.jwtService.signAsync({}, options);
+	return this.jwtService.signAsync(payload, options);
   }
 
   public async generateRefreshToken(
@@ -62,9 +68,7 @@ export class TokenService {
 	if (!refreshTokenId) {
 		throw new UnprocessableEntityException('Не верный формат refresh token');
 	}
-	return this.refreshTokenRepository.findRefreshTokenById(
-		refreshTokenId,
-	);
+	return this.refreshTokenRepository.findRefreshTokenById(refreshTokenId);
   }
 
   //декодирую refresh token
