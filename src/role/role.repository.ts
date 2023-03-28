@@ -16,4 +16,8 @@ export class RoleRepository {
   public async findRole(role: string): Promise<RoleModel> {
 	return this.roleRepository.findOne({ where: { role } });
   }
+
+  public async getAllRoles(): Promise<RoleModel[]> {
+	return this.roleRepository.findAll();
+  }
 }

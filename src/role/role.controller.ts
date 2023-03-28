@@ -14,8 +14,14 @@ export class RoleController {
   }
 
   @HttpCode(200)
-  @Get('/:role')
+  @Get('/one/:role')
   async getOne(@Param('role') role: string): Promise<RoleModel> {
 	return this.roleService.findRole(role);
+  }
+
+  @HttpCode(200)
+  @Get('/all')
+  public async getAllRoles(): Promise<RoleModel[]> {
+	return this.roleService.getAllRoles();
   }
 }
