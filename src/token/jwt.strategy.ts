@@ -12,19 +12,19 @@ export interface IAccessTokenSubject {
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly userService: UserService) {
-    super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
-      secretOrKey: appConfig().jwtSecretKey,
-      signOptions: { expiresIn: '24h' },
-    });
+	super({
+		jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+		ignoreExpiration: false,
+		secretOrKey: appConfig().jwtSecretKey,
+		signOptions: { expiresIn: '24h' },
+	});
   }
 
   async validate(payload: IAccessTokenSubject): Promise<UserModel> {
-    const user = await this.userService.findUserById(payload.sub);
-    if (!user) {
-      return null;
-    }
-    return user;
+	const user = await this.userService.findUserById(payload.sub);
+	if (!user) {
+		return null;
+	}
+	return user;
   }
 }

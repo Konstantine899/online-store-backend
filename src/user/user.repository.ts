@@ -43,7 +43,10 @@ export class UserRepository {
   }
 
   public async findUserById(id: number): Promise<UserModel> {
-	const user = await this.userRepository.findByPk(id);
+	const user = await this.userRepository.findOne({
+		where: { id },
+		include: { all: true },
+	});
 	if (!user) {
 		throw new NotFoundException('Пользователь не найден');
 	}

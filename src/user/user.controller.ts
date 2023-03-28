@@ -12,6 +12,8 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserModel } from './user.model';
+import { AddRoleDto } from './dto/add-role.dto';
+import { RemoveRoleDto } from './dto/remove-role.dto';
 
 @Controller('user')
 export class UserController {
@@ -48,5 +50,17 @@ export class UserController {
   @Delete('/:id')
   async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
 	return this.userService.remove(id);
+  }
+
+  @HttpCode(201)
+  @Post('/role/add')
+  public async addRole(@Body() dto: AddRoleDto) {
+	return this.userService.addRole(dto);
+  }
+
+  @HttpCode(200)
+  @Delete('/role/delete')
+  public async removeRole(@Body() dto: RemoveRoleDto) {
+	return this.userService.removeRole(dto);
   }
 }
