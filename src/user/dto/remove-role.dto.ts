@@ -1,10 +1,11 @@
 import { Transform } from 'class-transformer';
-import { IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class RemoveRoleDto {
   @Transform((value) => Number(value))
   readonly userId: number;
 
-  @IsString()
+  @IsNotEmpty({ message: 'Укажите role пользователя' })
+  @IsString({ message: 'Поле role должно быть строкой' })
   readonly role: string;
 }
