@@ -21,7 +21,7 @@ export class UserService {
 
   public async create(dto: CreateUserDto): Promise<UserModel> {
 	const user = await this.userRepository.createUser(dto);
-	const role = await this.roleService.findRole('ADMIN');
+	const role = await this.roleService.findRole('USER');
 	await user.$set('roles', [role.id]); // #set перезаписываю поле только в БД
 	user.roles = [role]; // Добавляю roles в сам объект user
 	return user.save();
