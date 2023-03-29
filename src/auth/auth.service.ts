@@ -32,7 +32,7 @@ export class AuthService {
 	const candidate = await this.userService.findUserByEmail(dto.email);
 	if (candidate) {
 		throw new HttpException(
-		`Пользователь с таким email: ${candidate} уже существует`,
+		`Пользователь с таким email: ${candidate.email} уже существует`,
 		HttpStatus.BAD_REQUEST,
 		);
 	}

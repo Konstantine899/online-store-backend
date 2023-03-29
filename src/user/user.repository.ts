@@ -15,12 +15,6 @@ export class UserRepository {
   ) {}
 
   public async createUser(dto: CreateUserDto): Promise<UserModel> {
-	const findEmail = await this.findUserByEmail(dto.email);
-	if (findEmail) {
-		throw new BadRequestException(
-		`Пользователь с таким email: ${dto.email} уже существует`,
-		);
-	}
 	const user = new UserModel();
 	user.email = dto.email;
 	user.password = await hash(dto.password, 10);
@@ -43,14 +37,10 @@ export class UserRepository {
   }
 
   public async findUserById(id: number): Promise<UserModel> {
-	const user = await this.userRepository.findOne({
+	return this.userRepository.findOne({
 		where: { id },
 		include: { all: true },
 	});
-	if (!user) {
-		throw new NotFoundException('Пользователь не найден');
-	}
-	return user;
   }
 
   public async findUserByEmail(email: string): Promise<UserModel> {

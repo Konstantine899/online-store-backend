@@ -12,11 +12,7 @@ export class RoleService {
   }
 
   public async findRole(role: string): Promise<RoleModel> {
-	const userRole = await this.roleRepository.findRole(role);
-	if (!userRole) {
-		throw new NotFoundException('Роль пользователя не найдена');
-	}
-	return userRole;
+	return this.roleRepository.findRole(role);
   }
 
   public async getAllRoles(): Promise<RoleModel[]> {
