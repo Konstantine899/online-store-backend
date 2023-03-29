@@ -15,7 +15,7 @@ export class CategoryService {
 	private categoryRepository: typeof CategoryModel,
   ) {}
 
-  async create(dto: CreateCategoryDto) {
+  public async create(dto: CreateCategoryDto) {
 	const category = await this.categoryRepository.create(dto);
 	if (!category) {
 		throw new HttpException(
@@ -26,7 +26,7 @@ export class CategoryService {
 	return category;
   }
 
-  async findAll(): Promise<CategoryModel[]> {
+  public async findAll(): Promise<CategoryModel[]> {
 	const categories = await this.categoryRepository.findAll();
 	if (!categories) {
 		throw new NotFoundException('Не найдено');
@@ -34,7 +34,7 @@ export class CategoryService {
 	return categories;
   }
 
-  async findOne(id: number): Promise<CategoryModel> {
+  public async findOne(id: number): Promise<CategoryModel> {
 	const category = await this.categoryRepository.findByPk(id);
 	if (!category) {
 		throw new NotFoundException('Не найдено');
@@ -42,7 +42,10 @@ export class CategoryService {
 	return category;
   }
 
-  async update(id: number, dto: CreateCategoryDto): Promise<CategoryModel> {
+  public async update(
+	id: number,
+	dto: CreateCategoryDto,
+  ): Promise<CategoryModel> {
 	const category = await this.categoryRepository.findByPk(id);
 	if (!category) {
 		throw new NotFoundException('Не найдено');
@@ -57,7 +60,7 @@ export class CategoryService {
 	return findCategory;
   }
 
-  async remove(id: number): Promise<boolean> {
+  public async remove(id: number): Promise<boolean> {
 	const category = await this.categoryRepository.findByPk(id);
 	if (!category) {
 		throw new NotFoundException('Не найдено');

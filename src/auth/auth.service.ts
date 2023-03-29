@@ -49,7 +49,7 @@ export class AuthService {
 	};
   }
 
-  async login(
+  public async login(
 	dto: CreateUserDto,
   ): Promise<{ status: string; data: IAuthPayload }> {
 	const user = await this.validateUser(dto);

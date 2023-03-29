@@ -18,24 +18,26 @@ export class BrandController {
   constructor(private readonly brandService: BrandService) {}
   @Post('/create')
   @HttpCode(201)
-  async create(@Body() dto: CreateBrandDto): Promise<BrandModel> {
+  public async create(@Body() dto: CreateBrandDto): Promise<BrandModel> {
 	return this.brandService.create(dto);
   }
   @Get('/all')
   @HttpCode(200)
-  async getAll(): Promise<BrandModel[]> {
+  public async getAll(): Promise<BrandModel[]> {
 	return this.brandService.findAll();
   }
 
   @Get('/one/:id([0-9]+)')
   @HttpCode(200)
-  async getOne(@Param('id', ParseIntPipe) id: number): Promise<BrandModel> {
+  public async getOne(
+	@Param('id', ParseIntPipe) id: number,
+  ): Promise<BrandModel> {
 	return this.brandService.findOne(id);
   }
 
   @Put('/update/:id([0-9]+)')
   @HttpCode(200)
-  async update(
+  public async update(
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateBrandDto,
   ): Promise<BrandModel> {
@@ -43,7 +45,7 @@ export class BrandController {
   }
   @Delete('/delete/:id([0-9]+)')
   @HttpCode(200)
-  async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
+  public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
 	return this.brandService.remove(id);
   }
 }

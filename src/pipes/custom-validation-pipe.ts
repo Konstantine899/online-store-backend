@@ -10,7 +10,7 @@ import { CustomValidationException } from '../exceptions/custom-validation.excep
 
 @Injectable()
 export class CustomValidationPipe implements PipeTransform<any> {
-  async transform(
+  public async transform(
 	value: any,
 	{ metatype, data }: ArgumentMetadata,
   ): Promise<any> {

@@ -14,7 +14,7 @@ export class BrandService {
 	@InjectModel(BrandModel) private brandRepository: typeof BrandModel,
   ) {}
 
-  async create(dto: CreateBrandDto): Promise<BrandModel> {
+  public async create(dto: CreateBrandDto): Promise<BrandModel> {
 	const brand = await this.brandRepository.create(dto);
 	if (!brand) {
 		throw new HttpException(
@@ -25,7 +25,7 @@ export class BrandService {
 	return brand;
   }
 
-  async findAll(): Promise<BrandModel[]> {
+  public async findAll(): Promise<BrandModel[]> {
 	const brands = await this.brandRepository.findAll();
 	if (!brands) {
 		throw new NotFoundException('Не найдено');
@@ -33,7 +33,7 @@ export class BrandService {
 	return brands;
   }
 
-  async findOne(id: number): Promise<BrandModel> {
+  public async findOne(id: number): Promise<BrandModel> {
 	const brand = await this.brandRepository.findByPk(id);
 	if (!brand) {
 		throw new NotFoundException('Не найдено');
@@ -41,7 +41,7 @@ export class BrandService {
 	return brand;
   }
 
-  async update(id: number, dto: CreateBrandDto): Promise<BrandModel> {
+  public async update(id: number, dto: CreateBrandDto): Promise<BrandModel> {
 	const brand = await this.brandRepository.findByPk(id);
 	if (!brand) {
 		throw new NotFoundException('Не найдено');
@@ -56,7 +56,7 @@ export class BrandService {
 	return brand;
   }
 
-  async remove(id: number): Promise<boolean> {
+  public async remove(id: number): Promise<boolean> {
 	const brand = await this.brandRepository.findByPk(id);
 	if (!brand) {
 		throw new NotFoundException('Не найдено');

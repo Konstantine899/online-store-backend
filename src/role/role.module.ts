@@ -10,12 +10,13 @@ import { RoleGuard } from './role.guard';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
-  providers: [RoleService, RoleRepository, RoleGuard],
-  controllers: [RoleController],
   imports: [
 	SequelizeModule.forFeature([RoleModel, UserModel, UserRoleModel]),
 	JwtModule,
   ],
+  providers: [RoleService, RoleRepository, RoleGuard],
+  controllers: [RoleController],
+
   exports: [RoleService, RoleRepository, RoleGuard],
 })
 export class RoleModule {}

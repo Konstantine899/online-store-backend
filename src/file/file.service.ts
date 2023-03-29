@@ -6,7 +6,7 @@ import * as process from 'process';
 
 @Injectable()
 export class FileService {
-  async createFile(file: Express.Multer.File): Promise<string> {
+  public async createFile(file: Express.Multer.File): Promise<string> {
 	try {
 		const extension = file.originalname.split('.').filter(Boolean).splice(1); // Достаю расширение файла
 		const newFileName = `${uuid.v4()}.${extension}`; // генерирую новое уникальное имя имя файла
@@ -28,7 +28,7 @@ export class FileService {
 	}
   }
 
-  async removeFile(fileName: string): Promise<boolean> {
+  public async removeFile(fileName: string): Promise<boolean> {
 	try {
 		const filePath =
 		process.env.NODE_ENV === 'development'
@@ -44,7 +44,7 @@ export class FileService {
 	}
   }
 
-  async updateFile(
+  public async updateFile(
 	oldFile: string,
 	newFile: Express.Multer.File,
   ): Promise<string> {

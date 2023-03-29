@@ -20,7 +20,7 @@ export class ProductPropertyController {
   ) {}
   @HttpCode(201)
   @Post('/:productId([0-9]+)/create')
-  async create(
+  public async create(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Body() dto: CreateProductPropertyDto,
   ): Promise<ProductPropertyModel> {
@@ -29,7 +29,7 @@ export class ProductPropertyController {
 
   @HttpCode(200)
   @Get('/:productId([0-9]+)/one/:id([0-9]+)')
-  async getOne(
+  public async getOne(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('id', ParseIntPipe) id: number,
   ): Promise<ProductPropertyModel> {
@@ -38,7 +38,7 @@ export class ProductPropertyController {
 
   @HttpCode(200)
   @Get('/:productId([0-9]+)/all')
-  async getAll(
+  public async getAll(
 	@Param('productId', ParseIntPipe) productId: number,
   ): Promise<ProductPropertyModel[]> {
 	return this.productPropertyService.findAll(productId);
@@ -46,7 +46,7 @@ export class ProductPropertyController {
 
   @HttpCode(200)
   @Put('/:productId([0-9]+)/update/:id([0-9]+)')
-  async update(
+  public async update(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateProductPropertyDto,
@@ -56,7 +56,7 @@ export class ProductPropertyController {
 
   @HttpCode(200)
   @Delete('/:productId([0-9]+)/delete/:id([0-9]+)')
-  async delete(
+  public async delete(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('id', ParseIntPipe) id: number,
   ): Promise<boolean> {

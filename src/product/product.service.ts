@@ -14,10 +14,10 @@ import { ProductPropertyModel } from '../product-property/product-property.model
 export class ProductService {
   constructor(
 	@InjectModel(ProductModel) private productRepository: typeof ProductModel,
-	private fileService: FileService,
+	private readonly fileService: FileService,
   ) {}
 
-  async productCreate(
+  public async productCreate(
 	dto: CreateProductDto,
 	image: Express.Multer.File,
   ): Promise<ProductModel> {
@@ -25,7 +25,7 @@ export class ProductService {
 	return this.productRepository.create({ ...dto, image: fileName });
   }
 
-  async findOneProduct(id: number): Promise<ProductModel> {
+  public async findOneProduct(id: number): Promise<ProductModel> {
 	const product = await this.productRepository.findOne({
 		where: { id },
 		include: [{ model: ProductPropertyModel }],
@@ -36,7 +36,7 @@ export class ProductService {
 	return product;
   }
 
-  async findAllProducts(): Promise<ProductModel[]> {
+  public async findAllProducts(): Promise<ProductModel[]> {
 	const products = await this.productRepository.findAll();
 	if (!products) {
 		throw new NotFoundException('Не найдено');
@@ -44,7 +44,7 @@ export class ProductService {
 	return products;
   }
 
-  async findAllByBrandId(brandId: number): Promise<ProductModel[]> {
+  public async findAllByBrandId(brandId: number): Promise<ProductModel[]> {
 	const allProductsByBrand = await this.productRepository.findAll({
 		where: { brandId },
 	});
@@ -54,7 +54,9 @@ export class ProductService {
 	return allProductsByBrand;
   }
 
-  async findAllByCategoryId(categoryId: number): Promise<ProductModel[]> {
+  public async findAllByCategoryId(
+	categoryId: number,
+  ): Promise<ProductModel[]> {
 	const allProductsByCategoryId = await this.productRepository.findAll({
 		where: { categoryId },
 	});
@@ -64,7 +66,7 @@ export class ProductService {
 	return allProductsByCategoryId;
   }
 
-  async findAllByBrandIdAndCategoryId(
+  public async findAllByBrandIdAndCategoryId(
 	brandId: number,
 	categoryId: number,
   ): Promise<ProductModel[]> {
@@ -76,7 +78,7 @@ export class ProductService {
 	return allProductsByBrandIdAndCategoryId;
   }
 
-  async removeProduct(id: number): Promise<boolean> {
+  public async removeProduct(id: number): Promise<boolean> {
 	const findProduct = await this.productRepository.findByPk(id);
 	if (!findProduct) {
 		throw new NotFoundException('Не найдено');
@@ -94,7 +96,7 @@ export class ProductService {
 	return true;
   }
 
-  async updateProduct(
+  public async updateProduct(
 	id: number,
 	dto: CreateProductDto,
 	image: Express.Multer.File,

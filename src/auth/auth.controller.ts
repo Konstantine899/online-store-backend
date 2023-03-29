@@ -25,14 +25,14 @@ export class AuthController {
 
   @HttpCode(201)
   @Post('/registration')
-  async registration(
+  public async registration(
 	@Body() dto: RegisterRequestDto,
   ): Promise<{ status: string; data: IAuthPayload }> {
 	return this.authService.registration(dto);
   }
   @HttpCode(200)
   @Post('/login')
-  async login(
+  public async login(
 	@Body() dto: LoginRequestDto,
   ): Promise<{ status: string; data: IAuthPayload }> {
 	return this.authService.login(dto);
@@ -40,7 +40,7 @@ export class AuthController {
 
   @HttpCode(200)
   @Post('/refresh')
-  async refresh(
+  public async refresh(
 	@Body() dto: RefreshRequestDto,
   ): Promise<{ status: string; data: IAuthPayload }> {
 	return this.authService.updateAccessToken(dto.refreshToken);

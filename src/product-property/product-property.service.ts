@@ -16,7 +16,7 @@ export class ProductPropertyService {
 	private productPropertyRepository: typeof ProductPropertyModel,
   ) {}
 
-  async create(
+  public async create(
 	productId: number,
 	dto: CreateProductPropertyDto,
   ): Promise<ProductPropertyModel> {
@@ -38,7 +38,10 @@ export class ProductPropertyService {
 	return property;
   }
 
-  async findOne(productId: number, id: number): Promise<ProductPropertyModel> {
+  public async findOne(
+	productId: number,
+	id: number,
+  ): Promise<ProductPropertyModel> {
 	if (!productId || !id) {
 		throw new BadRequestException(
 		'Не указан id продукта или id свойства товара',
@@ -53,7 +56,7 @@ export class ProductPropertyService {
 	return property;
   }
 
-  async findAll(productId: number): Promise<ProductPropertyModel[]> {
+  public async findAll(productId: number): Promise<ProductPropertyModel[]> {
 	if (!productId) {
 		throw new BadRequestException('Не указан id продукта');
 	}
@@ -67,7 +70,7 @@ export class ProductPropertyService {
 	return properties;
   }
 
-  async update(
+  public async update(
 	productId: number,
 	id: number,
 	dto: CreateProductPropertyDto,
@@ -90,7 +93,7 @@ export class ProductPropertyService {
 	return updateProperty;
   }
 
-  async remove(productId: number, id: number): Promise<boolean> {
+  public async remove(productId: number, id: number): Promise<boolean> {
 	await this.findOne(productId, id);
 	const removedProperty = await this.productPropertyRepository.destroy({
 		where: { id },

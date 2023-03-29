@@ -6,8 +6,8 @@ import { ProductModel } from '../product/product.model';
 import { ProductPropertyController } from './product-property.controller';
 
 @Module({
+  imports: [SequelizeModule.forFeature([ProductPropertyModel, ProductModel])],
   providers: [ProductPropertyService],
   controllers: [ProductPropertyController],
-  imports: [SequelizeModule.forFeature([ProductPropertyModel, ProductModel])],
 })
 export class ProductPropertyModule {}

@@ -22,7 +22,7 @@ export class ProductController {
   @Post('/create')
   @HttpCode(201)
   @UseInterceptors(FileInterceptor('image'))
-  async create(
+  public async create(
 	@Body() dto: CreateProductDto,
 	@UploadedFile() image: Express.Multer.File,
   ): Promise<ProductModel> {
@@ -31,26 +31,28 @@ export class ProductController {
 
   @HttpCode(200)
   @Get('/one/:id([0-9]+)')
-  async getOne(@Param('id', ParseIntPipe) id: number): Promise<ProductModel> {
+  public async getOne(
+	@Param('id', ParseIntPipe) id: number,
+  ): Promise<ProductModel> {
 	return this.productService.findOneProduct(id);
   }
 
   @HttpCode(200)
   @Get('/all')
-  async getAll(): Promise<ProductModel[]> {
+  public async getAll(): Promise<ProductModel[]> {
 	return this.productService.findAllProducts();
   }
 
   @HttpCode(200)
   @Get('/all/brandId/:brandId([0-9]+)')
-  async getAllByBrand(
+  public async getAllByBrand(
 	@Param('brandId', ParseIntPipe) brandId: number,
   ): Promise<ProductModel[]> {
 	return this.productService.findAllByBrandId(brandId);
   }
   @HttpCode(200)
   @Get('/all/categoryId/:categoryId([0-9]+)')
-  async getAllByCategory(
+  public async getAllByCategory(
 	@Param('categoryId', ParseIntPipe) categoryId: number,
   ): Promise<ProductModel[]> {
 	return this.productService.findAllByCategoryId(categoryId);
@@ -58,7 +60,7 @@ export class ProductController {
 
   @HttpCode(200)
   @Get('/all/brandId/:brandId([0-9]+)/categoryId/:categoryId([0-9]+)')
-  async getAllByBrandAndCategory(
+  public async getAllByBrandAndCategory(
 	@Param('brandId', ParseIntPipe) brandId: number,
 	@Param('categoryId', ParseIntPipe) categoryId: number,
   ): Promise<ProductModel[]> {
@@ -71,7 +73,7 @@ export class ProductController {
   @Put('/update/:id([0-9]+)')
   @HttpCode(200) // Если создает новый ресурс то 201, Если обновляет имеющийся то 200
   @UseInterceptors(FileInterceptor('image'))
-  async update(
+  public async update(
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateProductDto,
 	@UploadedFile() image: Express.Multer.File,
@@ -81,7 +83,7 @@ export class ProductController {
 
   @HttpCode(200)
   @Delete('/delete/:id([0-9]+)')
-  async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
+  public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
 	return this.productService.removeProduct(id);
   }
 }

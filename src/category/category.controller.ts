@@ -18,25 +18,27 @@ export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
   @Post('/create')
   @HttpCode(201)
-  async create(@Body() dto: CreateCategoryDto): Promise<CategoryModel> {
+  public async create(@Body() dto: CreateCategoryDto): Promise<CategoryModel> {
 	return this.categoryService.create(dto);
   }
 
   @Get('/all')
   @HttpCode(200)
-  async getAll(): Promise<CategoryModel[]> {
+  public async getAll(): Promise<CategoryModel[]> {
 	return this.categoryService.findAll();
   }
 
   @Get('/one/:id([0-9]+)')
   @HttpCode(200)
-  async getOne(@Param('id', ParseIntPipe) id: number): Promise<CategoryModel> {
+  public async getOne(
+	@Param('id', ParseIntPipe) id: number,
+  ): Promise<CategoryModel> {
 	return this.categoryService.findOne(id);
   }
 
   @Put('/update/:id([0-9]+)')
   @HttpCode(200)
-  async update(
+  public async update(
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateCategoryDto,
   ): Promise<CategoryModel> {
@@ -44,7 +46,7 @@ export class CategoryController {
   }
 
   @Delete('/delete/:id([0-9]+)')
-  async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
+  public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
 	return this.categoryService.remove(id);
   }
 }

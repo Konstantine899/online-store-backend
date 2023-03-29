@@ -5,17 +5,17 @@ import { RoleModel } from './role.model';
 
 @Controller('role')
 export class RoleController {
-  constructor(private roleService: RoleService) {}
+  constructor(private readonly roleService: RoleService) {}
 
   @HttpCode(201)
   @Post()
-  async create(@Body() dto: CreateRoleDto): Promise<RoleModel> {
+  public async create(@Body() dto: CreateRoleDto): Promise<RoleModel> {
 	return this.roleService.create(dto);
   }
 
   @HttpCode(200)
   @Get('/one/:role')
-  async getOne(@Param('role') role: string): Promise<RoleModel> {
+  public async getOne(@Param('role') role: string): Promise<RoleModel> {
 	return this.roleService.findRole(role);
   }
 

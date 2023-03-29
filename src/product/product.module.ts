@@ -9,8 +9,6 @@ import { BrandModel } from '../brand/brand.model';
 import { ProductPropertyModel } from '../product-property/product-property.model';
 
 @Module({
-  providers: [ProductService],
-  controllers: [ProductController],
   imports: [
 	SequelizeModule.forFeature([
 		ProductModel,
@@ -20,5 +18,7 @@ import { ProductPropertyModel } from '../product-property/product-property.model
 	]),
 	FileModule,
   ],
+  providers: [ProductService],
+  controllers: [ProductController],
 })
 export class ProductModule {}

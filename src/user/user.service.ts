@@ -19,7 +19,7 @@ export class UserService {
 	private roleService: RoleService,
   ) {}
 
-  async create(dto: CreateUserDto): Promise<UserModel> {
+  public async create(dto: CreateUserDto): Promise<UserModel> {
 	const user = await this.userRepository.createUser(dto);
 	const role = await this.roleService.findRole('ADMIN');
 	await user.$set('roles', [role.id]); // #set перезаписываю поле только в БД
@@ -27,19 +27,19 @@ export class UserService {
 	return user.save();
   }
 
-  async findUserById(id: number): Promise<UserModel | null> {
+  public async findUserById(id: number): Promise<UserModel | null> {
 	return this.userRepository.findUserById(id);
   }
 
-  async findUserByEmail(email: string): Promise<UserModel> {
+  public async findUserByEmail(email: string): Promise<UserModel> {
 	return this.userRepository.findUserByEmail(email);
   }
 
-  async findAllUsers(): Promise<UserModel[]> {
+  public async findAllUsers(): Promise<UserModel[]> {
 	return this.userRepository.findAllUsers();
   }
 
-  async update(id: number, dto: CreateUserDto): Promise<UserModel> {
+  public async update(id: number, dto: CreateUserDto): Promise<UserModel> {
 	const user = await this.userRepository.updateUser(id, dto);
 	const role = await this.roleService.findRole('USER');
 	await user.$set('roles', [role.id]); // #set перезаписываю поле
@@ -47,7 +47,7 @@ export class UserService {
 	return user;
   }
 
-  async remove(id: number): Promise<boolean> {
+  public async remove(id: number): Promise<boolean> {
 	await this.userRepository.removeUser(id);
 	return true;
   }

@@ -6,8 +6,8 @@ import { BrandModel } from './brand.model';
 import { ProductModel } from '../product/product.model';
 
 @Module({
+  imports: [SequelizeModule.forFeature([BrandModel, ProductModel])],
   controllers: [BrandController],
   providers: [BrandService],
-  imports: [SequelizeModule.forFeature([BrandModel, ProductModel])],
 })
 export class BrandModule {}
