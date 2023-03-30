@@ -29,37 +29,41 @@ export class ProductPropertyController {
 
   @HttpCode(200)
   @Get('/:productId([0-9]+)/one/:id([0-9]+)')
-  public async getOne(
+  public async getOneProductProperty(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('id', ParseIntPipe) id: number,
   ): Promise<ProductPropertyModel> {
-	return this.productPropertyService.findOne(productId, id);
+	return this.productPropertyService.findOneProductProperty(productId, id);
   }
 
   @HttpCode(200)
   @Get('/:productId([0-9]+)/all')
-  public async getAll(
+  public async getAllProductProperties(
 	@Param('productId', ParseIntPipe) productId: number,
   ): Promise<ProductPropertyModel[]> {
-	return this.productPropertyService.findAll(productId);
+	return this.productPropertyService.findAllProductProperties(productId);
   }
 
   @HttpCode(200)
   @Put('/:productId([0-9]+)/update/:id([0-9]+)')
-  public async update(
+  public async updateProductProperty(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateProductPropertyDto,
   ): Promise<ProductPropertyModel> {
-	return this.productPropertyService.update(productId, id, dto);
+	return this.productPropertyService.updateProductProperty(
+		productId,
+		id,
+		dto,
+	);
   }
 
   @HttpCode(200)
   @Delete('/:productId([0-9]+)/delete/:id([0-9]+)')
-  public async delete(
+  public async deleteProductProperty(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('id', ParseIntPipe) id: number,
   ): Promise<boolean> {
-	return this.productPropertyService.remove(productId, id);
+	return this.productPropertyService.removeProductProperty(productId, id);
   }
 }

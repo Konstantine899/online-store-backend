@@ -1,109 +1,107 @@
 import {
-  BadRequestException,
-  HttpException,
+  ConflictException,
   HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateProductPropertyDto } from './dto/create-product-property.dto';
 import { ProductPropertyModel } from './product-property.model';
-import { InjectModel } from '@nestjs/sequelize';
+import { ProductPropertyRepository } from './product-property.repository';
+import { ProductRepository } from '../product/product.repository';
+import { ProductModel } from '../product/product.model';
 
 @Injectable()
 export class ProductPropertyService {
   constructor(
-	@InjectModel(ProductPropertyModel)
-	private productPropertyRepository: typeof ProductPropertyModel,
+	private readonly propertyProductRepository: ProductPropertyRepository,
+	private readonly productRepository: ProductRepository,
   ) {}
 
   public async create(
 	productId: number,
 	dto: CreateProductPropertyDto,
   ): Promise<ProductPropertyModel> {
-	if (!productId) {
-		throw new BadRequestException('Не указан id продукта');
-	}
-
-	const property = await this.productPropertyRepository.create({
-		productId,
-		...dto,
-	});
-
-	if (!property) {
-		throw new HttpException(
-		'Внутренняя ошибка сервера',
-		HttpStatus.INTERNAL_SERVER_ERROR,
-		);
-	}
-	return property;
+	await this.findProduct(productId);
+	return this.propertyProductRepository.create(productId, dto);
   }
 
-  public async findOne(
+  public async findOneProductProperty(
 	productId: number,
 	id: number,
   ): Promise<ProductPropertyModel> {
-	if (!productId || !id) {
-		throw new BadRequestException(
-		'Не указан id продукта или id свойства товара',
+	await this.findProduct(productId);
+	const property =
+		await this.propertyProductRepository.findOneProductProperty(
+		productId,
+		id,
 		);
-	}
-	const property = await this.productPropertyRepository.findOne({
-		where: { productId, id },
-	});
 	if (!property) {
-		throw new NotFoundException('Не найдено');
+		throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message: 'Продукт или свойство продукта не найдено',
+		});
 	}
 	return property;
   }
 
-  public async findAll(productId: number): Promise<ProductPropertyModel[]> {
-	if (!productId) {
-		throw new BadRequestException('Не указан id продукта');
-	}
-	const properties = await this.productPropertyRepository.findAll({
-		where: { productId },
-	});
+  public async findAllProductProperties(
+	productId: number,
+  ): Promise<ProductPropertyModel[]> {
+	await this.findProduct(productId);
+	const properties =
+		await this.propertyProductRepository.findAllProductProperties(productId);
 
 	if (!properties.length) {
-		throw new NotFoundException('Не найдено');
+		throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message: 'Свойства продукта не найдены',
+		});
 	}
 	return properties;
   }
 
-  public async update(
+  public async updateProductProperty(
 	productId: number,
 	id: number,
 	dto: CreateProductPropertyDto,
   ): Promise<ProductPropertyModel> {
-	const property = await this.findOne(productId, id);
-	if (!dto) {
-		throw new BadRequestException('Нет данных для обновления');
+	await this.findProduct(productId);
+	const property = await this.findOneProductProperty(productId, id);
+	const updatedProductProperty =
+		await this.propertyProductRepository.updateProductProperty(property, dto);
+	if (!updatedProductProperty) {
+		throw new ConflictException({
+		status: HttpStatus.CONFLICT,
+		message: 'При обновлении свойства продукта произошла ошибка',
+		});
 	}
-	const updateProperty = await property.update({
-		...dto,
-		name: dto.name,
-		value: dto.value,
-	});
-	if (!updateProperty) {
-		throw new HttpException(
-		'Внутренняя ошибка сервера',
-		HttpStatus.INTERNAL_SERVER_ERROR,
-		);
-	}
-	return updateProperty;
+	return updatedProductProperty;
   }
 
-  public async remove(productId: number, id: number): Promise<boolean> {
-	await this.findOne(productId, id);
-	const removedProperty = await this.productPropertyRepository.destroy({
-		where: { id },
-	});
-	if (!removedProperty) {
-		throw new HttpException(
-		'Внутренняя ошибка сервера',
-		HttpStatus.INTERNAL_SERVER_ERROR,
-		);
+  public async removeProductProperty(
+	productId: number,
+	id: number,
+  ): Promise<boolean> {
+	await this.findOneProductProperty(productId, id);
+	const removedPropertyId =
+		await this.propertyProductRepository.removeProductProperty(id);
+	if (!removedPropertyId) {
+		throw new ConflictException({
+		status: HttpStatus.CONFLICT,
+		message: 'При удалении свойства продукта произошел конфликт',
+		});
 	}
 	return true;
+  }
+
+  private async findProduct(productId: number): Promise<ProductModel> {
+	const findProduct = await this.productRepository.findOneProduct(productId);
+	if (!findProduct) {
+		throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message: 'Продукт не найден',
+		});
+	}
+	return findProduct;
   }
 }

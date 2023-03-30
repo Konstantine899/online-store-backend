@@ -1,19 +1,18 @@
 import {
-  HttpException,
+  ConflictException,
   HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
 import { ProductModel } from './product.model';
 import { CreateProductDto } from './dto/create-product.dto';
 import { FileService } from '../file/file.service';
-import { ProductPropertyModel } from '../product-property/product-property.model';
+import { ProductRepository } from './product.repository';
 
 @Injectable()
 export class ProductService {
   constructor(
-	@InjectModel(ProductModel) private productRepository: typeof ProductModel,
+	private readonly productRepository: ProductRepository,
 	private readonly fileService: FileService,
   ) {}
 
@@ -21,35 +20,41 @@ export class ProductService {
 	dto: CreateProductDto,
 	image: Express.Multer.File,
   ): Promise<ProductModel> {
-	const fileName = await this.fileService.createFile(image);
-	return this.productRepository.create({ ...dto, image: fileName });
+	const imageName = await this.fileService.createFile(image);
+	return this.productRepository.create(dto, imageName);
   }
 
   public async findOneProduct(id: number): Promise<ProductModel> {
-	const product = await this.productRepository.findOne({
-		where: { id },
-		include: [{ model: ProductPropertyModel }],
-	});
+	const product = await this.productRepository.findOneProduct(id);
 	if (!product) {
-		throw new NotFoundException('Не найдено');
+		throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message: 'Продукт не найден',
+		});
 	}
 	return product;
   }
 
   public async findAllProducts(): Promise<ProductModel[]> {
-	const products = await this.productRepository.findAll();
+	const products = await this.productRepository.findAllProducts();
 	if (!products) {
-		throw new NotFoundException('Не найдено');
+		throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message: 'Продукты не найдены',
+		});
 	}
 	return products;
   }
 
   public async findAllByBrandId(brandId: number): Promise<ProductModel[]> {
-	const allProductsByBrand = await this.productRepository.findAll({
-		where: { brandId },
-	});
+	const allProductsByBrand = await this.productRepository.findAllByBrandId(
+		brandId,
+	);
 	if (!allProductsByBrand) {
-		throw new NotFoundException('Не найдено');
+		throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message: 'Продукты не найдены',
+		});
 	}
 	return allProductsByBrand;
   }
@@ -57,11 +62,14 @@ export class ProductService {
   public async findAllByCategoryId(
 	categoryId: number,
   ): Promise<ProductModel[]> {
-	const allProductsByCategoryId = await this.productRepository.findAll({
-		where: { categoryId },
-	});
+	const allProductsByCategoryId =
+		await this.productRepository.findAllByCategoryId(categoryId);
+
 	if (!allProductsByCategoryId) {
-		throw new NotFoundException('Не найдено');
+		throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message: 'Продукты не найдены',
+		});
 	}
 	return allProductsByCategoryId;
   }
@@ -71,27 +79,34 @@ export class ProductService {
 	categoryId: number,
   ): Promise<ProductModel[]> {
 	const allProductsByBrandIdAndCategoryId =
-		await this.productRepository.findAll({ where: { brandId, categoryId } });
+		await this.productRepository.findAllByBrandIdAndCategoryId(
+		brandId,
+		categoryId,
+		);
 	if (!allProductsByBrandIdAndCategoryId) {
-		throw new NotFoundException('Не найдено');
+		throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message: 'Продукты не найдены',
+		});
 	}
 	return allProductsByBrandIdAndCategoryId;
   }
 
   public async removeProduct(id: number): Promise<boolean> {
-	const findProduct = await this.productRepository.findByPk(id);
+	const findProduct = await this.productRepository.findOneProduct(id);
 	if (!findProduct) {
-		throw new NotFoundException('Не найдено');
+		throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message: 'Продукт не найден',
+		});
 	}
 	const removedFile = await this.fileService.removeFile(findProduct.image);
-	const removedProduct = await this.productRepository.destroy({
-		where: { id },
-	});
+	const removedProduct = await this.productRepository.removedProduct(id);
 	if (!removedFile || !removedProduct) {
-		throw new HttpException(
-		'Внутренняя ошибка сервера',
-		HttpStatus.INTERNAL_SERVER_ERROR,
-		);
+		throw new ConflictException({
+		status: HttpStatus.CONFLICT,
+		message: 'Произошел конфликт во время удаления продукта',
+		});
 	}
 	return true;
   }
@@ -101,19 +116,28 @@ export class ProductService {
 	dto: CreateProductDto,
 	image: Express.Multer.File,
   ): Promise<ProductModel> {
-	const findProduct = await this.productRepository.findByPk(id);
+	const findProduct = await this.productRepository.findOneProduct(id);
 	if (!findProduct) {
-		throw new NotFoundException('Не найдено');
+		throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message: 'Продукт не найден',
+		});
 	}
-	const updatedImage = await this.fileService.updateFile(
+	const updatedNameImage = await this.fileService.updateFile(
 		findProduct.image,
 		image,
 	);
-	return findProduct.update({
-		...dto,
-		name: dto.name,
-		price: dto.price,
-		image: updatedImage,
-	});
+	const updatedProduct = await this.productRepository.updateProduct(
+		dto,
+		findProduct,
+		updatedNameImage,
+	);
+	if (!updatedProduct) {
+		throw new ConflictException({
+		status: HttpStatus.CONFLICT,
+		message: 'При обновлении продукта произошла ошибка',
+		});
+	}
+	return updatedProduct;
   }
 }

@@ -7,6 +7,7 @@ import { FileModule } from '../file/file.module';
 import { CategoryModel } from '../category/category-model';
 import { BrandModel } from '../brand/brand.model';
 import { ProductPropertyModel } from '../product-property/product-property.model';
+import { ProductRepository } from './product.repository';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { ProductPropertyModel } from '../product-property/product-property.model
 	]),
 	FileModule,
   ],
-  providers: [ProductService],
+  providers: [ProductService, ProductRepository],
   controllers: [ProductController],
+  exports: [ProductService, ProductRepository],
 })
 export class ProductModule {}
