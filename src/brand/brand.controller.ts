@@ -19,12 +19,12 @@ export class BrandController {
   @Post('/create')
   @HttpCode(201)
   public async create(@Body() dto: CreateBrandDto): Promise<BrandModel> {
-	return this.brandService.create(dto);
+	return this.brandService.createBrand(dto);
   }
   @Get('/all')
   @HttpCode(200)
   public async getAll(): Promise<BrandModel[]> {
-	return this.brandService.findAll();
+	return this.brandService.findAllBrands();
   }
 
   @Get('/one/:id([0-9]+)')
@@ -32,7 +32,7 @@ export class BrandController {
   public async getOne(
 	@Param('id', ParseIntPipe) id: number,
   ): Promise<BrandModel> {
-	return this.brandService.findOne(id);
+	return this.brandService.findOneBrand(id);
   }
 
   @Put('/update/:id([0-9]+)')
@@ -41,7 +41,7 @@ export class BrandController {
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateBrandDto,
   ): Promise<BrandModel> {
-	return this.brandService.update(id, dto);
+	return this.brandService.updateBrand(id, dto);
   }
   @Delete('/delete/:id([0-9]+)')
   @HttpCode(200)
