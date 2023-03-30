@@ -10,9 +10,7 @@ import { hash } from 'bcrypt';
 
 Injectable();
 export class UserRepository {
-  constructor(
-	@InjectModel(UserModel) private userRepository: typeof UserModel,
-  ) {}
+  constructor(@InjectModel(UserModel) private userModel: typeof UserModel) {}
 
   public async createUser(dto: CreateUserDto): Promise<UserModel> {
 	const user = new UserModel();
@@ -37,21 +35,21 @@ export class UserRepository {
   }
 
   public async findUserById(id: number): Promise<UserModel> {
-	return this.userRepository.findOne({
+	return this.userModel.findOne({
 		where: { id },
 		include: { all: true },
 	});
   }
 
   public async findUserByEmail(email: string): Promise<UserModel> {
-	return this.userRepository.findOne({
+	return this.userModel.findOne({
 		where: { email },
 		include: { all: true },
 	});
   }
 
   public async findAllUsers() {
-	return this.userRepository.findAll({ include: { all: true } });
+	return this.userModel.findAll({ include: { all: true } });
   }
 
   public async removeUser(id: number) {
@@ -59,6 +57,6 @@ export class UserRepository {
 	if (!user) {
 		throw new NotFoundException(`Пользователь не найден`);
 	}
-	return this.userRepository.destroy({ where: { id: user.id } });
+	return this.userModel.destroy({ where: { id: user.id } });
   }
 }

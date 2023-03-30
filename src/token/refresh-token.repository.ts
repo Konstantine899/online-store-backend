@@ -7,7 +7,7 @@ import { UserModel } from '../user/user.model';
 export class RefreshTokenRepository {
   constructor(
 	@InjectModel(RefreshTokenModel)
-	private readonly refreshTokenRepository: typeof RefreshTokenModel,
+	private readonly refreshTokenModel: typeof RefreshTokenModel,
   ) {}
 
   public async createRefreshToken(
@@ -26,7 +26,7 @@ export class RefreshTokenRepository {
   public async findRefreshTokenById(
 	id: number,
   ): Promise<RefreshTokenModel | null> {
-	const refresh_token = await this.refreshTokenRepository.findOne({
+	const refresh_token = await this.refreshTokenModel.findOne({
 		where: { id },
 	});
 	if (!refresh_token) {
