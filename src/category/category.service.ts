@@ -1,79 +1,77 @@
 import {
-  HttpException,
+  ConflictException,
   HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
 import { CategoryModel } from './category-model';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { CategoryRepository } from './category.repository';
 
 @Injectable()
 export class CategoryService {
-  constructor(
-	@InjectModel(CategoryModel)
-	private categoryRepository: typeof CategoryModel,
-  ) {}
+  constructor(private readonly categoryRepository: CategoryRepository) {}
 
-  public async create(dto: CreateCategoryDto) {
-	const category = await this.categoryRepository.create(dto);
-	if (!category) {
-		throw new HttpException(
-		'Не предвиденная ошибка',
-		HttpStatus.INTERNAL_SERVER_ERROR,
-		);
-	}
-	return category;
+  public async createCategory(dto: CreateCategoryDto): Promise<CategoryModel> {
+    const category = await this.categoryRepository.createCategory(dto);
+    if (!category) {
+      throw new ConflictException({
+        status: HttpStatus.CONFLICT,
+        message: 'При создании категории товара возник конфликт',
+      });
+    }
+    return category;
   }
 
-  public async findAll(): Promise<CategoryModel[]> {
-	const categories = await this.categoryRepository.findAll();
-	if (!categories) {
-		throw new NotFoundException('Не найдено');
-	}
-	return categories;
+  public async findAllCategories(): Promise<CategoryModel[]> {
+    const categories = await this.categoryRepository.findAllCategories();
+    if (!categories) {
+      throw new NotFoundException({
+        status: HttpStatus.NOT_FOUND,
+        message: 'Категории товаров не найдены',
+      });
+    }
+    return categories;
   }
 
-  public async findOne(id: number): Promise<CategoryModel> {
-	const category = await this.categoryRepository.findByPk(id);
-	if (!category) {
-		throw new NotFoundException('Не найдено');
-	}
-	return category;
+  public async findOneCategory(id: number): Promise<CategoryModel> {
+    const category = await this.categoryRepository.findOneCategory(id);
+    if (!category) {
+      throw new NotFoundException({
+        status: HttpStatus.NOT_FOUND,
+        message: 'Категория товара не найдена',
+      });
+    }
+    return category;
   }
 
-  public async update(
-	id: number,
-	dto: CreateCategoryDto,
+  public async updateCategory(
+    id: number,
+    dto: CreateCategoryDto,
   ): Promise<CategoryModel> {
-	const category = await this.categoryRepository.findByPk(id);
-	if (!category) {
-		throw new NotFoundException('Не найдено');
-	}
-	const findCategory = await category.update({ ...dto, name: dto.name });
-	if (!findCategory) {
-		throw new HttpException(
-		'Внутренняя ошибка сервера',
-		HttpStatus.INTERNAL_SERVER_ERROR,
-		);
-	}
-	return findCategory;
+    const category = await this.findOneCategory(id);
+    const updatedCategory = await this.categoryRepository.updateCategory(
+      dto,
+      category,
+    );
+    if (!updatedCategory) {
+      throw new ConflictException({
+        status: HttpStatus.CONFLICT,
+        message: 'При обновлении категории произошел конфликт',
+      });
+    }
+    return updatedCategory;
   }
 
   public async remove(id: number): Promise<boolean> {
-	const category = await this.categoryRepository.findByPk(id);
-	if (!category) {
-		throw new NotFoundException('Не найдено');
-	}
-	const removeCategory = await this.categoryRepository.destroy({
-		where: { id },
-	});
-	if (!removeCategory) {
-		throw new HttpException(
-		'Внутренняя ошибка сервера',
-		HttpStatus.INTERNAL_SERVER_ERROR,
-		);
-	}
-	return true;
+    await this.findOneCategory(id);
+    const removeCategory = await this.categoryRepository.removeCategory(id);
+    if (!removeCategory) {
+      throw new ConflictException({
+        status: HttpStatus.CONFLICT,
+        message: 'При удалении категории товара произошел конфликт',
+      });
+    }
+    return true;
   }
 }

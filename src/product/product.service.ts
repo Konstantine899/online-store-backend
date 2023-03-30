@@ -135,7 +135,7 @@ export class ProductService {
 	if (!updatedProduct) {
 		throw new ConflictException({
 		status: HttpStatus.CONFLICT,
-		message: 'При обновлении продукта произошла ошибка',
+		message: 'При обновлении продукта произошел конфликт',
 		});
 	}
 	return updatedProduct;

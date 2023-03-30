@@ -19,13 +19,13 @@ export class CategoryController {
   @Post('/create')
   @HttpCode(201)
   public async create(@Body() dto: CreateCategoryDto): Promise<CategoryModel> {
-	return this.categoryService.create(dto);
+	return this.categoryService.createCategory(dto);
   }
 
   @Get('/all')
   @HttpCode(200)
   public async getAll(): Promise<CategoryModel[]> {
-	return this.categoryService.findAll();
+	return this.categoryService.findAllCategories();
   }
 
   @Get('/one/:id([0-9]+)')
@@ -33,7 +33,7 @@ export class CategoryController {
   public async getOne(
 	@Param('id', ParseIntPipe) id: number,
   ): Promise<CategoryModel> {
-	return this.categoryService.findOne(id);
+	return this.categoryService.findOneCategory(id);
   }
 
   @Put('/update/:id([0-9]+)')
@@ -42,7 +42,7 @@ export class CategoryController {
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateCategoryDto,
   ): Promise<CategoryModel> {
-	return this.categoryService.update(id, dto);
+	return this.categoryService.updateCategory(id, dto);
   }
 
   @Delete('/delete/:id([0-9]+)')
