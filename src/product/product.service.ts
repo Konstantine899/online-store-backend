@@ -39,13 +39,30 @@ export class ProductService {
 	search?: string,
 	sort?: string,
   ): Promise<ProductModel[]> {
-	if (search && sort) { return this.searchAndSort(search, sort); }
-	if (search) { return this.search(search); }
-	if (sort) { return this.sort(sort); }
-	if (!search && sort) { return this.findAll(); }
+	if (search && sort) {
+		return this.searchAndSort(search, sort);
+	}
+	if (search) {
+		return this.search(search);
+	}
+	if (sort) {
+		return this.sort(sort);
+	}
+	if (!search && sort) {
+		return this.findAll();
+	}
   }
 
-  public async findAllByBrandId(brandId: number): Promise<ProductModel[]> {
+  public async findAllByBrandId(
+	brandId: number,
+	sort?: string,
+  ): Promise<ProductModel[]> {
+	if (sort) {
+		return this.productRepository.findAllByBrandIdAndSortByPrice(
+		brandId,
+		sort,
+		);
+	}
 	const allProductsByBrand = await this.productRepository.findAllByBrandId(
 		brandId,
 	);

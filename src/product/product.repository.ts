@@ -39,6 +39,16 @@ export class ProductRepository {
 	});
   }
 
+  findAllByBrandIdAndSortByPrice(
+	brandId: number,
+	sort: string,
+  ): Promise<ProductModel[]> {
+	return this.productModel.findAll({
+		where: { brandId },
+		order: [['price', sort.toUpperCase()]],
+	});
+  }
+
   public async findAllByCategoryId(
 	categoryId: number,
   ): Promise<ProductModel[]> {

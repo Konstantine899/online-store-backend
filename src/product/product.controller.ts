@@ -52,8 +52,10 @@ export class ProductController {
   @Get('/all/brandId/:brandId([0-9]+)')
   public async getAllByBrand(
 	@Param('brandId', ParseIntPipe) brandId: number,
+	@Query() query: QueryProductDto,
   ): Promise<ProductModel[]> {
-	return this.productService.findAllByBrandId(brandId);
+	const { sort } = query;
+	return this.productService.findAllByBrandId(brandId, sort);
   }
   @HttpCode(200)
   @Get('/all/categoryId/:categoryId([0-9]+)')
