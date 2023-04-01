@@ -2,6 +2,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { ProductModel } from './product.model';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductPropertyModel } from '../product-property/product-property.model';
+import { Op } from 'sequelize';
 
 export class ProductRepository {
   constructor(
@@ -49,6 +50,25 @@ export class ProductRepository {
 	categoryId: number,
   ): Promise<ProductModel[]> {
 	return this.productModel.findAll({ where: { brandId, categoryId } });
+  }
+
+  public async search(search: string): Promise<ProductModel[]> {
+	return this.productModel.findAll({
+		where: { name: { [Op.like]: `%${search}%` } },
+	});
+  }
+
+  public async sort(sort: string): Promise<ProductModel[]> {
+	return this.productModel.findAll({
+		order: [['price', sort.toUpperCase()]],
+	});
+  }
+
+  public async searchAndSort(search, sort): Promise<ProductModel[]> {
+	return this.productModel.findAll({
+		where: { name: { [Op.like]: `%${search}%` } },
+		order: [['price', sort.toUpperCase()]],
+	});
   }
 
   public async removedProduct(id: number): Promise<number> {

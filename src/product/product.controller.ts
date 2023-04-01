@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -15,6 +16,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { ProductService } from './product.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductModel } from './product.model';
+import { QueryProductDto, Sort } from './dto/query-product.dto';
 
 @Controller('product')
 export class ProductController {
@@ -39,8 +41,11 @@ export class ProductController {
 
   @HttpCode(200)
   @Get('/all')
-  public async getAll(): Promise<ProductModel[]> {
-	return this.productService.findAllProducts();
+  public async getAll(
+	@Query() query: QueryProductDto,
+  ): Promise<ProductModel[]> {
+	const { search, sort } = query;
+	return this.productService.findAllProducts(search, sort || Sort.ASC);
   }
 
   @HttpCode(200)
