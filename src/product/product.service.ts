@@ -66,7 +66,7 @@ export class ProductService {
 	const allProductsByBrand = await this.productRepository.findAllByBrandId(
 		brandId,
 	);
-	if (!allProductsByBrand) {
+	if (!allProductsByBrand.length) {
 		throw new NotFoundException({
 		status: HttpStatus.NOT_FOUND,
 		message: 'Продукты не найдены',
@@ -81,10 +81,10 @@ export class ProductService {
 	const allProductsByCategoryId =
 		await this.productRepository.findAllByCategoryId(categoryId);
 
-	if (!allProductsByCategoryId) {
+	if (!allProductsByCategoryId.length) {
 		throw new NotFoundException({
 		status: HttpStatus.NOT_FOUND,
-		message: 'Продукты не найдены',
+		message: 'Ничего не найдено',
 		});
 	}
 	return allProductsByCategoryId;
@@ -93,13 +93,21 @@ export class ProductService {
   public async findAllByBrandIdAndCategoryId(
 	brandId: number,
 	categoryId: number,
+	sort?: string,
   ): Promise<ProductModel[]> {
+	if (sort) {
+		return this.productRepository.findAllByBrandIdAndCategoryIdAndSort(
+		brandId,
+		categoryId,
+		sort,
+		);
+	}
 	const allProductsByBrandIdAndCategoryId =
 		await this.productRepository.findAllByBrandIdAndCategoryId(
 		brandId,
 		categoryId,
 		);
-	if (!allProductsByBrandIdAndCategoryId) {
+	if (!allProductsByBrandIdAndCategoryId.length) {
 		throw new NotFoundException({
 		status: HttpStatus.NOT_FOUND,
 		message: 'Продукты не найдены',

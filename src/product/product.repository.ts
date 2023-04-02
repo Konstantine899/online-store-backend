@@ -59,7 +59,20 @@ export class ProductRepository {
 	brandId: number,
 	categoryId: number,
   ): Promise<ProductModel[]> {
-	return this.productModel.findAll({ where: { brandId, categoryId } });
+	return this.productModel.findAll({
+		where: { brandId, categoryId },
+	});
+  }
+
+  public async findAllByBrandIdAndCategoryIdAndSort(
+	brandId: number,
+	categoryId: number,
+	sort: string,
+  ): Promise<ProductModel[]> {
+	return this.productModel.findAll({
+		where: { brandId, categoryId },
+		order: [['price', sort.toUpperCase()]],
+	});
   }
 
   public async search(search: string): Promise<ProductModel[]> {
