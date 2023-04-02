@@ -120,12 +120,7 @@ export class ProductService {
 
   public async removeProduct(id: number): Promise<boolean> {
 	const findProduct = await this.productRepository.findOneProduct(id);
-	if (!findProduct) {
-		throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: 'Продукт не найден',
-		});
-	}
+	if (!findProduct) { this.notFountId(id); }
 	const removedFile = await this.fileService.removeFile(findProduct.image);
 	const removedProduct = await this.productRepository.removedProduct(id);
 	if (!removedFile || !removedProduct) {
@@ -143,12 +138,7 @@ export class ProductService {
 	image: Express.Multer.File,
   ): Promise<ProductModel> {
 	const findProduct = await this.productRepository.findOneProduct(id);
-	if (!findProduct) {
-		throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: 'Продукт не найден',
-		});
-	}
+	if (!findProduct) { this.notFountId(id); }
 	const updatedNameImage = await this.fileService.updateFile(
 		findProduct.image,
 		image,
@@ -165,6 +155,13 @@ export class ProductService {
 		});
 	}
 	return updatedProduct;
+  }
+
+  private notFountId(id: number): void {
+	throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message: `Продукт с идентификатором ${id} не найден в базе данных`,
+	});
   }
 
   private notFound(): void {
