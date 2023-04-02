@@ -13,35 +13,18 @@ export class CategoryService {
   constructor(private readonly categoryRepository: CategoryRepository) {}
 
   public async createCategory(dto: CreateCategoryDto): Promise<CategoryModel> {
-	const category = await this.categoryRepository.createCategory(dto);
-	if (!category) {
-		throw new ConflictException({
-		status: HttpStatus.CONFLICT,
-		message: 'При создании категории товара возник конфликт',
-		});
-	}
-	return category;
+	return this.categoryRepository.createCategory(dto);
   }
 
   public async findAllCategories(): Promise<CategoryModel[]> {
 	const categories = await this.categoryRepository.findAllCategories();
-	if (!categories) {
-		throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: 'Категории товаров не найдены',
-		});
-	}
+	if (!categories) { this.notFound('Категории товаров не найдены'); }
 	return categories;
   }
 
   public async findOneCategory(id: number): Promise<CategoryModel> {
 	const category = await this.categoryRepository.findOneCategory(id);
-	if (!category) {
-		throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: 'Категория товара не найдена',
-		});
-	}
+	if (!category) { this.notFound('Категория товара не найдена'); }
 	return category;
   }
 
@@ -55,10 +38,7 @@ export class CategoryService {
 		category,
 	);
 	if (!updatedCategory) {
-		throw new ConflictException({
-		status: HttpStatus.CONFLICT,
-		message: 'При обновлении категории произошел конфликт',
-		});
+		this.conflict('При обновлении категории произошел конфликт');
 	}
 	return updatedCategory;
   }
@@ -67,11 +47,23 @@ export class CategoryService {
 	await this.findOneCategory(id);
 	const removeCategory = await this.categoryRepository.removeCategory(id);
 	if (!removeCategory) {
-		throw new ConflictException({
-		status: HttpStatus.CONFLICT,
-		message: 'При удалении категории товара произошел конфликт',
-		});
+		this.conflict('При удалении категории товара произошел конфликт');
 	}
+
 	return true;
+  }
+
+  private notFound(message: string): void {
+	throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message,
+	});
+  }
+
+  private conflict(message: string): void {
+	throw new ConflictException({
+		status: HttpStatus.CONFLICT,
+		message,
+	});
   }
 }
