@@ -13,35 +13,18 @@ export class BrandService {
   constructor(private readonly brandRepository: BrandRepository) {}
 
   public async createBrand(dto: CreateBrandDto): Promise<BrandModel> {
-	const brand = await this.brandRepository.createBrand(dto);
-	if (!brand) {
-		throw new ConflictException({
-		status: HttpStatus.CONFLICT,
-		message: 'При создании бренда произошел конфликт',
-		});
-	}
-	return brand;
+	return this.brandRepository.createBrand(dto);
   }
 
   public async findAllBrands(): Promise<BrandModel[]> {
 	const brands = await this.brandRepository.findAllBrands();
-	if (!brands) {
-		throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: 'Бренды не найдены',
-		});
-	}
+	if (!brands.length) { this.notFound(); }
 	return brands;
   }
 
   public async findOneBrand(id: number): Promise<BrandModel> {
 	const brand = await this.brandRepository.findOneBrand(id);
-	if (!brand) {
-		throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: 'Бренд не найден',
-		});
-	}
+	if (!brand) { this.notFoundId(id); }
 	return brand;
   }
 
@@ -52,10 +35,7 @@ export class BrandService {
 	const brand = await this.findOneBrand(id);
 	const updatedBrand = await this.brandRepository.updateBrand(dto, brand);
 	if (!updatedBrand) {
-		throw new ConflictException({
-		status: HttpStatus.CONFLICT,
-		message: 'Произошел конфликт при обновлении бренда',
-		});
+		this.conflict('Произошел конфликт при обновлении бренда');
 	}
 	return brand;
   }
@@ -63,12 +43,27 @@ export class BrandService {
   public async remove(id: number): Promise<boolean> {
 	const brand = await this.findOneBrand(id);
 	const removedBrand = await this.brandRepository.removeBrand(brand.id);
-	if (!removedBrand) {
-		throw new ConflictException({
-		status: HttpStatus.CONFLICT,
-		message: 'При удалении бренда произошел конфликт',
-		});
-	}
+	if (!removedBrand) { this.conflict('При удалении бренда произошел конфликт'); }
 	return true;
+  }
+
+  private conflict(message: string): void {
+	throw new ConflictException({
+		status: HttpStatus.CONFLICT,
+		message,
+	});
+  }
+
+  private notFoundId(id: number): void {
+	throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message: `Бренд с идентификатором ${id} не найден в базе данных`,
+	});
+  }
+  private notFound(): void {
+	throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message: 'К сожалению по вашему запросу ничего не найдено',
+	});
   }
 }

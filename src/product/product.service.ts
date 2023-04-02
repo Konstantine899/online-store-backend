@@ -121,7 +121,7 @@ export class ProductService {
   public async removeProduct(id: number): Promise<boolean> {
 	const findProduct = await this.productRepository.findOneProduct(id);
 	if (!findProduct) {
-		this.notFountId(id);
+		this.notFoundId(id);
 	}
 	const removedFile = await this.fileService.removeFile(findProduct.image);
 	const removedProduct = await this.productRepository.removedProduct(id);
@@ -138,7 +138,7 @@ export class ProductService {
   ): Promise<ProductModel> {
 	const findProduct = await this.productRepository.findOneProduct(id);
 	if (!findProduct) {
-		this.notFountId(id);
+		this.notFoundId(id);
 	}
 	const updatedNameImage = await this.fileService.updateFile(
 		findProduct.image,
@@ -165,7 +165,7 @@ export class ProductService {
 	});
   }
 
-  private notFountId(id: number): void {
+  private notFoundId(id: number): void {
 	throw new NotFoundException({
 		status: HttpStatus.NOT_FOUND,
 		message: `Продукт с идентификатором ${id} не найден в базе данных`,
