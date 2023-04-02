@@ -39,7 +39,7 @@ export class ProductRepository {
 	});
   }
 
-  findAllByBrandIdAndSortByPrice(
+  public async findAllByBrandIdAndSortByPrice(
 	brandId: number,
 	sort: string,
   ): Promise<ProductModel[]> {
