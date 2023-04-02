@@ -120,14 +120,13 @@ export class ProductService {
 
   public async removeProduct(id: number): Promise<boolean> {
 	const findProduct = await this.productRepository.findOneProduct(id);
-	if (!findProduct) { this.notFountId(id); }
+	if (!findProduct) {
+		this.notFountId(id);
+	}
 	const removedFile = await this.fileService.removeFile(findProduct.image);
 	const removedProduct = await this.productRepository.removedProduct(id);
 	if (!removedFile || !removedProduct) {
-		throw new ConflictException({
-		status: HttpStatus.CONFLICT,
-		message: 'Произошел конфликт во время удаления продукта',
-		});
+		this.conflict('Произошел конфликт во время удаления продукта');
 	}
 	return true;
   }
@@ -138,23 +137,32 @@ export class ProductService {
 	image: Express.Multer.File,
   ): Promise<ProductModel> {
 	const findProduct = await this.productRepository.findOneProduct(id);
-	if (!findProduct) { this.notFountId(id); }
+	if (!findProduct) {
+		this.notFountId(id);
+	}
 	const updatedNameImage = await this.fileService.updateFile(
 		findProduct.image,
 		image,
 	);
+	if (!updatedNameImage) {
+		this.conflict('При обновлении картинки произошел конфликт');
+	}
 	const updatedProduct = await this.productRepository.updateProduct(
 		dto,
 		findProduct,
 		updatedNameImage,
 	);
 	if (!updatedProduct) {
-		throw new ConflictException({
-		status: HttpStatus.CONFLICT,
-		message: 'При обновлении продукта произошел конфликт',
-		});
+		this.conflict('При обновлении продукта произошел конфликт');
 	}
 	return updatedProduct;
+  }
+
+  private conflict(message: string): void {
+	throw new ConflictException({
+		status: HttpStatus.CONFLICT,
+		message,
+	});
   }
 
   private notFountId(id: number): void {
