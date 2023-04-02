@@ -27,7 +27,7 @@ export class BrandService {
   public async findOneBrand(id: number): Promise<BrandModel> {
 	const brand = await this.brandRepository.findOneBrand(id);
 	if (!brand) {
-		this.notFoundId(id);
+		this.notFound(`Бренд не найден`);
 	}
 	return brand;
   }
@@ -60,12 +60,6 @@ export class BrandService {
 	});
   }
 
-  private notFoundId(id: number): void {
-	throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: `Бренд с идентификатором ${id} не найден в базе данных`,
-	});
-  }
   private notFound(message: string): void {
 	throw new NotFoundException({
 		status: HttpStatus.NOT_FOUND,

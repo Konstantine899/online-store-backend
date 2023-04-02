@@ -1,5 +1,5 @@
 import {
-  HttpException,
+  BadRequestException,
   HttpStatus,
   Injectable,
   UnauthorizedException,
@@ -31,9 +31,8 @@ export class AuthService {
   ): Promise<{ status: string; data: IAuthPayload }> {
 	const candidate = await this.userService.findUserByEmail(dto.email);
 	if (candidate) {
-		throw new HttpException(
+		this.badRequest(
 		`Пользователь с таким email: ${candidate.email} уже существует`,
-		HttpStatus.BAD_REQUEST,
 		);
 	}
 	const user = await this.userService.create(dto);
@@ -95,17 +94,23 @@ export class AuthService {
   private async validateUser(dto: CreateUserDto): Promise<UserModel> {
 	const user = await this.userService.findUserByEmail(dto.email);
 	if (!user) {
-		throw new UnauthorizedException({
-		message: 'Не корректный email',
-		});
+		this.unauthorized('Не корректный email');
 	}
 	const password = await bcrypt.compare(dto.password, user.password); // сравниваю пароли
-
 	if (!password) {
-		throw new UnauthorizedException({
-		message: 'Не корректный пароль',
-		});
+		this.unauthorized('Не корректный пароль');
 	}
 	return user;
+  }
+
+  private unauthorized(message): void {
+	throw new UnauthorizedException({
+		status: HttpStatus.UNAUTHORIZED,
+		message,
+	});
+  }
+
+  private badRequest(message: string): void {
+	throw new BadRequestException({ status: HttpStatus.BAD_REQUEST, message });
   }
 }
