@@ -29,17 +29,11 @@ export class ProductPropertyService {
 	productId: number,
 	id: number,
   ): Promise<ProductPropertyModel> {
-	await this.findProduct(productId);
-	const property =
-		await this.propertyProductRepository.findOneProductProperty(
-		productId,
-		id,
-		);
-	if (!property) {
-		throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: 'Продукт или свойство продукта не найдено',
-		});
+	const product = await this.findProduct(productId);
+	const property = await this.findProperty(productId, id);
+
+	if (!product || !property) {
+		this.notFound('Продукт или свойство продукта не найдено');
 	}
 	return property;
   }
@@ -48,14 +42,9 @@ export class ProductPropertyService {
 	productId: number,
   ): Promise<ProductPropertyModel[]> {
 	await this.findProduct(productId);
-	const properties =
-		await this.propertyProductRepository.findAllProductProperties(productId);
-
+	const properties = await this.findAllProperties(productId);
 	if (!properties.length) {
-		throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: 'Свойства продукта не найдены',
-		});
+		this.notFound('Свойства продукта не найдены');
 	}
 	return properties;
   }
@@ -67,13 +56,9 @@ export class ProductPropertyService {
   ): Promise<ProductPropertyModel> {
 	await this.findProduct(productId);
 	const property = await this.findOneProductProperty(productId, id);
-	const updatedProductProperty =
-		await this.propertyProductRepository.updateProductProperty(property, dto);
+	const updatedProductProperty = await this.updateProperty(property, dto);
 	if (!updatedProductProperty) {
-		throw new ConflictException({
-		status: HttpStatus.CONFLICT,
-		message: 'При обновлении свойства продукта произошла ошибка',
-		});
+		this.conflict('При обновлении свойства продукта произошла ошибка');
 	}
 	return updatedProductProperty;
   }
@@ -83,25 +68,60 @@ export class ProductPropertyService {
 	id: number,
   ): Promise<boolean> {
 	await this.findOneProductProperty(productId, id);
-	const removedPropertyId =
-		await this.propertyProductRepository.removeProductProperty(id);
-	if (!removedPropertyId) {
-		throw new ConflictException({
-		status: HttpStatus.CONFLICT,
-		message: 'При удалении свойства продукта произошел конфликт',
-		});
+	const removedProperty = await this.removeProperty(id);
+	if (!removedProperty) {
+		this.conflict('При удалении свойства продукта произошел конфликт');
 	}
 	return true;
   }
 
   private async findProduct(productId: number): Promise<ProductModel> {
-	const findProduct = await this.productRepository.findOneProduct(productId);
-	if (!findProduct) {
-		throw new NotFoundException({
+	return this.productRepository.findOneProduct(productId);
+  }
+
+  private async findAllProperties(
+	productId: number,
+  ): Promise<ProductPropertyModel[]> {
+	return this.propertyProductRepository.findAllProductProperties(
+		productId,
+	);
+  }
+
+  private async findProperty(
+	productId: number,
+	id: number,
+  ): Promise<ProductPropertyModel> {
+	return this.propertyProductRepository.findOneProductProperty(
+		productId,
+		id,
+	);
+  }
+
+  private async updateProperty(
+	property: ProductPropertyModel,
+	dto: CreateProductPropertyDto,
+  ) {
+	return this.propertyProductRepository.updateProductProperty(
+		property,
+		dto,
+	);
+  }
+
+  private async removeProperty(id: number) {
+	return this.propertyProductRepository.removeProductProperty(id);
+  }
+
+  private notFound(message: string): void {
+	throw new NotFoundException({
 		status: HttpStatus.NOT_FOUND,
-		message: 'Продукт не найден',
-		});
-	}
-	return findProduct;
+		message,
+	});
+  }
+
+  private conflict(message: string): void {
+	throw new ConflictException({
+		status: HttpStatus.CONFLICT,
+		message,
+	});
   }
 }

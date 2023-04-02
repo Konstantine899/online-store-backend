@@ -18,13 +18,17 @@ export class BrandService {
 
   public async findAllBrands(): Promise<BrandModel[]> {
 	const brands = await this.brandRepository.findAllBrands();
-	if (!brands.length) { this.notFound(); }
+	if (!brands.length) {
+		this.notFound('К сожалению по вашему запросу ничего не найдено');
+	}
 	return brands;
   }
 
   public async findOneBrand(id: number): Promise<BrandModel> {
 	const brand = await this.brandRepository.findOneBrand(id);
-	if (!brand) { this.notFoundId(id); }
+	if (!brand) {
+		this.notFoundId(id);
+	}
 	return brand;
   }
 
@@ -43,7 +47,9 @@ export class BrandService {
   public async remove(id: number): Promise<boolean> {
 	const brand = await this.findOneBrand(id);
 	const removedBrand = await this.brandRepository.removeBrand(brand.id);
-	if (!removedBrand) { this.conflict('При удалении бренда произошел конфликт'); }
+	if (!removedBrand) {
+		this.conflict('При удалении бренда произошел конфликт');
+	}
 	return true;
   }
 
@@ -60,10 +66,10 @@ export class BrandService {
 		message: `Бренд с идентификатором ${id} не найден в базе данных`,
 	});
   }
-  private notFound(): void {
+  private notFound(message: string): void {
 	throw new NotFoundException({
 		status: HttpStatus.NOT_FOUND,
-		message: 'К сожалению по вашему запросу ничего не найдено',
+		message,
 	});
   }
 }

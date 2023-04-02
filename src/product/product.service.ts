@@ -27,7 +27,7 @@ export class ProductService {
   public async findOneProduct(id: number): Promise<ProductModel> {
 	const product = await this.productRepository.findOneProduct(id);
 	if (!product) {
-		this.notFound();
+		this.notFound('К сожалению по вашему запросу ничего не найдено');
 	}
 	return product;
   }
@@ -42,24 +42,24 @@ export class ProductService {
 		sort,
 		);
 		if (!foundProducts.length) {
-		this.notFound();
+		this.notFound('К сожалению по вашему запросу ничего не найдено');
 		}
 		return foundProducts;
 	}
 	if (search) {
 		const foundProducts = await this.productRepository.search(search);
 		if (!foundProducts.length) {
-		this.notFound();
+		this.notFound('К сожалению по вашему запросу ничего не найдено');
 		}
 		return foundProducts;
 	}
 	if (sort) {
 		return this.productRepository.sort(sort);
 	}
-	if (!search && sort) {
+	if (!search && !sort) {
 		const products = await this.productRepository.findAllProducts();
 		if (!products.length) {
-		this.notFound();
+		this.notFound('К сожалению по вашему запросу ничего не найдено');
 		}
 		return products;
 	}
@@ -79,7 +79,7 @@ export class ProductService {
 		brandId,
 	);
 	if (!allProductsByBrand.length) {
-		this.notFound();
+		this.notFound('К сожалению по вашему запросу ничего не найдено');
 	}
 	return allProductsByBrand;
   }
@@ -90,7 +90,7 @@ export class ProductService {
 	const allProductsByCategoryId =
 		await this.productRepository.findAllByCategoryId(categoryId);
 	if (!allProductsByCategoryId.length) {
-		this.notFound();
+		this.notFound('К сожалению по вашему запросу ничего не найдено');
 	}
 	return allProductsByCategoryId;
   }
@@ -113,7 +113,7 @@ export class ProductService {
 		categoryId,
 		);
 	if (!allProductsByBrandIdAndCategoryId.length) {
-		this.notFound();
+		this.notFound('К сожалению по вашему запросу ничего не найдено');
 	}
 	return allProductsByBrandIdAndCategoryId;
   }
@@ -172,10 +172,10 @@ export class ProductService {
 	});
   }
 
-  private notFound(): void {
+  private notFound(message: string): void {
 	throw new NotFoundException({
 		status: HttpStatus.NOT_FOUND,
-		message: 'К сожалению по вашему запросу ничего не найдено',
+		message,
 	});
   }
 }
