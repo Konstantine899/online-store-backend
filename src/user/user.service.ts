@@ -29,9 +29,7 @@ export class UserService {
 	}
 	const user = await this.userRepository.createUser(dto);
 	const role = await this.roleService.findRole('USER');
-	if (!role) {
-		throw new NotFoundException('Роль пользователя не найдена');
-	}
+	if (!role) { this.notFound('Роль пользователя не найдена'); }
 	await user.$set('roles', [role.id]); // #set перезаписываю поле только в БД
 	user.roles = [role]; // Добавляю roles в сам объект user
 	return user.save();
@@ -39,9 +37,7 @@ export class UserService {
 
   public async findUserById(id: number): Promise<UserModel | null> {
 	const user = this.userRepository.findUserById(id);
-	if (!user) {
-		throw new NotFoundException('Пользователь не найден');
-	}
+	if (!user) { this.notFound('Пользователь не найден'); }
 	return user;
   }
 
@@ -90,11 +86,17 @@ export class UserService {
 	}
 	const removedRole = await user.$remove('role', foundRole.id);
 	if (!removedRole) {
-		throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: `Роль ${foundRole.role} не принадлежит данному пользователю`,
-		});
+		this.notFound(
+		`Роль ${foundRole.role} не принадлежит данному пользователю`,
+		);
 	}
 	return { message: `Роль ${foundRole.role} удалена успешно` };
+  }
+
+  private notFound(message: string): void {
+	throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message,
+	});
   }
 }
