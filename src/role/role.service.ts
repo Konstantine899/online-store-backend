@@ -12,17 +12,21 @@ export class RoleService {
   }
 
   public async findRole(role: string): Promise<RoleModel> {
-	return this.roleRepository.findRole(role);
+	const foundRole = this.roleRepository.findRole(role);
+	if (!foundRole) { this.notFound(`Роль ${role} не найдена`); }
+	return foundRole;
   }
 
   public async getAllRoles(): Promise<RoleModel[]> {
 	const roles = await this.roleRepository.getAllRoles();
-	if (!roles) {
-		throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: `Роли пользователя не найдены`,
-		});
-	}
+	if (!roles) { this.notFound(`Роли пользователя не найдены`); }
 	return roles;
+  }
+
+  private notFound(message: string): void {
+	throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message,
+	});
   }
 }
