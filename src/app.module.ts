@@ -14,6 +14,7 @@ import { RoleModule } from './role/role.module';
 import { AuthModule } from './auth/auth.module';
 import { TokenModule } from './token/token.module';
 import { sequelizeConfig } from './config/sequelize.config';
+import { BasketModule } from './basket/basket.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { sequelizeConfig } from './config/sequelize.config';
 	RoleModule,
 	AuthModule,
 	TokenModule,
+	BasketModule,
   ],
   controllers: [],
   providers: [],

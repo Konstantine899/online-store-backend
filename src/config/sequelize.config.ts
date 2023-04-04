@@ -8,6 +8,8 @@ import { RoleModel } from '../role/role.model';
 import { UserRoleModel } from '../role/user-role.model';
 import { RefreshTokenModel } from '../token/refresh-token.model';
 import * as process from 'process';
+import { BasketModel } from '../basket/basket.model';
+import { BasketProductModel } from '../basket/basket-product.model';
 
 export const sequelizeConfig: SequelizeModuleAsyncOptions = {
   useFactory: () => {
@@ -27,6 +29,8 @@ export const sequelizeConfig: SequelizeModuleAsyncOptions = {
 		RoleModel,
 		UserRoleModel,
 		RefreshTokenModel,
+		BasketModel,
+		BasketProductModel,
 		],
 		autoLoadModels: true, // автоматическая загрузка моделей
 	};

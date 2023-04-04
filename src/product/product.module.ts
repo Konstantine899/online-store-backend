@@ -8,6 +8,7 @@ import { CategoryModel } from '../category/category-model';
 import { BrandModel } from '../brand/brand.model';
 import { ProductPropertyModel } from '../product-property/product-property.model';
 import { ProductRepository } from './product.repository';
+import { BasketModel } from '../basket/basket.model';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ProductRepository } from './product.repository';
 		CategoryModel,
 		BrandModel,
 		ProductPropertyModel,
+		BasketModel,
 	]),
 	FileModule,
   ],

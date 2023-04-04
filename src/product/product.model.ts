@@ -1,5 +1,6 @@
 import {
   BelongsTo,
+  BelongsToMany,
   Column,
   DataType,
   ForeignKey,
@@ -10,6 +11,8 @@ import {
 import { CategoryModel } from '../category/category-model';
 import { BrandModel } from '../brand/brand.model';
 import { ProductPropertyModel } from '../product-property/product-property.model';
+import { BasketProductModel } from '../basket/basket-product.model';
+import { BasketModel } from '../basket/basket.model';
 
 interface IUserCreationAttributes {
   name: string;
@@ -59,4 +62,7 @@ export class ProductModel extends Model<ProductModel, IUserCreationAttributes> {
 
   @HasMany(() => ProductPropertyModel, { onDelete: 'CASCADE' })
   properties: ProductPropertyModel[];
+
+  @BelongsToMany(() => BasketModel, () => BasketProductModel)
+  baskets: BasketModel[];
 }
