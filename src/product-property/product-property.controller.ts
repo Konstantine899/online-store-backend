@@ -19,7 +19,7 @@ export class ProductPropertyController {
 	private readonly productPropertyService: ProductPropertyService,
   ) {}
   @HttpCode(201)
-  @Post('/:productId([0-9]+)/create')
+  @Post('/product_id/:productId([0-9]+)/create')
   public async create(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Body() dto: CreateProductPropertyDto,
@@ -28,7 +28,7 @@ export class ProductPropertyController {
   }
 
   @HttpCode(200)
-  @Get('/:productId([0-9]+)/one/:id([0-9]+)')
+  @Get('/product_id/:productId([0-9]+)/get_one_property/:id([0-9]+)')
   public async getOneProductProperty(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('id', ParseIntPipe) id: number,
@@ -37,7 +37,7 @@ export class ProductPropertyController {
   }
 
   @HttpCode(200)
-  @Get('/:productId([0-9]+)/all')
+  @Get('/product_id/:productId([0-9]+)/all_properties')
   public async getAllProductProperties(
 	@Param('productId', ParseIntPipe) productId: number,
   ): Promise<ProductPropertyModel[]> {
@@ -45,7 +45,7 @@ export class ProductPropertyController {
   }
 
   @HttpCode(200)
-  @Put('/:productId([0-9]+)/update/:id([0-9]+)')
+  @Put('/product_id/:productId([0-9]+)/update_property/:id([0-9]+)')
   public async updateProductProperty(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('id', ParseIntPipe) id: number,
@@ -59,7 +59,7 @@ export class ProductPropertyController {
   }
 
   @HttpCode(200)
-  @Delete('/:productId([0-9]+)/delete/:id([0-9]+)')
+  @Delete('/product_id/:productId([0-9]+)/delete_property/:id([0-9]+)')
   public async deleteProductProperty(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('id', ParseIntPipe) id: number,
