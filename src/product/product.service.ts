@@ -13,6 +13,7 @@ import { PaginateProductDto } from './dto/paginate-product.dto';
 import { IProductsResponse } from './product.controller';
 
 export interface IGetMetadata {
+  totalCount: number;
   lastPage: number;
   currentPage: number;
   nextPage: number;
@@ -187,6 +188,7 @@ export class ProductService {
 	limit: number,
   ): IGetMetadata {
 	return {
+		totalCount: count,
 		lastPage: Math.ceil(count / limit),
 		currentPage: paginate.page,
 		nextPage: paginate.page + 1,
