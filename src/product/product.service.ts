@@ -67,28 +67,27 @@ export class ProductService {
 	action: QueryProductDto,
 	paginate: PaginateProductDto,
   ): Promise<IProductsResponse> {
-	const { sort } = action;
 	const { limit, offset } = this.getPaginate(paginate);
-	const allProductsByBrand = await this.productRepository.findAllByBrandId(
+	const products = await this.productRepository.findAllByBrandId(
 		brandId,
-		sort,
+		action,
 		limit,
 		offset,
 	);
-	const lastPage = Math.ceil(allProductsByBrand.count / limit);
+	const lastPage = Math.ceil(products.count / limit);
 	const currentPage = paginate.page;
 	const nextPage = paginate.page + 1;
 	const previousPage = paginate.page - 1;
-	if (!allProductsByBrand.rows.length) {
+	if (!products.rows.length) {
 		this.notFound('По вашему запросу ничего не найдено');
 	}
 	return {
-		count: allProductsByBrand.count,
+		count: products.count,
 		currentPage,
 		nextPage,
 		previousPage,
 		lastPage,
-		rows: allProductsByBrand.rows,
+		rows: products.rows,
 	};
   }
 
@@ -97,54 +96,60 @@ export class ProductService {
 	action: QueryProductDto,
 	paginate: PaginateProductDto,
   ): Promise<IProductsResponse> {
-	const { sort } = action;
 	const { limit, offset } = this.getPaginate(paginate);
-	const allProductsByCategoryId =
-		await this.productRepository.findAllByCategoryId(
+	const products = await this.productRepository.findAllByCategoryId(
 		categoryId,
-		sort,
+		action,
 		limit,
 		offset,
-		);
+	);
 
-	const lastPage = Math.ceil(allProductsByCategoryId.count / limit);
+	const lastPage = Math.ceil(products.count / limit);
 	const currentPage = paginate.page;
 	const nextPage = paginate.page + 1;
 	const previousPage = paginate.page - 1;
-	if (!allProductsByCategoryId.rows.length) {
+	if (!products.rows.length) {
 		this.notFound('По вашему запросу ничего не найдено');
 	}
 	return {
-		count: allProductsByCategoryId.count,
+		count: products.count,
 		currentPage,
 		nextPage,
 		previousPage,
 		lastPage,
-		rows: allProductsByCategoryId.rows,
+		rows: products.rows,
 	};
   }
 
   public async findAllByBrandIdAndCategoryId(
 	brandId: number,
 	categoryId: number,
-	sort?: string,
-  ): Promise<ProductModel[]> {
-	if (sort) {
-		return this.productRepository.findAllByBrandIdAndCategoryIdAndSort(
+	action: QueryProductDto,
+	paginate: PaginateProductDto,
+  ): Promise<IProductsResponse> {
+	const { limit, offset } = this.getPaginate(paginate);
+	const products = await this.productRepository.findAllByBrandIdAndCategoryId(
 		brandId,
 		categoryId,
-		sort,
-		);
+		action,
+		limit,
+		offset,
+	);
+	const lastPage = Math.ceil(products.count / limit);
+	const currentPage = paginate.page;
+	const nextPage = paginate.page + 1;
+	const previousPage = paginate.page - 1;
+	if (!products.rows.length) {
+		this.notFound('По вашему запросу ничего не найдено');
 	}
-	const allProductsByBrandIdAndCategoryId =
-		await this.productRepository.findAllByBrandIdAndCategoryId(
-		brandId,
-		categoryId,
-		);
-	if (!allProductsByBrandIdAndCategoryId.length) {
-		this.notFound('К сожалению по вашему запросу ничего не найдено');
-	}
-	return allProductsByBrandIdAndCategoryId;
+	return {
+		count: products.count,
+		currentPage,
+		nextPage,
+		previousPage,
+		lastPage,
+		rows: products.rows,
+	};
   }
 
   public async removeProduct(id: number): Promise<boolean> {

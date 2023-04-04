@@ -91,12 +91,15 @@ export class ProductController {
   public async getAllByBrandAndCategory(
 	@Param('brandId', ParseIntPipe) brandId: number,
 	@Param('categoryId', ParseIntPipe) categoryId: number,
-	@Query() { sort }: QueryProductDto,
-  ): Promise<ProductModel[]> {
+	@Query() action: QueryProductDto,
+	@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+	@Query('size', new DefaultValuePipe(1), ParseIntPipe) size: number,
+  ) {
 	return this.productService.findAllByBrandIdAndCategoryId(
 		brandId,
 		categoryId,
-		sort,
+		action,
+		{ page, size },
 	);
   }
 

@@ -46,10 +46,11 @@ export class ProductRepository {
 
   public async findAllByBrandId(
 	brandId: number,
-	sort: string,
+	action: QueryProductDto,
 	limit: number,
 	offset: number,
   ): Promise<{ count: number; rows: ProductModel[] }> {
+	const { sort } = action;
 	return this.productModel.findAndCountAll({
 		where: { brandId },
 		order: sort ? [['price', sort.toUpperCase()]] : null,
@@ -60,10 +61,11 @@ export class ProductRepository {
 
   public async findAllByCategoryId(
 	categoryId: number,
-	sort: string,
+	action: QueryProductDto,
 	limit: number,
 	offset: number,
   ): Promise<{ count: number; rows: ProductModel[] }> {
+	const { sort } = action;
 	return this.productModel.findAndCountAll({
 		where: { categoryId },
 		order: sort ? [['price', sort.toUpperCase()]] : null,
@@ -75,20 +77,16 @@ export class ProductRepository {
   public async findAllByBrandIdAndCategoryId(
 	brandId: number,
 	categoryId: number,
-  ): Promise<ProductModel[]> {
-	return this.productModel.findAll({
+	action: QueryProductDto,
+	limit: number,
+	offset: number,
+  ): Promise<{ count: number; rows: ProductModel[] }> {
+	const { sort } = action;
+	return this.productModel.findAndCountAll({
 		where: { brandId, categoryId },
-	});
-  }
-
-  public async findAllByBrandIdAndCategoryIdAndSort(
-	brandId: number,
-	categoryId: number,
-	sort: string,
-  ): Promise<ProductModel[]> {
-	return this.productModel.findAll({
-		where: { brandId, categoryId },
-		order: [['price', sort.toUpperCase()]],
+		order: sort ? [['price', sort.toUpperCase()]] : null,
+		limit: limit ? limit : 5,
+		offset,
 	});
   }
 
