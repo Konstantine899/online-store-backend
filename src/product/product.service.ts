@@ -12,6 +12,13 @@ import { QueryProductDto } from './dto/query-product.dto';
 import { PaginateProductDto } from './dto/paginate-product.dto';
 import { IProductsResponse } from './product.controller';
 
+export interface IGetMetadata {
+  lastPage: number;
+  currentPage: number;
+  nextPage: number;
+  previousPage: number;
+}
+
 @Injectable()
 export class ProductService {
   constructor(
@@ -45,19 +52,12 @@ export class ProductService {
 		limit,
 		offset,
 	);
-	const lastPage = Math.ceil(products.count / limit);
-	const currentPage = paginate.page;
-	const nextPage = paginate.page + 1;
-	const previousPage = paginate.page - 1;
+	const metaData = this.getMetadata(products.count, paginate, limit);
 	if (!products.rows.length) {
 		this.notFound('По вашему запросу ничего не найдено');
 	}
 	return {
-		count: products.count,
-		currentPage,
-		nextPage,
-		previousPage,
-		lastPage,
+		metaData,
 		rows: products.rows,
 	};
   }
@@ -74,19 +74,12 @@ export class ProductService {
 		limit,
 		offset,
 	);
-	const lastPage = Math.ceil(products.count / limit);
-	const currentPage = paginate.page;
-	const nextPage = paginate.page + 1;
-	const previousPage = paginate.page - 1;
+	const metaData = this.getMetadata(products.count, paginate, limit);
 	if (!products.rows.length) {
 		this.notFound('По вашему запросу ничего не найдено');
 	}
 	return {
-		count: products.count,
-		currentPage,
-		nextPage,
-		previousPage,
-		lastPage,
+		metaData,
 		rows: products.rows,
 	};
   }
@@ -104,19 +97,12 @@ export class ProductService {
 		offset,
 	);
 
-	const lastPage = Math.ceil(products.count / limit);
-	const currentPage = paginate.page;
-	const nextPage = paginate.page + 1;
-	const previousPage = paginate.page - 1;
+	const metaData = this.getMetadata(products.count, paginate, limit);
 	if (!products.rows.length) {
 		this.notFound('По вашему запросу ничего не найдено');
 	}
 	return {
-		count: products.count,
-		currentPage,
-		nextPage,
-		previousPage,
-		lastPage,
+		metaData,
 		rows: products.rows,
 	};
   }
@@ -135,19 +121,12 @@ export class ProductService {
 		limit,
 		offset,
 	);
-	const lastPage = Math.ceil(products.count / limit);
-	const currentPage = paginate.page;
-	const nextPage = paginate.page + 1;
-	const previousPage = paginate.page - 1;
+	const metaData = this.getMetadata(products.count, paginate, limit);
 	if (!products.rows.length) {
 		this.notFound('По вашему запросу ничего не найдено');
 	}
 	return {
-		count: products.count,
-		currentPage,
-		nextPage,
-		previousPage,
-		lastPage,
+		metaData,
 		rows: products.rows,
 	};
   }
@@ -200,6 +179,19 @@ export class ProductService {
 	const limit = size;
 	const offset = (page - 1) * limit;
 	return { limit, offset };
+  }
+
+  private getMetadata(
+	count: number,
+	paginate: PaginateProductDto,
+	limit: number,
+  ): IGetMetadata {
+	return {
+		lastPage: Math.ceil(count / limit),
+		currentPage: paginate.page,
+		nextPage: paginate.page + 1,
+		previousPage: paginate.page - 1,
+	};
   }
 
   private conflict(message: string): void {

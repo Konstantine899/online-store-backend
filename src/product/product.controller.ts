@@ -14,17 +14,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
-import { ProductService } from './product.service';
+import { IGetMetadata, ProductService } from './product.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductModel } from './product.model';
 import { QueryProductDto } from './dto/query-product.dto';
 
 export interface IProductsResponse {
-  count: number;
-  currentPage: number;
-  nextPage: number;
-  previousPage: number;
-  lastPage: number;
+  metaData: IGetMetadata;
   rows: ProductModel[];
 }
 
