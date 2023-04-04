@@ -60,8 +60,16 @@ export class ProductRepository {
 
   public async findAllByCategoryId(
 	categoryId: number,
-  ): Promise<ProductModel[]> {
-	return this.productModel.findAll({ where: { categoryId } });
+	sort: string,
+	limit: number,
+	offset: number,
+  ): Promise<{ count: number; rows: ProductModel[] }> {
+	return this.productModel.findAndCountAll({
+		where: { categoryId },
+		order: sort ? [['price', sort.toUpperCase()]] : null,
+		limit: limit ? limit : 5,
+		offset,
+	});
   }
 
   public async findAllByBrandIdAndCategoryId(

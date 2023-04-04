@@ -76,8 +76,14 @@ export class ProductController {
   @Get('/all/categoryId/:categoryId([0-9]+)')
   public async getAllByCategory(
 	@Param('categoryId', ParseIntPipe) categoryId: number,
-  ): Promise<ProductModel[]> {
-	return this.productService.findAllByCategoryId(categoryId);
+	@Query() action: QueryProductDto,
+	@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+	@Query('size', new DefaultValuePipe(1), ParseIntPipe) size: number,
+  ) {
+	return this.productService.findAllByCategoryId(categoryId, action, {
+		page,
+		size,
+	});
   }
 
   @HttpCode(200)

@@ -94,13 +94,34 @@ export class ProductService {
 
   public async findAllByCategoryId(
 	categoryId: number,
-  ): Promise<ProductModel[]> {
+	action: QueryProductDto,
+	paginate: PaginateProductDto,
+  ): Promise<IProductsResponse> {
+	const { sort } = action;
+	const { limit, offset } = this.getPaginate(paginate);
 	const allProductsByCategoryId =
-		await this.productRepository.findAllByCategoryId(categoryId);
-	if (!allProductsByCategoryId.length) {
-		this.notFound('К сожалению по вашему запросу ничего не найдено');
+		await this.productRepository.findAllByCategoryId(
+		categoryId,
+		sort,
+		limit,
+		offset,
+		);
+
+	const lastPage = Math.ceil(allProductsByCategoryId.count / limit);
+	const currentPage = paginate.page;
+	const nextPage = paginate.page + 1;
+	const previousPage = paginate.page - 1;
+	if (!allProductsByCategoryId.rows.length) {
+		this.notFound('По вашему запросу ничего не найдено');
 	}
-	return allProductsByCategoryId;
+	return {
+		count: allProductsByCategoryId.count,
+		currentPage,
+		nextPage,
+		previousPage,
+		lastPage,
+		rows: allProductsByCategoryId.rows,
+	};
   }
 
   public async findAllByBrandIdAndCategoryId(
