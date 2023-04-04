@@ -3,6 +3,7 @@ import { ProductModel } from './product.model';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductPropertyModel } from '../product-property/product-property.model';
 import { Op } from 'sequelize';
+import { QueryProductDto } from './dto/query-product.dto';
 
 export class ProductRepository {
   constructor(
@@ -29,23 +30,23 @@ export class ProductRepository {
 	});
   }
 
-  public async findAllProducts(): Promise<ProductModel[]> {
-	return this.productModel.findAll();
+  public async findAllProducts(
+	action: QueryProductDto,
+	limit: number,
+	offset: number,
+  ): Promise<{ count: number; rows: ProductModel[] }> {
+	const { sort, search } = action;
+	return this.productModel.findAndCountAll({
+		where: search ? { name: { [Op.like]: `%${search}%` } } : null,
+		order: sort ? [['price', sort.toUpperCase()]] : null,
+		limit: limit ? limit : 5,
+		offset,
+	});
   }
 
   public async findAllByBrandId(brandId: number): Promise<ProductModel[]> {
 	return this.productModel.findAll({
 		where: { brandId },
-	});
-  }
-
-  public async findAllByBrandIdAndSortByPrice(
-	brandId: number,
-	sort: string,
-  ): Promise<ProductModel[]> {
-	return this.productModel.findAll({
-		where: { brandId },
-		order: [['price', sort.toUpperCase()]],
 	});
   }
 
@@ -71,25 +72,6 @@ export class ProductRepository {
   ): Promise<ProductModel[]> {
 	return this.productModel.findAll({
 		where: { brandId, categoryId },
-		order: [['price', sort.toUpperCase()]],
-	});
-  }
-
-  public async search(search: string): Promise<ProductModel[]> {
-	return this.productModel.findAll({
-		where: { name: { [Op.like]: `%${search}%` } },
-	});
-  }
-
-  public async sort(sort: string): Promise<ProductModel[]> {
-	return this.productModel.findAll({
-		order: [['price', sort.toUpperCase()]],
-	});
-  }
-
-  public async searchAndSort(search, sort): Promise<ProductModel[]> {
-	return this.productModel.findAll({
-		where: { name: { [Op.like]: `%${search}%` } },
 		order: [['price', sort.toUpperCase()]],
 	});
   }
