@@ -13,6 +13,8 @@ import { BrandModel } from '../brand/brand.model';
 import { ProductPropertyModel } from '../product-property/product-property.model';
 import { BasketProductModel } from '../basket/basket-product.model';
 import { BasketModel } from '../basket/basket.model';
+import { UserModel } from '../user/user.model';
+import { RatingModel } from '../rating/rating.model';
 
 interface IUserCreationAttributes {
   name: string;
@@ -63,6 +65,15 @@ export class ProductModel extends Model<ProductModel, IUserCreationAttributes> {
   @HasMany(() => ProductPropertyModel, { onDelete: 'CASCADE' })
   properties: ProductPropertyModel[];
 
-  @BelongsToMany(() => BasketModel, () => BasketProductModel)
+  @BelongsToMany(() => BasketModel, {
+	through: () => BasketProductModel,
+	onDelete: 'CASCADE',
+  })
   baskets: BasketModel[];
+
+  @BelongsToMany(() => UserModel, {
+	through: () => RatingModel,
+	onDelete: 'CASCADE',
+  })
+  users: UserModel[];
 }

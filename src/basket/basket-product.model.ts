@@ -9,7 +9,7 @@ import { BasketModel } from './basket.model';
 import { ProductModel } from '../product/product.model';
 
 @Table({ tableName: 'basket_product', underscored: true })
-export class BasketProductModel extends Model<BasketModel> {
+export class BasketProductModel extends Model<BasketProductModel> {
   @Column({ type: DataType.INTEGER, defaultValue: 1 })
   quantity: number;
 

@@ -9,6 +9,7 @@ import { BrandModel } from '../brand/brand.model';
 import { ProductPropertyModel } from '../product-property/product-property.model';
 import { ProductRepository } from './product.repository';
 import { BasketModel } from '../basket/basket.model';
+import { RatingModel } from '../rating/rating.model';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { BasketModel } from '../basket/basket.model';
 		BrandModel,
 		ProductPropertyModel,
 		BasketModel,
+		RatingModel,
 	]),
 	FileModule,
   ],

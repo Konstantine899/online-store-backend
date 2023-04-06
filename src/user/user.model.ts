@@ -9,6 +9,8 @@ import {
 import { UserRoleModel } from '../role/user-role.model';
 import { RoleModel } from '../role/role.model';
 import { RefreshTokenModel } from '../token/refresh-token.model';
+import { RatingModel } from '../rating/rating.model';
+import { ProductModel } from '../product/product.model';
 
 interface IUserCreationAttributes {
   email: string;
@@ -36,4 +38,10 @@ export class UserModel extends Model<UserModel, IUserCreationAttributes> {
 	onUpdate: 'CASCADE',
   })
   refresh_tokens: RefreshTokenModel[];
+
+  @BelongsToMany(() => ProductModel, {
+	through: () => RatingModel,
+	onDelete: 'CASCADE',
+  })
+  products: ProductModel[];
 }

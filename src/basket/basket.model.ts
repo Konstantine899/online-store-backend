@@ -11,13 +11,16 @@ import { BasketProductModel } from './basket-product.model';
 @Table({ tableName: 'basket', underscored: true })
 export class BasketModel extends Model<BasketModel> {
   @Column({
-    type: DataType.INTEGER,
-    unique: true,
-    primaryKey: true,
-    autoIncrement: true,
+	type: DataType.INTEGER,
+	unique: true,
+	primaryKey: true,
+	autoIncrement: true,
   })
   id: number;
 
-  @BelongsToMany(() => ProductModel, () => BasketProductModel)
+  @BelongsToMany(() => ProductModel, {
+	through: () => BasketProductModel,
+	onDelete: 'CASCADE',
+  })
   products: ProductModel[];
 }

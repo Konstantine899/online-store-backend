@@ -10,6 +10,7 @@ import { RefreshTokenModel } from '../token/refresh-token.model';
 import * as process from 'process';
 import { BasketModel } from '../basket/basket.model';
 import { BasketProductModel } from '../basket/basket-product.model';
+import { RatingModel } from '../rating/rating.model';
 
 export const sequelizeConfig: SequelizeModuleAsyncOptions = {
   useFactory: () => {
@@ -31,6 +32,7 @@ export const sequelizeConfig: SequelizeModuleAsyncOptions = {
 		RefreshTokenModel,
 		BasketModel,
 		BasketProductModel,
+		RatingModel,
 		],
 		autoLoadModels: true, // автоматическая загрузка моделей
 	};
