@@ -78,4 +78,27 @@ export class BasketService {
 	});
 	return basket;
   }
+
+  public async decrement(
+	request: Request,
+	response: Response,
+	params: IParams,
+  ): Promise<BasketModel> {
+	const { productId, quantity } = params;
+	let { basketId } = request.signedCookies;
+	if (!basketId) {
+		const created = await this.basketRepository.createBasket();
+		basketId = created.id;
+	}
+	const basket = await this.basketRepository.decrement(
+		basketId,
+		productId,
+		quantity,
+	);
+	response.cookie('basketId', basket.id, {
+		maxAge: this.maxAge,
+		signed: this.signed,
+	});
+	return basket;
+  }
 }

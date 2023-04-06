@@ -70,4 +70,29 @@ export class BasketRepository {
 	}
 	return basket;
   }
+
+  public async decrement(basketId, productId, quantity): Promise<BasketModel> {
+	let basket = await this.basketModel.findByPk(basketId, {
+		include: { model: ProductModel, as: 'products' },
+	});
+	if (!basket) {
+		basket = await this.basketModel.create();
+	}
+
+	const basket_product = await this.basketProductModel.findOne({
+		where: { basketId, productId },
+	});
+	// Если продукт в корзине не найден удаляем его из таблицы BasketProductModel
+	if (!basket_product) {
+		await basket_product.destroy();
+	}
+	// если количество продуктов в корзине больше переданного количества,
+	// то уменьшаем количество товаров в корзине
+	if (basket_product.quantity > quantity) {
+		await basket_product.decrement('quantity', { by: quantity });
+	}
+	// Обновляю объект корзины, что бы подтянуть обновленные данные
+	await basket.reload();
+	return basket;
+  }
 }
