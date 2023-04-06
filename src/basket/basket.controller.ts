@@ -81,5 +81,10 @@ export class BasketController {
 
   @HttpCode(200)
   @Put('/clear')
-  public async clear() {}
+  public async clear(
+	@Req() request: Request,
+	@Res({ passthrough: true }) response: Response,
+  ) {
+	return this.basketService.clearBasket(request, response);
+  }
 }

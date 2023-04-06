@@ -119,4 +119,21 @@ export class BasketService {
 	});
 	return basket;
   }
+
+  public async clearBasket(
+	request: Request,
+	response: Response,
+  ): Promise<BasketModel> {
+	let { basketId } = request.signedCookies;
+	if (!basketId) {
+		const created = await this.basketRepository.createBasket();
+		basketId = created.id;
+	}
+	const basket = await this.basketRepository.clearBasket(basketId);
+	response.cookie('basketId', basket.id, {
+		maxAge: this.maxAge,
+		signed: this.signed,
+	});
+	return basket;
+  }
 }

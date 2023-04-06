@@ -115,4 +115,16 @@ export class BasketRepository {
 	}
 	return basket;
   }
+
+  public async clearBasket(basketId: number): Promise<BasketModel> {
+	let basket = await this.basketModel.findByPk(basketId, {
+		include: [{ model: ProductModel, as: 'products' }],
+	});
+	if (!basket) {
+		basket = await this.basketModel.create();
+	}
+	await this.basketProductModel.destroy({ where: { basketId } });
+	await basket.reload();
+	return basket;
+  }
 }
