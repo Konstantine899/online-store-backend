@@ -95,4 +95,24 @@ export class BasketRepository {
 	await basket.reload();
 	return basket;
   }
+
+  public async removeFromBasket(
+	basketId: number,
+	productId: number,
+  ): Promise<BasketModel> {
+	const basket = await this.basketModel.findByPk(basketId, {
+		include: [{ model: ProductModel, as: 'products' }],
+	});
+	if (!basket) {
+		await this.basketModel.create();
+	}
+	const basket_product = await this.basketProductModel.findOne({
+		where: { basketId, productId },
+	});
+	if (basket_product) {
+		await basket_product.destroy();
+		await basket.reload();
+	}
+	return basket;
+  }
 }

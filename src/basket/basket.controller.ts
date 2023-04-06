@@ -69,7 +69,15 @@ export class BasketController {
 
   @HttpCode(200)
   @Put('/product/:productId([0-9]+)/remove')
-  public async remove() {}
+  public async remove(
+	@Req() request: Request,
+	@Res({ passthrough: true }) response: Response,
+	@Param('productId', ParseIntPipe) productId: number,
+  ) {
+	return this.basketService.removeFromBasket(request, response, {
+		productId,
+	});
+  }
 
   @HttpCode(200)
   @Put('/clear')

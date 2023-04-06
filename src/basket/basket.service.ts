@@ -4,8 +4,8 @@ import { Request, Response } from 'express';
 import { BasketModel } from './basket.model';
 
 interface IParams {
-  productId: number;
-  quantity: number;
+  productId?: number;
+  quantity?: number;
 }
 
 @Injectable()
@@ -94,6 +94,24 @@ export class BasketService {
 		basketId,
 		productId,
 		quantity,
+	);
+	response.cookie('basketId', basket.id, {
+		maxAge: this.maxAge,
+		signed: this.signed,
+	});
+	return basket;
+  }
+
+  public async removeFromBasket(request, response, params: IParams) {
+	const { productId } = params;
+	let { basketId } = request.signedCookies;
+	if (!basketId) {
+		const created = await this.basketRepository.createBasket();
+		basketId = created.id;
+	}
+	const basket = await this.basketRepository.removeFromBasket(
+		basketId,
+		productId,
 	);
 	response.cookie('basketId', basket.id, {
 		maxAge: this.maxAge,
