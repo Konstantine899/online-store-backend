@@ -3,7 +3,7 @@ import { BasketRepository } from './basket.repository';
 import { Request, Response } from 'express';
 import { BasketModel } from './basket.model';
 
-interface IAppendToBasketParams {
+interface IParams {
   productId: number;
   quantity: number;
 }
@@ -36,8 +36,8 @@ export class BasketService {
   public async appendToBasket(
 	request: Request,
 	response: Response,
-	params: IAppendToBasketParams,
-  ) {
+	params: IParams,
+  ): Promise<BasketModel> {
 	let { basketId } = request.signedCookies;
 	const { productId, quantity } = params;
 	if (!basketId) {
@@ -49,7 +49,30 @@ export class BasketService {
 		productId,
 		quantity,
 	);
-	request.cookies('basketId', basket.id, {
+	response.cookie('basketId', basket.id, {
+		maxAge: this.maxAge,
+		signed: this.signed,
+	});
+	return basket;
+  }
+
+  public async increment(
+	request: Request,
+	response: Response,
+	params: IParams,
+  ): Promise<BasketModel> {
+	const { productId, quantity } = params;
+	let { basketId } = request.signedCookies;
+	if (!basketId) {
+		const created = await this.basketRepository.createBasket();
+		basketId = created.id;
+	}
+	const basket = await this.basketRepository.increment(
+		basketId,
+		productId,
+		quantity,
+	);
+	response.cookie('basketId', basket.id, {
 		maxAge: this.maxAge,
 		signed: this.signed,
 	});

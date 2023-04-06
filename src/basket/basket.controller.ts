@@ -41,7 +41,17 @@ export class BasketController {
 
   @HttpCode(200)
   @Put('/product/:productId([0-9]+)/increment/:quantity([0-9]+)')
-  public async increment() {}
+  public async increment(
+	@Req() request: Request,
+	@Res({ passthrough: true }) response: Response,
+	@Param('productId', ParseIntPipe) productId: number,
+	@Param('quantity', ParseIntPipe) quantity: number,
+  ) {
+	return this.basketService.increment(request, response, {
+		productId,
+		quantity,
+	});
+  }
 
   @HttpCode(200)
   @Put('/product/:productId([0-9]+)/decrement/:quantity([0-9]+)')
