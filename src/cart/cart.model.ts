@@ -6,10 +6,10 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { ProductModel } from '../product/product.model';
-import { BasketProductModel } from './basket-product.model';
+import { CartProductModel } from './cart-product.model';
 
-@Table({ tableName: 'basket', underscored: true })
-export class BasketModel extends Model<BasketModel> {
+@Table({ tableName: 'cart', underscored: true })
+export class CartModel extends Model<CartModel> {
   @Column({
 	type: DataType.INTEGER,
 	unique: true,
@@ -19,7 +19,7 @@ export class BasketModel extends Model<BasketModel> {
   id: number;
 
   @BelongsToMany(() => ProductModel, {
-	through: () => BasketProductModel,
+	through: () => CartProductModel,
 	onDelete: 'CASCADE',
   })
   products: ProductModel[];

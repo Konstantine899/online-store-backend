@@ -8,8 +8,8 @@ import { RoleModel } from '../role/role.model';
 import { UserRoleModel } from '../role/user-role.model';
 import { RefreshTokenModel } from '../token/refresh-token.model';
 import * as process from 'process';
-import { BasketModel } from '../basket/basket.model';
-import { BasketProductModel } from '../basket/basket-product.model';
+import { CartModel } from '../cart/cart.model';
+import { CartProductModel } from '../cart/cart-product.model';
 import { RatingModel } from '../rating/rating.model';
 
 export const sequelizeConfig: SequelizeModuleAsyncOptions = {
@@ -30,8 +30,8 @@ export const sequelizeConfig: SequelizeModuleAsyncOptions = {
 		RoleModel,
 		UserRoleModel,
 		RefreshTokenModel,
-		BasketModel,
-		BasketProductModel,
+		CartModel,
+		CartProductModel,
 		RatingModel,
 		],
 		autoLoadModels: true, // автоматическая загрузка моделей

@@ -8,32 +8,32 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import { BasketService } from './basket.service';
+import { CartService } from './cart.service';
 import { Request, Response } from 'express';
 
-@Controller('basket')
-export class BasketController {
-  constructor(private readonly basketService: BasketService) {}
+@Controller('cart')
+export class CartController {
+  constructor(private readonly cartService: CartService) {}
 
   @HttpCode(200)
-  @Get('/getone')
-  public async getOneBasket(
+  @Get('/get-cart')
+  public async getCart(
 	@Req() request: Request,
 	// passthrough: true дает возможность использовать не только cookie, но и другие возможности framework
 	@Res({ passthrough: true }) response: Response,
   ) {
-	return this.basketService.getOneBasket(request, response);
+	return this.cartService.getCart(request, response);
   }
 
   @HttpCode(200)
   @Put('/product/:productId([0-9]+)/append/:quantity([0-9]+)')
-  public async append(
+  public async appendToCart(
 	@Req() request: Request,
 	@Res({ passthrough: true }) response: Response,
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('quantity', ParseIntPipe) quantity: number,
   ) {
-	return this.basketService.appendToBasket(request, response, {
+	return this.cartService.appendToCart(request, response, {
 		productId,
 		quantity,
 	});
@@ -47,7 +47,7 @@ export class BasketController {
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('quantity', ParseIntPipe) quantity: number,
   ) {
-	return this.basketService.increment(request, response, {
+	return this.cartService.increment(request, response, {
 		productId,
 		quantity,
 	});
@@ -61,7 +61,7 @@ export class BasketController {
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('quantity', ParseIntPipe) quantity: number,
   ) {
-	return this.basketService.decrement(request, response, {
+	return this.cartService.decrement(request, response, {
 		productId,
 		quantity,
 	});
@@ -69,22 +69,22 @@ export class BasketController {
 
   @HttpCode(200)
   @Put('/product/:productId([0-9]+)/remove')
-  public async remove(
+  public async removeProductFromCart(
 	@Req() request: Request,
 	@Res({ passthrough: true }) response: Response,
 	@Param('productId', ParseIntPipe) productId: number,
   ) {
-	return this.basketService.removeFromBasket(request, response, {
+	return this.cartService.removeProductFromCart(request, response, {
 		productId,
 	});
   }
 
   @HttpCode(200)
   @Put('/clear')
-  public async clear(
+  public async clearCart(
 	@Req() request: Request,
 	@Res({ passthrough: true }) response: Response,
   ) {
-	return this.basketService.clearBasket(request, response);
+	return this.cartService.clearCart(request, response);
   }
 }

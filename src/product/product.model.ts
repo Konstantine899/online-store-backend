@@ -11,8 +11,8 @@ import {
 import { CategoryModel } from '../category/category-model';
 import { BrandModel } from '../brand/brand.model';
 import { ProductPropertyModel } from '../product-property/product-property.model';
-import { BasketProductModel } from '../basket/basket-product.model';
-import { BasketModel } from '../basket/basket.model';
+import { CartProductModel } from '../cart/cart-product.model';
+import { CartModel } from '../cart/cart.model';
 import { UserModel } from '../user/user.model';
 import { RatingModel } from '../rating/rating.model';
 
@@ -65,11 +65,11 @@ export class ProductModel extends Model<ProductModel, IUserCreationAttributes> {
   @HasMany(() => ProductPropertyModel, { onDelete: 'CASCADE' })
   properties: ProductPropertyModel[];
 
-  @BelongsToMany(() => BasketModel, {
-	through: () => BasketProductModel,
+  @BelongsToMany(() => CartModel, {
+	through: () => CartProductModel,
 	onDelete: 'CASCADE',
   })
-  baskets: BasketModel[];
+  baskets: CartModel[];
 
   @BelongsToMany(() => UserModel, {
 	through: () => RatingModel,

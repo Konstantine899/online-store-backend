@@ -5,17 +5,17 @@ import {
   Model,
   Table,
 } from 'sequelize-typescript';
-import { BasketModel } from './basket.model';
+import { CartModel } from './cart.model';
 import { ProductModel } from '../product/product.model';
 
-@Table({ tableName: 'basket_product', underscored: true })
-export class BasketProductModel extends Model<BasketProductModel> {
+@Table({ tableName: 'cart_product', underscored: true })
+export class CartProductModel extends Model<CartProductModel> {
   @Column({ type: DataType.INTEGER, defaultValue: 1 })
   quantity: number;
 
-  @ForeignKey(() => BasketModel)
+  @ForeignKey(() => CartModel)
   @Column({ type: DataType.INTEGER })
-  basketId: number;
+  cartId: number;
 
   @ForeignKey(() => ProductModel)
   @Column({ type: DataType.INTEGER })

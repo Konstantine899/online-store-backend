@@ -8,7 +8,7 @@ import { CategoryModel } from '../category/category-model';
 import { BrandModel } from '../brand/brand.model';
 import { ProductPropertyModel } from '../product-property/product-property.model';
 import { ProductRepository } from './product.repository';
-import { BasketModel } from '../basket/basket.model';
+import { CartModel } from '../cart/cart.model';
 import { RatingModel } from '../rating/rating.model';
 
 @Module({
@@ -18,7 +18,7 @@ import { RatingModel } from '../rating/rating.model';
 		CategoryModel,
 		BrandModel,
 		ProductPropertyModel,
-		BasketModel,
+		CartModel,
 		RatingModel,
 	]),
 	FileModule,
