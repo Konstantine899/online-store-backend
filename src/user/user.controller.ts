@@ -49,7 +49,7 @@ export class UserController {
   }
 
   @HttpCode(200)
-  @Delete('/:id')
+  @Delete('/delete/:id')
   public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
 	return this.userService.remove(id);
   }

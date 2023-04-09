@@ -41,6 +41,11 @@ export class UserRepository {
 	});
   }
 
+  // Используется в модуле Rating
+  public async findUserByPkId(userId: number): Promise<UserModel> {
+	return this.userModel.findByPk(userId);
+  }
+
   public async findUserByEmail(email: string): Promise<UserModel> {
 	return this.userModel.findOne({
 		where: { email },

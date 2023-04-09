@@ -23,6 +23,11 @@ export class ProductRepository {
 	return product.save();
   }
 
+  // Используется в модуле Rating
+  public async fidProductByPkId(productId: number): Promise<ProductModel> {
+	return this.productModel.findByPk(productId);
+  }
+
   public async findOneProduct(id: number): Promise<ProductModel> {
 	return this.productModel.findOne({
 		where: { id },
