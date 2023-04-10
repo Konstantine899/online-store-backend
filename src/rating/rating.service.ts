@@ -29,44 +29,41 @@ export class RatingService {
 	rating: number,
   ): Promise<RatingModel> {
 	const product = await this.productRepository.fidProductByPkId(productId);
-	if (!product) {
-		throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: 'Продукт не найден',
-		});
-	}
+	if (!product) { this.notFound('Продукт не найден'); }
 	const user = await this.userRepository.findUserByPkId(userId);
-	if (!user) {
-		throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: 'Пользователь не найден',
-		});
-	}
+	if (!user) { this.notFound('Пользователь не найден'); }
 	const reviewVote = await this.ratingRepository.findVote(
 		userId,
 		productId,
 		rating,
 	);
 	if (reviewVote) {
-		throw new BadRequestException({
-		status: HttpStatus.BAD_REQUEST,
-		message: `Оценка рейтинга выми была выставлена ранее`,
-		});
+		this.badRequest(`Оценка рейтинга выми была выставлена ранее`);
 	}
 	return this.ratingRepository.createRating(user.id, product.id, rating);
   }
 
   public async getRating(productId: number): Promise<IRating> {
 	const product = await this.productRepository.fidProductByPkId(productId);
-	if (!product) {
-		throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: 'Продукт не найден',
-		});
-	}
+	if (!product) { this.notFound('Продукт не найден'); }
 	const votes = await this.ratingRepository.countRating(productId);
-	if (!votes) { return { ratingsSum: 0, votes: 0, rating: 0 }; }
+	if (!votes) {
+		return { ratingsSum: 0, votes: 0, rating: 0 };
+	}
 	const ratingsSum = await this.ratingRepository.ratingsSum(productId);
 	return { ratingsSum, votes, rating: ratingsSum / votes };
+  }
+
+  private notFound(message: string): void {
+	throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message,
+	});
+  }
+  private badRequest(message: string): void {
+	throw new BadRequestException({
+		status: HttpStatus.BAD_REQUEST,
+		message,
+	});
   }
 }
