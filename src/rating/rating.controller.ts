@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   HttpCode,
   Param,
   ParseIntPipe,
@@ -24,5 +25,11 @@ export class RatingController {
   ) {
 	const { id } = request.user;
 	return this.ratingService.createRating(id, productId, rating);
+  }
+
+  @HttpCode(200)
+  @Get('/product/:productId([0-9]+)')
+  public async getRating(@Param('productId', ParseIntPipe) productId: number) {
+	return this.ratingService.getRating(productId);
   }
 }

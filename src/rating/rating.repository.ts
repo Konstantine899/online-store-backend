@@ -30,4 +30,14 @@ export class RatingRepository {
 		where: { userId, productId, rating },
 	});
   }
+
+  public async countRating(productId: number): Promise<number> {
+	return this.ratingModel.count({
+		where: { productId },
+	});
+  }
+
+  public async ratingsSum(productId: number): Promise<number> {
+	return this.ratingModel.sum('rating', { where: { productId } });
+  }
 }

@@ -9,6 +9,12 @@ import { ProductRepository } from '../product/product.repository';
 import { UserRepository } from '../user/user.repository';
 import { RatingModel } from './rating.model';
 
+export class IRating {
+  ratingsSum: number;
+  votes: number;
+  rating: number;
+}
+
 @Injectable()
 export class RatingService {
   constructor(
@@ -47,10 +53,20 @@ export class RatingService {
 		message: `Оценка рейтинга выми была выставлена ранее`,
 		});
 	}
-	return this.ratingRepository.createRating(
-		user.id,
-		product.id,
-		rating,
-	);
+	return this.ratingRepository.createRating(user.id, product.id, rating);
+  }
+
+  public async getRating(productId: number): Promise<IRating> {
+	const product = await this.productRepository.fidProductByPkId(productId);
+	if (!product) {
+		throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message: 'Продукт не найден',
+		});
+	}
+	const votes = await this.ratingRepository.countRating(productId);
+	if (!votes) { return { ratingsSum: 0, votes: 0, rating: 0 }; }
+	const ratingsSum = await this.ratingRepository.ratingsSum(productId);
+	return { ratingsSum, votes, rating: ratingsSum / votes };
   }
 }
