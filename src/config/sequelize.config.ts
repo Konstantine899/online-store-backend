@@ -11,6 +11,8 @@ import * as process from 'process';
 import { CartModel } from '../cart/cart.model';
 import { CartProductModel } from '../cart/cart-product.model';
 import { RatingModel } from '../rating/rating.model';
+import { OrderModel } from '../order/order.model';
+import { OrderItemModel } from '../order-item/order-item.model';
 
 export const sequelizeConfig: SequelizeModuleAsyncOptions = {
   useFactory: () => {
@@ -33,6 +35,8 @@ export const sequelizeConfig: SequelizeModuleAsyncOptions = {
 		CartModel,
 		CartProductModel,
 		RatingModel,
+		OrderModel,
+		OrderItemModel,
 		],
 		autoLoadModels: true, // автоматическая загрузка моделей
 	};

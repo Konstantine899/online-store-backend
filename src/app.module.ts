@@ -16,6 +16,8 @@ import { TokenModule } from './token/token.module';
 import { sequelizeConfig } from './config/sequelize.config';
 import { CartModule } from './cart/cart.module';
 import { RatingModule } from './rating/rating.module';
+import { OrderModule } from './order/order.module';
+import { OrderItemModule } from './order-item/order-item.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { RatingModule } from './rating/rating.module';
 	TokenModule,
 	CartModule,
 	RatingModule,
+	OrderModule,
+	OrderItemModule,
   ],
   controllers: [],
   providers: [],
