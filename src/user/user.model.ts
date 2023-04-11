@@ -11,6 +11,7 @@ import { RoleModel } from '../role/role.model';
 import { RefreshTokenModel } from '../token/refresh-token.model';
 import { RatingModel } from '../rating/rating.model';
 import { ProductModel } from '../product/product.model';
+import { OrderModel } from '../order/order.model';
 
 interface IUserCreationAttributes {
   email: string;
@@ -44,4 +45,7 @@ export class UserModel extends Model<UserModel, IUserCreationAttributes> {
 	onDelete: 'CASCADE',
   })
   products: ProductModel[];
+
+  @HasMany(() => OrderModel, { onDelete: 'SET NULL' })
+  orders: OrderModel[];
 }
