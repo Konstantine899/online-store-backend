@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { OrderModel } from './order.model';
+import { OrderItemModel } from '../order-item/order-item.model';
 
 @Injectable()
 export class OrderRepository {
@@ -15,5 +16,35 @@ export class OrderRepository {
 	}
 
 	return orders;
+  }
+
+  public async adminFindUserOrderById(
+	id: number,
+	userId: number,
+  ): Promise<OrderModel> {
+	let order: OrderModel;
+	if (userId) {
+		order = await this.orderModel.findOne({
+		where: { id, userId },
+		include: [
+			{
+			model: OrderItemModel,
+			as: 'items',
+			attributes: ['name', 'price', 'quantity'],
+			},
+		],
+		});
+		return order;
+	}
+	order = await this.orderModel.findByPk(id, {
+		include: [
+		{
+			model: OrderItemModel,
+			as: 'items',
+			attributes: ['name', 'price', 'quantity'],
+		},
+		],
+	});
+	return order;
   }
 }
