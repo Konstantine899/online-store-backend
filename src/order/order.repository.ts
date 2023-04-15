@@ -93,4 +93,21 @@ export class OrderRepository {
 		],
 	});
   }
+
+  public async findOrder(orderId: number): Promise<OrderModel> {
+	return this.orderModel.findByPk(orderId, {
+		include: [
+		{
+			model: OrderItemModel,
+			as: `items`,
+			attributes: ['name', 'price', 'quantity'],
+		},
+		],
+	});
+  }
+
+  public async destroyOrder(order: OrderModel): Promise<boolean> {
+	await order.destroy();
+	return true;
+  }
 }

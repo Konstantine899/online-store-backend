@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
@@ -60,5 +61,16 @@ export class OrderController {
   @Post(`/admin/create-order`)
   public async adminCreateOrder(@Body() dto: OrderDto) {
 	return this.orderService.adminCreateOrder(dto);
+  }
+
+  @HttpCode(200)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
+  @Delete('/admin/delete-order/:orderId([0-9]+)')
+  public async adminDeleteOrder(
+	@Param('orderId', ParseIntPipe) orderId: number,
+  ) {
+	return this.orderService.adminDeleteOrder(orderId);
   }
 }

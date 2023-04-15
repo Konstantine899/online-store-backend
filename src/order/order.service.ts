@@ -57,4 +57,10 @@ export class OrderService {
 		message,
 	});
   }
+
+  public async adminDeleteOrder(orderId: number): Promise<boolean> {
+	const order = await this.orderRepository.findOrder(orderId);
+	if (!order) { this.notFound(`Заказ не найден`); }
+	return this.orderRepository.destroyOrder(order);
+  }
 }
