@@ -51,16 +51,26 @@ export class OrderService {
 	return userAndHisOrders;
   }
 
+  public async adminDeleteOrder(orderId: number): Promise<boolean> {
+	const order = await this.orderRepository.findOrder(orderId);
+	if (!order) {
+		this.notFound(`Заказ не найден`);
+	}
+	return this.orderRepository.destroyOrder(order);
+  }
+
+  public async userGetListOrdersByUserId(userId): Promise<OrderModel[]> {
+	const orders = await this.orderRepository.userFindListOrdersByUserId(
+		userId,
+	);
+	if (!orders) { this.notFound(`Заказ не найден`); }
+	return orders;
+  }
+
   private notFound(message: string) {
 	throw new NotFoundException({
 		status: HttpStatus.NOT_FOUND,
 		message,
 	});
-  }
-
-  public async adminDeleteOrder(orderId: number): Promise<boolean> {
-	const order = await this.orderRepository.findOrder(orderId);
-	if (!order) { this.notFound(`Заказ не найден`); }
-	return this.orderRepository.destroyOrder(order);
   }
 }

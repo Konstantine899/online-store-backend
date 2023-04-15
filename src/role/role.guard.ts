@@ -14,10 +14,11 @@ import * as process from 'process';
 import { RoleModel } from './role.model';
 
 export interface IDecodedPayload {
-  roles: RoleModel[];
-  iat: number;
-  exp: number;
-  sub: string;
+  id?: number;
+  roles?: RoleModel[];
+  iat?: number;
+  exp?: number;
+  sub?: string;
 }
 
 @Injectable()

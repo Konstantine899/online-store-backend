@@ -110,4 +110,26 @@ export class OrderRepository {
 	await order.destroy();
 	return true;
   }
+
+  public async userFindListOrdersByUserId(
+	userId: number,
+  ): Promise<OrderModel[]> {
+	let orders: OrderModel[];
+	if (userId) {
+		orders = await this.orderModel.findAll({
+		where: { userId },
+		include: [
+			{
+			model: OrderItemModel,
+			as: `items`,
+			attributes: ['name', 'price', 'quantity'],
+			},
+		],
+		});
+	} else {
+		orders = await this.orderModel.findAll();
+	}
+
+	return orders;
+  }
 }

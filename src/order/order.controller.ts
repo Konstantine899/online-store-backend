@@ -7,13 +7,15 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { JwtGuard } from '../token/jwt.guard';
-import { RoleGuard } from '../role/role.guard';
+import { IDecodedPayload, RoleGuard } from '../role/role.guard';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { OrderDto } from './dto/order.dto';
+import { Request } from 'express';
 
 @Controller('order')
 export class OrderController {
@@ -72,5 +74,17 @@ export class OrderController {
 	@Param('orderId', ParseIntPipe) orderId: number,
   ) {
 	return this.orderService.adminDeleteOrder(orderId);
+  }
+
+  /*Для авторизованного пользователя*/
+
+  @HttpCode(200)
+  @Roles('USER')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
+  @Get(`/user/get-all-order`)
+  public async userGetListOrdersByUserId(@Req() request: Request) {
+	const { id }: IDecodedPayload = request.user;
+	return this.orderService.userGetListOrdersByUserId(id);
   }
 }

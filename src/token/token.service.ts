@@ -15,6 +15,7 @@ export interface IRefreshTokenPayload {
 }
 
 export interface IAccessTokenPayload {
+  id: number;
   roles: RoleModel[];
 }
 
@@ -27,7 +28,7 @@ export class TokenService {
   ) {}
 
   public async generateAccessToken(user: UserModel): Promise<string> {
-	const payload: IAccessTokenPayload = { roles: user.roles };
+	const payload: IAccessTokenPayload = { id: user.id, roles: user.roles };
 	const options: SignOptions = {
 		subject: String(user.id),
 	};
