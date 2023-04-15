@@ -36,7 +36,7 @@ export class OrderModel extends Model<OrderModel> {
   amount: number;
 
   @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
-  status: string;
+  status: number;
 
   @Column({ type: DataType.STRING })
   comment: string;

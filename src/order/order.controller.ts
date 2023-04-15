@@ -5,6 +5,7 @@ import {
   HttpCode,
   Param,
   ParseIntPipe,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
@@ -50,5 +51,14 @@ export class OrderController {
 	@Param('orderId', ParseIntPipe) orderId: number,
   ) {
 	return this.orderService.adminGetUserOrderById(orderId, dto.userId);
+  }
+
+  @HttpCode(201)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
+  @Post(`/admin/create-order`)
+  public async adminCreateOrder(@Body() dto: OrderDto) {
+	return this.orderService.adminCreateOrder(dto);
   }
 }

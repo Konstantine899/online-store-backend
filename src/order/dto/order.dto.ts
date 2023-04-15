@@ -1,8 +1,4 @@
-export interface IItems {
-  readonly name: string;
-  readonly price: number;
-  readonly quantity: number;
-}
+import { OrderItemModel } from '../../order-item/order-item.model';
 
 export class OrderDto {
   readonly userId: number;
@@ -11,5 +7,5 @@ export class OrderDto {
   readonly phone: string;
   readonly address: string;
   readonly comment: string;
-  readonly items: IItems[];
+  readonly items: OrderItemModel[];
 }

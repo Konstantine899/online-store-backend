@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { OrderRepository } from './order.repository';
 import { OrderModel } from './order.model';
+import { OrderDto } from './dto/order.dto';
 
 @Injectable()
 export class OrderService {
@@ -32,8 +33,22 @@ export class OrderService {
 		orderId,
 		userId,
 	);
-	if (!order) { this.notFound('Заказ не найден'); }
+	if (!order) {
+		this.notFound('Заказ не найден');
+	}
 	return order;
+  }
+
+  public async adminCreateOrder(dto: OrderDto): Promise<OrderModel> {
+	const userAndHisOrders = await this.orderRepository.findUserAndHisOrders(
+		dto.userId,
+	);
+	// Если у пользователя нет заказа, то создаю его
+	if (!userAndHisOrders) {
+		return this.orderRepository.adminCreateOrder(dto);
+	}
+	// Если у пользователя есть заказ, то просто возвращаю заказ
+	return userAndHisOrders;
   }
 
   private notFound(message: string) {
