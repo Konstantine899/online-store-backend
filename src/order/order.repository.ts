@@ -23,7 +23,7 @@ export class OrderRepository {
 	return orders;
   }
 
-  public async adminFindUserOrderById(
+  public async adminFindOrderUser(
 	id: number,
 	userId: number,
   ): Promise<OrderModel> {
@@ -111,9 +111,7 @@ export class OrderRepository {
 	return true;
   }
 
-  public async userFindListOrdersByUserId(
-	userId: number,
-  ): Promise<OrderModel[]> {
+  public async userFindListOrders(userId: number): Promise<OrderModel[]> {
 	let orders: OrderModel[];
 	if (userId) {
 		orders = await this.orderModel.findAll({

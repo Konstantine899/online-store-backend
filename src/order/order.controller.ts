@@ -29,33 +29,36 @@ export class OrderController {
   @UseGuards(JwtGuard)
   @UseGuards(RoleGuard)
   @Get('/admin/get-all-order')
-  public async adminGetListAllOrder() {
-	return this.orderService.adminGetListAllOrder();
+  public async adminGetListOrdersStore() {
+	return this.orderService.adminGetListOrdersStore();
   }
 
+  /*Получение списка заказов пользователя*/
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard)
   @UseGuards(RoleGuard)
   @Get('/admin/get-all-order/user/:userId([0-9]+)')
-  public async adminGetListOrdersByUserId(
+  public async adminGetListOrdersUser(
 	@Param('userId', ParseIntPipe) userId: number,
   ) {
-	return this.orderService.adminGetListOrdersByUserId(userId);
+	return this.orderService.adminGetListOrdersUser(userId);
   }
 
+  /*Получение заказа пользователя по id заказа*/
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard)
   @UseGuards(RoleGuard)
   @Get('/admin/get-order/:orderId([0-9]+)')
-  public async adminGetUserOrderById(
+  public async adminGetOrderUser(
 	@Body() dto: OrderDto,
 	@Param('orderId', ParseIntPipe) orderId: number,
   ) {
-	return this.orderService.adminGetUserOrderById(orderId, dto.userId);
+	return this.orderService.adminGetOrderUser(orderId, dto.userId);
   }
 
+  /*Создание заказа для пользователя администратором*/
   @HttpCode(201)
   @Roles('ADMIN')
   @UseGuards(JwtGuard)
@@ -65,6 +68,7 @@ export class OrderController {
 	return this.orderService.adminCreateOrder(dto);
   }
 
+  /*Администратор Удаление заказа*/
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard)
@@ -78,13 +82,16 @@ export class OrderController {
 
   /*Для авторизованного пользователя*/
 
+  /*Получение списка заказов пользователя*/
   @HttpCode(200)
   @Roles('USER')
   @UseGuards(JwtGuard)
   @UseGuards(RoleGuard)
   @Get(`/user/get-all-order`)
-  public async userGetListOrdersByUserId(@Req() request: Request) {
+  public async userGetListOrders(@Req() request: Request) {
 	const { id }: IDecodedPayload = request.user;
-	return this.orderService.userGetListOrdersByUserId(id);
+	return this.orderService.userGetListOrders(id);
   }
+
+  /*Получение одного заказа пользователя*/
 }

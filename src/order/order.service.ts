@@ -7,7 +7,7 @@ import { OrderDto } from './dto/order.dto';
 export class OrderService {
   constructor(private readonly orderRepository: OrderRepository) {}
 
-  public async adminGetListAllOrder(): Promise<OrderModel[]> {
+  public async adminGetListOrdersStore(): Promise<OrderModel[]> {
 	const orders = await this.orderRepository.adminFindListOrders();
 	if (!orders.length) {
 		this.notFound('Список заказов магазина пуст');
@@ -15,9 +15,7 @@ export class OrderService {
 	return orders;
   }
 
-  public async adminGetListOrdersByUserId(
-	userId: number,
-  ): Promise<OrderModel[]> {
+  public async adminGetListOrdersUser(userId: number): Promise<OrderModel[]> {
 	const orders = await this.orderRepository.adminFindListOrders(userId);
 	if (!orders.length) {
 		this.notFound('Список заказов пользователя пуст');
@@ -25,11 +23,11 @@ export class OrderService {
 	return orders;
   }
 
-  public async adminGetUserOrderById(
+  public async adminGetOrderUser(
 	orderId: number,
 	userId: number,
   ): Promise<OrderModel> {
-	const order = await this.orderRepository.adminFindUserOrderById(
+	const order = await this.orderRepository.adminFindOrderUser(
 		orderId,
 		userId,
 	);
@@ -59,11 +57,11 @@ export class OrderService {
 	return this.orderRepository.destroyOrder(order);
   }
 
-  public async userGetListOrdersByUserId(userId): Promise<OrderModel[]> {
-	const orders = await this.orderRepository.userFindListOrdersByUserId(
-		userId,
-	);
-	if (!orders) { this.notFound(`Заказ не найден`); }
+  public async userGetListOrders(userId): Promise<OrderModel[]> {
+	const orders = await this.orderRepository.userFindListOrders(userId);
+	if (!orders) {
+		this.notFound(`Заказ не найден`);
+	}
 	return orders;
   }
 
