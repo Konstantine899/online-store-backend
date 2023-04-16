@@ -65,6 +65,15 @@ export class OrderService {
 	return orders;
   }
 
+  public async userGetOrder(
+	orderId: number,
+	userId: number,
+  ): Promise<OrderModel> {
+	const order = await this.orderRepository.userFindOrder(orderId, userId);
+	if (!order) { this.notFound(`Заказ не найден`); }
+	return order;
+  }
+
   private notFound(message: string) {
 	throw new NotFoundException({
 		status: HttpStatus.NOT_FOUND,

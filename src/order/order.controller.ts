@@ -94,4 +94,17 @@ export class OrderController {
   }
 
   /*Получение одного заказа пользователя*/
+
+  @HttpCode(200)
+  @Roles('USER')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
+  @Get(`/user/get-order/:orderId([0-9]+)`)
+  public async userGetOrder(
+	@Req() request: Request,
+	@Param('orderId', ParseIntPipe) orderId: number,
+  ) {
+	const { id }: IDecodedPayload = request.user;
+	return this.orderService.userGetOrder(orderId, id);
+  }
 }

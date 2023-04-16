@@ -130,4 +130,20 @@ export class OrderRepository {
 
 	return orders;
   }
+
+  public async userFindOrder(
+	orderId: number,
+	userId?: number,
+  ): Promise<OrderModel> {
+	return this.orderModel.findOne({
+		where: { userId, id: orderId },
+		include: [
+		{
+			model: OrderItemModel,
+			as: `items`,
+			attributes: ['name', 'price', 'quantity'],
+		},
+		],
+	});
+  }
 }
