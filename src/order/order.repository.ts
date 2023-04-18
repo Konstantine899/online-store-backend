@@ -67,31 +67,7 @@ export class OrderRepository {
   }
 
   public async adminCreateOrder(dto: OrderDto): Promise<OrderModel> {
-	const order: OrderModel = new OrderModel();
-	order.userId = dto.userId;
-	order.name = dto.name;
-	order.email = dto.email;
-	order.phone = dto.phone;
-	order.address = dto.address;
-	order.comment = dto.comment;
-	order.amount = dto.items.reduce(
-		(sum: number, item: OrderItemModel) => sum + item.price * item.quantity,
-		0,
-	);
-	await order.save();
-	for (const item of dto.items) {
-		await this.orderItemRepository.createItem(order.id, item);
-	}
-
-	return this.orderModel.findByPk(order.id, {
-		include: [
-		{
-			model: OrderItemModel,
-			as: `items`,
-			attributes: ['name', 'price', 'quantity'],
-		},
-		],
-	});
+	return this.createOrder(dto);
   }
 
   public async findOrder(orderId: number): Promise<OrderModel> {
@@ -137,6 +113,39 @@ export class OrderRepository {
   ): Promise<OrderModel> {
 	return this.orderModel.findOne({
 		where: { userId, id: orderId },
+		include: [
+		{
+			model: OrderItemModel,
+			as: `items`,
+			attributes: ['name', 'price', 'quantity'],
+		},
+		],
+	});
+  }
+
+  public async userCreateOrder(dto: OrderDto): Promise<OrderModel> {
+	return this.createOrder(dto);
+  }
+
+  private async createOrder(dto: OrderDto): Promise<OrderModel> {
+	const order: OrderModel = new OrderModel();
+	order.userId = dto.userId;
+	order.name = dto.name;
+	order.email = dto.email;
+	order.phone = dto.phone;
+	order.address = dto.address;
+	order.comment = dto.comment;
+	console.log(dto.items.map((item) => item.quantity));
+	order.amount = dto.items.reduce(
+		(sum: number, item: OrderItemModel) => sum + item.price * item.quantity,
+		0,
+	);
+	await order.save();
+	for (const item of dto.items) {
+		await this.orderItemRepository.createItem(order.id, item);
+	}
+
+	return this.orderModel.findByPk(order.id, {
 		include: [
 		{
 			model: OrderItemModel,

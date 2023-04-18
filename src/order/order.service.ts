@@ -2,10 +2,14 @@ import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { OrderRepository } from './order.repository';
 import { OrderModel } from './order.model';
 import { OrderDto } from './dto/order.dto';
+import { CartRepository } from '../cart/cart.repository';
 
 @Injectable()
 export class OrderService {
-  constructor(private readonly orderRepository: OrderRepository) {}
+  constructor(
+	private readonly orderRepository: OrderRepository,
+	private readonly cartRepository: CartRepository,
+  ) {}
 
   public async adminGetListOrdersStore(): Promise<OrderModel[]> {
 	const orders = await this.orderRepository.adminFindListOrders();
@@ -70,7 +74,28 @@ export class OrderService {
 	userId: number,
   ): Promise<OrderModel> {
 	const order = await this.orderRepository.userFindOrder(orderId, userId);
-	if (!order) { this.notFound(`Заказ не найден`); }
+	if (!order) {
+		this.notFound(`Заказ не найден`);
+	}
+	return order;
+  }
+
+  /*Авторизованный и не авторизованный пользователи могут делать заказ*/
+  /*Состав заказа мы получаем из корзины которая находится в cookie(если пользователь авторизован)*/
+  /*Если пользователь авторизован то userId получаю из access token*/
+  public async userCreateOrder(
+	dto: OrderDto,
+	userId?: number,
+	cartId?: number,
+  ): Promise<OrderModel> {
+	if (!cartId) { this.notFound(`Ваша корзина пуста`); }
+	const cart = await this.cartRepository.findCart(cartId);
+	if (cart.products.length === 0) { this.notFound(`Ваша корзина пуста`); }
+	/*Для создания заказа отправляю сформированный в клиентской части объект
+     * который содержит в себе данные пользователя, и данные заказа с корзины*/
+	const order = this.orderRepository.userCreateOrder(dto);
+	// после оформления заказа корзину нужно очистить
+	await this.cartRepository.clearCart(cartId);
 	return order;
   }
 

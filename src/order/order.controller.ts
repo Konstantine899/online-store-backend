@@ -107,4 +107,15 @@ export class OrderController {
 	const { id }: IDecodedPayload = request.user;
 	return this.orderService.userGetOrder(orderId, id);
   }
+
+  @HttpCode(200)
+  @Roles('USER')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
+  @Post('/user/create-order')
+  public async userCreateOrder(@Req() request: Request, @Body() dto: OrderDto) {
+	const { id }: IDecodedPayload = request.user;
+	const { cartId } = request.signedCookies;
+	return this.orderService.userCreateOrder(dto, id, Number(cartId));
+  }
 }

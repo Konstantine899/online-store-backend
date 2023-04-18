@@ -4,6 +4,10 @@ import { Request, Response } from 'express';
 import { CartModel } from './cart.model';
 import { ProductModel } from '../product/product.model';
 
+export class ISignedCookies {
+  cartId: string;
+}
+
 interface IParams {
   productId?: number;
   quantity?: number;
