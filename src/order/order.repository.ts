@@ -123,13 +123,6 @@ export class OrderRepository {
 	});
   }
 
-  // public async userCreateOrder(
-  //   dto: OrderDto,
-  //   userId: number,
-  // ): Promise<OrderModel> {
-  //   return this.createOrder(dto, userId);
-  // }
-
   public async createOrder(
 	dto: OrderDto,
 	userId?: number,
@@ -141,7 +134,6 @@ export class OrderRepository {
 	order.phone = dto.phone;
 	order.address = dto.address;
 	order.comment = dto.comment;
-	console.log(dto.items.map((item) => item.quantity));
 	order.amount = dto.items.reduce(
 		(sum: number, item: OrderItemModel) => sum + item.price * item.quantity,
 		0,
