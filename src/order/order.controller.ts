@@ -108,7 +108,7 @@ export class OrderController {
 	return this.orderService.userGetOrder(orderId, id);
   }
 
-  @HttpCode(200)
+  @HttpCode(201)
   @Roles('USER')
   @UseGuards(JwtGuard)
   @UseGuards(RoleGuard)
@@ -117,5 +117,16 @@ export class OrderController {
 	const { id }: IDecodedPayload = request.user;
 	const { cartId } = request.signedCookies;
 	return this.orderService.userCreateOrder(dto, id, Number(cartId));
+  }
+
+  /*Для не авторизованного пользователя*/
+  @HttpCode(201)
+  @Post('/guest/create-order')
+  public async guestCreateOrder(
+	@Req() request: Request,
+	@Body() dto: OrderDto,
+  ) {
+	const { cartId } = request.signedCookies;
+	return this.orderService.guestCreateOrder(dto, undefined, cartId);
   }
 }

@@ -7,6 +7,7 @@ import { OrderRepository } from './order.repository';
 import { JwtModule } from '@nestjs/jwt';
 import { OrderItemModule } from '../order-item/order-item.module';
 import { CartModule } from '../cart/cart.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { CartModule } from '../cart/cart.module';
 	JwtModule,
 	OrderItemModule,
 	CartModule,
+	UserModule,
   ],
   controllers: [OrderController],
   providers: [OrderService, OrderRepository],

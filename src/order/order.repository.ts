@@ -123,13 +123,19 @@ export class OrderRepository {
 	});
   }
 
-  public async userCreateOrder(dto: OrderDto): Promise<OrderModel> {
-	return this.createOrder(dto);
-  }
+  // public async userCreateOrder(
+  //   dto: OrderDto,
+  //   userId: number,
+  // ): Promise<OrderModel> {
+  //   return this.createOrder(dto, userId);
+  // }
 
-  private async createOrder(dto: OrderDto): Promise<OrderModel> {
+  public async createOrder(
+	dto: OrderDto,
+	userId?: number,
+  ): Promise<OrderModel> {
 	const order: OrderModel = new OrderModel();
-	order.userId = dto.userId;
+	order.userId = userId;
 	order.name = dto.name;
 	order.email = dto.email;
 	order.phone = dto.phone;

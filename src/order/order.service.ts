@@ -3,12 +3,14 @@ import { OrderRepository } from './order.repository';
 import { OrderModel } from './order.model';
 import { OrderDto } from './dto/order.dto';
 import { CartRepository } from '../cart/cart.repository';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class OrderService {
   constructor(
 	private readonly orderRepository: OrderRepository,
 	private readonly cartRepository: CartRepository,
+	private readonly userService: UserService,
   ) {}
 
   public async adminGetListOrdersStore(): Promise<OrderModel[]> {
@@ -88,12 +90,36 @@ export class OrderService {
 	userId?: number,
 	cartId?: number,
   ): Promise<OrderModel> {
-	if (!cartId) { this.notFound(`Ваша корзина пуста`); }
+	return this.createOrder(dto, userId, cartId);
+  }
+
+  public async guestCreateOrder(
+	dto: OrderDto,
+	userId?: number,
+	cartId?: number,
+  ): Promise<OrderModel> {
+	return this.createOrder(dto, userId, cartId);
+  }
+
+  private async createOrder(
+	dto: OrderDto,
+	userId?: number,
+	cartId?: number,
+  ): Promise<OrderModel> {
+	/*Если есть userId ищем пользователя в БД. Если пользователь не найден выдаст исключение*/
+	if (userId) {
+		await this.userService.findUserById(userId);
+	}
+	if (!cartId) {
+		this.notFound(`Ваша корзина пуста`);
+	}
 	const cart = await this.cartRepository.findCart(cartId);
-	if (cart.products.length === 0) { this.notFound(`Ваша корзина пуста`); }
+	if (cart.products.length === 0) {
+		this.notFound(`Ваша корзина пуста`);
+	}
 	/*Для создания заказа отправляю сформированный в клиентской части объект
      * который содержит в себе данные пользователя, и данные заказа с корзины*/
-	const order = this.orderRepository.userCreateOrder(dto);
+	const order = this.orderRepository.createOrder(dto, userId);
 	// после оформления заказа корзину нужно очистить
 	await this.cartRepository.clearCart(cartId);
 	return order;
