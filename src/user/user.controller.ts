@@ -8,24 +8,34 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserModel } from './user.model';
 import { AddRoleDto } from './dto/add-role.dto';
 import { RemoveRoleDto } from './dto/remove-role.dto';
+import { Roles } from '../auth/decorators/roles-auth.decorator';
+import { JwtGuard } from '../token/jwt.guard';
+import { RoleGuard } from '../role/role.guard';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @HttpCode(201)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
   @Post()
   public async create(@Body() dto: CreateUserDto): Promise<UserModel> {
 	return this.userService.create(dto);
   }
 
   @HttpCode(200)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
   @Get('/:id')
   public async getOne(
 	@Param('id', ParseIntPipe) id: number,
@@ -34,12 +44,18 @@ export class UserController {
   }
 
   @HttpCode(200)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
   @Get()
   public async getAll(): Promise<UserModel[]> {
 	return this.userService.findAllUsers();
   }
 
   @HttpCode(200)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
   @Put('/:id')
   public async update(
 	@Param('id', ParseIntPipe) id: number,
@@ -49,18 +65,27 @@ export class UserController {
   }
 
   @HttpCode(200)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
   @Delete('/delete/:id')
   public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
 	return this.userService.remove(id);
   }
 
   @HttpCode(201)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
   @Post('/role/add')
   public async addRole(@Body() dto: AddRoleDto) {
 	return this.userService.addRole(dto);
   }
 
   @HttpCode(200)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
   @Delete('/role/delete')
   public async removeRole(@Body() dto: RemoveRoleDto) {
 	return this.userService.removeRole(dto);
