@@ -29,15 +29,19 @@ export class UserService {
 	}
 	const user = await this.userRepository.createUser(dto);
 	const role = await this.roleService.findRole('USER');
-	if (!role) { this.notFound('Роль пользователя не найдена'); }
+	if (!role) {
+		this.notFound('Роль пользователя не найдена');
+	}
 	await user.$set('roles', [role.id]); // #set перезаписываю поле только в БД
 	user.roles = [role]; // Добавляю roles в сам объект user
 	return user.save();
   }
 
-  public async findUserById(id: number): Promise<UserModel | null> {
+  public async findUserById(id: number): Promise<UserModel> {
 	const user = this.userRepository.findUserById(id);
-	if (!user) { this.notFound('Пользователь не найден'); }
+	if (!user) {
+		this.notFound('Пользователь не найден');
+	}
 	return user;
   }
 
@@ -62,7 +66,7 @@ export class UserService {
 	return true;
   }
 
-  public async addRole(dto: AddRoleDto): Promise<{ message: string }> {
+  public async addRole(dto: AddRoleDto): Promise<UserModel> {
 	const user = await this.userRepository.findUserById(dto.userId);
 	const foundRole = await this.roleService.findRole(dto.role);
 	const addedRole = await user.$add('role', foundRole.id);
@@ -72,11 +76,14 @@ export class UserService {
 		message: `Данному пользователю уже присвоена роль ${foundRole.role}`,
 		});
 	}
-	return { message: `Роль ${foundRole.role} присвоена успешно` };
+	return this.userRepository.findUserById(user.id);
   }
 
-  public async removeRole(dto: RemoveRoleDto): Promise<{ message: string }> {
+  public async removeRole(dto: RemoveRoleDto): Promise<UserModel> {
 	const user = await this.userRepository.findUserById(dto.userId);
+	if (!user) {
+		this.notFound(`Пользователь не найден`);
+	}
 	const foundRole = await this.roleService.findRole(dto.role);
 	if (foundRole.role === 'USER') {
 		throw new ForbiddenException({
@@ -90,7 +97,7 @@ export class UserService {
 		`Роль ${foundRole.role} не принадлежит данному пользователю`,
 		);
 	}
-	return { message: `Роль ${foundRole.role} удалена успешно` };
+	return this.userRepository.findUserById(user.id);
   }
 
   private notFound(message: string): void {
