@@ -39,6 +39,7 @@ export class AuthController {
   }
 
   @HttpCode(200)
+  @UseGuards(JwtGuard)
   @Post('/refresh')
   public async refresh(
 	@Body() dto: RefreshRequestDto,
