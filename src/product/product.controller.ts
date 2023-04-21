@@ -11,6 +11,7 @@ import {
   Put,
   Query,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -18,6 +19,9 @@ import { IGetMetadata, ProductService } from './product.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductModel } from './product.model';
 import { QueryProductDto } from './dto/query-product.dto';
+import { Roles } from '../auth/decorators/roles-auth.decorator';
+import { JwtGuard } from '../token/jwt.guard';
+import { RoleGuard } from '../role/role.guard';
 
 export interface IProductsResponse {
   metaData: IGetMetadata;
@@ -27,8 +31,11 @@ export interface IProductsResponse {
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
-  @Post('/create')
   @HttpCode(201)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
+  @Post('/create')
   @UseInterceptors(FileInterceptor('image'))
   public async create(
 	@Body() dto: CreateProductDto,
@@ -99,8 +106,11 @@ export class ProductController {
 	);
   }
 
+  @HttpCode(200)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
   @Put('/update/:id([0-9]+)')
-  @HttpCode(200) // Если создает новый ресурс то 201, Если обновляет имеющийся то 200
   @UseInterceptors(FileInterceptor('image'))
   public async update(
 	@Param('id', ParseIntPipe) id: number,
@@ -111,6 +121,9 @@ export class ProductController {
   }
 
   @HttpCode(200)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
   @Delete('/delete/:id([0-9]+)')
   public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
 	return this.productService.removeProduct(id);
