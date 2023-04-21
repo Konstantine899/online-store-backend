@@ -8,16 +8,23 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { BrandService } from './brand.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { BrandModel } from './brand.model';
+import { Roles } from '../auth/decorators/roles-auth.decorator';
+import { JwtGuard } from '../token/jwt.guard';
+import { RoleGuard } from '../role/role.guard';
 
 @Controller('brand')
 export class BrandController {
   constructor(private readonly brandService: BrandService) {}
-  @Post('/create')
   @HttpCode(201)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
+  @Post('/create')
   public async create(@Body() dto: CreateBrandDto): Promise<BrandModel> {
 	return this.brandService.createBrand(dto);
   }
@@ -35,16 +42,23 @@ export class BrandController {
 	return this.brandService.findOneBrand(id);
   }
 
-  @Put('/update/:id([0-9]+)')
   @HttpCode(200)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
+  @Put('/update/:id([0-9]+)')
   public async update(
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateBrandDto,
   ): Promise<BrandModel> {
 	return this.brandService.updateBrand(id, dto);
   }
-  @Delete('/delete/:id([0-9]+)')
+
   @HttpCode(200)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
+  @Delete('/delete/:id([0-9]+)')
   public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
 	return this.brandService.remove(id);
   }
