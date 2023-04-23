@@ -18,16 +18,38 @@ import { RemoveRoleDto } from './dto/remove-role.dto';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
+import {
+  ApiBody,
+  ApiCreatedResponse,
+  ApiOperation,
+  ApiTags,
+  OmitType,
+} from '@nestjs/swagger';
 
+@ApiTags(`Пользователи`)
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @ApiOperation({ summary: `Создание пользователя` })
+  @ApiBody({
+	type: CreateUserDto,
+	description: `Структура входных данных для создания пользователя`,
+  })
+  @ApiCreatedResponse({
+	description: `Созданный пользователь`,
+	type: OmitType(UserModel, [
+		'roles',
+		'refresh_tokens',
+		'products',
+		'orders',
+	]),
+  })
   @HttpCode(201)
   @Roles('ADMIN')
   @UseGuards(JwtGuard)
   @UseGuards(RoleGuard)
-  @Post()
+  @Post('/create')
   public async create(@Body() dto: CreateUserDto): Promise<UserModel> {
 	return this.userService.create(dto);
   }

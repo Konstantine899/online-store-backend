@@ -43,7 +43,9 @@ export class UserRepository {
 
   // Используется в модуле Rating
   public async findUserByPkId(userId: number): Promise<UserModel> {
-	return this.userModel.findByPk(userId);
+	return this.userModel.findByPk(userId, {
+		attributes: { exclude: [`updatedAt`, `createdAt`] },
+	});
   }
 
   public async findUserByEmail(email: string): Promise<UserModel> {
