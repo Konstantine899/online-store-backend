@@ -37,7 +37,7 @@ export class UserRepository {
   public async findUserById(id: number): Promise<UserModel> {
 	return this.userModel.findOne({
 		where: { id },
-		include: { all: true },
+		attributes: { exclude: [`updatedAt`, `createdAt`] },
 	});
   }
 
