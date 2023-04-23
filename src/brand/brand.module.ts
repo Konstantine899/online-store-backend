@@ -5,9 +5,10 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { BrandModel } from './brand.model';
 import { ProductModel } from '../product/product.model';
 import { BrandRepository } from './brand.repository';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
-  imports: [SequelizeModule.forFeature([BrandModel, ProductModel])],
+  imports: [SequelizeModule.forFeature([BrandModel, ProductModel]), JwtModule],
   controllers: [BrandController],
   providers: [BrandService, BrandRepository],
 })

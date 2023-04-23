@@ -6,12 +6,14 @@ import { RatingService } from './rating.service';
 import { RatingRepository } from './rating.repository';
 import { ProductModule } from '../product/product.module';
 import { UserModule } from '../user/user.module';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
 	SequelizeModule.forFeature([RatingModel]),
 	ProductModule,
 	UserModule,
+	JwtModule,
   ],
   controllers: [RatingController],
   providers: [RatingService, RatingRepository],

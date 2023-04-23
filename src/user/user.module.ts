@@ -7,11 +7,13 @@ import { RoleModel } from '../role/role.model';
 import { RoleModule } from '../role/role.module';
 import { UserRepository } from './user.repository';
 import { RatingModel } from '../rating/rating.model';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
 	SequelizeModule.forFeature([UserModel, RoleModel, RatingModel]),
 	RoleModule,
+	JwtModule,
   ],
   controllers: [UserController],
   providers: [UserService, UserRepository],

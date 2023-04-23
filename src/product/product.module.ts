@@ -10,6 +10,7 @@ import { ProductPropertyModel } from '../product-property/product-property.model
 import { ProductRepository } from './product.repository';
 import { CartModel } from '../cart/cart.model';
 import { RatingModel } from '../rating/rating.model';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { RatingModel } from '../rating/rating.model';
 		RatingModel,
 	]),
 	FileModule,
+	JwtModule,
   ],
   providers: [ProductService, ProductRepository],
   controllers: [ProductController],
