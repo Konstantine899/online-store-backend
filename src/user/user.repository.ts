@@ -27,10 +27,14 @@ export class UserRepository {
 		`Пользователь с таким email: ${dto.email} уже существует`,
 		);
 	}
-	return user.update({
+	await user.update({
 		...dto,
 		email: dto.email,
 		password: await hash(dto.password, 10),
+	});
+
+	return this.userModel.findByPk(user.id, {
+		attributes: { exclude: [`updatedAt`, `createdAt`] },
 	});
   }
 

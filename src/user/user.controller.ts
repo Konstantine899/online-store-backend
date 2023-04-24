@@ -102,12 +102,12 @@ export class UserController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard)
   @UseGuards(RoleGuard)
-  @Put('/:id')
-  public async update(
+  @Put('/update/:id')
+  public async updateUser(
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateUserDto,
   ): Promise<UserModel> {
-	return this.userService.update(id, dto);
+	return this.userService.updateUser(id, dto);
   }
 
   @HttpCode(200)

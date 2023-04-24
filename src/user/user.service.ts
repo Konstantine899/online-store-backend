@@ -54,10 +54,11 @@ export class UserService {
 	return this.userRepository.findListUsers();
   }
 
-  public async update(id: number, dto: CreateUserDto): Promise<UserModel> {
+  public async updateUser(id: number, dto: CreateUserDto): Promise<UserModel> {
 	const user = await this.userRepository.updateUser(id, dto);
 	const role = await this.roleService.findRole('USER');
-	await user.$set('roles', [role.id]); // #set перезаписываю поле
+	/* #set Потому что обновляется весь объект. Ищу роль пользователя и при обновлении перезаписываю поле*/
+	await user.$set('roles', [role.id]);
 	user.roles = [role];
 	return user;
   }
