@@ -56,6 +56,13 @@ export class UserController {
 	return this.userService.create(dto);
   }
 
+  @ApiOperation({ summary: `Получение списка всех пользователей` })
+  @ApiResponse({
+	description: `Список пользователей`,
+	type: [
+		OmitType(UserModel, ['roles', 'refresh_tokens', 'products', 'orders']),
+	],
+  })
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard)

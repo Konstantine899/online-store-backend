@@ -56,7 +56,9 @@ export class UserRepository {
   }
 
   public async findListUsers() {
-	return this.userModel.findAll();
+	return this.userModel.findAll({
+		attributes: { exclude: [`createdAt`, `updatedAt`] },
+	});
   }
 
   public async removeUser(id: number) {
