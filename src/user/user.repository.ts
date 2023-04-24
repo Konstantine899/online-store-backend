@@ -55,8 +55,8 @@ export class UserRepository {
 	});
   }
 
-  public async findAllUsers() {
-	return this.userModel.findAll({ include: { all: true } });
+  public async findListUsers() {
+	return this.userModel.findAll();
   }
 
   public async removeUser(id: number) {

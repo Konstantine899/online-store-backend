@@ -50,8 +50,8 @@ export class UserService {
 	return this.userRepository.findUserByEmail(email);
   }
 
-  public async findAllUsers(): Promise<UserModel[]> {
-	return this.userRepository.findAllUsers();
+  public async getListUsers(): Promise<UserModel[]> {
+	return this.userRepository.findListUsers();
   }
 
   public async update(id: number, dto: CreateUserDto): Promise<UserModel> {

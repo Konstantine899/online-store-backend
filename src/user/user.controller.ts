@@ -35,17 +35,17 @@ export class UserController {
 
   @ApiOperation({ summary: `Создание пользователя` })
   @ApiBody({
-    type: CreateUserDto,
-    description: `Структура входных данных для создания пользователя`,
+	type: CreateUserDto,
+	description: `Структура входных данных для создания пользователя`,
   })
   @ApiCreatedResponse({
-    description: `Созданный пользователь`,
-    type: OmitType(UserModel, [
-      'roles',
-      'refresh_tokens',
-      'products',
-      'orders',
-    ]),
+	description: `Созданный пользователь`,
+	type: OmitType(UserModel, [
+		'roles',
+		'refresh_tokens',
+		'products',
+		'orders',
+	]),
   })
   @HttpCode(201)
   @Roles('ADMIN')
@@ -53,23 +53,32 @@ export class UserController {
   @UseGuards(RoleGuard)
   @Post('/create')
   public async create(@Body() dto: CreateUserDto): Promise<UserModel> {
-    return this.userService.create(dto);
+	return this.userService.create(dto);
+  }
+
+  @HttpCode(200)
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard)
+  @UseGuards(RoleGuard)
+  @Get(`/get-list-users`)
+  public async getListUsers(): Promise<UserModel[]> {
+	return this.userService.getListUsers();
   }
 
   @ApiOperation({ summary: `Получение пользователя по идентификатору` })
   @ApiParam({
-    name: `id`,
-    type: `string`,
-    description: `идентификатор пользователя`,
+	name: `id`,
+	type: `string`,
+	description: `идентификатор пользователя`,
   })
   @ApiResponse({
-    description: `Объект ответа содержащий пользователя`,
-    type: OmitType(UserModel, [
-      'roles',
-      'refresh_tokens',
-      'products',
-      'orders',
-    ]),
+	description: `Объект ответа содержащий пользователя`,
+	type: OmitType(UserModel, [
+		'roles',
+		'refresh_tokens',
+		'products',
+		'orders',
+	]),
   })
   @HttpCode(200)
   @Roles('ADMIN')
@@ -77,18 +86,9 @@ export class UserController {
   @UseGuards(RoleGuard)
   @Get('/:id')
   public async getOne(
-    @Param('id', ParseIntPipe) id: number,
+	@Param('id', ParseIntPipe) id: number,
   ): Promise<UserModel> {
-    return this.userService.findUserById(id);
-  }
-
-  @HttpCode(200)
-  @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
-  @Get()
-  public async getAll(): Promise<UserModel[]> {
-    return this.userService.findAllUsers();
+	return this.userService.findUserById(id);
   }
 
   @HttpCode(200)
@@ -97,10 +97,10 @@ export class UserController {
   @UseGuards(RoleGuard)
   @Put('/:id')
   public async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: CreateUserDto,
+	@Param('id', ParseIntPipe) id: number,
+	@Body() dto: CreateUserDto,
   ): Promise<UserModel> {
-    return this.userService.update(id, dto);
+	return this.userService.update(id, dto);
   }
 
   @HttpCode(200)
@@ -109,7 +109,7 @@ export class UserController {
   @UseGuards(RoleGuard)
   @Delete('/delete/:id')
   public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
-    return this.userService.remove(id);
+	return this.userService.remove(id);
   }
 
   @HttpCode(201)
@@ -118,7 +118,7 @@ export class UserController {
   @UseGuards(RoleGuard)
   @Post('/role/add')
   public async addRole(@Body() dto: AddRoleDto) {
-    return this.userService.addRole(dto);
+	return this.userService.addRole(dto);
   }
 
   @HttpCode(200)
@@ -127,6 +127,6 @@ export class UserController {
   @UseGuards(RoleGuard)
   @Delete('/role/delete')
   public async removeRole(@Body() dto: RemoveRoleDto) {
-    return this.userService.removeRole(dto);
+	return this.userService.removeRole(dto);
   }
 }
