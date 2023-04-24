@@ -98,6 +98,25 @@ export class UserController {
 	return this.userService.findUserById(id);
   }
 
+  @ApiOperation({ summary: `Обновление пользователя` })
+  @ApiParam({
+	name: `id`,
+	type: `string`,
+	description: `идентификатор пользователя`,
+  })
+  @ApiBody({
+	type: CreateUserDto,
+	description: `Структура входных данных для обновления пользователя`,
+  })
+  @ApiResponse({
+	description: `Обновленный пользователь`,
+	type: OmitType(UserModel, [
+		'roles',
+		'refresh_tokens',
+		'products',
+		'orders',
+	]),
+  })
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard)
