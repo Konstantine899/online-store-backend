@@ -149,6 +149,16 @@ export class UserController {
 	return this.userService.remove(id);
   }
 
+  @ApiOperation({ summary: `Добавление роли пользователю` })
+  @ApiBody({
+	type: AddRoleDto,
+	description: `Структура входных данных для добавления роли пользователю`,
+  })
+  @ApiCreatedResponse({
+	schema: { example: [{ id: 1, userId: 1, roleId: 1 }] },
+	status: 201,
+	description: `Структура ответа добавленной роли пользователю`,
+  })
   @HttpCode(201)
   @Roles('ADMIN')
   @UseGuards(JwtGuard)
