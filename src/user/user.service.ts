@@ -69,9 +69,13 @@ export class UserService {
 
   public async addRole(dto: AddRoleDto): Promise<unknown> {
 	const user = await this.userRepository.findUserById(dto.userId);
-	if (!user) { this.notFound(`Пользователь не найден в БД`); }
+	if (!user) {
+		this.notFound(`Пользователь не найден в БД`);
+	}
 	const foundRole = await this.roleService.findRole(dto.role);
-	if (!foundRole) { this.notFound(`Роль не найдена в БД`); }
+	if (!foundRole) {
+		this.notFound(`Роль не найдена в БД`);
+	}
 	const addedRole = await user.$add('role', foundRole.id);
 	if (!addedRole) {
 		this.conflictException(
@@ -81,25 +85,20 @@ export class UserService {
 	return addedRole;
   }
 
-  public async removeRole(dto: RemoveRoleDto): Promise<UserModel> {
+  public async removeRole(dto: RemoveRoleDto): Promise<number> {
 	const user = await this.userRepository.findUserById(dto.userId);
-	if (!user) {
-		this.notFound(`Пользователь не найден`);
-	}
+	if (!user) { this.notFound(`Пользователь не найден`); }
 	const foundRole = await this.roleService.findRole(dto.role);
 	if (foundRole.role === 'USER') {
-		throw new ForbiddenException({
-		status: HttpStatus.FORBIDDEN,
-		message: 'Удаление роли USER запрещено',
-		});
+		this.forbiddenException('Удаление роли USER запрещено');
 	}
-	const removedRole = await user.$remove('role', foundRole.id);
+	const removedRole: number = await user.$remove('role', foundRole.id);
 	if (!removedRole) {
 		this.notFound(
 		`Роль ${foundRole.role} не принадлежит данному пользователю`,
 		);
 	}
-	return this.userRepository.findUserById(user.id);
+	return removedRole;
   }
 
   private notFound(message: string): void {
@@ -112,6 +111,13 @@ export class UserService {
   private conflictException(message: string): void {
 	throw new ConflictException({
 		status: HttpStatus.CONFLICT,
+		message,
+	});
+  }
+
+  private forbiddenException(message: string): void {
+	throw new ForbiddenException({
+		status: HttpStatus.FORBIDDEN,
 		message,
 	});
   }
