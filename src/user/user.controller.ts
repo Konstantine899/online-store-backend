@@ -20,6 +20,7 @@ import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import {
   ApiBody,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOperation,
@@ -221,6 +222,36 @@ export class UserController {
 	schema: { example: [{ id: 1, userId: 1, roleId: 1 }] },
 	status: 201,
 	description: `Структура ответа добавленной роли пользователю`,
+  })
+  @ApiNotFoundResponse({
+	description: `Пользователь не найден в БД`,
+	schema: {
+		example: {
+		statusCode: 404,
+		message: 'Пользователь не найден в БД',
+		},
+	},
+	status: 404,
+  })
+  @ApiNotFoundResponse({
+	description: `Роль не найдена в БД`,
+	schema: {
+		example: {
+		statusCode: 404,
+		message: 'Роль не найдена в БД',
+		},
+	},
+	status: 404,
+  })
+  @ApiConflictResponse({
+	description: `Данному пользователю уже присвоена роль ADMIN`,
+	schema: {
+		example: {
+		statusCode: 409,
+		message: 'Данному пользователю уже присвоена роль ADMIN',
+		},
+	},
+	status: 409,
   })
   @HttpCode(201)
   @Roles('ADMIN')
