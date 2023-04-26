@@ -39,9 +39,9 @@ export class UserService {
   }
 
   public async findUserById(id: number): Promise<UserModel> {
-	const user = this.userRepository.findUserById(id);
+	const user = await this.userRepository.findUserById(id);
 	if (!user) {
-		this.notFound('Пользователь не найден');
+		this.notFound('Пользователь не найден В БД');
 	}
 	return user;
   }

@@ -63,8 +63,8 @@ export class UserController {
 	description: `Структура ответа если роль USER не найдена`,
 	schema: {
 		example: {
+		status: 404,
 		message: `Роль USER не найдена в БД`,
-		error: `Not Found`,
 		},
 	},
   })
@@ -83,6 +83,7 @@ export class UserController {
 	type: [
 		OmitType(UserModel, ['roles', 'refresh_tokens', 'products', 'orders']),
 	],
+	status: 200,
   })
   @HttpCode(200)
   @Roles('ADMIN')
@@ -107,6 +108,13 @@ export class UserController {
 		'products',
 		'orders',
 	]),
+	status: 200,
+  })
+  @ApiNotFoundResponse({
+	description: `Пользователь не найден в БД`,
+	schema: {
+		example: { status: 404, message: `Пользователь не найден В БД` },
+	},
   })
   @HttpCode(200)
   @Roles('ADMIN')
