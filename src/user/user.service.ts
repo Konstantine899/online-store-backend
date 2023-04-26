@@ -92,7 +92,7 @@ export class UserService {
   public async removeRole(dto: RemoveRoleDto): Promise<number> {
 	const user = await this.userRepository.findUserById(dto.userId);
 	if (!user) {
-		this.notFound(`Пользователь не найден`);
+		this.notFound(`Пользователь не найден в БД`);
 	}
 	const foundRole = await this.roleService.findRole(dto.role);
 	if (foundRole.role === 'USER') {

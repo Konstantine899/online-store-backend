@@ -23,6 +23,7 @@ import {
   ApiBody,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOperation,
   ApiParam,
@@ -269,6 +270,37 @@ export class UserController {
 	description: `Возвращается количество удаленных записей из БД`,
 	schema: { example: 1 },
 	status: 200,
+  })
+  @ApiNotFoundResponse({
+	status: HttpStatus.NOT_FOUND,
+	schema: {
+		anyOf: [
+		{
+			title: 'Поиск не существующего пользователя',
+			description: `Пользователь не найден в БД`,
+			example: { statusCode: 404, message: 'Пользователь не найден в БД' },
+		},
+		{
+			title: `Удаление роли которой нет у пользователя`,
+			description: `Удаление роли пользователя которая ему не принадлежит`,
+			example: {
+			statusCode: 404,
+			message: `Роль ADMIN не принадлежит данному пользователю`,
+			},
+		},
+		],
+	},
+  })
+  @ApiForbiddenResponse({
+	status: HttpStatus.FORBIDDEN,
+	description: `Запрет удаления роли USER`,
+	schema: {
+		title: `Запрет удаления роли USER`,
+		example: {
+		status: 403,
+		message: 'Удаление роли USER запрещено',
+		},
+	},
   })
   @HttpCode(200)
   @Roles('ADMIN')
