@@ -134,7 +134,7 @@ export class UserController {
   @UseGuards(JwtGuard)
   @UseGuards(RoleGuard)
   @Delete('/delete/:id')
-  public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
+  public async delete(@Param('id', ParseIntPipe) id: number): Promise<number> {
 	return this.userService.remove(id);
   }
 

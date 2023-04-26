@@ -63,9 +63,8 @@ export class UserService {
 	return user;
   }
 
-  public async remove(id: number): Promise<boolean> {
-	await this.userRepository.removeUser(id);
-	return true;
+  public async remove(id: number): Promise<number> {
+	return this.userRepository.removeUser(id);
   }
 
   public async addRole(dto: AddRoleDto): Promise<UserModel> {
