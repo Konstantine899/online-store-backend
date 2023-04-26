@@ -137,7 +137,7 @@ export class UserController {
   })
   @ApiResponse({
 	description: `Возвращается количество удаленных записей из БД`,
-	type: Number,
+	schema: { example: 1 },
 	status: 200,
   })
   @HttpCode(200)
@@ -168,6 +168,16 @@ export class UserController {
 	return this.userService.addRole(dto);
   }
 
+  @ApiOperation({ summary: `Удаление роли у пользователя` })
+  @ApiBody({
+	description: `Входные данные для удаления пользователя`,
+	type: RemoveRoleDto,
+  })
+  @ApiResponse({
+	description: `Возвращается количество удаленных записей из БД`,
+	schema: { example: 1 },
+	status: 200,
+  })
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard)
