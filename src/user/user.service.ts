@@ -20,7 +20,7 @@ export class UserService {
 	private roleService: RoleService,
   ) {}
 
-  public async create(dto: CreateUserDto): Promise<UserModel> {
+  public async createUser(dto: CreateUserDto): Promise<UserModel> {
 	const findEmail = await this.userRepository.findUserByEmail(dto.email);
 	if (findEmail) {
 		throw new BadRequestException(
@@ -30,7 +30,7 @@ export class UserService {
 	const user = await this.userRepository.createUser(dto);
 	const role = await this.roleService.findRole('USER');
 	if (!role) {
-		this.notFound('Роль пользователя не найдена');
+		this.notFound('Роль USER не найдена в БД');
 	}
 	await user.$set('roles', [role.id]); // #set перезаписываю поле только в БД
 	user.roles = [role]; // Добавляю roles в сам объект user
@@ -87,7 +87,9 @@ export class UserService {
 
   public async removeRole(dto: RemoveRoleDto): Promise<number> {
 	const user = await this.userRepository.findUserById(dto.userId);
-	if (!user) { this.notFound(`Пользователь не найден`); }
+	if (!user) {
+		this.notFound(`Пользователь не найден`);
+	}
 	const foundRole = await this.roleService.findRole(dto.role);
 	if (foundRole.role === 'USER') {
 		this.forbiddenException('Удаление роли USER запрещено');

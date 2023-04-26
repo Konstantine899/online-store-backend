@@ -21,12 +21,14 @@ import { RoleGuard } from '../role/role.guard';
 import {
   ApiBody,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
   OmitType,
 } from '@nestjs/swagger';
+import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 
 @ApiTags(`Пользователи`)
 @Controller('user')
@@ -47,13 +49,32 @@ export class UserController {
 		'orders',
 	]),
   })
+  @ApiBadRequestResponse({
+	description: `Структура ответа если пользователь с таким email существует в БД`,
+	schema: {
+		example: {
+		message: `Пользователь с таким email: test@gmail.com уже существует`,
+		error: 'Bad Request',
+		},
+	},
+	status: 400,
+  })
+  @ApiNotFoundResponse({
+	description: `Структура ответа если роль USER не найдена`,
+	schema: {
+		example: {
+		message: `Роль USER не найдена в БД`,
+		error: `Not Found`,
+		},
+	},
+  })
   @HttpCode(201)
   @Roles('ADMIN')
   @UseGuards(JwtGuard)
   @UseGuards(RoleGuard)
   @Post('/create')
-  public async create(@Body() dto: CreateUserDto): Promise<UserModel> {
-	return this.userService.create(dto);
+  public async createUser(@Body() dto: CreateUserDto): Promise<UserModel> {
+	return this.userService.createUser(dto);
   }
 
   @ApiOperation({ summary: `Получение списка всех пользователей` })

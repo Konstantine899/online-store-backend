@@ -35,7 +35,7 @@ export class AuthService {
 		`Пользователь с таким email: ${candidate.email} уже существует`,
 		);
 	}
-	const user = await this.userService.create(dto);
+	const user = await this.userService.createUser(dto);
 	const accessToken = await this.tokenService.generateAccessToken(user);
 	const refreshToken = await this.tokenService.generateRefreshToken(
 		user,
