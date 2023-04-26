@@ -145,6 +145,29 @@ export class UserController {
 		'products',
 		'orders',
 	]),
+	status: 200,
+  })
+  @ApiBadRequestResponse({
+	description: `Если пользователь с таким же email найден в БД`,
+	schema: {
+		example: {
+		statusCode: 400,
+		message: 'Пользователь с таким email: user@email.com уже существует',
+		error: 'Bad Request',
+		},
+	},
+	status: 400,
+  })
+  @ApiNotFoundResponse({
+	description: `Ели по какой-то причине роль пользователя не найдена`,
+	schema: {
+		example: {
+		status: 404,
+		message: 'Роль USER не найдена',
+		error: 'Not Found',
+		},
+	},
+	status: 404,
   })
   @HttpCode(200)
   @Roles('ADMIN')
