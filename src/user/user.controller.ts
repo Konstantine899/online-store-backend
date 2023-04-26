@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Post,
@@ -224,24 +225,21 @@ export class UserController {
 	description: `Структура ответа добавленной роли пользователю`,
   })
   @ApiNotFoundResponse({
-	description: `Пользователь не найден в БД`,
+	status: HttpStatus.NOT_FOUND,
 	schema: {
-		example: {
-		statusCode: 404,
-		message: 'Пользователь не найден в БД',
+		anyOf: [
+		{
+			title: 'Пользователь',
+			description: `Пользователь не найден в БД`,
+			example: { statusCode: 404, message: 'Пользователь не найден в БД' },
 		},
-	},
-	status: 404,
-  })
-  @ApiNotFoundResponse({
-	description: `Роль не найдена в БД`,
-	schema: {
-		example: {
-		statusCode: 404,
-		message: 'Роль не найдена в БД',
+		{
+			title: 'Роль пользователя',
+			description: `Роль не найдена в БД`,
+			example: { statusCode: 404, message: 'Роль не найдена в БД' },
 		},
+		],
 	},
-	status: 404,
   })
   @ApiConflictResponse({
 	description: `Данному пользователю уже присвоена роль ADMIN`,
