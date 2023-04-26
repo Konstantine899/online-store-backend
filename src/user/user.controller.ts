@@ -44,7 +44,7 @@ export class UserController {
 	description: `Структура входных данных для создания пользователя`,
   })
   @ApiCreatedResponse({
-	description: `Созданный пользователь`,
+	description: `Create user`,
 	type: OmitType(UserModel, [
 		'roles',
 		'refresh_tokens',
@@ -53,18 +53,21 @@ export class UserController {
 	]),
   })
   @ApiBadRequestResponse({
-	description: `Структура ответа если пользователь с таким email существует в БД`,
+	description: `Bad Request`,
+	status: HttpStatus.BAD_REQUEST,
 	schema: {
+		title: `Существующий email в БД`,
 		example: {
 		message: `Пользователь с таким email: test@gmail.com уже существует`,
 		error: 'Bad Request',
 		},
 	},
-	status: 400,
   })
   @ApiNotFoundResponse({
-	description: `Структура ответа если роль USER не найдена`,
+	description: `Not Found`,
+	status: HttpStatus.NOT_FOUND,
 	schema: {
+		title: `Роль USER не найдена в БД`,
 		example: {
 		status: 404,
 		message: `Роль USER не найдена в БД`,
@@ -82,11 +85,11 @@ export class UserController {
 
   @ApiOperation({ summary: `Получение списка всех пользователей` })
   @ApiResponse({
-	description: `Список пользователей`,
+	description: `Get list users`,
+	status: HttpStatus.OK,
 	type: [
 		OmitType(UserModel, ['roles', 'refresh_tokens', 'products', 'orders']),
 	],
-	status: 200,
   })
   @HttpCode(200)
   @Roles('ADMIN')
@@ -104,18 +107,20 @@ export class UserController {
 	description: `идентификатор пользователя`,
   })
   @ApiResponse({
-	description: `Объект ответа содержащий пользователя`,
+	description: `Get user`,
+	status: HttpStatus.OK,
 	type: OmitType(UserModel, [
 		'roles',
 		'refresh_tokens',
 		'products',
 		'orders',
 	]),
-	status: 200,
   })
   @ApiNotFoundResponse({
-	description: `Пользователь не найден в БД`,
+	description: `Not Found`,
+	status: HttpStatus.NOT_FOUND,
 	schema: {
+		title: `Пользователь не найден в БД`,
 		example: { statusCode: 404, message: `Пользователь не найден В БД` },
 	},
   })
@@ -141,35 +146,37 @@ export class UserController {
 	description: `Структура входных данных для обновления пользователя`,
   })
   @ApiResponse({
-	description: `Обновленный пользователь`,
+	description: `Updated user`,
+	status: HttpStatus.OK,
 	type: OmitType(UserModel, [
 		'roles',
 		'refresh_tokens',
 		'products',
 		'orders',
 	]),
-	status: 200,
   })
   @ApiBadRequestResponse({
-	description: `Если пользователь с таким же email найден в БД`,
+	description: `Bad Request`,
+	status: HttpStatus.BAD_REQUEST,
 	schema: {
+		title: `Существующий email в БД`,
 		example: {
 		statusCode: 400,
 		message: 'Пользователь с таким email: user@email.com уже существует',
 		error: 'Bad Request',
 		},
 	},
-	status: 400,
   })
   @ApiNotFoundResponse({
-	description: `Ели по какой-то причине роль пользователя не найдена`,
+	description: `Not Found`,
+	status: HttpStatus.NOT_FOUND,
 	schema: {
+		title: `Роль пользователя не найдена`,
 		example: {
 		status: 404,
 		message: 'Роль USER не найдена',
 		},
 	},
-	status: 404,
   })
   @HttpCode(200)
   @Roles('ADMIN')
@@ -190,19 +197,21 @@ export class UserController {
 	description: `идентификатор пользователя`,
   })
   @ApiResponse({
-	description: `Возвращается количество удаленных записей из БД`,
-	schema: { example: 1 },
-	status: 200,
+	description: `Remove user`,
+	status: HttpStatus.OK,
+	schema: { title: 'Удалено записей', example: 1 },
   })
   @ApiNotFoundResponse({
-	description: `Если пользователь не найден в БД`,
+	description: `Not Found`,
+	status: HttpStatus.NOT_FOUND,
 	schema: {
+		title: `Пользователь не найден В БД`,
 		example: {
+		title: `Пользователь не найден В БД`,
 		statusCode: 404,
 		message: 'Пользователь не найден В БД',
 		},
 	},
-	status: 404,
   })
   @HttpCode(200)
   @Roles('ADMIN')
@@ -221,11 +230,15 @@ export class UserController {
 	description: `Структура входных данных для добавления роли пользователю`,
   })
   @ApiCreatedResponse({
-	schema: { example: [{ id: 1, userId: 1, roleId: 1 }] },
-	status: 201,
-	description: `Структура ответа добавленной роли пользователю`,
+	description: `Add Role`,
+	status: HttpStatus.CREATED,
+	schema: {
+		title: `Добавленная роль`,
+		example: [{ id: 1, userId: 1, roleId: 1 }],
+	},
   })
   @ApiNotFoundResponse({
+	description: `Not Found`,
 	status: HttpStatus.NOT_FOUND,
 	schema: {
 		anyOf: [
@@ -243,14 +256,14 @@ export class UserController {
 	},
   })
   @ApiConflictResponse({
-	description: `Данному пользователю уже присвоена роль ADMIN`,
+	description: `Conflict`,
+	status: HttpStatus.CONFLICT,
 	schema: {
 		example: {
 		statusCode: 409,
 		message: 'Данному пользователю уже присвоена роль ADMIN',
 		},
 	},
-	status: 409,
   })
   @HttpCode(201)
   @Roles('ADMIN')
@@ -267,11 +280,12 @@ export class UserController {
 	type: RemoveRoleDto,
   })
   @ApiResponse({
-	description: `Возвращается количество удаленных записей из БД`,
-	schema: { example: 1 },
-	status: 200,
+	description: `Remove Role`,
+	status: HttpStatus.OK,
+	schema: { title: `Количество удаленных записей из БД`, example: 1 },
   })
   @ApiNotFoundResponse({
+	description: `Not Found`,
 	status: HttpStatus.NOT_FOUND,
 	schema: {
 		anyOf: [
@@ -292,8 +306,8 @@ export class UserController {
 	},
   })
   @ApiForbiddenResponse({
+	description: `Forbidden`,
 	status: HttpStatus.FORBIDDEN,
-	description: `Запрет удаления роли USER`,
 	schema: {
 		title: `Запрет удаления роли USER`,
 		example: {
