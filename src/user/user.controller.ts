@@ -129,6 +129,17 @@ export class UserController {
 	return this.userService.updateUser(id, dto);
   }
 
+  @ApiOperation({ summary: `Удаление пользователя` })
+  @ApiParam({
+	name: `id`,
+	type: `string`,
+	description: `идентификатор пользователя`,
+  })
+  @ApiResponse({
+	description: `Возвращается количество удаленных записей из БД`,
+	type: Number,
+	status: 200,
+  })
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard)
