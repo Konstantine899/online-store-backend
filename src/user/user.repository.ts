@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UserModel } from './user.model';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -66,10 +62,6 @@ export class UserRepository {
   }
 
   public async removeUser(id: number) {
-	const user = await this.findUserById(id);
-	if (!user) {
-		throw new NotFoundException(`Пользователь не найден`);
-	}
-	return this.userModel.destroy({ where: { id: user.id } });
+	return this.userModel.destroy({ where: { id } });
   }
 }

@@ -113,7 +113,7 @@ export class UserController {
   @ApiNotFoundResponse({
 	description: `Пользователь не найден в БД`,
 	schema: {
-		example: { status: 404, message: `Пользователь не найден В БД` },
+		example: { statusCode: 404, message: `Пользователь не найден В БД` },
 	},
   })
   @HttpCode(200)
@@ -164,7 +164,6 @@ export class UserController {
 		example: {
 		status: 404,
 		message: 'Роль USER не найдена',
-		error: 'Not Found',
 		},
 	},
 	status: 404,
@@ -192,13 +191,25 @@ export class UserController {
 	schema: { example: 1 },
 	status: 200,
   })
+  @ApiNotFoundResponse({
+	description: `Если пользователь не найден в БД`,
+	schema: {
+		example: {
+		statusCode: 404,
+		message: 'Пользователь не найден В БД',
+		},
+	},
+	status: 404,
+  })
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard)
   @UseGuards(RoleGuard)
   @Delete('/delete/:id')
-  public async delete(@Param('id', ParseIntPipe) id: number): Promise<number> {
-	return this.userService.remove(id);
+  public async removeUser(
+	@Param('id', ParseIntPipe) id: number,
+  ): Promise<number> {
+	return this.userService.removeUser(id);
   }
 
   @ApiOperation({ summary: `Добавление роли пользователю` })

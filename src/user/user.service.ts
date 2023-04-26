@@ -63,8 +63,12 @@ export class UserService {
 	return user;
   }
 
-  public async remove(id: number): Promise<number> {
-	return this.userRepository.removeUser(id);
+  public async removeUser(id: number): Promise<number> {
+	const user = await this.findUserById(id);
+	if (!user) {
+		throw new NotFoundException(`Пользователь не найден`);
+	}
+	return this.userRepository.removeUser(user.id);
   }
 
   public async addRole(dto: AddRoleDto): Promise<unknown> {
