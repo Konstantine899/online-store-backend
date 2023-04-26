@@ -67,17 +67,18 @@ export class UserService {
 	return this.userRepository.removeUser(id);
   }
 
-  public async addRole(dto: AddRoleDto): Promise<UserModel> {
+  public async addRole(dto: AddRoleDto): Promise<unknown> {
 	const user = await this.userRepository.findUserById(dto.userId);
+	if (!user) { this.notFound(`Пользователь не найден в БД`); }
 	const foundRole = await this.roleService.findRole(dto.role);
+	if (!foundRole) { this.notFound(`Роль не найдена в БД`); }
 	const addedRole = await user.$add('role', foundRole.id);
 	if (!addedRole) {
-		throw new ConflictException({
-		status: HttpStatus.CONFLICT,
-		message: `Данному пользователю уже присвоена роль ${foundRole.role}`,
-		});
+		this.conflictException(
+		`Данному пользователю уже присвоена роль ${foundRole.role}`,
+		);
 	}
-	return this.userRepository.findUserById(user.id);
+	return addedRole;
   }
 
   public async removeRole(dto: RemoveRoleDto): Promise<UserModel> {
@@ -104,6 +105,13 @@ export class UserService {
   private notFound(message: string): void {
 	throw new NotFoundException({
 		status: HttpStatus.NOT_FOUND,
+		message,
+	});
+  }
+
+  private conflictException(message: string): void {
+	throw new ConflictException({
+		status: HttpStatus.CONFLICT,
 		message,
 	});
   }
