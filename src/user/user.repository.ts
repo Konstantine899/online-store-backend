@@ -48,6 +48,12 @@ export class UserRepository {
 	});
   }
 
+  public async findRegisteredUser(userId: number): Promise<UserModel> {
+	return this.userModel.findByPk(userId, {
+		attributes: { exclude: [`updatedAt`, `createdAt`, `password`] },
+	});
+  }
+
   public async findUserByEmail(email: string): Promise<UserModel> {
 	return this.userModel.findOne({
 		where: { email },

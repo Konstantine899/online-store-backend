@@ -35,7 +35,7 @@ export class UserService {
 	await user.$set('roles', [role.id]); // #set перезаписываю поле только в БД
 	user.roles = [role]; // Добавляю roles в сам объект user
 	await user.save();
-	return this.userRepository.findUserByPkId(user.id);
+	return this.userRepository.findRegisteredUser(user.id);
   }
 
   public async findUserById(id: number): Promise<UserModel> {
