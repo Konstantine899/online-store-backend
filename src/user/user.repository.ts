@@ -51,7 +51,7 @@ export class UserRepository {
   public async findUserByEmail(email: string): Promise<UserModel> {
 	return this.userModel.findOne({
 		where: { email },
-		include: { all: true },
+		attributes: { exclude: [`createdAt`, `updatedAt`] },
 	});
   }
 
