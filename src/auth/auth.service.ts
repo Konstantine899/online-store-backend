@@ -100,7 +100,7 @@ export class AuthService {
 	if (!password) {
 		this.unauthorized('Не корректный пароль');
 	}
-	return user;
+	return this.userService.findAuthenticatedUser(user.id);
   }
 
   private unauthorized(message): void {

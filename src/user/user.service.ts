@@ -38,6 +38,10 @@ export class UserService {
 	return this.userRepository.findRegisteredUser(user.id);
   }
 
+  public async findAuthenticatedUser(userId: number): Promise<UserModel> {
+	return this.userRepository.findAuthenticatedUser(userId);
+  }
+
   public async findUserById(id: number): Promise<UserModel> {
 	const user = await this.userRepository.findUserById(id);
 	if (!user) {
