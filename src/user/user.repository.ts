@@ -47,14 +47,24 @@ export class UserRepository {
   public async findRegisteredUser(userId: number): Promise<UserModel> {
 	return this.userModel.findByPk(userId, {
 		attributes: { exclude: [`password`] },
-		include: { model: RoleModel },
+		include: [
+		{
+			model: RoleModel,
+			through: { attributes: [] }, // this may not be needed
+		},
+		],
 	});
   }
 
   public async findAuthenticatedUser(userId: number): Promise<UserModel> {
 	return this.userModel.findByPk(userId, {
 		attributes: { exclude: [`password`] },
-		include: { model: RoleModel },
+		include: [
+		{
+			model: RoleModel,
+			through: { attributes: [] }, // this may not be needed
+		},
+		],
 	});
   }
 
