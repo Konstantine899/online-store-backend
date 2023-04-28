@@ -5,7 +5,13 @@ interface ICreateBrandAttributes {
   name: string;
 }
 
-@Table({ tableName: 'brand', underscored: true })
+@Table({
+  tableName: 'brand',
+  underscored: true,
+  defaultScope: {
+	attributes: { exclude: [`updatedAt`, `createdAt`] },
+  },
+})
 export class BrandModel extends Model<BrandModel, ICreateBrandAttributes> {
   @Column({
 	type: DataType.INTEGER,
