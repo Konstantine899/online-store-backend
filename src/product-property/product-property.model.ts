@@ -8,7 +8,13 @@ import {
 } from 'sequelize-typescript';
 import { ProductModel } from '../product/product.model';
 
-@Table({ tableName: 'product-property', underscored: true })
+@Table({
+  tableName: 'product-property',
+  underscored: true,
+  defaultScope: {
+	attributes: { exclude: [`updatedAt`, `createdAt`] },
+  },
+})
 export class ProductPropertyModel extends Model<ProductPropertyModel> {
   @Column({
 	type: DataType.INTEGER,
