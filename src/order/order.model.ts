@@ -10,7 +10,13 @@ import {
 import { OrderItemModel } from '../order-item/order-item.model';
 import { UserModel } from '../user/user.model';
 
-@Table({ tableName: 'order', underscored: true })
+@Table({
+  tableName: 'order',
+  underscored: true,
+  defaultScope: {
+	attributes: { exclude: [`updatedAt`, `createdAt`] },
+  },
+})
 export class OrderModel extends Model<OrderModel> {
   @Column({
 	type: DataType.INTEGER,
