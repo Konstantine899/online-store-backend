@@ -9,7 +9,13 @@ import {
 import { UserModel } from '../user/user.model';
 import { ApiProperty } from '@nestjs/swagger';
 
-@Table({ tableName: 'refresh_token', underscored: true })
+@Table({
+  tableName: 'refresh_token',
+  underscored: true,
+  defaultScope: {
+	attributes: { exclude: [`updatedAt`, `createdAt`] },
+  },
+})
 export class RefreshTokenModel extends Model<RefreshTokenModel> {
   @ApiProperty({ example: 1, description: `Уникальный идентификатор` })
   @Column({
