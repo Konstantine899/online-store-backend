@@ -30,35 +30,30 @@ export class UserRepository {
 		password: await hash(dto.password, 10),
 	});
 
-	return this.userModel.findByPk(user.id, {
-		attributes: { exclude: [`updatedAt`, `createdAt`] },
-	});
+	return this.userModel.findByPk(user.id);
   }
 
   public async findUserById(id: number): Promise<UserModel> {
 	return this.userModel.findOne({
 		where: { id },
-		attributes: { exclude: [`updatedAt`, `createdAt`] },
 	});
   }
 
   // Используется в модуле Rating
   public async findUserByPkId(userId: number): Promise<UserModel> {
-	return this.userModel.findByPk(userId, {
-		attributes: { exclude: [`updatedAt`, `createdAt`] },
-	});
+	return this.userModel.findByPk(userId, {});
   }
 
   public async findRegisteredUser(userId: number): Promise<UserModel> {
 	return this.userModel.findByPk(userId, {
-		attributes: { exclude: [`updatedAt`, `createdAt`, `password`] },
+		attributes: { exclude: [`password`] },
 		include: { model: RoleModel },
 	});
   }
 
   public async findAuthenticatedUser(userId: number): Promise<UserModel> {
 	return this.userModel.findByPk(userId, {
-		attributes: { exclude: [`updatedAt`, `createdAt`, `password`] },
+		attributes: { exclude: [`password`] },
 		include: { model: RoleModel },
 	});
   }
@@ -66,14 +61,11 @@ export class UserRepository {
   public async findUserByEmail(email: string): Promise<UserModel> {
 	return this.userModel.findOne({
 		where: { email },
-		attributes: { exclude: [`createdAt`, `updatedAt`] },
 	});
   }
 
   public async findListUsers() {
-	return this.userModel.findAll({
-		attributes: { exclude: [`createdAt`, `updatedAt`] },
-	});
+	return this.userModel.findAll();
   }
 
   public async removeUser(id: number) {

@@ -19,7 +19,13 @@ interface IUserCreationAttributes {
   password: string;
 }
 
-@Table({ tableName: 'user', underscored: true })
+@Table({
+  tableName: 'user',
+  underscored: true,
+  defaultScope: {
+	attributes: { exclude: [`updatedAt`, `createdAt`] },
+  },
+})
 export class UserModel extends Model<UserModel, IUserCreationAttributes> {
   @ApiProperty({ example: 1, description: `Уникальный идентификатор` })
   @Column({ type: DataType.INTEGER, primaryKey: true, autoIncrement: true })
