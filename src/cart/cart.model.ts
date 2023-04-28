@@ -8,7 +8,13 @@ import {
 import { ProductModel } from '../product/product.model';
 import { CartProductModel } from './cart-product.model';
 
-@Table({ tableName: 'cart', underscored: true })
+@Table({
+  tableName: 'cart',
+  underscored: true,
+  defaultScope: {
+	attributes: { exclude: [`updatedAt`, `createdAt`] },
+  },
+})
 export class CartModel extends Model<CartModel> {
   @Column({
 	type: DataType.INTEGER,
