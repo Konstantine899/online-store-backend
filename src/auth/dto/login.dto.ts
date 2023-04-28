@@ -1,6 +1,6 @@
 import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 
-export class RegisterRequestDto {
+export class LoginDto {
   @IsNotEmpty({ message: 'Укажите email' })
   @IsEmail({}, { message: 'Не верный формат email' })
   readonly email: string;
