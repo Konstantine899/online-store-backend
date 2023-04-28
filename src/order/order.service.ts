@@ -108,7 +108,7 @@ export class OrderService {
   ): Promise<OrderModel> {
 	/*Если есть userId ищем пользователя в БД. Если пользователь не найден выдаст исключение*/
 	if (userId) {
-		await this.userService.findUserById(userId);
+		await this.userService.getUser(userId);
 	}
 	if (!cartId) {
 		this.notFound(`Ваша корзина пуста`);

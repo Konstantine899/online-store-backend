@@ -53,7 +53,7 @@ export class AuthController {
   @Get('/me')
   public async getUser(@Req() request) {
 	const { id } = request.user;
-	const user = await this.userService.findUserById(id);
+	const user = await this.userService.getUser(id);
 	return {
 		status: 'success',
 		data: user,

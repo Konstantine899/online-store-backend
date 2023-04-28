@@ -42,7 +42,7 @@ export class UserService {
 	return this.userRepository.findAuthenticatedUser(userId);
   }
 
-  public async findUserById(id: number): Promise<UserModel> {
+  public async getUser(id: number): Promise<UserModel> {
 	const user = await this.userRepository.findUserById(id);
 	if (!user) {
 		this.notFound('Пользователь не найден В БД');
@@ -68,7 +68,7 @@ export class UserService {
   }
 
   public async removeUser(id: number): Promise<number> {
-	const user = await this.findUserById(id);
+	const user = await this.getUser(id);
 	if (!user) {
 		throw new NotFoundException(`Пользователь не найден`);
 	}
