@@ -22,7 +22,13 @@ interface IUserCreationAttributes {
   image: string;
 }
 
-@Table({ tableName: 'product', underscored: true })
+@Table({
+  tableName: 'product',
+  underscored: true,
+  defaultScope: {
+	attributes: { exclude: [`updatedAt`, `createdAt`] },
+  },
+})
 export class ProductModel extends Model<ProductModel, IUserCreationAttributes> {
   @Column({
 	type: DataType.INTEGER,
