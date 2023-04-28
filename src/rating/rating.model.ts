@@ -8,7 +8,13 @@ import {
 import { UserModel } from '../user/user.model';
 import { ProductModel } from '../product/product.model';
 
-@Table({ tableName: 'rating', underscored: true })
+@Table({
+  tableName: 'rating',
+  underscored: true,
+  defaultScope: {
+	attributes: { exclude: [`updatedAt`, `createdAt`] },
+  },
+})
 export class RatingModel extends Model<RatingModel> {
   @Column({ type: DataType.INTEGER, allowNull: false })
   rating: number;
