@@ -8,7 +8,13 @@ import {
 } from 'sequelize-typescript';
 import { OrderModel } from '../order/order.model';
 
-@Table({ tableName: 'order-item', underscored: true })
+@Table({
+  tableName: 'order-item',
+  underscored: true,
+  defaultScope: {
+	attributes: { exclude: [`updatedAt`, `createdAt`] },
+  },
+})
 export class OrderItemModel extends Model<OrderItemModel> {
   @Column({
 	type: DataType.INTEGER,
