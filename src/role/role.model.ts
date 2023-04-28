@@ -8,7 +8,13 @@ import {
 import { UserModel } from '../user/user.model';
 import { UserRoleModel } from './user-role.model';
 
-@Table({ tableName: 'role', underscored: true })
+@Table({
+  tableName: 'role',
+  underscored: true,
+  defaultScope: {
+	attributes: { exclude: [`updatedAt`, `createdAt`] },
+  },
+})
 export class RoleModel extends Model<RoleModel> {
   @Column({
 	type: DataType.INTEGER,
