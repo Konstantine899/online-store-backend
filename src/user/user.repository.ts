@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { UserModel } from './user.model';
 import { CreateUserDto } from './dto/create-user.dto';
 import { hash } from 'bcrypt';
+import { RoleModel } from '../role/role.model';
 
 Injectable();
 export class UserRepository {
@@ -51,12 +52,14 @@ export class UserRepository {
   public async findRegisteredUser(userId: number): Promise<UserModel> {
 	return this.userModel.findByPk(userId, {
 		attributes: { exclude: [`updatedAt`, `createdAt`, `password`] },
+		include: { model: RoleModel },
 	});
   }
 
   public async findAuthenticatedUser(userId: number): Promise<UserModel> {
 	return this.userModel.findByPk(userId, {
 		attributes: { exclude: [`updatedAt`, `createdAt`, `password`] },
+		include: { model: RoleModel },
 	});
   }
 
