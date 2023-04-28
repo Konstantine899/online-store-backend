@@ -5,7 +5,13 @@ interface ICategoryCreationAttributes {
   name: string;
 }
 
-@Table({ tableName: 'category', underscored: true })
+@Table({
+  tableName: 'category',
+  underscored: true,
+  defaultScope: {
+	attributes: { exclude: [`updatedAt`, `createdAt`] },
+  },
+})
 export class CategoryModel extends Model<
   CategoryModel,
   ICategoryCreationAttributes
