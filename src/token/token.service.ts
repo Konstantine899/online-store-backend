@@ -103,7 +103,7 @@ export class TokenService {
 	}
 	const user = await this.getUserFromRefreshTokenPayload(payload);
 	if (!user) {
-		throw new UnprocessableEntityException('Refresh token не верный формат');
+		throw new UnprocessableEntityException('Не верный формат refresh token');
 	}
 	return { user, refreshToken };
   }

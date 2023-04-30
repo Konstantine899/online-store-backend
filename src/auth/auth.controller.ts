@@ -18,6 +18,7 @@ import { Roles } from './decorators/roles-auth.decorator';
 import { ApiTags } from '@nestjs/swagger';
 import { RegistrationDocumentation } from './decorators/documentation/registration.documentation';
 import { LoginDocumentation } from './decorators/documentation/login.documentation';
+import { UpdateAccessTokenDocumentation } from './decorators/documentation/update-access-token.documentation';
 
 @ApiTags(`Аутентификация`)
 @Controller('auth')
@@ -44,7 +45,8 @@ export class AuthController {
 	return this.authService.login(dto);
   }
 
-  @HttpCode(200)
+  @UpdateAccessTokenDocumentation()
+  @HttpCode(201)
   @Post('/refresh')
   public async updateAccessToken(
 	@Body() dto: RefreshDto,
