@@ -17,38 +17,40 @@ import { RoleGuard } from '../role/role.guard';
 import { Roles } from './decorators/roles-auth.decorator';
 import { ApiTags } from '@nestjs/swagger';
 import { RegistrationDocumentation } from './decorators/documentation/registration.documentation';
+import { LoginDocumentation } from './decorators/documentation/login.documentation';
 
 @ApiTags(`Аутентификация`)
 @Controller('auth')
 export class AuthController {
   constructor(
-    private readonly authService: AuthService,
-    private readonly userService: UserService,
+	private readonly authService: AuthService,
+	private readonly userService: UserService,
   ) {}
 
   @RegistrationDocumentation()
   @HttpCode(201)
   @Post('/registration')
   public async registration(
-    @Body() dto: RegisterDto,
+	@Body() dto: RegisterDto,
   ): Promise<{ status: string; data: IAuthPayload }> {
-    return this.authService.registration(dto);
+	return this.authService.registration(dto);
   }
+  @LoginDocumentation()
   @HttpCode(200)
   @Post('/login')
   public async login(
-    @Body() dto: LoginDto,
+	@Body() dto: LoginDto,
   ): Promise<{ status: string; data: IAuthPayload }> {
-    return this.authService.login(dto);
+	return this.authService.login(dto);
   }
 
   @HttpCode(200)
   @UseGuards(JwtGuard)
   @Post('/refresh')
   public async refresh(
-    @Body() dto: RefreshDto,
+	@Body() dto: RefreshDto,
   ): Promise<{ status: string; data: IAuthPayload }> {
-    return this.authService.updateAccessToken(dto.refreshToken);
+	return this.authService.updateAccessToken(dto.refreshToken);
   }
 
   @Roles('ADMIN')
@@ -56,11 +58,11 @@ export class AuthController {
   @UseGuards(RoleGuard)
   @Get('/me')
   public async getUser(@Req() request) {
-    const { id } = request.user;
-    const user = await this.userService.getUser(id);
-    return {
-      status: 'success',
-      data: user,
-    };
+	const { id } = request.user;
+	const user = await this.userService.getUser(id);
+	return {
+		status: 'success',
+		data: user,
+	};
   }
 }
