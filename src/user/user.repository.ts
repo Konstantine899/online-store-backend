@@ -36,6 +36,13 @@ export class UserRepository {
   public async findUserById(id: number): Promise<UserModel> {
 	return this.userModel.findOne({
 		where: { id },
+		attributes: { exclude: [`password`] },
+		include: [
+		{
+			model: RoleModel,
+			through: { attributes: [] }, // this may not be needed
+		},
+		],
 	});
   }
 

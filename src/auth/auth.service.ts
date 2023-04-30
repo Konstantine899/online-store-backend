@@ -11,7 +11,6 @@ import { UserModel } from '../user/user.model';
 import { TokenService } from '../token/token.service';
 
 export interface IAuthPayload {
-  user: UserModel;
   payload: {
 	type: string;
 	accessToken: string;
@@ -82,7 +81,6 @@ export class AuthService {
 	refreshToken?: string,
   ): IAuthPayload {
 	return {
-		user,
 		payload: {
 		type: 'bearer',
 		accessToken,
