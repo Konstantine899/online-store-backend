@@ -45,9 +45,8 @@ export class AuthController {
   }
 
   @HttpCode(200)
-  @UseGuards(JwtGuard)
   @Post('/refresh')
-  public async refresh(
+  public async updateAccessToken(
 	@Body() dto: RefreshDto,
   ): Promise<{ status: string; data: IAuthPayload }> {
 	return this.authService.updateAccessToken(dto.refreshToken);
