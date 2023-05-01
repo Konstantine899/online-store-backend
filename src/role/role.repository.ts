@@ -8,7 +8,8 @@ export class RoleRepository {
   constructor(@InjectModel(RoleModel) private roleModel: typeof RoleModel) {}
 
   public async createRole(dto: CreateRoleDto): Promise<RoleModel> {
-	return this.roleModel.create(dto);
+	const role = await this.roleModel.create(dto);
+	return this.roleModel.findByPk(role.id);
   }
 
   public async findRole(role: string): Promise<RoleModel> {

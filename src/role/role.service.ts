@@ -7,19 +7,23 @@ import { RoleRepository } from './role.repository';
 export class RoleService {
   constructor(private readonly roleRepository: RoleRepository) {}
 
-  public async create(dto: CreateRoleDto): Promise<RoleModel> {
+  public async createRole(dto: CreateRoleDto): Promise<RoleModel> {
 	return this.roleRepository.createRole(dto);
   }
 
   public async findRole(role: string): Promise<RoleModel> {
 	const foundRole = this.roleRepository.findRole(role);
-	if (!foundRole) { this.notFound(`Роль ${role} не найдена`); }
+	if (!foundRole) {
+		this.notFound(`Роль ${role} не найдена`);
+	}
 	return foundRole;
   }
 
   public async getAllRoles(): Promise<RoleModel[]> {
 	const roles = await this.roleRepository.getAllRoles();
-	if (!roles) { this.notFound(`Роли пользователя не найдены`); }
+	if (!roles) {
+		this.notFound(`Роли пользователя не найдены`);
+	}
 	return roles;
   }
 
