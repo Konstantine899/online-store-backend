@@ -13,8 +13,6 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { UserService } from '../user/user.service';
 import { JwtGuard } from '../token/jwt.guard';
-import { RoleGuard } from '../role/role.guard';
-import { Roles } from './decorators/roles-auth.decorator';
 import { ApiTags } from '@nestjs/swagger';
 import { RegistrationDocumentation } from './decorators/documentation/registration.documentation';
 import { LoginDocumentation } from './decorators/documentation/login.documentation';
@@ -54,13 +52,11 @@ export class AuthController {
 	return this.authService.updateAccessToken(dto.refreshToken);
   }
 
-  @Roles('ADMIN')
   @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
-  @Get('/me')
-  public async getUser(@Req() request) {
+  @Get('/user/profile')
+  public async getProfileUser(@Req() request) {
 	const { id } = request.user;
-	const user = await this.userService.getUser(id);
+	const user = await this.userService.getProfileUser(id);
 	return {
 		status: 'success',
 		data: user,

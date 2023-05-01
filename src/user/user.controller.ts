@@ -61,7 +61,7 @@ export class UserController {
   public async getUser(
 	@Param('id', ParseIntPipe) id: number,
   ): Promise<UserModel> {
-	return this.userService.getUser(id);
+	return this.userService.getProfileUser(id);
   }
 
   @UpdateUserDocumentation()

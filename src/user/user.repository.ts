@@ -4,6 +4,8 @@ import { UserModel } from './user.model';
 import { CreateUserDto } from './dto/create-user.dto';
 import { hash } from 'bcrypt';
 import { RoleModel } from '../role/role.model';
+import { OrderModel } from '../order/order.model';
+import { OrderItemModel } from '../order-item/order-item.model';
 
 Injectable();
 export class UserRepository {
@@ -41,6 +43,25 @@ export class UserRepository {
 		{
 			model: RoleModel,
 			through: { attributes: [] }, // this may not be needed
+		},
+		],
+	});
+  }
+
+  public async findProfileUser(id: number): Promise<UserModel> {
+	return this.userModel.findOne({
+		where: { id },
+		attributes: { exclude: [`password`] },
+		include: [
+		{
+			model: OrderModel,
+			include: [
+			{
+				model: OrderItemModel,
+				as: `items`,
+				attributes: ['name', 'price', 'quantity'],
+			},
+			],
 		},
 		],
 	});
