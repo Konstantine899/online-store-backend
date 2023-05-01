@@ -3,10 +3,12 @@ import {
   Controller,
   Get,
   HttpCode,
+  HttpStatus,
   Post,
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthService, IAuthPayload } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -17,6 +19,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { RegistrationDocumentation } from './decorators/documentation/registration.documentation';
 import { LoginDocumentation } from './decorators/documentation/login.documentation';
 import { UpdateAccessTokenDocumentation } from './decorators/documentation/update-access-token.documentation';
+import { ProfileUserDocumentation } from './decorators/documentation/profile-user.documentation';
 
 @ApiTags(`Аутентификация`)
 @Controller('auth')
@@ -52,14 +55,15 @@ export class AuthController {
 	return this.authService.updateAccessToken(dto.refreshToken);
   }
 
+  @ProfileUserDocumentation()
   @UseGuards(JwtGuard)
-  @Get('/user/profile')
-  public async getProfileUser(@Req() request) {
-	const { id } = request.user;
-	const user = await this.userService.getProfileUser(id);
+  @Get('/profile')
+  public async getProfileUser(@Req() request: Request) {
+	const { id } = request.user as { id: number };
+	const foundUser = await this.userService.getProfileUser(id);
 	return {
-		status: 'success',
-		data: user,
+		status: HttpStatus.OK,
+		data: foundUser,
 	};
   }
 }

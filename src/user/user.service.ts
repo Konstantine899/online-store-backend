@@ -45,7 +45,7 @@ export class UserService {
   public async getProfileUser(id: number): Promise<UserModel> {
 	const user = await this.userRepository.findProfileUser(id);
 	if (!user) {
-		this.notFound('Пользователь не найден В БД');
+		this.notFound('Профиль пользователя не найден в БД');
 	}
 	return user;
   }
