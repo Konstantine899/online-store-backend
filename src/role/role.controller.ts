@@ -16,6 +16,7 @@ import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from './role.guard';
 import { AllRolesDocumentation } from './decorators/all-roles-documentation';
+import { GetRoleDocumentation } from './decorators/get-role.documentation';
 
 @ApiTags(`Роль`)
 @Controller('role')
@@ -32,6 +33,7 @@ export class RoleController {
 	return this.roleService.createRole(dto);
   }
 
+  @GetRoleDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard)
