@@ -27,7 +27,7 @@ export class AuthService {
 
   public async registration(
 	dto: CreateUserDto,
-  ): Promise<{ status: string; data: IAuthPayload }> {
+  ): Promise<{ status: HttpStatus; data: IAuthPayload }> {
 	const candidate = await this.userService.findUserByEmail(dto.email);
 	if (candidate) {
 		this.badRequest(
@@ -42,14 +42,14 @@ export class AuthService {
 	);
 	const payload = this.buildResponsePayload(user, accessToken, refreshToken);
 	return {
-		status: 'success',
+		status: HttpStatus.OK,
 		data: payload,
 	};
   }
 
   public async login(
 	dto: CreateUserDto,
-  ): Promise<{ status: string; data: IAuthPayload }> {
+  ): Promise<{ status: HttpStatus; data: IAuthPayload }> {
 	const user = await this.validateUser(dto);
 	const accessToken = await this.tokenService.generateAccessToken(user);
 	const refreshToken = await this.tokenService.generateRefreshToken(
@@ -58,19 +58,19 @@ export class AuthService {
 	);
 	const payload = this.buildResponsePayload(user, accessToken, refreshToken);
 	return {
-		status: 'success',
+		status: HttpStatus.OK,
 		data: payload,
 	};
   }
 
   public async updateAccessToken(
 	refreshToken: string,
-  ): Promise<{ status: string; data: IAuthPayload }> {
+  ): Promise<{ status: HttpStatus; data: IAuthPayload }> {
 	const { user, accessToken } =
 		await this.tokenService.createAccessTokenFromRefreshToken(refreshToken);
 	const payload = this.buildResponsePayload(user, accessToken);
 	return {
-		status: 'success',
+		status: HttpStatus.OK,
 		data: payload,
 	};
   }

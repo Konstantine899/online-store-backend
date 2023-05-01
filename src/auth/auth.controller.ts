@@ -20,6 +20,7 @@ import { RegistrationDocumentation } from './decorators/documentation/registrati
 import { LoginDocumentation } from './decorators/documentation/login.documentation';
 import { UpdateAccessTokenDocumentation } from './decorators/documentation/update-access-token.documentation';
 import { ProfileUserDocumentation } from './decorators/documentation/profile-user.documentation';
+import { UserModel } from '../user/user.model';
 
 @ApiTags(`Аутентификация`)
 @Controller('auth')
@@ -34,7 +35,7 @@ export class AuthController {
   @Post('/registration')
   public async registration(
 	@Body() dto: RegisterDto,
-  ): Promise<{ status: string; data: IAuthPayload }> {
+  ): Promise<{ status: HttpStatus; data: IAuthPayload }> {
 	return this.authService.registration(dto);
   }
   @LoginDocumentation()
@@ -42,7 +43,7 @@ export class AuthController {
   @Post('/login')
   public async login(
 	@Body() dto: LoginDto,
-  ): Promise<{ status: string; data: IAuthPayload }> {
+  ): Promise<{ status: HttpStatus; data: IAuthPayload }> {
 	return this.authService.login(dto);
   }
 
@@ -51,14 +52,16 @@ export class AuthController {
   @Post('/refresh')
   public async updateAccessToken(
 	@Body() dto: RefreshDto,
-  ): Promise<{ status: string; data: IAuthPayload }> {
+  ): Promise<{ status: HttpStatus; data: IAuthPayload }> {
 	return this.authService.updateAccessToken(dto.refreshToken);
   }
 
   @ProfileUserDocumentation()
   @UseGuards(JwtGuard)
   @Get('/profile')
-  public async getProfileUser(@Req() request: Request) {
+  public async getProfileUser(
+	@Req() request: Request,
+  ): Promise<{ status: HttpStatus; data: UserModel }> {
 	const { id } = request.user as { id: number };
 	const foundUser = await this.userService.getProfileUser(id);
 	return {
