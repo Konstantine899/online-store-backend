@@ -28,7 +28,7 @@ export class UserService {
 		);
 	}
 	const user = await this.userRepository.createUser(dto);
-	const role = await this.roleService.findRole('USER');
+	const role = await this.roleService.getRole('USER');
 	if (!role) {
 		this.notFound('Роль USER не найдена в БД');
 	}
@@ -60,7 +60,7 @@ export class UserService {
 
   public async updateUser(id: number, dto: CreateUserDto): Promise<UserModel> {
 	const user = await this.userRepository.updateUser(id, dto);
-	const role = await this.roleService.findRole('USER');
+	const role = await this.roleService.getRole('USER');
 	/* #set Потому что обновляется весь объект. Ищу роль пользователя и при обновлении перезаписываю поле*/
 	await user.$set('roles', [role.id]);
 	user.roles = [role];
@@ -80,7 +80,7 @@ export class UserService {
 	if (!user) {
 		this.notFound(`Пользователь не найден в БД`);
 	}
-	const foundRole = await this.roleService.findRole(dto.role);
+	const foundRole = await this.roleService.getRole(dto.role);
 	if (!foundRole) {
 		this.notFound(`Роль не найдена в БД`);
 	}
@@ -98,7 +98,7 @@ export class UserService {
 	if (!user) {
 		this.notFound(`Пользователь не найден в БД`);
 	}
-	const foundRole = await this.roleService.findRole(dto.role);
+	const foundRole = await this.roleService.getRole(dto.role);
 	if (foundRole.role === 'USER') {
 		this.forbiddenException('Удаление роли USER запрещено');
 	}

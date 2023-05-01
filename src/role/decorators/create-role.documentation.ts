@@ -12,6 +12,7 @@ export function CreateRoleDocumentation() {
 	ApiResponse({
 		status: HttpStatus.CREATED,
 		schema: {
+		title: `Созданная роль пользователя`,
 		example: {
 			id: 4,
 			role: 'MANAGER',

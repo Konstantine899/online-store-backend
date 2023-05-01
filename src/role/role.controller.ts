@@ -15,6 +15,7 @@ import { CreateRoleDocumentation } from './decorators/create-role.documentation'
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from './role.guard';
+import { AllRolesDocumentation } from './decorators/all-roles-documentation';
 
 @ApiTags(`Роль`)
 @Controller('role')
@@ -36,16 +37,17 @@ export class RoleController {
   @UseGuards(JwtGuard)
   @UseGuards(RoleGuard)
   @Get('/one/:role')
-  public async getOne(@Param('role') role: string): Promise<RoleModel> {
-	return this.roleService.findRole(role);
+  public async getRole(@Param('role') role: string): Promise<RoleModel> {
+	return this.roleService.getRole(role);
   }
 
+  @AllRolesDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard)
   @UseGuards(RoleGuard)
-  @Get('/all')
-  public async getAllRoles(): Promise<RoleModel[]> {
-	return this.roleService.getAllRoles();
+  @Get('/list')
+  public async getListRoles(): Promise<RoleModel[]> {
+	return this.roleService.getListRoles();
   }
 }

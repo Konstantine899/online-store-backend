@@ -11,7 +11,7 @@ export class RoleService {
 	return this.roleRepository.createRole(dto);
   }
 
-  public async findRole(role: string): Promise<RoleModel> {
+  public async getRole(role: string): Promise<RoleModel> {
 	const foundRole = this.roleRepository.findRole(role);
 	if (!foundRole) {
 		this.notFound(`Роль ${role} не найдена`);
@@ -19,10 +19,10 @@ export class RoleService {
 	return foundRole;
   }
 
-  public async getAllRoles(): Promise<RoleModel[]> {
+  public async getListRoles(): Promise<RoleModel[]> {
 	const roles = await this.roleRepository.getAllRoles();
 	if (!roles) {
-		this.notFound(`Роли пользователя не найдены`);
+		this.notFound(`Роли не найдены`);
 	}
 	return roles;
   }
