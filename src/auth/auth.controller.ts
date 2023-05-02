@@ -21,6 +21,7 @@ import { LoginDocumentation } from './decorators/documentation/login.documentati
 import { UpdateAccessTokenDocumentation } from './decorators/documentation/update-access-token.documentation';
 import { ProfileUserDocumentation } from './decorators/documentation/profile-user.documentation';
 import { UserModel } from '../user/user.model';
+import { GetProfileUserRequest } from './requests/get-profile-user.request';
 
 @ApiTags(`Аутентификация`)
 @Controller('auth')
@@ -62,7 +63,7 @@ export class AuthController {
   public async getProfileUser(
 	@Req() request: Request,
   ): Promise<{ status: HttpStatus; data: UserModel }> {
-	const { id } = request.user as { id: number };
+	const { id } = request.user as GetProfileUserRequest;
 	const foundUser = await this.userService.getProfileUser(id);
 	return {
 		status: HttpStatus.OK,

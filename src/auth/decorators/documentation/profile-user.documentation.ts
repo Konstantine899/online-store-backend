@@ -1,20 +1,19 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
+  ApiBody,
   ApiNotFoundResponse,
   ApiOperation,
-  ApiQuery,
   ApiResponse,
 } from '@nestjs/swagger';
+import { GetProfileUserRequest } from '../../requests/get-profile-user.request';
 
 export function ProfileUserDocumentation() {
   return applyDecorators(
 	ApiOperation({ summary: `Профиль пользователя` }),
-	ApiQuery({
-		name: `Идентификатор пользователя`,
-		description: `Идентификатор пользователя`,
-		type: `number`,
+	ApiBody({
+		type: GetProfileUserRequest,
+		description: `Это описание тела запроса в котором содержится пользователь т.е. request.user`,
 		required: true,
-		example: `1`,
 	}),
 	ApiResponse({
 		status: HttpStatus.OK,
