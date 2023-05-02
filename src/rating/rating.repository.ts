@@ -17,8 +17,7 @@ export class RatingRepository {
 	productRating.userId = userId;
 	productRating.productId = productId;
 	productRating.rating = rating;
-	await productRating.save();
-	return productRating;
+	return productRating.save();
   }
 
   public async findVote(
