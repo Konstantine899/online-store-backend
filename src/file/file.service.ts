@@ -1,4 +1,9 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as uuid from 'uuid';
@@ -7,25 +12,21 @@ import * as process from 'process';
 @Injectable()
 export class FileService {
   public async createFile(file: Express.Multer.File): Promise<string> {
-	try {
-		const extension = file.originalname.split('.').filter(Boolean).splice(1); // Достаю расширение файла
-		const newFileName = `${uuid.v4()}.${extension}`; // генерирую новое уникальное имя имя файла
-		const filePath =
+	if (!file) { this.badRequest(`Не валидный файл`); }
+	const extension = this.fileFilter(
+		file.originalname.split('.').filter(Boolean).splice(1),
+	); // Достаю расширение файла
+	const newFileName = `${uuid.v4()}.${extension}`; // генерирую новое уникальное имя имя файла
+	const filePath =
 		process.env.NODE_ENV === 'development'
-			? path.resolve(__dirname, '..', '..', 'static')
-			: path.resolve(__dirname, '..', 'static'); // получаю путь к директории где храняться статические файлы
-		/*Проверяю если директория хранения статических файлов не существует, то создаю ее*/
-		if (!fs.existsSync(filePath)) {
+		? path.resolve(__dirname, '..', '..', 'static')
+		: path.resolve(__dirname, '..', 'static'); // получаю путь к директории где храняться статические файлы
+	/*Проверяю если директория хранения статических файлов не существует, то создаю ее*/
+	if (!fs.existsSync(filePath)) {
 		fs.mkdirSync(filePath, { recursive: true }); // создаю директорию
-		}
-		fs.writeFileSync(path.join(filePath, newFileName), file.buffer); // записываю файл
-		return newFileName;
-	} catch (error) {
-		throw new HttpException(
-		'Произошла ошибка при записи файла',
-		HttpStatus.INTERNAL_SERVER_ERROR,
-		);
 	}
+	fs.writeFileSync(path.join(filePath, newFileName), file.buffer); // записываю файл
+	return newFileName;
   }
 
   public async removeFile(fileName: string): Promise<boolean> {
@@ -70,5 +71,22 @@ export class FileService {
 		HttpStatus.INTERNAL_SERVER_ERROR,
 		);
 	}
+  }
+
+  private fileFilter(extensions: string[]): string[] | void {
+	return extensions.map((extension) => {
+		console.log(extension);
+		if (!extension.match(/(jpg|jpeg|png|gif)$/)) {
+		this.badRequest(`разрешены только файлы изображений`);
+		}
+		return extension;
+	});
+  }
+
+  private badRequest(message: string): void {
+	throw new BadRequestException({
+		status: HttpStatus.BAD_REQUEST,
+		message,
+	});
   }
 }
