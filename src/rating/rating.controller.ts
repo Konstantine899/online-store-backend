@@ -14,6 +14,7 @@ import { CreateRatingDocumentation } from './decorators/create-rating.documentat
 import { ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { UserRequest } from './requests/user.request';
+import { GetRatingDocumentation } from './decorators/get-rating.documentation';
 
 @ApiTags(`Рейтинг`)
 @Controller('rating')
@@ -33,6 +34,7 @@ export class RatingController {
 	return this.ratingService.createRating(id, productId, rating);
   }
 
+  @GetRatingDocumentation()
   @HttpCode(200)
   @Get('/product/:productId([0-9]+)')
   public async getRating(@Param('productId', ParseIntPipe) productId: number) {
