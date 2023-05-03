@@ -7,6 +7,17 @@ export function swaggerConfig(app: INestApplication): void {
 	.setDescription(`Документация REST API`)
 	.addTag(`Автор: Атрощенко Константин`)
 	.setVersion(`1.0.0`)
+	.addBearerAuth(
+		{
+		type: 'http',
+		scheme: 'bearer',
+		bearerFormat: 'JWT',
+		name: 'JWT',
+		description: 'Enter JWT token',
+		in: 'header',
+		},
+		'JWT-auth', // Это имя важно для сопоставления с @ApiBearerAuth() в контроллере!
+	)
 	.build();
 
   const document = SwaggerModule.createDocument(app, config);
