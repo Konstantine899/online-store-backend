@@ -1,8 +1,8 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiForbiddenResponse,
-  ApiHeaders,
   ApiNotFoundResponse,
   ApiOperation,
   ApiResponse,
@@ -12,14 +12,7 @@ import { RemoveRoleDto } from '../dto/remove-role.dto';
 export function RemoveRoleUserDocumentation() {
   return applyDecorators(
 	ApiOperation({ summary: `Удаление роли у пользователя` }),
-	ApiHeaders([
-		{
-		name: `Authorization`,
-		description:
-			'bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZXMiOlt7ImlkIjoxLCJyb2xlIjoiQURNSU4iLCJkZXNjcmlwdGlvbiI6ItCQ0LTQvNC40L3QuNGB0YLRgNCw0YLQvtGAIn0seyJpZCI6Miwicm9sZSI6IlVTRVIiLCJkZXNjcmlwdGlvbiI6ItCf0L7Qu9GM0LfQvtCy0LDRgtC10LvRjCJ9XSwiaWF0IjoxNjgzMDA4MDg0LCJleHAiOjE2ODMwOTQ0ODQsInN1YiI6IjEifQ.u0CmxeLT6CEUg4Yx38FwBDZwQ5QUXABK5306OrEMNt0',
-		required: true,
-		},
-	]),
+	ApiBearerAuth('JWT-auth'),
 	ApiBody({
 		description: `Входные данные для удаления пользователя`,
 		type: RemoveRoleDto,
