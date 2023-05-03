@@ -45,7 +45,7 @@ export class RoleGuard implements CanActivate {
 	const bearer: string = authorizationHeader.split(' ')[0];
 	const accessToken: string = authorizationHeader.split(' ')[1];
 
-	if (bearer !== 'bearer' || !accessToken) {
+	if (bearer !== 'Bearer' || !accessToken) {
 		throw new UnauthorizedException({
 		status: HttpStatus.UNAUTHORIZED,
 		message: 'Пользователь не авторизован',

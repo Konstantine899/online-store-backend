@@ -82,7 +82,7 @@ export class AuthService {
   ): IAuthPayload {
 	return {
 		payload: {
-		type: 'bearer',
+		type: 'Bearer',
 		accessToken,
 		...(refreshToken ? { refreshToken } : {}),
 		},

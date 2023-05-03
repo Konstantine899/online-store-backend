@@ -35,8 +35,7 @@ export class UserController {
   @CreateUserDocumentation()
   @HttpCode(201)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Post('/create')
   public async createUser(@Body() dto: CreateUserDto) {
 	return this.userService.createUser(dto);
