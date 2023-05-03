@@ -33,8 +33,7 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
   @HttpCode(201)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Post('/create')
   @UseInterceptors(FileInterceptor('image'))
   public async create(
@@ -108,8 +107,7 @@ export class ProductController {
 
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Put('/update/:id([0-9]+)')
   @UseInterceptors(FileInterceptor('image'))
   public async update(
@@ -122,8 +120,7 @@ export class ProductController {
 
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Delete('/delete/:id([0-9]+)')
   public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
 	return this.productService.removeProduct(id);

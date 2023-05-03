@@ -44,8 +44,7 @@ export class UserController {
   @GetListUsersDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Get(`/get-list-users`)
   public async getListUsers(): Promise<UserModel[]> {
 	return this.userService.getListUsers();
@@ -54,8 +53,7 @@ export class UserController {
   @GetUserDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Get('/:id')
   public async getUser(
 	@Param('id', ParseIntPipe) id: number,
@@ -66,8 +64,7 @@ export class UserController {
   @UpdateUserDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Put('/update/:id')
   public async updateUser(
 	@Param('id', ParseIntPipe) id: number,
@@ -79,8 +76,7 @@ export class UserController {
   @RemoveUserDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Delete('/delete/:id')
   public async removeUser(
 	@Param('id', ParseIntPipe) id: number,
@@ -91,8 +87,7 @@ export class UserController {
   @AddRoleUserDocumentation()
   @HttpCode(201)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Post('/role/add')
   public async addRole(@Body() dto: AddRoleDto) {
 	return this.userService.addRole(dto);
@@ -101,8 +96,7 @@ export class UserController {
   @RemoveRoleUserDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Delete('/role/delete')
   public async removeRole(@Body() dto: RemoveRoleDto) {
 	return this.userService.removeRole(dto);

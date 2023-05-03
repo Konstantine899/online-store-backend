@@ -26,8 +26,7 @@ export class RoleController {
   @CreateRoleDocumentation()
   @HttpCode(201)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Post(`/create`)
   public async createRole(@Body() dto: CreateRoleDto): Promise<RoleModel> {
 	return this.roleService.createRole(dto);
@@ -36,8 +35,7 @@ export class RoleController {
   @GetRoleDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Get('/one/:role')
   public async getRole(@Param('role') role: string): Promise<RoleModel> {
 	return this.roleService.getRole(role);
@@ -46,8 +44,7 @@ export class RoleController {
   @AllRolesDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Get('/list')
   public async getListRoles(): Promise<RoleModel[]> {
 	return this.roleService.getListRoles();

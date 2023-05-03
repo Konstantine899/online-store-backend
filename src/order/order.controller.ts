@@ -26,8 +26,7 @@ export class OrderController {
   /*Получение списка всех заказов магазина*/
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-all-order')
   public async adminGetListOrdersStore() {
 	return this.orderService.adminGetListOrdersStore();
@@ -36,8 +35,7 @@ export class OrderController {
   /*Получение списка заказов пользователя*/
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-all-order/user/:userId([0-9]+)')
   public async adminGetListOrdersUser(
 	@Param('userId', ParseIntPipe) userId: number,
@@ -48,8 +46,7 @@ export class OrderController {
   /*Получение заказа пользователя по id заказа*/
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-order/:orderId([0-9]+)')
   public async adminGetOrderUser(
 	@Body() dto: OrderDto,
@@ -61,8 +58,7 @@ export class OrderController {
   /*Создание заказа для пользователя администратором*/
   @HttpCode(201)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Post(`/admin/create-order`)
   public async adminCreateOrder(@Body() dto: OrderDto) {
 	return this.orderService.adminCreateOrder(dto);
@@ -71,8 +67,7 @@ export class OrderController {
   /*Администратор Удаление заказа*/
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Delete('/admin/delete-order/:orderId([0-9]+)')
   public async adminDeleteOrder(
 	@Param('orderId', ParseIntPipe) orderId: number,
@@ -85,8 +80,7 @@ export class OrderController {
   /*Получение списка заказов пользователя*/
   @HttpCode(200)
   @Roles('USER')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Get(`/user/get-all-order`)
   public async userGetListOrders(@Req() request: Request) {
 	const { id }: IDecodedPayload = request.user;
@@ -97,8 +91,7 @@ export class OrderController {
 
   @HttpCode(200)
   @Roles('USER')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Get(`/user/get-order/:orderId([0-9]+)`)
   public async userGetOrder(
 	@Req() request: Request,
@@ -110,8 +103,7 @@ export class OrderController {
 
   @HttpCode(201)
   @Roles('USER')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Post('/user/create-order')
   public async userCreateOrder(@Req() request: Request, @Body() dto: OrderDto) {
 	const { id }: IDecodedPayload = request.user;

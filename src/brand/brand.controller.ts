@@ -22,8 +22,7 @@ export class BrandController {
   constructor(private readonly brandService: BrandService) {}
   @HttpCode(201)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Post('/create')
   public async create(@Body() dto: CreateBrandDto): Promise<BrandModel> {
 	return this.brandService.createBrand(dto);
@@ -44,8 +43,7 @@ export class BrandController {
 
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Put('/update/:id([0-9]+)')
   public async update(
 	@Param('id', ParseIntPipe) id: number,
@@ -56,8 +54,7 @@ export class BrandController {
 
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Delete('/delete/:id([0-9]+)')
   public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
 	return this.brandService.remove(id);

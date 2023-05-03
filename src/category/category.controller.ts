@@ -22,8 +22,7 @@ export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
   @HttpCode(201)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Post('/create')
   public async create(@Body() dto: CreateCategoryDto): Promise<CategoryModel> {
 	return this.categoryService.createCategory(dto);
@@ -45,8 +44,7 @@ export class CategoryController {
 
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Put('/update/:id([0-9]+)')
   public async update(
 	@Param('id', ParseIntPipe) id: number,
@@ -57,8 +55,7 @@ export class CategoryController {
 
   @HttpCode(200)
   @Roles('ADMIN')
-  @UseGuards(JwtGuard)
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard, RoleGuard)
   @Delete('/delete/:id([0-9]+)')
   public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
 	return this.categoryService.remove(id);
