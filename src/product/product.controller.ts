@@ -22,6 +22,7 @@ import { QueryProductDto } from './dto/query-product.dto';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
+import { imageMulterOptions } from '../file/image-multer.options';
 
 export interface IProductsResponse {
   metaData: IGetMetadata;
@@ -35,10 +36,11 @@ export class ProductController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Post('/create')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('image', imageMulterOptions))
   public async create(
 	@Body() dto: CreateProductDto,
-	@UploadedFile() image: Express.Multer.File,
+	@UploadedFile()
+	image: Express.Multer.File,
   ): Promise<ProductModel> {
 	return this.productService.productCreate(dto, image);
   }
@@ -109,7 +111,7 @@ export class ProductController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Put('/update/:id([0-9]+)')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('image', imageMulterOptions))
   public async update(
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateProductDto,
