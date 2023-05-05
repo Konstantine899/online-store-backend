@@ -25,6 +25,7 @@ import { RoleGuard } from '../role/role.guard';
 import { imageMulterOptions } from '../file/image-multer.options';
 import { ProductCreateDocumentation } from './decorators/product-create.documentation';
 import { ApiTags } from '@nestjs/swagger';
+import { GetProductDocumentation } from './decorators/get-product.documentation';
 
 export interface IProductsResponse {
   metaData: IGetMetadata;
@@ -49,12 +50,13 @@ export class ProductController {
 	return this.productService.productCreate(dto, image);
   }
 
+  @GetProductDocumentation()
   @HttpCode(200)
   @Get('/one/:id([0-9]+)')
-  public async getOne(
+  public async getProduct(
 	@Param('id', ParseIntPipe) id: number,
   ): Promise<ProductModel> {
-	return this.productService.findOneProduct(id);
+	return this.productService.getProduct(id);
   }
 
   @HttpCode(200)

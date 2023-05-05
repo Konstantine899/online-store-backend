@@ -28,7 +28,7 @@ export class ProductRepository {
 	return this.productModel.findByPk(productId);
   }
 
-  public async findOneProduct(id: number): Promise<ProductModel> {
+  public async findProduct(id: number): Promise<ProductModel> {
 	return this.productModel.findOne({
 		where: { id },
 		include: [{ model: ProductPropertyModel }],

@@ -76,35 +76,27 @@ export class ProductPropertyService {
   }
 
   private async findProduct(productId: number): Promise<ProductModel> {
-	return this.productRepository.findOneProduct(productId);
+	return this.productRepository.findProduct(productId);
   }
 
   private async findAllProperties(
 	productId: number,
   ): Promise<ProductPropertyModel[]> {
-	return this.propertyProductRepository.findAllProductProperties(
-		productId,
-	);
+	return this.propertyProductRepository.findAllProductProperties(productId);
   }
 
   private async findProperty(
 	productId: number,
 	id: number,
   ): Promise<ProductPropertyModel> {
-	return this.propertyProductRepository.findOneProductProperty(
-		productId,
-		id,
-	);
+	return this.propertyProductRepository.findOneProductProperty(productId, id);
   }
 
   private async updateProperty(
 	property: ProductPropertyModel,
 	dto: CreateProductPropertyDto,
   ) {
-	return this.propertyProductRepository.updateProductProperty(
-		property,
-		dto,
-	);
+	return this.propertyProductRepository.updateProductProperty(property, dto);
   }
 
   private async removeProperty(id: number) {
