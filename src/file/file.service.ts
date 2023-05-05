@@ -1,4 +1,9 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as uuid from 'uuid';
@@ -6,8 +11,14 @@ import * as process from 'process';
 
 @Injectable()
 export class FileService {
-  public async createFile(file: Express.Multer.File): Promise<string> {
-	const extension = file.originalname.split('.').filter(Boolean).splice(1); // Достаю расширение файла
+  public async createFile(image: Express.Multer.File): Promise<string> {
+	if (!image) {
+		throw new BadRequestException({
+		status: HttpStatus.BAD_REQUEST,
+		message: `Поле image не должно быть пустым`,
+		});
+	}
+	const extension = image.originalname.split('.').filter(Boolean).splice(1); // Достаю расширение файла
 	const newFileName = `${uuid.v4()}.${extension}`; // генерирую новое уникальное имя файла
 	const filePath =
 		process.env.NODE_ENV === 'development'
@@ -17,7 +28,7 @@ export class FileService {
 	if (!fs.existsSync(filePath)) {
 		fs.mkdirSync(filePath, { recursive: true }); // создаю директорию
 	}
-	fs.writeFileSync(path.join(filePath, newFileName), file.buffer); // записываю файл
+	fs.writeFileSync(path.join(filePath, newFileName), image.buffer); // записываю файл
 	return newFileName;
   }
 

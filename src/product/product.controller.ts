@@ -23,15 +23,19 @@ import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { imageMulterOptions } from '../file/image-multer.options';
+import { ProductCreateDocumentation } from './decorators/product-create.documentation';
+import { ApiTags } from '@nestjs/swagger';
 
 export interface IProductsResponse {
   metaData: IGetMetadata;
   rows: ProductModel[];
 }
 
+@ApiTags(`Продукт`)
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
+  @ProductCreateDocumentation()
   @HttpCode(201)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
