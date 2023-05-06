@@ -8,9 +8,10 @@ import { ProductModel } from './product.model';
 import { CreateProductDto } from './dto/create-product.dto';
 import { FileService } from '../file/file.service';
 import { ProductRepository } from './product.repository';
-import { QueryProductDto } from './dto/query-product.dto';
-import { PaginateProductDto } from './dto/paginate-product.dto';
 import { IProductsResponse } from './product.controller';
+import { SearchQueryDto } from './dto/search-query.dto';
+import { SortQueryDto } from './dto/sort-query.dto';
+import { Sort } from '../../dist/product/dto/query-product.dto';
 
 export interface IGetMetadata {
   totalCount: number;
@@ -44,16 +45,21 @@ export class ProductService {
   }
 
   public async findAllProducts(
-	action: QueryProductDto,
-	paginate: PaginateProductDto,
+	searchQuery: SearchQueryDto,
+	sortQuery: SortQueryDto,
+	page: number,
+	size: number,
   ): Promise<IProductsResponse> {
-	const { limit, offset } = this.getPaginate(paginate);
+	const { search } = searchQuery;
+	const { sort = Sort.DESC } = sortQuery;
+	const { limit, offset } = this.getPaginate(page, size);
 	const products = await this.productRepository.findAllProducts(
-		action,
+		search,
+		sort,
 		limit,
 		offset,
 	);
-	const metaData = this.getMetadata(products.count, paginate, limit);
+	const metaData = this.getMetadata(products.count, page, limit);
 	if (!products.rows.length) {
 		this.notFound('По вашему запросу ничего не найдено');
 	}
@@ -65,17 +71,22 @@ export class ProductService {
 
   public async findAllByBrandId(
 	brandId: number,
-	action: QueryProductDto,
-	paginate: PaginateProductDto,
+	searchQuery: SearchQueryDto,
+	sortQuery: SortQueryDto,
+	page: number,
+	size: number,
   ): Promise<IProductsResponse> {
-	const { limit, offset } = this.getPaginate(paginate);
+	const { limit, offset } = this.getPaginate(page, size);
+	const { search } = searchQuery;
+	const { sort = Sort.DESC } = sortQuery;
 	const products = await this.productRepository.findAllByBrandId(
 		brandId,
-		action,
+		search,
+		sort,
 		limit,
 		offset,
 	);
-	const metaData = this.getMetadata(products.count, paginate, limit);
+	const metaData = this.getMetadata(products.count, page, limit);
 	if (!products.rows.length) {
 		this.notFound('По вашему запросу ничего не найдено');
 	}
@@ -87,18 +98,23 @@ export class ProductService {
 
   public async findAllByCategoryId(
 	categoryId: number,
-	action: QueryProductDto,
-	paginate: PaginateProductDto,
+	searchQuery: SearchQueryDto,
+	sortQuery: SortQueryDto,
+	page: number,
+	size: number,
   ): Promise<IProductsResponse> {
-	const { limit, offset } = this.getPaginate(paginate);
+	const { limit, offset } = this.getPaginate(page, size);
+	const { search } = searchQuery;
+	const { sort = Sort.DESC } = sortQuery;
 	const products = await this.productRepository.findAllByCategoryId(
 		categoryId,
-		action,
+		search,
+		sort,
 		limit,
 		offset,
 	);
 
-	const metaData = this.getMetadata(products.count, paginate, limit);
+	const metaData = this.getMetadata(products.count, page, limit);
 	if (!products.rows.length) {
 		this.notFound('По вашему запросу ничего не найдено');
 	}
@@ -111,18 +127,23 @@ export class ProductService {
   public async findAllByBrandIdAndCategoryId(
 	brandId: number,
 	categoryId: number,
-	action: QueryProductDto,
-	paginate: PaginateProductDto,
+	searchQuery: SearchQueryDto,
+	sortQuery: SortQueryDto,
+	page: number,
+	size: number,
   ): Promise<IProductsResponse> {
-	const { limit, offset } = this.getPaginate(paginate);
+	const { limit, offset } = this.getPaginate(page, size);
+	const { search } = searchQuery;
+	const { sort = Sort.DESC } = sortQuery;
 	const products = await this.productRepository.findAllByBrandIdAndCategoryId(
 		brandId,
 		categoryId,
-		action,
+		search,
+		sort,
 		limit,
 		offset,
 	);
-	const metaData = this.getMetadata(products.count, paginate, limit);
+	const metaData = this.getMetadata(products.count, page, limit);
 	if (!products.rows.length) {
 		this.notFound('По вашему запросу ничего не найдено');
 	}
@@ -172,11 +193,13 @@ export class ProductService {
 	return updatedProduct;
   }
 
-  private getPaginate(paginate: PaginateProductDto): {
+  private getPaginate(
+	page: number,
+	size: number,
+  ): {
 	limit: number;
 	offset: number;
   } {
-	const { page, size } = paginate;
 	const limit = size;
 	const offset = (page - 1) * limit;
 	return { limit, offset };
@@ -184,15 +207,15 @@ export class ProductService {
 
   private getMetadata(
 	count: number,
-	paginate: PaginateProductDto,
+	page: number,
 	limit: number,
   ): IGetMetadata {
 	return {
 		totalCount: count,
 		lastPage: Math.ceil(count / limit),
-		currentPage: paginate.page,
-		nextPage: paginate.page + 1,
-		previousPage: paginate.page - 1,
+		currentPage: page,
+		nextPage: page + 1,
+		previousPage: page - 1,
 	};
   }
 

@@ -18,7 +18,6 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { IGetMetadata, ProductService } from './product.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductModel } from './product.model';
-import { QueryProductDto } from './dto/query-product.dto';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
@@ -26,6 +25,8 @@ import { imageMulterOptions } from '../file/image-multer.options';
 import { ProductCreateDocumentation } from './decorators/product-create.documentation';
 import { ApiTags } from '@nestjs/swagger';
 import { GetProductDocumentation } from './decorators/get-product.documentation';
+import { SearchQueryDto } from './dto/search-query.dto';
+import { SortQueryDto } from './dto/sort-query.dto';
 
 export interface IProductsResponse {
   metaData: IGetMetadata;
@@ -62,38 +63,52 @@ export class ProductController {
   @HttpCode(200)
   @Get('/all')
   public async getAll(
-	@Query() action: QueryProductDto,
+	@Query() searchQuery: SearchQueryDto,
+	@Query() sortQuery: SortQueryDto,
 	@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-	@Query('size', new DefaultValuePipe(1), ParseIntPipe) size: number,
+	@Query('size', new DefaultValuePipe(4), ParseIntPipe) size: number,
   ): Promise<IProductsResponse> {
-	return this.productService.findAllProducts(action, { page, size });
+	return this.productService.findAllProducts(
+		searchQuery,
+		sortQuery,
+		page,
+		size,
+	);
   }
 
   @HttpCode(200)
   @Get('/all/brandId/:brandId([0-9]+)')
   public async getAllByBrandId(
 	@Param('brandId', ParseIntPipe) brandId: number,
-	@Query() action: QueryProductDto,
+	@Query() searchQuery: SearchQueryDto,
+	@Query() sortQuery: SortQueryDto,
 	@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-	@Query('size', new DefaultValuePipe(1), ParseIntPipe) size: number,
+	@Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
   ): Promise<IProductsResponse> {
-	return this.productService.findAllByBrandId(brandId, action, {
+	return this.productService.findAllByBrandId(
+		brandId,
+		searchQuery,
+		sortQuery,
 		page,
 		size,
-	});
+	);
   }
   @HttpCode(200)
   @Get('/all/categoryId/:categoryId([0-9]+)')
   public async getAllByCategory(
 	@Param('categoryId', ParseIntPipe) categoryId: number,
-	@Query() action: QueryProductDto,
+	@Query() searchQuery: SearchQueryDto,
+	@Query() sortQuery: SortQueryDto,
 	@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-	@Query('size', new DefaultValuePipe(1), ParseIntPipe) size: number,
+	@Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
   ) {
-	return this.productService.findAllByCategoryId(categoryId, action, {
+	return this.productService.findAllByCategoryId(
+		categoryId,
+		searchQuery,
+		sortQuery,
 		page,
 		size,
-	});
+	);
   }
 
   @HttpCode(200)
@@ -101,15 +116,18 @@ export class ProductController {
   public async getAllByBrandAndCategory(
 	@Param('brandId', ParseIntPipe) brandId: number,
 	@Param('categoryId', ParseIntPipe) categoryId: number,
-	@Query() action: QueryProductDto,
+	@Query() searchQuery: SearchQueryDto,
+	@Query() sortQuery: SortQueryDto,
 	@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-	@Query('size', new DefaultValuePipe(1), ParseIntPipe) size: number,
+	@Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
   ) {
 	return this.productService.findAllByBrandIdAndCategoryId(
 		brandId,
 		categoryId,
-		action,
-		{ page, size },
+		searchQuery,
+		sortQuery,
+		page,
+		size,
 	);
   }
 

@@ -3,7 +3,6 @@ import { ProductModel } from './product.model';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductPropertyModel } from '../product-property/product-property.model';
 import { Op } from 'sequelize';
-import { QueryProductDto } from './dto/query-product.dto';
 
 export class ProductRepository {
   constructor(
@@ -36,11 +35,11 @@ export class ProductRepository {
   }
 
   public async findAllProducts(
-	action: QueryProductDto,
+	search: string,
+	sort: string,
 	limit: number,
 	offset: number,
   ): Promise<{ count: number; rows: ProductModel[] }> {
-	const { sort, search } = action;
 	return this.productModel.findAndCountAll({
 		where: search ? { name: { [Op.like]: `%${search}%` } } : null,
 		order: sort ? [['price', sort.toUpperCase()]] : null,
@@ -51,11 +50,11 @@ export class ProductRepository {
 
   public async findAllByBrandId(
 	brandId: number,
-	action: QueryProductDto,
+	search: string,
+	sort: string,
 	limit: number,
 	offset: number,
   ): Promise<{ count: number; rows: ProductModel[] }> {
-	const { sort } = action;
 	return this.productModel.findAndCountAll({
 		where: { brandId },
 		order: sort ? [['price', sort.toUpperCase()]] : null,
@@ -66,11 +65,11 @@ export class ProductRepository {
 
   public async findAllByCategoryId(
 	categoryId: number,
-	action: QueryProductDto,
+	search: string,
+	sort: string,
 	limit: number,
 	offset: number,
   ): Promise<{ count: number; rows: ProductModel[] }> {
-	const { sort } = action;
 	return this.productModel.findAndCountAll({
 		where: { categoryId },
 		order: sort ? [['price', sort.toUpperCase()]] : null,
@@ -82,11 +81,11 @@ export class ProductRepository {
   public async findAllByBrandIdAndCategoryId(
 	brandId: number,
 	categoryId: number,
-	action: QueryProductDto,
+	search: string,
+	sort: string,
 	limit: number,
 	offset: number,
   ): Promise<{ count: number; rows: ProductModel[] }> {
-	const { sort } = action;
 	return this.productModel.findAndCountAll({
 		where: { brandId, categoryId },
 		order: sort ? [['price', sort.toUpperCase()]] : null,
