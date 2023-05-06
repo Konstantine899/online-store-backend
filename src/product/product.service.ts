@@ -10,8 +10,7 @@ import { FileService } from '../file/file.service';
 import { ProductRepository } from './product.repository';
 import { IProductsResponse } from './product.controller';
 import { SearchQueryDto } from './dto/search-query.dto';
-import { SortQueryDto } from './dto/sort-query.dto';
-import { Sort } from '../../dist/product/dto/query-product.dto';
+import { SortQueryDto, Sort } from './dto/sort-query.dto';
 
 export interface IGetMetadata {
   totalCount: number;
@@ -44,7 +43,7 @@ export class ProductService {
 	return product;
   }
 
-  public async findAllProducts(
+  public async getListAllProducts(
 	searchQuery: SearchQueryDto,
 	sortQuery: SortQueryDto,
 	page: number,
@@ -53,7 +52,7 @@ export class ProductService {
 	const { search } = searchQuery;
 	const { sort = Sort.DESC } = sortQuery;
 	const { limit, offset } = this.getPaginate(page, size);
-	const products = await this.productRepository.findAllProducts(
+	const products = await this.productRepository.findListAllProducts(
 		search,
 		sort,
 		limit,

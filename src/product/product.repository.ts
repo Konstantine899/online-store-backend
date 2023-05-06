@@ -34,7 +34,7 @@ export class ProductRepository {
 	});
   }
 
-  public async findAllProducts(
+  public async findListAllProducts(
 	search: string,
 	sort: string,
 	limit: number,

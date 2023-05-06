@@ -27,6 +27,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { GetProductDocumentation } from './decorators/get-product.documentation';
 import { SearchQueryDto } from './dto/search-query.dto';
 import { SortQueryDto } from './dto/sort-query.dto';
+import { GetListAllProductsDocumentation } from './decorators/get-list-all-products.documentation';
 
 export interface IProductsResponse {
   metaData: IGetMetadata;
@@ -60,15 +61,16 @@ export class ProductController {
 	return this.productService.getProduct(id);
   }
 
+  @GetListAllProductsDocumentation()
   @HttpCode(200)
   @Get('/all')
-  public async getAll(
+  public async getListAllProducts(
 	@Query() searchQuery: SearchQueryDto,
 	@Query() sortQuery: SortQueryDto,
 	@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
 	@Query('size', new DefaultValuePipe(4), ParseIntPipe) size: number,
   ): Promise<IProductsResponse> {
-	return this.productService.findAllProducts(
+	return this.productService.getListAllProducts(
 		searchQuery,
 		sortQuery,
 		page,
