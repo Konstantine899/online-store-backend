@@ -2,19 +2,14 @@ import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
   ApiNotFoundResponse,
   ApiOperation,
-  ApiParam,
   ApiQuery,
   ApiResponse,
 } from '@nestjs/swagger';
 
-export function GetListAllProductsByBrandDocumentation() {
+export function GetListAllProductsByCategoryDocumentation() {
   return applyDecorators(
-	ApiOperation({ summary: `Получение списка всех продуктов по бренду` }),
-	ApiParam({
-		name: `brandId`,
-		type: String,
-		description: `идентификатор бренда`,
-		required: true,
+	ApiOperation({
+		summary: `Получение списка всех продуктов по категории товара`,
 	}),
 	ApiQuery({ name: `search`, type: `string`, required: false }),
 	ApiQuery({ name: `sort`, type: `string`, required: false }),
@@ -31,10 +26,10 @@ export function GetListAllProductsByBrandDocumentation() {
 		description: `Количество элементов на странице`,
 	}),
 	ApiResponse({
-		description: `Get list products by brand`,
+		description: `Get list products by category`,
 		status: HttpStatus.OK,
 		schema: {
-		title: `Список продуктов отсортированных по brandId`,
+		title: `Список продуктов отсортированных по categoryId`,
 		example: {
 			metaData: {
 			totalCount: 4,
@@ -64,8 +59,8 @@ export function GetListAllProductsByBrandDocumentation() {
 		title: `Список найденных продуктов пуст`,
 		example: {
 			statusCode: HttpStatus.NOT_FOUND,
-			url: '/online-store/product/all/brandId/2',
-			path: '/online-store/product/all/brandId/2',
+			url: '/online-store/product/all/categoryId/2?page=1&size=1',
+			path: '/online-store/product/all/categoryId/2',
 			name: 'NotFoundException',
 			message: 'По вашему запросу ничего не найдено',
 		},

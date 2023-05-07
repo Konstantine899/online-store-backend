@@ -63,7 +63,7 @@ export class ProductRepository {
 	});
   }
 
-  public async findAllByCategoryId(
+  public async findListAllProductsByCategoryId(
 	categoryId: number,
 	search: string,
 	sort: string,

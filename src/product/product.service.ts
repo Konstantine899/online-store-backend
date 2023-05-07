@@ -95,7 +95,7 @@ export class ProductService {
 	};
   }
 
-  public async findAllByCategoryId(
+  public async getListAllProductsByCategory(
 	categoryId: number,
 	searchQuery: SearchQueryDto,
 	sortQuery: SortQueryDto,
@@ -105,13 +105,14 @@ export class ProductService {
 	const { limit, offset } = this.getPaginate(page, size);
 	const { search } = searchQuery;
 	const { sort = Sort.DESC } = sortQuery;
-	const products = await this.productRepository.findAllByCategoryId(
+	const products =
+		await this.productRepository.findListAllProductsByCategoryId(
 		categoryId,
 		search,
 		sort,
 		limit,
 		offset,
-	);
+		);
 
 	const metaData = this.getMetadata(products.count, page, limit);
 	if (!products.rows.length) {
