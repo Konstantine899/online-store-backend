@@ -31,6 +31,7 @@ import { GetListAllProductsDocumentation } from './decorators/get-list-all-produ
 import { GetListAllProductsByBrandDocumentation } from './decorators/get-list-all-products-by-brand.documentation';
 import { GetListAllProductsByCategoryDocumentation } from './decorators/get-list-all-products-by-category.documentation';
 import { GetListAllProductsByBrandAndCategoryDocumentation } from './decorators/get-list-all-products-by-brand-and-category.documentation';
+import { UpdateProductDocumentation } from './decorators/update-product.documentation';
 
 export interface IProductsResponse {
   metaData: IGetMetadata;
@@ -140,6 +141,7 @@ export class ProductController {
 	);
   }
 
+  @UpdateProductDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
