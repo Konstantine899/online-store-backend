@@ -68,7 +68,7 @@ export class ProductService {
 	};
   }
 
-  public async findAllByBrandId(
+  public async getListAllProductsByBrandId(
 	brandId: number,
 	searchQuery: SearchQueryDto,
 	sortQuery: SortQueryDto,
@@ -78,7 +78,7 @@ export class ProductService {
 	const { limit, offset } = this.getPaginate(page, size);
 	const { search } = searchQuery;
 	const { sort = Sort.DESC } = sortQuery;
-	const products = await this.productRepository.findAllByBrandId(
+	const products = await this.productRepository.findListAllProductsByBrandId(
 		brandId,
 		search,
 		sort,

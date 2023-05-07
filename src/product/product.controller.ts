@@ -28,6 +28,7 @@ import { GetProductDocumentation } from './decorators/get-product.documentation'
 import { SearchQueryDto } from './dto/search-query.dto';
 import { SortQueryDto } from './dto/sort-query.dto';
 import { GetListAllProductsDocumentation } from './decorators/get-list-all-products.documentation';
+import { GetListAllProductsByBrandDocumentation } from './decorators/get-list-all-products-by-brand.documentation';
 
 export interface IProductsResponse {
   metaData: IGetMetadata;
@@ -68,7 +69,7 @@ export class ProductController {
 	@Query() searchQuery: SearchQueryDto,
 	@Query() sortQuery: SortQueryDto,
 	@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-	@Query('size', new DefaultValuePipe(4), ParseIntPipe) size: number,
+	@Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
   ): Promise<IProductsResponse> {
 	return this.productService.getListAllProducts(
 		searchQuery,
@@ -78,16 +79,17 @@ export class ProductController {
 	);
   }
 
+  @GetListAllProductsByBrandDocumentation()
   @HttpCode(200)
   @Get('/all/brandId/:brandId([0-9]+)')
-  public async getAllByBrandId(
+  public async getListAllProductsByBrandId(
 	@Param('brandId', ParseIntPipe) brandId: number,
 	@Query() searchQuery: SearchQueryDto,
 	@Query() sortQuery: SortQueryDto,
 	@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
 	@Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
   ): Promise<IProductsResponse> {
-	return this.productService.findAllByBrandId(
+	return this.productService.getListAllProductsByBrandId(
 		brandId,
 		searchQuery,
 		sortQuery,

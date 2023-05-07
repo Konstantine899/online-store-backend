@@ -48,7 +48,7 @@ export class ProductRepository {
 	});
   }
 
-  public async findAllByBrandId(
+  public async findListAllProductsByBrandId(
 	brandId: number,
 	search: string,
 	sort: string,
