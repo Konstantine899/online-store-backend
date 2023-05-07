@@ -9,7 +9,9 @@ import {
 
 export function GetListAllProductsByBrandDocumentation() {
   return applyDecorators(
-	ApiOperation({ summary: `Получение списка всех продуктов по бренду` }),
+	ApiOperation({
+		summary: `Получение отсортированного списка продуктов по бренду товара`,
+	}),
 	ApiParam({
 		name: `brandId`,
 		type: String,

@@ -9,7 +9,7 @@ import {
 export function GetListAllProductsByCategoryDocumentation() {
   return applyDecorators(
 	ApiOperation({
-		summary: `Получение списка всех продуктов по категории товара`,
+		summary: `Получение отсортированного списка продуктов по категории товара`,
 	}),
 	ApiQuery({ name: `search`, type: `string`, required: false }),
 	ApiQuery({ name: `sort`, type: `string`, required: false }),
