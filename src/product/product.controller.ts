@@ -30,6 +30,7 @@ import { SortQueryDto } from './dto/sort-query.dto';
 import { GetListAllProductsDocumentation } from './decorators/get-list-all-products.documentation';
 import { GetListAllProductsByBrandDocumentation } from './decorators/get-list-all-products-by-brand.documentation';
 import { GetListAllProductsByCategoryDocumentation } from './decorators/get-list-all-products-by-category.documentation';
+import { GetListAllProductsByBrandAndCategoryDocumentation } from './decorators/get-list-all-products-by-brand-and-category.documentation';
 
 export interface IProductsResponse {
   metaData: IGetMetadata;
@@ -118,6 +119,7 @@ export class ProductController {
 	);
   }
 
+  @GetListAllProductsByBrandAndCategoryDocumentation()
   @HttpCode(200)
   @Get('/all/brandId/:brandId([0-9]+)/categoryId/:categoryId([0-9]+)')
   public async getAllByBrandAndCategory(

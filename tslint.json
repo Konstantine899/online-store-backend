@@ -30,7 +30,7 @@
     "prefer-switch": [true,{"min-cases": 3}],
     "switch-final-break": true,
     "import-spacing": true,
-    "max-line-length": [true, 120],
+    "max-line-length": [true, 150],
     "no-trailing-whitespace": false,
     "quotemark": [true,"single"],
     "semicolon": [true, "always"],
