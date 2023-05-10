@@ -17,12 +17,15 @@ export class ProductPropertyService {
 	private readonly productRepository: ProductRepository,
   ) {}
 
-  public async create(
+  public async createProductProperty(
 	productId: number,
 	dto: CreateProductPropertyDto,
   ): Promise<ProductPropertyModel> {
-	await this.findProduct(productId);
-	return this.propertyProductRepository.create(productId, dto);
+	const product = await this.findProduct(productId);
+	if (!product) {
+		this.notFound(`Продукт не найден`);
+	}
+	return this.propertyProductRepository.create(product.id, dto);
   }
 
   public async findOneProductProperty(

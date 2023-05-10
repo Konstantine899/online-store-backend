@@ -12,19 +12,24 @@ import {
 import { CreateProductPropertyDto } from './dto/create-product-property.dto';
 import { ProductPropertyService } from './product-property.service';
 import { ProductPropertyModel } from './product-property.model';
+import { ApiTags } from '@nestjs/swagger';
+import { CreateProductPropertyDocumentation } from './decorators/create-product-property.documentation';
 
+@ApiTags(`Свойства продукта`)
 @Controller('product-property')
 export class ProductPropertyController {
   constructor(
 	private readonly productPropertyService: ProductPropertyService,
   ) {}
+
+  @CreateProductPropertyDocumentation()
   @HttpCode(201)
   @Post('/product_id/:productId([0-9]+)/create')
-  public async create(
+  public async createProductProperty(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Body() dto: CreateProductPropertyDto,
   ): Promise<ProductPropertyModel> {
-	return this.productPropertyService.create(productId, dto);
+	return this.productPropertyService.createProductProperty(productId, dto);
   }
 
   @HttpCode(200)
