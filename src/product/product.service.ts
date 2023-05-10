@@ -153,7 +153,7 @@ export class ProductService {
 	};
   }
 
-  public async removeProduct(id: number): Promise<boolean> {
+  public async removeProduct(id: number): Promise<number> {
 	const findProduct = await this.productRepository.findProduct(id);
 	if (!findProduct) {
 		this.notFoundId(id);
@@ -163,7 +163,7 @@ export class ProductService {
 	if (!removedFile || !removedProduct) {
 		this.conflict('Произошел конфликт во время удаления продукта');
 	}
-	return true;
+	return removedProduct;
   }
 
   public async updateProduct(

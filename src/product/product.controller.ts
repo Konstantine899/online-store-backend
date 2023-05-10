@@ -32,6 +32,7 @@ import { GetListAllProductsByBrandDocumentation } from './decorators/get-list-al
 import { GetListAllProductsByCategoryDocumentation } from './decorators/get-list-all-products-by-category.documentation';
 import { GetListAllProductsByBrandAndCategoryDocumentation } from './decorators/get-list-all-products-by-brand-and-category.documentation';
 import { UpdateProductDocumentation } from './decorators/update-product.documentation';
+import { RemoveProductDocumentation } from './decorators/remove-product.documentation';
 
 export interface IProductsResponse {
   metaData: IGetMetadata;
@@ -155,11 +156,14 @@ export class ProductController {
 	return this.productService.updateProduct(id, dto, image);
   }
 
+  @RemoveProductDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Delete('/delete/:id([0-9]+)')
-  public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
+  public async removeProduct(
+	@Param('id', ParseIntPipe) id: number,
+  ): Promise<number> {
 	return this.productService.removeProduct(id);
   }
 }
