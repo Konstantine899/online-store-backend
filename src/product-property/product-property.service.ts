@@ -28,16 +28,14 @@ export class ProductPropertyService {
 	return this.propertyProductRepository.create(product.id, dto);
   }
 
-  public async findOneProductProperty(
+  public async getProductProperty(
 	productId: number,
 	id: number,
   ): Promise<ProductPropertyModel> {
 	const product = await this.findProduct(productId);
-	const property = await this.findProperty(productId, id);
-
-	if (!product || !property) {
-		this.notFound('Продукт или свойство продукта не найдено');
-	}
+	const property = await this.findProductProperty(productId, id);
+	if (!product) { this.notFound(`Продукт не найден`); }
+	if (!property) { this.notFound('Свойство продукта не найдено'); }
 	return property;
   }
 
@@ -58,7 +56,7 @@ export class ProductPropertyService {
 	dto: CreateProductPropertyDto,
   ): Promise<ProductPropertyModel> {
 	await this.findProduct(productId);
-	const property = await this.findOneProductProperty(productId, id);
+	const property = await this.getProductProperty(productId, id);
 	const updatedProductProperty = await this.updateProperty(property, dto);
 	if (!updatedProductProperty) {
 		this.conflict('При обновлении свойства продукта произошла ошибка');
@@ -70,7 +68,7 @@ export class ProductPropertyService {
 	productId: number,
 	id: number,
   ): Promise<boolean> {
-	await this.findOneProductProperty(productId, id);
+	await this.getProductProperty(productId, id);
 	const removedProperty = await this.removeProperty(id);
 	if (!removedProperty) {
 		this.conflict('При удалении свойства продукта произошел конфликт');
@@ -88,7 +86,7 @@ export class ProductPropertyService {
 	return this.propertyProductRepository.findAllProductProperties(productId);
   }
 
-  private async findProperty(
+  private async findProductProperty(
 	productId: number,
 	id: number,
   ): Promise<ProductPropertyModel> {

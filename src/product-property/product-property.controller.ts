@@ -14,6 +14,7 @@ import { ProductPropertyService } from './product-property.service';
 import { ProductPropertyModel } from './product-property.model';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateProductPropertyDocumentation } from './decorators/create-product-property.documentation';
+import { GetProductPropertyDocumentation } from './decorators/get-product-property.documentation';
 
 @ApiTags(`Свойства продукта`)
 @Controller('product-property')
@@ -32,13 +33,14 @@ export class ProductPropertyController {
 	return this.productPropertyService.createProductProperty(productId, dto);
   }
 
+  @GetProductPropertyDocumentation()
   @HttpCode(200)
-  @Get('/product_id/:productId([0-9]+)/get_one_property/:id([0-9]+)')
-  public async getOneProductProperty(
+  @Get('/product_id/:productId([0-9]+)/get-property/:id([0-9]+)')
+  public async getProductProperty(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('id', ParseIntPipe) id: number,
   ): Promise<ProductPropertyModel> {
-	return this.productPropertyService.findOneProductProperty(productId, id);
+	return this.productPropertyService.getProductProperty(productId, id);
   }
 
   @HttpCode(200)
