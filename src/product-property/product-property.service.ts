@@ -59,8 +59,10 @@ export class ProductPropertyService {
 	id: number,
 	dto: CreateProductPropertyDto,
   ): Promise<ProductPropertyModel> {
-	await this.findProduct(productId);
+	const product = await this.findProduct(productId);
+	if (!product) { this.notFound(`Продукт не найден`); }
 	const property = await this.getProductProperty(productId, id);
+	if (!property) { this.notFound('Свойство продукта не найдено'); }
 	const updatedProductProperty = await this.updateProperty(property, dto);
 	if (!updatedProductProperty) {
 		this.conflict('При обновлении свойства продукта произошла ошибка');

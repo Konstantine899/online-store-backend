@@ -16,6 +16,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { CreateProductPropertyDocumentation } from './decorators/create-product-property.documentation';
 import { GetProductPropertyDocumentation } from './decorators/get-product-property.documentation';
 import { GetAllProductPropertiesDocumentation } from './decorators/get-all-product-properties.documentation';
+import { UpdateProductPropertyDocumentation } from './decorators/update-product-property.documentation';
 
 @ApiTags(`Свойства продукта`)
 @Controller('product-property')
@@ -53,6 +54,7 @@ export class ProductPropertyController {
 	return this.productPropertyService.getAllProductProperties(productId);
   }
 
+  @UpdateProductPropertyDocumentation()
   @HttpCode(200)
   @Put('/product_id/:productId([0-9]+)/update_property/:id([0-9]+)')
   public async updateProductProperty(
