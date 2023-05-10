@@ -17,6 +17,7 @@ import { CreateProductPropertyDocumentation } from './decorators/create-product-
 import { GetProductPropertyDocumentation } from './decorators/get-product-property.documentation';
 import { GetAllProductPropertiesDocumentation } from './decorators/get-all-product-properties.documentation';
 import { UpdateProductPropertyDocumentation } from './decorators/update-product-property.documentation';
+import { RemoveProductPropertyDocumentation } from './decorators/remove-product-property.documentation';
 
 @ApiTags(`Свойства продукта`)
 @Controller('product-property')
@@ -69,12 +70,13 @@ export class ProductPropertyController {
 	);
   }
 
+  @RemoveProductPropertyDocumentation()
   @HttpCode(200)
-  @Delete('/product_id/:productId([0-9]+)/delete_property/:id([0-9]+)')
-  public async deleteProductProperty(
+  @Delete('/product_id/:productId([0-9]+)/remove-product-property/:id([0-9]+)')
+  public async removeProductProperty(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('id', ParseIntPipe) id: number,
-  ): Promise<boolean> {
+  ): Promise<number> {
 	return this.productPropertyService.removeProductProperty(productId, id);
   }
 }

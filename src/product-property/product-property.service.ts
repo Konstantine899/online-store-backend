@@ -60,9 +60,13 @@ export class ProductPropertyService {
 	dto: CreateProductPropertyDto,
   ): Promise<ProductPropertyModel> {
 	const product = await this.findProduct(productId);
-	if (!product) { this.notFound(`Продукт не найден`); }
+	if (!product) {
+		this.notFound(`Продукт не найден`);
+	}
 	const property = await this.getProductProperty(productId, id);
-	if (!property) { this.notFound('Свойство продукта не найдено'); }
+	if (!property) {
+		this.notFound('Свойство продукта не найдено');
+	}
 	const updatedProductProperty = await this.updateProperty(property, dto);
 	if (!updatedProductProperty) {
 		this.conflict('При обновлении свойства продукта произошла ошибка');
@@ -73,13 +77,14 @@ export class ProductPropertyService {
   public async removeProductProperty(
 	productId: number,
 	id: number,
-  ): Promise<boolean> {
-	await this.getProductProperty(productId, id);
-	const removedProperty = await this.removeProperty(id);
-	if (!removedProperty) {
-		this.conflict('При удалении свойства продукта произошел конфликт');
+  ): Promise<number> {
+	const product = await this.findProduct(productId);
+	if (!product) { this.notFound(`Продукт не найден`); }
+	const property = await this.getProductProperty(product.id, id);
+	if (!property) {
+		this.notFound('Свойство продукта не найдено');
 	}
-	return true;
+	return this.removeProperty(property.id);
   }
 
   private async findProduct(productId: number): Promise<ProductModel> {
@@ -106,7 +111,7 @@ export class ProductPropertyService {
 	return this.propertyProductRepository.updateProductProperty(property, dto);
   }
 
-  private async removeProperty(id: number) {
+  private async removeProperty(id: number): Promise<number> {
 	return this.propertyProductRepository.removeProductProperty(id);
   }
 
