@@ -34,16 +34,20 @@ export class ProductPropertyService {
   ): Promise<ProductPropertyModel> {
 	const product = await this.findProduct(productId);
 	const property = await this.findProductProperty(productId, id);
-	if (!product) { this.notFound(`Продукт не найден`); }
-	if (!property) { this.notFound('Свойство продукта не найдено'); }
+	if (!product) {
+		this.notFound(`Продукт не найден`);
+	}
+	if (!property) {
+		this.notFound('Свойство продукта не найдено');
+	}
 	return property;
   }
 
-  public async findAllProductProperties(
+  public async getAllProductProperties(
 	productId: number,
   ): Promise<ProductPropertyModel[]> {
 	await this.findProduct(productId);
-	const properties = await this.findAllProperties(productId);
+	const properties = await this.findAllProductProperties(productId);
 	if (!properties.length) {
 		this.notFound('Свойства продукта не найдены');
 	}
@@ -80,7 +84,7 @@ export class ProductPropertyService {
 	return this.productRepository.findProduct(productId);
   }
 
-  private async findAllProperties(
+  private async findAllProductProperties(
 	productId: number,
   ): Promise<ProductPropertyModel[]> {
 	return this.propertyProductRepository.findAllProductProperties(productId);
