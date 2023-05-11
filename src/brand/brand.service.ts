@@ -37,11 +37,7 @@ export class BrandService {
 	dto: CreateBrandDto,
   ): Promise<BrandModel> {
 	const brand = await this.getBrand(id);
-	const updatedBrand = await this.brandRepository.updateBrand(dto, brand);
-	if (!updatedBrand) {
-		this.conflict('Произошел конфликт при обновлении бренда');
-	}
-	return brand;
+	return this.brandRepository.updateBrand(dto, brand);
   }
 
   public async remove(id: number): Promise<boolean> {

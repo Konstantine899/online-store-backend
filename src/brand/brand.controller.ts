@@ -20,6 +20,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { CreateBrandDocumentation } from './decorators/create-brand.documentation';
 import { GetListAllBrandsDocumentation } from './decorators/get-list-all-brands.documentation';
 import { GetBrandDocumentation } from './decorators/get-brand.documentation';
+import { UpdateBrandDocumentation } from './decorators/update-brand.documentation';
 
 @ApiTags(`Бренд`)
 @Controller('brand')
@@ -51,11 +52,12 @@ export class BrandController {
 	return this.brandService.getBrand(id);
   }
 
+  @UpdateBrandDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Put('/update/:id([0-9]+)')
-  public async update(
+  public async updateBrand(
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateBrandDto,
   ): Promise<BrandModel> {
