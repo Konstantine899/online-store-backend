@@ -16,15 +16,19 @@ export class CategoryService {
 	return this.categoryRepository.createCategory(dto);
   }
 
-  public async findAllCategories(): Promise<CategoryModel[]> {
-	const categories = await this.categoryRepository.findAllCategories();
-	if (!categories) { this.notFound('Категории товаров не найдены'); }
+  public async getListAllCategories(): Promise<CategoryModel[]> {
+	const categories = await this.categoryRepository.findListAllCategories();
+	if (!categories) {
+		this.notFound('Категории товаров не найдены');
+	}
 	return categories;
   }
 
   public async findOneCategory(id: number): Promise<CategoryModel> {
 	const category = await this.categoryRepository.findOneCategory(id);
-	if (!category) { this.notFound('Категория товара не найдена'); }
+	if (!category) {
+		this.notFound('Категория товара не найдена');
+	}
 	return category;
   }
 

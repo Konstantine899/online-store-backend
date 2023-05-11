@@ -16,7 +16,7 @@ export class CategoryRepository {
 	return category.save();
   }
 
-  public async findAllCategories(): Promise<CategoryModel[]> {
+  public async findListAllCategories(): Promise<CategoryModel[]> {
 	return this.categoryModel.findAll();
   }
 

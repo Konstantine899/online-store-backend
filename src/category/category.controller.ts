@@ -18,6 +18,7 @@ import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateCategoryDocumentation } from './decorators/create-category.documentation';
+import { GetListAllCategoriesDocumentation } from './decorators/get-list-all-categories.documentation';
 
 @ApiTags(`Категория`)
 @Controller('category')
@@ -35,10 +36,11 @@ export class CategoryController {
 	return this.categoryService.createCategory(dto);
   }
 
-  @Get('/all')
+  @GetListAllCategoriesDocumentation()
+  @Get('/categories')
   @HttpCode(200)
-  public async getAll(): Promise<CategoryModel[]> {
-	return this.categoryService.findAllCategories();
+  public async getListAllCategories(): Promise<CategoryModel[]> {
+	return this.categoryService.getListAllCategories();
   }
 
   @Get('/one/:id([0-9]+)')
