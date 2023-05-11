@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { BrandModel } from './brand.model';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { BrandRepository } from './brand.repository';
@@ -40,20 +35,9 @@ export class BrandService {
 	return this.brandRepository.updateBrand(dto, brand);
   }
 
-  public async remove(id: number): Promise<boolean> {
+  public async removeBrand(id: number): Promise<number> {
 	const brand = await this.getBrand(id);
-	const removedBrand = await this.brandRepository.removeBrand(brand.id);
-	if (!removedBrand) {
-		this.conflict('При удалении бренда произошел конфликт');
-	}
-	return true;
-  }
-
-  private conflict(message: string): void {
-	throw new ConflictException({
-		status: HttpStatus.CONFLICT,
-		message,
-	});
+	return this.brandRepository.removeBrand(brand.id);
   }
 
   private notFound(message: string): void {

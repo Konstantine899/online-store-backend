@@ -21,6 +21,7 @@ import { CreateBrandDocumentation } from './decorators/create-brand.documentatio
 import { GetListAllBrandsDocumentation } from './decorators/get-list-all-brands.documentation';
 import { GetBrandDocumentation } from './decorators/get-brand.documentation';
 import { UpdateBrandDocumentation } from './decorators/update-brand.documentation';
+import { RemoveBrandDocumentation } from './decorators/remove-brand.documentation';
 
 @ApiTags(`Бренд`)
 @Controller('brand')
@@ -64,11 +65,14 @@ export class BrandController {
 	return this.brandService.updateBrand(id, dto);
   }
 
+  @RemoveBrandDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Delete('/delete/:id([0-9]+)')
-  public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
-	return this.brandService.remove(id);
+  public async removeBrand(
+	@Param('id', ParseIntPipe) id: number,
+  ): Promise<number> {
+	return this.brandService.removeBrand(id);
   }
 }
