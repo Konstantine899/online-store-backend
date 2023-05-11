@@ -20,7 +20,7 @@ export class CategoryRepository {
 	return this.categoryModel.findAll();
   }
 
-  public async findOneCategory(id: number): Promise<CategoryModel> {
+  public async findCategory(id: number): Promise<CategoryModel> {
 	return this.categoryModel.findByPk(id);
   }
 

@@ -24,8 +24,8 @@ export class CategoryService {
 	return categories;
   }
 
-  public async findOneCategory(id: number): Promise<CategoryModel> {
-	const category = await this.categoryRepository.findOneCategory(id);
+  public async getCategory(id: number): Promise<CategoryModel> {
+	const category = await this.categoryRepository.findCategory(id);
 	if (!category) {
 		this.notFound('Категория товара не найдена');
 	}
@@ -36,7 +36,7 @@ export class CategoryService {
 	id: number,
 	dto: CreateCategoryDto,
   ): Promise<CategoryModel> {
-	const category = await this.findOneCategory(id);
+	const category = await this.getCategory(id);
 	const updatedCategory = await this.categoryRepository.updateCategory(
 		dto,
 		category,
@@ -48,7 +48,7 @@ export class CategoryService {
   }
 
   public async remove(id: number): Promise<boolean> {
-	await this.findOneCategory(id);
+	await this.getCategory(id);
 	const removeCategory = await this.categoryRepository.removeCategory(id);
 	if (!removeCategory) {
 		this.conflict('При удалении категории товара произошел конфликт');

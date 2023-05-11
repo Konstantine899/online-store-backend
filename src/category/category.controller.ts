@@ -19,6 +19,7 @@ import { RoleGuard } from '../role/role.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateCategoryDocumentation } from './decorators/create-category.documentation';
 import { GetListAllCategoriesDocumentation } from './decorators/get-list-all-categories.documentation';
+import { GetCategoryDocumentation } from './decorators/get-category.documentation';
 
 @ApiTags(`Категория`)
 @Controller('category')
@@ -43,12 +44,13 @@ export class CategoryController {
 	return this.categoryService.getListAllCategories();
   }
 
+  @GetCategoryDocumentation()
   @Get('/one/:id([0-9]+)')
   @HttpCode(200)
-  public async getOne(
+  public async getCategory(
 	@Param('id', ParseIntPipe) id: number,
   ): Promise<CategoryModel> {
-	return this.categoryService.findOneCategory(id);
+	return this.categoryService.getCategory(id);
   }
 
   @HttpCode(200)
