@@ -19,6 +19,7 @@ import { RoleGuard } from '../role/role.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateBrandDocumentation } from './decorators/create-brand.documentation';
 import { GetListAllBrandsDocumentation } from './decorators/get-list-all-brands.documentation';
+import { GetBrandDocumentation } from './decorators/get-brand.documentation';
 
 @ApiTags(`Бренд`)
 @Controller('brand')
@@ -41,12 +42,13 @@ export class BrandController {
 	return this.brandService.getListAllBrands();
   }
 
+  @GetBrandDocumentation()
   @Get('/one/:id([0-9]+)')
   @HttpCode(200)
-  public async getOne(
+  public async getBrand(
 	@Param('id', ParseIntPipe) id: number,
   ): Promise<BrandModel> {
-	return this.brandService.findOneBrand(id);
+	return this.brandService.getBrand(id);
   }
 
   @HttpCode(200)

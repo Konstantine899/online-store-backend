@@ -24,8 +24,8 @@ export class BrandService {
 	return brands;
   }
 
-  public async findOneBrand(id: number): Promise<BrandModel> {
-	const brand = await this.brandRepository.findOneBrand(id);
+  public async getBrand(id: number): Promise<BrandModel> {
+	const brand = await this.brandRepository.findBrand(id);
 	if (!brand) {
 		this.notFound(`Бренд не найден`);
 	}
@@ -36,7 +36,7 @@ export class BrandService {
 	id: number,
 	dto: CreateBrandDto,
   ): Promise<BrandModel> {
-	const brand = await this.findOneBrand(id);
+	const brand = await this.getBrand(id);
 	const updatedBrand = await this.brandRepository.updateBrand(dto, brand);
 	if (!updatedBrand) {
 		this.conflict('Произошел конфликт при обновлении бренда');
@@ -45,7 +45,7 @@ export class BrandService {
   }
 
   public async remove(id: number): Promise<boolean> {
-	const brand = await this.findOneBrand(id);
+	const brand = await this.getBrand(id);
 	const removedBrand = await this.brandRepository.removeBrand(brand.id);
 	if (!removedBrand) {
 		this.conflict('При удалении бренда произошел конфликт');

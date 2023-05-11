@@ -17,7 +17,7 @@ export class BrandRepository {
 	return this.brandModel.findAll();
   }
 
-  public async findOneBrand(id: number): Promise<BrandModel> {
+  public async findBrand(id: number): Promise<BrandModel> {
 	return this.brandModel.findByPk(id);
   }
 
