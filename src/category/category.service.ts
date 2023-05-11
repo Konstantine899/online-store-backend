@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { CategoryModel } from './category-model';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CategoryRepository } from './category.repository';
@@ -40,26 +35,17 @@ export class CategoryService {
 	return this.categoryRepository.updateCategory(dto, category);
   }
 
-  public async remove(id: number): Promise<boolean> {
-	await this.getCategory(id);
-	const removeCategory = await this.categoryRepository.removeCategory(id);
-	if (!removeCategory) {
-		this.conflict('При удалении категории товара произошел конфликт');
+  public async removeCategory(id: number): Promise<number> {
+	const category = await this.getCategory(id);
+	if (!category) {
+		this.notFound('Категория товара не найдена');
 	}
-
-	return true;
+	return this.categoryRepository.removeCategory(category.id);
   }
 
   private notFound(message: string): void {
 	throw new NotFoundException({
 		status: HttpStatus.NOT_FOUND,
-		message,
-	});
-  }
-
-  private conflict(message: string): void {
-	throw new ConflictException({
-		status: HttpStatus.CONFLICT,
 		message,
 	});
   }

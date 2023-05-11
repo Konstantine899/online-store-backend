@@ -21,6 +21,7 @@ import { CreateCategoryDocumentation } from './decorators/create-category.docume
 import { GetListAllCategoriesDocumentation } from './decorators/get-list-all-categories.documentation';
 import { GetCategoryDocumentation } from './decorators/get-category.documentation';
 import { UpdateCategoryDocumentation } from './decorators/update-category.documentation';
+import { RemoveCategoryDocumentation } from './decorators/remove-category.documentation';
 
 @ApiTags(`Категория`)
 @Controller('category')
@@ -66,11 +67,14 @@ export class CategoryController {
 	return this.categoryService.updateCategory(id, dto);
   }
 
+  @RemoveCategoryDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Delete('/delete/:id([0-9]+)')
-  public async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
-	return this.categoryService.remove(id);
+  public async removeCategory(
+	@Param('id', ParseIntPipe) id: number,
+  ): Promise<number> {
+	return this.categoryService.removeCategory(id);
   }
 }
