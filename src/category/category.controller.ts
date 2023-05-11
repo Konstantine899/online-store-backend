@@ -16,15 +16,22 @@ import { CategoryModel } from './category-model';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
+import { ApiTags } from '@nestjs/swagger';
+import { CreateCategoryDocumentation } from './decorators/create-category.documentation';
 
+@ApiTags(`Категория`)
 @Controller('category')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
+
+  @CreateCategoryDocumentation()
   @HttpCode(201)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Post('/create')
-  public async create(@Body() dto: CreateCategoryDto): Promise<CategoryModel> {
+  public async createCategory(
+	@Body() dto: CreateCategoryDto,
+  ): Promise<CategoryModel> {
 	return this.categoryService.createCategory(dto);
   }
 

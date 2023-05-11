@@ -1,7 +1,9 @@
 import { IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateCategoryDto {
-  @IsNotEmpty({ message: 'Поле категория не может быть пустым' })
-  @IsString({ message: 'Поле категория должна быть строкой' })
+  @ApiProperty({ example: `Ноутбуки`, description: `Название категории` })
+  @IsNotEmpty({ message: 'Поле name не может быть пустым' })
+  @IsString({ message: 'Поле name должна быть строкой' })
   readonly name: string;
 }
