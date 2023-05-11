@@ -1,5 +1,6 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiNotFoundResponse,
   ApiOperation,
@@ -12,6 +13,7 @@ import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-respo
 export function UpdateProductPropertyDocumentation() {
   return applyDecorators(
 	ApiOperation({ summary: `Обновление свойства продукта` }),
+	ApiBearerAuth('JWT-auth'),
 	ApiParam({
 		name: `productId`,
 		type: String,

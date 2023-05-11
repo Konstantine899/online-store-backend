@@ -1,5 +1,6 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiNotFoundResponse,
   ApiOperation,
   ApiParam,
@@ -9,6 +10,7 @@ import {
 export function GetAllProductPropertiesDocumentation() {
   return applyDecorators(
 	ApiOperation({ summary: `Получение всех свойств продукта` }),
+	ApiBearerAuth('JWT-auth'),
 	ApiParam({
 		name: `productId`,
 		type: String,

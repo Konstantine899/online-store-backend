@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { CreateProductPropertyDto } from './dto/create-product-property.dto';
 import { ProductPropertyService } from './product-property.service';
@@ -18,6 +19,9 @@ import { GetProductPropertyDocumentation } from './decorators/get-product-proper
 import { GetAllProductPropertiesDocumentation } from './decorators/get-all-product-properties.documentation';
 import { UpdateProductPropertyDocumentation } from './decorators/update-product-property.documentation';
 import { RemoveProductPropertyDocumentation } from './decorators/remove-product-property.documentation';
+import { Roles } from '../auth/decorators/roles-auth.decorator';
+import { JwtGuard } from '../token/jwt.guard';
+import { RoleGuard } from '../role/role.guard';
 
 @ApiTags(`Свойства продукта`)
 @Controller('product-property')
@@ -27,6 +31,8 @@ export class ProductPropertyController {
   ) {}
 
   @CreateProductPropertyDocumentation()
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard, RoleGuard)
   @HttpCode(201)
   @Post('/product_id/:productId([0-9]+)/create')
   public async createProductProperty(
@@ -37,6 +43,8 @@ export class ProductPropertyController {
   }
 
   @GetProductPropertyDocumentation()
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard, RoleGuard)
   @HttpCode(200)
   @Get('/product_id/:productId([0-9]+)/get-property/:id([0-9]+)')
   public async getProductProperty(
@@ -47,6 +55,8 @@ export class ProductPropertyController {
   }
 
   @GetAllProductPropertiesDocumentation()
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard, RoleGuard)
   @HttpCode(200)
   @Get('/product_id/:productId([0-9]+)/properties')
   public async getAllProductProperties(
@@ -56,6 +66,8 @@ export class ProductPropertyController {
   }
 
   @UpdateProductPropertyDocumentation()
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard, RoleGuard)
   @HttpCode(200)
   @Put('/product_id/:productId([0-9]+)/update_property/:id([0-9]+)')
   public async updateProductProperty(
@@ -71,6 +83,8 @@ export class ProductPropertyController {
   }
 
   @RemoveProductPropertyDocumentation()
+  @Roles('ADMIN')
+  @UseGuards(JwtGuard, RoleGuard)
   @HttpCode(200)
   @Delete('/product_id/:productId([0-9]+)/remove-product-property/:id([0-9]+)')
   public async removeProductProperty(

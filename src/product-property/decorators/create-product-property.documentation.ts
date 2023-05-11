@@ -14,6 +14,7 @@ export function CreateProductPropertyDocumentation() {
   return applyDecorators(
 	ApiOperation({ summary: `Создать свойство продукта` }),
 	ApiBearerAuth('JWT-auth'),
+	ApiBearerAuth('JWT-auth'),
 	ApiParam({
 		name: `productId`,
 		type: String,
