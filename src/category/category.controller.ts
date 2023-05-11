@@ -20,6 +20,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { CreateCategoryDocumentation } from './decorators/create-category.documentation';
 import { GetListAllCategoriesDocumentation } from './decorators/get-list-all-categories.documentation';
 import { GetCategoryDocumentation } from './decorators/get-category.documentation';
+import { UpdateCategoryDocumentation } from './decorators/update-category.documentation';
 
 @ApiTags(`Категория`)
 @Controller('category')
@@ -53,11 +54,12 @@ export class CategoryController {
 	return this.categoryService.getCategory(id);
   }
 
+  @UpdateCategoryDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Put('/update/:id([0-9]+)')
-  public async update(
+  public async updateCategory(
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateCategoryDto,
   ): Promise<CategoryModel> {

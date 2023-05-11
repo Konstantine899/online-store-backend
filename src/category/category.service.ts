@@ -37,14 +37,7 @@ export class CategoryService {
 	dto: CreateCategoryDto,
   ): Promise<CategoryModel> {
 	const category = await this.getCategory(id);
-	const updatedCategory = await this.categoryRepository.updateCategory(
-		dto,
-		category,
-	);
-	if (!updatedCategory) {
-		this.conflict('При обновлении категории произошел конфликт');
-	}
-	return updatedCategory;
+	return this.categoryRepository.updateCategory(dto, category);
   }
 
   public async remove(id: number): Promise<boolean> {
