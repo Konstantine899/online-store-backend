@@ -16,8 +16,8 @@ export class BrandService {
 	return this.brandRepository.createBrand(dto);
   }
 
-  public async findAllBrands(): Promise<BrandModel[]> {
-	const brands = await this.brandRepository.findAllBrands();
+  public async getListAllBrands(): Promise<BrandModel[]> {
+	const brands = await this.brandRepository.findListAllBrands();
 	if (!brands.length) {
 		this.notFound('К сожалению по вашему запросу ничего не найдено');
 	}

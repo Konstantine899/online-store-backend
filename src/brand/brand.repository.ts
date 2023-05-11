@@ -13,7 +13,7 @@ export class BrandRepository {
 	return brand.save();
   }
 
-  public async findAllBrands(): Promise<BrandModel[]> {
+  public async findListAllBrands(): Promise<BrandModel[]> {
 	return this.brandModel.findAll();
   }
 
