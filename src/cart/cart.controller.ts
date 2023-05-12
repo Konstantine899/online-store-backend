@@ -13,6 +13,7 @@ import { Request, Response } from 'express';
 import { AppendToCartDocumentation } from './decorators/append-to-cart.documentation';
 import { ApiTags } from '@nestjs/swagger';
 import { GetCartDocumentation } from './decorators/get-cart.documentation';
+import { IncrementDocumentation } from './decorators/increment.documentation';
 
 @ApiTags(`Корзина`)
 @Controller('cart')
@@ -45,6 +46,7 @@ export class CartController {
 	});
   }
 
+  @IncrementDocumentation()
   @HttpCode(200)
   @Put('/product/:productId([0-9]+)/increment/:quantity([0-9]+)')
   public async increment(
