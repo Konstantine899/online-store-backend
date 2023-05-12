@@ -16,6 +16,7 @@ import { GetCartDocumentation } from './decorators/get-cart.documentation';
 import { IncrementDocumentation } from './decorators/increment.documentation';
 import { DecrementDocumentation } from './decorators/decrement.documentation';
 import { RemoveProductFromCartDocumentation } from './decorators/remove-product-from-cart.documentation';
+import { ClearCartDocumentation } from './decorators/clear-cart.documentation';
 
 @ApiTags(`Корзина`)
 @Controller('cart')
@@ -91,6 +92,7 @@ export class CartController {
 	});
   }
 
+  @ClearCartDocumentation()
   @HttpCode(200)
   @Put('/clear')
   public async clearCart(
