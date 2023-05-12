@@ -14,6 +14,7 @@ import { AppendToCartDocumentation } from './decorators/append-to-cart.documenta
 import { ApiTags } from '@nestjs/swagger';
 import { GetCartDocumentation } from './decorators/get-cart.documentation';
 import { IncrementDocumentation } from './decorators/increment.documentation';
+import { DecrementDocumentation } from './decorators/decrement.documentation';
 
 @ApiTags(`Корзина`)
 @Controller('cart')
@@ -61,6 +62,7 @@ export class CartController {
 	});
   }
 
+  @DecrementDocumentation()
   @HttpCode(200)
   @Put('/product/:productId([0-9]+)/decrement/:quantity([0-9]+)')
   public async decrement(
