@@ -18,6 +18,11 @@ export function swaggerConfig(app: INestApplication): void {
 		},
 		'JWT-auth', // Это имя важно для сопоставления с @ApiBearerAuth() в контроллере!
 	)
+	.addCookieAuth('authCookie', {
+		type: 'http',
+		in: 'Header',
+		scheme: 'Bearer',
+	})
 	.build();
 
   const document = SwaggerModule.createDocument(app, config);

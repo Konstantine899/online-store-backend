@@ -10,7 +10,10 @@ import {
 } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { Request, Response } from 'express';
+import { AppendToCartDocumentation } from './decorators/append-to-cart.documentation';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags(`Корзина`)
 @Controller('cart')
 export class CartController {
   constructor(private readonly cartService: CartService) {}
@@ -25,6 +28,7 @@ export class CartController {
 	return this.cartService.getCart(request, response);
   }
 
+  @AppendToCartDocumentation()
   @HttpCode(200)
   @Put('/product/:productId([0-9]+)/append/:quantity([0-9]+)')
   public async appendToCart(
