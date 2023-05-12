@@ -15,6 +15,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { GetCartDocumentation } from './decorators/get-cart.documentation';
 import { IncrementDocumentation } from './decorators/increment.documentation';
 import { DecrementDocumentation } from './decorators/decrement.documentation';
+import { RemoveProductFromCartDocumentation } from './decorators/remove-product-from-cart.documentation';
 
 @ApiTags(`Корзина`)
 @Controller('cart')
@@ -77,6 +78,7 @@ export class CartController {
 	});
   }
 
+  @RemoveProductFromCartDocumentation()
   @HttpCode(200)
   @Put('/product/:productId([0-9]+)/remove')
   public async removeProductFromCart(
