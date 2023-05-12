@@ -12,12 +12,14 @@ import { CartService } from './cart.service';
 import { Request, Response } from 'express';
 import { AppendToCartDocumentation } from './decorators/append-to-cart.documentation';
 import { ApiTags } from '@nestjs/swagger';
+import { GetCartDocumentation } from './decorators/get-cart.documentation';
 
 @ApiTags(`Корзина`)
 @Controller('cart')
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
+  @GetCartDocumentation()
   @HttpCode(200)
   @Get('/get-cart')
   public async getCart(
