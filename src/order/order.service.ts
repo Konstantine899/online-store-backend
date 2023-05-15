@@ -4,6 +4,7 @@ import { OrderModel } from './order.model';
 import { OrderDto } from './dto/order.dto';
 import { CartRepository } from '../cart/cart.repository';
 import { UserService } from '../user/user.service';
+import { UserRepository } from '../user/user.repository';
 
 @Injectable()
 export class OrderService {
@@ -11,6 +12,7 @@ export class OrderService {
 	private readonly orderRepository: OrderRepository,
 	private readonly cartRepository: CartRepository,
 	private readonly userService: UserService,
+	private readonly userRepository: UserRepository,
   ) {}
 
   public async adminGetListOfAllStoreOrders(): Promise<OrderModel[]> {
@@ -22,7 +24,9 @@ export class OrderService {
   }
 
   public async adminGetListOrdersUser(userId: number): Promise<OrderModel[]> {
-	const orders = await this.orderRepository.adminFindListOrders(userId);
+	const user = await this.userRepository.findUserByPkId(userId);
+	if (!user) { this.notFound(`Пользователь не найден в БД`); }
+	const orders = await this.orderRepository.adminFindListOrders(user.id);
 	if (!orders.length) {
 		this.notFound('Список заказов пользователя пуст');
 	}
