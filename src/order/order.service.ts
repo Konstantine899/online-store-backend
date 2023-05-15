@@ -13,7 +13,7 @@ export class OrderService {
 	private readonly userService: UserService,
   ) {}
 
-  public async adminGetListOrdersStore(): Promise<OrderModel[]> {
+  public async adminGetListOfAllStoreOrders(): Promise<OrderModel[]> {
 	const orders = await this.orderRepository.adminFindListOrders();
 	if (!orders.length) {
 		this.notFound('Список заказов магазина пуст');

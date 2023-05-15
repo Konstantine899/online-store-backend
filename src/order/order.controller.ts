@@ -16,7 +16,10 @@ import { IDecodedPayload, RoleGuard } from '../role/role.guard';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { OrderDto } from './dto/order.dto';
 import { Request } from 'express';
+import { AdminGetListOfAllStoreOrdersDocumentation } from './decorators/admin-get-list-of-all-store-orders.documentation';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags(`Заказы`)
 @Controller('order')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
@@ -24,12 +27,13 @@ export class OrderController {
   /*Для администратора*/
 
   /*Получение списка всех заказов магазина*/
+  @AdminGetListOfAllStoreOrdersDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-all-order')
-  public async adminGetListOrdersStore() {
-	return this.orderService.adminGetListOrdersStore();
+  public async adminGetListOfAllStoreOrders() {
+	return this.orderService.adminGetListOfAllStoreOrders();
   }
 
   /*Получение списка заказов пользователя*/
