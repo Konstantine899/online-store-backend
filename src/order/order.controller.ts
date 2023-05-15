@@ -20,6 +20,7 @@ import { AdminGetListOfAllStoreOrdersDocumentation } from './decorators/admin-ge
 import { ApiTags } from '@nestjs/swagger';
 import { AdminGetListOrdersUserDocumentation } from './decorators/admin-get-list-orders-user.documentation';
 import { AdminGetOrderUserDocumentation } from './decorators/admin-get-order-user.documentation';
+import { AdminCreateOrderDocumentation } from './decorators/admin-create-order.documentation';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -63,6 +64,7 @@ export class OrderController {
   }
 
   /*Создание заказа для пользователя администратором*/
+  @AdminCreateOrderDocumentation()
   @HttpCode(201)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)

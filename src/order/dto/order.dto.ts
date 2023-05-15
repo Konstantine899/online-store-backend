@@ -19,7 +19,7 @@ export class OrderDto {
 	description: `ФИО заказчика`,
   })
   @IsNotEmpty({ message: 'Укажите ФИО заказчика' })
-  @MaxLength(100)
+  @MaxLength(100, { message: `Поле ФИО не должно превышать 100 символов` })
   readonly name: string;
 
   @ApiProperty({ example: `test@mail.com`, description: `Email заказчика` })
@@ -32,7 +32,7 @@ export class OrderDto {
 	description: `Контактный номер заказчика`,
   })
   @IsNotEmpty({ message: 'Укажите контактный номер заказчика' })
-  @MaxLength(15)
+  @MaxLength(15, { message: `Максимальная длинна телефона 15 символов` })
   readonly phone: string;
 
   @ApiProperty({
@@ -40,7 +40,7 @@ export class OrderDto {
 	description: `Адрес доставки`,
   })
   @IsNotEmpty({ message: 'Укажите адрес доставки' })
-  @MaxLength(200)
+  @MaxLength(200, { message: `Максимальная длинна 200 символов` })
   readonly address: string;
 
   @ApiProperty({
@@ -48,10 +48,13 @@ export class OrderDto {
 	description: `Комментарий заказчика`,
   })
   @IsOptional()
-  @MaxLength(2200)
+  @MaxLength(2200, { message: `Максимальная длинна 2200 символов` })
   readonly comment: string;
 
-  @ApiProperty({ type: OrderItemModel })
+  @ApiProperty({
+	type: OrderItemModel,
+	example: [{ name: 'Xiaomi 10pro', price: 1000, quantity: 1 }],
+  })
   @IsArray()
   @ValidateNested()
   @Type(() => OrderItemModel)
