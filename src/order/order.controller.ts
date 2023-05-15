@@ -55,7 +55,7 @@ export class OrderController {
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-order/:orderId([0-9]+)')
   public async adminGetOrderUser(
-	@Body() dto: OrderDto,
+	@Body() dto: Pick<OrderDto, 'userId'>,
 	@Param('orderId', ParseIntPipe) orderId: number,
   ) {
 	return this.orderService.adminGetOrderUser(orderId, dto.userId);

@@ -67,7 +67,7 @@ export class UserRepository {
 	});
   }
 
-  // Используется в модуле Rating
+  // Используется в модуле Rating и Order
   public async findUserByPkId(userId: number): Promise<UserModel> {
 	return this.userModel.findByPk(userId, {});
   }
