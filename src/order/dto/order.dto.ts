@@ -28,13 +28,18 @@ export class OrderDto {
   readonly email: string;
 
   @ApiProperty({
-	example: `+375(29)891-89-71`,
+	example: `375298918971`,
 	description: `Контактный номер заказчика`,
   })
   @IsNotEmpty({ message: 'Укажите контактный номер заказчика' })
   @MaxLength(15)
   readonly phone: string;
-  @IsNotEmpty({ message: 'Укажите адрес заказчика' })
+
+  @ApiProperty({
+	example: `г. Витебск ул Чкалова 41 к1 кв 73`,
+	description: `Адрес доставки`,
+  })
+  @IsNotEmpty({ message: 'Укажите адрес доставки' })
   @MaxLength(200)
   readonly address: string;
 
