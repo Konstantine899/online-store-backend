@@ -19,6 +19,7 @@ import { Request } from 'express';
 import { AdminGetListOfAllStoreOrdersDocumentation } from './decorators/admin-get-list-of-all-store-orders.documentation';
 import { ApiTags } from '@nestjs/swagger';
 import { AdminGetListOrdersUserDocumentation } from './decorators/admin-get-list-orders-user.documentation';
+import { AdminGetOrderUserDocumentation } from './decorators/admin-get-order-user.documentation';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -50,15 +51,15 @@ export class OrderController {
   }
 
   /*Получение заказа пользователя по id заказа*/
+  @AdminGetOrderUserDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-order/:orderId([0-9]+)')
   public async adminGetOrderUser(
-	@Body() dto: Pick<OrderDto, 'userId'>,
 	@Param('orderId', ParseIntPipe) orderId: number,
   ) {
-	return this.orderService.adminGetOrderUser(orderId, dto.userId);
+	return this.orderService.adminGetOrderUser(orderId);
   }
 
   /*Создание заказа для пользователя администратором*/

@@ -25,7 +25,7 @@ export class OrderRepository {
 
   public async adminFindOrderUser(
 	id: number,
-	userId: number,
+	userId?: number,
   ): Promise<OrderModel> {
 	let order: OrderModel;
 	if (userId) {
