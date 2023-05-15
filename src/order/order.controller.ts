@@ -18,6 +18,7 @@ import { OrderDto } from './dto/order.dto';
 import { Request } from 'express';
 import { AdminGetListOfAllStoreOrdersDocumentation } from './decorators/admin-get-list-of-all-store-orders.documentation';
 import { ApiTags } from '@nestjs/swagger';
+import { AdminGetListOrdersUserDocumentation } from './decorators/admin-get-list-orders-user.documentation';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -37,6 +38,7 @@ export class OrderController {
   }
 
   /*Получение списка заказов пользователя*/
+  @AdminGetListOrdersUserDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
