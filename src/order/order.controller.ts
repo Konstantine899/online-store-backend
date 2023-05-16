@@ -21,6 +21,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { AdminGetListOrdersUserDocumentation } from './decorators/admin-get-list-orders-user.documentation';
 import { AdminGetOrderUserDocumentation } from './decorators/admin-get-order-user.documentation';
 import { AdminCreateOrderDocumentation } from './decorators/admin-create-order.documentation';
+import { AdminRemoveOrderDocumentation } from '../product/decorators/admin-remove-order.documentation';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -74,6 +75,7 @@ export class OrderController {
   }
 
   /*Администратор Удаление заказа*/
+  @AdminRemoveOrderDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
