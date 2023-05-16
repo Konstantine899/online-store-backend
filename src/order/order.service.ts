@@ -86,9 +86,9 @@ export class OrderService {
   /*Состав заказа мы получаем из корзины которая находится в cookie(если пользователь авторизован)*/
   /*Если пользователь авторизован то userId получаю из access token*/
   public async userCreateOrder(
-	dto: OrderDto,
-	userId?: number,
-	cartId?: number,
+	dto: Omit<OrderDto, 'userId'>,
+	userId: number,
+	cartId: number,
   ): Promise<OrderModel> {
 	return this.createOrder(dto, userId, cartId);
   }
@@ -102,18 +102,16 @@ export class OrderService {
   }
 
   private async createOrder(
-	dto: OrderDto,
-	userId?: number,
-	cartId?: number,
+	dto: Omit<OrderDto, 'userId'>,
+	userId: number,
+	cartId: number,
   ): Promise<OrderModel> {
 	/*Если есть userId ищем пользователя в БД. Если пользователь не найден выдаст исключение*/
 	if (userId) {
 		await this.userService.getProfileUser(userId);
 	}
-	if (!cartId) {
-		this.notFound(`Ваша корзина пуста`);
-	}
 	const cart = await this.cartRepository.findCart(cartId);
+	if (!cart) { this.notFound(`Корзины с id:${cartId} не найдена БД`); }
 	if (cart.products.length === 0) {
 		this.notFound(`Ваша корзина пуста`);
 	}

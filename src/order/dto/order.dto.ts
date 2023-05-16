@@ -12,10 +12,11 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class OrderDto {
   @ApiProperty({ example: 1, description: `Идентификатор заказчика` })
-  readonly userId: number;
+  @IsOptional()
+  readonly userId?: number;
 
   @ApiProperty({
-	example: `Атрощенко константин Анатольевич`,
+	example: `Атрощенко Константин Анатольевич`,
 	description: `ФИО заказчика`,
   })
   @IsNotEmpty({ message: 'Укажите ФИО заказчика' })

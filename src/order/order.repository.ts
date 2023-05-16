@@ -123,7 +123,7 @@ export class OrderRepository {
   }
 
   public async createOrder(
-	dto: OrderDto,
+	dto: Omit<OrderDto, 'userId'>,
 	userId?: number,
   ): Promise<OrderModel> {
 	const order: OrderModel = new OrderModel();

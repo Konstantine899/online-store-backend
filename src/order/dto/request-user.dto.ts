@@ -1,6 +1,6 @@
-import { IsNumber } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class RequestUserDto {
-  @IsNumber()
+  @Transform((value) => Number(value))
   readonly id: number;
 }
