@@ -22,6 +22,8 @@ import { AdminGetListOrdersUserDocumentation } from './decorators/admin-get-list
 import { AdminGetOrderUserDocumentation } from './decorators/admin-get-order-user.documentation';
 import { AdminCreateOrderDocumentation } from './decorators/admin-create-order.documentation';
 import { AdminRemoveOrderDocumentation } from '../product/decorators/admin-remove-order.documentation';
+import { RequestUserDto } from './dto/request-user.dto';
+import { RequestSignedCookiesDto } from './dto/request-signed-cookies.dto';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -37,7 +39,7 @@ export class OrderController {
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-all-order')
   public async adminGetListOfAllStoreOrders() {
-	return this.orderService.adminGetListOfAllStoreOrders();
+    return this.orderService.adminGetListOfAllStoreOrders();
   }
 
   /*Получение списка заказов пользователя*/
@@ -47,9 +49,9 @@ export class OrderController {
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-all-order/user/:userId([0-9]+)')
   public async adminGetListOrdersUser(
-	@Param('userId', ParseIntPipe) userId: number,
+    @Param('userId', ParseIntPipe) userId: number,
   ) {
-	return this.orderService.adminGetListOrdersUser(userId);
+    return this.orderService.adminGetListOrdersUser(userId);
   }
 
   /*Получение заказа пользователя по id заказа*/
@@ -59,9 +61,9 @@ export class OrderController {
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-order/:orderId([0-9]+)')
   public async adminGetOrderUser(
-	@Param('orderId', ParseIntPipe) orderId: number,
+    @Param('orderId', ParseIntPipe) orderId: number,
   ) {
-	return this.orderService.adminGetOrderUser(orderId);
+    return this.orderService.adminGetOrderUser(orderId);
   }
 
   /*Создание заказа для пользователя администратором*/
@@ -71,7 +73,7 @@ export class OrderController {
   @UseGuards(JwtGuard, RoleGuard)
   @Post(`/admin/create-order`)
   public async adminCreateOrder(@Body() dto: OrderDto) {
-	return this.orderService.adminCreateOrder(dto);
+    return this.orderService.adminCreateOrder(dto);
   }
 
   /*Администратор Удаление заказа*/
@@ -81,9 +83,9 @@ export class OrderController {
   @UseGuards(JwtGuard, RoleGuard)
   @Delete('/admin/delete-order/:orderId([0-9]+)')
   public async adminRemoveOrder(
-	@Param('orderId', ParseIntPipe) orderId: number,
+    @Param('orderId', ParseIntPipe) orderId: number,
   ) {
-	return this.orderService.adminRemoveOrder(orderId);
+    return this.orderService.adminRemoveOrder(orderId);
   }
 
   /*Для авторизованного пользователя*/
@@ -94,8 +96,8 @@ export class OrderController {
   @UseGuards(JwtGuard, RoleGuard)
   @Get(`/user/get-all-order`)
   public async userGetListOrders(@Req() request: Request) {
-	const { id }: IDecodedPayload = request.user;
-	return this.orderService.userGetListOrders(id);
+    const { id }: IDecodedPayload = request.user;
+    return this.orderService.userGetListOrders(id);
   }
 
   /*Получение одного заказа пользователя*/
@@ -105,11 +107,11 @@ export class OrderController {
   @UseGuards(JwtGuard, RoleGuard)
   @Get(`/user/get-order/:orderId([0-9]+)`)
   public async userGetOrder(
-	@Req() request: Request,
-	@Param('orderId', ParseIntPipe) orderId: number,
+    @Req() request: Request,
+    @Param('orderId', ParseIntPipe) orderId: number,
   ) {
-	const { id }: IDecodedPayload = request.user;
-	return this.orderService.userGetOrder(orderId, id);
+    const { id }: IDecodedPayload = request.user;
+    return this.orderService.userGetOrder(orderId, id);
   }
 
   @HttpCode(201)
@@ -117,19 +119,19 @@ export class OrderController {
   @UseGuards(JwtGuard, RoleGuard)
   @Post('/user/create-order')
   public async userCreateOrder(@Req() request: Request, @Body() dto: OrderDto) {
-	const { id }: IDecodedPayload = request.user;
-	const { cartId } = request.signedCookies;
-	return this.orderService.userCreateOrder(dto, id, Number(cartId));
+    const { id } = request.user as RequestUserDto;
+    const { cartId } = request.signedCookies as RequestSignedCookiesDto;
+    return this.orderService.userCreateOrder(dto, id, cartId);
   }
 
   /*Для не авторизованного пользователя*/
   @HttpCode(201)
   @Post('/guest/create-order')
   public async guestCreateOrder(
-	@Req() request: Request,
-	@Body() dto: OrderDto,
+    @Req() request: Request,
+    @Body() dto: OrderDto,
   ) {
-	const { cartId } = request.signedCookies;
-	return this.orderService.guestCreateOrder(dto, undefined, cartId);
+    const { cartId } = request.signedCookies;
+    return this.orderService.guestCreateOrder(dto, undefined, cartId);
   }
 }
