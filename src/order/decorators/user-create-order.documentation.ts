@@ -3,11 +3,13 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiNotFoundResponse,
+  ApiBadRequestResponse,
   ApiOperation,
   ApiResponse,
   OmitType,
 } from '@nestjs/swagger';
 import { OrderDto } from '../dto/order.dto';
+import { validateOrder } from './helpers/validate-order';
 
 export function UserCreateOrderDocumentation() {
   return applyDecorators(
@@ -70,5 +72,6 @@ export function UserCreateOrderDocumentation() {
 		],
 		},
 	}),
+	ApiBadRequestResponse(validateOrder()),
   );
 }
