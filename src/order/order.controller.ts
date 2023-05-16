@@ -25,6 +25,7 @@ import { AdminRemoveOrderDocumentation } from '../product/decorators/admin-remov
 import { RequestUserDto } from './dto/request-user.dto';
 import { RequestSignedCookiesDto } from './dto/request-signed-cookies.dto';
 import { UserCreateOrderDocumentation } from './decorators/user-create-order.documentation';
+import { UserGetOrderDocumentation } from './decorators/user-get-order.documentation';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -102,7 +103,7 @@ export class OrderController {
   }
 
   /*Получение одного заказа пользователя*/
-
+  @UserGetOrderDocumentation()
   @HttpCode(200)
   @Roles('USER')
   @UseGuards(JwtGuard, RoleGuard)
@@ -111,7 +112,7 @@ export class OrderController {
 	@Req() request: Request,
 	@Param('orderId', ParseIntPipe) orderId: number,
   ) {
-	const { id }: IDecodedPayload = request.user;
+	const { id } = request.user as RequestUserDto;
 	return this.orderService.userGetOrder(orderId, id);
   }
 
