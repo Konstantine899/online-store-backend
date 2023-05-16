@@ -82,9 +82,8 @@ export class OrderRepository {
 	});
   }
 
-  public async destroyOrder(order: OrderModel): Promise<boolean> {
-	await order.destroy();
-	return true;
+  public async removeOrder(id: number): Promise<number> {
+	return this.orderModel.destroy({ where: { id } });
   }
 
   public async userFindListOrders(userId: number): Promise<OrderModel[]> {

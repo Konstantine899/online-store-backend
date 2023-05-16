@@ -55,12 +55,12 @@ export class OrderService {
 	return userAndHisOrders;
   }
 
-  public async adminDeleteOrder(orderId: number): Promise<boolean> {
+  public async adminRemoveOrder(orderId: number): Promise<number> {
 	const order = await this.orderRepository.findOrder(orderId);
 	if (!order) {
 		this.notFound(`Заказ не найден`);
 	}
-	return this.orderRepository.destroyOrder(order);
+	return this.orderRepository.removeOrder(order.id);
   }
 
   public async userGetListOrders(userId): Promise<OrderModel[]> {

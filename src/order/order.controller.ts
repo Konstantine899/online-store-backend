@@ -78,10 +78,10 @@ export class OrderController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Delete('/admin/delete-order/:orderId([0-9]+)')
-  public async adminDeleteOrder(
+  public async adminRemoveOrder(
 	@Param('orderId', ParseIntPipe) orderId: number,
   ) {
-	return this.orderService.adminDeleteOrder(orderId);
+	return this.orderService.adminRemoveOrder(orderId);
   }
 
   /*Для авторизованного пользователя*/
