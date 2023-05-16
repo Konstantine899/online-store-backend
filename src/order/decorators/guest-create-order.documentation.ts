@@ -1,31 +1,22 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiNotFoundResponse,
   ApiBadRequestResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiResponse,
-  OmitType,
 } from '@nestjs/swagger';
-import { OrderDto } from '../dto/order.dto';
 import { validateOrder } from './helpers/validate-order';
 
-export function UserCreateOrderDocumentation() {
+export function GuestCreateOrderDocumentation() {
   return applyDecorators(
-	ApiOperation({ summary: `Создание заказа пользователем` }),
-	ApiBearerAuth('JWT-auth'),
-	ApiBody({
-		type: OmitType(OrderDto, [`userId`]),
-		description: `Входящая структура данных для создания заказа`,
-	}),
+	ApiOperation({ summary: `Создание заказа гостем` }),
 	ApiResponse({
 		description: `User create order`,
 		status: HttpStatus.CREATED,
 		schema: {
 		title: `Созданный заказ`,
 		example: {
-			id: 65,
+			id: 73,
 			name: 'Атрощенко Константин Анатольевич',
 			email: 'test@mail.com',
 			phone: '375298918971',
@@ -53,7 +44,7 @@ export function UserCreateOrderDocumentation() {
 			title: `Ваша корзина пуста`,
 			example: {
 				statusCode: HttpStatus.NOT_FOUND,
-				url: '/online-store/order/user/create-order?id=574&cartId=31',
+				url: '/online-store/order/guest/create-order?id=574&cartId=31',
 				path: '/online-store/order/guest/create-order',
 				name: 'NotFoundException',
 				message: 'Ваша корзина пуста',
@@ -63,7 +54,7 @@ export function UserCreateOrderDocumentation() {
 			title: `Корзина не найдена`,
 			example: {
 				statusCode: HttpStatus.NOT_FOUND,
-				url: '/online-store/order/user/create-order?id=574&cartId=31',
+				url: '/online-store/order/guest/create-order?id=574&cartId=31',
 				path: '/online-store/order/guest/create-order',
 				name: 'NotFoundException',
 				message: `Корзины с id:26 не найдена БД`,

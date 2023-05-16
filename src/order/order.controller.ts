@@ -27,6 +27,7 @@ import { RequestSignedCookiesDto } from './dto/request-signed-cookies.dto';
 import { UserCreateOrderDocumentation } from './decorators/user-create-order.documentation';
 import { UserGetOrderDocumentation } from './decorators/user-get-order.documentation';
 import { UserGetListOrdersDocumentation } from './decorators/user-get-list-orders.documentation';
+import { GuestCreateOrderDocumentation } from './decorators/guest-create-order.documentation';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -134,6 +135,7 @@ export class OrderController {
 
   /*Для не авторизованного пользователя*/
 
+  @GuestCreateOrderDocumentation()
   @HttpCode(201)
   @Post('/guest/create-order')
   public async guestCreateOrder(
