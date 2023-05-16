@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { JwtGuard } from '../token/jwt.guard';
-import { IDecodedPayload, RoleGuard } from '../role/role.guard';
+import { RoleGuard } from '../role/role.guard';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { OrderDto } from './dto/order.dto';
 import { Request } from 'express';
@@ -26,6 +26,7 @@ import { RequestUserDto } from './dto/request-user.dto';
 import { RequestSignedCookiesDto } from './dto/request-signed-cookies.dto';
 import { UserCreateOrderDocumentation } from './decorators/user-create-order.documentation';
 import { UserGetOrderDocumentation } from './decorators/user-get-order.documentation';
+import { UserGetListOrdersDocumentation } from './decorators/user-get-list-orders.documentation';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -93,12 +94,13 @@ export class OrderController {
   /*Для авторизованного пользователя*/
 
   /*Получение списка заказов пользователя*/
+  @UserGetListOrdersDocumentation()
   @HttpCode(200)
   @Roles('USER')
   @UseGuards(JwtGuard, RoleGuard)
   @Get(`/user/get-all-order`)
   public async userGetListOrders(@Req() request: Request) {
-	const { id }: IDecodedPayload = request.user;
+	const { id } = request.user as RequestUserDto;
 	return this.orderService.userGetListOrders(id);
   }
 

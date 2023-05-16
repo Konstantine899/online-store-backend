@@ -65,8 +65,8 @@ export class OrderService {
 
   public async userGetListOrders(userId): Promise<OrderModel[]> {
 	const orders = await this.orderRepository.userFindListOrders(userId);
-	if (!orders) {
-		this.notFound(`Заказ не найден`);
+	if (!orders.length) {
+		this.notFound(`Заказы не найдены`);
 	}
 	return orders;
   }
@@ -111,7 +111,9 @@ export class OrderService {
 		await this.userService.getProfileUser(userId);
 	}
 	const cart = await this.cartRepository.findCart(cartId);
-	if (!cart) { this.notFound(`Корзины с id:${cartId} не найдена БД`); }
+	if (!cart) {
+		this.notFound(`Корзины с id:${cartId} не найдена БД`);
+	}
 	if (cart.products.length === 0) {
 		this.notFound(`Ваша корзина пуста`);
 	}
