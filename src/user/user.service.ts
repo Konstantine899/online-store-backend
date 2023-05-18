@@ -91,7 +91,9 @@ export class UserService {
 
   public async removeUser(id: number): Promise<number> {
 	const user = await this.userRepository.findUser(id);
-	if (!user) { this.notFound(`Пользователь не найден в БД`); }
+	if (!user) {
+		this.notFound(`Пользователь не найден в БД`);
+	}
 	return this.userRepository.removeUser(user.id);
   }
 
@@ -119,16 +121,11 @@ export class UserService {
 		this.notFound(`Пользователь не найден в БД`);
 	}
 	const foundRole = await this.roleService.getRole(dto.role);
+	if (!foundRole) { this.notFound(`Роль ${dto.role} не найдена в БД`); }
 	if (foundRole.role === 'USER') {
 		this.forbiddenException('Удаление роли USER запрещено');
 	}
-	const removedRole: number = await user.$remove('role', foundRole.id);
-	if (!removedRole) {
-		this.notFound(
-		`Роль ${foundRole.role} не принадлежит данному пользователю`,
-		);
-	}
-	return removedRole;
+	return user.$remove('role', foundRole.id);
   }
 
   private notFound(message: string): void {

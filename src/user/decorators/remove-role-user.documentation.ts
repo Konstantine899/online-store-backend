@@ -28,19 +28,23 @@ export function RemoveRoleUserDocumentation() {
 		schema: {
 		anyOf: [
 			{
-			title: 'Поиск не существующего пользователя',
-			description: `Пользователь не найден в БД`,
+			title: 'Пользователь не найден в БД',
 			example: {
-				statusCode: 404,
+				statusCode: HttpStatus.NOT_FOUND,
+				url: '/online-store/user/role/delete',
+				path: '/online-store/user/role/delete',
+				name: 'NotFoundException',
 				message: 'Пользователь не найден в БД',
 			},
 			},
 			{
-			title: `Удаление роли которой нет у пользователя`,
-			description: `Удаление роли пользователя которая ему не принадлежит`,
+			title: `Роль не найдена в БД`,
 			example: {
-				statusCode: 404,
-				message: `Роль ADMIN не принадлежит данному пользователю`,
+				statusCode: HttpStatus.NOT_FOUND,
+				url: '/online-store/user/role/delete',
+				path: '/online-store/user/role/delete',
+				name: 'NotFoundException',
+				message: 'Роль ADMIN1 не найдена в БД',
 			},
 			},
 		],
@@ -52,7 +56,7 @@ export function RemoveRoleUserDocumentation() {
 		schema: {
 		title: `Запрет удаления роли USER`,
 		example: {
-			status: 403,
+			status: HttpStatus.FORBIDDEN,
 			message: 'Удаление роли USER запрещено',
 		},
 		},
