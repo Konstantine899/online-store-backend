@@ -2,13 +2,11 @@ import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
-  ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOperation,
-  OmitType,
+  ApiResponse,
 } from '@nestjs/swagger';
 import { CreateUserDto } from '../dto/create-user.dto';
-import { UserModel } from '../user.model';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 
 export function CreateUserDocumentation() {
@@ -19,24 +17,60 @@ export function CreateUserDocumentation() {
 		type: CreateUserDto,
 		description: `Структура входных данных для создания пользователя`,
 	}),
-	ApiCreatedResponse({
-		description: `Create user`,
-		type: OmitType(UserModel, [
-		'roles',
-		'refresh_tokens',
-		'products',
-		'orders',
-		]),
+	ApiResponse({
+		description: `Created user`,
+		status: HttpStatus.CREATED,
+		schema: {
+		title: `Созданный пользователь`,
+		example: {
+			id: 59,
+			email: 'test1@gmail.com',
+			roles: [
+			{
+				id: 2,
+				role: 'USER',
+				description: 'Пользователь',
+			},
+			],
+		},
+		},
 	}),
 	ApiBadRequestResponse({
 		description: `Bad Request`,
 		status: HttpStatus.BAD_REQUEST,
 		schema: {
-		title: `Существующий email в БД`,
-		example: {
-			message: `Пользователь с таким email: test@gmail.com уже существует`,
-			error: 'Bad Request',
-		},
+		anyOf: [
+			{
+			title: `Существующий email в БД`,
+			example: {
+				statusCode: HttpStatus.BAD_REQUEST,
+				message:
+				'Пользователь с таким email: test@gmail.com уже существует',
+				error: 'Bad Request',
+			},
+			},
+			{
+			title: `Не верный формат email`,
+			example: {
+				status: HttpStatus.BAD_REQUEST,
+				property: 'email',
+				messages: ['Не верный формат email'],
+				value: 'testgmail.com',
+			},
+			},
+			{
+			title: `Валидация пароля`,
+			example: {
+				status: HttpStatus.BAD_REQUEST,
+				property: 'password',
+				messages: [
+				'Пароль пользователя должен быть не менее 6 символов',
+				'Поле пароль не должно быть пустым',
+				],
+				value: '12345',
+			},
+			},
+		],
 		},
 	}),
 	ApiNotFoundResponse({

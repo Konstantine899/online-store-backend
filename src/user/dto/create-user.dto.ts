@@ -9,11 +9,12 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'Укажите email' })
   @IsEmail({}, { message: 'Не верный формат email' })
   readonly email: string;
+
   @ApiProperty({
 	example: `123456`,
 	description: `Пароль пользователя с минимальной длинной 6 символов`,
   })
-  @IsNotEmpty({ message: 'Укажите пароль' })
+  @IsNotEmpty({ message: 'Поле пароль не должно быть пустым' })
   @MinLength(6, {
 	message: 'Пароль пользователя должен быть не менее 6 символов',
   })

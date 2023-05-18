@@ -22,7 +22,7 @@ interface IUserCreationAttributes {
   tableName: 'user',
   underscored: true,
   defaultScope: {
-    attributes: { exclude: [`updatedAt`, `createdAt`] },
+	attributes: { exclude: [`updatedAt`, `createdAt`] },
   },
 })
 export class UserModel extends Model<UserModel, IUserCreationAttributes> {
@@ -42,14 +42,14 @@ export class UserModel extends Model<UserModel, IUserCreationAttributes> {
   //У одного пользователя могут быть несколько refresh tokens
 
   @HasMany(() => RefreshTokenModel, {
-    onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
+	onDelete: 'CASCADE',
+	onUpdate: 'CASCADE',
   })
   refresh_tokens: RefreshTokenModel[];
 
   @BelongsToMany(() => ProductModel, {
-    through: () => RatingModel,
-    onDelete: 'CASCADE',
+	through: () => RatingModel,
+	onDelete: 'CASCADE',
   })
   products: ProductModel[];
 

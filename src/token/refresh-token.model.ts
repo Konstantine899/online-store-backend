@@ -12,15 +12,15 @@ import { UserModel } from '../user/user.model';
   tableName: 'refresh_token',
   underscored: true,
   defaultScope: {
-    attributes: { exclude: [`updatedAt`, `createdAt`] },
+	attributes: { exclude: [`updatedAt`, `createdAt`] },
   },
 })
 export class RefreshTokenModel extends Model<RefreshTokenModel> {
   @Column({
-    type: DataType.INTEGER,
-    unique: true,
-    primaryKey: true,
-    autoIncrement: true,
+	type: DataType.INTEGER,
+	unique: true,
+	primaryKey: true,
+	autoIncrement: true,
   })
   id: number;
 
