@@ -1,11 +1,10 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiResponse,
-  OmitType,
 } from '@nestjs/swagger';
-import { UserModel } from '../user.model';
 
 export function GetListUsersDocumentation() {
   return applyDecorators(
@@ -14,9 +13,37 @@ export function GetListUsersDocumentation() {
 	ApiResponse({
 		description: `Get list users`,
 		status: HttpStatus.OK,
-		type: [
-		OmitType(UserModel, ['roles', 'refresh_tokens', 'products', 'orders']),
+		schema: {
+		title: `Список всех пользователей`,
+		example: [
+			{
+			id: 1,
+			email: 'kostay375298918971@gmail.com',
+			},
+			{
+			id: 57,
+			email: 'test@gmail.com',
+			},
+			{
+			id: 61,
+			email: 'test1@gmail.com',
+			},
 		],
+		},
+	}),
+	ApiNotFoundResponse({
+		description: `List users is empty`,
+		status: HttpStatus.NOT_FOUND,
+		schema: {
+		title: `Список пользователей пуст`,
+		example: {
+			statusCode: HttpStatus.NOT_FOUND,
+			url: '/online-store/user/get-list-users',
+			path: '/online-store/user/get-list-users',
+			name: 'NotFoundException',
+			message: `Список пользователей пуст`,
+		},
+		},
 	}),
   );
 }

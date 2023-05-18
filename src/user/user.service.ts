@@ -55,7 +55,9 @@ export class UserService {
   }
 
   public async getListUsers(): Promise<UserModel[]> {
-	return this.userRepository.findListUsers();
+	const listUsers = this.userRepository.findListUsers();
+	if (!listUsers) { this.notFound(`Список пользователей пуст`); }
+	return listUsers;
   }
 
   public async updateUser(id: number, dto: CreateUserDto): Promise<UserModel> {

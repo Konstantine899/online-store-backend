@@ -103,7 +103,7 @@ export class UserRepository {
   }
 
   public async findListUsers() {
-	return this.userModel.findAll();
+	return this.userModel.findAll({ attributes: { exclude: [`password`] } });
   }
 
   public async removeUser(id: number) {
