@@ -42,6 +42,12 @@ export class UserService {
 	return this.userRepository.findAuthenticatedUser(userId);
   }
 
+  public async getUser(id: number): Promise<UserModel> {
+	const foundUser = await this.userRepository.findUser(id);
+	if (!foundUser) { this.notFound(`Пользователь не найден В БД`); }
+	return foundUser;
+  }
+
   public async getProfileUser(id: number): Promise<UserModel> {
 	const user = await this.userRepository.findProfileUser(id);
 	if (!user) {
@@ -56,7 +62,9 @@ export class UserService {
 
   public async getListUsers(): Promise<UserModel[]> {
 	const listUsers = this.userRepository.findListUsers();
-	if (!listUsers) { this.notFound(`Список пользователей пуст`); }
+	if (!listUsers) {
+		this.notFound(`Список пользователей пуст`);
+	}
 	return listUsers;
   }
 
@@ -78,7 +86,7 @@ export class UserService {
   }
 
   public async addRole(dto: AddRoleDto): Promise<unknown> {
-	const user = await this.userRepository.findUserById(dto.userId);
+	const user = await this.userRepository.findUser(dto.userId);
 	if (!user) {
 		this.notFound(`Пользователь не найден в БД`);
 	}
@@ -96,7 +104,7 @@ export class UserService {
   }
 
   public async removeRole(dto: RemoveRoleDto): Promise<number> {
-	const user = await this.userRepository.findUserById(dto.userId);
+	const user = await this.userRepository.findUser(dto.userId);
 	if (!user) {
 		this.notFound(`Пользователь не найден в БД`);
 	}

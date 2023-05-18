@@ -19,7 +19,7 @@ export class UserRepository {
   }
 
   public async updateUser(id: number, dto: CreateUserDto): Promise<UserModel> {
-	const user = await this.findUserById(id);
+	const user = await this.findUser(id);
 	const findEmail = await this.findUserByEmail(dto.email);
 	if (findEmail) {
 		throw new BadRequestException(
@@ -35,7 +35,7 @@ export class UserRepository {
 	return this.userModel.findByPk(user.id);
   }
 
-  public async findUserById(id: number): Promise<UserModel> {
+  public async findUser(id: number): Promise<UserModel> {
 	return this.userModel.findOne({
 		where: { id },
 		attributes: { exclude: [`password`] },

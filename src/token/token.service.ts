@@ -58,7 +58,7 @@ export class TokenService {
 	if (!subjectId) {
 		throw new UnprocessableEntityException('Не верный формат refresh token');
 	}
-	return this.userRepository.findUserById(subjectId);
+	return this.userRepository.findUser(subjectId);
   }
 
   // получаю сохраненный refresh token из refresh token payload
