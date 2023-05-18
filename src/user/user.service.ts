@@ -44,7 +44,9 @@ export class UserService {
 
   public async getUser(id: number): Promise<UserModel> {
 	const foundUser = await this.userRepository.findUser(id);
-	if (!foundUser) { this.notFound(`Пользователь не найден В БД`); }
+	if (!foundUser) {
+		this.notFound(`Пользователь не найден В БД`);
+	}
 	return foundUser;
   }
 
@@ -69,12 +71,20 @@ export class UserService {
   }
 
   public async updateUser(id: number, dto: CreateUserDto): Promise<UserModel> {
-	const user = await this.userRepository.updateUser(id, dto);
+	const foundUser = await this.userRepository.findUser(id);
+	if (!foundUser) { this.notFound(`Пользователь с id: ${id} не найден в БД`); }
+	const foundEmail = await this.findUserByEmail(dto.email);
+	if (foundEmail) {
+		this.badRequest(
+		`Пользователь с таким email: ${dto.email} уже существует`,
+		);
+	}
+	const updatedUser = await this.userRepository.updateUser(foundUser, dto);
 	const role = await this.roleService.getRole('USER');
 	/* #set Потому что обновляется весь объект. Ищу роль пользователя и при обновлении перезаписываю поле*/
-	await user.$set('roles', [role.id]);
-	user.roles = [role];
-	return user;
+	await updatedUser.$set('roles', [role.id]);
+	updatedUser.roles = [role];
+	return updatedUser;
   }
 
   public async removeUser(id: number): Promise<number> {
@@ -126,6 +136,10 @@ export class UserService {
 		status: HttpStatus.NOT_FOUND,
 		message,
 	});
+  }
+
+  private badRequest(message: string): void {
+	throw new BadRequestException({ status: HttpStatus.BAD_REQUEST, message });
   }
 
   private conflictException(message: string): void {

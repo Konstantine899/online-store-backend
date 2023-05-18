@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UserModel } from './user.model';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -18,21 +18,22 @@ export class UserRepository {
 	return user.save();
   }
 
-  public async updateUser(id: number, dto: CreateUserDto): Promise<UserModel> {
-	const user = await this.findUser(id);
-	const findEmail = await this.findUserByEmail(dto.email);
-	if (findEmail) {
-		throw new BadRequestException(
-		`Пользователь с таким email: ${dto.email} уже существует`,
-		);
-	}
+  public async updateUser(
+	user: UserModel,
+	dto: CreateUserDto,
+  ): Promise<UserModel> {
 	await user.update({
 		...dto,
 		email: dto.email,
 		password: await hash(dto.password, 10),
 	});
 
-	return this.userModel.findByPk(user.id);
+	return this.userModel.findByPk(user.id, {
+		attributes: { exclude: [`password`] },
+		include: { model: RoleModel, through: { attributes: [] } },
+		/*Так как при обновлении всего объекта пользователя я обновляю и его роль, то роли тоже возвращаю,
+       кроме данных из связующей таблицы user-role*/
+	});
   }
 
   public async findUser(id: number): Promise<UserModel> {
