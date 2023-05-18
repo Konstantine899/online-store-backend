@@ -15,6 +15,7 @@ export function RemoveUserDocumentation() {
 		name: `id`,
 		type: `string`,
 		description: `идентификатор пользователя`,
+		required: true,
 	}),
 	ApiResponse({
 		description: `Remove user`,
@@ -27,9 +28,11 @@ export function RemoveUserDocumentation() {
 		schema: {
 		title: `Пользователь не найден В БД`,
 		example: {
-			title: `Пользователь не найден В БД`,
-			statusCode: 404,
-			message: 'Пользователь не найден В БД',
+			statusCode: HttpStatus.NOT_FOUND,
+			url: '/online-store/user/delete/62',
+			path: '/online-store/user/delete/62',
+			name: 'NotFoundException',
+			message: 'Пользователь не найден в БД',
 		},
 		},
 	}),

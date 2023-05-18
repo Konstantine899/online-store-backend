@@ -72,7 +72,9 @@ export class UserService {
 
   public async updateUser(id: number, dto: CreateUserDto): Promise<UserModel> {
 	const foundUser = await this.userRepository.findUser(id);
-	if (!foundUser) { this.notFound(`Пользователь с id: ${id} не найден в БД`); }
+	if (!foundUser) {
+		this.notFound(`Пользователь с id: ${id} не найден в БД`);
+	}
 	const foundEmail = await this.findUserByEmail(dto.email);
 	if (foundEmail) {
 		this.badRequest(
@@ -88,10 +90,8 @@ export class UserService {
   }
 
   public async removeUser(id: number): Promise<number> {
-	const user = await this.getProfileUser(id);
-	if (!user) {
-		throw new NotFoundException(`Пользователь не найден`);
-	}
+	const user = await this.userRepository.findUser(id);
+	if (!user) { this.notFound(`Пользователь не найден в БД`); }
 	return this.userRepository.removeUser(user.id);
   }
 

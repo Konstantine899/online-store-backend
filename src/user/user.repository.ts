@@ -43,7 +43,7 @@ export class UserRepository {
 		include: [
 		{
 			model: RoleModel,
-			through: { attributes: [] }, // this may not be needed
+			through: { attributes: [] },
 		},
 		],
 	});
