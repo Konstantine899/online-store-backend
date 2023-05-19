@@ -4,7 +4,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class AddRoleDto {
   @ApiProperty({
-	example: `1`,
+	example: 1,
 	description: `Идентификатор пользователя`,
   })
   @Transform((value) => Number(value))
