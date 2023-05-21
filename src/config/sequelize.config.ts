@@ -1,4 +1,5 @@
 import { SequelizeModuleAsyncOptions } from '@nestjs/sequelize';
+import { Dialect } from 'sequelize';
 import { ProductModel } from '../product/product.model';
 import { CategoryModel } from '../category/category-model';
 import { BrandModel } from '../brand/brand.model';
@@ -17,7 +18,7 @@ import { OrderItemModel } from '../order-item/order-item.model';
 export const sequelizeConfig: SequelizeModuleAsyncOptions = {
   useFactory: () => {
 	return {
-		dialect: 'mysql',
+		dialect: <Dialect>process.env.DIALECT,
 		host: process.env.MYSQL_HOST,
 		port: Number(process.env.MYSQL_PORT),
 		username: process.env.MYSQL_USER,
