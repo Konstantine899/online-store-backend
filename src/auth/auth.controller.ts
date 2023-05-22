@@ -59,12 +59,12 @@ export class AuthController {
 
   @ProfileUserDocumentation()
   @UseGuards(JwtGuard)
-  @Get('/profile')
-  public async getProfileUser(
+  @Get('/login-check')
+  public async loginCheck(
 	@Req() request: Request,
   ): Promise<{ status: HttpStatus; data: UserModel }> {
 	const { id } = request.user as GetProfileUserRequest;
-	const foundUser = await this.userService.getProfileUser(id);
+	const foundUser = await this.userService.loginCheck(id);
 	return {
 		status: HttpStatus.OK,
 		data: foundUser,

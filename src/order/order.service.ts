@@ -108,7 +108,7 @@ export class OrderService {
   ): Promise<OrderModel> {
 	/*Если есть userId ищем пользователя в БД. Если пользователь не найден выдаст исключение*/
 	if (userId) {
-		await this.userService.getProfileUser(userId);
+		await this.userService.getUser(userId);
 	}
 	const cart = await this.cartRepository.findCart(cartId);
 	if (!cart) {

@@ -21,7 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   public async validate(payload: IAccessTokenSubject): Promise<UserModel> {
-	const user = await this.userService.getProfileUser(payload.sub);
+	const user = await this.userService.loginCheck(payload.sub);
 	if (!user) {
 		return null;
 	}

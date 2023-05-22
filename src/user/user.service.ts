@@ -50,8 +50,8 @@ export class UserService {
 	return foundUser;
   }
 
-  public async getProfileUser(id: number): Promise<UserModel> {
-	const user = await this.userRepository.findProfileUser(id);
+  public async loginCheck(id: number): Promise<UserModel> {
+	const user = await this.userRepository.findUser(id);
 	if (!user) {
 		this.notFound('Профиль пользователя не найден в БД');
 	}
@@ -121,7 +121,9 @@ export class UserService {
 		this.notFound(`Пользователь не найден в БД`);
 	}
 	const foundRole = await this.roleService.getRole(dto.role);
-	if (!foundRole) { this.notFound(`Роль ${dto.role} не найдена в БД`); }
+	if (!foundRole) {
+		this.notFound(`Роль ${dto.role} не найдена в БД`);
+	}
 	if (foundRole.role === 'USER') {
 		this.forbiddenException('Удаление роли USER запрещено');
 	}
