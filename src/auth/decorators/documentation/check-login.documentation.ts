@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { GetProfileUserRequest } from '../../requests/get-profile-user.request';
 
-export function ProfileUserDocumentation() {
+export function CheckLoginDocumentation() {
   return applyDecorators(
 	ApiOperation({ summary: `Профиль пользователя` }),
 	ApiBearerAuth('JWT-auth'),

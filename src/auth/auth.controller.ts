@@ -20,7 +20,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { RegistrationDocumentation } from './decorators/documentation/registration.documentation';
 import { LoginDocumentation } from './decorators/documentation/login.documentation';
 import { UpdateAccessTokenDocumentation } from './decorators/documentation/update-access-token.documentation';
-import { ProfileUserDocumentation } from './decorators/documentation/profile-user.documentation';
+import { CheckLoginDocumentation } from './decorators/documentation/check-login.documentation';
 import { UserModel } from '../user/user.model';
 import { GetProfileUserRequest } from './requests/get-profile-user.request';
 
@@ -58,7 +58,7 @@ export class AuthController {
 	return this.authService.updateAccessToken(dto.refreshToken);
   }
 
-  @ProfileUserDocumentation()
+  @CheckLoginDocumentation()
   @UseGuards(JwtGuard)
   @Get('/login-check')
   public async loginCheck(
@@ -72,7 +72,6 @@ export class AuthController {
 	};
   }
 
-  @ProfileUserDocumentation()
   @UseGuards(JwtGuard)
   @Delete('/logout')
   public async logout(@Body() refresh: RefreshDto) {
