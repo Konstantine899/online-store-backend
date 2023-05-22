@@ -110,6 +110,10 @@ export class CartService {
 	params: IParams,
   ): Promise<ITransformData> {
 	const { productId, quantity } = params;
+	const product = await this.productRepository.fidProductByPkId(productId);
+	if (!product) {
+		this.notFound(`Продукт с id:${productId} не найден в БД`);
+	}
 	let { cartId } = request.signedCookies as { cartId: number };
 	if (!cartId) {
 		const created = await this.cartRepository.createCart();
@@ -118,7 +122,7 @@ export class CartService {
 	const foundCart = await this.findCart(cartId);
 	const cart = await this.cartRepository.decrement(
 		foundCart.id,
-		productId,
+		product.id,
 		quantity,
 	);
 	response.cookie('cartId', cart.id, {
