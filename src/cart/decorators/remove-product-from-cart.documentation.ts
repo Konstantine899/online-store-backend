@@ -32,14 +32,28 @@ export function RemoveProductFromCartDocumentation() {
 		description: `Not found`,
 		status: HttpStatus.NOT_FOUND,
 		schema: {
-		title: `Корзина не найдена в БД`,
-		example: {
-			statusCode: HttpStatus.NOT_FOUND,
-			url: '/online-store/cart/product/55/remove',
-			path: '/online-store/cart/product/55/remove',
-			name: 'NotFoundException',
-			message: 'Корзина с id:26 не найдена в БД',
-		},
+		anyOf: [
+			{
+			title: `Корзина не найдена в БД`,
+			example: {
+				statusCode: HttpStatus.NOT_FOUND,
+				url: '/online-store/cart/product/55/remove',
+				path: '/online-store/cart/product/55/remove',
+				name: 'NotFoundException',
+				message: 'Корзина с id:26 не найдена в БД',
+			},
+			},
+			{
+			title: `Продукт не найден в БД`,
+			example: {
+				statusCode: HttpStatus.NOT_FOUND,
+				url: '/online-store/cart/product/56/remove',
+				path: '/online-store/cart/product/56/remove',
+				name: 'NotFoundException',
+				message: 'Продукт с id:56 не найден в БД',
+			},
+			},
+		],
 		},
 	}),
   );
