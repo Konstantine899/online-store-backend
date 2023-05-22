@@ -76,7 +76,7 @@ export class AuthController {
   @LogoutDocumentation()
   @UseGuards(JwtGuard)
   @Delete('/logout')
-  public async logout(@Body() refresh: RefreshDto) {
-	return this.authService.logout(refresh);
+  public async logout(@Req() request: Request, @Body() refresh: RefreshDto) {
+	return this.authService.logout(refresh, request);
   }
 }

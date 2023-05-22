@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { UserModel } from '../user/user.model';
 import { TokenService } from '../token/token.service';
 import { RefreshDto } from './dto/refresh.dto';
+import { Request } from 'express';
 
 export interface IAuthPayload {
   payload: {
@@ -64,11 +65,16 @@ export class AuthService {
 	};
   }
 
-  public async logout(refresh: RefreshDto): Promise<number> {
+  public async logout(
+	refresh: RefreshDto,
+	request: Request,
+  ): Promise<{ status: number; message: string }> {
 	const payload = await this.tokenService.decodeRefreshToken(
 		refresh.refreshToken,
 	);
-	return this.tokenService.removeRefreshToken(payload.jti, payload.sub);
+	await this.tokenService.removeRefreshToken(payload.jti, payload.sub);
+	request.headers.authorization = null; // обнуляю access token
+	return { status: HttpStatus.OK, message: `success` };
   }
 
   public async updateAccessToken(
