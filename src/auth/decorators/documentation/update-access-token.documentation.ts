@@ -1,6 +1,7 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
   ApiBody,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiResponse,
   ApiUnprocessableEntityResponse,
@@ -33,23 +34,36 @@ export function UpdateAccessTokenDocumentation() {
 		},
 		},
 	}),
+	ApiNotFoundResponse({
+		status: HttpStatus.NOT_FOUND,
+		schema: {
+		example: {
+			title: `Refresh token не найден в БД`,
+			example: {
+			status: HttpStatus.UNPROCESSABLE_ENTITY,
+			message: 'Refresh token не найден в БД',
+			error: 'Unprocessable Entity',
+			},
+		},
+		},
+	}),
 	ApiUnprocessableEntityResponse({
 		description: `Unprocessable Entity`,
 		status: HttpStatus.UNPROCESSABLE_ENTITY,
 		schema: {
 		anyOf: [
 			{
-			title: `Не передан refresh token`,
-			description: `Не передан refresh token`,
+			title: `id refresh token не получен из payload`,
+
 			example: {
 				status: HttpStatus.UNPROCESSABLE_ENTITY,
-				message: 'Refresh token не найден',
+				message: 'id refresh token не получен из payload',
 				error: 'Unprocessable Entity',
 			},
 			},
 			{
-			title: `Передан не верный формат refresh token`,
-			description: `Передан не верный формат refresh token`,
+			title: `'Не верный формат refresh token'`,
+
 			example: {
 				status: HttpStatus.UNPROCESSABLE_ENTITY,
 				message: 'Не верный формат refresh token',
@@ -57,7 +71,7 @@ export function UpdateAccessTokenDocumentation() {
 			},
 			},
 			{
-			title: `Refresh token с истекшим сроком действия`,
+			title: `Срок действия refresh token истек`,
 			description: `Refresh token с истекшим сроком действия`,
 			example: {
 				status: HttpStatus.UNPROCESSABLE_ENTITY,

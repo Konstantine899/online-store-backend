@@ -1,4 +1,9 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import {
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserModel } from '../user/user.model';
 import { SignOptions, TokenExpiredError } from 'jsonwebtoken';
@@ -67,7 +72,9 @@ export class TokenService {
   ): Promise<RefreshTokenModel | null> {
 	const refreshTokenId = payload.jti;
 	if (!refreshTokenId) {
-		throw new UnprocessableEntityException('Не верный формат refresh token');
+		throw new UnprocessableEntityException(
+		'id refresh token не получен из payload',
+		);
 	}
 	return this.refreshTokenRepository.findRefreshTokenById(refreshTokenId);
   }
@@ -98,9 +105,7 @@ export class TokenService {
 	const payload = await this.decodeRefreshToken(encoded);
 	const refreshToken =
 		await this.getStoredRefreshTokenFromRefreshTokenPayload(payload);
-	if (!refreshToken) {
-		throw new UnprocessableEntityException('Refresh token не найден');
-	}
+	if (!refreshToken) { this.notFound(`Refresh token не найден в БД`); }
 	const user = await this.getUserFromRefreshTokenPayload(payload);
 	if (!user) {
 		throw new UnprocessableEntityException('Не верный формат refresh token');
@@ -126,5 +131,12 @@ export class TokenService {
 		return this.refreshTokenRepository.removeListRefreshTokens(userId);
 	}
 	return this.refreshTokenRepository.removeRefreshToken(refreshTokenId);
+  }
+
+  private notFound(message: string): void {
+	throw new NotFoundException({
+		status: HttpStatus.NOT_FOUND,
+		message,
+	});
   }
 }

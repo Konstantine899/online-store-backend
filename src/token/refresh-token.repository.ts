@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { RefreshTokenModel } from './refresh-token.model';
 import { UserModel } from '../user/user.model';
@@ -26,13 +26,9 @@ export class RefreshTokenRepository {
   public async findRefreshTokenById(
 	id: number,
   ): Promise<RefreshTokenModel | null> {
-	const refresh_token = await this.refreshTokenModel.findOne({
+	return this.refreshTokenModel.findOne({
 		where: { id },
 	});
-	if (!refresh_token) {
-		throw new NotFoundException('Refresh token не найден');
-	}
-	return refresh_token;
   }
 
   public async findListRefreshTokens(
