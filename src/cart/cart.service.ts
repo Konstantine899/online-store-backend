@@ -55,10 +55,7 @@ export class CartService {
   ): Promise<ITransformData> {
 	let { cartId } = request.signedCookies as { cartId: number };
 	const { productId, quantity } = params;
-	const product = await this.productRepository.fidProductByPkId(productId);
-	if (!product) {
-		this.notFound(`Продукт с id:${productId} не найден в БД`);
-	}
+	const product = await this.findProduct(productId);
 	if (!cartId) {
 		const created = await this.cartRepository.createCart();
 		cartId = created.id;
@@ -82,10 +79,7 @@ export class CartService {
 	params: IParams,
   ): Promise<ITransformData> {
 	const { productId, quantity } = params;
-	const product = await this.productRepository.fidProductByPkId(productId);
-	if (!product) {
-		this.notFound(`Продукт с id:${productId} не найден в БД`);
-	}
+	const product = await this.findProduct(productId);
 	let { cartId } = request.signedCookies as { cartId: number };
 	if (!cartId) {
 		const created = await this.cartRepository.createCart();
@@ -110,10 +104,7 @@ export class CartService {
 	params: IParams,
   ): Promise<ITransformData> {
 	const { productId, quantity } = params;
-	const product = await this.productRepository.fidProductByPkId(productId);
-	if (!product) {
-		this.notFound(`Продукт с id:${productId} не найден в БД`);
-	}
+	const product = await this.findProduct(productId);
 	let { cartId } = request.signedCookies as { cartId: number };
 	if (!cartId) {
 		const created = await this.cartRepository.createCart();
@@ -138,10 +129,7 @@ export class CartService {
 	params: IParams,
   ): Promise<ITransformData> {
 	const { productId } = params;
-	const product = await this.productRepository.fidProductByPkId(productId);
-	if (!product) {
-		this.notFound(`Продукт с id:${productId} не найден в БД`);
-	}
+	const product = await this.findProduct(productId);
 	let { cartId } = request.signedCookies as { cartId: number };
 	if (!cartId) {
 		const created = await this.cartRepository.createCart();
@@ -204,6 +192,14 @@ export class CartService {
 		this.notFound(`Корзина с id:${cartId} не найдена в БД`);
 	}
 	return foundCart;
+  }
+
+  private async findProduct(id: number): Promise<ProductModel> {
+	const product = await this.productRepository.fidProductByPkId(id);
+	if (!product) {
+		this.notFound(`Продукт с id:${id} не найден в БД`);
+	}
+	return product;
   }
 
   private notFound(message: string): void {
