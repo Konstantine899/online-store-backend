@@ -3,6 +3,7 @@ import { CartRepository } from './cart.repository';
 import { Request, Response } from 'express';
 import { CartModel } from './cart.model';
 import { ProductModel } from '../product/product.model';
+import { ProductRepository } from '../product/product.repository';
 
 export class ISignedCookies {
   cartId: string;
@@ -20,7 +21,10 @@ export interface ITransformData {
 
 @Injectable()
 export class CartService {
-  constructor(private readonly cartRepository: CartRepository) {}
+  constructor(
+	private readonly cartRepository: CartRepository,
+	private readonly productRepository: ProductRepository,
+  ) {}
 
   maxAge: number = 60 * 60 * 1000 * 24 * 365;
   signed: boolean = true;
@@ -51,6 +55,8 @@ export class CartService {
   ): Promise<ITransformData> {
 	let { cartId } = request.signedCookies as { cartId: number };
 	const { productId, quantity } = params;
+	const product = await this.productRepository.fidProductByPkId(productId);
+	if (!product) { this.notFound(`Продукт с id:${productId} не найден в БД`); }
 	if (!cartId) {
 		const created = await this.cartRepository.createCart();
 		cartId = created.id;
@@ -58,7 +64,7 @@ export class CartService {
 	const foundCart = await this.findCart(cartId);
 	const cart = await this.cartRepository.appendToCart(
 		foundCart.id,
-		productId,
+		product.id,
 		quantity,
 	);
 	response.cookie('cartId', cart.id, {
@@ -180,7 +186,9 @@ export class CartService {
 
   private async findCart(cartId: number): Promise<CartModel> {
 	const foundCart = await this.cartRepository.findCart(cartId);
-	if (!foundCart) { this.notFound(`Корзина с id:${cartId} не найдена в БД`); }
+	if (!foundCart) {
+		this.notFound(`Корзина с id:${cartId} не найдена в БД`);
+	}
 	return foundCart;
   }
 

@@ -6,10 +6,12 @@ import { ProductModel } from '../product/product.model';
 import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
 import { CartRepository } from './cart.repository';
+import { ProductModule } from '../product/product.module';
 
 @Module({
   imports: [
 	SequelizeModule.forFeature([CartModel, ProductModel, CartProductModel]),
+	ProductModule,
   ],
   providers: [CartService, CartRepository],
   controllers: [CartController],
