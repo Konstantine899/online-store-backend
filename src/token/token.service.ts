@@ -115,4 +115,16 @@ export class TokenService {
 	const accessToken = await this.generateAccessToken(user);
 	return { accessToken, user };
   }
+
+  public async removeRefreshToken(
+	refreshTokenId: number,
+	userId: number,
+  ): Promise<number> {
+	const listRefreshTokens =
+		await this.refreshTokenRepository.findListRefreshTokens(userId);
+	if (listRefreshTokens.length > 1) {
+		return this.refreshTokenRepository.removeListRefreshTokens(userId);
+	}
+	return this.refreshTokenRepository.removeRefreshToken(refreshTokenId);
+  }
 }

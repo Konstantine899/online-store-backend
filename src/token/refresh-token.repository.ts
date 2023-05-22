@@ -34,4 +34,20 @@ export class RefreshTokenRepository {
 	}
 	return refresh_token;
   }
+
+  public async findListRefreshTokens(
+	userId: number,
+  ): Promise<RefreshTokenModel[]> {
+	return this.refreshTokenModel.findAll({ where: { user_id: userId } });
+  }
+
+  public async removeListRefreshTokens(userId: number): Promise<number> {
+	return this.refreshTokenModel.destroy({ where: { user_id: userId } });
+  }
+
+  public async removeRefreshToken(refreshTokenId: number): Promise<number> {
+	return this.refreshTokenModel.destroy({
+		where: { id: refreshTokenId },
+	});
+  }
 }

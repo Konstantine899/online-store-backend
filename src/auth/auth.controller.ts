@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -69,5 +70,12 @@ export class AuthController {
 		status: HttpStatus.OK,
 		data: foundUser,
 	};
+  }
+
+  @ProfileUserDocumentation()
+  @UseGuards(JwtGuard)
+  @Delete('/logout')
+  public async logout(@Body() refresh: RefreshDto) {
+	return this.authService.logout(refresh);
   }
 }

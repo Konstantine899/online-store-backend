@@ -9,6 +9,7 @@ import { CreateUserDto } from '../user/dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 import { UserModel } from '../user/user.model';
 import { TokenService } from '../token/token.service';
+import { RefreshDto } from './dto/refresh.dto';
 
 export interface IAuthPayload {
   payload: {
@@ -61,6 +62,13 @@ export class AuthService {
 		status: HttpStatus.OK,
 		data: payload,
 	};
+  }
+
+  public async logout(refresh: RefreshDto): Promise<number> {
+	const payload = await this.tokenService.decodeRefreshToken(
+		refresh.refreshToken,
+	);
+	return this.tokenService.removeRefreshToken(payload.jti, payload.sub);
   }
 
   public async updateAccessToken(
