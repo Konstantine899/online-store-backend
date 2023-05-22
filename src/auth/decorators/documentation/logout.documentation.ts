@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { RefreshDto } from '../../dto/refresh.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
+import { LogoutResponse } from '../../responces/logout.response';
 
 export function LogoutDocumentation() {
   return applyDecorators(
@@ -47,7 +48,7 @@ export function LogoutDocumentation() {
 	ApiResponse({
 		description: `Remove refresh token`,
 		status: HttpStatus.OK,
-		schema: { title: 'Удалено записей', example: 1 },
+		type: LogoutResponse,
 	}),
 	ApiUnprocessableEntityResponse({
 		status: HttpStatus.UNPROCESSABLE_ENTITY,

@@ -11,6 +11,7 @@ import { UserModel } from '../user/user.model';
 import { TokenService } from '../token/token.service';
 import { RefreshDto } from './dto/refresh.dto';
 import { Request } from 'express';
+import { LogoutResponse } from './responces/logout.response';
 
 export interface IAuthPayload {
   payload: {
@@ -68,7 +69,7 @@ export class AuthService {
   public async logout(
 	refresh: RefreshDto,
 	request: Request,
-  ): Promise<{ status: number; message: string }> {
+  ): Promise<LogoutResponse> {
 	const payload = await this.tokenService.decodeRefreshToken(
 		refresh.refreshToken,
 	);
