@@ -7,46 +7,19 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { LoginCheckRequest } from '../../requests/login-check.request';
+import { LoginCheckResponse } from '../../responses/login-check.response';
 
 export function LoginCheckDocumentation() {
   return applyDecorators(
-	ApiOperation({ summary: `Профиль пользователя` }),
+	ApiOperation({ summary: `Проверка авторизации пользователя` }),
 	ApiBearerAuth('JWT-auth'),
 	ApiBody({
 		type: LoginCheckRequest,
-		description: `Это описание тела запроса в котором содержится пользователь т.е. request.user`,
 		required: true,
 	}),
 	ApiResponse({
 		status: HttpStatus.OK,
-		schema: {
-		example: {
-			data: {
-			id: 1,
-			email: 'test@gmail.com',
-			orders: [
-				{
-				id: 40,
-				name: 'Константин',
-				email: 'test@gmail.com',
-				phone: '375298992917',
-				address: 'г. Минск пр Независимости 15 кв 100',
-				amount: 1000,
-				status: 0,
-				comment: null,
-				userId: 51,
-				items: [
-					{
-					name: 'Xiaomi 10pro',
-					price: 1000,
-					quantity: 1,
-					},
-				],
-				},
-			],
-			},
-		},
-		},
+		type: LoginCheckResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,
