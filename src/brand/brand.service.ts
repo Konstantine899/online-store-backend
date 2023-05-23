@@ -3,6 +3,7 @@ import { BrandModel } from './brand.model';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { BrandRepository } from './brand.repository';
 import { CreateBrandResponse } from './responses/create-brand.response';
+import { ListAllBrandsResponse } from './responses/list-all-brands.response';
 
 @Injectable()
 export class BrandService {
@@ -12,7 +13,7 @@ export class BrandService {
 	return this.brandRepository.createBrand(dto);
   }
 
-  public async getListAllBrands(): Promise<BrandModel[]> {
+  public async getListAllBrands(): Promise<ListAllBrandsResponse[]> {
 	const brands = await this.brandRepository.findListAllBrands();
 	if (!brands.length) {
 		this.notFound('К сожалению по вашему запросу ничего не найдено');

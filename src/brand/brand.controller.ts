@@ -23,6 +23,7 @@ import { GetBrandDocumentation } from './decorators/get-brand.documentation';
 import { UpdateBrandDocumentation } from './decorators/update-brand.documentation';
 import { RemoveBrandDocumentation } from './decorators/remove-brand.documentation';
 import { CreateBrandResponse } from './responses/create-brand.response';
+import { ListAllBrandsResponse } from './responses/list-all-brands.response';
 
 @ApiTags(`Бренд`)
 @Controller('brand')
@@ -43,7 +44,7 @@ export class BrandController {
   @GetListAllBrandsDocumentation()
   @Get('/brands')
   @HttpCode(200)
-  public async getListAllBrands(): Promise<BrandModel[]> {
+  public async getListAllBrands(): Promise<ListAllBrandsResponse[]> {
 	return this.brandService.getListAllBrands();
   }
 

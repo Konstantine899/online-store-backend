@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { BrandModel } from './brand.model';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { CreateBrandResponse } from './responses/create-brand.response';
+import { ListAllBrandsResponse } from './responses/list-all-brands.response';
 
 @Injectable()
 export class BrandRepository {
@@ -15,7 +16,7 @@ export class BrandRepository {
 	return brand;
   }
 
-  public async findListAllBrands(): Promise<BrandModel[]> {
+  public async findListAllBrands(): Promise<ListAllBrandsResponse[]> {
 	return this.brandModel.findAll();
   }
 

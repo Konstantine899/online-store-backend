@@ -4,6 +4,7 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
+import { ListAllBrandsResponse } from '../responses/list-all-brands.response';
 
 export function GetListAllBrandsDocumentation() {
   return applyDecorators(
@@ -11,27 +12,7 @@ export function GetListAllBrandsDocumentation() {
 	ApiResponse({
 		description: `Get list all brands`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Список всех брендов`,
-		example: [
-			{
-			id: 4,
-			name: 'Bosh',
-			},
-			{
-			id: 2,
-			name: 'lg',
-			},
-			{
-			id: 3,
-			name: 'samsung',
-			},
-			{
-			id: 1,
-			name: 'xiomi',
-			},
-		],
-		},
+		type: [ListAllBrandsResponse],
 	}),
 	ApiNotFoundResponse({
 		description: `Not found`,
