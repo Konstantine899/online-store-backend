@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateBrandDto } from '../dto/create-brand.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
+import { UpdateBrandResponse } from '../responses/update-brand.response';
 
 export function UpdateBrandDocumentation() {
   return applyDecorators(
@@ -26,14 +27,7 @@ export function UpdateBrandDocumentation() {
 	ApiResponse({
 		description: `Updated brand`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Обновленный бренд`,
-		example: {
-			id: 4,
-			name: 'Toshiba',
-			updatedAt: '2023-05-11T09:39:25.119Z',
-		},
-		},
+		type: UpdateBrandResponse,
 	}),
 	ApiBadRequestResponse({
 		description: `Bad Request`,

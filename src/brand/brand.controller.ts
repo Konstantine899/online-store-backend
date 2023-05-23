@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { BrandService } from './brand.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
-import { BrandModel } from './brand.model';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
@@ -25,6 +24,7 @@ import { RemoveBrandDocumentation } from './decorators/remove-brand.documentatio
 import { CreateBrandResponse } from './responses/create-brand.response';
 import { ListAllBrandsResponse } from './responses/list-all-brands.response';
 import { BrandResponse } from './responses/brand.response';
+import { UpdateBrandResponse } from './responses/update-brand.response';
 
 @ApiTags(`Бренд`)
 @Controller('brand')
@@ -37,25 +37,25 @@ export class BrandController {
   @UseGuards(JwtGuard, RoleGuard)
   @Post('/create')
   public async createBrand(
-    @Body() dto: CreateBrandDto,
+	@Body() dto: CreateBrandDto,
   ): Promise<CreateBrandResponse> {
-    return this.brandService.createBrand(dto);
+	return this.brandService.createBrand(dto);
   }
 
   @GetListAllBrandsDocumentation()
   @Get('/brands')
   @HttpCode(200)
   public async getListAllBrands(): Promise<ListAllBrandsResponse[]> {
-    return this.brandService.getListAllBrands();
+	return this.brandService.getListAllBrands();
   }
 
   @GetBrandDocumentation()
   @Get('/one/:id([0-9]+)')
   @HttpCode(200)
   public async getBrand(
-    @Param('id', ParseIntPipe) id: number,
+	@Param('id', ParseIntPipe) id: number,
   ): Promise<BrandResponse> {
-    return this.brandService.getBrand(id);
+	return this.brandService.getBrand(id);
   }
 
   @UpdateBrandDocumentation()
@@ -64,10 +64,10 @@ export class BrandController {
   @UseGuards(JwtGuard, RoleGuard)
   @Put('/update/:id([0-9]+)')
   public async updateBrand(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: CreateBrandDto,
-  ): Promise<BrandModel> {
-    return this.brandService.updateBrand(id, dto);
+	@Param('id', ParseIntPipe) id: number,
+	@Body() dto: CreateBrandDto,
+  ): Promise<UpdateBrandResponse> {
+	return this.brandService.updateBrand(id, dto);
   }
 
   @RemoveBrandDocumentation()
@@ -76,8 +76,8 @@ export class BrandController {
   @UseGuards(JwtGuard, RoleGuard)
   @Delete('/delete/:id([0-9]+)')
   public async removeBrand(
-    @Param('id', ParseIntPipe) id: number,
+	@Param('id', ParseIntPipe) id: number,
   ): Promise<number> {
-    return this.brandService.removeBrand(id);
+	return this.brandService.removeBrand(id);
   }
 }
