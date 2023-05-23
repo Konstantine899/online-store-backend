@@ -11,15 +11,9 @@ import { UserModel } from '../user/user.model';
 import { TokenService } from '../token/token.service';
 import { RefreshDto } from './dto/refresh.dto';
 import { Request } from 'express';
-import { LogoutResponse } from './responces/logout.response';
-
-export interface IAuthPayload {
-  payload: {
-	type: string;
-	accessToken: string;
-	refreshToken?: string;
-  };
-}
+import { LogoutResponse } from './responses/logout.response';
+import { IPayload } from './interfaces/i-payload';
+import { LoginResponse } from './responses/login.response';
 
 @Injectable()
 export class AuthService {
@@ -30,7 +24,7 @@ export class AuthService {
 
   public async registration(
 	dto: CreateUserDto,
-  ): Promise<{ status: HttpStatus; data: IAuthPayload }> {
+  ): Promise<{ status: HttpStatus; data: IPayload }> {
 	const candidate = await this.userService.findUserByEmail(dto.email);
 	if (candidate) {
 		this.badRequest(
@@ -50,9 +44,7 @@ export class AuthService {
 	};
   }
 
-  public async login(
-	dto: CreateUserDto,
-  ): Promise<{ status: HttpStatus; data: IAuthPayload }> {
+  public async login(dto: CreateUserDto): Promise<LoginResponse> {
 	const user = await this.validateUser(dto);
 	const accessToken = await this.tokenService.generateAccessToken(user);
 	const refreshToken = await this.tokenService.generateRefreshToken(
@@ -80,7 +72,7 @@ export class AuthService {
 
   public async updateAccessToken(
 	refreshToken: string,
-  ): Promise<{ status: HttpStatus; data: IAuthPayload }> {
+  ): Promise<{ status: HttpStatus; data: IPayload }> {
 	const { user, accessToken } =
 		await this.tokenService.createAccessTokenFromRefreshToken(refreshToken);
 	const payload = this.buildResponsePayload(user, accessToken);
@@ -94,7 +86,7 @@ export class AuthService {
 	user: UserModel,
 	accessToken: string,
 	refreshToken?: string,
-  ): IAuthPayload {
+  ): IPayload {
 	return {
 		payload: {
 		type: 'Bearer',

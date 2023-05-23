@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { AuthService, IAuthPayload } from './auth.service';
+import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
@@ -24,6 +24,8 @@ import { LoginCheckDocumentation } from './decorators/documentation/login-check.
 import { UserModel } from '../user/user.model';
 import { LoginCheckRequest } from './requests/login-check.request';
 import { LogoutDocumentation } from './decorators/documentation/logout.documentation';
+import { IPayload } from './interfaces/i-payload';
+import { LoginResponse } from './responses/login.response';
 
 @ApiTags(`Аутентификация`)
 @Controller('auth')
@@ -38,15 +40,13 @@ export class AuthController {
   @Post('/registration')
   public async registration(
 	@Body() dto: RegisterDto,
-  ): Promise<{ status: HttpStatus; data: IAuthPayload }> {
+  ): Promise<{ status: HttpStatus; data: IPayload }> {
 	return this.authService.registration(dto);
   }
   @LoginDocumentation()
   @HttpCode(200)
   @Post('/login')
-  public async login(
-	@Body() dto: LoginDto,
-  ): Promise<{ status: HttpStatus; data: IAuthPayload }> {
+  public async login(@Body() dto: LoginDto): Promise<LoginResponse> {
 	return this.authService.login(dto);
   }
 
@@ -55,7 +55,7 @@ export class AuthController {
   @Post('/refresh')
   public async updateAccessToken(
 	@Body() dto: RefreshDto,
-  ): Promise<{ status: HttpStatus; data: IAuthPayload }> {
+  ): Promise<{ status: HttpStatus; data: IPayload }> {
 	return this.authService.updateAccessToken(dto.refreshToken);
   }
 
