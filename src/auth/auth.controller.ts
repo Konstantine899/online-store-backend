@@ -11,13 +11,13 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
+import { RegistrationDto } from './dto/registration.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { UserService } from '../user/user.service';
 import { JwtGuard } from '../token/jwt.guard';
 import { ApiTags } from '@nestjs/swagger';
-import { RegistrationDocumentation } from './decorators/documentation/registration.documentation';
+import { RegistrationDocumentation } from './decorators/documentation/registration-documentation';
 import { LoginDocumentation } from './decorators/documentation/login.documentation';
 import { UpdateAccessTokenDocumentation } from './decorators/documentation/update-access-token.documentation';
 import { LoginCheckDocumentation } from './decorators/documentation/login-check.documentation';
@@ -26,6 +26,7 @@ import { LoginCheckRequest } from './requests/login-check.request';
 import { LogoutDocumentation } from './decorators/documentation/logout.documentation';
 import { IPayload } from './interfaces/i-payload';
 import { LoginResponse } from './responses/login.response';
+import { RegistrationResponse } from './responses/registration.response';
 
 @ApiTags(`Аутентификация`)
 @Controller('auth')
@@ -39,8 +40,8 @@ export class AuthController {
   @HttpCode(201)
   @Post('/registration')
   public async registration(
-	@Body() dto: RegisterDto,
-  ): Promise<{ status: HttpStatus; data: IPayload }> {
+	@Body() dto: RegistrationDto,
+  ): Promise<RegistrationResponse> {
 	return this.authService.registration(dto);
   }
   @LoginDocumentation()
