@@ -5,6 +5,7 @@ import { CreateBrandResponse } from './responses/create-brand.response';
 import { ListAllBrandsResponse } from './responses/list-all-brands.response';
 import { BrandResponse } from './responses/brand.response';
 import { UpdateBrandResponse } from './responses/update-brand.response';
+import { RemoveBrandResponse } from './responses/remove-brand.response';
 
 @Injectable()
 export class BrandService {
@@ -38,9 +39,10 @@ export class BrandService {
 	return this.brandRepository.updateBrand(dto, brand);
   }
 
-  public async removeBrand(id: number): Promise<number> {
+  public async removeBrand(id: number): Promise<RemoveBrandResponse> {
 	const brand = await this.getBrand(id);
-	return this.brandRepository.removeBrand(brand.id);
+	await this.brandRepository.removeBrand(brand.id);
+	return { status: HttpStatus.OK, message: `success` };
   }
 
   private notFound(message: string): void {

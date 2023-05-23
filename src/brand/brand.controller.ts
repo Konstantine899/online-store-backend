@@ -25,6 +25,7 @@ import { CreateBrandResponse } from './responses/create-brand.response';
 import { ListAllBrandsResponse } from './responses/list-all-brands.response';
 import { BrandResponse } from './responses/brand.response';
 import { UpdateBrandResponse } from './responses/update-brand.response';
+import { RemoveBrandResponse } from './responses/remove-brand.response';
 
 @ApiTags(`Бренд`)
 @Controller('brand')
@@ -77,7 +78,7 @@ export class BrandController {
   @Delete('/delete/:id([0-9]+)')
   public async removeBrand(
 	@Param('id', ParseIntPipe) id: number,
-  ): Promise<number> {
+  ): Promise<RemoveBrandResponse> {
 	return this.brandService.removeBrand(id);
   }
 }
