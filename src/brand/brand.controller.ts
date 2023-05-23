@@ -24,6 +24,7 @@ import { UpdateBrandDocumentation } from './decorators/update-brand.documentatio
 import { RemoveBrandDocumentation } from './decorators/remove-brand.documentation';
 import { CreateBrandResponse } from './responses/create-brand.response';
 import { ListAllBrandsResponse } from './responses/list-all-brands.response';
+import { BrandResponse } from './responses/brand.response';
 
 @ApiTags(`Бренд`)
 @Controller('brand')
@@ -36,25 +37,25 @@ export class BrandController {
   @UseGuards(JwtGuard, RoleGuard)
   @Post('/create')
   public async createBrand(
-	@Body() dto: CreateBrandDto,
+    @Body() dto: CreateBrandDto,
   ): Promise<CreateBrandResponse> {
-	return this.brandService.createBrand(dto);
+    return this.brandService.createBrand(dto);
   }
 
   @GetListAllBrandsDocumentation()
   @Get('/brands')
   @HttpCode(200)
   public async getListAllBrands(): Promise<ListAllBrandsResponse[]> {
-	return this.brandService.getListAllBrands();
+    return this.brandService.getListAllBrands();
   }
 
   @GetBrandDocumentation()
   @Get('/one/:id([0-9]+)')
   @HttpCode(200)
   public async getBrand(
-	@Param('id', ParseIntPipe) id: number,
-  ): Promise<BrandModel> {
-	return this.brandService.getBrand(id);
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<BrandResponse> {
+    return this.brandService.getBrand(id);
   }
 
   @UpdateBrandDocumentation()
@@ -63,10 +64,10 @@ export class BrandController {
   @UseGuards(JwtGuard, RoleGuard)
   @Put('/update/:id([0-9]+)')
   public async updateBrand(
-	@Param('id', ParseIntPipe) id: number,
-	@Body() dto: CreateBrandDto,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateBrandDto,
   ): Promise<BrandModel> {
-	return this.brandService.updateBrand(id, dto);
+    return this.brandService.updateBrand(id, dto);
   }
 
   @RemoveBrandDocumentation()
@@ -75,8 +76,8 @@ export class BrandController {
   @UseGuards(JwtGuard, RoleGuard)
   @Delete('/delete/:id([0-9]+)')
   public async removeBrand(
-	@Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIntPipe) id: number,
   ): Promise<number> {
-	return this.brandService.removeBrand(id);
+    return this.brandService.removeBrand(id);
   }
 }
