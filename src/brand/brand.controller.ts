@@ -22,6 +22,7 @@ import { GetListAllBrandsDocumentation } from './decorators/get-list-all-brands.
 import { GetBrandDocumentation } from './decorators/get-brand.documentation';
 import { UpdateBrandDocumentation } from './decorators/update-brand.documentation';
 import { RemoveBrandDocumentation } from './decorators/remove-brand.documentation';
+import { CreateBrandResponse } from './responses/create-brand.response';
 
 @ApiTags(`Бренд`)
 @Controller('brand')
@@ -33,7 +34,9 @@ export class BrandController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Post('/create')
-  public async createBrand(@Body() dto: CreateBrandDto): Promise<BrandModel> {
+  public async createBrand(
+	@Body() dto: CreateBrandDto,
+  ): Promise<CreateBrandResponse> {
 	return this.brandService.createBrand(dto);
   }
 

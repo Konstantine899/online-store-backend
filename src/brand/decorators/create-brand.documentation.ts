@@ -7,6 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateBrandDto } from '../dto/create-brand.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
+import { CreateBrandResponse } from '../responses/create-brand.response';
 
 export function CreateBrandDocumentation() {
   return applyDecorators(
@@ -19,15 +20,7 @@ export function CreateBrandDocumentation() {
 	ApiResponse({
 		description: `Created brand`,
 		status: HttpStatus.CREATED,
-		schema: {
-		title: `Тело ответа созданного бренда`,
-		example: {
-			id: 4,
-			name: 'Bosh',
-			updatedAt: '2023-05-11T08:42:14.588Z',
-			createdAt: '2023-05-11T08:42:14.588Z',
-		},
-		},
+		type: CreateBrandResponse,
 	}),
 	ApiBadRequestResponse({
 		description: `Bad Request`,

@@ -2,15 +2,17 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { BrandModel } from './brand.model';
 import { CreateBrandDto } from './dto/create-brand.dto';
+import { CreateBrandResponse } from './responses/create-brand.response';
 
 @Injectable()
 export class BrandRepository {
   constructor(@InjectModel(BrandModel) private brandModel: typeof BrandModel) {}
 
-  public async createBrand(dto: CreateBrandDto): Promise<BrandModel> {
+  public async createBrand(dto: CreateBrandDto): Promise<CreateBrandResponse> {
 	const brand = new BrandModel();
 	brand.name = dto.name;
-	return brand.save();
+	await brand.save();
+	return brand;
   }
 
   public async findListAllBrands(): Promise<BrandModel[]> {

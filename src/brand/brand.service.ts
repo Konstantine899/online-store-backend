@@ -2,12 +2,13 @@ import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { BrandModel } from './brand.model';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { BrandRepository } from './brand.repository';
+import { CreateBrandResponse } from './responses/create-brand.response';
 
 @Injectable()
 export class BrandService {
   constructor(private readonly brandRepository: BrandRepository) {}
 
-  public async createBrand(dto: CreateBrandDto): Promise<BrandModel> {
+  public async createBrand(dto: CreateBrandDto): Promise<CreateBrandResponse> {
 	return this.brandRepository.createBrand(dto);
   }
 
