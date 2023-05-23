@@ -14,6 +14,7 @@ import { Request } from 'express';
 import { LogoutResponse } from './responses/logout.response';
 import { IPayload } from './interfaces/i-payload';
 import { LoginResponse } from './responses/login.response';
+import { UpdateAccessTokenResponse } from './responses/update-access-token.response';
 
 @Injectable()
 export class AuthService {
@@ -72,7 +73,7 @@ export class AuthService {
 
   public async updateAccessToken(
 	refreshToken: string,
-  ): Promise<{ status: HttpStatus; data: IPayload }> {
+  ): Promise<UpdateAccessTokenResponse> {
 	const { user, accessToken } =
 		await this.tokenService.createAccessTokenFromRefreshToken(refreshToken);
 	const payload = this.buildResponsePayload(user, accessToken);

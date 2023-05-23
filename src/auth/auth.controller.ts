@@ -24,9 +24,9 @@ import { LoginCheckDocumentation } from './decorators/documentation/login-check.
 import { UserModel } from '../user/user.model';
 import { LoginCheckRequest } from './requests/login-check.request';
 import { LogoutDocumentation } from './decorators/documentation/logout.documentation';
-import { IPayload } from './interfaces/i-payload';
 import { LoginResponse } from './responses/login.response';
 import { RegistrationResponse } from './responses/registration.response';
+import { UpdateAccessTokenResponse } from './responses/update-access-token.response';
 
 @ApiTags(`Аутентификация`)
 @Controller('auth')
@@ -56,7 +56,7 @@ export class AuthController {
   @Post('/refresh')
   public async updateAccessToken(
 	@Body() dto: RefreshDto,
-  ): Promise<{ status: HttpStatus; data: IPayload }> {
+  ): Promise<UpdateAccessTokenResponse> {
 	return this.authService.updateAccessToken(dto.refreshToken);
   }
 
