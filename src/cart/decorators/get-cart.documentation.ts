@@ -1,32 +1,22 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCookieAuth,
   ApiNotFoundResponse,
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
+import { CartResponse } from '../responses/cart.response';
 
 export function GetCartDocumentation() {
   return applyDecorators(
 	ApiOperation({ summary: `Получение корзины` }),
+	ApiBearerAuth('JWT-auth'),
 	ApiCookieAuth(),
 	ApiResponse({
 		description: `Get cart`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Получение корзины`,
-		example: {
-			cartId: 26,
-			products: [
-			{
-				productId: 55,
-				name: 'Смартфон Xiaomi Redmi Note 13 Pro 4G 8GB/256GB RU (синий)',
-				price: 1149,
-				quantity: 1,
-			},
-			],
-		},
-		},
+		type: CartResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not found`,

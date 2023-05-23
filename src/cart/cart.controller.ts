@@ -17,6 +17,7 @@ import { IncrementDocumentation } from './decorators/increment.documentation';
 import { DecrementDocumentation } from './decorators/decrement.documentation';
 import { RemoveProductFromCartDocumentation } from './decorators/remove-product-from-cart.documentation';
 import { ClearCartDocumentation } from './decorators/clear-cart.documentation';
+import { CartResponse } from './responses/cart.response';
 
 @ApiTags(`Корзина`)
 @Controller('cart')
@@ -30,7 +31,7 @@ export class CartController {
 	@Req() request: Request,
 	// passthrough: true дает возможность использовать не только cookie, но и другие возможности framework
 	@Res({ passthrough: true }) response: Response,
-  ) {
+  ): Promise<CartResponse> {
 	return this.cartService.getCart(request, response);
   }
 

@@ -4,20 +4,9 @@ import { Request, Response } from 'express';
 import { CartModel } from './cart.model';
 import { ProductModel } from '../product/product.model';
 import { ProductRepository } from '../product/product.repository';
-
-export class ISignedCookies {
-  cartId: string;
-}
-
-interface IParams {
-  productId?: number;
-  quantity?: number;
-}
-
-export interface ITransformData {
-  cartId: number;
-  products: ProductModel[];
-}
+import { CartResponse } from './responses/cart.response';
+import { ITransformData } from './interfaces/i-transform-data';
+import { IParams } from './interfaces/i-params';
 
 @Injectable()
 export class CartService {
@@ -32,7 +21,7 @@ export class CartService {
   public async getCart(
 	request: Request,
 	response: Response,
-  ): Promise<ITransformData> {
+  ): Promise<CartResponse> {
 	let cart: CartModel;
 	const { cartId } = request.signedCookies;
 	if (cartId) {
