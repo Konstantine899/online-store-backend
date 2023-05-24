@@ -39,7 +39,7 @@ export class OrderService {
 	}
 	const orders = await this.orderRepository.adminFindListOrders(user.id);
 	if (!orders.length) {
-		this.notFound('Список заказов пользователя пуст');
+		this.notFound(`Список заказов пользователя email: ${user.email} пуст`);
 	}
 	return orders;
   }

@@ -23,9 +23,26 @@ export class OrderRepository {
   > {
 	let orders: OrderModel[];
 	if (userId) {
-		orders = await this.orderModel.findAll({ where: { userId } });
+		orders = await this.orderModel.findAll({
+		where: { userId },
+		include: [
+			{
+			model: OrderItemModel,
+			as: 'items',
+			attributes: ['name', 'price', 'quantity'],
+			},
+		],
+		});
 	} else {
-		orders = await this.orderModel.findAll();
+		orders = await this.orderModel.findAll({
+		include: [
+			{
+			model: OrderItemModel,
+			as: 'items',
+			attributes: ['name', 'price', 'quantity'],
+			},
+		],
+		});
 	}
 
 	return orders;

@@ -1,5 +1,8 @@
 import { OrderModel } from '../order.model';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { OrderItemModel } from '../../order-item/order-item.model';
 
 export class AdminGetListOfAllStoreOrdersResponse extends OrderModel {
   @ApiProperty({ example: 1 })
@@ -28,4 +31,18 @@ export class AdminGetListOfAllStoreOrdersResponse extends OrderModel {
 
   @ApiProperty({ example: 1 })
   readonly userId: number;
+
+  @ApiProperty({
+	example: [
+		{
+		name: 'Xiaomi 10pro',
+		price: 1000,
+		quantity: 1,
+		},
+	],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderItemModel)
+  readonly items: OrderItemModel[];
 }

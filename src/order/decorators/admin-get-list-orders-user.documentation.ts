@@ -40,7 +40,8 @@ export function AdminGetListOrdersUserDocumentation() {
 				url: '/online-store/order/admin/get-all-order/user/1',
 				path: '/online-store/order/admin/get-all-order/user/1',
 				name: 'NotFoundException',
-				message: 'Список заказов пользователя пуст',
+				message:
+				'Список заказов пользователя email: kostay375298918971@gmail.com пуст',
 			},
 			},
 		],
