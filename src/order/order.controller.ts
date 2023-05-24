@@ -34,6 +34,7 @@ import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.respo
 import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
 import { AdminRemoveOrderResponse } from './requests/admin-remove-order.response';
 import { UserGetOrderListResponse } from './requests/user-get-order-list.response';
+import { UserGetOrderResponse } from './requests/user-get-order.response';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -126,7 +127,7 @@ export class OrderController {
   public async userGetOrder(
 	@Req() request: Request,
 	@Param('orderId', ParseIntPipe) orderId: number,
-  ) {
+  ): Promise<UserGetOrderResponse> {
 	const { id } = request.user as RequestUserDto;
 	return this.orderService.userGetOrder(orderId, id);
   }

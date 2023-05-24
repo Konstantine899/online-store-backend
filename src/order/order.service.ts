@@ -11,6 +11,7 @@ import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.respo
 import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
 import { AdminRemoveOrderResponse } from './requests/admin-remove-order.response';
 import { UserGetOrderListResponse } from './requests/user-get-order-list.response';
+import { UserGetOrderResponse } from './requests/user-get-order.response';
 
 @Injectable()
 export class OrderService {
@@ -91,7 +92,7 @@ export class OrderService {
   public async userGetOrder(
 	orderId: number,
 	userId: number,
-  ): Promise<OrderModel> {
+  ): Promise<UserGetOrderResponse> {
 	const order = await this.orderRepository.userFindOrder(orderId, userId);
 	if (!order) {
 		this.notFound(`Заказ не найден`);

@@ -5,6 +5,7 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
+import { UserGetOrderResponse } from '../requests/user-get-order.response';
 
 export function UserGetOrderDocumentation() {
   return applyDecorators(
@@ -13,27 +14,7 @@ export function UserGetOrderDocumentation() {
 	ApiResponse({
 		description: `User get order`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Полученный заказ`,
-		example: {
-			id: 71,
-			name: 'Атрощенко Константин Анатольевич',
-			email: 'test@mail.com',
-			phone: '375298918971',
-			address: 'г. Витебск ул Чкалова 41 к1 кв 73',
-			amount: 1000,
-			status: 0,
-			comment: 'Комментарий заказчика',
-			userId: 57,
-			items: [
-			{
-				name: 'Xiaomi 10pro',
-				price: 1000,
-				quantity: 1,
-			},
-			],
-		},
-		},
+		type: UserGetOrderResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not found`,
