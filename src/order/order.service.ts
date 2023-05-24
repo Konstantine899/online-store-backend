@@ -9,6 +9,7 @@ import { AdminGetListOfAllStoreOrdersResponse } from './requests/admin-get-list-
 import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
 import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
 import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
+import { AdminRemoveOrderResponse } from './requests/admin-remove-order.response';
 
 @Injectable()
 export class OrderService {
@@ -67,12 +68,15 @@ export class OrderService {
 	return userAndHisOrders;
   }
 
-  public async adminRemoveOrder(orderId: number): Promise<number> {
+  public async adminRemoveOrder(
+	orderId: number,
+  ): Promise<AdminRemoveOrderResponse> {
 	const order = await this.orderRepository.findOrder(orderId);
 	if (!order) {
 		this.notFound(`Заказ не найден`);
 	}
-	return this.orderRepository.removeOrder(order.id);
+	await this.orderRepository.removeOrder(order.id);
+	return { status: HttpStatus.OK, message: `success` };
   }
 
   public async userGetListOrders(userId): Promise<OrderModel[]> {

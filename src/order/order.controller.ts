@@ -32,6 +32,7 @@ import { AdminGetListOfAllStoreOrdersResponse } from './requests/admin-get-list-
 import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
 import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
 import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
+import { AdminRemoveOrderResponse } from './requests/admin-remove-order.response';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -96,7 +97,7 @@ export class OrderController {
   @Delete('/admin/delete-order/:orderId([0-9]+)')
   public async adminRemoveOrder(
 	@Param('orderId', ParseIntPipe) orderId: number,
-  ) {
+  ): Promise<AdminRemoveOrderResponse> {
 	return this.orderService.adminRemoveOrder(orderId);
   }
 

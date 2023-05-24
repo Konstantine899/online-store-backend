@@ -6,6 +6,7 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
+import { AdminRemoveOrderResponse } from '../../order/requests/admin-remove-order.response';
 
 export function AdminRemoveOrderDocumentation() {
   return applyDecorators(
@@ -20,7 +21,7 @@ export function AdminRemoveOrderDocumentation() {
 	ApiResponse({
 		description: `Remove order`,
 		status: HttpStatus.OK,
-		schema: { title: 'Удалено записей', example: 1 },
+		type: AdminRemoveOrderResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,
