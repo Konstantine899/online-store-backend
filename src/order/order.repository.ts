@@ -7,6 +7,7 @@ import { OrderItemRepository } from '../order-item/order-item.repository';
 import { AdminGetListOfAllStoreOrdersResponse } from './requests/admin-get-list-of-all-store-orders.response';
 import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
 import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
+import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
 
 @Injectable()
 export class OrderRepository {
@@ -60,7 +61,9 @@ export class OrderRepository {
 	return order;
   }
 
-  public async findUserAndHisOrders(userId: number): Promise<OrderModel> {
+  public async findUserAndHisOrders(
+	userId: number,
+  ): Promise<AdminCreateOrderResponse> {
 	return this.orderModel.findOne({
 		where: { userId },
 		include: [
@@ -73,7 +76,9 @@ export class OrderRepository {
 	});
   }
 
-  public async adminCreateOrder(dto: OrderDto): Promise<OrderModel> {
+  public async adminCreateOrder(
+	dto: OrderDto,
+  ): Promise<AdminCreateOrderResponse> {
 	return this.createOrder(dto);
   }
 

@@ -57,7 +57,7 @@ export class OrderDto {
 	example: [{ name: 'Xiaomi 10pro', price: 1000, quantity: 1 }],
   })
   @IsArray()
-  @ValidateNested()
+  @ValidateNested({ each: true })
   @Type(() => OrderItemModel)
   readonly items: OrderItemModel[];
 }

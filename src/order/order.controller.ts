@@ -31,6 +31,7 @@ import { GuestCreateOrderDocumentation } from './decorators/guest-create-order.d
 import { AdminGetListOfAllStoreOrdersResponse } from './requests/admin-get-list-of-all-store-orders.response';
 import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
 import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
+import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -81,7 +82,9 @@ export class OrderController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Post(`/admin/create-order`)
-  public async adminCreateOrder(@Body() dto: OrderDto) {
+  public async adminCreateOrder(
+	@Body() dto: OrderDto,
+  ): Promise<AdminCreateOrderResponse> {
 	return this.orderService.adminCreateOrder(dto);
   }
 

@@ -8,6 +8,7 @@ import { UserRepository } from '../user/user.repository';
 import { AdminGetListOfAllStoreOrdersResponse } from './requests/admin-get-list-of-all-store-orders.response';
 import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
 import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
+import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
 
 @Injectable()
 export class OrderService {
@@ -52,7 +53,9 @@ export class OrderService {
 	return order;
   }
 
-  public async adminCreateOrder(dto: OrderDto): Promise<OrderModel> {
+  public async adminCreateOrder(
+	dto: OrderDto,
+  ): Promise<AdminCreateOrderResponse> {
 	const userAndHisOrders = await this.orderRepository.findUserAndHisOrders(
 		dto.userId,
 	);
