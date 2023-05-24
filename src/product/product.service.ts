@@ -13,6 +13,8 @@ import { SearchQueryDto } from './dto/search-query.dto';
 import { SortQueryDto, Sort } from './dto/sort-query.dto';
 import { CreateProductResponse } from './responses/create-product.response';
 import { GetProductResponse } from './responses/get-product.response';
+import { GetListProductResponse } from './responses/get-list-product.response';
+import { MetaData } from './responses/paginate/meta-data';
 
 export interface IGetMetadata {
   totalCount: number;
@@ -45,16 +47,16 @@ export class ProductService {
 	return product;
   }
 
-  public async getListAllProducts(
+  public async getListProduct(
 	searchQuery: SearchQueryDto,
 	sortQuery: SortQueryDto,
 	page: number,
 	size: number,
-  ): Promise<IProductsResponse> {
+  ): Promise<GetListProductResponse> {
 	const { search } = searchQuery;
 	const { sort = Sort.DESC } = sortQuery;
 	const { limit, offset } = this.getPaginate(page, size);
-	const products = await this.productRepository.findListAllProducts(
+	const products = await this.productRepository.findListProduct(
 		search,
 		sort,
 		limit,
@@ -207,11 +209,7 @@ export class ProductService {
 	return { limit, offset };
   }
 
-  private getMetadata(
-	count: number,
-	page: number,
-	limit: number,
-  ): IGetMetadata {
+  private getMetadata(count: number, page: number, limit: number): MetaData {
 	return {
 		totalCount: count,
 		lastPage: Math.ceil(count / limit),

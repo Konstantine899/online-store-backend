@@ -5,8 +5,9 @@ import {
   ApiQuery,
   ApiResponse,
 } from '@nestjs/swagger';
+import { GetListProductResponse } from '../responses/get-list-product.response';
 
-export function GetListAllProductsDocumentation() {
+export function GetListProductDocumentation() {
   return applyDecorators(
 	ApiOperation({ summary: `Получение списка всех продуктов` }),
 	ApiQuery({ name: `search`, type: `string`, required: false }),
@@ -26,29 +27,7 @@ export function GetListAllProductsDocumentation() {
 	ApiResponse({
 		description: `Get list products`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Список продуктов`,
-		example: {
-			metaData: {
-			totalCount: 4,
-			lastPage: 4,
-			currentPage: 1,
-			nextPage: 2,
-			previousPage: 0,
-			},
-			rows: [
-			{
-				id: 54,
-				name: 'Смартфон Xiaomi Redmi Note 12 Pro 4G 8GB/256GB RU (синий)',
-				price: 1149,
-				rating: 0,
-				image: '926429b8-69bf-439b-b9be-6f4893d7bab9.jpg',
-				categoryId: 1,
-				brandId: 1,
-			},
-			],
-		},
-		},
+		type: GetListProductResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,

@@ -5,6 +5,7 @@ import { ProductPropertyModel } from '../product-property/product-property.model
 import { Op } from 'sequelize';
 import { CreateProductResponse } from './responses/create-product.response';
 import { GetProductResponse } from './responses/get-product.response';
+import { Rows } from './responses/paginate/rows';
 
 export class ProductRepository {
   constructor(
@@ -36,12 +37,12 @@ export class ProductRepository {
 	});
   }
 
-  public async findListAllProducts(
+  public async findListProduct(
 	search: string,
 	sort: string,
 	limit: number,
 	offset: number,
-  ): Promise<{ count: number; rows: ProductModel[] }> {
+  ): Promise<{ count: number; rows: Rows[] }> {
 	return this.productModel.findAndCountAll({
 		where: search ? { name: { [Op.like]: `%${search}%` } } : null,
 		order: sort ? [['price', sort.toUpperCase()]] : null,
