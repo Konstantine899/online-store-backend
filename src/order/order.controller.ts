@@ -36,6 +36,7 @@ import { AdminRemoveOrderResponse } from './requests/admin-remove-order.response
 import { UserGetOrderListResponse } from './requests/user-get-order-list.response';
 import { UserGetOrderResponse } from './requests/user-get-order.response';
 import { UserCreateOrderResponse } from './requests/user-create-order.response';
+import { GuestCreateOrderResponse } from './requests/guest-create-order.response';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -155,7 +156,7 @@ export class OrderController {
   public async guestCreateOrder(
 	@Req() request: Request,
 	@Body() dto: OrderDto,
-  ) {
+  ): Promise<GuestCreateOrderResponse> {
 	const { cartId } = request.signedCookies;
 	return this.orderService.guestCreateOrder(dto, undefined, cartId);
   }

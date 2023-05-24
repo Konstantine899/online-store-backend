@@ -1,6 +1,5 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { OrderRepository } from './order.repository';
-import { OrderModel } from './order.model';
 import { OrderDto } from './dto/order.dto';
 import { CartRepository } from '../cart/cart.repository';
 import { UserService } from '../user/user.service';
@@ -13,6 +12,7 @@ import { AdminRemoveOrderResponse } from './requests/admin-remove-order.response
 import { UserGetOrderListResponse } from './requests/user-get-order-list.response';
 import { UserGetOrderResponse } from './requests/user-get-order.response';
 import { UserCreateOrderResponse } from './requests/user-create-order.response';
+import { GuestCreateOrderResponse } from './requests/guest-create-order.response';
 
 @Injectable()
 export class OrderService {
@@ -116,7 +116,7 @@ export class OrderService {
 	dto: OrderDto,
 	userId?: number,
 	cartId?: number,
-  ): Promise<OrderModel> {
+  ): Promise<GuestCreateOrderResponse> {
 	return this.createOrder(dto, userId, cartId);
   }
 
@@ -124,7 +124,7 @@ export class OrderService {
 	dto: Omit<OrderDto, 'userId'>,
 	userId: number,
 	cartId: number,
-  ): Promise<UserCreateOrderResponse> {
+  ): Promise<UserCreateOrderResponse | GuestCreateOrderResponse> {
 	/*Если есть userId ищем пользователя в БД. Если пользователь не найден выдаст исключение*/
 	if (userId) {
 		await this.userService.getUser(userId);

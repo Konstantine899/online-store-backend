@@ -6,6 +6,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { validateOrder } from './helpers/validate-order';
+import { GuestCreateOrderResponse } from '../requests/guest-create-order.response';
 
 export function GuestCreateOrderDocumentation() {
   return applyDecorators(
@@ -13,27 +14,7 @@ export function GuestCreateOrderDocumentation() {
 	ApiResponse({
 		description: `User create order`,
 		status: HttpStatus.CREATED,
-		schema: {
-		title: `Созданный заказ`,
-		example: {
-			id: 73,
-			name: 'Атрощенко Константин Анатольевич',
-			email: 'test@mail.com',
-			phone: '375298918971',
-			address: 'г. Витебск ул Чкалова 41 к1 кв 73',
-			amount: 1000,
-			status: 0,
-			comment: 'Комментарий заказчика',
-			userId: null,
-			items: [
-			{
-				name: 'Xiaomi 10pro',
-				price: 1000,
-				quantity: 1,
-			},
-			],
-		},
-		},
+		type: GuestCreateOrderResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not found`,
