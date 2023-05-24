@@ -10,6 +10,7 @@ import {
 } from '@nestjs/swagger';
 import { OrderDto } from '../dto/order.dto';
 import { validateOrder } from './helpers/validate-order';
+import { UserCreateOrderResponse } from '../requests/user-create-order.response';
 
 export function UserCreateOrderDocumentation() {
   return applyDecorators(
@@ -22,27 +23,7 @@ export function UserCreateOrderDocumentation() {
 	ApiResponse({
 		description: `User create order`,
 		status: HttpStatus.CREATED,
-		schema: {
-		title: `Созданный заказ`,
-		example: {
-			id: 65,
-			name: 'Атрощенко Константин Анатольевич',
-			email: 'test@mail.com',
-			phone: '375298918971',
-			address: 'г. Витебск ул Чкалова 41 к1 кв 73',
-			amount: 1000,
-			status: 0,
-			comment: 'Комментарий заказчика',
-			userId: null,
-			items: [
-			{
-				name: 'Xiaomi 10pro',
-				price: 1000,
-				quantity: 1,
-			},
-			],
-		},
-		},
+		type: UserCreateOrderResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not found`,

@@ -53,8 +53,8 @@ export class OrderDto {
   readonly comment: string;
 
   @ApiProperty({
-	type: OrderItemModel,
 	example: [{ name: 'Xiaomi 10pro', price: 1000, quantity: 1 }],
+	description: `Позиции заказа`,
   })
   @IsArray()
   @ValidateNested({ each: true })

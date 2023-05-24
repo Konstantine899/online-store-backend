@@ -12,6 +12,7 @@ import { AdminCreateOrderResponse } from './requests/admin-create-order.response
 import { AdminRemoveOrderResponse } from './requests/admin-remove-order.response';
 import { UserGetOrderListResponse } from './requests/user-get-order-list.response';
 import { UserGetOrderResponse } from './requests/user-get-order.response';
+import { UserCreateOrderResponse } from './requests/user-create-order.response';
 
 @Injectable()
 export class OrderService {
@@ -107,7 +108,7 @@ export class OrderService {
 	dto: Omit<OrderDto, 'userId'>,
 	userId: number,
 	cartId: number,
-  ): Promise<OrderModel> {
+  ): Promise<UserCreateOrderResponse> {
 	return this.createOrder(dto, userId, cartId);
   }
 
@@ -123,7 +124,7 @@ export class OrderService {
 	dto: Omit<OrderDto, 'userId'>,
 	userId: number,
 	cartId: number,
-  ): Promise<OrderModel> {
+  ): Promise<UserCreateOrderResponse> {
 	/*Если есть userId ищем пользователя в БД. Если пользователь не найден выдаст исключение*/
 	if (userId) {
 		await this.userService.getUser(userId);

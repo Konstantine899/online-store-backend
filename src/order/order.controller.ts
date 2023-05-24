@@ -35,6 +35,7 @@ import { AdminCreateOrderResponse } from './requests/admin-create-order.response
 import { AdminRemoveOrderResponse } from './requests/admin-remove-order.response';
 import { UserGetOrderListResponse } from './requests/user-get-order-list.response';
 import { UserGetOrderResponse } from './requests/user-get-order.response';
+import { UserCreateOrderResponse } from './requests/user-create-order.response';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -140,7 +141,7 @@ export class OrderController {
   public async userCreateOrder(
 	@Req() request: Request,
 	@Body() dto: Omit<OrderDto, 'userId'>,
-  ) {
+  ): Promise<UserCreateOrderResponse> {
 	const { id } = request.user as RequestUserDto;
 	const { cartId } = request.signedCookies as RequestSignedCookiesDto;
 	return this.orderService.userCreateOrder(dto, id, cartId);
