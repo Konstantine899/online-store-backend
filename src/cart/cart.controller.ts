@@ -21,6 +21,7 @@ import { CartResponse } from './responses/cart.response';
 import { AppendToCartResponse } from './responses/append-to-cart.response';
 import { IncrementResponse } from './responses/increment.response';
 import { DecrementResponse } from './responses/decrement.response';
+import { RemoveProductFromCartResponse } from './responses/remove-product-from-cart.response';
 
 @ApiTags(`Корзина`)
 @Controller('cart')
@@ -90,7 +91,7 @@ export class CartController {
 	@Req() request: Request,
 	@Res({ passthrough: true }) response: Response,
 	@Param('productId', ParseIntPipe) productId: number,
-  ) {
+  ): Promise<RemoveProductFromCartResponse> {
 	return this.cartService.removeProductFromCart(request, response, {
 		productId,
 	});
