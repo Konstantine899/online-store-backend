@@ -1,10 +1,10 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { CategoryModel } from './category-model';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CategoryRepository } from './category.repository';
 import { CreateCategoryResponse } from './responses/create-category.response';
 import { ListAllCategoriesResponse } from './responses/list-all-categories.response';
 import { CategoryResponse } from './responses/category.response';
+import { UpdateCategoryResponse } from './responses/update-category.response';
 
 @Injectable()
 export class CategoryService {
@@ -35,7 +35,7 @@ export class CategoryService {
   public async updateCategory(
 	id: number,
 	dto: CreateCategoryDto,
-  ): Promise<CategoryModel> {
+  ): Promise<UpdateCategoryResponse> {
 	const category = await this.getCategory(id);
 	return this.categoryRepository.updateCategory(dto, category);
   }

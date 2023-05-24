@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { CategoryModel } from './category-model';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
@@ -25,6 +24,7 @@ import { RemoveCategoryDocumentation } from './decorators/remove-category.docume
 import { CreateCategoryResponse } from './responses/create-category.response';
 import { ListAllCategoriesResponse } from './responses/list-all-categories.response';
 import { CategoryResponse } from './responses/category.response';
+import { UpdateCategoryResponse } from './responses/update-category.response';
 
 @ApiTags(`Категория`)
 @Controller('category')
@@ -66,7 +66,7 @@ export class CategoryController {
   public async updateCategory(
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateCategoryDto,
-  ): Promise<CategoryModel> {
+  ): Promise<UpdateCategoryResponse> {
 	return this.categoryService.updateCategory(id, dto);
   }
 

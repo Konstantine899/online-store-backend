@@ -5,6 +5,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { CreateCategoryResponse } from './responses/create-category.response';
 import { ListAllCategoriesResponse } from './responses/list-all-categories.response';
 import { CategoryResponse } from './responses/category.response';
+import { UpdateCategoryResponse } from './responses/update-category.response';
 
 @Injectable()
 export class CategoryRepository {
@@ -32,7 +33,7 @@ export class CategoryRepository {
   public async updateCategory(
 	dto: CreateCategoryDto,
 	category: CategoryModel,
-  ): Promise<CategoryModel> {
+  ): Promise<UpdateCategoryResponse> {
 	return category.update({ ...dto, name: dto.name });
   }
 

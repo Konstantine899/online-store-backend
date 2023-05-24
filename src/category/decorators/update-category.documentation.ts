@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
+import { UpdateCategoryResponse } from '../responses/update-category.response';
 
 export function UpdateCategoryDocumentation() {
   return applyDecorators(
@@ -27,14 +28,7 @@ export function UpdateCategoryDocumentation() {
 	ApiResponse({
 		description: `Updated category`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Тело ответа обновленной категории`,
-		example: {
-			id: 7,
-			name: 'Ноутбуки',
-			updatedAt: '2023-05-11T13:23:32.511Z',
-		},
-		},
+		type: UpdateCategoryResponse,
 	}),
 	ApiBadRequestResponse({
 		description: `Bad Request`,
