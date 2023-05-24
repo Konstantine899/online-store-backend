@@ -6,6 +6,7 @@ import { OrderDto } from './dto/order.dto';
 import { OrderItemRepository } from '../order-item/order-item.repository';
 import { AdminGetListOfAllStoreOrdersResponse } from './requests/admin-get-list-of-all-store-orders.response';
 import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
+import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
 
 @Injectable()
 export class OrderRepository {
@@ -32,7 +33,7 @@ export class OrderRepository {
   public async adminFindOrderUser(
 	id: number,
 	userId?: number,
-  ): Promise<OrderModel> {
+  ): Promise<AdminGetOrderUserResponse> {
 	let order: OrderModel;
 	if (userId) {
 		order = await this.orderModel.findOne({

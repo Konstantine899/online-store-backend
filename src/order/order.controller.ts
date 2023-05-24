@@ -30,6 +30,7 @@ import { UserGetListOrdersDocumentation } from './decorators/user-get-list-order
 import { GuestCreateOrderDocumentation } from './decorators/guest-create-order.documentation';
 import { AdminGetListOfAllStoreOrdersResponse } from './requests/admin-get-list-of-all-store-orders.response';
 import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
+import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -70,7 +71,7 @@ export class OrderController {
   @Get('/admin/get-order/:orderId([0-9]+)')
   public async adminGetOrderUser(
 	@Param('orderId', ParseIntPipe) orderId: number,
-  ) {
+  ): Promise<AdminGetOrderUserResponse> {
 	return this.orderService.adminGetOrderUser(orderId);
   }
 

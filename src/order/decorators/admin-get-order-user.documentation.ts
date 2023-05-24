@@ -6,6 +6,7 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
+import { AdminGetOrderUserResponse } from '../requests/admin-get-order-user.response';
 
 export function AdminGetOrderUserDocumentation() {
   return applyDecorators(
@@ -20,37 +21,7 @@ export function AdminGetOrderUserDocumentation() {
 	ApiResponse({
 		description: `Admin get order user`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Получение заказа пользователя администратором`,
-		example: {
-			id: 23,
-			name: 'Константин',
-			email: '375298918971@gmail.com',
-			phone: '375298918971',
-			address: 'г. Витебск ул Чкалова 41 к1 кв 73',
-			amount: 6000,
-			status: 0,
-			comment: null,
-			userId: 1,
-			items: [
-			{
-				name: 'Xiaomi 12S',
-				price: 2000,
-				quantity: 2,
-			},
-			{
-				name: 'Xiaomi 10pro',
-				price: 1000,
-				quantity: 1,
-			},
-			{
-				name: 'Xiaomi 11pro',
-				price: 1000,
-				quantity: 1,
-			},
-			],
-		},
-		},
+		type: AdminGetOrderUserResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not found`,

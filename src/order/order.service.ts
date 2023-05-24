@@ -7,6 +7,7 @@ import { UserService } from '../user/user.service';
 import { UserRepository } from '../user/user.repository';
 import { AdminGetListOfAllStoreOrdersResponse } from './requests/admin-get-list-of-all-store-orders.response';
 import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
+import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
 
 @Injectable()
 export class OrderService {
@@ -41,7 +42,9 @@ export class OrderService {
 	return orders;
   }
 
-  public async adminGetOrderUser(orderId: number): Promise<OrderModel> {
+  public async adminGetOrderUser(
+	orderId: number,
+  ): Promise<AdminGetOrderUserResponse> {
 	const order = await this.orderRepository.adminFindOrderUser(orderId);
 	if (!order) {
 		this.notFound('Заказ не найден');
