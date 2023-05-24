@@ -5,31 +5,43 @@ import { Type } from 'class-transformer';
 import { OrderItemModel } from '../../order-item/order-item.model';
 
 export class AdminCreateOrderResponse extends OrderModel {
-  @ApiProperty({ example: 1 })
+  @ApiProperty({ example: 1, description: `Идентификатор заказа` })
   readonly id: number;
 
-  @ApiProperty({ example: 'Константин' })
+  @ApiProperty({ example: 'Константин', description: `Имя заказчика` })
   readonly name: string;
 
-  @ApiProperty({ example: '375298918971@gmail.com' })
+  @ApiProperty({
+	example: '375298918971@gmail.com',
+	description: `email адрес заказчика`,
+  })
   readonly email: string;
 
-  @ApiProperty({ example: '375298918971' })
+  @ApiProperty({
+	example: '375298918971',
+	description: `Контактный номер заказчика`,
+  })
   readonly phone: string;
 
-  @ApiProperty({ example: 'г. Витебск ул Чкалова 41 к1 кв 73' })
+  @ApiProperty({
+	example: 'г. Витебск ул Чкалова 41 к1 кв 73',
+	description: `Адрес доставки`,
+  })
   readonly address: string;
 
-  @ApiProperty({ example: 6000 })
+  @ApiProperty({ example: 6000, description: `Сумма заказа` })
   readonly amount: number;
 
-  @ApiProperty({ example: 0 })
+  @ApiProperty({ example: 0, description: `Статус заказа` })
   readonly status: number;
 
-  @ApiProperty({ example: null })
+  @ApiProperty({
+	example: `Лучший заказ`,
+	description: `Комментарий заказчика`,
+  })
   readonly comment: string | null;
 
-  @ApiProperty({ example: 1 })
+  @ApiProperty({ example: 1, description: `Идентификатор заказчика` })
   readonly userId: number;
 
   @ApiProperty({
@@ -40,6 +52,7 @@ export class AdminCreateOrderResponse extends OrderModel {
 		quantity: 1,
 		},
 	],
+	description: `Позиции заказа`,
   })
   @IsArray()
   @ValidateNested({ each: true })
