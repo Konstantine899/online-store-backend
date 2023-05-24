@@ -28,7 +28,7 @@ import { GetProductDocumentation } from './decorators/get-product.documentation'
 import { SearchQueryDto } from './dto/search-query.dto';
 import { SortQueryDto } from './dto/sort-query.dto';
 import { GetListProductDocumentation } from './decorators/get-list-product.documentation';
-import { GetListAllProductsByBrandDocumentation } from './decorators/get-list-all-products-by-brand.documentation';
+import { GetListProductByBrandIdDocumentation } from './decorators/get-list-product-by-brand-id.documentation';
 import { GetListAllProductsByCategoryDocumentation } from './decorators/get-list-all-products-by-category.documentation';
 import { GetListAllProductsByBrandAndCategoryDocumentation } from './decorators/get-list-all-products-by-brand-and-category.documentation';
 import { UpdateProductDocumentation } from './decorators/update-product.documentation';
@@ -36,6 +36,7 @@ import { RemoveProductDocumentation } from './decorators/remove-product.document
 import { CreateProductResponse } from './responses/create-product.response';
 import { GetProductResponse } from './responses/get-product.response';
 import { GetListProductResponse } from './responses/get-list-product.response';
+import { GetListProductByBrandIdResponse } from './responses/get-list-product-by-brand-id.response';
 
 export interface IProductsResponse {
   metaData: IGetMetadata;
@@ -86,17 +87,17 @@ export class ProductController {
 	);
   }
 
-  @GetListAllProductsByBrandDocumentation()
+  @GetListProductByBrandIdDocumentation()
   @HttpCode(200)
   @Get('/all/brandId/:brandId([0-9]+)')
-  public async getListAllProductsByBrandId(
+  public async getListProductByBrandId(
 	@Param('brandId', ParseIntPipe) brandId: number,
 	@Query() searchQuery: SearchQueryDto,
 	@Query() sortQuery: SortQueryDto,
 	@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
 	@Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
-  ): Promise<IProductsResponse> {
-	return this.productService.getListAllProductsByBrandId(
+  ): Promise<GetListProductByBrandIdResponse> {
+	return this.productService.getListProductByBrandId(
 		brandId,
 		searchQuery,
 		sortQuery,

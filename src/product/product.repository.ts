@@ -51,13 +51,13 @@ export class ProductRepository {
 	});
   }
 
-  public async findListAllProductsByBrandId(
+  public async findListProductByBrandId(
 	brandId: number,
 	search: string,
 	sort: string,
 	limit: number,
 	offset: number,
-  ): Promise<{ count: number; rows: ProductModel[] }> {
+  ): Promise<{ count: number; rows: Rows[] }> {
 	return this.productModel.findAndCountAll({
 		where: { brandId },
 		order: sort ? [['price', sort.toUpperCase()]] : null,
