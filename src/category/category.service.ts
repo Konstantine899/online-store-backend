@@ -4,6 +4,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { CategoryRepository } from './category.repository';
 import { CreateCategoryResponse } from './responses/create-category.response';
 import { ListAllCategoriesResponse } from './responses/list-all-categories.response';
+import { CategoryResponse } from './responses/category.response';
 
 @Injectable()
 export class CategoryService {
@@ -23,7 +24,7 @@ export class CategoryService {
 	return categories;
   }
 
-  public async getCategory(id: number): Promise<CategoryModel> {
+  public async getCategory(id: number): Promise<CategoryResponse> {
 	const category = await this.categoryRepository.findCategory(id);
 	if (!category) {
 		this.notFound('Категория товара не найдена');

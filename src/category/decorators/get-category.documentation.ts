@@ -5,6 +5,7 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
+import { CategoryResponse } from '../responses/category.response';
 
 export function GetCategoryDocumentation() {
   return applyDecorators(
@@ -18,13 +19,7 @@ export function GetCategoryDocumentation() {
 	ApiResponse({
 		description: `Get category`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Полученная категория`,
-		example: {
-			id: 4,
-			name: 'Компьютеры',
-		},
-		},
+		type: CategoryResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not found`,

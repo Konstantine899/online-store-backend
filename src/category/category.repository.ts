@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CreateCategoryResponse } from './responses/create-category.response';
 import { ListAllCategoriesResponse } from './responses/list-all-categories.response';
+import { CategoryResponse } from './responses/category.response';
 
 @Injectable()
 export class CategoryRepository {
@@ -24,7 +25,7 @@ export class CategoryRepository {
 	return this.categoryModel.findAll();
   }
 
-  public async findCategory(id: number): Promise<CategoryModel> {
+  public async findCategory(id: number): Promise<CategoryResponse> {
 	return this.categoryModel.findByPk(id);
   }
 
