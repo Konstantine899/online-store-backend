@@ -5,7 +5,7 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
-import { UserOrderListResponse } from '../requests/user-order-list.response';
+import { UserGetOrderListResponse } from '../requests/user-get-order-list.response';
 
 export function UserGetOrderListDocumentation() {
   return applyDecorators(
@@ -14,7 +14,7 @@ export function UserGetOrderListDocumentation() {
 	ApiResponse({
 		description: `User get list orders`,
 		status: HttpStatus.OK,
-		type: [UserOrderListResponse],
+		type: [UserGetOrderListResponse],
 	}),
 	ApiNotFoundResponse({
 		description: `Not found`,

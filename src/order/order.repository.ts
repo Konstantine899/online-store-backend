@@ -8,7 +8,7 @@ import { AdminGetStoreOrderListResponse } from './requests/admin-get-store-order
 import { AdminGetOrderListUserResponse } from './requests/admin-get-order-list-user.response';
 import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
 import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
-import { UserOrderListResponse } from './requests/user-order-list.response';
+import { UserGetOrderListResponse } from './requests/user-get-order-list.response';
 
 @Injectable()
 export class OrderRepository {
@@ -118,7 +118,7 @@ export class OrderRepository {
 
   public async userFindOrderList(
 	userId: number,
-  ): Promise<UserOrderListResponse[]> {
+  ): Promise<UserGetOrderListResponse[]> {
 	let orders: OrderModel[];
 	if (userId) {
 		orders = await this.orderModel.findAll({
