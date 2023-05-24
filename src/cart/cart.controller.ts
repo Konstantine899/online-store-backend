@@ -22,6 +22,7 @@ import { AppendToCartResponse } from './responses/append-to-cart.response';
 import { IncrementResponse } from './responses/increment.response';
 import { DecrementResponse } from './responses/decrement.response';
 import { RemoveProductFromCartResponse } from './responses/remove-product-from-cart.response';
+import { ClearCartResponse } from './responses/clear-cart.response';
 
 @ApiTags(`Корзина`)
 @Controller('cart')
@@ -103,7 +104,7 @@ export class CartController {
   public async clearCart(
 	@Req() request: Request,
 	@Res({ passthrough: true }) response: Response,
-  ) {
+  ): Promise<ClearCartResponse> {
 	return this.cartService.clearCart(request, response);
   }
 }

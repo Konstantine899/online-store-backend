@@ -5,6 +5,7 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
+import { ClearCartResponse } from '../responses/clear-cart.response';
 
 export function ClearCartDocumentation() {
   return applyDecorators(
@@ -13,13 +14,7 @@ export function ClearCartDocumentation() {
 	ApiResponse({
 		description: `Clear cart`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Очистка корзины корзины`,
-		example: {
-			cartId: 26,
-			products: [],
-		},
-		},
+		type: ClearCartResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not found`,

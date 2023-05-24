@@ -11,6 +11,7 @@ import { AppendToCartResponse } from './responses/append-to-cart.response';
 import { IncrementResponse } from './responses/increment.response';
 import { DecrementResponse } from './responses/decrement.response';
 import { RemoveProductFromCartResponse } from './responses/remove-product-from-cart.response';
+import { ClearCartResponse } from './responses/clear-cart.response';
 
 @Injectable()
 export class CartService {
@@ -143,7 +144,7 @@ export class CartService {
   public async clearCart(
 	request: Request,
 	response: Response,
-  ): Promise<ITransformData> {
+  ): Promise<ClearCartResponse> {
 	let { cartId } = request.signedCookies as { cartId: number };
 	if (!cartId) {
 		const created = await this.cartRepository.createCart();
