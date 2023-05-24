@@ -3,6 +3,7 @@ import { CategoryModel } from './category-model';
 import { Injectable } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CreateCategoryResponse } from './responses/create-category.response';
+import { ListAllCategoriesResponse } from './responses/list-all-categories.response';
 
 @Injectable()
 export class CategoryRepository {
@@ -19,7 +20,7 @@ export class CategoryRepository {
 	return category.save();
   }
 
-  public async findListAllCategories(): Promise<CategoryModel[]> {
+  public async findListAllCategories(): Promise<ListAllCategoriesResponse[]> {
 	return this.categoryModel.findAll();
   }
 

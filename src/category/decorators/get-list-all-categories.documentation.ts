@@ -4,6 +4,7 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
+import { ListAllCategoriesResponse } from '../responses/list-all-categories.response';
 
 export function GetListAllCategoriesDocumentation() {
   return applyDecorators(
@@ -11,31 +12,7 @@ export function GetListAllCategoriesDocumentation() {
 	ApiResponse({
 		description: `Get list all categories`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Список всех категорий`,
-		example: [
-			{
-			id: 4,
-			name: 'Компьютеры',
-			},
-			{
-			id: 7,
-			name: 'Ноутбуки',
-			},
-			{
-			id: 1,
-			name: 'Смартфоны',
-			},
-			{
-			id: 2,
-			name: 'Телевизоры',
-			},
-			{
-			id: 3,
-			name: 'Холодильники',
-			},
-		],
-		},
+		type: [ListAllCategoriesResponse],
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,

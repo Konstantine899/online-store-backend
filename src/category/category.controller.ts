@@ -23,6 +23,7 @@ import { GetCategoryDocumentation } from './decorators/get-category.documentatio
 import { UpdateCategoryDocumentation } from './decorators/update-category.documentation';
 import { RemoveCategoryDocumentation } from './decorators/remove-category.documentation';
 import { CreateCategoryResponse } from './responses/create-category.response';
+import { ListAllCategoriesResponse } from './responses/list-all-categories.response';
 
 @ApiTags(`Категория`)
 @Controller('category')
@@ -43,7 +44,7 @@ export class CategoryController {
   @GetListAllCategoriesDocumentation()
   @Get('/categories')
   @HttpCode(200)
-  public async getListAllCategories(): Promise<CategoryModel[]> {
+  public async getListAllCategories(): Promise<ListAllCategoriesResponse[]> {
 	return this.categoryService.getListAllCategories();
   }
 
