@@ -22,6 +22,7 @@ import { GetListAllCategoriesDocumentation } from './decorators/get-list-all-cat
 import { GetCategoryDocumentation } from './decorators/get-category.documentation';
 import { UpdateCategoryDocumentation } from './decorators/update-category.documentation';
 import { RemoveCategoryDocumentation } from './decorators/remove-category.documentation';
+import { CreateCategoryResponse } from './responses/create-category.response';
 
 @ApiTags(`Категория`)
 @Controller('category')
@@ -35,7 +36,7 @@ export class CategoryController {
   @Post('/create')
   public async createCategory(
 	@Body() dto: CreateCategoryDto,
-  ): Promise<CategoryModel> {
+  ): Promise<CreateCategoryResponse> {
 	return this.categoryService.createCategory(dto);
   }
 

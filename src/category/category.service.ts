@@ -2,12 +2,15 @@ import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { CategoryModel } from './category-model';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CategoryRepository } from './category.repository';
+import { CreateCategoryResponse } from './responses/create-category.response';
 
 @Injectable()
 export class CategoryService {
   constructor(private readonly categoryRepository: CategoryRepository) {}
 
-  public async createCategory(dto: CreateCategoryDto): Promise<CategoryModel> {
+  public async createCategory(
+	dto: CreateCategoryDto,
+  ): Promise<CreateCategoryResponse> {
 	return this.categoryRepository.createCategory(dto);
   }
 

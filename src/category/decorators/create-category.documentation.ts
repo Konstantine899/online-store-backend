@@ -7,6 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
+import { CreateCategoryResponse } from '../responses/create-category.response';
 
 export function CreateCategoryDocumentation() {
   return applyDecorators(
@@ -19,15 +20,7 @@ export function CreateCategoryDocumentation() {
 	ApiResponse({
 		description: `Created category`,
 		status: HttpStatus.CREATED,
-		schema: {
-		title: `Тело ответа созданной категории`,
-		example: {
-			id: 7,
-			name: 'Ноутбуки',
-			updatedAt: '2023-05-11T12:24:33.702Z',
-			createdAt: '2023-05-11T12:24:33.702Z',
-		},
-		},
+		type: CreateCategoryResponse,
 	}),
 	ApiBadRequestResponse({
 		description: `Bad Request`,
