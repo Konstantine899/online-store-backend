@@ -6,6 +6,7 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
+import { RemoveCategoryResponse } from '../responses/remove-category.response';
 
 export function RemoveCategoryDocumentation() {
   return applyDecorators(
@@ -20,7 +21,7 @@ export function RemoveCategoryDocumentation() {
 	ApiResponse({
 		description: `Remove category`,
 		status: HttpStatus.OK,
-		schema: { title: 'Удалено записей', example: 1 },
+		type: RemoveCategoryResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not found`,

@@ -25,6 +25,7 @@ import { CreateCategoryResponse } from './responses/create-category.response';
 import { ListAllCategoriesResponse } from './responses/list-all-categories.response';
 import { CategoryResponse } from './responses/category.response';
 import { UpdateCategoryResponse } from './responses/update-category.response';
+import { RemoveCategoryResponse } from './responses/remove-category.response';
 
 @ApiTags(`Категория`)
 @Controller('category')
@@ -77,7 +78,7 @@ export class CategoryController {
   @Delete('/delete/:id([0-9]+)')
   public async removeCategory(
 	@Param('id', ParseIntPipe) id: number,
-  ): Promise<number> {
+  ): Promise<RemoveCategoryResponse> {
 	return this.categoryService.removeCategory(id);
   }
 }

@@ -5,6 +5,7 @@ import { CreateCategoryResponse } from './responses/create-category.response';
 import { ListAllCategoriesResponse } from './responses/list-all-categories.response';
 import { CategoryResponse } from './responses/category.response';
 import { UpdateCategoryResponse } from './responses/update-category.response';
+import { RemoveCategoryResponse } from './responses/remove-category.response';
 
 @Injectable()
 export class CategoryService {
@@ -40,12 +41,16 @@ export class CategoryService {
 	return this.categoryRepository.updateCategory(dto, category);
   }
 
-  public async removeCategory(id: number): Promise<number> {
+  public async removeCategory(id: number): Promise<RemoveCategoryResponse> {
 	const category = await this.getCategory(id);
 	if (!category) {
 		this.notFound('Категория товара не найдена');
 	}
-	return this.categoryRepository.removeCategory(category.id);
+	await this.categoryRepository.removeCategory(category.id);
+	return {
+		status: HttpStatus.OK,
+		message: `success`,
+	};
   }
 
   private notFound(message: string): void {

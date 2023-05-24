@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { HttpStatus } from '@nestjs/common';
 
-export class RemoveBrandResponse {
+export class RemoveCategoryResponse {
   @ApiProperty({ example: HttpStatus.OK })
   readonly status: number;
 
