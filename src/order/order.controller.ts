@@ -28,6 +28,7 @@ import { UserCreateOrderDocumentation } from './decorators/user-create-order.doc
 import { UserGetOrderDocumentation } from './decorators/user-get-order.documentation';
 import { UserGetListOrdersDocumentation } from './decorators/user-get-list-orders.documentation';
 import { GuestCreateOrderDocumentation } from './decorators/guest-create-order.documentation';
+import { AdminGetListOfAllStoreOrdersResponse } from './requests/admin-get-list-of-all-store-orders.response';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -42,7 +43,9 @@ export class OrderController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-all-order')
-  public async adminGetListOfAllStoreOrders() {
+  public async adminGetListOfAllStoreOrders(): Promise<
+	AdminGetListOfAllStoreOrdersResponse[]
+  > {
 	return this.orderService.adminGetListOfAllStoreOrders();
   }
 

@@ -5,6 +5,7 @@ import { OrderDto } from './dto/order.dto';
 import { CartRepository } from '../cart/cart.repository';
 import { UserService } from '../user/user.service';
 import { UserRepository } from '../user/user.repository';
+import { AdminGetListOfAllStoreOrdersResponse } from './requests/admin-get-list-of-all-store-orders.response';
 
 @Injectable()
 export class OrderService {
@@ -15,7 +16,9 @@ export class OrderService {
 	private readonly userRepository: UserRepository,
   ) {}
 
-  public async adminGetListOfAllStoreOrders(): Promise<OrderModel[]> {
+  public async adminGetListOfAllStoreOrders(): Promise<
+	AdminGetListOfAllStoreOrdersResponse[]
+  > {
 	const orders = await this.orderRepository.adminFindListOrders();
 	if (!orders.length) {
 		this.notFound('Список заказов магазина пуст');
