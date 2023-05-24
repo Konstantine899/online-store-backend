@@ -11,6 +11,7 @@ import { ProductRepository } from './product.repository';
 import { IProductsResponse } from './product.controller';
 import { SearchQueryDto } from './dto/search-query.dto';
 import { SortQueryDto, Sort } from './dto/sort-query.dto';
+import { CreateProductResponse } from './responses/create-product.response';
 
 export interface IGetMetadata {
   totalCount: number;
@@ -30,7 +31,7 @@ export class ProductService {
   public async productCreate(
 	dto: CreateProductDto,
 	image: Express.Multer.File,
-  ): Promise<ProductModel> {
+  ): Promise<CreateProductResponse> {
 	const imageName = await this.fileService.createFile(image);
 	return this.productRepository.create(dto, imageName);
   }

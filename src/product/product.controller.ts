@@ -33,6 +33,7 @@ import { GetListAllProductsByCategoryDocumentation } from './decorators/get-list
 import { GetListAllProductsByBrandAndCategoryDocumentation } from './decorators/get-list-all-products-by-brand-and-category.documentation';
 import { UpdateProductDocumentation } from './decorators/update-product.documentation';
 import { RemoveProductDocumentation } from './decorators/remove-product.documentation';
+import { CreateProductResponse } from './responses/create-product.response';
 
 export interface IProductsResponse {
   metaData: IGetMetadata;
@@ -53,7 +54,7 @@ export class ProductController {
 	@Body() dto: CreateProductDto,
 	@UploadedFile()
 	image: Express.Multer.File,
-  ): Promise<ProductModel> {
+  ): Promise<CreateProductResponse> {
 	return this.productService.productCreate(dto, image);
   }
 

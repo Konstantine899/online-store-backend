@@ -3,6 +3,7 @@ import { ProductModel } from './product.model';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductPropertyModel } from '../product-property/product-property.model';
 import { Op } from 'sequelize';
+import { CreateProductResponse } from './responses/create-product.response';
 
 export class ProductRepository {
   constructor(
@@ -12,7 +13,7 @@ export class ProductRepository {
   public async create(
 	dto: CreateProductDto,
 	imageName: string,
-  ): Promise<ProductModel> {
+  ): Promise<CreateProductResponse> {
 	const product = new ProductModel();
 	product.name = dto.name;
 	product.price = dto.price;
