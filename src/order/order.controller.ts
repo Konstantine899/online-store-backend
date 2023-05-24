@@ -18,7 +18,7 @@ import { OrderDto } from './dto/order.dto';
 import { Request } from 'express';
 import { AdminGetStoreOrderListDocumentation } from './decorators/admin-get-store-order-list.documentation';
 import { ApiTags } from '@nestjs/swagger';
-import { AdminGetListOrdersUserDocumentation } from './decorators/admin-get-list-orders-user.documentation';
+import { AdminGetOrderListUserDocumentation } from './decorators/admin-get-order-list-user.documentation';
 import { AdminGetOrderUserDocumentation } from './decorators/admin-get-order-user.documentation';
 import { AdminCreateOrderDocumentation } from './decorators/admin-create-order.documentation';
 import { AdminRemoveOrderDocumentation } from '../product/decorators/admin-remove-order.documentation';
@@ -29,7 +29,7 @@ import { UserGetOrderDocumentation } from './decorators/user-get-order.documenta
 import { UserGetOrderListDocumentation } from './decorators/user-get-order-list.documentation';
 import { GuestCreateOrderDocumentation } from './decorators/guest-create-order.documentation';
 import { AdminGetStoreOrderListResponse } from './requests/admin-get-store-order-list.response';
-import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
+import { AdminGetOrderListUserResponse } from './requests/admin-get-order-list-user.response';
 import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
 import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
 import { AdminRemoveOrderResponse } from './requests/admin-remove-order.response';
@@ -55,15 +55,15 @@ export class OrderController {
   }
 
   /*Получение списка заказов пользователя*/
-  @AdminGetListOrdersUserDocumentation()
+  @AdminGetOrderListUserDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-all-order/user/:userId([0-9]+)')
-  public async adminGetListOrdersUser(
+  public async adminGetOrderListUser(
 	@Param('userId', ParseIntPipe) userId: number,
-  ): Promise<AdminGetListOrdersUserResponse[]> {
-	return this.orderService.adminGetListOrdersUser(userId);
+  ): Promise<AdminGetOrderListUserResponse[]> {
+	return this.orderService.adminGetOrderListUser(userId);
   }
 
   /*Получение заказа пользователя по id заказа*/

@@ -6,7 +6,7 @@ import { CartRepository } from '../cart/cart.repository';
 import { UserService } from '../user/user.service';
 import { UserRepository } from '../user/user.repository';
 import { AdminGetStoreOrderListResponse } from './requests/admin-get-store-order-list.response';
-import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
+import { AdminGetOrderListUserResponse } from './requests/admin-get-order-list-user.response';
 import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
 import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
 import { AdminRemoveOrderResponse } from './requests/admin-remove-order.response';
@@ -24,21 +24,21 @@ export class OrderService {
   public async adminGetStoreOrderList(): Promise<
 	AdminGetStoreOrderListResponse[]
   > {
-	const orders = await this.orderRepository.adminFindStoreOrderList();
+	const orders = await this.orderRepository.adminFindOrderListUser();
 	if (!orders.length) {
 		this.notFound('Список заказов магазина пуст');
 	}
 	return orders;
   }
 
-  public async adminGetListOrdersUser(
+  public async adminGetOrderListUser(
 	userId: number,
-  ): Promise<AdminGetListOrdersUserResponse[]> {
+  ): Promise<AdminGetOrderListUserResponse[]> {
 	const user = await this.userRepository.findUserByPkId(userId);
 	if (!user) {
 		this.notFound(`Пользователь не найден в БД`);
 	}
-	const orders = await this.orderRepository.adminFindStoreOrderList(user.id);
+	const orders = await this.orderRepository.adminFindOrderListUser(user.id);
 	if (!orders.length) {
 		this.notFound(`Список заказов пользователя email: ${user.email} пуст`);
 	}

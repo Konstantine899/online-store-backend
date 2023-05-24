@@ -5,7 +5,7 @@ import { OrderItemModel } from '../order-item/order-item.model';
 import { OrderDto } from './dto/order.dto';
 import { OrderItemRepository } from '../order-item/order-item.repository';
 import { AdminGetStoreOrderListResponse } from './requests/admin-get-store-order-list.response';
-import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
+import { AdminGetOrderListUserResponse } from './requests/admin-get-order-list-user.response';
 import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
 import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
 import { UserOrderListResponse } from './requests/user-order-list.response';
@@ -17,10 +17,10 @@ export class OrderRepository {
 	private readonly orderItemRepository: OrderItemRepository,
   ) {}
 
-  public async adminFindStoreOrderList(
+  public async adminFindOrderListUser(
 	userId?: number,
   ): Promise<
-	AdminGetStoreOrderListResponse[] | AdminGetListOrdersUserResponse[]
+	AdminGetStoreOrderListResponse[] | AdminGetOrderListUserResponse[]
   > {
 	let orders: OrderModel[];
 	if (userId) {
