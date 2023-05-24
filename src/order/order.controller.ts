@@ -16,7 +16,7 @@ import { RoleGuard } from '../role/role.guard';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { OrderDto } from './dto/order.dto';
 import { Request } from 'express';
-import { AdminGetListOfAllStoreOrdersDocumentation } from './decorators/admin-get-list-of-all-store-orders.documentation';
+import { AdminGetStoreOrderListDocumentation } from './decorators/admin-get-store-order-list.documentation';
 import { ApiTags } from '@nestjs/swagger';
 import { AdminGetListOrdersUserDocumentation } from './decorators/admin-get-list-orders-user.documentation';
 import { AdminGetOrderUserDocumentation } from './decorators/admin-get-order-user.documentation';
@@ -28,7 +28,7 @@ import { UserCreateOrderDocumentation } from './decorators/user-create-order.doc
 import { UserGetOrderDocumentation } from './decorators/user-get-order.documentation';
 import { UserGetOrderListDocumentation } from './decorators/user-get-order-list.documentation';
 import { GuestCreateOrderDocumentation } from './decorators/guest-create-order.documentation';
-import { AdminGetListOfAllStoreOrdersResponse } from './requests/admin-get-list-of-all-store-orders.response';
+import { AdminGetStoreOrderListResponse } from './requests/admin-get-store-order-list.response';
 import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
 import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
 import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
@@ -43,15 +43,15 @@ export class OrderController {
   /*Для администратора*/
 
   /*Получение списка всех заказов магазина*/
-  @AdminGetListOfAllStoreOrdersDocumentation()
+  @AdminGetStoreOrderListDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-all-order')
-  public async adminGetListOfAllStoreOrders(): Promise<
-	AdminGetListOfAllStoreOrdersResponse[]
+  public async adminGetStoreOrderList(): Promise<
+	AdminGetStoreOrderListResponse[]
   > {
-	return this.orderService.adminGetListOfAllStoreOrders();
+	return this.orderService.adminGetStoreOrderList();
   }
 
   /*Получение списка заказов пользователя*/

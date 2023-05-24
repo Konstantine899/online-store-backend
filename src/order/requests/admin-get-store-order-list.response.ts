@@ -4,7 +4,7 @@ import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { OrderItemModel } from '../../order-item/order-item.model';
 
-export class AdminGetListOfAllStoreOrdersResponse extends OrderModel {
+export class AdminGetStoreOrderListResponse extends OrderModel {
   @ApiProperty({ example: 1 })
   readonly id: number;
 

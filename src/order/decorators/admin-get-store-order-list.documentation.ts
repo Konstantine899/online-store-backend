@@ -5,9 +5,9 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
-import { AdminGetListOfAllStoreOrdersResponse } from '../requests/admin-get-list-of-all-store-orders.response';
+import { AdminGetStoreOrderListResponse } from '../requests/admin-get-store-order-list.response';
 
-export function AdminGetListOfAllStoreOrdersDocumentation() {
+export function AdminGetStoreOrderListDocumentation() {
   return applyDecorators(
 	ApiOperation({
 		summary: `Получение списка всех заказов магазина администратором`,
@@ -16,7 +16,7 @@ export function AdminGetListOfAllStoreOrdersDocumentation() {
 	ApiResponse({
 		description: `Admin get list of all store orders`,
 		status: HttpStatus.OK,
-		type: [AdminGetListOfAllStoreOrdersResponse],
+		type: [AdminGetStoreOrderListResponse],
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,
