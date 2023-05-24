@@ -16,7 +16,7 @@ export function AdminGetListOfAllStoreOrdersDocumentation() {
 	ApiResponse({
 		description: `Admin get list of all store orders`,
 		status: HttpStatus.OK,
-		type: AdminGetListOfAllStoreOrdersResponse,
+		type: [AdminGetListOfAllStoreOrdersResponse],
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,

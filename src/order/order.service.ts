@@ -6,6 +6,7 @@ import { CartRepository } from '../cart/cart.repository';
 import { UserService } from '../user/user.service';
 import { UserRepository } from '../user/user.repository';
 import { AdminGetListOfAllStoreOrdersResponse } from './requests/admin-get-list-of-all-store-orders.response';
+import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
 
 @Injectable()
 export class OrderService {
@@ -26,7 +27,9 @@ export class OrderService {
 	return orders;
   }
 
-  public async adminGetListOrdersUser(userId: number): Promise<OrderModel[]> {
+  public async adminGetListOrdersUser(
+	userId: number,
+  ): Promise<AdminGetListOrdersUserResponse[]> {
 	const user = await this.userRepository.findUserByPkId(userId);
 	if (!user) {
 		this.notFound(`Пользователь не найден в БД`);

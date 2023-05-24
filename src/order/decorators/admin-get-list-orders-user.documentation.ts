@@ -5,30 +5,18 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
+import { AdminGetListOrdersUserResponse } from '../requests/admin-get-list-orders-user.response';
 
 export function AdminGetListOrdersUserDocumentation() {
   return applyDecorators(
-	ApiOperation({ summary: `Получение списка заказов пользователя` }),
+	ApiOperation({
+		summary: `Получение списка заказов пользователя администратором`,
+	}),
 	ApiBearerAuth('JWT-auth'),
 	ApiResponse({
 		description: `Admin get list orders user`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Список заказов пользователя`,
-		example: [
-			{
-			id: 23,
-			name: 'Константин',
-			email: '375298918971@gmail.com',
-			phone: '375298918971',
-			address: 'г. Витебск ул Чкалова 41 к1 кв 73',
-			amount: 6000,
-			status: 0,
-			comment: null,
-			userId: 1,
-			},
-		],
-		},
+		type: [AdminGetListOrdersUserResponse],
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,

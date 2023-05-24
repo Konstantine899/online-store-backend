@@ -5,6 +5,7 @@ import { OrderItemModel } from '../order-item/order-item.model';
 import { OrderDto } from './dto/order.dto';
 import { OrderItemRepository } from '../order-item/order-item.repository';
 import { AdminGetListOfAllStoreOrdersResponse } from './requests/admin-get-list-of-all-store-orders.response';
+import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
 
 @Injectable()
 export class OrderRepository {
@@ -15,7 +16,9 @@ export class OrderRepository {
 
   public async adminFindListOrders(
 	userId?: number,
-  ): Promise<AdminGetListOfAllStoreOrdersResponse[]> {
+  ): Promise<
+	AdminGetListOfAllStoreOrdersResponse[] | AdminGetListOrdersUserResponse[]
+  > {
 	let orders: OrderModel[];
 	if (userId) {
 		orders = await this.orderModel.findAll({ where: { userId } });
