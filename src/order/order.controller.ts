@@ -26,13 +26,14 @@ import { RequestUserDto } from './dto/request-user.dto';
 import { RequestSignedCookiesDto } from './dto/request-signed-cookies.dto';
 import { UserCreateOrderDocumentation } from './decorators/user-create-order.documentation';
 import { UserGetOrderDocumentation } from './decorators/user-get-order.documentation';
-import { UserGetListOrdersDocumentation } from './decorators/user-get-list-orders.documentation';
+import { UserGetOrderListDocumentation } from './decorators/user-get-order-list.documentation';
 import { GuestCreateOrderDocumentation } from './decorators/guest-create-order.documentation';
 import { AdminGetListOfAllStoreOrdersResponse } from './requests/admin-get-list-of-all-store-orders.response';
 import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders-user.response';
 import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
 import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
 import { AdminRemoveOrderResponse } from './requests/admin-remove-order.response';
+import { UserOrderListResponse } from './requests/user-order-list.response';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -104,14 +105,16 @@ export class OrderController {
   /*Для авторизованного пользователя*/
 
   /*Получение списка заказов пользователя*/
-  @UserGetListOrdersDocumentation()
+  @UserGetOrderListDocumentation()
   @HttpCode(200)
   @Roles('USER')
   @UseGuards(JwtGuard, RoleGuard)
   @Get(`/user/get-all-order`)
-  public async userGetListOrders(@Req() request: Request) {
+  public async userGetOrderList(
+	@Req() request: Request,
+  ): Promise<UserOrderListResponse[]> {
 	const { id } = request.user as RequestUserDto;
-	return this.orderService.userGetListOrders(id);
+	return this.orderService.userGetOrderList(id);
   }
 
   /*Получение одного заказа пользователя*/

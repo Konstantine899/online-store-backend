@@ -10,6 +10,7 @@ import { AdminGetListOrdersUserResponse } from './requests/admin-get-list-orders
 import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
 import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
 import { AdminRemoveOrderResponse } from './requests/admin-remove-order.response';
+import { UserOrderListResponse } from './requests/user-order-list.response';
 
 @Injectable()
 export class OrderService {
@@ -79,8 +80,8 @@ export class OrderService {
 	return { status: HttpStatus.OK, message: `success` };
   }
 
-  public async userGetListOrders(userId): Promise<OrderModel[]> {
-	const orders = await this.orderRepository.userFindListOrders(userId);
+  public async userGetOrderList(userId): Promise<UserOrderListResponse[]> {
+	const orders = await this.orderRepository.userFindOrderList(userId);
 	if (!orders.length) {
 		this.notFound(`Заказы не найдены`);
 	}
