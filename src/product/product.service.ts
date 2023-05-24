@@ -12,6 +12,7 @@ import { IProductsResponse } from './product.controller';
 import { SearchQueryDto } from './dto/search-query.dto';
 import { SortQueryDto, Sort } from './dto/sort-query.dto';
 import { CreateProductResponse } from './responses/create-product.response';
+import { GetProductResponse } from './responses/get-product.response';
 
 export interface IGetMetadata {
   totalCount: number;
@@ -36,7 +37,7 @@ export class ProductService {
 	return this.productRepository.create(dto, imageName);
   }
 
-  public async getProduct(id: number): Promise<ProductModel> {
+  public async getProduct(id: number): Promise<GetProductResponse> {
 	const product = await this.productRepository.findProduct(id);
 	if (!product) {
 		this.notFound('К сожалению по вашему запросу ничего не найдено');

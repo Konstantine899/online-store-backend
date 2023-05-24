@@ -34,6 +34,7 @@ import { GetListAllProductsByBrandAndCategoryDocumentation } from './decorators/
 import { UpdateProductDocumentation } from './decorators/update-product.documentation';
 import { RemoveProductDocumentation } from './decorators/remove-product.documentation';
 import { CreateProductResponse } from './responses/create-product.response';
+import { GetProductResponse } from './responses/get-product.response';
 
 export interface IProductsResponse {
   metaData: IGetMetadata;
@@ -63,7 +64,7 @@ export class ProductController {
   @Get('/one/:id([0-9]+)')
   public async getProduct(
 	@Param('id', ParseIntPipe) id: number,
-  ): Promise<ProductModel> {
+  ): Promise<GetProductResponse> {
 	return this.productService.getProduct(id);
   }
 

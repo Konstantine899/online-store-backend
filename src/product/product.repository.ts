@@ -4,6 +4,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { ProductPropertyModel } from '../product-property/product-property.model';
 import { Op } from 'sequelize';
 import { CreateProductResponse } from './responses/create-product.response';
+import { GetProductResponse } from './responses/get-product.response';
 
 export class ProductRepository {
   constructor(
@@ -28,7 +29,7 @@ export class ProductRepository {
 	return this.productModel.findByPk(productId);
   }
 
-  public async findProduct(id: number): Promise<ProductModel> {
+  public async findProduct(id: number): Promise<GetProductResponse> {
 	return this.productModel.findOne({
 		where: { id },
 		include: [{ model: ProductPropertyModel }],
