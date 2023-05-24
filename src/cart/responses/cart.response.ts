@@ -4,7 +4,7 @@ import { ITransformData } from '../interfaces/i-transform-data';
 
 export class CartResponse implements ITransformData {
   @ApiProperty({ example: 26 })
-  cartId: number;
+  readonly cartId: number;
 
   @ApiProperty({
 	example: [
@@ -16,5 +16,5 @@ export class CartResponse implements ITransformData {
 		},
 	],
   })
-  products: ProductModel[];
+  readonly products: ProductModel[];
 }

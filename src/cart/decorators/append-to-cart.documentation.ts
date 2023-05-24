@@ -1,6 +1,5 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
-  ApiBearerAuth,
   ApiCookieAuth,
   ApiNotFoundResponse,
   ApiOperation,
@@ -12,7 +11,6 @@ import { AppendToCartResponse } from '../responses/append-to-cart.response';
 export function AppendToCartDocumentation() {
   return applyDecorators(
 	ApiOperation({ summary: `Добавление продукта в корзину` }),
-	ApiBearerAuth('JWT-auth'),
 	ApiCookieAuth(),
 	ApiParam({
 		name: `productId`,

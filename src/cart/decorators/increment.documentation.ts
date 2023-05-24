@@ -6,6 +6,7 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
+import { IncrementResponse } from '../responses/increment.response';
 
 export function IncrementDocumentation() {
   return applyDecorators(
@@ -26,20 +27,7 @@ export function IncrementDocumentation() {
 	ApiResponse({
 		description: `increment quantity`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Увеличенное количество товара`,
-		example: {
-			cartId: 26,
-			products: [
-			{
-				productId: 55,
-				name: 'Смартфон Xiaomi Redmi Note 13 Pro 4G 8GB/256GB RU (синий)',
-				price: 1149,
-				quantity: 2,
-			},
-			],
-		},
-		},
+		type: IncrementResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not found`,
