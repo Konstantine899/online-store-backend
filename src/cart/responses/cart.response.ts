@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { ITransformData } from '../interfaces/i-transform-data';
 
 export class CartResponse implements ITransformData {
-  @ApiProperty({ example: 26 })
+  @ApiProperty({ example: 26, description: `Идентификатор корзины` })
   readonly cartId: number;
 
   @ApiProperty({
@@ -15,6 +15,7 @@ export class CartResponse implements ITransformData {
 		quantity: 1,
 		},
 	],
+	description: `Позиции продуктов в корзине`,
   })
   readonly products: ProductModel[];
 }

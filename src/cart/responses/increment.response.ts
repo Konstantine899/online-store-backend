@@ -3,7 +3,7 @@ import { ProductModel } from '../../product/product.model';
 import { ITransformData } from '../interfaces/i-transform-data';
 
 export class IncrementResponse implements ITransformData {
-  @ApiProperty({ example: 26 })
+  @ApiProperty({ example: 26, description: `Идентификатор корзины` })
   readonly cartId: number;
 
   @ApiProperty({
@@ -15,6 +15,7 @@ export class IncrementResponse implements ITransformData {
 		quantity: 2,
 		},
 	],
+	description: `Позиции продуктов в корзине`,
   })
   readonly products: ProductModel[];
 }
