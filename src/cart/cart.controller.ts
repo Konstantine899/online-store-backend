@@ -20,6 +20,7 @@ import { ClearCartDocumentation } from './decorators/clear-cart.documentation';
 import { CartResponse } from './responses/cart.response';
 import { AppendToCartResponse } from './responses/append-to-cart.response';
 import { IncrementResponse } from './responses/increment.response';
+import { DecrementResponse } from './responses/decrement.response';
 
 @ApiTags(`Корзина`)
 @Controller('cart')
@@ -75,7 +76,7 @@ export class CartController {
 	@Res({ passthrough: true }) response: Response,
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('quantity', ParseIntPipe) quantity: number,
-  ) {
+  ): Promise<DecrementResponse> {
 	return this.cartService.decrement(request, response, {
 		productId,
 		quantity,

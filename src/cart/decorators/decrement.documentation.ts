@@ -6,6 +6,7 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
+import { DecrementResponse } from '../responses/decrement.response';
 
 export function DecrementDocumentation() {
   return applyDecorators(
@@ -26,20 +27,7 @@ export function DecrementDocumentation() {
 	ApiResponse({
 		description: `decrement quantity`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Уменьшение количества продукта`,
-		example: {
-			cartId: 26,
-			products: [
-			{
-				productId: 55,
-				name: 'Смартфон Xiaomi Redmi Note 13 Pro 4G 8GB/256GB RU (синий)',
-				price: 1149,
-				quantity: 1,
-			},
-			],
-		},
-		},
+		type: DecrementResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not found`,
