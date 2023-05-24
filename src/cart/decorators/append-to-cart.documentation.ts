@@ -1,15 +1,18 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCookieAuth,
   ApiNotFoundResponse,
   ApiOperation,
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
+import { AppendToCartResponse } from '../responses/append-to-cart.response';
 
 export function AppendToCartDocumentation() {
   return applyDecorators(
 	ApiOperation({ summary: `Добавление продукта в корзину` }),
+	ApiBearerAuth('JWT-auth'),
 	ApiCookieAuth(),
 	ApiParam({
 		name: `productId`,
@@ -26,20 +29,7 @@ export function AppendToCartDocumentation() {
 	ApiResponse({
 		description: `Product added to cart`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Продукт добавлен в корзину`,
-		example: {
-			cartId: 25,
-			products: [
-			{
-				productId: 55,
-				name: 'Смартфон Xiaomi Redmi Note 13 Pro 4G 8GB/256GB RU (синий)',
-				price: 1149,
-				quantity: 1,
-			},
-			],
-		},
-		},
+		type: AppendToCartResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not found`,

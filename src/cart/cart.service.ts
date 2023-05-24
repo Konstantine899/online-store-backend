@@ -7,6 +7,7 @@ import { ProductRepository } from '../product/product.repository';
 import { CartResponse } from './responses/cart.response';
 import { ITransformData } from './interfaces/i-transform-data';
 import { IParams } from './interfaces/i-params';
+import { AppendToCartResponse } from './responses/append-to-cart.response';
 
 @Injectable()
 export class CartService {
@@ -41,7 +42,7 @@ export class CartService {
 	request: Request,
 	response: Response,
 	params: IParams,
-  ): Promise<ITransformData> {
+  ): Promise<AppendToCartResponse> {
 	let { cartId } = request.signedCookies as { cartId: number };
 	const { productId, quantity } = params;
 	const product = await this.findProduct(productId);
