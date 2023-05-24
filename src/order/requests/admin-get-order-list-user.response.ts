@@ -29,7 +29,7 @@ export class AdminGetOrderListUserResponse extends OrderModel {
   })
   readonly address: string;
 
-  @ApiProperty({ example: 6000, description: `Сумма заказа` })
+  @ApiProperty({ example: 1000, description: `Сумма заказа` })
   readonly amount: number;
 
   @ApiProperty({ example: 0, description: `Статус заказа` })
