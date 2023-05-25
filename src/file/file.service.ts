@@ -1,78 +1,77 @@
-import {
-  BadRequestException,
-  HttpException,
-  HttpStatus,
-  Injectable,
-} from '@nestjs/common';
+import { ConflictException, HttpStatus, Injectable } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
+import { readdir } from 'fs/promises';
 import * as uuid from 'uuid';
 import * as process from 'process';
 
 @Injectable()
 export class FileService {
   public async createFile(image: Express.Multer.File): Promise<string> {
-	if (!image) {
-		throw new BadRequestException({
-		status: HttpStatus.BAD_REQUEST,
-		message: `Поле image не должно быть пустым`,
-		});
-	}
-	const extension = image.originalname.split('.').filter(Boolean).splice(1); // Достаю расширение файла
-	const newFileName = `${uuid.v4()}.${extension}`; // генерирую новое уникальное имя файла
 	const filePath =
 		process.env.NODE_ENV === 'development'
 		? path.resolve(__dirname, '..', '..', 'static')
-		: path.resolve(__dirname, '..', 'static'); // получаю путь к директории где храняться статические файлы
+		: path.resolve(__dirname, '..', 'static'); // получаю путь к директории где хранятся статические файлы
 	/*Проверяю если директория хранения статических файлов не существует, то создаю ее*/
 	if (!fs.existsSync(filePath)) {
 		fs.mkdirSync(filePath, { recursive: true }); // создаю директорию
 	}
-	fs.writeFileSync(path.join(filePath, newFileName), image.buffer); // записываю файл
-	return newFileName;
+	return this.generateFile(filePath, image);
   }
 
-  public async removeFile(fileName: string): Promise<boolean> {
-	try {
-		const filePath =
+  public async removeFile(file: string): Promise<boolean> {
+	const filePath =
 		process.env.NODE_ENV === 'development'
-			? path.resolve(__dirname, '..', '..', 'static')
-			: path.resolve(__dirname, '..', 'static'); // получаю путь к директории где храняться статические файлы
-		fs.rmSync(path.join(filePath, fileName));
+		? path.resolve(__dirname, '..', '..', 'static')
+		: path.resolve(__dirname, '..', 'static'); // получаю путь к директории где хранятся статические файлы
+	const files = await readdir(filePath); // Получаю все файлы с файловой системы
+	const filenameToDelete = path.parse(file).name; // Получаю имя удаляемого
+	for (const file of files) {
+		const fileName = path.parse(file).name;
+		if (filenameToDelete === fileName) {
+		fs.rmSync(path.join(filePath, file)); //Удаляю файл из файловой системы
 		return true;
-	} catch (error) {
-		throw new HttpException(
-		'При удалении файла в файловой системе произошла непредвиденная ошибка',
-		HttpStatus.INTERNAL_SERVER_ERROR,
-		);
+		}
 	}
+	/*Если файл не найден в файловой системе, то просто возвращаю true для того что бы без проблем можно было удалить продукт*/
+	return true;
   }
 
   public async updateFile(
 	oldFile: string,
 	newFile: Express.Multer.File,
   ): Promise<string> {
-	try {
-		// Удаляю старый файл
-		const filePath =
+	const filePath =
 		process.env.NODE_ENV === 'development'
-			? path.resolve(__dirname, '..', '..', 'static')
-			: path.resolve(__dirname, '..', 'static'); // получаю путь к директории где храняться статические файлы
-		fs.rmSync(path.join(filePath, oldFile));
+		? path.resolve(__dirname, '..', '..', 'static')
+		: path.resolve(__dirname, '..', 'static'); // получаю путь к директории где храняться статические файлы
 
+	const files = await readdir(filePath); // Получаю все файлы с файловой системы
+	const filenameToDelete = path.parse(oldFile).name; // Получаю имя старого файла
+	for (const file of files) {
+		const fileName = path.parse(file).name;
+		if (filenameToDelete === fileName) {
+		fs.rmSync(path.join(filePath, oldFile)); //Удаляю файл из файловой системы
 		// генерирую новый файл
-		const extension = newFile.originalname
-		.split('.')
-		.filter(Boolean)
-		.splice(1);
-		const newFileName = `${uuid.v4()}.${extension}`;
-		fs.writeFileSync(path.join(filePath, newFileName), newFile.buffer); // записываю файл
-		return newFileName;
-	} catch (error) {
-		throw new HttpException(
-		'Произошла непредвиденная ошибка',
-		HttpStatus.INTERNAL_SERVER_ERROR,
-		);
+		return this.generateFile(filePath, newFile);
+		}
 	}
+
+	/*Если по какой-то причине файл в файловой системе отсутствует, то генерирую новый файл*/
+	return this.generateFile(filePath, newFile);
+  }
+
+  private async generateFile(filePath: string, newFile: Express.Multer.File) {
+	const extension = newFile.originalname.split('.').filter(Boolean).splice(1);
+	const newFileName = `${uuid.v4()}.${extension}`;
+	fs.writeFile(path.join(filePath, newFileName), newFile.buffer, (error) => {
+		if (error) {
+		throw new ConflictException({
+			status: HttpStatus.CONFLICT,
+			message: `Произошел конфликт при записи файла в файловую систему`,
+		});
+		}
+	});
+	return newFileName;
   }
 }
