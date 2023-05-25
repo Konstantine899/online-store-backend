@@ -16,6 +16,7 @@ import { GetProductResponse } from './responses/get-product.response';
 import { GetListProductResponse } from './responses/get-list-product.response';
 import { MetaData } from './responses/paginate/meta-data';
 import { GetListProductByBrandIdResponse } from './responses/get-list-product-by-brand-id.response';
+import { GetListProductByCategoryIdResponse } from './responses/get-list-product-by-category-id.response';
 
 export interface IGetMetadata {
   totalCount: number;
@@ -100,24 +101,23 @@ export class ProductService {
 	};
   }
 
-  public async getListAllProductsByCategory(
+  public async getListProductByCategoryId(
 	categoryId: number,
 	searchQuery: SearchQueryDto,
 	sortQuery: SortQueryDto,
 	page: number,
 	size: number,
-  ): Promise<IProductsResponse> {
+  ): Promise<GetListProductByCategoryIdResponse> {
 	const { limit, offset } = this.getPaginate(page, size);
 	const { search } = searchQuery;
 	const { sort = Sort.DESC } = sortQuery;
-	const products =
-		await this.productRepository.findListAllProductsByCategoryId(
+	const products = await this.productRepository.findListProductByCategoryId(
 		categoryId,
 		search,
 		sort,
 		limit,
 		offset,
-		);
+	);
 
 	const metaData = this.getMetadata(products.count, page, limit);
 	if (!products.rows.length) {
