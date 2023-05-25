@@ -8,22 +8,12 @@ import * as process from 'process';
 @Injectable()
 export class FileService {
   public async createFile(image: Express.Multer.File): Promise<string> {
-	const filePath =
-		process.env.NODE_ENV === 'development'
-		? path.resolve(__dirname, '..', '..', 'static')
-		: path.resolve(__dirname, '..', 'static'); // получаю путь к директории где хранятся статические файлы
-	/*Проверяю если директория хранения статических файлов не существует, то создаю ее*/
-	if (!fs.existsSync(filePath)) {
-		fs.mkdirSync(filePath, { recursive: true }); // создаю директорию
-	}
+	const filePath = await this.getFilePath();
 	return this.generateFile(filePath, image);
   }
 
   public async removeFile(file: string): Promise<boolean> {
-	const filePath =
-		process.env.NODE_ENV === 'development'
-		? path.resolve(__dirname, '..', '..', 'static')
-		: path.resolve(__dirname, '..', 'static'); // получаю путь к директории где хранятся статические файлы
+	const filePath = await this.getFilePath();
 	const files = await readdir(filePath); // Получаю все файлы с файловой системы
 	const filenameToDelete = path.parse(file).name; // Получаю имя удаляемого
 	for (const file of files) {
@@ -41,11 +31,7 @@ export class FileService {
 	oldFile: string,
 	newFile: Express.Multer.File,
   ): Promise<string> {
-	const filePath =
-		process.env.NODE_ENV === 'development'
-		? path.resolve(__dirname, '..', '..', 'static')
-		: path.resolve(__dirname, '..', 'static'); // получаю путь к директории где храняться статические файлы
-
+	const filePath = await this.getFilePath();
 	const files = await readdir(filePath); // Получаю все файлы с файловой системы
 	const filenameToDelete = path.parse(oldFile).name; // Получаю имя старого файла
 	for (const file of files) {
@@ -59,6 +45,18 @@ export class FileService {
 
 	/*Если по какой-то причине файл в файловой системе отсутствует, то генерирую новый файл*/
 	return this.generateFile(filePath, newFile);
+  }
+
+  private async getFilePath(): Promise<string> {
+	const filePath =
+		process.env.NODE_ENV === 'development'
+		? path.resolve(__dirname, '..', '..', 'static')
+		: path.resolve(__dirname, '..', 'static'); // получаю путь к директории где хранятся статические файлы
+	/*Проверяю если директория хранения статических файлов не существует, то создаю ее*/
+	if (!fs.existsSync(filePath)) {
+		fs.mkdirSync(filePath, { recursive: true }); // создаю директорию
+	}
+	return filePath;
   }
 
   private async generateFile(filePath: string, newFile: Express.Multer.File) {
