@@ -88,7 +88,7 @@ export class ProductRepository {
 	sort: string,
 	limit: number,
 	offset: number,
-  ): Promise<{ count: number; rows: ProductModel[] }> {
+  ): Promise<{ count: number; rows: Rows[] }> {
 	return this.productModel.findAndCountAll({
 		where: { brandId, categoryId },
 		order: sort ? [['price', sort.toUpperCase()]] : null,

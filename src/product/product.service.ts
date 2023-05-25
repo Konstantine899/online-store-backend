@@ -8,23 +8,15 @@ import { ProductModel } from './product.model';
 import { CreateProductDto } from './dto/create-product.dto';
 import { FileService } from '../file/file.service';
 import { ProductRepository } from './product.repository';
-import { IProductsResponse } from './product.controller';
 import { SearchQueryDto } from './dto/search-query.dto';
-import { SortQueryDto, Sort } from './dto/sort-query.dto';
+import { Sort, SortQueryDto } from './dto/sort-query.dto';
 import { CreateProductResponse } from './responses/create-product.response';
 import { GetProductResponse } from './responses/get-product.response';
 import { GetListProductResponse } from './responses/get-list-product.response';
 import { MetaData } from './responses/paginate/meta-data';
 import { GetListProductByBrandIdResponse } from './responses/get-list-product-by-brand-id.response';
 import { GetListProductByCategoryIdResponse } from './responses/get-list-product-by-category-id.response';
-
-export interface IGetMetadata {
-  totalCount: number;
-  lastPage: number;
-  currentPage: number;
-  nextPage: number;
-  previousPage: number;
-}
+import { GetAllByBrandIdAndCategoryIdResponse } from './responses/get-all-by-brand-id-and-category-id.response';
 
 @Injectable()
 export class ProductService {
@@ -129,14 +121,14 @@ export class ProductService {
 	};
   }
 
-  public async findAllByBrandIdAndCategoryId(
+  public async getAllByBrandIdAndCategoryId(
 	brandId: number,
 	categoryId: number,
 	searchQuery: SearchQueryDto,
 	sortQuery: SortQueryDto,
 	page: number,
 	size: number,
-  ): Promise<IProductsResponse> {
+  ): Promise<GetAllByBrandIdAndCategoryIdResponse> {
 	const { limit, offset } = this.getPaginate(page, size);
 	const { search } = searchQuery;
 	const { sort = Sort.DESC } = sortQuery;

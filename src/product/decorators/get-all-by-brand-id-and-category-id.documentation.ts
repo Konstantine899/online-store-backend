@@ -6,8 +6,9 @@ import {
   ApiQuery,
   ApiResponse,
 } from '@nestjs/swagger';
+import { GetAllByBrandIdAndCategoryIdResponse } from '../responses/get-all-by-brand-id-and-category-id.response';
 
-export function GetListAllProductsByBrandAndCategoryDocumentation() {
+export function GetAllByBrandIdAndCategoryIdDocumentation() {
   return applyDecorators(
 	ApiOperation({
 		summary: `Получение отсортированного списка продуктов по бренду и по категории товара`,
@@ -19,7 +20,7 @@ export function GetListAllProductsByBrandAndCategoryDocumentation() {
 		required: true,
 	}),
 	ApiOperation({
-		summary: `Получение отсортированного списка продуктов по категории товара`,
+		summary: `Получение отсортированного списка продуктов по категории и по бренду товара`,
 	}),
 	ApiQuery({ name: `search`, type: `string`, required: false }),
 	ApiQuery({ name: `sort`, type: `string`, required: false }),
@@ -38,29 +39,7 @@ export function GetListAllProductsByBrandAndCategoryDocumentation() {
 	ApiResponse({
 		description: `Get list products by brand and category`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Список продуктов отсортированных по brandId и categoryId`,
-		example: {
-			metaData: {
-			totalCount: 4,
-			lastPage: 4,
-			currentPage: 1,
-			nextPage: 2,
-			previousPage: 0,
-			},
-			rows: [
-			{
-				id: 54,
-				name: 'Смартфон Xiaomi Redmi Note 12 Pro 4G 8GB/256GB RU (синий)',
-				price: 1149,
-				rating: 0,
-				image: '926429b8-69bf-439b-b9be-6f4893d7bab9.jpg',
-				categoryId: 1,
-				brandId: 1,
-			},
-			],
-		},
-		},
+		type: GetAllByBrandIdAndCategoryIdResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,
