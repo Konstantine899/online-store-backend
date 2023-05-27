@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { CreateProductPropertyDto } from './dto/create-product-property.dto';
 import { ProductPropertyService } from './product-property.service';
-import { ProductPropertyModel } from './product-property.model';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateProductPropertyDocumentation } from './decorators/create-product-property.documentation';
 import { GetProductPropertyDocumentation } from './decorators/get-product-property.documentation';
@@ -25,6 +24,7 @@ import { RoleGuard } from '../role/role.guard';
 import { CreateProductPropertyResponse } from './responses/create-product-property.response';
 import { GetProductPropertyResponse } from './responses/get-product-property.response';
 import { GetListProductPropertyResponse } from './responses/get-list-product-property.response';
+import { UpdateProductPropertyResponse } from './decorators/update-product-property.response';
 
 @ApiTags(`Свойства продукта`)
 @Controller('product-property')
@@ -77,7 +77,7 @@ export class ProductPropertyController {
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateProductPropertyDto,
-  ): Promise<ProductPropertyModel> {
+  ): Promise<UpdateProductPropertyResponse> {
 	return this.productPropertyService.updateProductProperty(
 		productId,
 		id,

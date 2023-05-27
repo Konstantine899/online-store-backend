@@ -1,7 +1,7 @@
 import { ProductPropertyModel } from '../product-property.model';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CreateProductPropertyResponse extends ProductPropertyModel {
+export class UpdateProductPropertyResponse extends ProductPropertyModel {
   @ApiProperty({ example: 1, description: `Идентификатор свойства` })
   id: number;
 
@@ -26,11 +26,4 @@ export class CreateProductPropertyResponse extends ProductPropertyModel {
 	required: false,
   })
   updatedAt?: string;
-
-  @ApiProperty({
-	example: '2023-05-10T11:46:40.961Z',
-	description: `Время создания свойства`,
-	required: false,
-  })
-  createdAt?: string;
 }

@@ -5,6 +5,7 @@ import { CreateProductPropertyDto } from './dto/create-product-property.dto';
 import { CreateProductPropertyResponse } from './responses/create-product-property.response';
 import { GetProductPropertyResponse } from './responses/get-product-property.response';
 import { GetListProductPropertyResponse } from './responses/get-list-product-property.response';
+import { UpdateProductPropertyResponse } from './decorators/update-product-property.response';
 
 @Injectable()
 export class ProductPropertyRepository {
@@ -40,7 +41,7 @@ export class ProductPropertyRepository {
   public async updateProductProperty(
 	property: ProductPropertyModel,
 	dto: CreateProductPropertyDto,
-  ): Promise<ProductPropertyModel> {
+  ): Promise<UpdateProductPropertyResponse> {
 	return property.update({ ...dto, name: dto.name, value: dto.value });
   }
 

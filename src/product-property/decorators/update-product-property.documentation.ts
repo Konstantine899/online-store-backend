@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateProductPropertyDto } from '../dto/create-product-property.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
+import { UpdateProductPropertyResponse } from './update-product-property.response';
 
 export function UpdateProductPropertyDocumentation() {
   return applyDecorators(
@@ -33,15 +34,7 @@ export function UpdateProductPropertyDocumentation() {
 	ApiResponse({
 		description: `Updated product property`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Обновленное свойство продукта`,
-		example: {
-			id: 13,
-			name: 'Объем встроенной памяти ',
-			value: '256 ГБ',
-			productId: 56,
-		},
-		},
+		type: UpdateProductPropertyResponse,
 	}),
 	ApiBadRequestResponse({
 		description: `Bad Request`,
