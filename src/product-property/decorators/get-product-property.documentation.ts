@@ -6,6 +6,7 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
+import { GetProductPropertyResponse } from '../responses/get-product-property.response';
 
 export function GetProductPropertyDocumentation() {
   return applyDecorators(
@@ -26,15 +27,7 @@ export function GetProductPropertyDocumentation() {
 	ApiResponse({
 		description: `Get product property`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Получение свойства продукта`,
-		example: {
-			id: 10,
-			name: 'Объем встроенной памяти ',
-			value: '256 ГБ',
-			productId: 56,
-		},
-		},
+		type: GetProductPropertyResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,

@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ProductPropertyModel } from './product-property.model';
 import { CreateProductPropertyDto } from './dto/create-product-property.dto';
+import { CreateProductPropertyResponse } from './responses/create-product-property.response';
+import { GetProductPropertyResponse } from './responses/get-product-property.response';
 
 @Injectable()
 export class ProductPropertyRepository {
@@ -10,7 +12,7 @@ export class ProductPropertyRepository {
 	private productPropertyModel: typeof ProductPropertyModel,
   ) {}
 
-  public async create(productId, dto): Promise<ProductPropertyModel> {
+  public async create(productId, dto): Promise<CreateProductPropertyResponse> {
 	return this.productPropertyModel.create({
 		productId,
 		...dto,
@@ -20,7 +22,7 @@ export class ProductPropertyRepository {
   public async findOneProductProperty(
 	productId,
 	id,
-  ): Promise<ProductPropertyModel> {
+  ): Promise<GetProductPropertyResponse> {
 	return this.productPropertyModel.findOne({
 		where: { productId, id },
 	});

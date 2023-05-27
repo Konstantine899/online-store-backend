@@ -23,6 +23,7 @@ import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { CreateProductPropertyResponse } from './responses/create-product-property.response';
+import { GetProductPropertyResponse } from './responses/get-product-property.response';
 
 @ApiTags(`Свойства продукта`)
 @Controller('product-property')
@@ -51,7 +52,7 @@ export class ProductPropertyController {
   public async getProductProperty(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('id', ParseIntPipe) id: number,
-  ): Promise<ProductPropertyModel> {
+  ): Promise<GetProductPropertyResponse> {
 	return this.productPropertyService.getProductProperty(productId, id);
   }
 

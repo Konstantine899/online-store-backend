@@ -10,6 +10,7 @@ import { ProductPropertyRepository } from './product-property.repository';
 import { ProductRepository } from '../product/product.repository';
 import { ProductModel } from '../product/product.model';
 import { CreateProductPropertyResponse } from './responses/create-product-property.response';
+import { GetProductPropertyResponse } from './responses/get-product-property.response';
 
 @Injectable()
 export class ProductPropertyService {
@@ -32,7 +33,7 @@ export class ProductPropertyService {
   public async getProductProperty(
 	productId: number,
 	id: number,
-  ): Promise<ProductPropertyModel> {
+  ): Promise<GetProductPropertyResponse> {
 	const product = await this.findProduct(productId);
 	const property = await this.findProductProperty(productId, id);
 	if (!product) {
@@ -103,7 +104,7 @@ export class ProductPropertyService {
   private async findProductProperty(
 	productId: number,
 	id: number,
-  ): Promise<ProductPropertyModel> {
+  ): Promise<GetProductPropertyResponse> {
 	return this.propertyProductRepository.findOneProductProperty(productId, id);
   }
 
