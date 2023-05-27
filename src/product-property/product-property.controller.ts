@@ -22,6 +22,7 @@ import { RemoveProductPropertyDocumentation } from './decorators/remove-product-
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
+import { CreateProductPropertyResponse } from './responses/create-product-property.response';
 
 @ApiTags(`Свойства продукта`)
 @Controller('product-property')
@@ -38,7 +39,7 @@ export class ProductPropertyController {
   public async createProductProperty(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Body() dto: CreateProductPropertyDto,
-  ): Promise<ProductPropertyModel> {
+  ): Promise<CreateProductPropertyResponse> {
 	return this.productPropertyService.createProductProperty(productId, dto);
   }
 

@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateProductPropertyDto } from '../dto/create-product-property.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
+import { CreateProductPropertyResponse } from '../responses/create-product-property.response';
 
 export function CreateProductPropertyDocumentation() {
   return applyDecorators(
@@ -28,17 +29,7 @@ export function CreateProductPropertyDocumentation() {
 	ApiResponse({
 		description: `Created product property`,
 		status: HttpStatus.CREATED,
-		schema: {
-		title: `Созданное свойство продукта`,
-		example: {
-			id: 10,
-			productId: 56,
-			name: 'Объем встроенной памяти ',
-			value: '256 ГБ',
-			updatedAt: '2023-05-10T11:46:40.961Z',
-			createdAt: '2023-05-10T11:46:40.961Z',
-		},
-		},
+		type: CreateProductPropertyResponse,
 	}),
 	ApiBadRequestResponse({
 		description: `Bad Request`,

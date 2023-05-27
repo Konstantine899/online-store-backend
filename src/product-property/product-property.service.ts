@@ -9,6 +9,7 @@ import { ProductPropertyModel } from './product-property.model';
 import { ProductPropertyRepository } from './product-property.repository';
 import { ProductRepository } from '../product/product.repository';
 import { ProductModel } from '../product/product.model';
+import { CreateProductPropertyResponse } from './responses/create-product-property.response';
 
 @Injectable()
 export class ProductPropertyService {
@@ -20,7 +21,7 @@ export class ProductPropertyService {
   public async createProductProperty(
 	productId: number,
 	dto: CreateProductPropertyDto,
-  ): Promise<ProductPropertyModel> {
+  ): Promise<CreateProductPropertyResponse> {
 	const product = await this.findProduct(productId);
 	if (!product) {
 		this.notFound(`Продукт не найден`);
@@ -79,7 +80,9 @@ export class ProductPropertyService {
 	id: number,
   ): Promise<number> {
 	const product = await this.findProduct(productId);
-	if (!product) { this.notFound(`Продукт не найден`); }
+	if (!product) {
+		this.notFound(`Продукт не найден`);
+	}
 	const property = await this.getProductProperty(product.id, id);
 	if (!property) {
 		this.notFound('Свойство продукта не найдено');
