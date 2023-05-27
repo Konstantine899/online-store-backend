@@ -6,6 +6,7 @@ import { Op } from 'sequelize';
 import { CreateProductResponse } from './responses/create-product.response';
 import { GetProductResponse } from './responses/get-product.response';
 import { Rows } from './responses/paginate/rows';
+import { UpdateProductResponse } from './responses/update-product.response';
 
 export class ProductRepository {
   constructor(
@@ -105,7 +106,7 @@ export class ProductRepository {
 	dto: CreateProductDto,
 	findProduct: ProductModel,
 	updatedNameImage: string,
-  ): Promise<ProductModel> {
+  ): Promise<UpdateProductResponse> {
 	return findProduct.update({
 		...dto,
 		name: dto.name,

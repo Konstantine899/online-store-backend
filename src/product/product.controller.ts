@@ -17,7 +17,6 @@ import {
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductService } from './product.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ProductModel } from './product.model';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
@@ -39,6 +38,7 @@ import { GetListProductResponse } from './responses/get-list-product.response';
 import { GetListProductByBrandIdResponse } from './responses/get-list-product-by-brand-id.response';
 import { GetListProductByCategoryIdResponse } from './responses/get-list-product-by-category-id.response';
 import { GetAllByBrandIdAndCategoryIdResponse } from './responses/get-all-by-brand-id-and-category-id.response';
+import { UpdateProductResponse } from './responses/update-product.response';
 
 @ApiTags(`Продукт`)
 @Controller('product')
@@ -153,7 +153,7 @@ export class ProductController {
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateProductDto,
 	@UploadedFile() image: Express.Multer.File,
-  ): Promise<ProductModel> {
+  ): Promise<UpdateProductResponse> {
 	return this.productService.updateProduct(id, dto, image);
   }
 

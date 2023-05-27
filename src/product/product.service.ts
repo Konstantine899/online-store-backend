@@ -4,7 +4,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ProductModel } from './product.model';
 import { CreateProductDto } from './dto/create-product.dto';
 import { FileService } from '../file/file.service';
 import { ProductRepository } from './product.repository';
@@ -17,6 +16,7 @@ import { MetaData } from './responses/paginate/meta-data';
 import { GetListProductByBrandIdResponse } from './responses/get-list-product-by-brand-id.response';
 import { GetListProductByCategoryIdResponse } from './responses/get-list-product-by-category-id.response';
 import { GetAllByBrandIdAndCategoryIdResponse } from './responses/get-all-by-brand-id-and-category-id.response';
+import { UpdateProductResponse } from './responses/update-product.response';
 
 @Injectable()
 export class ProductService {
@@ -153,7 +153,7 @@ export class ProductService {
   public async removeProduct(id: number): Promise<number> {
 	const findProduct = await this.productRepository.findProduct(id);
 	if (!findProduct) {
-		this.notFoundId(id);
+		this.notFound(`Продукт не найден в БД`);
 	}
 	const removedFile = await this.fileService.removeFile(findProduct.image);
 	const removedProduct = await this.productRepository.removedProduct(id);
@@ -167,27 +167,20 @@ export class ProductService {
 	id: number,
 	dto: CreateProductDto,
 	image: Express.Multer.File,
-  ): Promise<ProductModel> {
+  ): Promise<UpdateProductResponse> {
 	const findProduct = await this.productRepository.findProduct(id);
 	if (!findProduct) {
-		this.notFoundId(id);
+		this.notFound(`Продукт не найден в БД`);
 	}
 	const updatedNameImage = await this.fileService.updateFile(
 		findProduct.image,
 		image,
 	);
-	if (!updatedNameImage) {
-		this.conflict('При обновлении картинки произошел конфликт');
-	}
-	const updatedProduct = await this.productRepository.updateProduct(
+	return this.productRepository.updateProduct(
 		dto,
 		findProduct,
 		updatedNameImage,
 	);
-	if (!updatedProduct) {
-		this.conflict('При обновлении продукта произошел конфликт');
-	}
-	return updatedProduct;
   }
 
   private getPaginate(
@@ -216,13 +209,6 @@ export class ProductService {
 	throw new ConflictException({
 		status: HttpStatus.CONFLICT,
 		message,
-	});
-  }
-
-  private notFoundId(id: number): void {
-	throw new NotFoundException({
-		status: HttpStatus.NOT_FOUND,
-		message: `Продукт с идентификатором ${id} не найден в базе данных`,
 	});
   }
 

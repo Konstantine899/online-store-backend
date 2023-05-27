@@ -32,47 +32,7 @@ export class GetProductResponse extends ProductModel {
   @ApiProperty({ example: 1, description: `Идентификатор бренда` })
   'brandId': number;
 
-  @ApiProperty({
-	example: [
-		{
-		id: 3,
-		name: 'Экран: ',
-		value: '6.67  1080x2400 пикселей, AMOLED',
-		productId: 54,
-		},
-		{
-		id: 4,
-		name: 'Процессор: ',
-		value: 'Qualcomm Snapdragon 732G 2.3 ГГц',
-		productId: 54,
-		},
-		{
-		id: 5,
-		name: 'Память: ',
-		value: 'ОЗУ 8 ГБ , 256 ГБ',
-		productId: 54,
-		},
-		{
-		id: 6,
-		name: 'Формат SIM-карты: ',
-		value: 'Nano',
-		productId: 54,
-		},
-		{
-		id: 7,
-		name: 'Количество мегапикселей камеры: ',
-		value: '108 Мп',
-		productId: 54,
-		},
-		{
-		id: 8,
-		name: 'Емкость аккумулятора: ',
-		value: '5000 мА·ч',
-		productId: 54,
-		},
-	],
-	description: `Характеристики продукта`,
-  })
+  @ApiProperty({ type: () => [ProductPropertyModel] })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ProductPropertyModel)
