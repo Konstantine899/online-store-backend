@@ -36,7 +36,7 @@ export class ProductService {
   public async getProduct(id: number): Promise<GetProductResponse> {
 	const product = await this.productRepository.findProduct(id);
 	if (!product) {
-		this.notFound('К сожалению по вашему запросу ничего не найдено');
+		this.notFound('Продукт не найден');
 	}
 	return product;
   }

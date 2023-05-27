@@ -27,7 +27,7 @@ export function GetProductDocumentation() {
 			url: '/online-store/product/one/1',
 			path: '/online-store/product/one/1',
 			name: 'NotFoundException',
-			message: 'К сожалению по вашему запросу ничего не найдено',
+			message: 'Продукт не найден',
 		},
 		},
 	}),
