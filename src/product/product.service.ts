@@ -17,6 +17,7 @@ import { GetListProductByBrandIdResponse } from './responses/get-list-product-by
 import { GetListProductByCategoryIdResponse } from './responses/get-list-product-by-category-id.response';
 import { GetAllByBrandIdAndCategoryIdResponse } from './responses/get-all-by-brand-id-and-category-id.response';
 import { UpdateProductResponse } from './responses/update-product.response';
+import { RemoveProductResponse } from './responses/remove-product.response';
 
 @Injectable()
 export class ProductService {
@@ -150,7 +151,7 @@ export class ProductService {
 	};
   }
 
-  public async removeProduct(id: number): Promise<number> {
+  public async removeProduct(id: number): Promise<RemoveProductResponse> {
 	const findProduct = await this.productRepository.findProduct(id);
 	if (!findProduct) {
 		this.notFound(`Продукт не найден в БД`);
@@ -160,7 +161,7 @@ export class ProductService {
 	if (!removedFile || !removedProduct) {
 		this.conflict('Произошел конфликт во время удаления продукта');
 	}
-	return removedProduct;
+	return { status: HttpStatus.OK, message: `success` };
   }
 
   public async updateProduct(

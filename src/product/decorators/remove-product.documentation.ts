@@ -7,6 +7,7 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
+import { RemoveProductResponse } from '../responses/remove-product.response';
 
 export function RemoveProductDocumentation() {
   return applyDecorators(
@@ -21,7 +22,7 @@ export function RemoveProductDocumentation() {
 	ApiResponse({
 		description: `Remove product`,
 		status: HttpStatus.OK,
-		schema: { title: 'Удалено записей', example: 1 },
+		type: RemoveProductResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,

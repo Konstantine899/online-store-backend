@@ -39,6 +39,7 @@ import { GetListProductByBrandIdResponse } from './responses/get-list-product-by
 import { GetListProductByCategoryIdResponse } from './responses/get-list-product-by-category-id.response';
 import { GetAllByBrandIdAndCategoryIdResponse } from './responses/get-all-by-brand-id-and-category-id.response';
 import { UpdateProductResponse } from './responses/update-product.response';
+import { RemoveProductResponse } from './responses/remove-product.response';
 
 @ApiTags(`Продукт`)
 @Controller('product')
@@ -164,7 +165,7 @@ export class ProductController {
   @Delete('/delete/:id([0-9]+)')
   public async removeProduct(
 	@Param('id', ParseIntPipe) id: number,
-  ): Promise<number> {
+  ): Promise<RemoveProductResponse> {
 	return this.productService.removeProduct(id);
   }
 }
