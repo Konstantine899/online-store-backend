@@ -25,6 +25,7 @@ import { CreateProductPropertyResponse } from './responses/create-product-proper
 import { GetProductPropertyResponse } from './responses/get-product-property.response';
 import { GetListProductPropertyResponse } from './responses/get-list-product-property.response';
 import { UpdateProductPropertyResponse } from './decorators/update-product-property.response';
+import { RemoveProductPropertyResponse } from './responses/remove-product-property.response';
 
 @ApiTags(`Свойства продукта`)
 @Controller('product-property')
@@ -93,7 +94,7 @@ export class ProductPropertyController {
   public async removeProductProperty(
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('id', ParseIntPipe) id: number,
-  ): Promise<number> {
+  ): Promise<RemoveProductPropertyResponse> {
 	return this.productPropertyService.removeProductProperty(productId, id);
   }
 }

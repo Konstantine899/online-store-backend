@@ -13,6 +13,7 @@ import { CreateProductPropertyResponse } from './responses/create-product-proper
 import { GetProductPropertyResponse } from './responses/get-product-property.response';
 import { GetListProductPropertyResponse } from './responses/get-list-product-property.response';
 import { UpdateProductPropertyResponse } from './decorators/update-product-property.response';
+import { RemoveProductPropertyResponse } from './responses/remove-product-property.response';
 
 @Injectable()
 export class ProductPropertyService {
@@ -81,7 +82,7 @@ export class ProductPropertyService {
   public async removeProductProperty(
 	productId: number,
 	id: number,
-  ): Promise<number> {
+  ): Promise<RemoveProductPropertyResponse> {
 	const product = await this.findProduct(productId);
 	if (!product) {
 		this.notFound(`Продукт не найден`);
@@ -117,8 +118,11 @@ export class ProductPropertyService {
 	return this.propertyProductRepository.updateProductProperty(property, dto);
   }
 
-  private async removeProperty(id: number): Promise<number> {
-	return this.propertyProductRepository.removeProductProperty(id);
+  private async removeProperty(
+	id: number,
+  ): Promise<RemoveProductPropertyResponse> {
+	await this.propertyProductRepository.removeProductProperty(id);
+	return { status: HttpStatus.OK, message: `success` };
   }
 
   private notFound(message: string): void {
