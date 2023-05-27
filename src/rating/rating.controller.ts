@@ -15,6 +15,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { UserRequest } from './requests/user.request';
 import { GetRatingDocumentation } from './decorators/get-rating.documentation';
+import { CreateRatingResponse } from './responses/create-rating.response';
 
 @ApiTags(`Рейтинг`)
 @Controller('rating')
@@ -29,7 +30,7 @@ export class RatingController {
 	@Req() request: Request,
 	@Param('productId', ParseIntPipe) productId: number,
 	@Param('rating', ParseIntPipe) rating: number,
-  ) {
+  ): Promise<CreateRatingResponse> {
 	const { id } = request.user as UserRequest;
 	return this.ratingService.createRating(id, productId, rating);
   }

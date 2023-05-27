@@ -9,6 +9,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { UserRequest } from '../requests/user.request';
+import { CreateRatingResponse } from '../responses/create-rating.response';
 
 export function CreateRatingDocumentation() {
   return applyDecorators(
@@ -34,10 +35,7 @@ export function CreateRatingDocumentation() {
 	ApiResponse({
 		description: `Created rating`,
 		status: HttpStatus.CREATED,
-		schema: {
-		title: `Созданный рейтинг продукта`,
-		example: { userId: 1, productId: 1, rating: 5 },
-		},
+		type: CreateRatingResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,

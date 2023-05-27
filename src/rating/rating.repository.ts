@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { RatingModel } from './rating.model';
+import { CreateRatingResponse } from './responses/create-rating.response';
 
 @Injectable()
 export class RatingRepository {
@@ -12,7 +13,7 @@ export class RatingRepository {
 	userId: number,
 	productId: number,
 	rating: number,
-  ): Promise<RatingModel> {
+  ): Promise<CreateRatingResponse> {
 	const productRating = new RatingModel();
 	productRating.userId = userId;
 	productRating.productId = productId;
