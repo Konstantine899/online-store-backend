@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { RoleModel } from './role.model';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { CreateRoleResponse } from './responses/create-role.response';
+import { GetRoleResponse } from './responses/get-role.response';
 
 @Injectable()
 export class RoleRepository {
@@ -13,7 +14,7 @@ export class RoleRepository {
 	return this.roleModel.findByPk(role.id);
   }
 
-  public async findRole(role: string): Promise<RoleModel> {
+  public async findRole(role: string): Promise<GetRoleResponse> {
 	return this.roleModel.findOne({ where: { role } });
   }
 

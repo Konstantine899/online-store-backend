@@ -6,28 +6,21 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
+import { GetRoleResponse } from '../responses/get-role.response';
 
 export function GetRoleDocumentation() {
   return applyDecorators(
 	ApiOperation({ summary: `Получение роли` }),
 	ApiBearerAuth('JWT-auth'),
 	ApiParam({
-		name: `Роль`,
-		description: `Роль`,
+		name: `role`,
 		type: `string`,
-		example: `MANAGER`,
+		description: `Роль пользователя`,
 		required: true,
 	}),
 	ApiResponse({
 		status: HttpStatus.OK,
-		schema: {
-		title: `Полученная роль`,
-		example: {
-			id: 5,
-			role: 'MANAGER',
-			description: 'Менеджер',
-		},
-		},
+		type: GetRoleResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,
@@ -36,7 +29,7 @@ export function GetRoleDocumentation() {
 		title: `Роль не найдена`,
 		example: {
 			status: HttpStatus.NOT_FOUND,
-			message: 'Роль MANAGER не найдена',
+			message: 'Роль не найдена',
 		},
 		},
 	}),

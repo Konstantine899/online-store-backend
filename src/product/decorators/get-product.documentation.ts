@@ -14,6 +14,7 @@ export function GetProductDocumentation() {
 		name: `id`,
 		type: `string`,
 		description: `Идентификатор продукта`,
+		required: true,
 	}),
 	ApiResponse({
 		status: HttpStatus.OK,

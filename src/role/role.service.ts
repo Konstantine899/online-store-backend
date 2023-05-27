@@ -3,6 +3,7 @@ import { RoleModel } from './role.model';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { RoleRepository } from './role.repository';
 import { CreateRoleResponse } from './responses/create-role.response';
+import { GetRoleResponse } from './responses/get-role.response';
 
 @Injectable()
 export class RoleService {
@@ -12,7 +13,7 @@ export class RoleService {
 	return this.roleRepository.createRole(dto);
   }
 
-  public async getRole(role: string): Promise<RoleModel> {
+  public async getRole(role: string): Promise<GetRoleResponse> {
 	const foundRole = this.roleRepository.findRole(role);
 	if (!foundRole) {
 		this.notFound(`Роль ${role} не найдена`);

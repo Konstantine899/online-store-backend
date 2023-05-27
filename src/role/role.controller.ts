@@ -18,6 +18,7 @@ import { RoleGuard } from './role.guard';
 import { AllRolesDocumentation } from './decorators/all-roles-documentation';
 import { GetRoleDocumentation } from './decorators/get-role.documentation';
 import { CreateRoleResponse } from './responses/create-role.response';
+import { GetRoleResponse } from './responses/get-role.response';
 
 @ApiTags(`Роль`)
 @Controller('role')
@@ -40,7 +41,7 @@ export class RoleController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/one/:role')
-  public async getRole(@Param('role') role: string): Promise<RoleModel> {
+  public async getRole(@Param('role') role: string): Promise<GetRoleResponse> {
 	return this.roleService.getRole(role);
   }
 
