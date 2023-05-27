@@ -4,11 +4,11 @@ import { OrderModel } from './order.model';
 import { OrderItemModel } from '../order-item/order-item.model';
 import { OrderDto } from './dto/order.dto';
 import { OrderItemRepository } from '../order-item/order-item.repository';
-import { AdminGetStoreOrderListResponse } from './requests/admin-get-store-order-list.response';
-import { AdminGetOrderListUserResponse } from './requests/admin-get-order-list-user.response';
-import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
-import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
-import { UserGetOrderListResponse } from './requests/user-get-order-list.response';
+import { AdminGetStoreOrderListResponse } from './response/admin-get-store-order-list.response';
+import { AdminGetOrderListUserResponse } from './response/admin-get-order-list-user.response';
+import { AdminGetOrderUserResponse } from './response/admin-get-order-user.response';
+import { AdminCreateOrderResponse } from './response/admin-create-order.response';
+import { UserGetOrderListResponse } from './response/user-get-order-list.response';
 
 @Injectable()
 export class OrderRepository {

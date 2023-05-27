@@ -4,15 +4,15 @@ import { OrderDto } from './dto/order.dto';
 import { CartRepository } from '../cart/cart.repository';
 import { UserService } from '../user/user.service';
 import { UserRepository } from '../user/user.repository';
-import { AdminGetStoreOrderListResponse } from './requests/admin-get-store-order-list.response';
-import { AdminGetOrderListUserResponse } from './requests/admin-get-order-list-user.response';
-import { AdminGetOrderUserResponse } from './requests/admin-get-order-user.response';
-import { AdminCreateOrderResponse } from './requests/admin-create-order.response';
-import { AdminRemoveOrderResponse } from './requests/admin-remove-order.response';
-import { UserGetOrderListResponse } from './requests/user-get-order-list.response';
-import { UserGetOrderResponse } from './requests/user-get-order.response';
-import { UserCreateOrderResponse } from './requests/user-create-order.response';
-import { GuestCreateOrderResponse } from './requests/guest-create-order.response';
+import { AdminGetStoreOrderListResponse } from './response/admin-get-store-order-list.response';
+import { AdminGetOrderListUserResponse } from './response/admin-get-order-list-user.response';
+import { AdminGetOrderUserResponse } from './response/admin-get-order-user.response';
+import { AdminCreateOrderResponse } from './response/admin-create-order.response';
+import { AdminRemoveOrderResponse } from './response/admin-remove-order.response';
+import { UserGetOrderListResponse } from './response/user-get-order-list.response';
+import { UserGetOrderResponse } from './response/user-get-order.response';
+import { UserCreateOrderResponse } from './response/user-create-order.response';
+import { GuestCreateOrderResponse } from './response/guest-create-order.response';
 
 @Injectable()
 export class OrderService {

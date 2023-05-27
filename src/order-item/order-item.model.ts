@@ -7,6 +7,7 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { OrderModel } from '../order/order.model';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Table({
   tableName: 'order-item',
@@ -24,12 +25,15 @@ export class OrderItemModel extends Model<OrderItemModel> {
   })
   id: number;
 
+  @ApiProperty({ example: `Xiaomi 10pro`, description: `Имя продукта` })
   @Column({ type: DataType.STRING, allowNull: false })
   name: string;
 
+  @ApiProperty({ example: 1000, description: `Цена продукта` })
   @Column({ type: DataType.INTEGER, allowNull: false })
   price: number;
 
+  @ApiProperty({ example: 1, description: `Количество` })
   @Column({ type: DataType.INTEGER, allowNull: false })
   quantity: number;
 
