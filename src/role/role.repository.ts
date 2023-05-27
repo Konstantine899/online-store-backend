@@ -4,6 +4,7 @@ import { RoleModel } from './role.model';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { CreateRoleResponse } from './responses/create-role.response';
 import { GetRoleResponse } from './responses/get-role.response';
+import { GetListRoleResponse } from './responses/get-list-role.response';
 
 @Injectable()
 export class RoleRepository {
@@ -18,7 +19,7 @@ export class RoleRepository {
 	return this.roleModel.findOne({ where: { role } });
   }
 
-  public async getAllRoles(): Promise<RoleModel[]> {
+  public async findListRole(): Promise<GetListRoleResponse[]> {
 	return this.roleModel.findAll();
   }
 }

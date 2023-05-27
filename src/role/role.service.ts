@@ -1,9 +1,9 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { RoleModel } from './role.model';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { RoleRepository } from './role.repository';
 import { CreateRoleResponse } from './responses/create-role.response';
 import { GetRoleResponse } from './responses/get-role.response';
+import { GetListRoleResponse } from './responses/get-list-role.response';
 
 @Injectable()
 export class RoleService {
@@ -21,8 +21,8 @@ export class RoleService {
 	return foundRole;
   }
 
-  public async getListRoles(): Promise<RoleModel[]> {
-	const roles = await this.roleRepository.getAllRoles();
+  public async getListRole(): Promise<GetListRoleResponse[]> {
+	const roles = await this.roleRepository.findListRole();
 	if (!roles) {
 		this.notFound(`Роли не найдены`);
 	}

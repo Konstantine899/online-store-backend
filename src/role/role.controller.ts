@@ -9,16 +9,16 @@ import {
 } from '@nestjs/common';
 import { RoleService } from './role.service';
 import { CreateRoleDto } from './dto/create-role.dto';
-import { RoleModel } from './role.model';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateRoleDocumentation } from './decorators/create-role.documentation';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from './role.guard';
-import { AllRolesDocumentation } from './decorators/all-roles-documentation';
+import { GetListRoleDocumentation } from './decorators/get-list-role-documentation';
 import { GetRoleDocumentation } from './decorators/get-role.documentation';
 import { CreateRoleResponse } from './responses/create-role.response';
 import { GetRoleResponse } from './responses/get-role.response';
+import { GetListRoleResponse } from './responses/get-list-role.response';
 
 @ApiTags(`Роль`)
 @Controller('role')
@@ -45,12 +45,12 @@ export class RoleController {
 	return this.roleService.getRole(role);
   }
 
-  @AllRolesDocumentation()
+  @GetListRoleDocumentation()
   @HttpCode(200)
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/list')
-  public async getListRoles(): Promise<RoleModel[]> {
-	return this.roleService.getListRoles();
+  public async getListRole(): Promise<GetListRoleResponse[]> {
+	return this.roleService.getListRole();
   }
 }

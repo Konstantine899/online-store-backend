@@ -5,33 +5,15 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
+import { GetListRoleResponse } from '../responses/get-list-role.response';
 
-export function AllRolesDocumentation() {
+export function GetListRoleDocumentation() {
   return applyDecorators(
 	ApiOperation({ summary: `Список ролей` }),
 	ApiBearerAuth('JWT-auth'),
 	ApiResponse({
 		status: HttpStatus.OK,
-		schema: {
-		title: `Список ролей`,
-		example: [
-			{
-			id: 1,
-			role: 'ADMIN',
-			description: 'Администратор',
-			},
-			{
-			id: 2,
-			role: 'USER',
-			description: 'Пользователь',
-			},
-			{
-			id: 5,
-			role: 'MANAGER',
-			description: 'Менеджер',
-			},
-		],
-		},
+		type: [GetListRoleResponse],
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,
