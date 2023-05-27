@@ -4,6 +4,7 @@ import { ProductPropertyModel } from './product-property.model';
 import { CreateProductPropertyDto } from './dto/create-product-property.dto';
 import { CreateProductPropertyResponse } from './responses/create-product-property.response';
 import { GetProductPropertyResponse } from './responses/get-product-property.response';
+import { GetListProductPropertyResponse } from './responses/get-list-product-property.response';
 
 @Injectable()
 export class ProductPropertyRepository {
@@ -28,9 +29,9 @@ export class ProductPropertyRepository {
 	});
   }
 
-  public async findAllProductProperties(
+  public async findListProductProperty(
 	productId: number,
-  ): Promise<ProductPropertyModel[]> {
+  ): Promise<GetListProductPropertyResponse[]> {
 	return this.productPropertyModel.findAll({
 		where: { productId },
 	});

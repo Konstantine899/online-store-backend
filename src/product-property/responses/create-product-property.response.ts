@@ -4,6 +4,7 @@ import { ApiProperty } from '@nestjs/swagger';
 export class CreateProductPropertyResponse extends ProductPropertyModel {
   @ApiProperty({ example: 1, description: `Идентификатор свойства` })
   id: number;
+
   @ApiProperty({ example: 1, description: `Идентификатор продукта` })
   productId: number;
 

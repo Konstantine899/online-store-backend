@@ -16,7 +16,7 @@ import { ProductPropertyModel } from './product-property.model';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateProductPropertyDocumentation } from './decorators/create-product-property.documentation';
 import { GetProductPropertyDocumentation } from './decorators/get-product-property.documentation';
-import { GetAllProductPropertiesDocumentation } from './decorators/get-all-product-properties.documentation';
+import { GetListProductPropertyDocumentation } from './decorators/get-list-product-property.documentation';
 import { UpdateProductPropertyDocumentation } from './decorators/update-product-property.documentation';
 import { RemoveProductPropertyDocumentation } from './decorators/remove-product-property.documentation';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
@@ -24,6 +24,7 @@ import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { CreateProductPropertyResponse } from './responses/create-product-property.response';
 import { GetProductPropertyResponse } from './responses/get-product-property.response';
+import { GetListProductPropertyResponse } from './responses/get-list-product-property.response';
 
 @ApiTags(`Свойства продукта`)
 @Controller('product-property')
@@ -56,15 +57,15 @@ export class ProductPropertyController {
 	return this.productPropertyService.getProductProperty(productId, id);
   }
 
-  @GetAllProductPropertiesDocumentation()
+  @GetListProductPropertyDocumentation()
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @HttpCode(200)
   @Get('/product_id/:productId([0-9]+)/properties')
-  public async getAllProductProperties(
+  public async getListProductProperty(
 	@Param('productId', ParseIntPipe) productId: number,
-  ): Promise<ProductPropertyModel[]> {
-	return this.productPropertyService.getAllProductProperties(productId);
+  ): Promise<GetListProductPropertyResponse[]> {
+	return this.productPropertyService.getListProductProperty(productId);
   }
 
   @UpdateProductPropertyDocumentation()

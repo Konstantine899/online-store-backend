@@ -11,6 +11,7 @@ import { ProductRepository } from '../product/product.repository';
 import { ProductModel } from '../product/product.model';
 import { CreateProductPropertyResponse } from './responses/create-product-property.response';
 import { GetProductPropertyResponse } from './responses/get-product-property.response';
+import { GetListProductPropertyResponse } from './responses/get-list-product-property.response';
 
 @Injectable()
 export class ProductPropertyService {
@@ -45,11 +46,11 @@ export class ProductPropertyService {
 	return property;
   }
 
-  public async getAllProductProperties(
+  public async getListProductProperty(
 	productId: number,
-  ): Promise<ProductPropertyModel[]> {
+  ): Promise<GetListProductPropertyResponse[]> {
 	await this.findProduct(productId);
-	const properties = await this.findAllProductProperties(productId);
+	const properties = await this.findListProductProperty(productId);
 	if (!properties.length) {
 		this.notFound('Свойства продукта не найдены');
 	}
@@ -95,10 +96,10 @@ export class ProductPropertyService {
 	return this.productRepository.findProduct(productId);
   }
 
-  private async findAllProductProperties(
+  private async findListProductProperty(
 	productId: number,
-  ): Promise<ProductPropertyModel[]> {
-	return this.propertyProductRepository.findAllProductProperties(productId);
+  ): Promise<GetListProductPropertyResponse[]> {
+	return this.propertyProductRepository.findListProductProperty(productId);
   }
 
   private async findProductProperty(
