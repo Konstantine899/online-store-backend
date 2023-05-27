@@ -2,6 +2,7 @@ import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConflictResponse,
   ApiConsumes,
   ApiOperation,
   ApiResponse,
@@ -68,6 +69,16 @@ export function CreateProductDocumentation() {
 			},
 			},
 		],
+		},
+	}),
+	ApiConflictResponse({
+		description: 'Conflict',
+		status: HttpStatus.CONFLICT,
+		schema: {
+		example: {
+			statusCode: HttpStatus.CONFLICT,
+			message: `Произошел конфликт при записи файла в файловую систему`,
+		},
 		},
 	}),
   );
