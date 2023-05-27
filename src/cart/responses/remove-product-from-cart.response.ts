@@ -8,7 +8,7 @@ export class RemoveProductFromCartResponse implements ITransformData {
 
   @ApiProperty({
 	example: [],
-	description: `Позиции продуктов в корзине`,
+	description: `Удаление одной позиции из корзины`,
   })
   readonly products: ProductModel[];
 }

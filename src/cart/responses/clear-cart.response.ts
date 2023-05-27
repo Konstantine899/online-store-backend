@@ -8,7 +8,7 @@ export class ClearCartResponse implements ITransformData {
 
   @ApiProperty({
 	example: [],
-	description: `Позиции продуктов в корзине`,
+	description: `Пустая корзина`,
   })
   readonly products: ProductModel[];
 }

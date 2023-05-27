@@ -12,6 +12,7 @@ import { IncrementResponse } from './responses/increment.response';
 import { DecrementResponse } from './responses/decrement.response';
 import { RemoveProductFromCartResponse } from './responses/remove-product-from-cart.response';
 import { ClearCartResponse } from './responses/clear-cart.response';
+import { TransformResponse } from './responses/transform.response';
 
 @Injectable()
 export class CartService {
@@ -168,7 +169,7 @@ export class CartService {
 
 	data.cartId = cart.id;
 	if (cart.products) {
-		data.products = cart.products.map((item) => {
+		data.products = cart.products.map((item): TransformResponse => {
 		return {
 			productId: item.id,
 			name: item.name,
