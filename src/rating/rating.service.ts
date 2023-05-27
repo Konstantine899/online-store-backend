@@ -8,12 +8,7 @@ import { RatingRepository } from './rating.repository';
 import { ProductRepository } from '../product/product.repository';
 import { UserRepository } from '../user/user.repository';
 import { CreateRatingResponse } from './responses/create-rating.response';
-
-export class IRating {
-  ratingsSum: number;
-  votes: number;
-  rating: number;
-}
+import { GetRatingResponse } from './responses/get-rating.response';
 
 @Injectable()
 export class RatingService {
@@ -47,7 +42,7 @@ export class RatingService {
 	return this.ratingRepository.createRating(user.id, product.id, rating);
   }
 
-  public async getRating(productId: number): Promise<IRating> {
+  public async getRating(productId: number): Promise<GetRatingResponse> {
 	const product = await this.productRepository.fidProductByPkId(productId);
 	if (!product) {
 		this.notFound('Продукт не найден');

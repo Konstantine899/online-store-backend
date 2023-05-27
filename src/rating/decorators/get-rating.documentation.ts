@@ -5,6 +5,7 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
+import { GetRatingResponse } from '../responses/get-rating.response';
 
 export function GetRatingDocumentation() {
   return applyDecorators(
@@ -21,14 +22,7 @@ export function GetRatingDocumentation() {
 	ApiResponse({
 		description: `Get rating`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Все значения относящиеся к rating`,
-		example: {
-			ratingsSum: 10,
-			votes: 2,
-			rating: 5,
-		},
-		},
+		type: GetRatingResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,

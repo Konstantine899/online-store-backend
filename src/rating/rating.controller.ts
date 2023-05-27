@@ -16,6 +16,7 @@ import { Request } from 'express';
 import { UserRequest } from './requests/user.request';
 import { GetRatingDocumentation } from './decorators/get-rating.documentation';
 import { CreateRatingResponse } from './responses/create-rating.response';
+import { GetRatingResponse } from './responses/get-rating.response';
 
 @ApiTags(`Рейтинг`)
 @Controller('rating')
@@ -38,7 +39,9 @@ export class RatingController {
   @GetRatingDocumentation()
   @HttpCode(200)
   @Get('/product/:productId([0-9]+)')
-  public async getRating(@Param('productId', ParseIntPipe) productId: number) {
+  public async getRating(
+	@Param('productId', ParseIntPipe) productId: number,
+  ): Promise<GetRatingResponse> {
 	return this.ratingService.getRating(productId);
   }
 }
