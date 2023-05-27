@@ -6,6 +6,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { CreateRoleDto } from '../dto/create-role.dto';
+import { CreateRoleResponse } from '../responses/create-role.response';
 
 export function CreateRoleDocumentation() {
   return applyDecorators(
@@ -17,14 +18,8 @@ export function CreateRoleDocumentation() {
 	}),
 	ApiResponse({
 		status: HttpStatus.CREATED,
-		schema: {
-		title: `Созданная роль пользователя`,
-		example: {
-			id: 4,
-			role: 'MANAGER',
-			description: 'Менеджер',
-		},
-		},
+		description: `Created role user`,
+		type: CreateRoleResponse,
 	}),
   );
 }

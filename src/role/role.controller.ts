@@ -17,6 +17,7 @@ import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from './role.guard';
 import { AllRolesDocumentation } from './decorators/all-roles-documentation';
 import { GetRoleDocumentation } from './decorators/get-role.documentation';
+import { CreateRoleResponse } from './responses/create-role.response';
 
 @ApiTags(`Роль`)
 @Controller('role')
@@ -28,7 +29,9 @@ export class RoleController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Post(`/create`)
-  public async createRole(@Body() dto: CreateRoleDto): Promise<RoleModel> {
+  public async createRole(
+	@Body() dto: CreateRoleDto,
+  ): Promise<CreateRoleResponse> {
 	return this.roleService.createRole(dto);
   }
 

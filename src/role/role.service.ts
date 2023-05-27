@@ -2,12 +2,13 @@ import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { RoleModel } from './role.model';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { RoleRepository } from './role.repository';
+import { CreateRoleResponse } from './responses/create-role.response';
 
 @Injectable()
 export class RoleService {
   constructor(private readonly roleRepository: RoleRepository) {}
 
-  public async createRole(dto: CreateRoleDto): Promise<RoleModel> {
+  public async createRole(dto: CreateRoleDto): Promise<CreateRoleResponse> {
 	return this.roleRepository.createRole(dto);
   }
 
