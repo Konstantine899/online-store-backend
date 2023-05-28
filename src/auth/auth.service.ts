@@ -67,11 +67,7 @@ export class AuthService {
   ): Promise<UpdateAccessTokenResponse> {
 	const { user, accessToken } =
 		await this.tokenService.createAccessTokenFromRefreshToken(refreshToken);
-	const payload = this.buildResponsePayload(user, accessToken);
-	return {
-		status: HttpStatus.OK,
-		data: payload,
-	};
+	return this.buildResponsePayload(user, accessToken);
   }
 
   public buildResponsePayload(
