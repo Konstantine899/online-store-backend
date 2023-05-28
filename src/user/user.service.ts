@@ -121,7 +121,7 @@ export class UserService {
 		`Данному пользователю уже присвоена роль ${foundRole.role}`,
 		);
 	}
-	return addedRole;
+	return this.userRepository.findUser(user.id);
   }
 
   public async removeRole(dto: RemoveRoleDto): Promise<number> {
