@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UserModel } from './user.model';
 import { AddRoleDto } from './dto/add-role.dto';
 import { RemoveRoleDto } from './dto/remove-role.dto';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
@@ -29,6 +28,7 @@ import { RemoveRoleUserDocumentation } from './decorators/remove-role-user.docum
 import { CreateUserResponse } from './responses/create-user.response';
 import { GetListUsersResponse } from './responses/get-list-users.response';
 import { GetUserResponse } from './responses/get-user-response';
+import { UpdateUserResponse } from './responses/update-user-response';
 
 @ApiTags(`Пользователи`)
 @Controller('user')
@@ -74,7 +74,7 @@ export class UserController {
   public async updateUser(
 	@Param('id', ParseIntPipe) id: number,
 	@Body() dto: CreateUserDto,
-  ): Promise<UserModel> {
+  ): Promise<UpdateUserResponse> {
 	return this.userService.updateUser(id, dto);
   }
 

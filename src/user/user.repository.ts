@@ -7,6 +7,7 @@ import { RoleModel } from '../role/role.model';
 import { CreateUserResponse } from './responses/create-user.response';
 import { GetListUsersResponse } from './responses/get-list-users.response';
 import { GetUserResponse } from './responses/get-user-response';
+import { UpdateUserResponse } from './responses/update-user-response';
 
 Injectable();
 export class UserRepository {
@@ -22,7 +23,7 @@ export class UserRepository {
   public async updateUser(
 	user: UserModel,
 	dto: CreateUserDto,
-  ): Promise<UserModel> {
+  ): Promise<UpdateUserResponse> {
 	await user.update({
 		...dto,
 		email: dto.email,

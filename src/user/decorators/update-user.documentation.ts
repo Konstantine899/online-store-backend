@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
+import { UpdateUserResponse } from '../responses/update-user-response';
 
 export function UpdateUserDocumentation() {
   return applyDecorators(
@@ -27,20 +28,7 @@ export function UpdateUserDocumentation() {
 	ApiResponse({
 		description: `Updated user`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Обновленный пользователь`,
-		example: {
-			id: 61,
-			email: 'test2@gmail.com',
-			roles: [
-			{
-				id: 2,
-				role: 'USER',
-				description: 'Пользователь',
-			},
-			],
-		},
-		},
+		type: UpdateUserResponse,
 	}),
 	ApiBadRequestResponse({
 		description: `Bad Request`,

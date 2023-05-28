@@ -15,6 +15,7 @@ import { RemoveRoleDto } from './dto/remove-role.dto';
 import { CreateUserResponse } from './responses/create-user.response';
 import { GetListUsersResponse } from './responses/get-list-users.response';
 import { GetUserResponse } from './responses/get-user-response';
+import { UpdateUserResponse } from './responses/update-user-response';
 
 @Injectable()
 export class UserService {
@@ -73,7 +74,10 @@ export class UserService {
 	return listUsers;
   }
 
-  public async updateUser(id: number, dto: CreateUserDto): Promise<UserModel> {
+  public async updateUser(
+	id: number,
+	dto: CreateUserDto,
+  ): Promise<UpdateUserResponse> {
 	const foundUser = await this.userRepository.findUser(id);
 	if (!foundUser) {
 		this.notFound(`Пользователь с id: ${id} не найден в БД`);
