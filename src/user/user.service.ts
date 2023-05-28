@@ -14,6 +14,7 @@ import { AddRoleDto } from './dto/add-role.dto';
 import { RemoveRoleDto } from './dto/remove-role.dto';
 import { CreateUserResponse } from './responses/create-user.response';
 import { GetListUsersResponse } from './responses/get-list-users.response';
+import { GetUserResponse } from './responses/get-user-response';
 
 @Injectable()
 export class UserService {
@@ -44,7 +45,7 @@ export class UserService {
 	return this.userRepository.findAuthenticatedUser(userId);
   }
 
-  public async getUser(id: number): Promise<UserModel> {
+  public async getUser(id: number): Promise<GetUserResponse> {
 	const foundUser = await this.userRepository.findUser(id);
 	if (!foundUser) {
 		this.notFound(`Пользователь не найден В БД`);

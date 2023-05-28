@@ -28,6 +28,7 @@ import { AddRoleUserDocumentation } from './decorators/add-role-user.documentati
 import { RemoveRoleUserDocumentation } from './decorators/remove-role-user.documentation';
 import { CreateUserResponse } from './responses/create-user.response';
 import { GetListUsersResponse } from './responses/get-list-users.response';
+import { GetUserResponse } from './responses/get-user-response';
 
 @ApiTags(`Пользователи`)
 @Controller('user')
@@ -61,7 +62,7 @@ export class UserController {
   @Get('/:id')
   public async getUser(
 	@Param('id', ParseIntPipe) id: number,
-  ): Promise<UserModel> {
+  ): Promise<GetUserResponse> {
 	return this.userService.getUser(id);
   }
 

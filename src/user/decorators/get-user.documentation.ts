@@ -6,6 +6,7 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
+import { GetUserResponse } from '../responses/get-user-response';
 
 export function GetUserDocumentation() {
   return applyDecorators(
@@ -20,20 +21,7 @@ export function GetUserDocumentation() {
 	ApiResponse({
 		description: `Get user`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Получение пользователя`,
-		example: {
-			id: 61,
-			email: 'test1@gmail.com',
-			roles: [
-			{
-				id: 2,
-				role: 'USER',
-				description: 'Пользователь',
-			},
-			],
-		},
-		},
+		type: GetUserResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,

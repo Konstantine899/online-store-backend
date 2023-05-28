@@ -6,6 +6,7 @@ import { hash } from 'bcrypt';
 import { RoleModel } from '../role/role.model';
 import { CreateUserResponse } from './responses/create-user.response';
 import { GetListUsersResponse } from './responses/get-list-users.response';
+import { GetUserResponse } from './responses/get-user-response';
 
 Injectable();
 export class UserRepository {
@@ -36,7 +37,7 @@ export class UserRepository {
 	});
   }
 
-  public async findUser(id: number): Promise<UserModel> {
+  public async findUser(id: number): Promise<GetUserResponse> {
 	return this.userModel.findOne({
 		where: { id },
 		attributes: { exclude: [`password`] },
