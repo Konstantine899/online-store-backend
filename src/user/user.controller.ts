@@ -31,6 +31,7 @@ import { GetUserResponse } from './responses/get-user-response';
 import { UpdateUserResponse } from './responses/update-user-response';
 import { RemoveUserResponse } from './responses/remove-user.response';
 import { AddRoleResponse } from './responses/add-role.response';
+import { RemoveRoleResponse } from './responses/remove-role.response';
 
 @ApiTags(`Пользователи`)
 @Controller('user')
@@ -105,7 +106,9 @@ export class UserController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Delete('/role/delete')
-  public async removeRole(@Body() dto: RemoveRoleDto) {
+  public async removeRole(
+	@Body() dto: RemoveRoleDto,
+  ): Promise<RemoveRoleResponse> {
 	return this.userService.removeRole(dto);
   }
 }

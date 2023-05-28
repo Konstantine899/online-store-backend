@@ -18,6 +18,7 @@ import { GetUserResponse } from './responses/get-user-response';
 import { UpdateUserResponse } from './responses/update-user-response';
 import { RemoveUserResponse } from './responses/remove-user.response';
 import { AddRoleResponse } from './responses/add-role.response';
+import { RemoveRoleResponse } from './responses/remove-role.response';
 
 @Injectable()
 export class UserService {
@@ -125,7 +126,7 @@ export class UserService {
 	return this.userRepository.findUser(user.id);
   }
 
-  public async removeRole(dto: RemoveRoleDto): Promise<number> {
+  public async removeRole(dto: RemoveRoleDto): Promise<RemoveRoleResponse> {
 	const user = await this.userRepository.findUser(dto.userId);
 	if (!user) {
 		this.notFound(`Пользователь не найден в БД`);
@@ -137,7 +138,8 @@ export class UserService {
 	if (foundRole.role === 'USER') {
 		this.forbiddenException('Удаление роли USER запрещено');
 	}
-	return user.$remove('role', foundRole.id);
+	await user.$remove('role', foundRole.id);
+	return { status: HttpStatus.OK, message: `success` };
   }
 
   private notFound(message: string): void {

@@ -8,6 +8,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { RemoveRoleDto } from '../dto/remove-role.dto';
+import { RemoveRoleResponse } from '../responses/remove-role.response';
 
 export function RemoveRoleUserDocumentation() {
   return applyDecorators(
@@ -20,7 +21,7 @@ export function RemoveRoleUserDocumentation() {
 	ApiResponse({
 		description: `Remove Role`,
 		status: HttpStatus.OK,
-		schema: { title: `Количество удаленных записей из БД`, example: 1 },
+		type: RemoveRoleResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,
