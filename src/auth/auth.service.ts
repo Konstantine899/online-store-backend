@@ -14,6 +14,8 @@ import { Request } from 'express';
 import { LogoutResponse } from './responses/logout.response';
 import { LoginResponse } from './responses/login.response';
 import { UpdateAccessTokenResponse } from './responses/update-access-token.response';
+import { RegistrationResponse } from './responses/registration.response';
+import { IPaylad } from './interfaces/i-paylad';
 
 @Injectable()
 export class AuthService {
@@ -22,7 +24,7 @@ export class AuthService {
 	private readonly tokenService: TokenService,
   ) {}
 
-  public async registration(dto: CreateUserDto) {
+  public async registration(dto: CreateUserDto): Promise<RegistrationResponse> {
 	const candidate = await this.userService.findUserByEmail(dto.email);
 	if (candidate) {
 		this.badRequest(
@@ -35,11 +37,7 @@ export class AuthService {
 		user,
 		60 * 60 * 24 * 30,
 	);
-	const payload = this.buildResponsePayload(user, accessToken, refreshToken);
-	return {
-		status: HttpStatus.OK,
-		data: payload,
-	};
+	return this.buildResponsePayload(user, accessToken, refreshToken);
   }
 
   public async login(dto: CreateUserDto): Promise<LoginResponse> {
@@ -80,7 +78,7 @@ export class AuthService {
 	user: UserModel,
 	accessToken: string,
 	refreshToken?: string,
-  ): { type: string; accessToken: string; refreshToken?: string } {
+  ): IPaylad {
 	return {
 		type: 'Bearer',
 		accessToken,
