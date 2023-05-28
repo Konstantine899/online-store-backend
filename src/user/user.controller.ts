@@ -29,6 +29,7 @@ import { CreateUserResponse } from './responses/create-user.response';
 import { GetListUsersResponse } from './responses/get-list-users.response';
 import { GetUserResponse } from './responses/get-user-response';
 import { UpdateUserResponse } from './responses/update-user-response';
+import { RemoveUserResponse } from './responses/remove-user.response';
 
 @ApiTags(`Пользователи`)
 @Controller('user')
@@ -85,7 +86,7 @@ export class UserController {
   @Delete('/delete/:id')
   public async removeUser(
 	@Param('id', ParseIntPipe) id: number,
-  ): Promise<number> {
+  ): Promise<RemoveUserResponse> {
 	return this.userService.removeUser(id);
   }
 

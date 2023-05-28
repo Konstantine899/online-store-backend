@@ -6,6 +6,7 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
+import { RemoveUserResponse } from '../responses/remove-user.response';
 
 export function RemoveUserDocumentation() {
   return applyDecorators(
@@ -20,7 +21,7 @@ export function RemoveUserDocumentation() {
 	ApiResponse({
 		description: `Remove user`,
 		status: HttpStatus.OK,
-		schema: { title: 'Удалено записей', example: 1 },
+		type: RemoveUserResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,
