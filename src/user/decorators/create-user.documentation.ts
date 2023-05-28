@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
+import { CreateUserResponse } from '../responses/create-user.response';
 
 export function CreateUserDocumentation() {
   return applyDecorators(
@@ -20,20 +21,7 @@ export function CreateUserDocumentation() {
 	ApiResponse({
 		description: `Created user`,
 		status: HttpStatus.CREATED,
-		schema: {
-		title: `Созданный пользователь`,
-		example: {
-			id: 59,
-			email: 'test1@gmail.com',
-			roles: [
-			{
-				id: 2,
-				role: 'USER',
-				description: 'Пользователь',
-			},
-			],
-		},
-		},
+		type: CreateUserResponse,
 	}),
 	ApiBadRequestResponse({
 		description: `Bad Request`,

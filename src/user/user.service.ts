@@ -12,6 +12,7 @@ import { RoleService } from '../role/role.service';
 import { UserRepository } from './user.repository';
 import { AddRoleDto } from './dto/add-role.dto';
 import { RemoveRoleDto } from './dto/remove-role.dto';
+import { CreateUserResponse } from './responses/create-user.response';
 
 @Injectable()
 export class UserService {
@@ -20,7 +21,7 @@ export class UserService {
 	private roleService: RoleService,
   ) {}
 
-  public async createUser(dto: CreateUserDto): Promise<UserModel> {
+  public async createUser(dto: CreateUserDto): Promise<CreateUserResponse> {
 	const findEmail = await this.userRepository.findUserByEmail(dto.email);
 	if (findEmail) {
 		throw new BadRequestException(

@@ -4,6 +4,7 @@ import { UserModel } from './user.model';
 import { CreateUserDto } from './dto/create-user.dto';
 import { hash } from 'bcrypt';
 import { RoleModel } from '../role/role.model';
+import { CreateUserResponse } from './responses/create-user.response';
 
 Injectable();
 export class UserRepository {
@@ -52,7 +53,7 @@ export class UserRepository {
 	return this.userModel.findByPk(userId, {});
   }
 
-  public async findRegisteredUser(userId: number): Promise<UserModel> {
+  public async findRegisteredUser(userId: number): Promise<CreateUserResponse> {
 	return this.userModel.findByPk(userId, {
 		attributes: { exclude: [`password`] },
 		include: [

@@ -26,6 +26,7 @@ import { UpdateUserDocumentation } from './decorators/update-user.documentation'
 import { RemoveUserDocumentation } from './decorators/remove-user.documentation';
 import { AddRoleUserDocumentation } from './decorators/add-role-user.documentation';
 import { RemoveRoleUserDocumentation } from './decorators/remove-role-user.documentation';
+import { CreateUserResponse } from './responses/create-user.response';
 
 @ApiTags(`Пользователи`)
 @Controller('user')
@@ -37,7 +38,9 @@ export class UserController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Post('/create')
-  public async createUser(@Body() dto: CreateUserDto) {
+  public async createUser(
+	@Body() dto: CreateUserDto,
+  ): Promise<CreateUserResponse> {
 	return this.userService.createUser(dto);
   }
 

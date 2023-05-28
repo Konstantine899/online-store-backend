@@ -7,6 +7,7 @@ import {
 } from 'sequelize-typescript';
 import { UserModel } from '../user/user.model';
 import { UserRoleModel } from './user-role.model';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Table({
   tableName: 'role',
@@ -16,6 +17,7 @@ import { UserRoleModel } from './user-role.model';
   },
 })
 export class RoleModel extends Model<RoleModel> {
+  @ApiProperty({ example: 1, description: `Идентификатор роли` })
   @Column({
 	type: DataType.INTEGER,
 	unique: true,
@@ -24,9 +26,11 @@ export class RoleModel extends Model<RoleModel> {
   })
   id: number;
 
+  @ApiProperty({ example: `USER`, description: `Роль` })
   @Column({ type: DataType.STRING, unique: true, allowNull: false })
   role: string;
 
+  @ApiProperty({ example: `Пользователь`, description: `Описание роли` })
   @Column({ type: DataType.STRING, allowNull: false })
   description: string;
 
