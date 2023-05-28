@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { AddRoleDto } from '../dto/add-role.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
+import { AddRoleResponse } from '../responses/add-role.response';
 
 export function AddRoleUserDocumentation() {
   return applyDecorators(
@@ -21,10 +22,7 @@ export function AddRoleUserDocumentation() {
 	ApiCreatedResponse({
 		description: `Add Role`,
 		status: HttpStatus.CREATED,
-		schema: {
-		title: `Добавленная роль`,
-		example: [{ id: 1, userId: 1, roleId: 1 }],
-		},
+		type: AddRoleResponse,
 	}),
 	ApiNotFoundResponse({
 		description: `Not Found`,

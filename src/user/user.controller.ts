@@ -30,6 +30,7 @@ import { GetListUsersResponse } from './responses/get-list-users.response';
 import { GetUserResponse } from './responses/get-user-response';
 import { UpdateUserResponse } from './responses/update-user-response';
 import { RemoveUserResponse } from './responses/remove-user.response';
+import { AddRoleResponse } from './responses/add-role.response';
 
 @ApiTags(`Пользователи`)
 @Controller('user')
@@ -95,7 +96,7 @@ export class UserController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Post('/role/add')
-  public async addRole(@Body() dto: AddRoleDto) {
+  public async addRole(@Body() dto: AddRoleDto): Promise<AddRoleResponse> {
 	return this.userService.addRole(dto);
   }
 

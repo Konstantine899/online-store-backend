@@ -17,6 +17,7 @@ import { GetListUsersResponse } from './responses/get-list-users.response';
 import { GetUserResponse } from './responses/get-user-response';
 import { UpdateUserResponse } from './responses/update-user-response';
 import { RemoveUserResponse } from './responses/remove-user.response';
+import { AddRoleResponse } from './responses/add-role.response';
 
 @Injectable()
 export class UserService {
@@ -106,7 +107,7 @@ export class UserService {
 	return { status: HttpStatus.OK, message: `success` };
   }
 
-  public async addRole(dto: AddRoleDto): Promise<unknown> {
+  public async addRole(dto: AddRoleDto): Promise<AddRoleResponse> {
 	const user = await this.userRepository.findUser(dto.userId);
 	if (!user) {
 		this.notFound(`Пользователь не найден в БД`);
