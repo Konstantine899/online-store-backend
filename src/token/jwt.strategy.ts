@@ -2,8 +2,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import { UserModel } from '../user/user.model';
 import appConfig from '../config/app.config';
+import { LoginCheckResponse } from '../auth/responses/login-check.response';
 
 export interface IAccessTokenSubject {
   sub: number; // сокращение от subject
@@ -20,7 +20,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 	});
   }
 
-  public async validate(payload: IAccessTokenSubject): Promise<UserModel> {
+  public async validate(
+	payload: IAccessTokenSubject,
+  ): Promise<LoginCheckResponse> {
 	const user = await this.userService.loginCheck(payload.sub);
 	if (!user) {
 		return null;

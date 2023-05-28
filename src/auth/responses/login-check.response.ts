@@ -1,23 +1,21 @@
-import { HttpStatus } from '@nestjs/common';
-import { UserModel } from '../../user/user.model';
 import { ApiProperty } from '@nestjs/swagger';
+import { RoleModel } from '../../role/role.model';
+import { IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class LoginCheckResponse {
-  @ApiProperty({ example: HttpStatus.OK })
-  readonly status: HttpStatus;
+  @ApiProperty({ example: 1, description: `Идентификатор пользователя` })
+  id: number;
 
   @ApiProperty({
-	example: {
-		id: 52,
-		email: 'test@gmail.com',
-		roles: [
-		{
-			id: 2,
-			role: 'USER',
-			description: 'Пользователь',
-		},
-		],
-	},
+	example: `test@mail.com`,
+	description: `Электронная почта пользователя`,
   })
-  readonly data: UserModel;
+  email: string;
+
+  @ApiProperty({ type: () => [RoleModel] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RoleModel)
+  roles: RoleModel[];
 }

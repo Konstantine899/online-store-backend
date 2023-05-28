@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   HttpCode,
-  HttpStatus,
   Post,
   Req,
   UseGuards,
@@ -68,11 +67,7 @@ export class AuthController {
 	@Req() request: Request,
   ): Promise<LoginCheckResponse> {
 	const { id } = request.user as LoginCheckRequest;
-	const foundUser = await this.userService.loginCheck(id);
-	return {
-		status: HttpStatus.OK,
-		data: foundUser,
-	};
+	return this.userService.loginCheck(id);
   }
 
   @LogoutDocumentation()
