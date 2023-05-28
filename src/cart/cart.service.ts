@@ -173,7 +173,7 @@ export class CartService {
 		return {
 			productId: item.id,
 			name: item.name,
-			price: item.price,
+			price: item.price * item['CartProductModel'].quantity,
 			quantity: item['CartProductModel'].quantity,
 		};
 		});

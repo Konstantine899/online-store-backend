@@ -166,7 +166,7 @@ export class OrderRepository {
 	order.address = dto.address;
 	order.comment = dto.comment;
 	order.amount = dto.items.reduce(
-		(sum: number, item: OrderItemModel) => sum + item.price * item.quantity,
+		(sum: number, item: OrderItemModel) => sum + item.price,
 		0,
 	);
 	await order.save();
