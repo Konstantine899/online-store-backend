@@ -13,6 +13,7 @@ import { UserRepository } from './user.repository';
 import { AddRoleDto } from './dto/add-role.dto';
 import { RemoveRoleDto } from './dto/remove-role.dto';
 import { CreateUserResponse } from './responses/create-user.response';
+import { GetListUsersResponse } from './responses/get-list-users.response';
 
 @Injectable()
 export class UserService {
@@ -63,7 +64,7 @@ export class UserService {
 	return this.userRepository.findUserByEmail(email);
   }
 
-  public async getListUsers(): Promise<UserModel[]> {
+  public async getListUsers(): Promise<GetListUsersResponse[]> {
 	const listUsers = this.userRepository.findListUsers();
 	if (!listUsers) {
 		this.notFound(`Список пользователей пуст`);

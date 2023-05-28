@@ -5,6 +5,7 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
+import { GetListUsersResponse } from '../responses/get-list-users.response';
 
 export function GetListUsersDocumentation() {
   return applyDecorators(
@@ -13,23 +14,7 @@ export function GetListUsersDocumentation() {
 	ApiResponse({
 		description: `Get list users`,
 		status: HttpStatus.OK,
-		schema: {
-		title: `Список всех пользователей`,
-		example: [
-			{
-			id: 1,
-			email: 'kostay375298918971@gmail.com',
-			},
-			{
-			id: 57,
-			email: 'test@gmail.com',
-			},
-			{
-			id: 61,
-			email: 'test1@gmail.com',
-			},
-		],
-		},
+		type: [GetListUsersResponse],
 	}),
 	ApiNotFoundResponse({
 		description: `List users is empty`,

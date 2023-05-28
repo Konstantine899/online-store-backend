@@ -5,6 +5,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { hash } from 'bcrypt';
 import { RoleModel } from '../role/role.model';
 import { CreateUserResponse } from './responses/create-user.response';
+import { GetListUsersResponse } from './responses/get-list-users.response';
 
 Injectable();
 export class UserRepository {
@@ -83,7 +84,7 @@ export class UserRepository {
 	});
   }
 
-  public async findListUsers() {
+  public async findListUsers(): Promise<GetListUsersResponse[]> {
 	return this.userModel.findAll({ attributes: { exclude: [`password`] } });
   }
 

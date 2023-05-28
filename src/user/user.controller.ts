@@ -27,6 +27,7 @@ import { RemoveUserDocumentation } from './decorators/remove-user.documentation'
 import { AddRoleUserDocumentation } from './decorators/add-role-user.documentation';
 import { RemoveRoleUserDocumentation } from './decorators/remove-role-user.documentation';
 import { CreateUserResponse } from './responses/create-user.response';
+import { GetListUsersResponse } from './responses/get-list-users.response';
 
 @ApiTags(`Пользователи`)
 @Controller('user')
@@ -49,7 +50,7 @@ export class UserController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get(`/get-list-users`)
-  public async getListUsers(): Promise<UserModel[]> {
+  public async getListUsers(): Promise<GetListUsersResponse[]> {
 	return this.userService.getListUsers();
   }
 
