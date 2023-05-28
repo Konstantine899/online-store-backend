@@ -91,6 +91,7 @@ export class ProductService {
 	}
 	return {
 		metaData,
+		count: products.count,
 		rows: products.rows,
 	};
   }
