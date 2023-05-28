@@ -6,6 +6,9 @@ export class GetAllByBrandIdAndCategoryIdResponse {
   @ApiProperty()
   metaData: MetaData;
 
+  @ApiProperty({ example: 1, description: `Количество найденных элементов` })
+  count: number;
+
   @ApiProperty({ type: () => [Rows] })
   rows: Rows[];
 }
