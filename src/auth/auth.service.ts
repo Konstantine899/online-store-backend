@@ -12,7 +12,6 @@ import { TokenService } from '../token/token.service';
 import { RefreshDto } from './dto/refresh.dto';
 import { Request } from 'express';
 import { LogoutResponse } from './responses/logout.response';
-import { IPayload } from './interfaces/i-payload';
 import { LoginResponse } from './responses/login.response';
 import { UpdateAccessTokenResponse } from './responses/update-access-token.response';
 
@@ -23,9 +22,7 @@ export class AuthService {
 	private readonly tokenService: TokenService,
   ) {}
 
-  public async registration(
-	dto: CreateUserDto,
-  ): Promise<{ status: HttpStatus; data: IPayload }> {
+  public async registration(dto: CreateUserDto) {
 	const candidate = await this.userService.findUserByEmail(dto.email);
 	if (candidate) {
 		this.badRequest(
@@ -52,11 +49,7 @@ export class AuthService {
 		user,
 		60 * 60 * 24 * 30,
 	);
-	const payload = this.buildResponsePayload(user, accessToken, refreshToken);
-	return {
-		status: HttpStatus.OK,
-		data: payload,
-	};
+	return this.buildResponsePayload(user, accessToken, refreshToken);
   }
 
   public async logout(
@@ -87,13 +80,11 @@ export class AuthService {
 	user: UserModel,
 	accessToken: string,
 	refreshToken?: string,
-  ): IPayload {
+  ): { type: string; accessToken: string; refreshToken?: string } {
 	return {
-		payload: {
 		type: 'Bearer',
 		accessToken,
 		...(refreshToken ? { refreshToken } : {}),
-		},
 	};
   }
 

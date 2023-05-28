@@ -1,21 +1,18 @@
-import { HttpStatus } from '@nestjs/common';
-import { IPayload } from '../interfaces/i-payload';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginResponse {
-  @ApiProperty({ example: HttpStatus.OK })
-  readonly status: HttpStatus;
+  @ApiProperty({ example: `Bearer`, description: `Тип токена` })
+  type: string;
 
   @ApiProperty({
-	example: {
-		payload: {
-		type: 'Bearer',
-		accessToken:
-			'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NTEsInJvbGVzIjpbeyJpZCI6Miwicm9sZSI6IlVTRVIiLCJkZXNjcmlwdGlvbiI6ItCf0L7Qu9GM0LfQvtCy0LDRgtC10LvRjCJ9XSwiaWF0IjoxNjg0ODI5MzAwLCJleHAiOjE2ODQ5MTU3MDAsInN1YiI6IjUxIn0.w64QkUzTAReR5WAFutdzfIbvmoYb3rNJT20CJfUiue0',
-		refreshToken:
-			'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2ODQ4MjkzMDAsImV4cCI6MTY4NDkxNTcwMCwic3ViIjoiNTEiLCJqdGkiOiI4NyJ9.fkPoMmVsoSUVWE1etpYcstsxajch-6VuQqLdVeohfX8',
-		},
-	},
+	example: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NTMsInJvbGVzIjpbXSwiaWF0IjoxNjg1MjgwMjk4LCJleHAiOjE2ODUzNjY2OTgsInN1YiI6IjUzIn0.Xb9fbsbj54CKNJ7WlR5Elc9n01urDXz5ATdNP5BAQBM`,
+	description: `Access token`,
   })
-  readonly data: IPayload;
+  accessToken: string;
+
+  @ApiProperty({
+	example: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2ODUyODAyOTgsImV4cCI6MTY4NTM2NjY5OCwic3ViIjoiNTMiLCJqdGkiOiI5OCJ9.pj1YNcfUgv_pBdX5WB0seI6a_IrzKVujtiHCb4VdIOs`,
+	description: `Refresh token`,
+  })
+  refreshToken?: string;
 }
