@@ -6,6 +6,9 @@ export class GetListProductByCategoryIdResponse {
   @ApiProperty()
   metaData: MetaData;
 
+  @ApiProperty({ example: 10, description: `Количество найденных элементов` })
+  count: number;
+
   @ApiProperty({ type: () => [Rows] })
   rows: Rows[];
 }
