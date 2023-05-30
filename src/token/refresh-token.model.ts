@@ -9,7 +9,7 @@ import {
 import { UserModel } from '../user/user.model';
 
 @Table({
-  tableName: 'refresh_token',
+  tableName: 'refresh-token',
   underscored: true,
   defaultScope: {
 	attributes: { exclude: [`updatedAt`, `createdAt`] },

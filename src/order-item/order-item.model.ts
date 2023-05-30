@@ -30,7 +30,7 @@ export class OrderItemModel extends Model<OrderItemModel> {
   name: string;
 
   @ApiProperty({ example: 1000, description: `Цена продукта` })
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.FLOAT, allowNull: false })
   price: number;
 
   @ApiProperty({ example: 1, description: `Количество` })

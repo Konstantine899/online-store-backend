@@ -38,7 +38,7 @@ export class OrderModel extends Model<OrderModel> {
   @Column({ type: DataType.STRING, allowNull: false })
   address: string;
 
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.FLOAT, allowNull: false })
   amount: number;
 
   @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })

@@ -8,7 +8,7 @@ import {
 import { UserModel } from '../user/user.model';
 import { RoleModel } from './role.model';
 
-@Table({ tableName: 'user_role', createdAt: false, updatedAt: false })
+@Table({ tableName: 'user-role', createdAt: false, updatedAt: false })
 export class UserRoleModel extends Model<UserModel> {
   @ForeignKey(() => RoleModel)
   @Column({ type: DataType.INTEGER })
