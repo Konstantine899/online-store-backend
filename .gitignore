@@ -3,6 +3,10 @@
 /node_modules
 /static
 
+/.development.env
+/.migrate.env
+/.production.env
+
 
 # Logs
 logs
