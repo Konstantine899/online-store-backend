@@ -44,13 +44,14 @@ export class OrderModel extends Model<OrderModel> {
   @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
   status: number;
 
-  @Column({ type: DataType.STRING })
+  @Column({ type: DataType.STRING(2200) })
   comment: string;
 
   @HasMany(() => OrderItemModel, { onDelete: 'CASCADE' })
   items: OrderItemModel[];
 
   @ForeignKey(() => UserModel)
+  @Column({ type: DataType.INTEGER, allowNull: false })
   userId: number;
 
   @BelongsTo(() => UserModel)

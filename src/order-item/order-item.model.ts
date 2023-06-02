@@ -38,6 +38,7 @@ export class OrderItemModel extends Model<OrderItemModel> {
   quantity: number;
 
   @ForeignKey(() => OrderModel)
+  @Column({ type: DataType.INTEGER, allowNull: false })
   orderId: number;
 
   @BelongsTo(() => OrderModel)
