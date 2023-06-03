@@ -9,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.hasMany(models.refreshToken);
+      this.belongsToMany(models.role, {
+        through: `user-role`,
+        as: `roles`,
+      });
     }
   }
   User.init(
