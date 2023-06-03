@@ -9,13 +9,13 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      this.belongsTo(models.user);
     }
   }
   RefreshToken.init(
     {
       is_revoked: DataTypes.BOOLEAN,
       expires: DataTypes.DATE,
-      user_id: DataTypes.INTEGER,
     },
     {
       sequelize,

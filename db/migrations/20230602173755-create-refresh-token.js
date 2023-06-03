@@ -13,7 +13,6 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         defaultValue: false,
       },
-      user_id: { type: Sequelize.INTEGER },
       expires: { type: Sequelize.DATE, allowNull: false },
       createdAt: {
         allowNull: false,
@@ -24,8 +23,15 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.addColumn('refresh-token', `user_id`, {
+      type: Sequelize.INTEGER,
+      references: { model: `User`, key: `id` },
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE',
+    });
   },
   async down(queryInterface) {
+    await queryInterface.removeColumn('refresh-token', `user_id`);
     await queryInterface.dropTable('refresh-token');
   },
 };
