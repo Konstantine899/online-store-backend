@@ -17,10 +17,7 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      productId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-      },
+
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -29,6 +26,11 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE,
       },
+    });
+    await queryInterface.addColumn(`product-property`, `productId`, {
+      type: Sequelize.INTEGER,
+      references: { model: `product`, key: `id` },
+      allowNull: false,
     });
   },
   async down(queryInterface) {

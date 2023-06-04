@@ -9,8 +9,9 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      this.belongsTo(models.brand);
-      this.belongsTo(models.category);
+      this.belongsTo(models.brand, { as: `brand` });
+      this.belongsTo(models.category, { as: `category` });
+      this.hasMany(models.property, { as: `properties`, onDelete: `CASCADE` });
       this.belongsToMany(models.user, {
         through: `rating`,
         as: `users`,
