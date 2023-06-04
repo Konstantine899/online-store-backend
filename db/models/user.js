@@ -13,6 +13,11 @@ module.exports = (sequelize, DataTypes) => {
         through: `user-role`,
         as: `roles`,
       });
+      this.belongsToMany(models.product, {
+        through: `rating`,
+        as: `products`,
+        onDelete: `CASCADE`,
+      });
     }
   }
   User.init(
