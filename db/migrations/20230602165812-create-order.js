@@ -19,7 +19,6 @@ module.exports = {
       amount: { type: Sequelize.FLOAT, allowNull: false },
       status: { type: Sequelize.INTEGER, allowNull: false },
       comment: { type: Sequelize.STRING(2200) },
-      userId: { type: Sequelize.INTEGER, allowNull: false },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -29,8 +28,14 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.addColumn(`order`, `userId`, {
+      type: Sequelize.INTEGER,
+      references: { model: `user`, key: `id` },
+      allowNull: false,
+    });
   },
   async down(queryInterface) {
+    await queryInterface.removeColumn(`order`, `userId`);
     await queryInterface.dropTable('order');
   },
 };

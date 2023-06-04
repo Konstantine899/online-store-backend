@@ -9,6 +9,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.hasMany(models.refreshToken);
+      this.hasMany(models.order, { onDelete: `SET NULL` });
       this.belongsToMany(models.role, {
         through: `user-role`,
         as: `roles`,

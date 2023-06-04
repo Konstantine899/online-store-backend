@@ -25,7 +25,7 @@ module.exports = {
     });
     await queryInterface.addColumn('refresh-token', `user_id`, {
       type: Sequelize.INTEGER,
-      references: { model: `User`, key: `id` },
+      references: { model: `user`, key: `id` },
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
     });
