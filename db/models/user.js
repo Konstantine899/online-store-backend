@@ -8,8 +8,12 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      this.hasMany(models.refreshToken);
-      this.hasMany(models.order, { onDelete: `SET NULL` });
+      this.hasMany(models.refreshToken, {
+        as: `refresh_tokens`,
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+      });
+      this.hasMany(models.order, { as: `orders`, onDelete: `SET NULL` });
       this.belongsToMany(models.role, {
         through: `user-role`,
         as: `roles`,
