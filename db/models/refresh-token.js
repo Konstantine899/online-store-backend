@@ -9,7 +9,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      this.belongsTo(models.user);
+      this.belongsTo(models.user, { as: `user` });
     }
   }
   RefreshToken.init(
