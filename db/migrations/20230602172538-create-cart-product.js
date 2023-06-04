@@ -7,11 +7,11 @@ module.exports = {
         type: Sequelize.INTEGER,
         defaultValue: 1,
       },
-      createdAt: {
+      created_at: {
         allowNull: false,
         type: Sequelize.DATE,
       },
-      updatedAt: {
+      updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
       },

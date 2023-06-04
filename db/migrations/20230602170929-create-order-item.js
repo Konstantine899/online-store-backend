@@ -15,11 +15,11 @@ module.exports = {
       },
       price: { type: Sequelize.FLOAT, allowNull: false },
       quantity: { type: Sequelize.INTEGER, allowNull: false },
-      createdAt: {
+      created_at: {
         allowNull: false,
         type: Sequelize.DATE,
       },
-      updatedAt: {
+      updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
       },

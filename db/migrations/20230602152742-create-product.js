@@ -18,11 +18,11 @@ module.exports = {
       rating: { type: Sequelize.INTEGER, defaultValue: 0 },
       image: { type: Sequelize.STRING, allowNull: false },
 
-      createdAt: {
+      created_at: {
         allowNull: false,
         type: Sequelize.DATE,
       },
-      updatedAt: {
+      updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
       },

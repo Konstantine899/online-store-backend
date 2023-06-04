@@ -19,11 +19,11 @@ module.exports = {
       amount: { type: Sequelize.FLOAT, allowNull: false },
       status: { type: Sequelize.INTEGER, allowNull: false },
       comment: { type: Sequelize.STRING(2200) },
-      createdAt: {
+      created_at: {
         allowNull: false,
         type: Sequelize.DATE,
       },
-      updatedAt: {
+      updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
       },
