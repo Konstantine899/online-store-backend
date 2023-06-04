@@ -9,6 +9,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      models.cart = undefined;
       this.belongsTo(models.brand, { as: `brand` });
       this.belongsTo(models.category, { as: `category` });
       this.hasMany(models.property, { as: `properties`, onDelete: `CASCADE` });
@@ -16,6 +17,11 @@ module.exports = (sequelize, DataTypes) => {
         through: `rating`,
         as: `users`,
         onDelete: `CASCADE`,
+      });
+      this.belongsToMany(models.cart, {
+        through: `cart-product`,
+        as: `baskets`,
+        onDelete: 'CASCADE',
       });
     }
   }

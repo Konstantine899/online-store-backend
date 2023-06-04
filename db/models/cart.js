@@ -1,7 +1,7 @@
 'use strict';
 const { Model } = require('sequelize');
 module.exports = (sequelize) => {
-  class cart extends Model {
+  class Cart extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -9,14 +9,19 @@ module.exports = (sequelize) => {
      */
     static associate(models) {
       // define association here
+      this.belongsToMany(models.product, {
+        through: `cart-product`,
+        as: `products`,
+        onDelete: 'CASCADE',
+      });
     }
   }
-  cart.init(
+  Cart.init(
     {},
     {
       sequelize,
-      modelName: 'cart',
+      modelName: 'Cart',
     },
   );
-  return cart;
+  return Cart;
 };
