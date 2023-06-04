@@ -17,8 +17,6 @@ module.exports = {
       price: { type: Sequelize.FLOAT, allowNull: false },
       rating: { type: Sequelize.INTEGER, defaultValue: 0 },
       image: { type: Sequelize.STRING, allowNull: false },
-      categoryId: { type: Sequelize.INTEGER, allowNull: false },
-      brandId: { type: Sequelize.INTEGER, allowNull: false },
 
       createdAt: {
         allowNull: false,
@@ -29,8 +27,20 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    await queryInterface.addColumn(`product`, `categoryId`, {
+      type: Sequelize.INTEGER,
+      references: { model: `category`, key: `id` },
+      allowNull: false,
+    });
+    await queryInterface.addColumn(`product`, `brandId`, {
+      type: Sequelize.INTEGER,
+      references: { model: `brand`, key: `id` },
+      allowNull: false,
+    });
   },
   async down(queryInterface) {
+    await queryInterface.removeColumn(`product`, `brandId`);
+    await queryInterface.removeColumn(`product`, `categoryId`);
     await queryInterface.dropTable('product');
   },
 };
