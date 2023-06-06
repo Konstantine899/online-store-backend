@@ -35,11 +35,11 @@ export class UserService {
 		`Пользователь с таким email: ${dto.email} уже существует`,
 		);
 	}
-	const user = await this.userRepository.createUser(dto);
 	const role = await this.roleService.getRole('USER');
 	if (!role) {
 		this.notFound('Роль USER не найдена в БД');
 	}
+	const user = await this.userRepository.createUser(dto);
 	await user.$set('roles', [role.id]); // #set перезаписываю поле только в БД
 	user.roles = [role]; // Добавляю roles в сам объект user
 	await user.save();
