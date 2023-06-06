@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -32,6 +33,9 @@ import { UpdateUserResponse } from './responses/update-user-response';
 import { RemoveUserResponse } from './responses/remove-user.response';
 import { AddRoleResponse } from './responses/add-role.response';
 import { RemoveRoleResponse } from './responses/remove-role.response';
+import { TransactionInterceptor } from '../interceptors/transaction-interceptor';
+import { TransactionDecorator } from '../decorators/transaction-decorator';
+import { Transaction } from 'sequelize';
 
 @ApiTags(`Пользователи`)
 @Controller('user')
@@ -43,10 +47,12 @@ export class UserController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Post('/create')
+  @UseInterceptors(TransactionInterceptor)
   public async createUser(
-	@Body() dto: CreateUserDto,
+    @Body() dto: CreateUserDto,
+    @TransactionDecorator() transaction: Transaction,
   ): Promise<CreateUserResponse> {
-	return this.userService.createUser(dto);
+    return this.userService.createUser(dto);
   }
 
   @GetListUsersDocumentation()
@@ -55,7 +61,7 @@ export class UserController {
   @UseGuards(JwtGuard, RoleGuard)
   @Get(`/get-list-users`)
   public async getListUsers(): Promise<GetListUsersResponse[]> {
-	return this.userService.getListUsers();
+    return this.userService.getListUsers();
   }
 
   @GetUserDocumentation()
@@ -64,9 +70,9 @@ export class UserController {
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/:id')
   public async getUser(
-	@Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIntPipe) id: number,
   ): Promise<GetUserResponse> {
-	return this.userService.getUser(id);
+    return this.userService.getUser(id);
   }
 
   @UpdateUserDocumentation()
@@ -75,10 +81,10 @@ export class UserController {
   @UseGuards(JwtGuard, RoleGuard)
   @Put('/update/:id')
   public async updateUser(
-	@Param('id', ParseIntPipe) id: number,
-	@Body() dto: CreateUserDto,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateUserDto,
   ): Promise<UpdateUserResponse> {
-	return this.userService.updateUser(id, dto);
+    return this.userService.updateUser(id, dto);
   }
 
   @RemoveUserDocumentation()
@@ -87,9 +93,9 @@ export class UserController {
   @UseGuards(JwtGuard, RoleGuard)
   @Delete('/delete/:id')
   public async removeUser(
-	@Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIntPipe) id: number,
   ): Promise<RemoveUserResponse> {
-	return this.userService.removeUser(id);
+    return this.userService.removeUser(id);
   }
 
   @AddRoleUserDocumentation()
@@ -98,7 +104,7 @@ export class UserController {
   @UseGuards(JwtGuard, RoleGuard)
   @Post('/role/add')
   public async addRole(@Body() dto: AddRoleDto): Promise<AddRoleResponse> {
-	return this.userService.addRole(dto);
+    return this.userService.addRole(dto);
   }
 
   @RemoveRoleUserDocumentation()
@@ -107,8 +113,8 @@ export class UserController {
   @UseGuards(JwtGuard, RoleGuard)
   @Delete('/role/delete')
   public async removeRole(
-	@Body() dto: RemoveRoleDto,
+    @Body() dto: RemoveRoleDto,
   ): Promise<RemoveRoleResponse> {
-	return this.userService.removeRole(dto);
+    return this.userService.removeRole(dto);
   }
 }
