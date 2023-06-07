@@ -9,6 +9,7 @@ import {
   Post,
   Req,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { JwtGuard } from '../token/jwt.guard';
@@ -37,6 +38,9 @@ import { UserGetOrderListResponse } from './response/user-get-order-list.respons
 import { UserGetOrderResponse } from './response/user-get-order.response';
 import { UserCreateOrderResponse } from './response/user-create-order.response';
 import { GuestCreateOrderResponse } from './response/guest-create-order.response';
+import { TransactionInterceptor } from '../interceptors/transaction-interceptor';
+import { TransactionDecorator } from '../decorators/transaction-decorator';
+import { Transaction } from 'sequelize';
 
 @ApiTags(`Заказы`)
 @Controller('order')
@@ -51,9 +55,10 @@ export class OrderController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-all-order')
-  public async adminGetStoreOrderList(): Promise<
-	AdminGetStoreOrderListResponse[]
-  > {
+  @UseInterceptors(TransactionInterceptor)
+  public async adminGetStoreOrderList(
+	@TransactionDecorator() transaction: Transaction,
+  ): Promise<AdminGetStoreOrderListResponse[]> {
 	return this.orderService.adminGetStoreOrderList();
   }
 
@@ -63,8 +68,10 @@ export class OrderController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-all-order/user/:userId([0-9]+)')
+  @UseInterceptors(TransactionInterceptor)
   public async adminGetOrderListUser(
 	@Param('userId', ParseIntPipe) userId: number,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<AdminGetOrderListUserResponse[]> {
 	return this.orderService.adminGetOrderListUser(userId);
   }
@@ -75,8 +82,10 @@ export class OrderController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/admin/get-order/:orderId([0-9]+)')
+  @UseInterceptors(TransactionInterceptor)
   public async adminGetOrderUser(
 	@Param('orderId', ParseIntPipe) orderId: number,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<AdminGetOrderUserResponse> {
 	return this.orderService.adminGetOrderUser(orderId);
   }
@@ -87,8 +96,10 @@ export class OrderController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Post(`/admin/create-order`)
+  @UseInterceptors(TransactionInterceptor)
   public async adminCreateOrder(
 	@Body() dto: OrderDto,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<AdminCreateOrderResponse> {
 	return this.orderService.adminCreateOrder(dto);
   }
@@ -99,8 +110,10 @@ export class OrderController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Delete('/admin/delete-order/:orderId([0-9]+)')
+  @UseInterceptors(TransactionInterceptor)
   public async adminRemoveOrder(
 	@Param('orderId', ParseIntPipe) orderId: number,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<AdminRemoveOrderResponse> {
 	return this.orderService.adminRemoveOrder(orderId);
   }
@@ -113,8 +126,10 @@ export class OrderController {
   @Roles('USER')
   @UseGuards(JwtGuard, RoleGuard)
   @Get(`/user/get-all-order`)
+  @UseInterceptors(TransactionInterceptor)
   public async userGetOrderList(
 	@Req() request: Request,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<UserGetOrderListResponse[]> {
 	const { id } = request.user as RequestUserDto;
 	return this.orderService.userGetOrderList(id);
@@ -126,9 +141,11 @@ export class OrderController {
   @Roles('USER')
   @UseGuards(JwtGuard, RoleGuard)
   @Get(`/user/get-order/:orderId([0-9]+)`)
+  @UseInterceptors(TransactionInterceptor)
   public async userGetOrder(
 	@Req() request: Request,
 	@Param('orderId', ParseIntPipe) orderId: number,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<UserGetOrderResponse> {
 	const { id } = request.user as RequestUserDto;
 	return this.orderService.userGetOrder(orderId, id);
@@ -139,9 +156,11 @@ export class OrderController {
   @Roles('USER')
   @UseGuards(JwtGuard, RoleGuard)
   @Post('/user/create-order')
+  @UseInterceptors(TransactionInterceptor)
   public async userCreateOrder(
 	@Req() request: Request,
 	@Body() dto: Omit<OrderDto, 'userId'>,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<UserCreateOrderResponse> {
 	const { id } = request.user as RequestUserDto;
 	const { cartId } = request.signedCookies as RequestSignedCookiesDto;
@@ -153,9 +172,11 @@ export class OrderController {
   @GuestCreateOrderDocumentation()
   @HttpCode(201)
   @Post('/guest/create-order')
+  @UseInterceptors(TransactionInterceptor)
   public async guestCreateOrder(
 	@Req() request: Request,
 	@Body() dto: OrderDto,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<GuestCreateOrderResponse> {
 	const { cartId } = request.signedCookies;
 	return this.orderService.guestCreateOrder(dto, undefined, cartId);
