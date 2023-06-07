@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -26,6 +27,9 @@ import { ListAllCategoriesResponse } from './responses/list-all-categories.respo
 import { CategoryResponse } from './responses/category.response';
 import { UpdateCategoryResponse } from './responses/update-category.response';
 import { RemoveCategoryResponse } from './responses/remove-category.response';
+import { TransactionInterceptor } from '../interceptors/transaction-interceptor';
+import { TransactionDecorator } from '../decorators/transaction-decorator';
+import { Transaction } from 'sequelize';
 
 @ApiTags(`Категория`)
 @Controller('category')
@@ -37,26 +41,33 @@ export class CategoryController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Post('/create')
+  @UseInterceptors(TransactionInterceptor)
   public async createCategory(
-	@Body() dto: CreateCategoryDto,
+    @Body() dto: CreateCategoryDto,
+    @TransactionDecorator() transaction: Transaction,
   ): Promise<CreateCategoryResponse> {
-	return this.categoryService.createCategory(dto);
+    return this.categoryService.createCategory(dto);
   }
 
   @GetListAllCategoriesDocumentation()
-  @Get('/categories')
   @HttpCode(200)
-  public async getListAllCategories(): Promise<ListAllCategoriesResponse[]> {
-	return this.categoryService.getListAllCategories();
+  @Get('/categories')
+  @UseInterceptors(TransactionInterceptor)
+  public async getListAllCategories(
+    @TransactionDecorator() transaction: Transaction,
+  ): Promise<ListAllCategoriesResponse[]> {
+    return this.categoryService.getListAllCategories();
   }
 
   @GetCategoryDocumentation()
-  @Get('/one/:id([0-9]+)')
   @HttpCode(200)
+  @Get('/one/:id([0-9]+)')
+  @UseInterceptors(TransactionInterceptor)
   public async getCategory(
-	@Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIntPipe) id: number,
+    @TransactionDecorator() transaction: Transaction,
   ): Promise<CategoryResponse> {
-	return this.categoryService.getCategory(id);
+    return this.categoryService.getCategory(id);
   }
 
   @UpdateCategoryDocumentation()
@@ -64,11 +75,13 @@ export class CategoryController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Put('/update/:id([0-9]+)')
+  @UseInterceptors(TransactionInterceptor)
   public async updateCategory(
-	@Param('id', ParseIntPipe) id: number,
-	@Body() dto: CreateCategoryDto,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateCategoryDto,
+    @TransactionDecorator() transaction: Transaction,
   ): Promise<UpdateCategoryResponse> {
-	return this.categoryService.updateCategory(id, dto);
+    return this.categoryService.updateCategory(id, dto);
   }
 
   @RemoveCategoryDocumentation()
@@ -76,9 +89,11 @@ export class CategoryController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Delete('/delete/:id([0-9]+)')
+  @UseInterceptors(TransactionInterceptor)
   public async removeCategory(
-	@Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIntPipe) id: number,
+    @TransactionDecorator() transaction: Transaction,
   ): Promise<RemoveCategoryResponse> {
-	return this.categoryService.removeCategory(id);
+    return this.categoryService.removeCategory(id);
   }
 }
