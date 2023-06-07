@@ -38,12 +38,12 @@ export class CartController {
   @Get('/get-cart')
   @UseInterceptors(TransactionInterceptor)
   public async getCart(
-    @Req() request: Request,
-    // passthrough: true дает возможность использовать не только cookie, но и другие возможности framework
-    @Res({ passthrough: true }) response: Response,
-    @TransactionDecorator() transaction: Transaction,
+	@Req() request: Request,
+	// passthrough: true дает возможность использовать не только cookie, но и другие возможности framework
+	@Res({ passthrough: true }) response: Response,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<CartResponse> {
-    return this.cartService.getCart(request, response);
+	return this.cartService.getCart(request, response);
   }
 
   @AppendToCartDocumentation()
@@ -51,16 +51,16 @@ export class CartController {
   @Put('/product/:productId([0-9]+)/append/:quantity([0-9]+)')
   @UseInterceptors(TransactionInterceptor)
   public async appendToCart(
-    @Req() request: Request,
-    @Res({ passthrough: true }) response: Response,
-    @Param('productId', ParseIntPipe) productId: number,
-    @Param('quantity', ParseIntPipe) quantity: number,
-    @TransactionDecorator() transaction: Transaction,
+	@Req() request: Request,
+	@Res({ passthrough: true }) response: Response,
+	@Param('productId', ParseIntPipe) productId: number,
+	@Param('quantity', ParseIntPipe) quantity: number,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<AppendToCartResponse> {
-    return this.cartService.appendToCart(request, response, {
-      productId,
-      quantity,
-    });
+	return this.cartService.appendToCart(request, response, {
+		productId,
+		quantity,
+	});
   }
 
   @IncrementDocumentation()
@@ -68,16 +68,16 @@ export class CartController {
   @Put('/product/:productId([0-9]+)/increment/:quantity([0-9]+)')
   @UseInterceptors(TransactionInterceptor)
   public async increment(
-    @Req() request: Request,
-    @Res({ passthrough: true }) response: Response,
-    @Param('productId', ParseIntPipe) productId: number,
-    @Param('quantity', ParseIntPipe) quantity: number,
-    @TransactionDecorator() transaction: Transaction,
+	@Req() request: Request,
+	@Res({ passthrough: true }) response: Response,
+	@Param('productId', ParseIntPipe) productId: number,
+	@Param('quantity', ParseIntPipe) quantity: number,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<IncrementResponse> {
-    return this.cartService.increment(request, response, {
-      productId,
-      quantity,
-    });
+	return this.cartService.increment(request, response, {
+		productId,
+		quantity,
+	});
   }
 
   @DecrementDocumentation()
@@ -85,16 +85,16 @@ export class CartController {
   @Put('/product/:productId([0-9]+)/decrement/:quantity([0-9]+)')
   @UseInterceptors(TransactionInterceptor)
   public async decrement(
-    @Req() request: Request,
-    @Res({ passthrough: true }) response: Response,
-    @Param('productId', ParseIntPipe) productId: number,
-    @Param('quantity', ParseIntPipe) quantity: number,
-    @TransactionDecorator() transaction: Transaction,
+	@Req() request: Request,
+	@Res({ passthrough: true }) response: Response,
+	@Param('productId', ParseIntPipe) productId: number,
+	@Param('quantity', ParseIntPipe) quantity: number,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<DecrementResponse> {
-    return this.cartService.decrement(request, response, {
-      productId,
-      quantity,
-    });
+	return this.cartService.decrement(request, response, {
+		productId,
+		quantity,
+	});
   }
 
   @RemoveProductFromCartDocumentation()
@@ -102,14 +102,14 @@ export class CartController {
   @Put('/product/:productId([0-9]+)/remove')
   @UseInterceptors(TransactionInterceptor)
   public async removeProductFromCart(
-    @Req() request: Request,
-    @Res({ passthrough: true }) response: Response,
-    @Param('productId', ParseIntPipe) productId: number,
-    @TransactionDecorator() transaction: Transaction,
+	@Req() request: Request,
+	@Res({ passthrough: true }) response: Response,
+	@Param('productId', ParseIntPipe) productId: number,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<RemoveProductFromCartResponse> {
-    return this.cartService.removeProductFromCart(request, response, {
-      productId,
-    });
+	return this.cartService.removeProductFromCart(request, response, {
+		productId,
+	});
   }
 
   @ClearCartDocumentation()
@@ -117,10 +117,10 @@ export class CartController {
   @Put('/clear')
   @UseInterceptors(TransactionInterceptor)
   public async clearCart(
-    @Req() request: Request,
-    @Res({ passthrough: true }) response: Response,
-    @TransactionDecorator() transaction: Transaction,
+	@Req() request: Request,
+	@Res({ passthrough: true }) response: Response,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<ClearCartResponse> {
-    return this.cartService.clearCart(request, response);
+	return this.cartService.clearCart(request, response);
   }
 }

@@ -43,10 +43,10 @@ export class CategoryController {
   @Post('/create')
   @UseInterceptors(TransactionInterceptor)
   public async createCategory(
-    @Body() dto: CreateCategoryDto,
-    @TransactionDecorator() transaction: Transaction,
+	@Body() dto: CreateCategoryDto,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<CreateCategoryResponse> {
-    return this.categoryService.createCategory(dto);
+	return this.categoryService.createCategory(dto);
   }
 
   @GetListAllCategoriesDocumentation()
@@ -54,9 +54,9 @@ export class CategoryController {
   @Get('/categories')
   @UseInterceptors(TransactionInterceptor)
   public async getListAllCategories(
-    @TransactionDecorator() transaction: Transaction,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<ListAllCategoriesResponse[]> {
-    return this.categoryService.getListAllCategories();
+	return this.categoryService.getListAllCategories();
   }
 
   @GetCategoryDocumentation()
@@ -64,10 +64,10 @@ export class CategoryController {
   @Get('/one/:id([0-9]+)')
   @UseInterceptors(TransactionInterceptor)
   public async getCategory(
-    @Param('id', ParseIntPipe) id: number,
-    @TransactionDecorator() transaction: Transaction,
+	@Param('id', ParseIntPipe) id: number,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<CategoryResponse> {
-    return this.categoryService.getCategory(id);
+	return this.categoryService.getCategory(id);
   }
 
   @UpdateCategoryDocumentation()
@@ -77,11 +77,11 @@ export class CategoryController {
   @Put('/update/:id([0-9]+)')
   @UseInterceptors(TransactionInterceptor)
   public async updateCategory(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: CreateCategoryDto,
-    @TransactionDecorator() transaction: Transaction,
+	@Param('id', ParseIntPipe) id: number,
+	@Body() dto: CreateCategoryDto,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<UpdateCategoryResponse> {
-    return this.categoryService.updateCategory(id, dto);
+	return this.categoryService.updateCategory(id, dto);
   }
 
   @RemoveCategoryDocumentation()
@@ -91,9 +91,9 @@ export class CategoryController {
   @Delete('/delete/:id([0-9]+)')
   @UseInterceptors(TransactionInterceptor)
   public async removeCategory(
-    @Param('id', ParseIntPipe) id: number,
-    @TransactionDecorator() transaction: Transaction,
+	@Param('id', ParseIntPipe) id: number,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<RemoveCategoryResponse> {
-    return this.categoryService.removeCategory(id);
+	return this.categoryService.removeCategory(id);
   }
 }
