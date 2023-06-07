@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { RoleService } from './role.service';
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -19,6 +20,9 @@ import { GetRoleDocumentation } from './decorators/get-role.documentation';
 import { CreateRoleResponse } from './responses/create-role.response';
 import { GetRoleResponse } from './responses/get-role.response';
 import { GetListRoleResponse } from './responses/get-list-role.response';
+import { TransactionInterceptor } from '../interceptors/transaction-interceptor';
+import { TransactionDecorator } from '../decorators/transaction-decorator';
+import { Transaction } from 'sequelize';
 
 @ApiTags(`Роль`)
 @Controller('role')
@@ -30,8 +34,10 @@ export class RoleController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Post(`/create`)
+  @UseInterceptors(TransactionInterceptor)
   public async createRole(
 	@Body() dto: CreateRoleDto,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<CreateRoleResponse> {
 	return this.roleService.createRole(dto);
   }
@@ -41,7 +47,11 @@ export class RoleController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/one/:role')
-  public async getRole(@Param('role') role: string): Promise<GetRoleResponse> {
+  @UseInterceptors(TransactionInterceptor)
+  public async getRole(
+	@Param('role') role: string,
+	@TransactionDecorator() transaction: Transaction,
+  ): Promise<GetRoleResponse> {
 	return this.roleService.getRole(role);
   }
 
@@ -50,7 +60,10 @@ export class RoleController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/list')
-  public async getListRole(): Promise<GetListRoleResponse[]> {
+  @UseInterceptors(TransactionInterceptor)
+  public async getListRole(
+	@TransactionDecorator() transaction: Transaction,
+  ): Promise<GetListRoleResponse[]> {
 	return this.roleService.getListRole();
   }
 }
