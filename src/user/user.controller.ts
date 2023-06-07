@@ -49,10 +49,10 @@ export class UserController {
   @Post('/create')
   @UseInterceptors(TransactionInterceptor)
   public async createUser(
-    @Body() dto: CreateUserDto,
-    @TransactionDecorator() transaction: Transaction,
+	@Body() dto: CreateUserDto,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<CreateUserResponse> {
-    return this.userService.createUser(dto);
+	return this.userService.createUser(dto);
   }
 
   @GetListUsersDocumentation()
@@ -60,8 +60,11 @@ export class UserController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get(`/get-list-users`)
-  public async getListUsers(): Promise<GetListUsersResponse[]> {
-    return this.userService.getListUsers();
+  @UseInterceptors(TransactionInterceptor)
+  public async getListUsers(
+	@TransactionDecorator() transaction: Transaction,
+  ): Promise<GetListUsersResponse[]> {
+	return this.userService.getListUsers();
   }
 
   @GetUserDocumentation()
@@ -69,10 +72,12 @@ export class UserController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Get('/:id')
+  @UseInterceptors(TransactionInterceptor)
   public async getUser(
-    @Param('id', ParseIntPipe) id: number,
+	@Param('id', ParseIntPipe) id: number,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<GetUserResponse> {
-    return this.userService.getUser(id);
+	return this.userService.getUser(id);
   }
 
   @UpdateUserDocumentation()
@@ -80,11 +85,13 @@ export class UserController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Put('/update/:id')
+  @UseInterceptors(TransactionInterceptor)
   public async updateUser(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: CreateUserDto,
+	@Param('id', ParseIntPipe) id: number,
+	@Body() dto: CreateUserDto,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<UpdateUserResponse> {
-    return this.userService.updateUser(id, dto);
+	return this.userService.updateUser(id, dto);
   }
 
   @RemoveUserDocumentation()
@@ -92,10 +99,12 @@ export class UserController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Delete('/delete/:id')
+  @UseInterceptors(TransactionInterceptor)
   public async removeUser(
-    @Param('id', ParseIntPipe) id: number,
+	@Param('id', ParseIntPipe) id: number,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<RemoveUserResponse> {
-    return this.userService.removeUser(id);
+	return this.userService.removeUser(id);
   }
 
   @AddRoleUserDocumentation()
@@ -103,8 +112,12 @@ export class UserController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Post('/role/add')
-  public async addRole(@Body() dto: AddRoleDto): Promise<AddRoleResponse> {
-    return this.userService.addRole(dto);
+  @UseInterceptors(TransactionInterceptor)
+  public async addRole(
+	@Body() dto: AddRoleDto,
+	@TransactionDecorator() transaction: Transaction,
+  ): Promise<AddRoleResponse> {
+	return this.userService.addRole(dto);
   }
 
   @RemoveRoleUserDocumentation()
@@ -112,9 +125,11 @@ export class UserController {
   @Roles('ADMIN')
   @UseGuards(JwtGuard, RoleGuard)
   @Delete('/role/delete')
+  @UseInterceptors(TransactionInterceptor)
   public async removeRole(
-    @Body() dto: RemoveRoleDto,
+	@Body() dto: RemoveRoleDto,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<RemoveRoleResponse> {
-    return this.userService.removeRole(dto);
+	return this.userService.removeRole(dto);
   }
 }
