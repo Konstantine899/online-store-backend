@@ -7,6 +7,7 @@ import {
   Post,
   Req,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
@@ -27,6 +28,9 @@ import { RegistrationResponse } from './responses/registration.response';
 import { UpdateAccessTokenResponse } from './responses/update-access-token.response';
 import { LoginCheckResponse } from './responses/login-check.response';
 import { LogoutResponse } from './responses/logout.response';
+import { TransactionInterceptor } from '../interceptors/transaction-interceptor';
+import { TransactionDecorator } from '../decorators/transaction-decorator';
+import { Transaction } from 'sequelize';
 
 @ApiTags(`Аутентификация`)
 @Controller('auth')
@@ -39,23 +43,31 @@ export class AuthController {
   @RegistrationDocumentation()
   @HttpCode(201)
   @Post('/registration')
+  @UseInterceptors(TransactionInterceptor)
   public async registration(
 	@Body() dto: RegistrationDto,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<RegistrationResponse> {
 	return this.authService.registration(dto);
   }
   @LoginDocumentation()
   @HttpCode(200)
   @Post('/login')
-  public async login(@Body() dto: LoginDto): Promise<LoginResponse> {
+  @UseInterceptors(TransactionInterceptor)
+  public async login(
+	@Body() dto: LoginDto,
+	@TransactionDecorator() transaction: Transaction,
+  ): Promise<LoginResponse> {
 	return this.authService.login(dto);
   }
 
   @UpdateAccessTokenDocumentation()
   @HttpCode(201)
   @Post('/refresh')
+  @UseInterceptors(TransactionInterceptor)
   public async updateAccessToken(
 	@Body() dto: RefreshDto,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<UpdateAccessTokenResponse> {
 	return this.authService.updateAccessToken(dto.refreshToken);
   }
@@ -63,8 +75,10 @@ export class AuthController {
   @LoginCheckDocumentation()
   @UseGuards(JwtGuard)
   @Get('/login-check')
+  @UseInterceptors(TransactionInterceptor)
   public async loginCheck(
 	@Req() request: Request,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<LoginCheckResponse> {
 	const { id } = request.user as LoginCheckRequest;
 	return this.userService.loginCheck(id);
@@ -73,9 +87,11 @@ export class AuthController {
   @LogoutDocumentation()
   @UseGuards(JwtGuard)
   @Delete('/logout')
+  @UseInterceptors(TransactionInterceptor)
   public async logout(
 	@Req() request: Request,
 	@Body() refresh: RefreshDto,
+	@TransactionDecorator() transaction: Transaction,
   ): Promise<LogoutResponse> {
 	return this.authService.logout(refresh, request);
   }
