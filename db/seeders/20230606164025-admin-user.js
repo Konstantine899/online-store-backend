@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface) {
-    await queryInterface.bulkInsert(`User`, [
+    await queryInterface.bulkInsert(`user`, [
       {
         email: 'kostay375298918971@gmail.com',
         password: await bcrypt.hash('123456', 10),
@@ -30,6 +30,6 @@ module.exports = {
   async down(queryInterface) {
     await queryInterface.sequelize.query('SET FOREIGN_KEY_CHECKS=0;'); // Отключаю проверку внешнего ключа
     await queryInterface.bulkDelete(`user-role`, null, {});
-    await queryInterface.bulkDelete(`User`, null, {});
+    await queryInterface.bulkDelete(`user`, null, {});
   },
 };
