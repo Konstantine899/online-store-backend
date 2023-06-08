@@ -22,7 +22,10 @@ async function bootstrap() {
   );
   app.enableCors({
 	credentials: true,
-	origin: [`http://localhost:5000/online-store`],
+	origin: [
+		`http://localhost:5000/online-store`,
+		`http://localhost:3000/online-store`,
+	],
   });
   app.use(cookieParser(process.env.COOKIE_PARSER_SECRET_KEY));
   swaggerConfig(app);
