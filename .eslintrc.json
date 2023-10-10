@@ -24,7 +24,8 @@
         "endOfLine": "auto"
       }
     ],
-
+    "no-undef": "warn",
+    "@typescript-eslint/no-var-requires": "warn",
     "@typescript-eslint/ban-types": "off",
     "@typescript-eslint/no-explicit-any": "warn",
     "unused-imports/no-unused-imports": "error",

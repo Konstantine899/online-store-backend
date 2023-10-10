@@ -26,17 +26,28 @@ interface IUserCreationAttributes {
     },
 })
 export class UserModel extends Model<UserModel, IUserCreationAttributes> {
-    @Column({ type: DataType.INTEGER, primaryKey: true, autoIncrement: true })
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
     id: number;
 
-    @Column({ type: DataType.STRING, unique: true })
+    @Column({
+        type: DataType.STRING,
+        unique: true,
+    })
     email: string;
 
     @Column({ type: DataType.STRING })
     password: string;
 
     // Многие ко многим через промежуточную таблицу UserRoleModel
-    @BelongsToMany(() => RoleModel, () => UserRoleModel)
+    @BelongsToMany(() => RoleModel, {
+        through: () => UserRoleModel,
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+    })
     roles: RoleModel[];
 
     //У одного пользователя могут быть несколько refresh tokens
