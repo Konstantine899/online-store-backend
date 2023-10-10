@@ -10,12 +10,12 @@ import { JwtGuard } from './jwt.guard';
 import { jwtConfig } from '../config/jwt.config';
 
 @Module({
-  imports: [
-	JwtModule.registerAsync(jwtConfig),
-	SequelizeModule.forFeature([RefreshTokenModel]),
-	UserModule,
-  ],
-  providers: [TokenService, RefreshTokenRepository, JwtStrategy, JwtGuard],
-  exports: [TokenService, JwtStrategy, JwtGuard],
+    imports: [
+        JwtModule.registerAsync(jwtConfig),
+        SequelizeModule.forFeature([RefreshTokenModel]),
+        UserModule,
+    ],
+    providers: [TokenService, RefreshTokenRepository, JwtStrategy, JwtGuard],
+    exports: [TokenService, JwtStrategy, JwtGuard],
 })
 export class TokenModule {}

@@ -1,15 +1,14 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  ParseIntPipe,
-  Post,
-  Put,
-  UseGuards,
-  UseInterceptors,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    Param,
+    ParseIntPipe,
+    Post,
+    Put,
+    UseGuards,
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -27,73 +26,59 @@ import { ListAllCategoriesResponse } from './responses/list-all-categories.respo
 import { CategoryResponse } from './responses/category.response';
 import { UpdateCategoryResponse } from './responses/update-category.response';
 import { RemoveCategoryResponse } from './responses/remove-category.response';
-import { TransactionInterceptor } from '../interceptors/transaction-interceptor';
-import { TransactionDecorator } from '../decorators/transaction-decorator';
-import { Transaction } from 'sequelize';
 
-@ApiTags(`Категория`)
+@ApiTags('Категория')
 @Controller('category')
 export class CategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+    constructor(private readonly categoryService: CategoryService) {}
 
-  @CreateCategoryDocumentation()
-  @HttpCode(201)
-  @Roles('ADMIN')
-  @UseGuards(JwtGuard, RoleGuard)
-  @Post('/create')
-  @UseInterceptors(TransactionInterceptor)
-  public async createCategory(
-	@Body() dto: CreateCategoryDto,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<CreateCategoryResponse> {
-	return this.categoryService.createCategory(dto);
-  }
+    @CreateCategoryDocumentation()
+    @HttpCode(201)
+    @Roles('ADMIN')
+    @UseGuards(JwtGuard, RoleGuard)
+    @Post('/create')
+    public async createCategory(
+        @Body() dto: CreateCategoryDto,
+    ): Promise<CreateCategoryResponse> {
+        return this.categoryService.createCategory(dto);
+    }
 
-  @GetListAllCategoriesDocumentation()
-  @HttpCode(200)
-  @Get('/categories')
-  @UseInterceptors(TransactionInterceptor)
-  public async getListAllCategories(
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<ListAllCategoriesResponse[]> {
-	return this.categoryService.getListAllCategories();
-  }
+    @GetListAllCategoriesDocumentation()
+    @HttpCode(200)
+    @Get('/categories')
+    public async getListAllCategories(): Promise<ListAllCategoriesResponse[]> {
+        return this.categoryService.getListAllCategories();
+    }
 
-  @GetCategoryDocumentation()
-  @HttpCode(200)
-  @Get('/one/:id([0-9]+)')
-  @UseInterceptors(TransactionInterceptor)
-  public async getCategory(
-	@Param('id', ParseIntPipe) id: number,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<CategoryResponse> {
-	return this.categoryService.getCategory(id);
-  }
+    @GetCategoryDocumentation()
+    @HttpCode(200)
+    @Get('/one/:id([0-9]+)')
+    public async getCategory(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<CategoryResponse> {
+        return this.categoryService.getCategory(id);
+    }
 
-  @UpdateCategoryDocumentation()
-  @HttpCode(200)
-  @Roles('ADMIN')
-  @UseGuards(JwtGuard, RoleGuard)
-  @Put('/update/:id([0-9]+)')
-  @UseInterceptors(TransactionInterceptor)
-  public async updateCategory(
-	@Param('id', ParseIntPipe) id: number,
-	@Body() dto: CreateCategoryDto,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<UpdateCategoryResponse> {
-	return this.categoryService.updateCategory(id, dto);
-  }
+    @UpdateCategoryDocumentation()
+    @HttpCode(200)
+    @Roles('ADMIN')
+    @UseGuards(JwtGuard, RoleGuard)
+    @Put('/update/:id([0-9]+)')
+    public async updateCategory(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() dto: CreateCategoryDto,
+    ): Promise<UpdateCategoryResponse> {
+        return this.categoryService.updateCategory(id, dto);
+    }
 
-  @RemoveCategoryDocumentation()
-  @HttpCode(200)
-  @Roles('ADMIN')
-  @UseGuards(JwtGuard, RoleGuard)
-  @Delete('/delete/:id([0-9]+)')
-  @UseInterceptors(TransactionInterceptor)
-  public async removeCategory(
-	@Param('id', ParseIntPipe) id: number,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<RemoveCategoryResponse> {
-	return this.categoryService.removeCategory(id);
-  }
+    @RemoveCategoryDocumentation()
+    @HttpCode(200)
+    @Roles('ADMIN')
+    @UseGuards(JwtGuard, RoleGuard)
+    @Delete('/delete/:id([0-9]+)')
+    public async removeCategory(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<RemoveCategoryResponse> {
+        return this.categoryService.removeCategory(id);
+    }
 }

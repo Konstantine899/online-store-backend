@@ -9,12 +9,12 @@ import { ProductModule } from '../product/product.module';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
-  imports: [
-	SequelizeModule.forFeature([ProductPropertyModel, ProductModel]),
-	ProductModule,
-	JwtModule,
-  ],
-  providers: [ProductPropertyRepository, ProductPropertyService],
-  controllers: [ProductPropertyController],
+    imports: [
+        SequelizeModule.forFeature([ProductPropertyModel, ProductModel]),
+        ProductModule,
+        JwtModule,
+    ],
+    providers: [ProductPropertyRepository, ProductPropertyService],
+    controllers: [ProductPropertyController],
 })
 export class ProductPropertyModule {}

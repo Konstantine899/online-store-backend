@@ -5,39 +5,39 @@ import { CreateRatingResponse } from './responses/create-rating.response';
 
 @Injectable()
 export class RatingRepository {
-  constructor(
-	@InjectModel(RatingModel) private ratingModel: typeof RatingModel,
-  ) {}
+    constructor(
+        @InjectModel(RatingModel) private ratingModel: typeof RatingModel,
+    ) {}
 
-  public async createRating(
-	userId: number,
-	productId: number,
-	rating: number,
-  ): Promise<CreateRatingResponse> {
-	const productRating = new RatingModel();
-	productRating.userId = userId;
-	productRating.productId = productId;
-	productRating.rating = rating;
-	return productRating.save();
-  }
+    public async createRating(
+        userId: number,
+        productId: number,
+        rating: number,
+    ): Promise<CreateRatingResponse> {
+        const productRating = new RatingModel();
+        productRating.userId = userId;
+        productRating.productId = productId;
+        productRating.rating = rating;
+        return productRating.save();
+    }
 
-  public async findVote(
-	userId: number,
-	productId: number,
-	rating: number,
-  ): Promise<RatingModel> {
-	return this.ratingModel.findOne({
-		where: { userId, productId, rating },
-	});
-  }
+    public async findVote(
+        userId: number,
+        productId: number,
+        rating: number,
+    ): Promise<RatingModel> {
+        return this.ratingModel.findOne({
+            where: { userId, productId, rating },
+        });
+    }
 
-  public async countRating(productId: number): Promise<number> {
-	return this.ratingModel.count({
-		where: { productId },
-	});
-  }
+    public async countRating(productId: number): Promise<number> {
+        return this.ratingModel.count({
+            where: { productId },
+        });
+    }
 
-  public async ratingsSum(productId: number): Promise<number> {
-	return this.ratingModel.sum('rating', { where: { productId } });
-  }
+    public async ratingsSum(productId: number): Promise<number> {
+        return this.ratingModel.sum('rating', { where: { productId } });
+    }
 }

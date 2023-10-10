@@ -9,35 +9,35 @@ import { UpdateCategoryResponse } from './responses/update-category.response';
 
 @Injectable()
 export class CategoryRepository {
-  constructor(
-	@InjectModel(CategoryModel)
-	private categoryModel: typeof CategoryModel,
-  ) {}
+    constructor(
+        @InjectModel(CategoryModel)
+        private categoryModel: typeof CategoryModel,
+    ) {}
 
-  public async createCategory(
-	dto: CreateCategoryDto,
-  ): Promise<CreateCategoryResponse> {
-	const category = new CategoryModel();
-	category.name = dto.name;
-	return category.save();
-  }
+    public async createCategory(
+        dto: CreateCategoryDto,
+    ): Promise<CreateCategoryResponse> {
+        const category = new CategoryModel();
+        category.name = dto.name;
+        return category.save();
+    }
 
-  public async findListAllCategories(): Promise<ListAllCategoriesResponse[]> {
-	return this.categoryModel.findAll();
-  }
+    public async findListAllCategories(): Promise<ListAllCategoriesResponse[]> {
+        return this.categoryModel.findAll();
+    }
 
-  public async findCategory(id: number): Promise<CategoryResponse> {
-	return this.categoryModel.findByPk(id);
-  }
+    public async findCategory(id: number): Promise<CategoryResponse> {
+        return this.categoryModel.findByPk(id);
+    }
 
-  public async updateCategory(
-	dto: CreateCategoryDto,
-	category: CategoryModel,
-  ): Promise<UpdateCategoryResponse> {
-	return category.update({ ...dto, name: dto.name });
-  }
+    public async updateCategory(
+        dto: CreateCategoryDto,
+        category: CategoryModel,
+    ): Promise<UpdateCategoryResponse> {
+        return category.update({ ...dto, name: dto.name });
+    }
 
-  public async removeCategory(id: number): Promise<number> {
-	return this.categoryModel.destroy({ where: { id } });
-  }
+    public async removeCategory(id: number): Promise<number> {
+        return this.categoryModel.destroy({ where: { id } });
+    }
 }

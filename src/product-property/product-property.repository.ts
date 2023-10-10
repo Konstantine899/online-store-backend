@@ -9,43 +9,46 @@ import { UpdateProductPropertyResponse } from './decorators/update-product-prope
 
 @Injectable()
 export class ProductPropertyRepository {
-  constructor(
-	@InjectModel(ProductPropertyModel)
-	private productPropertyModel: typeof ProductPropertyModel,
-  ) {}
+    constructor(
+        @InjectModel(ProductPropertyModel)
+        private productPropertyModel: typeof ProductPropertyModel,
+    ) {}
 
-  public async create(productId, dto): Promise<CreateProductPropertyResponse> {
-	return this.productPropertyModel.create({
-		productId,
-		...dto,
-	});
-  }
+    public async create(
+        productId,
+        dto,
+    ): Promise<CreateProductPropertyResponse> {
+        return this.productPropertyModel.create({
+            productId,
+            ...dto,
+        });
+    }
 
-  public async findOneProductProperty(
-	productId,
-	id,
-  ): Promise<GetProductPropertyResponse> {
-	return this.productPropertyModel.findOne({
-		where: { productId, id },
-	});
-  }
+    public async findOneProductProperty(
+        productId,
+        id,
+    ): Promise<GetProductPropertyResponse> {
+        return this.productPropertyModel.findOne({
+            where: { productId, id },
+        });
+    }
 
-  public async findListProductProperty(
-	productId: number,
-  ): Promise<GetListProductPropertyResponse[]> {
-	return this.productPropertyModel.findAll({
-		where: { productId },
-	});
-  }
+    public async findListProductProperty(
+        productId: number,
+    ): Promise<GetListProductPropertyResponse[]> {
+        return this.productPropertyModel.findAll({
+            where: { productId },
+        });
+    }
 
-  public async updateProductProperty(
-	property: ProductPropertyModel,
-	dto: CreateProductPropertyDto,
-  ): Promise<UpdateProductPropertyResponse> {
-	return property.update({ ...dto, name: dto.name, value: dto.value });
-  }
+    public async updateProductProperty(
+        property: ProductPropertyModel,
+        dto: CreateProductPropertyDto,
+    ): Promise<UpdateProductPropertyResponse> {
+        return property.update({ ...dto, name: dto.name, value: dto.value });
+    }
 
-  public async removeProductProperty(id: number): Promise<number> {
-	return this.productPropertyModel.destroy({ where: { id } });
-  }
+    public async removeProductProperty(id: number): Promise<number> {
+        return this.productPropertyModel.destroy({ where: { id } });
+    }
 }

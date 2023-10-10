@@ -6,12 +6,12 @@ import { Type } from 'class-transformer';
 import { TransformResponse } from './transform.response';
 
 export class AppendToCartResponse implements ITransformData {
-  @ApiProperty({ example: 26, description: `Идентификатор корзины` })
-  readonly cartId: number;
+    @ApiProperty({ example: 26, description: 'Идентификатор корзины' })
+    readonly cartId: number;
 
-  @ApiProperty({ type: () => [TransformResponse] })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => TransformResponse)
-  readonly products: ProductModel[];
+    @ApiProperty({ type: () => [TransformResponse] })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => TransformResponse)
+    readonly products: ProductModel[];
 }

@@ -1,6 +1,6 @@
 import {
-  SequelizeModuleOptions,
-  SequelizeOptionsFactory,
+    SequelizeModuleOptions,
+    SequelizeOptionsFactory,
 } from '@nestjs/sequelize';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -20,42 +20,42 @@ import { OrderItemModel } from '../../order-item/order-item.model';
 
 @Injectable()
 export class SequelizeConfigService implements SequelizeOptionsFactory {
-  constructor(private readonly configService: ConfigService) {}
+    constructor(private readonly configService: ConfigService) {}
 
-  createSequelizeOptions(): SequelizeModuleOptions {
-	const {
-		sql: { dialect, host, port, username, password, database },
-	} = this.configService.get(`online-store`);
+    createSequelizeOptions(): SequelizeModuleOptions {
+        const {
+            sql: { dialect, host, port, username, password, database },
+        } = this.configService.get('online-store');
 
-	return {
-		dialect,
-		host,
-		port,
-		username,
-		password,
-		database,
-		models: [
-		ProductModel,
-		CategoryModel,
-		BrandModel,
-		ProductPropertyModel,
-		UserModel,
-		RoleModel,
-		UserRoleModel,
-		RefreshTokenModel,
-		CartModel,
-		CartProductModel,
-		RatingModel,
-		OrderModel,
-		OrderItemModel,
-		],
-		autoLoadModels: true,
-		synchronize: true,
+        return {
+            dialect,
+            host,
+            port,
+            username,
+            password,
+            database,
+            models: [
+                ProductModel,
+                CategoryModel,
+                BrandModel,
+                ProductPropertyModel,
+                UserModel,
+                RoleModel,
+                UserRoleModel,
+                RefreshTokenModel,
+                CartModel,
+                CartProductModel,
+                RatingModel,
+                OrderModel,
+                OrderItemModel,
+            ],
+            autoLoadModels: true,
+            synchronize: true,
 
-		define: {
-		charset: 'utf8mb4',
-		collate: 'utf8mb4_0900_ai_ci',
-		},
-	};
-  }
+            define: {
+                charset: 'utf8mb4',
+                collate: 'utf8mb4_0900_ai_ci',
+            },
+        };
+    }
 }

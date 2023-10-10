@@ -6,27 +6,27 @@ import appConfig from '../config/app.config';
 import { LoginCheckResponse } from '../auth/responses/login-check.response';
 
 export interface IAccessTokenSubject {
-  sub: number; // сокращение от subject
+    sub: number; // сокращение от subject
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly userService: UserService) {
-	super({
-		jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-		ignoreExpiration: false,
-		secretOrKey: appConfig().jwtSecretKey,
-		signOptions: { expiresIn: '24h' },
-	});
-  }
+    constructor(private readonly userService: UserService) {
+        super({
+            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            ignoreExpiration: false,
+            secretOrKey: appConfig().jwtSecretKey,
+            signOptions: { expiresIn: '24h' },
+        });
+    }
 
-  public async validate(
-	payload: IAccessTokenSubject,
-  ): Promise<LoginCheckResponse> {
-	const user = await this.userService.loginCheck(payload.sub);
-	if (!user) {
-		return null;
-	}
-	return user;
-  }
+    public async validate(
+        payload: IAccessTokenSubject,
+    ): Promise<LoginCheckResponse> {
+        const user = await this.userService.loginCheck(payload.sub);
+        if (!user) {
+            return null;
+        }
+        return user;
+    }
 }

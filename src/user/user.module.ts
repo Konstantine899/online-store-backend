@@ -10,13 +10,13 @@ import { RatingModel } from '../rating/rating.model';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
-  imports: [
-	SequelizeModule.forFeature([UserModel, RoleModel, RatingModel]),
-	RoleModule,
-	JwtModule,
-  ],
-  controllers: [UserController],
-  providers: [UserService, UserRepository],
-  exports: [UserService, UserRepository],
+    imports: [
+        SequelizeModule.forFeature([UserModel, RoleModel, RatingModel]),
+        RoleModule,
+        JwtModule,
+    ],
+    controllers: [UserController],
+    providers: [UserService, UserRepository],
+    exports: [UserService, UserRepository],
 })
 export class UserModule {}

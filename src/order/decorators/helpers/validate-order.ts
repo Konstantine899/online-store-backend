@@ -1,88 +1,88 @@
 import { HttpStatus } from '@nestjs/common';
 
 export function validateOrder() {
-  return {
-	description: `Bad Request`,
-	status: HttpStatus.BAD_REQUEST,
-	schema: {
-		title: `Валидация`,
-		anyOf: [
-		{
-			example: {
-			status: HttpStatus.BAD_REQUEST,
-			property: 'name',
-			messages: ['Укажите ФИО заказчика'],
-			value: '',
-			},
-		},
-		{
-			example: {
-			status: HttpStatus.BAD_REQUEST,
-			property: 'name',
-			messages: [`Поле ФИО не должно превышать 100 символов`],
-			value: '',
-			},
-		},
-		{
-			example: {
-			status: HttpStatus.BAD_REQUEST,
-			property: 'email',
-			messages: ['Укажите email заказчика'],
-			value: null,
-			},
-		},
-		{
-			example: {
-			status: HttpStatus.BAD_REQUEST,
-			property: 'email',
-			messages: ['email must be an email'],
-			value: '375298918971gmail.com',
-			},
-		},
+    return {
+        description: 'Bad Request',
+        status: HttpStatus.BAD_REQUEST,
+        schema: {
+            title: 'Валидация',
+            anyOf: [
+                {
+                    example: {
+                        status: HttpStatus.BAD_REQUEST,
+                        property: 'name',
+                        messages: ['Укажите ФИО заказчика'],
+                        value: '',
+                    },
+                },
+                {
+                    example: {
+                        status: HttpStatus.BAD_REQUEST,
+                        property: 'name',
+                        messages: ['Поле ФИО не должно превышать 100 символов'],
+                        value: '',
+                    },
+                },
+                {
+                    example: {
+                        status: HttpStatus.BAD_REQUEST,
+                        property: 'email',
+                        messages: ['Укажите email заказчика'],
+                        value: null,
+                    },
+                },
+                {
+                    example: {
+                        status: HttpStatus.BAD_REQUEST,
+                        property: 'email',
+                        messages: ['email must be an email'],
+                        value: '375298918971gmail.com',
+                    },
+                },
 
-		{
-			example: {
-			status: HttpStatus.BAD_REQUEST,
-			property: `phone`,
-			messages: ['Укажите контактный номер заказчика'],
-			},
-		},
-		{
-			example: {
-			status: HttpStatus.BAD_REQUEST,
-			property: `phone`,
-			messages: [`Максимальная длинна телефона 15 символов`],
-			},
-		},
-		{
-			example: {
-			status: HttpStatus.BAD_REQUEST,
-			property: `address`,
-			messages: ['Укажите адрес доставки'],
-			},
-		},
-		{
-			example: {
-			status: HttpStatus.BAD_REQUEST,
-			property: `address`,
-			messages: ['Укажите адрес доставки'],
-			},
-		},
-		{
-			example: {
-			status: HttpStatus.BAD_REQUEST,
-			property: `address`,
-			messages: [`Максимальная длинна 200 символов`],
-			},
-		},
-		{
-			example: {
-			status: HttpStatus.BAD_REQUEST,
-			property: `comment`,
-			messages: [`Максимальная длинна 2200 символов`],
-			},
-		},
-		],
-	},
-  };
+                {
+                    example: {
+                        status: HttpStatus.BAD_REQUEST,
+                        property: 'phone',
+                        messages: ['Укажите контактный номер заказчика'],
+                    },
+                },
+                {
+                    example: {
+                        status: HttpStatus.BAD_REQUEST,
+                        property: 'phone',
+                        messages: ['Максимальная длинна телефона 15 символов'],
+                    },
+                },
+                {
+                    example: {
+                        status: HttpStatus.BAD_REQUEST,
+                        property: 'address',
+                        messages: ['Укажите адрес доставки'],
+                    },
+                },
+                {
+                    example: {
+                        status: HttpStatus.BAD_REQUEST,
+                        property: 'address',
+                        messages: ['Укажите адрес доставки'],
+                    },
+                },
+                {
+                    example: {
+                        status: HttpStatus.BAD_REQUEST,
+                        property: 'address',
+                        messages: ['Максимальная длинна 200 символов'],
+                    },
+                },
+                {
+                    example: {
+                        status: HttpStatus.BAD_REQUEST,
+                        property: 'comment',
+                        messages: ['Максимальная длинна 2200 символов'],
+                    },
+                },
+            ],
+        },
+    };
 }

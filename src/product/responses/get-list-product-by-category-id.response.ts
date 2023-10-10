@@ -3,12 +3,12 @@ import { MetaData } from './paginate/meta-data';
 import { Rows } from './paginate/rows';
 
 export class GetListProductByCategoryIdResponse {
-  @ApiProperty()
-  metaData: MetaData;
+    @ApiProperty()
+    metaData: MetaData;
 
-  @ApiProperty({ example: 1, description: `Количество найденных элементов` })
-  count: number;
+    @ApiProperty({ example: 1, description: 'Количество найденных элементов' })
+    count: number;
 
-  @ApiProperty({ type: () => [Rows] })
-  rows: Rows[];
+    @ApiProperty({ type: () => [Rows] })
+    rows: Rows[];
 }

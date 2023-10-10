@@ -10,14 +10,14 @@ import { CartModule } from '../cart/cart.module';
 import { UserModule } from '../user/user.module';
 
 @Module({
-  imports: [
-	SequelizeModule.forFeature([OrderModel]),
-	JwtModule,
-	OrderItemModule,
-	CartModule,
-	UserModule,
-  ],
-  controllers: [OrderController],
-  providers: [OrderService, OrderRepository],
+    imports: [
+        SequelizeModule.forFeature([OrderModel]),
+        JwtModule,
+        OrderItemModule,
+        CartModule,
+        UserModule,
+    ],
+    controllers: [OrderController],
+    providers: [OrderService, OrderRepository],
 })
 export class OrderModule {}

@@ -8,8 +8,11 @@ import { BrandRepository } from './brand.repository';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
-  imports: [SequelizeModule.forFeature([BrandModel, ProductModel]), JwtModule],
-  controllers: [BrandController],
-  providers: [BrandService, BrandRepository],
+    imports: [
+        SequelizeModule.forFeature([BrandModel, ProductModel]),
+        JwtModule,
+    ],
+    controllers: [BrandController],
+    providers: [BrandService, BrandRepository],
 })
 export class BrandModule {}

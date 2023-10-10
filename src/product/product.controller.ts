@@ -1,18 +1,18 @@
 import {
-  Body,
-  Controller,
-  DefaultValuePipe,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  ParseIntPipe,
-  Post,
-  Put,
-  Query,
-  UploadedFile,
-  UseGuards,
-  UseInterceptors,
+    Body,
+    Controller,
+    DefaultValuePipe,
+    Delete,
+    Get,
+    HttpCode,
+    Param,
+    ParseIntPipe,
+    Post,
+    Put,
+    Query,
+    UploadedFile,
+    UseGuards,
+    UseInterceptors,
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductService } from './product.service';
@@ -40,155 +40,132 @@ import { GetListProductByCategoryIdResponse } from './responses/get-list-product
 import { GetAllByBrandIdAndCategoryIdResponse } from './responses/get-all-by-brand-id-and-category-id.response';
 import { UpdateProductResponse } from './responses/update-product.response';
 import { RemoveProductResponse } from './responses/remove-product.response';
-import { TransactionInterceptor } from '../interceptors/transaction-interceptor';
-import { TransactionDecorator } from '../decorators/transaction-decorator';
-import { Transaction } from 'sequelize';
 
-@ApiTags(`Продукт`)
+@ApiTags('Продукт')
 @Controller('product')
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
-  @CreateProductDocumentation()
-  @HttpCode(201)
-  @Roles('ADMIN')
-  @UseGuards(JwtGuard, RoleGuard)
-  @Post('/create')
-  @UseInterceptors(
-	FileInterceptor('image', imageMulterOptions),
-	TransactionInterceptor,
-  )
-  public async create(
-	@Body() dto: CreateProductDto,
-	@UploadedFile()
-	image: Express.Multer.File,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<CreateProductResponse> {
-	return this.productService.productCreate(dto, image);
-  }
+    constructor(private readonly productService: ProductService) {}
+    @CreateProductDocumentation()
+    @HttpCode(201)
+    @Roles('ADMIN')
+    @UseGuards(JwtGuard, RoleGuard)
+    @Post('/create')
+    @UseInterceptors(FileInterceptor('image', imageMulterOptions))
+    public async create(
+        @Body() dto: CreateProductDto,
+        @UploadedFile()
+        image: Express.Multer.File,
+    ): Promise<CreateProductResponse> {
+        return this.productService.productCreate(dto, image);
+    }
 
-  @GetProductDocumentation()
-  @HttpCode(200)
-  @Get('/one/:id([0-9]+)')
-  @UseInterceptors(TransactionInterceptor)
-  public async getProduct(
-	@Param('id', ParseIntPipe) id: number,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<GetProductResponse> {
-	return this.productService.getProduct(id);
-  }
+    @GetProductDocumentation()
+    @HttpCode(200)
+    @Get('/one/:id([0-9]+)')
+    public async getProduct(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<GetProductResponse> {
+        return this.productService.getProduct(id);
+    }
 
-  @GetListProductDocumentation()
-  @HttpCode(200)
-  @Get('/all')
-  @UseInterceptors(TransactionInterceptor)
-  public async getListProduct(
-	@Query() searchQuery: SearchQueryDto,
-	@Query() sortQuery: SortQueryDto,
-	@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-	@Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<GetListProductResponse> {
-	return this.productService.getListProduct(
-		searchQuery,
-		sortQuery,
-		page,
-		size,
-	);
-  }
+    @GetListProductDocumentation()
+    @HttpCode(200)
+    @Get('/all')
+    public async getListProduct(
+        @Query() searchQuery: SearchQueryDto,
+        @Query() sortQuery: SortQueryDto,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
+    ): Promise<GetListProductResponse> {
+        return this.productService.getListProduct(
+            searchQuery,
+            sortQuery,
+            page,
+            size,
+        );
+    }
 
-  @GetListProductByBrandIdDocumentation()
-  @HttpCode(200)
-  @Get('/all/brandId/:brandId([0-9]+)')
-  @UseInterceptors(TransactionInterceptor)
-  public async getListProductByBrandId(
-	@Param('brandId', ParseIntPipe) brandId: number,
-	@Query() searchQuery: SearchQueryDto,
-	@Query() sortQuery: SortQueryDto,
-	@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-	@Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<GetListProductByBrandIdResponse> {
-	return this.productService.getListProductByBrandId(
-		brandId,
-		searchQuery,
-		sortQuery,
-		page,
-		size,
-	);
-  }
+    @GetListProductByBrandIdDocumentation()
+    @HttpCode(200)
+    @Get('/all/brandId/:brandId([0-9]+)')
+    public async getListProductByBrandId(
+        @Param('brandId', ParseIntPipe) brandId: number,
+        @Query() searchQuery: SearchQueryDto,
+        @Query() sortQuery: SortQueryDto,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
+    ): Promise<GetListProductByBrandIdResponse> {
+        return this.productService.getListProductByBrandId(
+            brandId,
+            searchQuery,
+            sortQuery,
+            page,
+            size,
+        );
+    }
 
-  @GetListProductByCategoryIdDocumentation()
-  @HttpCode(200)
-  @Get('/all/categoryId/:categoryId([0-9]+)')
-  @UseInterceptors(TransactionInterceptor)
-  public async getListProductByCategoryId(
-	@Param('categoryId', ParseIntPipe) categoryId: number,
-	@Query() searchQuery: SearchQueryDto,
-	@Query() sortQuery: SortQueryDto,
-	@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-	@Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<GetListProductByCategoryIdResponse> {
-	return this.productService.getListProductByCategoryId(
-		categoryId,
-		searchQuery,
-		sortQuery,
-		page,
-		size,
-	);
-  }
+    @GetListProductByCategoryIdDocumentation()
+    @HttpCode(200)
+    @Get('/all/categoryId/:categoryId([0-9]+)')
+    public async getListProductByCategoryId(
+        @Param('categoryId', ParseIntPipe) categoryId: number,
+        @Query() searchQuery: SearchQueryDto,
+        @Query() sortQuery: SortQueryDto,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
+    ): Promise<GetListProductByCategoryIdResponse> {
+        return this.productService.getListProductByCategoryId(
+            categoryId,
+            searchQuery,
+            sortQuery,
+            page,
+            size,
+        );
+    }
 
-  @GetAllByBrandIdAndCategoryIdDocumentation()
-  @HttpCode(200)
-  @Get('/all/brandId/:brandId([0-9]+)/categoryId/:categoryId([0-9]+)')
-  @UseInterceptors(TransactionInterceptor)
-  public async getAllByBrandIdAndCategoryId(
-	@Param('brandId', ParseIntPipe) brandId: number,
-	@Param('categoryId', ParseIntPipe) categoryId: number,
-	@Query() searchQuery: SearchQueryDto,
-	@Query() sortQuery: SortQueryDto,
-	@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-	@Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<GetAllByBrandIdAndCategoryIdResponse> {
-	return this.productService.getAllByBrandIdAndCategoryId(
-		brandId,
-		categoryId,
-		searchQuery,
-		sortQuery,
-		page,
-		size,
-	);
-  }
+    @GetAllByBrandIdAndCategoryIdDocumentation()
+    @HttpCode(200)
+    @Get('/all/brandId/:brandId([0-9]+)/categoryId/:categoryId([0-9]+)')
+    public async getAllByBrandIdAndCategoryId(
+        @Param('brandId', ParseIntPipe) brandId: number,
+        @Param('categoryId', ParseIntPipe) categoryId: number,
+        @Query() searchQuery: SearchQueryDto,
+        @Query() sortQuery: SortQueryDto,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
+    ): Promise<GetAllByBrandIdAndCategoryIdResponse> {
+        return this.productService.getAllByBrandIdAndCategoryId(
+            brandId,
+            categoryId,
+            searchQuery,
+            sortQuery,
+            page,
+            size,
+        );
+    }
 
-  @UpdateProductDocumentation()
-  @HttpCode(200)
-  @Roles('ADMIN')
-  @UseGuards(JwtGuard, RoleGuard)
-  @Put('/update/:id([0-9]+)')
-  @UseInterceptors(
-	FileInterceptor('image', imageMulterOptions),
-	TransactionInterceptor,
-  )
-  public async update(
-	@Param('id', ParseIntPipe) id: number,
-	@Body() dto: CreateProductDto,
-	@UploadedFile() image: Express.Multer.File,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<UpdateProductResponse> {
-	return this.productService.updateProduct(id, dto, image);
-  }
+    @UpdateProductDocumentation()
+    @HttpCode(200)
+    @Roles('ADMIN')
+    @UseGuards(JwtGuard, RoleGuard)
+    @Put('/update/:id([0-9]+)')
+    @UseInterceptors(FileInterceptor('image', imageMulterOptions))
+    public async update(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() dto: CreateProductDto,
+        @UploadedFile() image: Express.Multer.File,
+    ): Promise<UpdateProductResponse> {
+        return this.productService.updateProduct(id, dto, image);
+    }
 
-  @RemoveProductDocumentation()
-  @HttpCode(200)
-  @Roles('ADMIN')
-  @UseGuards(JwtGuard, RoleGuard)
-  @Delete('/delete/:id([0-9]+)')
-  @UseInterceptors(TransactionInterceptor)
-  public async removeProduct(
-	@Param('id', ParseIntPipe) id: number,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<RemoveProductResponse> {
-	return this.productService.removeProduct(id);
-  }
+    @RemoveProductDocumentation()
+    @HttpCode(200)
+    @Roles('ADMIN')
+    @UseGuards(JwtGuard, RoleGuard)
+    @Delete('/delete/:id([0-9]+)')
+    public async removeProduct(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<RemoveProductResponse> {
+        return this.productService.removeProduct(id);
+    }
 }

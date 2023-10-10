@@ -22,33 +22,35 @@ import { SequelizeConfigService } from './config/sequelize/sequelize.config.serv
 import { databaseConfig } from './config/sequelize/config';
 
 @Module({
-  imports: [
-	ServeStaticModule.forRoot({ rootPath: path.resolve(__dirname, 'static') }),
+    imports: [
+        ServeStaticModule.forRoot({
+            rootPath: path.resolve(__dirname, 'static'),
+        }),
 
-	SequelizeModule.forRootAsync({
-		imports: [ConfigModule],
-		useClass: SequelizeConfigService,
-	}),
-	ConfigModule.forRoot({
-		envFilePath: `.${process.env.NODE_ENV}.env`,
-		load: [databaseConfig],
-	}),
-	ProductModule,
-	FileModule,
-	CategoryModule,
-	BrandModule,
-	ProductPropertyModule,
-	UserModule,
-	RoleModule,
-	AuthModule,
-	TokenModule,
-	CartModule,
-	RatingModule,
-	OrderModule,
-	OrderItemModule,
-	PaymentModule,
-  ],
-  controllers: [],
-  providers: [],
+        SequelizeModule.forRootAsync({
+            imports: [ConfigModule],
+            useClass: SequelizeConfigService,
+        }),
+        ConfigModule.forRoot({
+            envFilePath: `.${process.env.NODE_ENV}.env`,
+            load: [databaseConfig],
+        }),
+        ProductModule,
+        FileModule,
+        CategoryModule,
+        BrandModule,
+        ProductPropertyModule,
+        UserModule,
+        RoleModule,
+        AuthModule,
+        TokenModule,
+        CartModule,
+        RatingModule,
+        OrderModule,
+        OrderItemModule,
+        PaymentModule,
+    ],
+    controllers: [],
+    providers: [],
 })
 export class AppModule {}

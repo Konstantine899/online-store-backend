@@ -9,12 +9,12 @@ import { CartRepository } from './cart.repository';
 import { ProductModule } from '../product/product.module';
 
 @Module({
-  imports: [
-	SequelizeModule.forFeature([CartModel, ProductModel, CartProductModel]),
-	ProductModule,
-  ],
-  providers: [CartService, CartRepository],
-  controllers: [CartController],
-  exports: [CartRepository],
+    imports: [
+        SequelizeModule.forFeature([CartModel, ProductModel, CartProductModel]),
+        ProductModule,
+    ],
+    providers: [CartService, CartRepository],
+    controllers: [CartController],
+    exports: [CartRepository],
 })
 export class CartModule {}

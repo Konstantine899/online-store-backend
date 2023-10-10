@@ -8,18 +8,18 @@ import { GetListRoleResponse } from './responses/get-list-role.response';
 
 @Injectable()
 export class RoleRepository {
-  constructor(@InjectModel(RoleModel) private roleModel: typeof RoleModel) {}
+    constructor(@InjectModel(RoleModel) private roleModel: typeof RoleModel) {}
 
-  public async createRole(dto: CreateRoleDto): Promise<CreateRoleResponse> {
-	const role = await this.roleModel.create(dto);
-	return this.roleModel.findByPk(role.id);
-  }
+    public async createRole(dto: CreateRoleDto): Promise<CreateRoleResponse> {
+        const role = await this.roleModel.create(dto);
+        return this.roleModel.findByPk(role.id);
+    }
 
-  public async findRole(role: string): Promise<GetRoleResponse> {
-	return this.roleModel.findOne({ where: { role } });
-  }
+    public async findRole(role: string): Promise<GetRoleResponse> {
+        return this.roleModel.findOne({ where: { role } });
+    }
 
-  public async findListRole(): Promise<GetListRoleResponse[]> {
-	return this.roleModel.findAll();
-  }
+    public async findListRole(): Promise<GetListRoleResponse[]> {
+        return this.roleModel.findAll();
+    }
 }

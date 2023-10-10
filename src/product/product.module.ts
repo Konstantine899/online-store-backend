@@ -13,20 +13,20 @@ import { RatingModel } from '../rating/rating.model';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
-  imports: [
-	SequelizeModule.forFeature([
-		ProductModel,
-		CategoryModel,
-		BrandModel,
-		ProductPropertyModel,
-		CartModel,
-		RatingModel,
-	]),
-	FileModule,
-	JwtModule,
-  ],
-  providers: [ProductService, ProductRepository],
-  controllers: [ProductController],
-  exports: [ProductService, ProductRepository],
+    imports: [
+        SequelizeModule.forFeature([
+            ProductModel,
+            CategoryModel,
+            BrandModel,
+            ProductPropertyModel,
+            CartModel,
+            RatingModel,
+        ]),
+        FileModule,
+        JwtModule,
+    ],
+    providers: [ProductService, ProductRepository],
+    controllers: [ProductController],
+    exports: [ProductService, ProductRepository],
 })
 export class ProductModule {}

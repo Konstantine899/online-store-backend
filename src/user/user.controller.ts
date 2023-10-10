@@ -1,15 +1,14 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  ParseIntPipe,
-  Post,
-  Put,
-  UseGuards,
-  UseInterceptors,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    Param,
+    ParseIntPipe,
+    Post,
+    Put,
+    UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -33,103 +32,83 @@ import { UpdateUserResponse } from './responses/update-user-response';
 import { RemoveUserResponse } from './responses/remove-user.response';
 import { AddRoleResponse } from './responses/add-role.response';
 import { RemoveRoleResponse } from './responses/remove-role.response';
-import { TransactionInterceptor } from '../interceptors/transaction-interceptor';
-import { TransactionDecorator } from '../decorators/transaction-decorator';
-import { Transaction } from 'sequelize';
 
-@ApiTags(`Пользователи`)
+@ApiTags('Пользователи')
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+    constructor(private readonly userService: UserService) {}
 
-  @CreateUserDocumentation()
-  @HttpCode(201)
-  @Roles('ADMIN')
-  @UseGuards(JwtGuard, RoleGuard)
-  @Post('/create')
-  @UseInterceptors(TransactionInterceptor)
-  public async createUser(
-	@Body() dto: CreateUserDto,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<CreateUserResponse> {
-	return this.userService.createUser(dto);
-  }
+    @CreateUserDocumentation()
+    @HttpCode(201)
+    @Roles('ADMIN')
+    @UseGuards(JwtGuard, RoleGuard)
+    @Post('/create')
+    public async createUser(
+        @Body() dto: CreateUserDto,
+    ): Promise<CreateUserResponse> {
+        return this.userService.createUser(dto);
+    }
 
-  @GetListUsersDocumentation()
-  @HttpCode(200)
-  @Roles('ADMIN')
-  @UseGuards(JwtGuard, RoleGuard)
-  @Get(`/get-list-users`)
-  @UseInterceptors(TransactionInterceptor)
-  public async getListUsers(
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<GetListUsersResponse[]> {
-	return this.userService.getListUsers();
-  }
+    @GetListUsersDocumentation()
+    @HttpCode(200)
+    @Roles('ADMIN')
+    @UseGuards(JwtGuard, RoleGuard)
+    @Get('/get-list-users')
+    public async getListUsers(): Promise<GetListUsersResponse[]> {
+        return this.userService.getListUsers();
+    }
 
-  @GetUserDocumentation()
-  @HttpCode(200)
-  @Roles('ADMIN')
-  @UseGuards(JwtGuard, RoleGuard)
-  @Get('/:id')
-  @UseInterceptors(TransactionInterceptor)
-  public async getUser(
-	@Param('id', ParseIntPipe) id: number,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<GetUserResponse> {
-	return this.userService.getUser(id);
-  }
+    @GetUserDocumentation()
+    @HttpCode(200)
+    @Roles('ADMIN')
+    @UseGuards(JwtGuard, RoleGuard)
+    @Get('/:id')
+    public async getUser(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<GetUserResponse> {
+        return this.userService.getUser(id);
+    }
 
-  @UpdateUserDocumentation()
-  @HttpCode(200)
-  @Roles('ADMIN')
-  @UseGuards(JwtGuard, RoleGuard)
-  @Put('/update/:id')
-  @UseInterceptors(TransactionInterceptor)
-  public async updateUser(
-	@Param('id', ParseIntPipe) id: number,
-	@Body() dto: CreateUserDto,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<UpdateUserResponse> {
-	return this.userService.updateUser(id, dto);
-  }
+    @UpdateUserDocumentation()
+    @HttpCode(200)
+    @Roles('ADMIN')
+    @UseGuards(JwtGuard, RoleGuard)
+    @Put('/update/:id')
+    public async updateUser(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() dto: CreateUserDto,
+    ): Promise<UpdateUserResponse> {
+        return this.userService.updateUser(id, dto);
+    }
 
-  @RemoveUserDocumentation()
-  @HttpCode(200)
-  @Roles('ADMIN')
-  @UseGuards(JwtGuard, RoleGuard)
-  @Delete('/delete/:id')
-  @UseInterceptors(TransactionInterceptor)
-  public async removeUser(
-	@Param('id', ParseIntPipe) id: number,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<RemoveUserResponse> {
-	return this.userService.removeUser(id);
-  }
+    @RemoveUserDocumentation()
+    @HttpCode(200)
+    @Roles('ADMIN')
+    @UseGuards(JwtGuard, RoleGuard)
+    @Delete('/delete/:id')
+    public async removeUser(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<RemoveUserResponse> {
+        return this.userService.removeUser(id);
+    }
 
-  @AddRoleUserDocumentation()
-  @HttpCode(201)
-  @Roles('ADMIN')
-  @UseGuards(JwtGuard, RoleGuard)
-  @Post('/role/add')
-  @UseInterceptors(TransactionInterceptor)
-  public async addRole(
-	@Body() dto: AddRoleDto,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<AddRoleResponse> {
-	return this.userService.addRole(dto);
-  }
+    @AddRoleUserDocumentation()
+    @HttpCode(201)
+    @Roles('ADMIN')
+    @UseGuards(JwtGuard, RoleGuard)
+    @Post('/role/add')
+    public async addRole(@Body() dto: AddRoleDto): Promise<AddRoleResponse> {
+        return this.userService.addRole(dto);
+    }
 
-  @RemoveRoleUserDocumentation()
-  @HttpCode(200)
-  @Roles('ADMIN')
-  @UseGuards(JwtGuard, RoleGuard)
-  @Delete('/role/delete')
-  @UseInterceptors(TransactionInterceptor)
-  public async removeRole(
-	@Body() dto: RemoveRoleDto,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<RemoveRoleResponse> {
-	return this.userService.removeRole(dto);
-  }
+    @RemoveRoleUserDocumentation()
+    @HttpCode(200)
+    @Roles('ADMIN')
+    @UseGuards(JwtGuard, RoleGuard)
+    @Delete('/role/delete')
+    public async removeRole(
+        @Body() dto: RemoveRoleDto,
+    ): Promise<RemoveRoleResponse> {
+        return this.userService.removeRole(dto);
+    }
 }

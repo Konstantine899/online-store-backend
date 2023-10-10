@@ -1,13 +1,12 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Post,
-  Req,
-  UseGuards,
-  UseInterceptors,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    Post,
+    Req,
+    UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
@@ -28,71 +27,57 @@ import { RegistrationResponse } from './responses/registration.response';
 import { UpdateAccessTokenResponse } from './responses/update-access-token.response';
 import { LoginCheckResponse } from './responses/login-check.response';
 import { LogoutResponse } from './responses/logout.response';
-import { TransactionInterceptor } from '../interceptors/transaction-interceptor';
-import { TransactionDecorator } from '../decorators/transaction-decorator';
-import { Transaction } from 'sequelize';
 
-@ApiTags(`Аутентификация`)
+@ApiTags('Аутентификация')
 @Controller('auth')
 export class AuthController {
-  constructor(
-	private readonly authService: AuthService,
-	private readonly userService: UserService,
-  ) {}
+    constructor(
+        private readonly authService: AuthService,
+        private readonly userService: UserService,
+    ) {}
 
-  @RegistrationDocumentation()
-  @HttpCode(201)
-  @Post('/registration')
-  @UseInterceptors(TransactionInterceptor)
-  public async registration(
-	@Body() dto: RegistrationDto,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<RegistrationResponse> {
-	return this.authService.registration(dto);
-  }
-  @LoginDocumentation()
-  @HttpCode(200)
-  @Post('/login')
-  @UseInterceptors(TransactionInterceptor)
-  public async login(
-	@Body() dto: LoginDto,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<LoginResponse> {
-	return this.authService.login(dto);
-  }
+    @RegistrationDocumentation()
+    @HttpCode(201)
+    @Post('/registration')
+    public async registration(
+        @Body() dto: RegistrationDto,
+    ): Promise<RegistrationResponse> {
+        return this.authService.registration(dto);
+    }
 
-  @UpdateAccessTokenDocumentation()
-  @HttpCode(201)
-  @Post('/refresh')
-  @UseInterceptors(TransactionInterceptor)
-  public async updateAccessToken(
-	@Body() dto: RefreshDto,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<UpdateAccessTokenResponse> {
-	return this.authService.updateAccessToken(dto.refreshToken);
-  }
+    @LoginDocumentation()
+    @HttpCode(200)
+    @Post('/login')
+    public async login(@Body() dto: LoginDto): Promise<LoginResponse> {
+        return this.authService.login(dto);
+    }
 
-  @LoginCheckDocumentation()
-  @UseGuards(JwtGuard)
-  @Get('/login-check')
-  @UseInterceptors(TransactionInterceptor)
-  public async loginCheck(
-	@Req() request: Request,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<LoginCheckResponse> {
-	const { id } = request.user as LoginCheckRequest;
-	return this.userService.loginCheck(id);
-  }
+    @UpdateAccessTokenDocumentation()
+    @HttpCode(201)
+    @Post('/refresh')
+    public async updateAccessToken(
+        @Body() dto: RefreshDto,
+    ): Promise<UpdateAccessTokenResponse> {
+        return this.authService.updateAccessToken(dto.refreshToken);
+    }
 
-  @LogoutDocumentation()
-  @UseGuards(JwtGuard)
-  @Delete('/logout')
-  @UseInterceptors(TransactionInterceptor)
-  public async logout(
-	@Req() request: Request,
-	@Body() refresh: RefreshDto,
-	@TransactionDecorator() transaction: Transaction,
-  ): Promise<LogoutResponse> {
-	return this.authService.logout(refresh, request);
-  }
+    @LoginCheckDocumentation()
+    @UseGuards(JwtGuard)
+    @Get('/login-check')
+    public async loginCheck(
+        @Req() request: Request,
+    ): Promise<LoginCheckResponse> {
+        const { id } = request.user as LoginCheckRequest;
+        return this.userService.loginCheck(id);
+    }
+
+    @LogoutDocumentation()
+    @UseGuards(JwtGuard)
+    @Delete('/logout')
+    public async logout(
+        @Req() request: Request,
+        @Body() refresh: RefreshDto,
+    ): Promise<LogoutResponse> {
+        return this.authService.logout(refresh, request);
+    }
 }

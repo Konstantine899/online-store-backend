@@ -1,4 +1,4 @@
 export interface IParams {
-  productId?: number;
-  quantity?: number;
+    productId?: number;
+    quantity?: number;
 }
