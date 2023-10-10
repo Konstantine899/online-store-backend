@@ -20,8 +20,6 @@ module.exports = (sequelize, DataTypes) => {
             this.belongsToMany(models.role, {
                 through: 'user-role',
                 as: 'roles',
-                onDelete: 'CASCADE',
-                onUpdate: 'CASCADE',
             });
             this.belongsToMany(models.product, {
                 through: 'rating',

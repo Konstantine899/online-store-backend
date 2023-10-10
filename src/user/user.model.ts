@@ -43,11 +43,7 @@ export class UserModel extends Model<UserModel, IUserCreationAttributes> {
     password: string;
 
     // Многие ко многим через промежуточную таблицу UserRoleModel
-    @BelongsToMany(() => RoleModel, {
-        through: () => UserRoleModel,
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
-    })
+    @BelongsToMany(() => RoleModel, () => UserRoleModel)
     roles: RoleModel[];
 
     //У одного пользователя могут быть несколько refresh tokens

@@ -10,6 +10,7 @@ import { GetUserResponse } from './responses/get-user-response';
 import { UpdateUserResponse } from './responses/update-user-response';
 
 Injectable();
+
 export class UserRepository {
     constructor(@InjectModel(UserModel) private userModel: typeof UserModel) {}
 
@@ -34,7 +35,7 @@ export class UserRepository {
             attributes: { exclude: ['password'] },
             include: { model: RoleModel, through: { attributes: [] } },
             /*Так как при обновлении всего объекта пользователя я обновляю и его роль, то роли тоже возвращаю,
-       кроме данных из связующей таблицы user-role*/
+ кроме данных из связующей таблицы user-role*/
         });
     }
 

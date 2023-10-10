@@ -1,7 +1,6 @@
 import {
     BadRequestException,
     ConflictException,
-    ForbiddenException,
     HttpStatus,
     Injectable,
     NotFoundException,
@@ -117,6 +116,8 @@ export class UserService {
         if (!user) {
             this.notFound('Пользователь не найден в БД');
         }
+        const roleId = await this.getRolesUser(user);
+        await user.$remove('role', roleId);
         await this.userRepository.removeUser(user.id);
         return {
             status: HttpStatus.OK,
@@ -142,23 +143,28 @@ export class UserService {
         return this.userRepository.findUser(user.id);
     }
 
-    public async removeRole(dto: RemoveRoleDto): Promise<RemoveRoleResponse> {
+    public async removeUserRole(
+        dto: RemoveRoleDto,
+    ): Promise<RemoveRoleResponse> {
         const user = await this.userRepository.findUser(dto.userId);
         if (!user) {
             this.notFound('Пользователь не найден в БД');
         }
-        const foundRole = await this.roleService.getRole(dto.role);
-        if (!foundRole) {
-            this.notFound(`Роль ${dto.role} не найдена в БД`);
-        }
-        if (foundRole.role === 'USER') {
-            this.forbiddenException('Удаление роли USER запрещено');
-        }
-        await user.$remove('role', foundRole.id);
+        const roleId = await this.getRolesUser(user);
+        await user.$remove('role', roleId);
         return {
             status: HttpStatus.OK,
             message: 'success',
         };
+    }
+
+    protected async getRolesUser(user: UserModel): Promise<number | null> {
+        const roles = user.roles.map((i) => i.role).join(',');
+        const foundRole = await this.roleService.getRole(roles);
+        if (!foundRole) {
+            this.notFound('Роли пользователя не найдены в БД');
+        }
+        return foundRole.id;
     }
 
     private notFound(message: string): void {
@@ -178,13 +184,6 @@ export class UserService {
     private conflictException(message: string): void {
         throw new ConflictException({
             status: HttpStatus.CONFLICT,
-            message,
-        });
-    }
-
-    private forbiddenException(message: string): void {
-        throw new ForbiddenException({
-            status: HttpStatus.FORBIDDEN,
             message,
         });
     }

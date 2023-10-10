@@ -109,6 +109,6 @@ export class UserController {
     public async removeRole(
         @Body() dto: RemoveRoleDto,
     ): Promise<RemoveRoleResponse> {
-        return this.userService.removeRole(dto);
+        return this.userService.removeUserRole(dto);
     }
 }
