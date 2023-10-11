@@ -2,7 +2,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import appConfig from '../config/app.config';
+import appConfig from '../../config/jwt/app.config';
 import { LoginCheckResponse } from '../auth/responses/login-check.response';
 
 export interface IAccessTokenSubject {

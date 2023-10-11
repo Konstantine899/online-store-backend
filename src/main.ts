@@ -6,7 +6,7 @@ import { SequelizeUniqueConstraintExceptionFilter } from './exceptions/sequelize
 import { CustomNotFoundExceptionFilter } from './exceptions/custom-not-found.exception.filter';
 import { SequelizeDatabaseErrorExceptionFilter } from './exceptions/sequelize-database-error.exception.filter';
 import * as cookieParser from 'cookie-parser';
-import { swaggerConfig } from './config/swagger.config';
+import { swaggerConfig } from '../config/swagger/swagger.config';
 
 async function bootstrap() {
     const PORT = process.env.PORT || 5000;
