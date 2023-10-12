@@ -18,8 +18,8 @@ import { RatingModule } from './rating/rating.module';
 import { OrderModule } from './order/order.module';
 import { OrderItemModule } from './order-item/order-item.module';
 import { PaymentModule } from './payment/payment.module';
-import { SequelizeConfigService } from '../config/sequelize/sequelize.config.service';
-import { databaseConfig } from '../config/sequelize/config';
+import { SequelizeConfigService } from '../config/sequelize/config/sequelize.config.service';
+import { databaseConfig } from '../config/sequelize/config/config';
 
 @Module({
     imports: [
