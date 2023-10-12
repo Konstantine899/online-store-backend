@@ -17,6 +17,7 @@ const {
     PROD_MYSQL_PASSWORD,
     PROD_MYSQL_DATABASE,
 } = process.env;
+
 module.exports = {
     development: {
         username: DEV_MYSQL_USER,
