@@ -4,7 +4,7 @@ import { INestApplication } from '@nestjs/common';
 export function swaggerConfig(app: INestApplication): void {
     const config = new DocumentBuilder()
         .setTitle('online-store-backend')
-        .setDescription('Документация REST API')
+        .setDescription('Документация online-store API')
         .addTag('Автор: Атрощенко Константин')
         .setVersion('1.0.0')
         .addBearerAuth(
@@ -20,8 +20,8 @@ export function swaggerConfig(app: INestApplication): void {
         )
         .addCookieAuth('authCookie', {
             type: 'http',
-            in: 'Header',
-            scheme: 'Bearer',
+            in: 'header',
+            scheme: 'bearer',
         })
         .build();
 
