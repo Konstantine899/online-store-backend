@@ -9,7 +9,7 @@ import {
 import { RefreshDto } from '../../dto/refresh.dto';
 import { UpdateAccessTokenResponse } from '../../responses/update-access-token.response';
 
-export function UpdateAccessTokenDocumentation() {
+export function UpdateAccessTokenSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({ summary: 'Обновление access token' }),
         ApiBody({

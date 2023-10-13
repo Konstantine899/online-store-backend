@@ -16,12 +16,12 @@ import { RefreshDto } from './dto/refresh.dto';
 import { UserService } from '../user/user.service';
 import { JwtGuard } from '../token/jwt.guard';
 import { ApiTags } from '@nestjs/swagger';
-import { RegistrationDocumentation } from './decorators/documentation/registration-documentation';
-import { LoginDocumentation } from './decorators/documentation/login.documentation';
-import { UpdateAccessTokenDocumentation } from './decorators/documentation/update-access-token.documentation';
-import { LoginCheckDocumentation } from './decorators/documentation/login-check.documentation';
+import { RegistrationSwaggerDecorator } from './decorators/swagger/registration.swagger.decorator';
+import { LoginSwaggerDecorator } from './decorators/swagger/login.swagger.decorator';
+import { UpdateAccessTokenSwaggerDecorator } from './decorators/swagger/update-access-token.swagger.decorator';
+import { LoginCheckSwaggerDecorator } from './decorators/swagger/login-check.swagger.decorator';
 import { LoginCheckRequest } from './requests/login-check.request';
-import { LogoutDocumentation } from './decorators/documentation/logout.documentation';
+import { LogoutSwaggerDecprator } from './decorators/swagger/logout.swagger.decprator';
 import { LoginResponse } from './responses/login.response';
 import { RegistrationResponse } from './responses/registration.response';
 import { UpdateAccessTokenResponse } from './responses/update-access-token.response';
@@ -36,7 +36,7 @@ export class AuthController {
         private readonly userService: UserService,
     ) {}
 
-    @RegistrationDocumentation()
+    @RegistrationSwaggerDecorator()
     @HttpCode(201)
     @Post('/registration')
     public async registration(
@@ -45,14 +45,14 @@ export class AuthController {
         return this.authService.registration(dto);
     }
 
-    @LoginDocumentation()
+    @LoginSwaggerDecorator()
     @HttpCode(200)
     @Post('/login')
     public async login(@Body() dto: LoginDto): Promise<LoginResponse> {
         return this.authService.login(dto);
     }
 
-    @UpdateAccessTokenDocumentation()
+    @UpdateAccessTokenSwaggerDecorator()
     @HttpCode(201)
     @Post('/refresh')
     public async updateAccessToken(
@@ -61,7 +61,7 @@ export class AuthController {
         return this.authService.updateAccessToken(dto.refreshToken);
     }
 
-    @LoginCheckDocumentation()
+    @LoginCheckSwaggerDecorator()
     @UseGuards(JwtGuard)
     @Get('/login-check')
     public async loginCheck(
@@ -71,7 +71,7 @@ export class AuthController {
         return this.userService.loginCheck(id);
     }
 
-    @LogoutDocumentation()
+    @LogoutSwaggerDecprator()
     @UseGuards(JwtGuard)
     @Delete('/logout')
     public async logout(

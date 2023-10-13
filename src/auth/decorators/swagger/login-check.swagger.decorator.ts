@@ -9,7 +9,7 @@ import {
 import { LoginCheckRequest } from '../../requests/login-check.request';
 import { LoginCheckResponse } from '../../responses/login-check.response';
 
-export function LoginCheckDocumentation() {
+export function LoginCheckSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({ summary: 'Проверка авторизации пользователя' }),
         ApiBearerAuth('JWT-auth'),

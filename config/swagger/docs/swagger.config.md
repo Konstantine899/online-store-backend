@@ -68,3 +68,8 @@ export function swaggerConfig(app: INestApplication): void {
 В `SwaggerModule.setup` первым аргументом передаю `path` по которому будет доступна документация. Вторым аргументом передаю `instance` `application`. А третьим аргументом передаю созданный `document`.
 
 Для описания endpoint в каждом модуле создаю соответствующий декоратор.
+
+---
+
+## Auth модуль
+

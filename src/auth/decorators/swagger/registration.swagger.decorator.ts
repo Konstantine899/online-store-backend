@@ -4,7 +4,7 @@ import { RegistrationDto } from '../../dto/registration.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { RegistrationResponse } from '../../responses/registration.response';
 
-export function RegistrationDocumentation() {
+export function RegistrationSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({ summary: 'Регистрация' }),
         ApiBody({
