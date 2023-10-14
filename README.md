@@ -38,6 +38,9 @@ npm run start:dev
 
 ---
 
+<br/>
+<br/>
+
 ## Миграции
 
 - `db/config` - содержит файл конфигурации, который сообщает `sequelize CLI`, как подключаться к базе данных
@@ -58,6 +61,27 @@ npm run start:dev
 
 
 ---
+
+<br/>
+<br/>
+
+## Pipes
+
+- Подробнее о `pipes` - [pipes](./pipes/pipes.md)
+
+---
+
+<br/>
+<br/>
+
+## Exceptions
+
+- Подробнее о `exceptions` - [exceptions](./exceptions/exceptions.md)
+
+---
+
+<br/>
+<br/>
 
 ## Модули
 
