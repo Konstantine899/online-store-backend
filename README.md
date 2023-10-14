@@ -8,6 +8,9 @@ npm run start:dev
 
 ---
 
+<br/>
+<br/>
+
 ## Скрипты
 
 - `npm run build` - production сборка проекта
@@ -23,6 +26,9 @@ npm run start:dev
 - `npm run db:seed:undo:all` - Удаление всех данных из таблиц
 
 ---
+
+<br/>
+<br/>
 
 # Конфигурация проекта
 
