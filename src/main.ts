@@ -1,10 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as process from 'process';
-import { CustomValidationPipe } from './pipes/custom-validation-pipe';
-import { SequelizeUniqueConstraintExceptionFilter } from './exceptions/sequelize-unique-constraint.exception.filter';
-import { CustomNotFoundExceptionFilter } from './exceptions/custom-not-found.exception.filter';
-import { SequelizeDatabaseErrorExceptionFilter } from './exceptions/sequelize-database-error.exception.filter';
+import { CustomValidationPipe } from '../pipes/custom-validation-pipe';
+import { SequelizeUniqueConstraintExceptionFilter } from '../exceptions/sequelize-unique-constraint.exception.filter';
+import { CustomNotFoundExceptionFilter } from '../exceptions/custom-not-found.exception.filter';
+import { SequelizeDatabaseErrorExceptionFilter } from '../exceptions/sequelize-database-error.exception.filter';
 import * as cookieParser from 'cookie-parser';
 import { swaggerConfig } from '../config/swagger/swagger.config';
 
