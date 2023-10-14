@@ -21,7 +21,7 @@ import { LoginSwaggerDecorator } from './decorators/swagger/login.swagger.decora
 import { UpdateAccessTokenSwaggerDecorator } from './decorators/swagger/update-access-token.swagger.decorator';
 import { LoginCheckSwaggerDecorator } from './decorators/swagger/login-check.swagger.decorator';
 import { LoginCheckRequest } from './requests/login-check.request';
-import { LogoutSwaggerDecprator } from './decorators/swagger/logout.swagger.decprator';
+import { LogoutSwaggerDecorator } from './decorators/swagger/logout.swagger.decorator';
 import { LoginResponse } from './responses/login.response';
 import { RegistrationResponse } from './responses/registration.response';
 import { UpdateAccessTokenResponse } from './responses/update-access-token.response';
@@ -71,7 +71,7 @@ export class AuthController {
         return this.userService.loginCheck(id);
     }
 
-    @LogoutSwaggerDecprator()
+    @LogoutSwaggerDecorator()
     @UseGuards(JwtGuard)
     @Delete('/logout')
     public async logout(

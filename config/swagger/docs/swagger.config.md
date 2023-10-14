@@ -41,7 +41,8 @@ export function swaggerConfig(app: INestApplication): void {
 
 В параметре функции `swaggerConfig` ожидает `instance application` типа `INestApplication` из пакета `@nestjs/common`.
 
-Далее создаю объект конфигурации с помощью инициализации класса `DocumentBuilder`. `DocumentBuilder` - это `helpers` который
+Далее создаю объект конфигурации с помощью инициализации класса `DocumentBuilder`. `DocumentBuilder` - это `helpers`
+который
 помогает структурировать базовый документ, соответствующий спецификации `OpenAPI`.
 
 Он предоставляет методы:
@@ -63,13 +64,31 @@ export function swaggerConfig(app: INestApplication): void {
     2) В `schema` - указываю тип используемого `token bearer(токен носитель)`
     3) В `in` - указываю что используется в `headers`
 
-В `createDocument` создаю документ. Первым аргументом передаю `instance application`, а вторым аргументом `config` `swagger`.
+В `createDocument` создаю документ. Первым аргументом передаю `instance application`, а вторым
+аргументом `config` `swagger`.
 
-В `SwaggerModule.setup` первым аргументом передаю `path` по которому будет доступна документация. Вторым аргументом передаю `instance` `application`. А третьим аргументом передаю созданный `document`.
+В `SwaggerModule.setup` первым аргументом передаю `path` по которому будет доступна документация. Вторым аргументом
+передаю `instance` `application`. А третьим аргументом передаю созданный `document`.
 
-Для описания endpoint в каждом модуле создаю соответствующий декоратор.
+И в `main.ts` в функцию аргументом передаю `instance application`
 
----
+```ts
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import * as process from 'process';
+import { swaggerConfig } from '../config/swagger/swagger.config';
 
-## Auth модуль
+async function bootstrap() {
+  const PORT = process.env.PORT || 5000;
+  const app = await NestFactory.create(AppModule, { cors: true });
+
+  swaggerConfig(app);
+  await app.listen(PORT, () =>
+	console.log(`Server started on port = ${PORT}`),
+  );
+}
+
+bootstrap();
+
+```
 
