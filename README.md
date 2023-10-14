@@ -77,8 +77,6 @@ npm run start:dev
 
 Подробнее о `pipes` можно почитать в документации - [pipes](https://docs.nestjs.com/pipes)
 
-Подробнее о `pipes` можно почитать в документации - [pipes](https://docs.nestjs.com/pipes)
-
 ---
 
 <br/>
@@ -87,8 +85,6 @@ npm run start:dev
 ## Exceptions
 
 - Подробнее о `custom exceptions` использующихся в проекте, можно ознакомиться здесь - [exceptions](./exceptions/exceptions.md)
-
-Подробнее о `exceptions` можно почитать в документации - [exception-filters](https://docs.nestjs.com/exception-filters)
 
 Подробнее о `exceptions` можно почитать в документации - [exception-filters](https://docs.nestjs.com/exception-filters)
 
