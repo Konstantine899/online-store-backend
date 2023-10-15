@@ -4,19 +4,19 @@ import {
 } from '@nestjs/sequelize';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ProductModel } from '../../../src/product/product.model';
-import { CategoryModel } from '../../../src/category/category-model';
-import { BrandModel } from '../../../src/brand/brand.model';
-import { ProductPropertyModel } from '../../../src/product-property/product-property.model';
-import { UserModel } from '../../../src/user/user.model';
-import { RoleModel } from '../../../src/role/role.model';
-import { UserRoleModel } from '../../../src/role/user-role.model';
-import { RefreshTokenModel } from '../../../src/token/refresh-token.model';
-import { CartModel } from '../../../src/cart/cart.model';
-import { CartProductModel } from '../../../src/cart/cart-product.model';
-import { RatingModel } from '../../../src/rating/rating.model';
-import { OrderModel } from '../../../src/order/order.model';
-import { OrderItemModel } from '../../../src/order-item/order-item.model';
+import { ProductModel } from '../../../src/modules/product/product.model';
+import { CategoryModel } from '../../../src/modules/category/category-model';
+import { BrandModel } from '../../../src/modules/brand/brand.model';
+import { ProductPropertyModel } from '../../../src/modules/product-property/product-property.model';
+import { UserModel } from '../../../src/modules/user/user.model';
+import { RoleModel } from '../../../src/modules/role/role.model';
+import { UserRoleModel } from '../../../src/modules/role/user-role.model';
+import { RefreshTokenModel } from '../../../src/modules/token/refresh-token.model';
+import { CartModel } from '../../../src/modules/cart/cart.model';
+import { CartProductModel } from '../../../src/modules/cart/cart-product.model';
+import { RatingModel } from '../../../src/modules/rating/rating.model';
+import { OrderModel } from '../../../src/modules/order/order.model';
+import { OrderItemModel } from '../../../src/modules/order-item/order-item.model';
 
 @Injectable()
 export class SequelizeConfigService implements SequelizeOptionsFactory {
