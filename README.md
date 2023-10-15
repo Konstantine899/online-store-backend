@@ -34,7 +34,6 @@ npm run start:dev
 
 - `config/sequelize` - [настройка конфигурации sequelize и подключения к БД](config/sequelize/configuration-and-connection-db.md)
 - `config/swagger` - [настройка конфигурации swagger](config/swagger/docs/swagger.config.md)
-- `config/jwt` - [настройка конфигурации jwt](config/jwt/jwt.config.md)
 
 Подробнее о конфигурации `nestjs` можно почитать в
 документации - [Configuration](https://docs-nestjs.netlify.app/techniques/configuration)

@@ -2,8 +2,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import appConfig from '../../../config/jwt/app.config';
 import { LoginCheckResponse } from '../auth/responses/login-check.response';
+import jwtSettingsConfig from './helpers/jwt.settings.config';
 
 export interface IAccessTokenSubject {
     sub: number; // сокращение от subject
@@ -15,8 +15,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            secretOrKey: appConfig().jwtSecretKey,
-            signOptions: { expiresIn: '24h' },
+            secretOrKey: jwtSettingsConfig().jwtSecretKey,
+            signOptions: jwtSettingsConfig().expiresIn,
         });
     }
 

@@ -7,11 +7,12 @@ import { RefreshTokenRepository } from './refresh-token.repository';
 import { UserModule } from '../user/user.module';
 import { JwtStrategy } from './jwt.strategy';
 import { JwtGuard } from './jwt.guard';
-import { jwtConfig } from '../../../config/jwt/jwt.config';
+
+import { jwtConfig } from './helpers/jwt.config';
 
 @Module({
     imports: [
-        JwtModule.registerAsync(jwtConfig),
+        JwtModule.registerAsync(jwtConfig()),
         SequelizeModule.forFeature([RefreshTokenModel]),
         UserModule,
     ],
