@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { CustomValidationException } from '../src/errors/exceptions/custom-validation.exception';
+import { CustomValidationException } from '../exceptions/custom-validation.exception';
 
 @Injectable()
 export class CustomValidationPipe implements PipeTransform<any> {
