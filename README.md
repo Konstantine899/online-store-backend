@@ -84,7 +84,7 @@ npm run start:dev
 
 ## Exceptions
 
-- Подробнее о `custom exceptions` использующихся в проекте, можно ознакомиться здесь - [exceptions](./exceptions/exceptions.md)
+- Подробнее о `custom exceptions` использующихся в проекте, можно ознакомиться здесь - [exceptions](src/errors/exceptions/exceptions.md)
 
 Подробнее о `exceptions` можно почитать в документации - [exception-filters](https://docs.nestjs.com/exception-filters)
 
