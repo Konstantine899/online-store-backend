@@ -67,12 +67,11 @@ export class CustomNotFoundExceptionFilter implements ExceptionFilter {
 
 ---
 
-<br/>
-<br/>
-<br/>
+Важный момент! Перед реализацией класса в декораторе `@Catch` передаю тип exception. Декоратор `@Catch` будет отлавливать этот `exception`. После чего мы сможем отловленный exception использовать в нашем коде.
 
-## SequelizeDatabaseErrorExceptionFilter
+`interface` `ExceptionFilter` в себе реализует один единственный метод `catch`. Метод `catch` принимает два аргумента. Первый это `exception: T`, как `generic` передаем тип обрабатываемого `exception`, к примеру `NotFoundException`. Второй аргумент это `host: ArgumentsHost` из которого мы можем получить `context` запроса.
 
+Далее использую этот контекст запроса. Вытаскиваю интересующие поля и формирую новый ответ.
 
 
 - `SequelizeDatabaseErrorExceptionFilter` - Используется для вывода информации об ошибке(ах) которая произошла в БД.
@@ -120,14 +119,6 @@ export class SequelizeDatabaseErrorExceptionFilter implements ExceptionFilter {
 
 ```
 
----
-
-<br/>
-<br/>
-<br/>
-
-## SequelizeUniqueConstraintExceptionFilter
-
 - `SequelizeUniqueConstraintExceptionFilter` - ошибка валидации или ограничения в `Sequelize`. Подробнее читайте в
   документации:[Validations & Constraints](https://sequelize.org/docs/v6/core-concepts/validations-and-constraints/#:~:text=Version%3A%20v6%20%2D%20stable-,Validations%20%26%20Constraints,-In%20this%20tutorial)
     * `url` - адрес по которому произошла ошибка
@@ -172,45 +163,4 @@ export class SequelizeUniqueConstraintExceptionFilter
 
 ```
 
----
-
-<br/>
-<br/>
-<br/>
-
-## Регистрация exception filters в приложении
-
-После чего нужно глобально в приложении зарегистрировать все `exception` `filters`
-
-```ts
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import * as process from 'process';
-import { CustomValidationPipe } from './common/pipes/custom-validation-pipe';
-import { SequelizeUniqueConstraintExceptionFilter } from './common/exceptions/sequelize-unique-constraint.exception.filter';
-import { CustomNotFoundExceptionFilter } from './common/exceptions/custom-not-found.exception.filter';
-import { SequelizeDatabaseErrorExceptionFilter } from './common/exceptions/sequelize-database-error.exception.filter';
-import * as cookieParser from 'cookie-parser';
-import { swaggerConfig } from '../config/swagger/swagger.config';
-
-async function bootstrap() {
-    const PORT = process.env.PORT || 5000;
-    const app = await NestFactory.create(AppModule, { cors: true });
-
-    app.useGlobalFilters(
-        ...[
-            new SequelizeUniqueConstraintExceptionFilter(),
-            new SequelizeDatabaseErrorExceptionFilter(),
-            new CustomNotFoundExceptionFilter(),
-        ],
-    );
-
-    await app.listen(PORT, () =>
-        console.log(`Server started on port = ${PORT}`),
-    );
-}
-
-bootstrap();
-
-```
-
+Подробнее об exception filters подробнее можно почитать в документации - [exception filters](https://docs.nestjs.com/exception-filters)
