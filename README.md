@@ -70,20 +70,13 @@ npm run start:dev
 <br/>
 <br/>
 
-## Pipes
+## Common
 
-- Подробнее о `custom pipes` использующихся в проекте, можно ознакомиться здесь - [pipes](src/common/pipes/pipes.md)
+- Подробнее о `src/common/pipes` использующихся в проекте, можно ознакомиться здесь - [pipes](src/common/pipes/pipes.md)
 
 Подробнее о `pipes` можно почитать в документации - [pipes](https://docs.nestjs.com/pipes)
 
----
-
-<br/>
-<br/>
-
-## Exceptions
-
-- Подробнее о `custom exceptions` использующихся в проекте, можно ознакомиться здесь - [exceptions](src/common/exceptions/exceptions.md)
+- Подробнее о `src/common/exceptions` использующихся в проекте, можно ознакомиться здесь - [exceptions](src/common/exceptions/exceptions.md)
 
 Подробнее о `exceptions` можно почитать в документации - [exception-filters](https://docs.nestjs.com/exception-filters)
 

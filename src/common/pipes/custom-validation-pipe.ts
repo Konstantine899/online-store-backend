@@ -1,19 +1,26 @@
 import {
     ArgumentMetadata,
+    HttpException,
     HttpStatus,
     Injectable,
     PipeTransform,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { CustomValidationException } from '../exceptions/custom-validation.exception';
+
+export interface FormatErrors {
+    status: HttpStatus;
+    property: string;
+    messages: string[];
+    value: any;
+}
 
 @Injectable()
 export class CustomValidationPipe implements PipeTransform<any> {
     public async transform(
         value: any,
         { metatype }: ArgumentMetadata,
-    ): Promise<any> {
+    ): Promise<FormatErrors[]> {
         if (!metatype || !this.validateMetaType(metatype)) {
             return value;
         }
@@ -22,7 +29,7 @@ export class CustomValidationPipe implements PipeTransform<any> {
         const errors = await validate(object);
 
         if (errors.length > 0) {
-            const messages = errors.map((error) => {
+            const formatErrors: FormatErrors[] = errors.map((error) => {
                 return {
                     status: HttpStatus.BAD_REQUEST,
                     property: error.property,
@@ -32,7 +39,7 @@ export class CustomValidationPipe implements PipeTransform<any> {
                     value: error.value,
                 };
             });
-            throw new CustomValidationException(messages);
+            throw new HttpException(formatErrors, HttpStatus.BAD_REQUEST);
         }
         return value;
     }
