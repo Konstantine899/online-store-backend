@@ -1,6 +1,10 @@
 import { Transform } from 'class-transformer';
 
-export class RequestSignedCookiesDto {
+export interface RequestSignedCookies {
+    cartId: number;
+}
+
+export class RequestSignedCookiesDto implements RequestSignedCookies {
     @Transform((value) => Number(value))
     readonly cartId: number;
 }

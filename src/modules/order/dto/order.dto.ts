@@ -10,8 +10,21 @@ import {
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class OrderDto {
-    @ApiProperty({ example: 1, description: 'Идентификатор заказчика' })
+export interface Order {
+    userId?: number;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    comment: string;
+    items: OrderItemModel[];
+}
+
+export class OrderDto implements Order {
+    @ApiProperty({
+        example: 1,
+        description: 'Идентификатор заказчика',
+    })
     @IsOptional()
     readonly userId?: number;
 
@@ -23,7 +36,10 @@ export class OrderDto {
     @MaxLength(100, { message: 'Поле ФИО не должно превышать 100 символов' })
     readonly name: string;
 
-    @ApiProperty({ example: 'test@mail.com', description: 'Email заказчика' })
+    @ApiProperty({
+        example: 'test@mail.com',
+        description: 'Email заказчика',
+    })
     @IsNotEmpty({ message: 'Укажите email заказчика' })
     @IsEmail()
     readonly email: string;
@@ -53,7 +69,13 @@ export class OrderDto {
     readonly comment: string;
 
     @ApiProperty({
-        example: [{ name: 'Xiaomi 10pro', price: 1000, quantity: 1 }],
+        example: [
+            {
+                name: 'Xiaomi 10pro',
+                price: 1000,
+                quantity: 1,
+            },
+        ],
         description: 'Позиции заказа',
     })
     @IsArray()

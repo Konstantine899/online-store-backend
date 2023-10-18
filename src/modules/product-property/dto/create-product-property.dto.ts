@@ -1,7 +1,12 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CreateProductPropertyDto {
+export interface CreateProductProperty {
+    name: string;
+    value: string;
+}
+
+export class CreateProductPropertyDto implements CreateProductProperty {
     @ApiProperty({
         example: 'Объем встроенной памяти',
         description: 'Имя свойства продукта',
