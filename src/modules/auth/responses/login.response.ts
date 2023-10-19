@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IPaylad } from '../interfaces/i-paylad';
+import { Token } from '../interfaces/token';
 
-export class LoginResponse implements IPaylad {
+export class LoginResponse implements Token {
     @ApiProperty({ example: 'Bearer', description: 'Тип токена' })
     type: string;
 

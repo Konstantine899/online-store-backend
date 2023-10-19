@@ -15,7 +15,7 @@ import { LogoutResponse } from './responses/logout.response';
 import { LoginResponse } from './responses/login.response';
 import { UpdateAccessTokenResponse } from './responses/update-access-token.response';
 import { RegistrationResponse } from './responses/registration.response';
-import { IPaylad } from './interfaces/i-paylad';
+import { Token } from './interfaces/token';
 
 @Injectable()
 export class AuthService {
@@ -39,7 +39,7 @@ export class AuthService {
             user,
             60 * 60 * 24 * 30,
         );
-        return this.buildResponsePayload(user, accessToken, refreshToken);
+        return this.getToken(accessToken, refreshToken);
     }
 
     public async login(dto: CreateUserDto): Promise<LoginResponse> {
@@ -49,7 +49,7 @@ export class AuthService {
             user,
             60 * 60 * 24 * 30,
         );
-        return this.buildResponsePayload(user, accessToken, refreshToken);
+        return this.getToken(accessToken, refreshToken);
     }
 
     public async logout(
@@ -61,24 +61,23 @@ export class AuthService {
         );
         await this.tokenService.removeRefreshToken(payload.jti, payload.sub);
         request.headers.authorization = null; // обнуляю access token
-        return { status: HttpStatus.OK, message: 'success' };
+        return {
+            status: HttpStatus.OK,
+            message: 'success',
+        };
     }
 
     public async updateAccessToken(
         refreshToken: string,
     ): Promise<UpdateAccessTokenResponse> {
-        const { user, accessToken } =
+        const { accessToken } =
             await this.tokenService.createAccessTokenFromRefreshToken(
                 refreshToken,
             );
-        return this.buildResponsePayload(user, accessToken);
+        return this.getToken(accessToken);
     }
 
-    public buildResponsePayload(
-        user: UserModel,
-        accessToken: string,
-        refreshToken?: string,
-    ): IPaylad {
+    private getToken(accessToken: string, refreshToken?: string): Token {
         return {
             type: 'Bearer',
             accessToken,
@@ -98,7 +97,7 @@ export class AuthService {
         return this.userService.findAuthenticatedUser(user.id);
     }
 
-    private unauthorized(message): void {
+    private unauthorized(message: string): void {
         throw new UnauthorizedException({
             status: HttpStatus.UNAUTHORIZED,
             message,
