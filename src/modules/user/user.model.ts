@@ -18,6 +18,16 @@ interface IUserCreationAttributes {
     password: string;
 }
 
+interface User {
+    id: number;
+    email: string;
+    password: string;
+    roles: RoleModel[];
+    refresh_tokens: RefreshTokenModel[];
+    products: ProductModel[];
+    orders: OrderModel[];
+}
+
 @Table({
     tableName: 'user',
     underscored: true,
@@ -25,7 +35,10 @@ interface IUserCreationAttributes {
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
 })
-export class UserModel extends Model<UserModel, IUserCreationAttributes> {
+export class UserModel
+    extends Model<UserModel, IUserCreationAttributes>
+    implements User
+{
     @Column({
         type: DataType.INTEGER,
         primaryKey: true,

@@ -8,6 +8,11 @@ import {
 import { ProductModel } from '../product/product.model';
 import { CartProductModel } from './cart-product.model';
 
+interface Cart {
+    id: number;
+    products: ProductModel[];
+}
+
 @Table({
     tableName: 'cart',
     underscored: true,
@@ -15,7 +20,7 @@ import { CartProductModel } from './cart-product.model';
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
 })
-export class CartModel extends Model<CartModel> {
+export class CartModel extends Model<CartModel> implements Cart {
     @Column({
         type: DataType.INTEGER,
         unique: true,

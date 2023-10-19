@@ -5,7 +5,7 @@ import { UserService } from '../user/user.service';
 import { LoginCheckResponse } from '../auth/responses/login-check.response';
 import jwtSettingsConfig from './helpers/jwt.settings.config';
 
-export interface IAccessTokenSubject {
+interface IAccessTokenSubject {
     sub: number; // сокращение от subject
 }
 

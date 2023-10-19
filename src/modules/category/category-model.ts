@@ -5,6 +5,12 @@ interface ICategoryCreationAttributes {
     name: string;
 }
 
+interface Category {
+    id: number;
+    name: string;
+    products: ProductModel[];
+}
+
 @Table({
     tableName: 'category',
     underscored: true,
@@ -12,10 +18,10 @@ interface ICategoryCreationAttributes {
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
 })
-export class CategoryModel extends Model<
-    CategoryModel,
-    ICategoryCreationAttributes
-> {
+export class CategoryModel
+    extends Model<CategoryModel, ICategoryCreationAttributes>
+    implements Category
+{
     @Column({
         type: DataType.INTEGER,
         unique: true,

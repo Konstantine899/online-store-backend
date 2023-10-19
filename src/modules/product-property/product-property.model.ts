@@ -9,6 +9,14 @@ import {
 import { ProductModel } from '../product/product.model';
 import { ApiProperty } from '@nestjs/swagger';
 
+interface ProductProperty {
+    id: number;
+    name: string;
+    value: string;
+    productId: number;
+    product: ProductModel;
+}
+
 @Table({
     tableName: 'product-property',
     underscored: true,
@@ -16,8 +24,14 @@ import { ApiProperty } from '@nestjs/swagger';
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
 })
-export class ProductPropertyModel extends Model<ProductPropertyModel> {
-    @ApiProperty({ example: 1, description: 'Идентификатор свойство продукта' })
+export class ProductPropertyModel
+    extends Model<ProductPropertyModel>
+    implements ProductProperty
+{
+    @ApiProperty({
+        example: 1,
+        description: 'Идентификатор свойство продукта',
+    })
     @Column({
         type: DataType.INTEGER,
         primaryKey: true,
@@ -26,7 +40,10 @@ export class ProductPropertyModel extends Model<ProductPropertyModel> {
     })
     id: number;
 
-    @ApiProperty({ example: 'Экран:', description: 'Имя свойства' })
+    @ApiProperty({
+        example: 'Экран:',
+        description: 'Имя свойства',
+    })
     @Column({
         type: DataType.STRING,
         allowNull: false,
@@ -48,7 +65,10 @@ export class ProductPropertyModel extends Model<ProductPropertyModel> {
         description: 'Идентификатор продукта',
     })
     @ForeignKey(() => ProductModel)
-    @Column({ type: DataType.INTEGER, allowNull: false })
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
     productId: number;
 
     @BelongsTo(() => ProductModel)

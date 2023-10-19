@@ -10,6 +10,20 @@ import {
 import { OrderItemModel } from '../order-item/order-item.model';
 import { UserModel } from '../user/user.model';
 
+interface Order {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    amount: number;
+    status: number;
+    comment: string;
+    items: OrderItemModel[];
+    userId: number;
+    user: UserModel;
+}
+
 @Table({
     tableName: 'order',
     underscored: true,
@@ -17,7 +31,7 @@ import { UserModel } from '../user/user.model';
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
 })
-export class OrderModel extends Model<OrderModel> {
+export class OrderModel extends Model<OrderModel> implements Order {
     @Column({
         type: DataType.INTEGER,
         unique: true,
@@ -26,22 +40,41 @@ export class OrderModel extends Model<OrderModel> {
     })
     id: number;
 
-    @Column({ type: DataType.STRING, allowNull: false })
+    @Column({
+        type: DataType.STRING,
+        allowNull: false,
+    })
     name: string;
 
-    @Column({ type: DataType.STRING, allowNull: false })
+    @Column({
+        type: DataType.STRING,
+        allowNull: false,
+    })
     email: string;
 
-    @Column({ type: DataType.STRING, allowNull: false })
+    @Column({
+        type: DataType.STRING,
+        allowNull: false,
+    })
     phone: string;
 
-    @Column({ type: DataType.STRING, allowNull: false })
+    @Column({
+        type: DataType.STRING,
+        allowNull: false,
+    })
     address: string;
 
-    @Column({ type: DataType.FLOAT, allowNull: false })
+    @Column({
+        type: DataType.FLOAT,
+        allowNull: false,
+    })
     amount: number;
 
-    @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+    })
     status: number;
 
     @Column({ type: DataType.STRING(2200) })
@@ -51,7 +84,10 @@ export class OrderModel extends Model<OrderModel> {
     items: OrderItemModel[];
 
     @ForeignKey(() => UserModel)
-    @Column({ type: DataType.INTEGER, allowNull: false })
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
     userId: number;
 
     @BelongsTo(() => UserModel)

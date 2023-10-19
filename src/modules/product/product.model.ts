@@ -22,6 +22,21 @@ interface IUserCreationAttributes {
     image: string;
 }
 
+interface Product {
+    id: number;
+    name: string;
+    price: number;
+    rating: number;
+    image: string;
+    categoryId: number;
+    category: CategoryModel;
+    brandId: number;
+    brand: BrandModel;
+    properties: ProductPropertyModel[];
+    baskets: CartModel[];
+    users: UserModel[];
+}
+
 @Table({
     tableName: 'product',
     underscored: true,
@@ -29,7 +44,10 @@ interface IUserCreationAttributes {
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
 })
-export class ProductModel extends Model<ProductModel, IUserCreationAttributes> {
+export class ProductModel
+    extends Model<ProductModel, IUserCreationAttributes>
+    implements Product
+{
     @Column({
         type: DataType.INTEGER,
         unique: true,
@@ -45,24 +63,39 @@ export class ProductModel extends Model<ProductModel, IUserCreationAttributes> {
     })
     name: string;
 
-    @Column({ type: DataType.FLOAT, allowNull: false })
+    @Column({
+        type: DataType.FLOAT,
+        allowNull: false,
+    })
     price: number;
 
-    @Column({ type: DataType.INTEGER, defaultValue: 0 })
+    @Column({
+        type: DataType.INTEGER,
+        defaultValue: 0,
+    })
     rating: number;
 
-    @Column({ type: DataType.STRING, allowNull: false })
+    @Column({
+        type: DataType.STRING,
+        allowNull: false,
+    })
     image: string;
 
     @ForeignKey(() => CategoryModel)
-    @Column({ type: DataType.INTEGER, allowNull: false })
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
     categoryId: number;
 
     @BelongsTo(() => CategoryModel)
     category: CategoryModel;
 
     @ForeignKey(() => BrandModel)
-    @Column({ type: DataType.INTEGER, allowNull: false })
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
     brandId: number;
 
     @BelongsTo(() => BrandModel)

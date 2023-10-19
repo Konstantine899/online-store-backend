@@ -9,6 +9,13 @@ import { UserModel } from '../user/user.model';
 import { UserRoleModel } from './user-role.model';
 import { ApiProperty } from '@nestjs/swagger';
 
+interface Role {
+    id: number;
+    role: string;
+    description: string;
+    users: UserModel[];
+}
+
 @Table({
     tableName: 'role',
     underscored: true,
@@ -16,8 +23,11 @@ import { ApiProperty } from '@nestjs/swagger';
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
 })
-export class RoleModel extends Model<RoleModel> {
-    @ApiProperty({ example: 1, description: 'Идентификатор роли' })
+export class RoleModel extends Model<RoleModel> implements Role {
+    @ApiProperty({
+        example: 1,
+        description: 'Идентификатор роли',
+    })
     @Column({
         type: DataType.INTEGER,
         unique: true,
@@ -26,12 +36,25 @@ export class RoleModel extends Model<RoleModel> {
     })
     id: number;
 
-    @ApiProperty({ example: 'USER', description: 'Роль' })
-    @Column({ type: DataType.STRING, unique: true, allowNull: false })
+    @ApiProperty({
+        example: 'USER',
+        description: 'Роль',
+    })
+    @Column({
+        type: DataType.STRING,
+        unique: true,
+        allowNull: false,
+    })
     role: string;
 
-    @ApiProperty({ example: 'Пользователь', description: 'Описание роли' })
-    @Column({ type: DataType.STRING, allowNull: false })
+    @ApiProperty({
+        example: 'Пользователь',
+        description: 'Описание роли',
+    })
+    @Column({
+        type: DataType.STRING,
+        allowNull: false,
+    })
     description: string;
 
     // Многие ко многим через промежуточную таблицу UserRoleModel

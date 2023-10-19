@@ -9,6 +9,15 @@ import {
 import { OrderModel } from '../order/order.model';
 import { ApiProperty } from '@nestjs/swagger';
 
+interface OrderItem {
+    id: number;
+    name: string;
+    price: number;
+    quantity: number;
+    orderId: number;
+    order: OrderModel;
+}
+
 @Table({
     tableName: 'order-item',
     underscored: true,
@@ -16,7 +25,7 @@ import { ApiProperty } from '@nestjs/swagger';
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
 })
-export class OrderItemModel extends Model<OrderItemModel> {
+export class OrderItemModel extends Model<OrderItemModel> implements OrderItem {
     @Column({
         type: DataType.INTEGER,
         unique: true,
@@ -25,20 +34,41 @@ export class OrderItemModel extends Model<OrderItemModel> {
     })
     id: number;
 
-    @ApiProperty({ example: 'Xiaomi 10pro', description: 'Имя продукта' })
-    @Column({ type: DataType.STRING, allowNull: false })
+    @ApiProperty({
+        example: 'Xiaomi 10pro',
+        description: 'Имя продукта',
+    })
+    @Column({
+        type: DataType.STRING,
+        allowNull: false,
+    })
     name: string;
 
-    @ApiProperty({ example: 1000, description: 'Цена продукта' })
-    @Column({ type: DataType.FLOAT, allowNull: false })
+    @ApiProperty({
+        example: 1000,
+        description: 'Цена продукта',
+    })
+    @Column({
+        type: DataType.FLOAT,
+        allowNull: false,
+    })
     price: number;
 
-    @ApiProperty({ example: 1, description: 'Количество' })
-    @Column({ type: DataType.INTEGER, allowNull: false })
+    @ApiProperty({
+        example: 1,
+        description: 'Количество',
+    })
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
     quantity: number;
 
     @ForeignKey(() => OrderModel)
-    @Column({ type: DataType.INTEGER, allowNull: false })
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
     orderId: number;
 
     @BelongsTo(() => OrderModel)

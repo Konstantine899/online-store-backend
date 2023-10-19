@@ -8,6 +8,14 @@ import {
 } from 'sequelize-typescript';
 import { UserModel } from '../user/user.model';
 
+interface RefreshToken {
+    id: number;
+    is_revoked: boolean;
+    expires: Date;
+    user_id: number;
+    user: UserModel;
+}
+
 @Table({
     tableName: 'refresh-token',
     underscored: true,
@@ -15,7 +23,10 @@ import { UserModel } from '../user/user.model';
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
 })
-export class RefreshTokenModel extends Model<RefreshTokenModel> {
+export class RefreshTokenModel
+    extends Model<RefreshTokenModel>
+    implements RefreshToken
+{
     @Column({
         type: DataType.INTEGER,
         unique: true,
@@ -24,10 +35,16 @@ export class RefreshTokenModel extends Model<RefreshTokenModel> {
     })
     id: number;
 
-    @Column({ type: DataType.BOOLEAN, defaultValue: false })
+    @Column({
+        type: DataType.BOOLEAN,
+        defaultValue: false,
+    })
     is_revoked: boolean; // аннулировать или нет
 
-    @Column({ type: DataType.DATE, allowNull: false })
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+    })
     expires: Date;
 
     @ForeignKey(() => UserModel)
