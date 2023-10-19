@@ -6,20 +6,20 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { LoginCheckRequest } from '../../requests/login-check.request';
-import { LoginCheckResponse } from '../../responses/login-check.response';
+import { CheckUserAuthResponse } from '../../responses/check-user-auth-response';
+import { UserModel } from '../../../user/user.model';
 
-export function LoginCheckSwaggerDecorator() {
+export function CheckUserAuthSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({ summary: 'Проверка авторизации пользователя' }),
         ApiBearerAuth('JWT-auth'),
         ApiBody({
-            type: LoginCheckRequest,
+            type: UserModel,
             required: true,
         }),
         ApiResponse({
             status: HttpStatus.OK,
-            type: LoginCheckResponse,
+            type: CheckUserAuthResponse,
         }),
         ApiNotFoundResponse({
             description: 'Not Found',

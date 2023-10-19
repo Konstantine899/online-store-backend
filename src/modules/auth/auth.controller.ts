@@ -19,14 +19,14 @@ import { ApiTags } from '@nestjs/swagger';
 import { RegistrationSwaggerDecorator } from './decorators/swagger/registration.swagger.decorator';
 import { LoginSwaggerDecorator } from './decorators/swagger/login.swagger.decorator';
 import { UpdateAccessTokenSwaggerDecorator } from './decorators/swagger/update-access-token.swagger.decorator';
-import { LoginCheckSwaggerDecorator } from './decorators/swagger/login-check.swagger.decorator';
-import { LoginCheckRequest } from './requests/login-check.request';
+import { CheckUserAuthSwaggerDecorator } from './decorators/swagger/check-user-auth-swagger-decorator';
 import { LogoutSwaggerDecorator } from './decorators/swagger/logout.swagger.decorator';
 import { LoginResponse } from './responses/login.response';
 import { RegistrationResponse } from './responses/registration.response';
 import { UpdateAccessTokenResponse } from './responses/update-access-token.response';
-import { LoginCheckResponse } from './responses/login-check.response';
+import { CheckUserAuthResponse } from './responses/check-user-auth-response';
 import { LogoutResponse } from './responses/logout.response';
+import { UserModel } from '../user/user.model';
 
 @ApiTags('Аутентификация')
 @Controller('auth')
@@ -61,14 +61,14 @@ export class AuthController {
         return this.authService.updateAccessToken(dto.refreshToken);
     }
 
-    @LoginCheckSwaggerDecorator()
+    @CheckUserAuthSwaggerDecorator()
     @UseGuards(JwtGuard)
-    @Get('/login-check')
-    public async loginCheck(
+    @Get('/check')
+    public async checkUserAuth(
         @Req() request: Request,
-    ): Promise<LoginCheckResponse> {
-        const { id } = request.user as LoginCheckRequest;
-        return this.userService.loginCheck(id);
+    ): Promise<CheckUserAuthResponse> {
+        const { id } = request.user as UserModel;
+        return this.userService.checkUserAuth(id);
     }
 
     @LogoutSwaggerDecorator()

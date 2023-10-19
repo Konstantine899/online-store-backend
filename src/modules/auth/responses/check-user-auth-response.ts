@@ -3,7 +3,7 @@ import { RoleModel } from '../../role/role.model';
 import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class LoginCheckResponse {
+export class CheckUserAuthResponse {
     @ApiProperty({ example: 1, description: 'Идентификатор пользователя' })
     id: number;
 

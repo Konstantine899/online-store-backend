@@ -2,7 +2,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import { LoginCheckResponse } from '../auth/responses/login-check.response';
+import { CheckUserAuthResponse } from '../auth/responses/check-user-auth-response';
 import jwtSettingsConfig from './helpers/jwt.settings.config';
 
 interface IAccessTokenSubject {
@@ -22,8 +22,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     public async validate(
         payload: IAccessTokenSubject,
-    ): Promise<LoginCheckResponse> {
-        const user = await this.userService.loginCheck(payload.sub);
+    ): Promise<CheckUserAuthResponse> {
+        const user = await this.userService.checkUserAuth(payload.sub);
         if (!user) {
             return null;
         }

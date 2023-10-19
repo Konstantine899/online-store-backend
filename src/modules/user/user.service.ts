@@ -18,7 +18,7 @@ import { UpdateUserResponse } from './responses/update-user-response';
 import { RemoveUserResponse } from './responses/remove-user.response';
 import { AddRoleResponse } from './responses/add-role.response';
 import { RemoveRoleResponse } from './responses/remove-role.response';
-import { LoginCheckResponse } from '../auth/responses/login-check.response';
+import { CheckUserAuthResponse } from '../auth/responses/check-user-auth-response';
 
 @Injectable()
 export class UserService {
@@ -66,7 +66,7 @@ export class UserService {
         return foundUser;
     }
 
-    public async loginCheck(id: number): Promise<LoginCheckResponse> {
+    public async checkUserAuth(id: number): Promise<CheckUserAuthResponse> {
         const user = await this.userRepository.findUser(id);
         if (!user) {
             this.notFound('Профиль пользователя не найден в БД');
