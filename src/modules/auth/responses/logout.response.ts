@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { HttpStatus } from '@nestjs/common';
-export class LogoutResponse {
+
+interface Logout {
+    status: number;
+    message: string;
+}
+
+export class LogoutResponse implements Logout {
     @ApiProperty({ example: HttpStatus.OK })
     readonly status: number;
 

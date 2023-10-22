@@ -15,7 +15,7 @@ import { LogoutResponse } from './responses/logout.response';
 import { LoginResponse } from './responses/login.response';
 import { UpdateAccessTokenResponse } from './responses/update-access-token.response';
 import { RegistrationResponse } from './responses/registration.response';
-import { Token } from './interfaces/token';
+import { Auth } from './interfaces/Auth';
 
 @Injectable()
 export class AuthService {
@@ -77,7 +77,7 @@ export class AuthService {
         return this.getToken(accessToken);
     }
 
-    private getToken(accessToken: string, refreshToken?: string): Token {
+    private getToken(accessToken: string, refreshToken?: string): Auth {
         return {
             type: 'Bearer',
             accessToken,

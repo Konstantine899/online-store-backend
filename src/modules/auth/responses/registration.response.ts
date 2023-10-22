@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Token } from '../interfaces/token';
+import { Auth } from '../interfaces/Auth';
 
-export class RegistrationResponse implements Token {
+export class RegistrationResponse implements Auth {
     @ApiProperty({ example: 'Bearer', description: 'Тип токена' })
     type: string;
 

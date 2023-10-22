@@ -6,7 +6,7 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CheckUserAuthResponse } from '../../responses/check-user-auth-response';
+import { CheckResponse } from '../../responses/check-response';
 import { UserModel } from '../../../user/user.model';
 
 export function CheckUserAuthSwaggerDecorator() {
@@ -19,7 +19,7 @@ export function CheckUserAuthSwaggerDecorator() {
         }),
         ApiResponse({
             status: HttpStatus.OK,
-            type: CheckUserAuthResponse,
+            type: CheckResponse,
         }),
         ApiNotFoundResponse({
             description: 'Not Found',

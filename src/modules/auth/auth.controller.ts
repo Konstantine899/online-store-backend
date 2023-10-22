@@ -24,7 +24,7 @@ import { LogoutSwaggerDecorator } from './decorators/swagger/logout.swagger.deco
 import { LoginResponse } from './responses/login.response';
 import { RegistrationResponse } from './responses/registration.response';
 import { UpdateAccessTokenResponse } from './responses/update-access-token.response';
-import { CheckUserAuthResponse } from './responses/check-user-auth-response';
+import { CheckResponse } from './responses/check-response';
 import { LogoutResponse } from './responses/logout.response';
 import { UserModel } from '../user/user.model';
 
@@ -66,7 +66,7 @@ export class AuthController {
     @Get('/check')
     public async checkUserAuth(
         @Req() request: Request,
-    ): Promise<CheckUserAuthResponse> {
+    ): Promise<CheckResponse> {
         const { id } = request.user as UserModel;
         return this.userService.checkUserAuth(id);
     }
