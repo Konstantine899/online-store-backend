@@ -28,9 +28,21 @@ import { CheckResponse } from './responses/check-response';
 import { LogoutResponse } from './responses/logout.response';
 import { UserModel } from '../user/user.model';
 
+interface IAuthController {
+    registration(dto: RegistrationDto): Promise<RegistrationResponse>;
+
+    login(dto: LoginDto): Promise<LoginResponse>;
+
+    updateAccessToken(dto: RefreshDto): Promise<UpdateAccessTokenResponse>;
+
+    checkUserAuth(request: Request): Promise<CheckResponse>;
+
+    logout(request: Request, refresh: RefreshDto): Promise<LogoutResponse>;
+}
+
 @ApiTags('Аутентификация')
 @Controller('auth')
-export class AuthController {
+export class AuthController implements IAuthController {
     constructor(
         private readonly authService: AuthService,
         private readonly userService: UserService,

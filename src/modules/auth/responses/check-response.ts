@@ -3,13 +3,13 @@ import { RoleModel } from '../../role/role.model';
 import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
-interface Check {
+interface ICheckResponse {
     id: number;
     email: string;
     roles: RoleModel[];
 }
 
-export class CheckResponse implements Check {
+export class CheckResponse implements ICheckResponse {
     @ApiProperty({
         example: 1,
         description: 'Идентификатор пользователя',

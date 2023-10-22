@@ -15,10 +15,20 @@ import { LogoutResponse } from './responses/logout.response';
 import { LoginResponse } from './responses/login.response';
 import { UpdateAccessTokenResponse } from './responses/update-access-token.response';
 import { RegistrationResponse } from './responses/registration.response';
-import { Auth } from './interfaces/Auth';
+import { IAuthResponse } from './interfaces/i-auth-response';
+
+interface IAuthService {
+    registration(dto: CreateUserDto): Promise<RegistrationResponse>;
+
+    login(dto: CreateUserDto): Promise<LoginResponse>;
+
+    logout(refresh: RefreshDto, request: Request): Promise<LogoutResponse>;
+
+    updateAccessToken(refreshToken: string): Promise<UpdateAccessTokenResponse>;
+}
 
 @Injectable()
-export class AuthService {
+export class AuthService implements IAuthService {
     constructor(
         private readonly userService: UserService,
         private readonly tokenService: TokenService,
@@ -77,7 +87,10 @@ export class AuthService {
         return this.getToken(accessToken);
     }
 
-    private getToken(accessToken: string, refreshToken?: string): Auth {
+    private getToken(
+        accessToken: string,
+        refreshToken?: string,
+    ): IAuthResponse {
         return {
             type: 'Bearer',
             accessToken,
