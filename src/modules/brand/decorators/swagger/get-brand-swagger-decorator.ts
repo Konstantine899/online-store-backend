@@ -1,17 +1,14 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
-    ApiBearerAuth,
     ApiNotFoundResponse,
     ApiOperation,
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { RemoveBrandResponse } from '../responses/remove-brand.response';
 
-export function RemoveBrandDocumentation() {
+export function GetBrandSwaggerDecorator() {
     return applyDecorators(
-        ApiOperation({ summary: 'Удаление бренда' }),
-        ApiBearerAuth('JWT-auth'),
+        ApiOperation({ summary: 'Получить бренд' }),
         ApiParam({
             name: 'id',
             type: 'string',
@@ -19,9 +16,15 @@ export function RemoveBrandDocumentation() {
             required: true,
         }),
         ApiResponse({
-            description: 'Remove brand',
+            description: 'Get brand',
             status: HttpStatus.OK,
-            type: RemoveBrandResponse,
+            schema: {
+                title: 'Бренд',
+                example: {
+                    id: 1,
+                    name: 'xiomi',
+                },
+            },
         }),
         ApiNotFoundResponse({
             description: 'Not found',

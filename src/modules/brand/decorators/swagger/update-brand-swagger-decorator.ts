@@ -3,24 +3,31 @@ import {
     ApiBearerAuth,
     ApiBody,
     ApiOperation,
+    ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CreateBrandDto } from '../dto/create-brand.dto';
+import { CreateBrandDto } from '../../dto/create-brand.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
-import { CreateBrandResponse } from '../responses/create-brand.response';
+import { UpdateBrandResponse } from '../../responses/update-brand.response';
 
-export function CreateBrandDocumentation() {
+export function UpdateBrandSwaggerDecorator() {
     return applyDecorators(
-        ApiOperation({ summary: 'Создание бренда продукта' }),
+        ApiOperation({ summary: 'Обновление бренда' }),
         ApiBearerAuth('JWT-auth'),
+        ApiParam({
+            name: 'id',
+            type: 'string',
+            description: 'Идентификатор бренда',
+            required: true,
+        }),
         ApiBody({
             type: CreateBrandDto,
-            description: 'Структура входящих данных для создания бренда',
+            description: 'Структура входящих данных для обновления бренда',
         }),
         ApiResponse({
-            description: 'Created brand',
-            status: HttpStatus.CREATED,
-            type: CreateBrandResponse,
+            description: 'Updated brand',
+            status: HttpStatus.OK,
+            type: UpdateBrandResponse,
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',

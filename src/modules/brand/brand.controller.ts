@@ -16,11 +16,11 @@ import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateBrandDocumentation } from './decorators/create-brand.documentation';
-import { GetListAllBrandsDocumentation } from './decorators/get-list-all-brands.documentation';
-import { GetBrandDocumentation } from './decorators/get-brand.documentation';
-import { UpdateBrandDocumentation } from './decorators/update-brand.documentation';
-import { RemoveBrandDocumentation } from './decorators/remove-brand.documentation';
+import { CreateBrandSwaggerDecorator } from './decorators/swagger/create-brand-swagger-decorator';
+import { GetListAllBrandsSwaggerDecorator } from './decorators/swagger/get-list-all-brands-swagger-decorator';
+import { GetBrandSwaggerDecorator } from './decorators/swagger/get-brand-swagger-decorator';
+import { UpdateBrandSwaggerDecorator } from './decorators/swagger/update-brand-swagger-decorator';
+import { RemoveBrandSwaggerDecorator } from './decorators/swagger/remove-brand-swagger-decorator';
 import { CreateBrandResponse } from './responses/create-brand.response';
 import { ListAllBrandsResponse } from './responses/list-all-brands.response';
 import { BrandResponse } from './responses/brand.response';
@@ -32,7 +32,7 @@ import { RemoveBrandResponse } from './responses/remove-brand.response';
 export class BrandController {
     constructor(private readonly brandService: BrandService) {}
 
-    @CreateBrandDocumentation()
+    @CreateBrandSwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -43,14 +43,14 @@ export class BrandController {
         return this.brandService.createBrand(dto);
     }
 
-    @GetListAllBrandsDocumentation()
+    @GetListAllBrandsSwaggerDecorator()
     @HttpCode(200)
     @Get('/brands')
     public async getListAllBrands(): Promise<ListAllBrandsResponse[]> {
         return this.brandService.getListAllBrands();
     }
 
-    @GetBrandDocumentation()
+    @GetBrandSwaggerDecorator()
     @HttpCode(200)
     @Get('/one/:id([0-9]+)')
     public async getBrand(
@@ -59,7 +59,7 @@ export class BrandController {
         return this.brandService.getBrand(id);
     }
 
-    @UpdateBrandDocumentation()
+    @UpdateBrandSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -71,7 +71,7 @@ export class BrandController {
         return this.brandService.updateBrand(id, dto);
     }
 
-    @RemoveBrandDocumentation()
+    @RemoveBrandSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
