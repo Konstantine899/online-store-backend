@@ -1,8 +1,9 @@
 'use strict';
-/** @type {import('sequelize-cli').Migration} */
+const { RATING } = require('../consts');
+/** @type {import("sequelize-cli").Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('rating', {
+        await queryInterface.createTable(`${RATING}`, {
             id: {
                 allowNull: false,
                 autoIncrement: true,
@@ -13,7 +14,7 @@ module.exports = {
                 type: Sequelize.INTEGER,
                 allowNull: false,
             },
-            userId: {
+            user_id: {
                 type: Sequelize.INTEGER,
                 references: {
                     model: 'user',
@@ -21,7 +22,7 @@ module.exports = {
                 },
                 allowNull: false,
             },
-            productId: {
+            product_id: {
                 type: Sequelize.INTEGER,
                 references: {
                     model: 'product',
@@ -40,6 +41,6 @@ module.exports = {
         });
     },
     async down(queryInterface) {
-        await queryInterface.dropTable('rating');
+        await queryInterface.dropTable(`${RATING}`);
     },
 };

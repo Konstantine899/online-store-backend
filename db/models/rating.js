@@ -8,8 +8,8 @@ module.exports = (sequelize, DataTypes) => {
     rating.init(
         {
             rating: DataTypes.NUMBER,
-            userId: DataTypes.NUMBER,
-            productId: DataTypes.NUMBER,
+            user_id: DataTypes.NUMBER,
+            product_id: DataTypes.NUMBER,
         },
         {
             sequelize,

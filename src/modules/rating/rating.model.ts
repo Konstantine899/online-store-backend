@@ -10,8 +10,8 @@ import { ProductModel } from '../product/product.model';
 
 interface Rating {
     rating: number;
-    userId: number;
-    productId: number;
+    user_id: number;
+    product_id: number;
 }
 
 @Table({
@@ -30,9 +30,9 @@ export class RatingModel extends Model<RatingModel> implements Rating {
 
     @ForeignKey(() => UserModel)
     @Column({ type: DataType.INTEGER })
-    userId: number;
+    user_id: number;
 
     @ForeignKey(() => ProductModel)
     @Column({ type: DataType.INTEGER })
-    productId: number;
+    product_id: number;
 }

@@ -15,29 +15,29 @@ export class RatingRepository {
         rating: number,
     ): Promise<CreateRatingResponse> {
         const productRating = new RatingModel();
-        productRating.userId = userId;
-        productRating.productId = productId;
+        productRating.user_id = userId;
+        productRating.product_id = productId;
         productRating.rating = rating;
         return productRating.save();
     }
 
     public async findVote(
-        userId: number,
-        productId: number,
+        user_id: number,
+        product_id: number,
         rating: number,
     ): Promise<RatingModel> {
         return this.ratingModel.findOne({
-            where: { userId, productId, rating },
+            where: { user_id, product_id, rating },
         });
     }
 
-    public async countRating(productId: number): Promise<number> {
+    public async countRating(product_id: number): Promise<number> {
         return this.ratingModel.count({
-            where: { productId },
+            where: { product_id },
         });
     }
 
-    public async ratingsSum(productId: number): Promise<number> {
-        return this.ratingModel.sum('rating', { where: { productId } });
+    public async ratingsSum(product_id: number): Promise<number> {
+        return this.ratingModel.sum('rating', { where: { product_id } });
     }
 }
