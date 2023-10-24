@@ -20,7 +20,7 @@ interface Order {
     status: number;
     comment: string;
     items: OrderItemModel[];
-    userId: number;
+    user_id: number;
     user: UserModel;
 }
 
@@ -88,7 +88,7 @@ export class OrderModel extends Model<OrderModel> implements Order {
         type: DataType.INTEGER,
         allowNull: false,
     })
-    userId: number;
+    user_id: number;
 
     @BelongsTo(() => UserModel)
     user: UserModel;

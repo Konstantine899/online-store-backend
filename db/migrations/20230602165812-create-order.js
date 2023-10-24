@@ -1,8 +1,9 @@
 'use strict';
-/** @type {import('sequelize-cli').Migration} */
+const { ORDER, USER_ID } = require('../consts');
+/** @type {import("sequelize-cli").Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('order', {
+        await queryInterface.createTable(`${ORDER}`, {
             id: {
                 allowNull: false,
                 autoIncrement: true,
@@ -43,7 +44,7 @@ module.exports = {
                 type: Sequelize.DATE,
             },
         });
-        await queryInterface.addColumn('order', 'userId', {
+        await queryInterface.addColumn(`${ORDER}`, `${USER_ID}`, {
             type: Sequelize.INTEGER,
             references: {
                 model: 'user',
@@ -53,7 +54,7 @@ module.exports = {
         });
     },
     async down(queryInterface) {
-        await queryInterface.removeColumn('order', 'userId');
-        await queryInterface.dropTable('order');
+        await queryInterface.removeColumn(`${ORDER}`, `${USER_ID}`);
+        await queryInterface.dropTable(`${ORDER}`);
     },
 };

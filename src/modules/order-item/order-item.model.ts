@@ -14,7 +14,7 @@ interface OrderItem {
     name: string;
     price: number;
     quantity: number;
-    orderId: number;
+    order_id: number;
     order: OrderModel;
 }
 
@@ -69,7 +69,7 @@ export class OrderItemModel extends Model<OrderItemModel> implements OrderItem {
         type: DataType.INTEGER,
         allowNull: false,
     })
-    orderId: number;
+    order_id: number;
 
     @BelongsTo(() => OrderModel)
     order: OrderModel;

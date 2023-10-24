@@ -10,11 +10,11 @@ export class OrderItemRepository {
     ) {}
 
     public async createItem(
-        orderId: number,
+        order_id: number,
         item: OrderItemModel,
     ): Promise<OrderItemModel> {
         return this.orderItemModel.create({
-            orderId,
+            order_id,
             name: item.name,
             price: item.price,
             quantity: item.quantity,

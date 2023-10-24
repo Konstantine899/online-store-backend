@@ -20,11 +20,12 @@ module.exports = (sequelize, DataTypes) => {
             amount: DataTypes.FLOAT,
             status: DataTypes.INTEGER,
             comment: DataTypes.STRING(2200),
-            userId: DataTypes.INTEGER,
+            user_id: DataTypes.INTEGER,
         },
         {
             sequelize,
             modelName: 'order',
+            underscored: true,
         },
     );
     return order;

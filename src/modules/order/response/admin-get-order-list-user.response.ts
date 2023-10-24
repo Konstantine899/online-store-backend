@@ -42,7 +42,7 @@ export class AdminGetOrderListUserResponse extends OrderModel {
     readonly comment: string | null;
 
     @ApiProperty({ example: 1, description: 'Идентификатор заказчика' })
-    readonly userId: number;
+    readonly user_id: number;
 
     @ApiProperty({ type: () => [OrderItemModel] })
     @IsArray()

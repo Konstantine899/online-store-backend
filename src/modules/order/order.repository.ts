@@ -18,14 +18,14 @@ export class OrderRepository {
     ) {}
 
     public async adminFindOrderListUser(
-        userId?: number,
+        user_id?: number,
     ): Promise<
         AdminGetStoreOrderListResponse[] | AdminGetOrderListUserResponse[]
     > {
         let orders: OrderModel[];
-        if (userId) {
+        if (user_id) {
             orders = await this.orderModel.findAll({
-                where: { userId },
+                where: { user_id },
                 include: [
                     {
                         model: OrderItemModel,
@@ -51,12 +51,15 @@ export class OrderRepository {
 
     public async adminFindOrderUser(
         id: number,
-        userId?: number,
+        user_id?: number,
     ): Promise<AdminGetOrderUserResponse> {
         let order: OrderModel;
-        if (userId) {
+        if (user_id) {
             order = await this.orderModel.findOne({
-                where: { id, userId },
+                where: {
+                    id,
+                    user_id,
+                },
                 include: [
                     {
                         model: OrderItemModel,
@@ -80,10 +83,10 @@ export class OrderRepository {
     }
 
     public async findUserAndHisOrders(
-        userId: number,
+        user_id: number,
     ): Promise<AdminCreateOrderResponse> {
-        return this.orderModel.findOne({
-            where: { userId },
+        return await this.orderModel.findOne({
+            where: { user_id },
             include: [
                 {
                     model: OrderItemModel,
@@ -97,7 +100,8 @@ export class OrderRepository {
     public async adminCreateOrder(
         dto: OrderDto,
     ): Promise<AdminCreateOrderResponse> {
-        return this.createOrder(dto);
+        const { userId } = dto;
+        return this.createOrder(dto, userId);
     }
 
     public async findOrder(orderId: number): Promise<OrderModel> {
@@ -117,12 +121,12 @@ export class OrderRepository {
     }
 
     public async userFindOrderList(
-        userId: number,
+        user_id: number,
     ): Promise<UserGetOrderListResponse[]> {
         let orders: OrderModel[];
-        if (userId) {
+        if (user_id) {
             orders = await this.orderModel.findAll({
-                where: { userId },
+                where: { user_id },
                 include: [
                     {
                         model: OrderItemModel,
@@ -139,11 +143,14 @@ export class OrderRepository {
     }
 
     public async userFindOrder(
-        orderId: number,
-        userId?: number,
+        order_id: number,
+        user_id?: number,
     ): Promise<OrderModel> {
         return this.orderModel.findOne({
-            where: { userId, id: orderId },
+            where: {
+                user_id,
+                id: order_id,
+            },
             include: [
                 {
                     model: OrderItemModel,
@@ -156,10 +163,10 @@ export class OrderRepository {
 
     public async createOrder(
         dto: Omit<OrderDto, 'userId'>,
-        userId?: number,
+        userId: number,
     ): Promise<OrderModel> {
         const order: OrderModel = new OrderModel();
-        order.userId = userId;
+        order.user_id = userId;
         order.name = dto.name;
         order.email = dto.email;
         order.phone = dto.phone;
