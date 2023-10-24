@@ -21,10 +21,10 @@ export class UpdateProductResponse extends ProductModel {
     price: number;
 
     @ApiProperty({ example: 1, description: 'Идентификатор бренда' })
-    brandId: number;
+    brand_id: number;
 
     @ApiProperty({ example: 1, description: 'Идентификатор категории' })
-    categoryId: number;
+    category_id: number;
 
     @ApiProperty({ type: () => [ProductPropertyModel] })
     @IsArray()

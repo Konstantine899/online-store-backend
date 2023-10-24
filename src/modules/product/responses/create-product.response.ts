@@ -18,10 +18,10 @@ export class CreateProductResponse extends ProductModel {
     price: number;
 
     @ApiProperty({ example: 1, description: 'Идентификатор бренда' })
-    brandId: number;
+    brand_id: number;
 
     @ApiProperty({ example: 1, description: 'Идентификатор категории' })
-    categoryId: number;
+    category_id: number;
 
     @ApiProperty({
         example: '471d35be-9906-4cee-a681-76a53a19bd25.png',

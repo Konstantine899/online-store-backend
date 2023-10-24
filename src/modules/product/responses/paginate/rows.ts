@@ -23,8 +23,8 @@ export class Rows extends ProductModel {
     image: string;
 
     @ApiProperty({ example: 1, description: 'Идентификатор категории' })
-    categoryId: number;
+    category_id: number;
 
     @ApiProperty({ example: 1, description: 'Идентификатор бренда' })
-    brandId: number;
+    brand_id: number;
 }

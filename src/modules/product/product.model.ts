@@ -28,9 +28,9 @@ interface Product {
     price: number;
     rating: number;
     image: string;
-    categoryId: number;
+    category_id: number;
     category: CategoryModel;
-    brandId: number;
+    brand_id: number;
     brand: BrandModel;
     properties: ProductPropertyModel[];
     baskets: CartModel[];
@@ -86,9 +86,9 @@ export class ProductModel
         type: DataType.INTEGER,
         allowNull: false,
     })
-    categoryId: number;
+    category_id: number;
 
-    @BelongsTo(() => CategoryModel)
+    @BelongsTo(() => CategoryModel, 'category_id')
     category: CategoryModel;
 
     @ForeignKey(() => BrandModel)
@@ -96,9 +96,9 @@ export class ProductModel
         type: DataType.INTEGER,
         allowNull: false,
     })
-    brandId: number;
+    brand_id: number;
 
-    @BelongsTo(() => BrandModel)
+    @BelongsTo(() => BrandModel, 'brand_id')
     brand: BrandModel;
 
     @HasMany(() => ProductPropertyModel, { onDelete: 'CASCADE' })

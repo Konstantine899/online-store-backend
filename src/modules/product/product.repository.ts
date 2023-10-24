@@ -20,8 +20,8 @@ export class ProductRepository {
         const product = new ProductModel();
         product.name = dto.name;
         product.price = dto.price;
-        product.brandId = dto.brandId;
-        product.categoryId = dto.categoryId;
+        product.brand_id = dto.brandId;
+        product.category_id = dto.categoryId;
         product.image = imageName;
         return product.save();
     }
@@ -60,7 +60,7 @@ export class ProductRepository {
         offset: number,
     ): Promise<{ count: number; rows: Rows[] }> {
         return this.productModel.findAndCountAll({
-            where: { brandId },
+            where: { brand_id: brandId },
             order: sort ? [['price', sort.toUpperCase()]] : null,
             limit: limit ? limit : 5,
             offset,
@@ -75,7 +75,7 @@ export class ProductRepository {
         offset: number,
     ): Promise<{ count: number; rows: Rows[] }> {
         return this.productModel.findAndCountAll({
-            where: { categoryId },
+            where: { category_id: categoryId },
             order: sort ? [['price', sort.toUpperCase()]] : null,
             limit: limit ? limit : 5,
             offset,
@@ -91,7 +91,7 @@ export class ProductRepository {
         offset: number,
     ): Promise<{ count: number; rows: Rows[] }> {
         return this.productModel.findAndCountAll({
-            where: { brandId, categoryId },
+            where: { brand_id: brandId, category_id: categoryId },
             order: sort ? [['price', sort.toUpperCase()]] : null,
             limit: limit ? limit : 5,
             offset,
@@ -111,8 +111,8 @@ export class ProductRepository {
             ...dto,
             name: dto.name,
             price: dto.price,
-            brandId: dto.brandId,
-            categoryId: dto.categoryId,
+            brand_id: dto.brandId,
+            category_id: dto.categoryId,
             image: updatedNameImage,
         });
     }
