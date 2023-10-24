@@ -1,8 +1,9 @@
 'use strict';
-/** @type {import('sequelize-cli').Migration} */
+const { CATEGORY_ID, BRAND_ID, PRODUCT } = require('../consts');
+/** @type {import("sequelize-cli").Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('product', {
+        await queryInterface.createTable(`${PRODUCT}`, {
             id: {
                 allowNull: false,
                 autoIncrement: true,
@@ -36,7 +37,7 @@ module.exports = {
                 type: Sequelize.DATE,
             },
         });
-        await queryInterface.addColumn('product', 'categoryId', {
+        await queryInterface.addColumn(`${PRODUCT}`, `${CATEGORY_ID}`, {
             type: Sequelize.INTEGER,
             references: {
                 model: 'category',
@@ -44,7 +45,7 @@ module.exports = {
             },
             allowNull: false,
         });
-        await queryInterface.addColumn('product', 'brandId', {
+        await queryInterface.addColumn(`${PRODUCT}`, `${BRAND_ID}`, {
             type: Sequelize.INTEGER,
             references: {
                 model: 'brand',
@@ -54,8 +55,8 @@ module.exports = {
         });
     },
     async down(queryInterface) {
-        await queryInterface.removeColumn('product', 'brandId');
-        await queryInterface.removeColumn('product', 'categoryId');
-        await queryInterface.dropTable('product');
+        await queryInterface.removeColumn(`${PRODUCT}`, `${BRAND_ID}`);
+        await queryInterface.removeColumn(`${PRODUCT}`, `${CATEGORY_ID}`);
+        await queryInterface.dropTable(`${PRODUCT}`);
     },
 };
