@@ -1,11 +1,12 @@
 'use strict';
 const { Model } = require('sequelize');
+const { USER_ROLE, USER, ROLE } = require('../consts');
 module.exports = (sequelize, DataTypes) => {
     class role extends Model {
         static associate(models) {
             this.belongsToMany(models.user, {
-                through: 'user-role',
-                as: 'users',
+                through: `${USER_ROLE}`,
+                as: `${USER}`,
             });
         }
     }
@@ -17,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: 'role',
+            modelName: `${ROLE}`,
         },
     );
     return role;

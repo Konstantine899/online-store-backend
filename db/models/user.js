@@ -1,24 +1,33 @@
 'use strict';
 const { Model } = require('sequelize');
+const {
+    REFRESH_TOKEN,
+    ORDER,
+    USER_ROLE,
+    ROLE,
+    RATING,
+    PRODUCT,
+    USER,
+} = require('../consts');
 module.exports = (sequelize, DataTypes) => {
     class User extends Model {
         static associate(models) {
             this.hasMany(models.refreshToken, {
-                as: 'refresh_tokens',
+                as: `${REFRESH_TOKEN}`,
                 onDelete: 'CASCADE',
                 onUpdate: 'CASCADE',
             });
             this.hasMany(models.order, {
-                as: 'orders',
+                as: `${ORDER}`,
                 onDelete: 'SET NULL',
             });
             this.belongsToMany(models.role, {
-                through: 'user-role',
-                as: 'roles',
+                through: `${USER_ROLE}`,
+                as: `${ROLE}`,
             });
             this.belongsToMany(models.product, {
-                through: 'rating',
-                as: 'products',
+                through: `${RATING}`,
+                as: `${PRODUCT}`,
                 onDelete: 'CASCADE',
             });
         }
@@ -31,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: 'User',
+            modelName: `${USER}`,
         },
     );
     return User;

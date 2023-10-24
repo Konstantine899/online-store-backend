@@ -1,11 +1,12 @@
 'use strict';
 const { Model } = require('sequelize');
+const { CART_PRODUCT, PRODUCT, CART } = require('../consts');
 module.exports = (sequelize) => {
     class Cart extends Model {
         static associate(models) {
             this.belongsToMany(models.product, {
-                through: 'cart-product',
-                as: 'products',
+                through: `${CART_PRODUCT}`,
+                as: `${PRODUCT}`,
                 onDelete: 'CASCADE',
             });
         }
@@ -15,7 +16,7 @@ module.exports = (sequelize) => {
         {},
         {
             sequelize,
-            modelName: 'Cart',
+            modelName: `${CART}`,
         },
     );
     return Cart;

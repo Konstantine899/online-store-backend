@@ -1,5 +1,5 @@
 'use strict';
-const { RATING } = require('../consts');
+const { RATING, PRODUCT, USER } = require('../consts');
 /** @type {import("sequelize-cli").Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
@@ -17,7 +17,7 @@ module.exports = {
             user_id: {
                 type: Sequelize.INTEGER,
                 references: {
-                    model: 'user',
+                    model: `${USER}`,
                     key: 'id',
                 },
                 allowNull: false,
@@ -25,7 +25,7 @@ module.exports = {
             product_id: {
                 type: Sequelize.INTEGER,
                 references: {
-                    model: 'product',
+                    model: `${PRODUCT}`,
                     key: 'id',
                 },
                 allowNull: false,

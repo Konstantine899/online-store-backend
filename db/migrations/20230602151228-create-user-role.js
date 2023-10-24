@@ -1,12 +1,13 @@
 'use strict';
-/** @type {import('sequelize-cli').Migration} */
+const { USER_ROLE, ROLE, USER } = require('../consts');
+/** @type {import("sequelize-cli").Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('user-role', {
+        await queryInterface.createTable(`${USER_ROLE}`, {
             roleId: {
                 type: Sequelize.INTEGER,
                 references: {
-                    model: 'role',
+                    model: `${ROLE}`,
                     key: 'id',
                 },
                 allowNull: false,
@@ -14,7 +15,7 @@ module.exports = {
             userId: {
                 type: Sequelize.INTEGER,
                 references: {
-                    model: 'user',
+                    model: `${USER}`,
                     key: 'id',
                 },
                 allowNull: false,
@@ -22,6 +23,6 @@ module.exports = {
         });
     },
     async down(queryInterface) {
-        await queryInterface.dropTable('user-role');
+        await queryInterface.dropTable(`${USER_ROLE}`);
     },
 };

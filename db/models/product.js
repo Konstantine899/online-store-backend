@@ -1,23 +1,33 @@
 'use strict';
 const { Model } = require('sequelize');
+const {
+    BRAND,
+    CATEGORY,
+    PRODUCT_PROPERTY,
+    RATING,
+    USER,
+    CART_PRODUCT,
+    CART,
+    PRODUCT,
+} = require('../consts');
 module.exports = (sequelize, DataTypes) => {
     class product extends Model {
         static associate(models) {
             models.cart = undefined;
-            this.belongsTo(models.brand, { as: 'brand' });
-            this.belongsTo(models.category, { as: 'category' });
+            this.belongsTo(models.brand, { as: `${BRAND}` });
+            this.belongsTo(models.category, { as: `${CATEGORY}` });
             this.hasMany(models.property, {
-                as: 'properties',
+                as: `${PRODUCT_PROPERTY}`,
                 onDelete: 'CASCADE',
             });
             this.belongsToMany(models.user, {
-                through: 'rating',
-                as: 'users',
+                through: `${RATING}`,
+                as: `${USER}`,
                 onDelete: 'CASCADE',
             });
             this.belongsToMany(models.cart, {
-                through: 'cart-product',
-                as: 'baskets',
+                through: `${CART_PRODUCT}`,
+                as: `${CART}`,
                 onDelete: 'CASCADE',
             });
         }
@@ -34,7 +44,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: 'product',
+            modelName: `${PRODUCT}`,
             underscored: true,
         },
     );

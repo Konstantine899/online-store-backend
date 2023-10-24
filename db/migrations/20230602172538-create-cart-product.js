@@ -1,5 +1,11 @@
 'use strict';
-const { CART_PRODUCT, CART_ID, PRODUCT_ID } = require('../consts');
+const {
+    CART_PRODUCT,
+    CART_ID,
+    PRODUCT_ID,
+    PRODUCT,
+    CART,
+} = require('../consts');
 /** @type {import("sequelize-cli").Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
@@ -20,14 +26,14 @@ module.exports = {
         await queryInterface.addColumn(`${CART_PRODUCT}`, `${CART_ID}`, {
             type: Sequelize.INTEGER,
             references: {
-                model: 'cart',
+                model: `${CART}`,
                 key: 'id',
             },
         });
         await queryInterface.addColumn(`${CART_PRODUCT}`, `${PRODUCT_ID}`, {
             type: Sequelize.INTEGER,
             references: {
-                model: 'product',
+                model: `${PRODUCT}`,
                 key: 'id',
             },
         });

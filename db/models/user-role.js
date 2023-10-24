@@ -1,5 +1,6 @@
 'use strict';
 const { Model } = require('sequelize');
+const { USER_ROLE } = require('../consts');
 module.exports = (sequelize, DataTypes) => {
     class UserRole extends Model {
         static associate() {}
@@ -12,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: 'user-role',
+            modelName: `${USER_ROLE}`,
         },
     );
     return UserRole;

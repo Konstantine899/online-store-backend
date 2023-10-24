@@ -1,5 +1,5 @@
 'use strict';
-const { ORDER, USER_ID } = require('../consts');
+const { ORDER, USER_ID, USER } = require('../consts');
 /** @type {import("sequelize-cli").Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
@@ -47,7 +47,7 @@ module.exports = {
         await queryInterface.addColumn(`${ORDER}`, `${USER_ID}`, {
             type: Sequelize.INTEGER,
             references: {
-                model: 'user',
+                model: `${USER}`,
                 key: 'id',
             },
             allowNull: false,

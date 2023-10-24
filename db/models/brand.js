@@ -1,10 +1,11 @@
 'use strict';
 const { Model } = require('sequelize');
+const { PRODUCT, BRAND } = require('../consts');
 module.exports = (sequelize, DataTypes) => {
     class brand extends Model {
         static associate(models) {
             this.hasMany(models.product, {
-                as: 'products',
+                as: `${PRODUCT}`,
                 onDelete: 'RESTRICT',
             });
         }
@@ -16,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: 'brand',
+            modelName: `${BRAND}`,
         },
     );
     return brand;

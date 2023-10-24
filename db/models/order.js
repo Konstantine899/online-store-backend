@@ -1,11 +1,12 @@
 'use strict';
 const { Model } = require('sequelize');
+const { USER, ORDER_ITEM, ORDER } = require('../consts');
 module.exports = (sequelize, DataTypes) => {
     class order extends Model {
         static associate(models) {
-            this.belongsTo(models.user, { as: 'user' });
+            this.belongsTo(models.user, { as: `${USER}` });
             this.hasMany(models.item, {
-                as: 'items',
+                as: `${ORDER_ITEM}`,
                 onDelete: 'CASCADE',
             });
         }
@@ -24,7 +25,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: 'order',
+            modelName: `${ORDER}`,
             underscored: true,
         },
     );

@@ -1,5 +1,6 @@
 'use strict';
 const { Model } = require('sequelize');
+const { RATING } = require('../consts');
 module.exports = (sequelize, DataTypes) => {
     class rating extends Model {
         static associate() {}
@@ -13,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: 'rating',
+            modelName: `${RATING}`,
         },
     );
     return rating;

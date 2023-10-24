@@ -5,6 +5,13 @@ module.exports = {
     ORDER: 'order',
     ORDER_ITEM: 'order-item',
     CART_PRODUCT: 'cart-product',
+    USER: 'user',
+    USER_ROLE: 'user-role',
+    ROLE: 'role',
+    BRAND: 'brand',
+    CATEGORY: 'category',
+    CART: 'cart',
+    REFRESH_TOKEN: 'refresh_token',
 
     BRAND_ID: 'brand_id',
     CATEGORY_ID: 'category_id',

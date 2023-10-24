@@ -1,9 +1,10 @@
 'use strict';
 const { Model } = require('sequelize');
+const { USER, REFRESH_TOKEN } = require('../consts');
 module.exports = (sequelize, DataTypes) => {
     class RefreshToken extends Model {
         static associate(models) {
-            this.belongsTo(models.user, { as: 'user' });
+            this.belongsTo(models.user, { as: `${USER}` });
         }
     }
 
@@ -14,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: 'refresh-token',
+            modelName: `${REFRESH_TOKEN}`,
         },
     );
     return RefreshToken;

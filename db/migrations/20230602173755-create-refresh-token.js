@@ -1,8 +1,9 @@
 'use strict';
-/** @type {import('sequelize-cli').Migration} */
+const { REFRESH_TOKEN, USER_ID, USER } = require('../consts');
+/** @type {import("sequelize-cli").Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('refresh-token', {
+        await queryInterface.createTable(`${REFRESH_TOKEN}`, {
             id: {
                 allowNull: false,
                 autoIncrement: true,
@@ -26,10 +27,10 @@ module.exports = {
                 type: Sequelize.DATE,
             },
         });
-        await queryInterface.addColumn('refresh-token', 'user_id', {
+        await queryInterface.addColumn(`${REFRESH_TOKEN}`, `${USER_ID}`, {
             type: Sequelize.INTEGER,
             references: {
-                model: 'user',
+                model: `${USER}`,
                 key: 'id',
             },
             onDelete: 'CASCADE',
@@ -37,7 +38,7 @@ module.exports = {
         });
     },
     async down(queryInterface) {
-        await queryInterface.removeColumn('refresh-token', 'user_id');
-        await queryInterface.dropTable('refresh-token');
+        await queryInterface.removeColumn(`${REFRESH_TOKEN}`, `${USER_ID}`);
+        await queryInterface.dropTable(`${REFRESH_TOKEN}`);
     },
 };
