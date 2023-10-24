@@ -26,11 +26,11 @@ export class CartRepository {
     }
 
     public async appendToCart(
-        cartId: number,
-        productId: number,
+        cart_id: number,
+        product_id: number,
         quantity: number,
     ): Promise<CartModel> {
-        let cart = await this.cartModel.findByPk(cartId, {
+        let cart = await this.cartModel.findByPk(cart_id, {
             attributes: ['id'],
             include: [
                 { model: ProductModel, attributes: ['id', 'name', 'price'] },
@@ -42,15 +42,15 @@ export class CartRepository {
         }
 
         const cart_product = await this.cartProductModel.findOne({
-            where: { cartId, productId },
+            where: { cart_id, product_id },
         });
 
         if (cart_product) {
             await cart_product.increment('quantity', { by: quantity });
         }
         await this.cartProductModel.create({
-            cartId,
-            productId,
+            cart_id,
+            product_id,
             quantity,
         });
         await cart.reload();
@@ -58,11 +58,11 @@ export class CartRepository {
     }
 
     public async increment(
-        cartId: number,
-        productId: number,
+        cart_id: number,
+        product_id: number,
         quantity: number,
     ): Promise<CartModel> {
-        let cart = await this.cartModel.findByPk(cartId, {
+        let cart = await this.cartModel.findByPk(cart_id, {
             include: [{ model: ProductModel, as: 'products' }],
         });
         if (!cart) {
@@ -70,7 +70,7 @@ export class CartRepository {
         }
 
         const cart_product = await this.cartProductModel.findOne({
-            where: { cartId, productId },
+            where: { cart_id, product_id },
         });
         if (cart_product) {
             await cart_product.increment('quantity', { by: quantity });
@@ -79,8 +79,12 @@ export class CartRepository {
         return cart;
     }
 
-    public async decrement(cartId, productId, quantity): Promise<CartModel> {
-        let cart = await this.cartModel.findByPk(cartId, {
+    public async decrement(
+        cart_id: number,
+        product_id: number,
+        quantity: number,
+    ): Promise<CartModel> {
+        let cart = await this.cartModel.findByPk(cart_id, {
             include: { model: ProductModel, as: 'products' },
         });
         if (!cart) {
@@ -88,7 +92,7 @@ export class CartRepository {
         }
 
         const cart_product = await this.cartProductModel.findOne({
-            where: { cartId, productId },
+            where: { cart_id, product_id },
         });
         // Если продукт в корзине не найден удаляем его из таблицы CartProductModel
         if (!cart_product) {
@@ -105,17 +109,17 @@ export class CartRepository {
     }
 
     public async removeFromCart(
-        cartId: number,
-        productId: number,
+        cart_id: number,
+        product_id: number,
     ): Promise<CartModel> {
-        const cart = await this.cartModel.findByPk(cartId, {
+        const cart = await this.cartModel.findByPk(cart_id, {
             include: [{ model: ProductModel, as: 'products' }],
         });
         if (!cart) {
             await this.cartModel.create();
         }
         const cart_product = await this.cartProductModel.findOne({
-            where: { cartId, productId },
+            where: { cart_id, product_id },
         });
         if (cart_product) {
             await cart_product.destroy();
@@ -124,14 +128,14 @@ export class CartRepository {
         return cart;
     }
 
-    public async clearCart(cartId: number): Promise<CartModel> {
-        let cart = await this.cartModel.findByPk(cartId, {
+    public async clearCart(cart_id: number): Promise<CartModel> {
+        let cart = await this.cartModel.findByPk(cart_id, {
             include: [{ model: ProductModel, as: 'products' }],
         });
         if (!cart) {
             cart = await this.cartModel.create();
         }
-        await this.cartProductModel.destroy({ where: { cartId } });
+        await this.cartProductModel.destroy({ where: { cart_id } });
         await cart.reload();
         return cart;
     }

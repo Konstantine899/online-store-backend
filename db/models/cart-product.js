@@ -1,5 +1,6 @@
 'use strict';
 const { Model } = require('sequelize');
+const { CART_PRODUCT } = require('../consts');
 module.exports = (sequelize, DataTypes) => {
     class CartProduct extends Model {
         static associate() {}
@@ -13,7 +14,8 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: 'cart-product',
+            modelName: `${CART_PRODUCT}`,
+            underscored: true,
         },
     );
     return CartProduct;

@@ -8,16 +8,22 @@ import {
 import { CartModel } from './cart.model';
 import { ProductModel } from '../product/product.model';
 
-@Table({ tableName: 'cart-product', underscored: true })
+@Table({
+    tableName: 'cart-product',
+    underscored: true,
+})
 export class CartProductModel extends Model<CartProductModel> {
-    @Column({ type: DataType.INTEGER, defaultValue: 1 })
+    @Column({
+        type: DataType.INTEGER,
+        defaultValue: 1,
+    })
     quantity: number;
 
     @ForeignKey(() => CartModel)
     @Column({ type: DataType.INTEGER })
-    cartId: number;
+    cart_id: number;
 
     @ForeignKey(() => ProductModel)
     @Column({ type: DataType.INTEGER })
-    productId: number;
+    product_id: number;
 }

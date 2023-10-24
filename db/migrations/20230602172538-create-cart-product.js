@@ -1,8 +1,9 @@
 'use strict';
-/** @type {import('sequelize-cli').Migration} */
+const { CART_PRODUCT, CART_ID, PRODUCT_ID } = require('../consts');
+/** @type {import("sequelize-cli").Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('cart-product', {
+        await queryInterface.createTable(`${CART_PRODUCT}`, {
             quantity: {
                 type: Sequelize.INTEGER,
                 defaultValue: 1,
@@ -16,14 +17,14 @@ module.exports = {
                 type: Sequelize.DATE,
             },
         });
-        await queryInterface.addColumn('cart-product', 'cartId', {
+        await queryInterface.addColumn(`${CART_PRODUCT}`, `${CART_ID}`, {
             type: Sequelize.INTEGER,
             references: {
                 model: 'cart',
                 key: 'id',
             },
         });
-        await queryInterface.addColumn('cart-product', 'productId', {
+        await queryInterface.addColumn(`${CART_PRODUCT}`, `${PRODUCT_ID}`, {
             type: Sequelize.INTEGER,
             references: {
                 model: 'product',
@@ -32,8 +33,8 @@ module.exports = {
         });
     },
     async down(queryInterface) {
-        await queryInterface.removeColumn('cart-product', 'cartId');
-        await queryInterface.removeColumn('cart-product', 'productId');
-        await queryInterface.dropTable('cart-product');
+        await queryInterface.removeColumn(`${CART_PRODUCT}`, `${CART_ID}`);
+        await queryInterface.removeColumn(`${CART_PRODUCT}`, `${PRODUCT_ID}`);
+        await queryInterface.dropTable(`${CART_PRODUCT}`);
     },
 };
