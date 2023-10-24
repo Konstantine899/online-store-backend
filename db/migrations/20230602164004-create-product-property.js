@@ -1,8 +1,9 @@
 'use strict';
-/** @type {import('sequelize-cli').Migration} */
+const { PRODUCT_PROPERTY, PRODUCT_ID } = require('../consts');
+/** @type {import("sequelize-cli").Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('product-property', {
+        await queryInterface.createTable(`${PRODUCT_PROPERTY}`, {
             id: {
                 allowNull: false,
                 autoIncrement: true,
@@ -27,7 +28,7 @@ module.exports = {
                 type: Sequelize.DATE,
             },
         });
-        await queryInterface.addColumn('product-property', 'productId', {
+        await queryInterface.addColumn(`${PRODUCT_PROPERTY}`, `${PRODUCT_ID}`, {
             type: Sequelize.INTEGER,
             references: {
                 model: 'product',
@@ -37,6 +38,10 @@ module.exports = {
         });
     },
     async down(queryInterface) {
-        await queryInterface.dropTable('product-property');
+        await queryInterface.removeColumn(
+            `${PRODUCT_PROPERTY}`,
+            `${PRODUCT_ID}`,
+        );
+        await queryInterface.dropTable(`${PRODUCT_PROPERTY}`);
     },
 };

@@ -15,5 +15,5 @@ export class GetProductPropertyResponse extends ProductPropertyModel {
     'value': string;
 
     @ApiProperty({ example: 1, description: 'Идентификатор продукта' })
-    productId: number;
+    product_id: number;
 }

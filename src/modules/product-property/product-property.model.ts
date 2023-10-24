@@ -13,7 +13,7 @@ interface ProductProperty {
     id: number;
     name: string;
     value: string;
-    productId: number;
+    product_id: number;
     product: ProductModel;
 }
 
@@ -69,7 +69,7 @@ export class ProductPropertyModel
         type: DataType.INTEGER,
         allowNull: false,
     })
-    productId: number;
+    product_id: number;
 
     @BelongsTo(() => ProductModel)
     product: ProductModel;

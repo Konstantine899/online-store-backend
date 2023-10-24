@@ -1,9 +1,10 @@
 'use strict';
 const { Model } = require('sequelize');
+const { PRODUCT_PROPERTY, PRODUCT } = require('../consts');
 module.exports = (sequelize, DataTypes) => {
     class Property extends Model {
         static associate(models) {
-            this.belongsTo(models.product, { as: 'product' });
+            this.belongsTo(models.product, { as: `${PRODUCT}` });
         }
     }
 
@@ -15,7 +16,8 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: 'product-property',
+            modelName: `${PRODUCT_PROPERTY}`,
+            underscored: true,
         },
     );
     return Property;

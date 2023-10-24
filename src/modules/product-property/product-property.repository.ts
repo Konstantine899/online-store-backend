@@ -15,29 +15,32 @@ export class ProductPropertyRepository {
     ) {}
 
     public async create(
-        productId,
-        dto,
+        product_id: number,
+        dto: CreateProductPropertyDto,
     ): Promise<CreateProductPropertyResponse> {
         return this.productPropertyModel.create({
-            productId,
+            product_id,
             ...dto,
         });
     }
 
     public async findOneProductProperty(
-        productId,
-        id,
+        product_id: number,
+        id: number,
     ): Promise<GetProductPropertyResponse> {
         return this.productPropertyModel.findOne({
-            where: { productId, id },
+            where: {
+                product_id,
+                id,
+            },
         });
     }
 
     public async findListProductProperty(
-        productId: number,
+        product_id: number,
     ): Promise<GetListProductPropertyResponse[]> {
         return this.productPropertyModel.findAll({
-            where: { productId },
+            where: { product_id },
         });
     }
 
@@ -45,7 +48,11 @@ export class ProductPropertyRepository {
         property: ProductPropertyModel,
         dto: CreateProductPropertyDto,
     ): Promise<UpdateProductPropertyResponse> {
-        return property.update({ ...dto, name: dto.name, value: dto.value });
+        return property.update({
+            ...dto,
+            name: dto.name,
+            value: dto.value,
+        });
     }
 
     public async removeProductProperty(id: number): Promise<number> {

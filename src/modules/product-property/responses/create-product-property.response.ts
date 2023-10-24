@@ -6,7 +6,7 @@ export class CreateProductPropertyResponse extends ProductPropertyModel {
     id: number;
 
     @ApiProperty({ example: 1, description: 'Идентификатор продукта' })
-    productId: number;
+    product_id: number;
 
     @ApiProperty({
         example: 'Объем встроенной памяти',
