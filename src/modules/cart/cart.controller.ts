@@ -10,13 +10,13 @@ import {
 } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { Request, Response } from 'express';
-import { AppendToCartDocumentation } from './decorators/append-to-cart.documentation';
+import { AppendToCartSwaggerDecorator } from './decorators/append-to-cart-swagger-decorator';
 import { ApiTags } from '@nestjs/swagger';
-import { GetCartDocumentation } from './decorators/get-cart.documentation';
-import { IncrementDocumentation } from './decorators/increment.documentation';
-import { DecrementDocumentation } from './decorators/decrement.documentation';
-import { RemoveProductFromCartDocumentation } from './decorators/remove-product-from-cart.documentation';
-import { ClearCartDocumentation } from './decorators/clear-cart.documentation';
+import { GetCartSwaggerDecorator } from './decorators/get-cart-swagger-decorator';
+import { IncrementSwaggerDecorator } from './decorators/increment-swagger-decorator';
+import { DecrementSwaggerDecorator } from './decorators/decrement-swagger-decorator';
+import { RemoveProductFromCartSwaggerDecorator } from './decorators/remove-product-from-cart-swagger-decorator';
+import { ClearCartSwaggerDecorator } from './decorators/clear-cart-swagger-decorator';
 import { CartResponse } from './responses/cart.response';
 import { AppendToCartResponse } from './responses/append-to-cart.response';
 import { IncrementResponse } from './responses/increment.response';
@@ -29,7 +29,7 @@ import { ClearCartResponse } from './responses/clear-cart.response';
 export class CartController {
     constructor(private readonly cartService: CartService) {}
 
-    @GetCartDocumentation()
+    @GetCartSwaggerDecorator()
     @HttpCode(200)
     @Get('/get-cart')
     public async getCart(
@@ -40,7 +40,7 @@ export class CartController {
         return this.cartService.getCart(request, response);
     }
 
-    @AppendToCartDocumentation()
+    @AppendToCartSwaggerDecorator()
     @HttpCode(200)
     @Put('/product/:productId([0-9]+)/append/:quantity([0-9]+)')
     public async appendToCart(
@@ -55,7 +55,7 @@ export class CartController {
         });
     }
 
-    @IncrementDocumentation()
+    @IncrementSwaggerDecorator()
     @HttpCode(200)
     @Put('/product/:productId([0-9]+)/increment/:quantity([0-9]+)')
     public async increment(
@@ -70,7 +70,7 @@ export class CartController {
         });
     }
 
-    @DecrementDocumentation()
+    @DecrementSwaggerDecorator()
     @HttpCode(200)
     @Put('/product/:productId([0-9]+)/decrement/:quantity([0-9]+)')
     public async decrement(
@@ -85,7 +85,7 @@ export class CartController {
         });
     }
 
-    @RemoveProductFromCartDocumentation()
+    @RemoveProductFromCartSwaggerDecorator()
     @HttpCode(200)
     @Put('/product/:productId([0-9]+)/remove')
     public async removeProductFromCart(
@@ -98,7 +98,7 @@ export class CartController {
         });
     }
 
-    @ClearCartDocumentation()
+    @ClearCartSwaggerDecorator()
     @HttpCode(200)
     @Put('/clear')
     public async clearCart(

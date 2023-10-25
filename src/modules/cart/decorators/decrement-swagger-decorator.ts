@@ -6,11 +6,11 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { IncrementResponse } from '../responses/increment.response';
+import { DecrementResponse } from '../responses/decrement.response';
 
-export function IncrementDocumentation() {
+export function DecrementSwaggerDecorator() {
     return applyDecorators(
-        ApiOperation({ summary: 'Увеличение количества товара в корзине' }),
+        ApiOperation({ summary: 'Уменьшение количества товара в корзине' }),
         ApiCookieAuth(),
         ApiParam({
             name: 'productId',
@@ -25,9 +25,9 @@ export function IncrementDocumentation() {
             required: true,
         }),
         ApiResponse({
-            description: 'increment quantity',
+            description: 'decrement quantity',
             status: HttpStatus.OK,
-            type: IncrementResponse,
+            type: DecrementResponse,
         }),
         ApiNotFoundResponse({
             description: 'Not found',
@@ -38,8 +38,8 @@ export function IncrementDocumentation() {
                         title: 'Корзина не найдена в БД',
                         example: {
                             statusCode: HttpStatus.NOT_FOUND,
-                            url: '/online-store/cart/product/55/increment/1',
-                            path: '/online-store/cart/product/55/increment/1',
+                            url: '/online-store/cart/product/55/decrement/1',
+                            path: '/online-store/cart/product/55/decrement/1',
                             name: 'NotFoundException',
                             message: 'Корзина с id:26 не найдена в БД',
                         },
@@ -48,8 +48,8 @@ export function IncrementDocumentation() {
                         title: 'Продукт не найден в БД',
                         example: {
                             statusCode: HttpStatus.NOT_FOUND,
-                            url: '/online-store/cart/product/56/increment/1',
-                            path: '/online-store/cart/product/56/increment/1',
+                            url: '/online-store/cart/product/56/decrement/1',
+                            path: '/online-store/cart/product/56/decrement/1',
                             name: 'NotFoundException',
                             message: 'Продукт с id:56 не найден в БД',
                         },

@@ -5,16 +5,16 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CartResponse } from '../responses/cart.response';
+import { ClearCartResponse } from '../responses/clear-cart.response';
 
-export function GetCartDocumentation() {
+export function ClearCartSwaggerDecorator() {
     return applyDecorators(
-        ApiOperation({ summary: 'Получение корзины' }),
+        ApiOperation({ summary: 'Очистка корзины' }),
         ApiCookieAuth(),
         ApiResponse({
-            description: 'Get cart',
+            description: 'Clear cart',
             status: HttpStatus.OK,
-            type: CartResponse,
+            type: ClearCartResponse,
         }),
         ApiNotFoundResponse({
             description: 'Not found',
@@ -23,8 +23,8 @@ export function GetCartDocumentation() {
                 title: 'Корзина не найдена в БД',
                 example: {
                     statusCode: HttpStatus.NOT_FOUND,
-                    url: '/online-store/cart/get-cart',
-                    path: '/online-store/cart/get-cart',
+                    url: '/online-store/cart/clear',
+                    path: '/online-store/cart/clear',
                     name: 'NotFoundException',
                     message: 'Корзина с id:26 не найдена в БД',
                 },

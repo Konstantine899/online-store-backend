@@ -6,11 +6,11 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { AppendToCartResponse } from '../responses/append-to-cart.response';
+import { RemoveProductFromCartResponse } from '../responses/remove-product-from-cart.response';
 
-export function AppendToCartDocumentation() {
+export function RemoveProductFromCartSwaggerDecorator() {
     return applyDecorators(
-        ApiOperation({ summary: 'Добавление продукта в корзину' }),
+        ApiOperation({ summary: 'Удаление продукта из корзины' }),
         ApiCookieAuth(),
         ApiParam({
             name: 'productId',
@@ -18,16 +18,10 @@ export function AppendToCartDocumentation() {
             description: 'Идентификатор продукта',
             required: true,
         }),
-        ApiParam({
-            name: 'quantity',
-            type: String,
-            description: 'Количество продуктов',
-            required: true,
-        }),
         ApiResponse({
-            description: 'Product added to cart',
+            description: 'remove product from cart',
             status: HttpStatus.OK,
-            type: AppendToCartResponse,
+            type: RemoveProductFromCartResponse,
         }),
         ApiNotFoundResponse({
             description: 'Not found',
@@ -38,18 +32,18 @@ export function AppendToCartDocumentation() {
                         title: 'Корзина не найдена в БД',
                         example: {
                             statusCode: HttpStatus.NOT_FOUND,
-                            url: '/online-store/cart/product/55/append/1',
-                            path: '/online-store/cart/product/55/append/1',
+                            url: '/online-store/cart/product/55/remove',
+                            path: '/online-store/cart/product/55/remove',
                             name: 'NotFoundException',
-                            message: 'Корзина с id:25 не найдена в БД',
+                            message: 'Корзина с id:26 не найдена в БД',
                         },
                     },
                     {
                         title: 'Продукт не найден в БД',
                         example: {
                             statusCode: HttpStatus.NOT_FOUND,
-                            url: '/online-store/cart/product/56/append/1',
-                            path: '/online-store/cart/product/56/append/1',
+                            url: '/online-store/cart/product/56/remove',
+                            path: '/online-store/cart/product/56/remove',
                             name: 'NotFoundException',
                             message: 'Продукт с id:56 не найден в БД',
                         },
