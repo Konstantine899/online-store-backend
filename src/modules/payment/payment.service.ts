@@ -1,11 +1,21 @@
 import { ForbiddenException, HttpStatus, Injectable } from '@nestjs/common';
 import { MakePaymentDto } from './dto/make-payment.dto';
 import axios from 'axios';
-import { GuestMakePaymentResponse } from './response/guest-make-payment.response';
-import { UserMakePaymentResponse } from './response/user-make-payment.response';
+import { GuestMakePaymentResponse } from './responses/guest-make-payment.response';
+import { UserMakePaymentResponse } from './responses/user-make-payment.response';
+
+interface IPaymentService {
+    userMakePayment(
+        makePayment: MakePaymentDto,
+    ): Promise<UserMakePaymentResponse>;
+
+    guestMakePayment(
+        makePayment: MakePaymentDto,
+    ): Promise<GuestMakePaymentResponse>;
+}
 
 @Injectable()
-export class PaymentService {
+export class PaymentService implements IPaymentService {
     public async userMakePayment(
         makePayment: MakePaymentDto,
     ): Promise<UserMakePaymentResponse> {
@@ -18,7 +28,9 @@ export class PaymentService {
         return this.makePayment(makePayment);
     }
 
-    private async makePayment(makePaymentDto: MakePaymentDto) {
+    private async makePayment(
+        makePaymentDto: MakePaymentDto,
+    ): Promise<GuestMakePaymentResponse | UserMakePaymentResponse> {
         try {
             const { data } = await axios({
                 method: 'POST',

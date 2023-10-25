@@ -14,7 +14,7 @@ import { ICreateCategory } from '../../modules/category/dto/create-category.dto'
 import { Order } from '../../modules/order/dto/order.dto';
 import { RequestSignedCookies } from '../../modules/order/dto/request-signed-cookies.dto';
 import { RequestUser } from '../../modules/order/dto/request-user.dto';
-import { MakePayment } from '../../modules/payment/dto/make-payment.dto';
+import { IMakePaymentDto } from '../../modules/payment/dto/make-payment.dto';
 import { CreateProduct } from '../../modules/product/dto/create-product.dto';
 import { PaginateProduct } from '../../modules/product/dto/paginate-product.dto';
 import { SearchQuery } from '../../modules/product/dto/search-query.dto';
@@ -30,7 +30,7 @@ type AuthValue = TRegistration | TLogin | IRefresh;
 type BrandValue = ICreateBrand;
 type CategoryValue = ICreateCategory;
 type OrderValue = Order | RequestSignedCookies | RequestUser;
-type PaymentValue = MakePayment;
+type PaymentValue = IMakePaymentDto;
 type ProductValue = CreateProduct | PaginateProduct | SearchQuery | SortQuery;
 type ProductPropertyValue = CreateProductProperty;
 type RoleValue = CreateRole;
