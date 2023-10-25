@@ -9,7 +9,7 @@ import {
 import { OrderModel } from '../order/order.model';
 import { ApiProperty } from '@nestjs/swagger';
 
-interface OrderItem {
+interface IOrderItemModel {
     id: number;
     name: string;
     price: number;
@@ -25,7 +25,10 @@ interface OrderItem {
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
 })
-export class OrderItemModel extends Model<OrderItemModel> implements OrderItem {
+export class OrderItemModel
+    extends Model<OrderItemModel>
+    implements IOrderItemModel
+{
     @Column({
         type: DataType.INTEGER,
         unique: true,
