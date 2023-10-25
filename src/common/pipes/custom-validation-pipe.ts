@@ -9,7 +9,7 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { TLogin } from '../../modules/auth/dto/login.dto';
 import { IRefresh } from '../../modules/auth/dto/refresh.dto';
-import { CreateBrand } from '../../modules/brand/dto/create-brand.dto';
+import { ICreateBrand } from '../../modules/brand/dto/create-brand.dto';
 import { CreateCategory } from '../../modules/category/dto/create-category.dto';
 import { Order } from '../../modules/order/dto/order.dto';
 import { RequestSignedCookies } from '../../modules/order/dto/request-signed-cookies.dto';
@@ -27,7 +27,7 @@ import { RemoveRole } from '../../modules/user/dto/remove-role.dto';
 import { TRegistration } from '../../modules/auth/dto/registration.dto';
 
 type AuthValue = TRegistration | TLogin | IRefresh;
-type BrandValue = CreateBrand;
+type BrandValue = ICreateBrand;
 type CategoryValue = CreateCategory;
 type OrderValue = Order | RequestSignedCookies | RequestUser;
 type PaymentValue = MakePayment;

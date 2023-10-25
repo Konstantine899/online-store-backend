@@ -1,11 +1,11 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export interface CreateBrand {
+export interface ICreateBrand {
     name: string;
 }
 
-export class CreateBrandDto implements CreateBrand {
+export class CreateBrandDto implements ICreateBrand {
     @ApiProperty({
         example: 'Bosh',
         description: 'Имя бренда',

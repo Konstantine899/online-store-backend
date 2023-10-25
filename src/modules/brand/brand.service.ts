@@ -7,8 +7,20 @@ import { BrandResponse } from './responses/brand.response';
 import { UpdateBrandResponse } from './responses/update-brand.response';
 import { RemoveBrandResponse } from './responses/remove-brand.response';
 
+interface IBrandService {
+    createBrand(dto: CreateBrandDto): Promise<CreateBrandResponse>;
+
+    getListAllBrands(): Promise<ListAllBrandsResponse[]>;
+
+    getBrand(id: number): Promise<BrandResponse>;
+
+    updateBrand(id: number, dto: CreateBrandDto): Promise<UpdateBrandResponse>;
+
+    removeBrand(id: number): Promise<RemoveBrandResponse>;
+}
+
 @Injectable()
-export class BrandService {
+export class BrandService implements IBrandService {
     constructor(private readonly brandRepository: BrandRepository) {}
 
     public async createBrand(
@@ -44,7 +56,10 @@ export class BrandService {
     public async removeBrand(id: number): Promise<RemoveBrandResponse> {
         const brand = await this.getBrand(id);
         await this.brandRepository.removeBrand(brand.id);
-        return { status: HttpStatus.OK, message: 'success' };
+        return {
+            status: HttpStatus.OK,
+            message: 'success',
+        };
     }
 
     private notFound(message: string): void {

@@ -7,8 +7,23 @@ import { ListAllBrandsResponse } from './responses/list-all-brands.response';
 import { BrandResponse } from './responses/brand.response';
 import { UpdateBrandResponse } from './responses/update-brand.response';
 
+interface IBrandRepository {
+    createBrand(dto: CreateBrandDto): Promise<CreateBrandResponse>;
+
+    findListAllBrands(): Promise<ListAllBrandsResponse[]>;
+
+    findBrand(id: number): Promise<BrandResponse>;
+
+    updateBrand(
+        dto: CreateBrandDto,
+        brand: BrandModel,
+    ): Promise<UpdateBrandResponse>;
+
+    removeBrand(id: number): Promise<number>;
+}
+
 @Injectable()
-export class BrandRepository {
+export class BrandRepository implements IBrandRepository {
     constructor(
         @InjectModel(BrandModel) private brandModel: typeof BrandModel,
     ) {}
@@ -34,7 +49,10 @@ export class BrandRepository {
         dto: CreateBrandDto,
         brand: BrandModel,
     ): Promise<UpdateBrandResponse> {
-        return brand.update({ ...dto, name: dto.name });
+        return brand.update({
+            ...dto,
+            name: dto.name,
+        });
     }
 
     public async removeBrand(id: number): Promise<number> {
