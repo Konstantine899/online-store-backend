@@ -1,12 +1,10 @@
 import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IAuthDto } from '../interfaces/I-auth-dto';
 
-export interface IRegistration {
-    email: string;
-    password: string;
-}
+export type TRegistration = IAuthDto;
 
-export class RegistrationDto implements IRegistration {
+export class RegistrationDto implements TRegistration {
     @ApiProperty({
         example: 'test@mail.com',
         description: 'Адрес электронной почты',
@@ -15,7 +13,10 @@ export class RegistrationDto implements IRegistration {
     @IsEmail({}, { message: 'Не верный формат email' })
     readonly email: string;
 
-    @ApiProperty({ example: '123456', description: 'Пароль' })
+    @ApiProperty({
+        example: '123456',
+        description: 'Пароль',
+    })
     @IsNotEmpty({ message: 'Укажите пароль' })
     @MinLength(6, {
         message: 'Пароль пользователя должен быть не менее 6 символов',

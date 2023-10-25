@@ -7,9 +7,8 @@ import {
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { ILogin } from '../../modules/auth/dto/login.dto';
+import { TLogin } from '../../modules/auth/dto/login.dto';
 import { IRefresh } from '../../modules/auth/dto/refresh.dto';
-import { IRegistration } from '../../modules/auth/dto/registration.dto';
 import { CreateBrand } from '../../modules/brand/dto/create-brand.dto';
 import { CreateCategory } from '../../modules/category/dto/create-category.dto';
 import { Order } from '../../modules/order/dto/order.dto';
@@ -25,8 +24,9 @@ import { CreateRole } from '../../modules/role/dto/create-role.dto';
 import { AddRole } from '../../modules/user/dto/add-role.dto';
 import { CreateUser } from '../../modules/user/dto/create-user.dto';
 import { RemoveRole } from '../../modules/user/dto/remove-role.dto';
+import { TRegistration } from '../../modules/auth/dto/registration.dto';
 
-type AuthValue = IRegistration | ILogin | IRefresh;
+type AuthValue = TRegistration | TLogin | IRefresh;
 type BrandValue = CreateBrand;
 type CategoryValue = CreateCategory;
 type OrderValue = Order | RequestSignedCookies | RequestUser;

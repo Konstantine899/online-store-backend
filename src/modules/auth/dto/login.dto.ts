@@ -1,12 +1,10 @@
 import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IAuthDto } from '../interfaces/I-auth-dto';
 
-export interface ILogin {
-    email: string;
-    password: string;
-}
+export type TLogin = IAuthDto;
 
-export class LoginDto implements ILogin {
+export class LoginDto implements TLogin {
     @ApiProperty({
         example: 'test@mail.com',
         description: 'Адрес электронной почты',
