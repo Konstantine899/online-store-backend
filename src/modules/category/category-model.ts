@@ -5,7 +5,7 @@ interface ICategoryCreationAttributes {
     name: string;
 }
 
-interface Category {
+interface ICategoryModel {
     id: number;
     name: string;
     products: ProductModel[];
@@ -20,7 +20,7 @@ interface Category {
 })
 export class CategoryModel
     extends Model<CategoryModel, ICategoryCreationAttributes>
-    implements Category
+    implements ICategoryModel
 {
     @Column({
         type: DataType.INTEGER,

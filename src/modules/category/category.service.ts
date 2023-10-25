@@ -7,8 +7,23 @@ import { CategoryResponse } from './responses/category.response';
 import { UpdateCategoryResponse } from './responses/update-category.response';
 import { RemoveCategoryResponse } from './responses/remove-category.response';
 
+interface ICategoryService {
+    createCategory(dto: CreateCategoryDto): Promise<CreateCategoryResponse>;
+
+    getListAllCategories(): Promise<ListAllCategoriesResponse[]>;
+
+    getCategory(id: number): Promise<CategoryResponse>;
+
+    updateCategory(
+        id: number,
+        dto: CreateCategoryDto,
+    ): Promise<UpdateCategoryResponse>;
+
+    removeCategory(id: number): Promise<RemoveCategoryResponse>;
+}
+
 @Injectable()
-export class CategoryService {
+export class CategoryService implements ICategoryService {
     constructor(private readonly categoryRepository: CategoryRepository) {}
 
     public async createCategory(

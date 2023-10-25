@@ -7,8 +7,23 @@ import { ListAllCategoriesResponse } from './responses/list-all-categories.respo
 import { CategoryResponse } from './responses/category.response';
 import { UpdateCategoryResponse } from './responses/update-category.response';
 
+interface ICategoryRepository {
+    createCategory(dto: CreateCategoryDto): Promise<CreateCategoryResponse>;
+
+    findListAllCategories(): Promise<ListAllCategoriesResponse[]>;
+
+    findCategory(id: number): Promise<CategoryResponse>;
+
+    updateCategory(
+        dto: CreateCategoryDto,
+        category: CategoryModel,
+    ): Promise<UpdateCategoryResponse>;
+
+    removeCategory(id: number): Promise<number>;
+}
+
 @Injectable()
-export class CategoryRepository {
+export class CategoryRepository implements ICategoryRepository {
     constructor(
         @InjectModel(CategoryModel)
         private categoryModel: typeof CategoryModel,
@@ -34,7 +49,10 @@ export class CategoryRepository {
         dto: CreateCategoryDto,
         category: CategoryModel,
     ): Promise<UpdateCategoryResponse> {
-        return category.update({ ...dto, name: dto.name });
+        return category.update({
+            ...dto,
+            name: dto.name,
+        });
     }
 
     public async removeCategory(id: number): Promise<number> {

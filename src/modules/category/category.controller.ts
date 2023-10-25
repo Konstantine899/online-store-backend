@@ -27,9 +27,24 @@ import { CategoryResponse } from './responses/category.response';
 import { UpdateCategoryResponse } from './responses/update-category.response';
 import { RemoveCategoryResponse } from './responses/remove-category.response';
 
+interface ICategoryController {
+    createCategory(dto: CreateCategoryDto): Promise<CreateCategoryResponse>;
+
+    getListAllCategories(): Promise<ListAllCategoriesResponse[]>;
+
+    getCategory(id: number): Promise<CategoryResponse>;
+
+    updateCategory(
+        id: number,
+        dto: CreateCategoryDto,
+    ): Promise<UpdateCategoryResponse>;
+
+    removeCategory(id: number): Promise<RemoveCategoryResponse>;
+}
+
 @ApiTags('Категория')
 @Controller('category')
-export class CategoryController {
+export class CategoryController implements ICategoryController {
     constructor(private readonly categoryService: CategoryService) {}
 
     @CreateCategorySwaggerDecorator()
