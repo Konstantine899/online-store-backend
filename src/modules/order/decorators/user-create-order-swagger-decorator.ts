@@ -12,7 +12,7 @@ import { OrderDto } from '../dto/order.dto';
 import { validateOrder } from './helpers/validate-order';
 import { UserCreateOrderResponse } from '../response/user-create-order.response';
 
-export function UserCreateOrderDocumentation() {
+export function UserCreateOrderSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({ summary: 'Создание заказа пользователем' }),
         ApiBearerAuth('JWT-auth'),

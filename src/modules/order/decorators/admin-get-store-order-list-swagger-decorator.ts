@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { AdminGetStoreOrderListResponse } from '../response/admin-get-store-order-list.response';
 
-export function AdminGetStoreOrderListDocumentation() {
+export function AdminGetStoreOrderListSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({
             summary: 'Получение списка всех заказов магазина администратором',

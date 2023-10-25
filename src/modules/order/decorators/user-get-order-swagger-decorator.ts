@@ -5,28 +5,28 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { UserGetOrderListResponse } from '../response/user-get-order-list.response';
+import { UserGetOrderResponse } from '../response/user-get-order.response';
 
-export function UserGetOrderListDocumentation() {
+export function UserGetOrderSwaggerDecorator() {
     return applyDecorators(
-        ApiOperation({ summary: 'Получение списка заказов пользователя' }),
+        ApiOperation({ summary: 'Получение заказа пользователем' }),
         ApiBearerAuth('JWT-auth'),
         ApiResponse({
-            description: 'User get list orders',
+            description: 'User get order',
             status: HttpStatus.OK,
-            type: [UserGetOrderListResponse],
+            type: UserGetOrderResponse,
         }),
         ApiNotFoundResponse({
             description: 'Not found',
             status: HttpStatus.NOT_FOUND,
             schema: {
-                title: 'Заказы не найдены',
+                title: 'Заказ не найден',
                 example: {
                     statusCode: HttpStatus.NOT_FOUND,
-                    url: '/online-store/order/user/get-all-order',
-                    path: '/online-store/order/user/get-all-order',
+                    url: '/online-store/order/user/get-order/711',
+                    path: '/online-store/order/user/get-order/711',
                     name: 'NotFoundException',
-                    message: 'Заказы не найдены',
+                    message: 'Заказ не найден',
                 },
             },
         }),

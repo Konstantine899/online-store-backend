@@ -16,18 +16,18 @@ import { RoleGuard } from '../role/role.guard';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { OrderDto } from './dto/order.dto';
 import { Request } from 'express';
-import { AdminGetStoreOrderListDocumentation } from './decorators/admin-get-store-order-list.documentation';
+import { AdminGetStoreOrderListSwaggerDecorator } from './decorators/admin-get-store-order-list-swagger-decorator';
 import { ApiTags } from '@nestjs/swagger';
-import { AdminGetOrderListUserDocumentation } from './decorators/admin-get-order-list-user.documentation';
-import { AdminGetOrderUserDocumentation } from './decorators/admin-get-order-user.documentation';
-import { AdminCreateOrderDocumentation } from './decorators/admin-create-order.documentation';
-import { AdminRemoveOrderDocumentation } from './decorators/admin-remove-order.documentation';
+import { AdminGetOrderListUsersSwaggerDecorator } from './decorators/admin-get-order-list-users-swagger-decorator';
+import { AdminGetOrderUsersSwaggerDecorator } from './decorators/admin-get-order-users-swagger-decorator';
+import { AdminCreateOrderSwaggerDecorator } from './decorators/admin-create-order-swagger-decorator';
+import { AdminRemoveOrderSwaggerDecorator } from './decorators/admin-remove-order-swagger-decorator';
 import { RequestUserDto } from './dto/request-user.dto';
 import { RequestSignedCookiesDto } from './dto/request-signed-cookies.dto';
-import { UserCreateOrderDocumentation } from './decorators/user-create-order.documentation';
-import { UserGetOrderDocumentation } from './decorators/user-get-order.documentation';
-import { UserGetOrderListDocumentation } from './decorators/user-get-order-list.documentation';
-import { GuestCreateOrderDocumentation } from './decorators/guest-create-order.documentation';
+import { UserCreateOrderSwaggerDecorator } from './decorators/user-create-order-swagger-decorator';
+import { UserGetOrderSwaggerDecorator } from './decorators/user-get-order-swagger-decorator';
+import { UserGetOrderListSwaggerDecorator } from './decorators/user-get-order-list-swagger-decorator';
+import { GuestCreateOrderSwaggerDecorator } from './decorators/guest-create-order-swagger-decorator';
 import { AdminGetStoreOrderListResponse } from './response/admin-get-store-order-list.response';
 import { AdminGetOrderListUserResponse } from './response/admin-get-order-list-user.response';
 import { AdminGetOrderUserResponse } from './response/admin-get-order-user.response';
@@ -46,7 +46,7 @@ export class OrderController {
     /*Для администратора*/
 
     /*Получение списка всех заказов магазина*/
-    @AdminGetStoreOrderListDocumentation()
+    @AdminGetStoreOrderListSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -58,7 +58,7 @@ export class OrderController {
     }
 
     /*Получение списка заказов пользователя*/
-    @AdminGetOrderListUserDocumentation()
+    @AdminGetOrderListUsersSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -70,7 +70,7 @@ export class OrderController {
     }
 
     /*Получение заказа пользователя по id заказа*/
-    @AdminGetOrderUserDocumentation()
+    @AdminGetOrderUsersSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -82,7 +82,7 @@ export class OrderController {
     }
 
     /*Создание заказа для пользователя администратором*/
-    @AdminCreateOrderDocumentation()
+    @AdminCreateOrderSwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -94,7 +94,7 @@ export class OrderController {
     }
 
     /*Администратор Удаление заказа*/
-    @AdminRemoveOrderDocumentation()
+    @AdminRemoveOrderSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -108,7 +108,7 @@ export class OrderController {
     /*Для авторизованного пользователя*/
 
     /*Получение списка заказов пользователя*/
-    @UserGetOrderListDocumentation()
+    @UserGetOrderListSwaggerDecorator()
     @HttpCode(200)
     @Roles('USER')
     @UseGuards(JwtGuard, RoleGuard)
@@ -121,7 +121,7 @@ export class OrderController {
     }
 
     /*Получение одного заказа пользователя*/
-    @UserGetOrderDocumentation()
+    @UserGetOrderSwaggerDecorator()
     @HttpCode(200)
     @Roles('USER')
     @UseGuards(JwtGuard, RoleGuard)
@@ -134,7 +134,7 @@ export class OrderController {
         return this.orderService.userGetOrder(orderId, id);
     }
 
-    @UserCreateOrderDocumentation()
+    @UserCreateOrderSwaggerDecorator()
     @HttpCode(201)
     @Roles('USER')
     @UseGuards(JwtGuard, RoleGuard)
@@ -150,7 +150,7 @@ export class OrderController {
 
     /*Для не авторизованного пользователя*/
 
-    @GuestCreateOrderDocumentation()
+    @GuestCreateOrderSwaggerDecorator()
     @HttpCode(201)
     @Post('/guest/create-order')
     public async guestCreateOrder(
