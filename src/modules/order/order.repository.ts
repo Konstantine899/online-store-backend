@@ -10,8 +10,38 @@ import { AdminGetOrderUserResponse } from './response/admin-get-order-user.respo
 import { AdminCreateOrderResponse } from './response/admin-create-order.response';
 import { UserGetOrderListResponse } from './response/user-get-order-list.response';
 
+interface IOrderRepository {
+    adminFindOrderListUser(
+        user_id?: number,
+    ): Promise<
+        AdminGetStoreOrderListResponse[] | AdminGetOrderListUserResponse[]
+    >;
+
+    adminFindOrderUser(
+        id: number,
+        user_id?: number,
+    ): Promise<AdminGetOrderUserResponse>;
+
+    findUserAndHisOrders(user_id: number): Promise<AdminCreateOrderResponse>;
+
+    adminCreateOrder(dto: OrderDto): Promise<AdminCreateOrderResponse>;
+
+    findOrder(orderId: number): Promise<OrderModel>;
+
+    removeOrder(id: number): Promise<number>;
+
+    userFindOrderList(user_id: number): Promise<UserGetOrderListResponse[]>;
+
+    userFindOrder(order_id: number, user_id?: number): Promise<OrderModel>;
+
+    createOrder(
+        dto: Omit<OrderDto, 'userId'>,
+        userId: number,
+    ): Promise<OrderModel>;
+}
+
 @Injectable()
-export class OrderRepository {
+export class OrderRepository implements IOrderRepository {
     constructor(
         @InjectModel(OrderModel) private orderModel: typeof OrderModel,
         private readonly orderItemRepository: OrderItemRepository,

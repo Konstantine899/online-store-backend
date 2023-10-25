@@ -14,8 +14,41 @@ import { UserGetOrderResponse } from './response/user-get-order.response';
 import { UserCreateOrderResponse } from './response/user-create-order.response';
 import { GuestCreateOrderResponse } from './response/guest-create-order.response';
 
+interface IOrderService {
+    adminGetStoreOrderList(): Promise<AdminGetStoreOrderListResponse[]>;
+
+    adminGetOrderListUser(
+        userId: number,
+    ): Promise<AdminGetOrderListUserResponse[]>;
+
+    adminGetOrderUser(orderId: number): Promise<AdminGetOrderUserResponse>;
+
+    adminCreateOrder(dto: OrderDto): Promise<AdminCreateOrderResponse>;
+
+    adminRemoveOrder(orderId: number): Promise<AdminRemoveOrderResponse>;
+
+    userGetOrderList(userId: number): Promise<UserGetOrderListResponse[]>;
+
+    userGetOrder(
+        orderId: number,
+        userId: number,
+    ): Promise<UserGetOrderResponse>;
+
+    userCreateOrder(
+        dto: Omit<OrderDto, 'userId'>,
+        userId: number,
+        cartId: number,
+    ): Promise<UserCreateOrderResponse>;
+
+    guestCreateOrder(
+        dto: OrderDto,
+        userId?: number,
+        cartId?: number,
+    ): Promise<GuestCreateOrderResponse>;
+}
+
 @Injectable()
-export class OrderService {
+export class OrderService implements IOrderService {
     constructor(
         private readonly orderRepository: OrderRepository,
         private readonly cartRepository: CartRepository,
@@ -82,10 +115,15 @@ export class OrderService {
             this.notFound('Заказ не найден');
         }
         await this.orderRepository.removeOrder(order.id);
-        return { status: HttpStatus.OK, message: 'success' };
+        return {
+            status: HttpStatus.OK,
+            message: 'success',
+        };
     }
 
-    public async userGetOrderList(userId): Promise<UserGetOrderListResponse[]> {
+    public async userGetOrderList(
+        userId: number,
+    ): Promise<UserGetOrderListResponse[]> {
         const orders = await this.orderRepository.userFindOrderList(userId);
         if (!orders.length) {
             this.notFound('Заказы не найдены');
@@ -106,6 +144,7 @@ export class OrderService {
 
     /*Авторизованный и не авторизованный пользователи могут делать заказ*/
     /*Состав заказа мы получаем из корзины которая находится в cookie(если пользователь авторизован)*/
+
     /*Если пользователь авторизован то userId получаю из access token*/
     public async userCreateOrder(
         dto: Omit<OrderDto, 'userId'>,

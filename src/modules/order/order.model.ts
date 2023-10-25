@@ -10,7 +10,7 @@ import {
 import { OrderItemModel } from '../order-item/order-item.model';
 import { UserModel } from '../user/user.model';
 
-interface Order {
+interface IOrderModel {
     id: number;
     name: string;
     email: string;
@@ -31,7 +31,7 @@ interface Order {
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
 })
-export class OrderModel extends Model<OrderModel> implements Order {
+export class OrderModel extends Model<OrderModel> implements IOrderModel {
     @Column({
         type: DataType.INTEGER,
         unique: true,

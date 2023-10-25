@@ -38,9 +38,40 @@ import { UserGetOrderResponse } from './response/user-get-order.response';
 import { UserCreateOrderResponse } from './response/user-create-order.response';
 import { GuestCreateOrderResponse } from './response/guest-create-order.response';
 
+interface IOrderController {
+    adminGetStoreOrderList(): Promise<AdminGetStoreOrderListResponse[]>;
+
+    adminGetOrderListUser(
+        userId: number,
+    ): Promise<AdminGetOrderListUserResponse[]>;
+
+    adminGetOrderUser(orderId: number): Promise<AdminGetOrderUserResponse>;
+
+    adminCreateOrder(dto: OrderDto): Promise<AdminCreateOrderResponse>;
+
+    adminRemoveOrder(orderId: number): Promise<AdminRemoveOrderResponse>;
+
+    userGetOrderList(request: Request): Promise<UserGetOrderListResponse[]>;
+
+    userGetOrder(
+        request: Request,
+        orderId: number,
+    ): Promise<UserGetOrderResponse>;
+
+    userCreateOrder(
+        request: Request,
+        dto: Omit<OrderDto, 'userId'>,
+    ): Promise<UserCreateOrderResponse>;
+
+    guestCreateOrder(
+        request: Request,
+        dto: OrderDto,
+    ): Promise<GuestCreateOrderResponse>;
+}
+
 @ApiTags('Заказы')
 @Controller('order')
-export class OrderController {
+export class OrderController implements IOrderController {
     constructor(private readonly orderService: OrderService) {}
 
     /*Для администратора*/
