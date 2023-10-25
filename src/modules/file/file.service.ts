@@ -5,8 +5,16 @@ import { readdir } from 'fs/promises';
 import * as uuid from 'uuid';
 import * as process from 'process';
 
+interface IFileService {
+    createFile(image: Express.Multer.File): Promise<string>;
+
+    removeFile(file: string): Promise<boolean>;
+
+    updateFile(oldFile: string, newFile: Express.Multer.File): Promise<string>;
+}
+
 @Injectable()
-export class FileService {
+export class FileService implements IFileService {
     public async createFile(image: Express.Multer.File): Promise<string> {
         const filePath = await this.getFilePath();
         return this.generateFile(filePath, image);
@@ -59,7 +67,10 @@ export class FileService {
         return filePath;
     }
 
-    private async generateFile(filePath: string, newFile: Express.Multer.File) {
+    private async generateFile(
+        filePath: string,
+        newFile: Express.Multer.File,
+    ): Promise<string> {
         const extension = newFile.originalname
             .split('.')
             .filter(Boolean)
