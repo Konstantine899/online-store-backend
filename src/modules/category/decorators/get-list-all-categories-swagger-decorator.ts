@@ -6,7 +6,7 @@ import {
 } from '@nestjs/swagger';
 import { ListAllCategoriesResponse } from '../responses/list-all-categories.response';
 
-export function GetListAllCategoriesDocumentation() {
+export function GetListAllCategoriesSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({ summary: 'Получение списка всех категорий' }),
         ApiResponse({

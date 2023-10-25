@@ -16,11 +16,11 @@ import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateCategoryDocumentation } from './decorators/create-category.documentation';
-import { GetListAllCategoriesDocumentation } from './decorators/get-list-all-categories.documentation';
-import { GetCategoryDocumentation } from './decorators/get-category.documentation';
-import { UpdateCategoryDocumentation } from './decorators/update-category.documentation';
-import { RemoveCategoryDocumentation } from './decorators/remove-category.documentation';
+import { CreateCategorySwaggerDecorator } from './decorators/create-category-swagger-decorator';
+import { GetListAllCategoriesSwaggerDecorator } from './decorators/get-list-all-categories-swagger-decorator';
+import { GetCategorySwaggerDecorator } from './decorators/get-category-swagger-decorator';
+import { UpdateCategorySwaggerDecorator } from './decorators/update-category-swagger-decorator';
+import { RemoveCategorySwaggerDecorator } from './decorators/remove-category-swagger-decorator';
 import { CreateCategoryResponse } from './responses/create-category.response';
 import { ListAllCategoriesResponse } from './responses/list-all-categories.response';
 import { CategoryResponse } from './responses/category.response';
@@ -32,7 +32,7 @@ import { RemoveCategoryResponse } from './responses/remove-category.response';
 export class CategoryController {
     constructor(private readonly categoryService: CategoryService) {}
 
-    @CreateCategoryDocumentation()
+    @CreateCategorySwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -43,14 +43,14 @@ export class CategoryController {
         return this.categoryService.createCategory(dto);
     }
 
-    @GetListAllCategoriesDocumentation()
+    @GetListAllCategoriesSwaggerDecorator()
     @HttpCode(200)
     @Get('/categories')
     public async getListAllCategories(): Promise<ListAllCategoriesResponse[]> {
         return this.categoryService.getListAllCategories();
     }
 
-    @GetCategoryDocumentation()
+    @GetCategorySwaggerDecorator()
     @HttpCode(200)
     @Get('/one/:id([0-9]+)')
     public async getCategory(
@@ -59,7 +59,7 @@ export class CategoryController {
         return this.categoryService.getCategory(id);
     }
 
-    @UpdateCategoryDocumentation()
+    @UpdateCategorySwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -71,7 +71,7 @@ export class CategoryController {
         return this.categoryService.updateCategory(id, dto);
     }
 
-    @RemoveCategoryDocumentation()
+    @RemoveCategorySwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)

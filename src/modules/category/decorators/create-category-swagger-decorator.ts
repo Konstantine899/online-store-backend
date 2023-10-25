@@ -9,7 +9,7 @@ import { CreateCategoryDto } from '../dto/create-category.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { CreateCategoryResponse } from '../responses/create-category.response';
 
-export function CreateCategoryDocumentation() {
+export function CreateCategorySwaggerDecorator() {
     return applyDecorators(
         ApiOperation({ summary: 'Создание категории' }),
         ApiBearerAuth('JWT-auth'),

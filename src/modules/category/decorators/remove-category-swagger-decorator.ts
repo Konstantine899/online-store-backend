@@ -1,15 +1,17 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
+    ApiBearerAuth,
     ApiNotFoundResponse,
     ApiOperation,
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CategoryResponse } from '../responses/category.response';
+import { RemoveCategoryResponse } from '../responses/remove-category.response';
 
-export function GetCategoryDocumentation() {
+export function RemoveCategorySwaggerDecorator() {
     return applyDecorators(
-        ApiOperation({ summary: 'Получение категории' }),
+        ApiOperation({ summary: 'Удаление категории' }),
+        ApiBearerAuth('JWT-auth'),
         ApiParam({
             name: 'id',
             type: 'string',
@@ -17,9 +19,9 @@ export function GetCategoryDocumentation() {
             required: true,
         }),
         ApiResponse({
-            description: 'Get category',
+            description: 'Remove category',
             status: HttpStatus.OK,
-            type: CategoryResponse,
+            type: RemoveCategoryResponse,
         }),
         ApiNotFoundResponse({
             description: 'Not found',
@@ -28,8 +30,8 @@ export function GetCategoryDocumentation() {
                 title: 'Категория не найдена',
                 example: {
                     statusCode: HttpStatus.NOT_FOUND,
-                    url: '/online-store/category/one/44',
-                    path: '/online-store/category/one/44',
+                    url: '/online-store/category/delete/111',
+                    path: '/online-store/category/delete/111',
                     name: 'NotFoundException',
                     message: 'Категория товара не найдена',
                 },
