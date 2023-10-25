@@ -1,7 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class TransformResponse {
-    @ApiProperty({ example: 1, description: 'Идентификатор продукта' })
+interface ITransformResponse {
+    productId: number;
+    name: string;
+    price: number;
+    quantity: number;
+}
+
+export class TransformResponse implements ITransformResponse {
+    @ApiProperty({
+        example: 1,
+        description: 'Идентификатор продукта',
+    })
     productId: number;
 
     @ApiProperty({
@@ -10,9 +20,15 @@ export class TransformResponse {
     })
     name: string;
 
-    @ApiProperty({ example: 1000, description: 'Цена продукта' })
+    @ApiProperty({
+        example: 1000,
+        description: 'Цена продукта',
+    })
     price: number;
 
-    @ApiProperty({ example: 1, description: 'Количество' })
+    @ApiProperty({
+        example: 1,
+        description: 'Количество',
+    })
     quantity: number;
 }

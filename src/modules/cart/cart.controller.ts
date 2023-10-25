@@ -12,21 +12,55 @@ import { CartService } from './cart.service';
 import { Request, Response } from 'express';
 import { AppendToCartSwaggerDecorator } from './decorators/append-to-cart-swagger-decorator';
 import { ApiTags } from '@nestjs/swagger';
-import { GetCartSwaggerDecorator } from './decorators/get-cart-swagger-decorator';
-import { IncrementSwaggerDecorator } from './decorators/increment-swagger-decorator';
-import { DecrementSwaggerDecorator } from './decorators/decrement-swagger-decorator';
-import { RemoveProductFromCartSwaggerDecorator } from './decorators/remove-product-from-cart-swagger-decorator';
-import { ClearCartSwaggerDecorator } from './decorators/clear-cart-swagger-decorator';
+
 import { CartResponse } from './responses/cart.response';
 import { AppendToCartResponse } from './responses/append-to-cart.response';
 import { IncrementResponse } from './responses/increment.response';
 import { DecrementResponse } from './responses/decrement.response';
 import { RemoveProductFromCartResponse } from './responses/remove-product-from-cart.response';
 import { ClearCartResponse } from './responses/clear-cart.response';
+import { GetCartSwaggerDecorator } from './decorators/get-cart-swagger-decorator';
+import { IncrementSwaggerDecorator } from './decorators/increment-swagger-decorator';
+import { DecrementSwaggerDecorator } from './decorators/decrement-swagger-decorator';
+import { RemoveProductFromCartSwaggerDecorator } from './decorators/remove-product-from-cart-swagger-decorator';
+import { ClearCartSwaggerDecorator } from './decorators/clear-cart-swagger-decorator';
+
+interface ICartController {
+    getCart(request: Request, response: Response): Promise<CartResponse>;
+
+    appendToCart(
+        request: Request,
+        response: Response,
+        productId: number,
+        quantity: number,
+    ): Promise<AppendToCartResponse>;
+
+    increment(
+        request: Request,
+        response: Response,
+        productId: number,
+        quantity: number,
+    ): Promise<IncrementResponse>;
+
+    decrement(
+        request: Request,
+        response: Response,
+        productId: number,
+        quantity: number,
+    ): Promise<DecrementResponse>;
+
+    removeProductFromCart(
+        request: Request,
+        response: Response,
+        productId: number,
+    ): Promise<RemoveProductFromCartResponse>;
+
+    clearCart(request: Request, response: Response): Promise<ClearCartResponse>;
+}
 
 @ApiTags('Корзина')
 @Controller('cart')
-export class CartController {
+export class CartController implements ICartController {
     constructor(private readonly cartService: CartService) {}
 
     @GetCartSwaggerDecorator()

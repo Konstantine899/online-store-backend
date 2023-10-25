@@ -14,8 +14,38 @@ import { RemoveProductFromCartResponse } from './responses/remove-product-from-c
 import { ClearCartResponse } from './responses/clear-cart.response';
 import { TransformResponse } from './responses/transform.response';
 
+interface ICartService {
+    getCart(request: Request, response: Response): Promise<CartResponse>;
+
+    appendToCart(
+        request: Request,
+        response: Response,
+        params: IParams,
+    ): Promise<AppendToCartResponse>;
+
+    increment(
+        request: Request,
+        response: Response,
+        params: IParams,
+    ): Promise<IncrementResponse>;
+
+    decrement(
+        request: Request,
+        response: Response,
+        params: IParams,
+    ): Promise<DecrementResponse>;
+
+    removeProductFromCart(
+        request: Request,
+        response: Response,
+        params: IParams,
+    ): Promise<RemoveProductFromCartResponse>;
+
+    clearCart(request: Request, response: Response): Promise<ClearCartResponse>;
+}
+
 @Injectable()
-export class CartService {
+export class CartService implements ICartService {
     constructor(
         private readonly cartRepository: CartRepository,
         private readonly productRepository: ProductRepository,
@@ -119,8 +149,8 @@ export class CartService {
     }
 
     public async removeProductFromCart(
-        request,
-        response,
+        request: Request,
+        response: Response,
         params: IParams,
     ): Promise<RemoveProductFromCartResponse> {
         const { productId } = params;

@@ -8,11 +8,20 @@ import {
 import { CartModel } from './cart.model';
 import { ProductModel } from '../product/product.model';
 
+interface ICartProductModel {
+    quantity: number;
+    cart_id: number;
+    product_id: number;
+}
+
 @Table({
     tableName: 'cart-product',
     underscored: true,
 })
-export class CartProductModel extends Model<CartProductModel> {
+export class CartProductModel
+    extends Model<CartProductModel>
+    implements ICartProductModel
+{
     @Column({
         type: DataType.INTEGER,
         defaultValue: 1,

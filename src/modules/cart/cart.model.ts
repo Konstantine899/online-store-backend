@@ -8,7 +8,7 @@ import {
 import { ProductModel } from '../product/product.model';
 import { CartProductModel } from './cart-product.model';
 
-interface Cart {
+interface ICart {
     id: number;
     products: ProductModel[];
 }
@@ -20,7 +20,7 @@ interface Cart {
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
 })
-export class CartModel extends Model<CartModel> implements Cart {
+export class CartModel extends Model<CartModel> implements ICart {
     @Column({
         type: DataType.INTEGER,
         unique: true,
