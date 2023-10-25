@@ -7,15 +7,15 @@ import { RoleGuard } from '../role/role.guard';
 import { GuestMakePaymentResponse } from './response/guest-make-payment.response';
 import { UserMakePaymentResponse } from './response/user-make-payment.response';
 import { ApiTags } from '@nestjs/swagger';
-import { GuestMakePaymentDocumentation } from './decorators/guest-make-payment.documentation';
-import { UserMakePaymentDocumentation } from './decorators/user-make-payment.documentation';
+import { GuestMakePaymentSwaggerDecorator } from './decorators/guest-make-payment-swagger-decorator';
+import { UserMakePaymentSwaggerDecorator } from './decorators/user-make-payment-swagger-decorator';
 
 @ApiTags('Оплата')
 @Controller('payment')
 export class PaymentController {
     constructor(private paymentService: PaymentService) {}
 
-    @UserMakePaymentDocumentation()
+    @UserMakePaymentSwaggerDecorator()
     @Roles('USER')
     @UseGuards(JwtGuard, RoleGuard)
     @Post('/user/make-payment')
@@ -25,7 +25,7 @@ export class PaymentController {
         return this.paymentService.userMakePayment(makePaymentDto);
     }
 
-    @GuestMakePaymentDocumentation()
+    @GuestMakePaymentSwaggerDecorator()
     @Post('/guest/make-payment')
     async guestMakePayment(
         @Body() makePaymentDto: MakePaymentDto,

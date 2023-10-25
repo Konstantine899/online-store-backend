@@ -1,11 +1,17 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiBody,
+    ApiOperation,
+    ApiResponse,
+} from '@nestjs/swagger';
 import { MakePaymentDto } from '../dto/make-payment.dto';
-import { GuestMakePaymentResponse } from '../response/guest-make-payment.response';
+import { UserMakePaymentResponse } from '../response/user-make-payment.response';
 
-export function GuestMakePaymentDocumentation() {
+export function UserMakePaymentSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({ summary: 'Оплата заказа гостем' }),
+        ApiBearerAuth('JWT-auth'),
         ApiBody({
             type: MakePaymentDto,
             description: 'Структура входных данных для оплаты заказа',
@@ -13,7 +19,7 @@ export function GuestMakePaymentDocumentation() {
         ApiResponse({
             description: 'Payment order',
             status: HttpStatus.CREATED,
-            type: GuestMakePaymentResponse,
+            type: UserMakePaymentResponse,
         }),
     );
 }
