@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { GetListProductResponse } from '../responses/get-list-product.response';
 
-export function GetListProductDocumentation() {
+export function GetListProductSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({ summary: 'Получение списка всех продуктов' }),
         ApiQuery({ name: 'search', type: 'string', required: false }),

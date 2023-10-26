@@ -21,17 +21,17 @@ import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { imageMulterOptions } from '../file/image-multer.options';
-import { CreateProductDocumentation } from './decorators/create-product.documentation';
+import { CreateProductSwaggerDecorator } from './decorators/create-product-swagger-decorator';
 import { ApiTags } from '@nestjs/swagger';
-import { GetProductDocumentation } from './decorators/get-product.documentation';
+import { GetProductSwaggerDecorator } from './decorators/get-product-swagger-decorator';
 import { SearchQueryDto } from './dto/search-query.dto';
 import { SortQueryDto } from './dto/sort-query.dto';
-import { GetListProductDocumentation } from './decorators/get-list-product.documentation';
-import { GetListProductByBrandIdDocumentation } from './decorators/get-list-product-by-brand-id.documentation';
-import { GetListProductByCategoryIdDocumentation } from './decorators/get-list-product-by-category-id.documentation';
-import { GetAllByBrandIdAndCategoryIdDocumentation } from './decorators/get-all-by-brand-id-and-category-id.documentation';
-import { UpdateProductDocumentation } from './decorators/update-product.documentation';
-import { RemoveProductDocumentation } from './decorators/remove-product.documentation';
+import { GetListProductSwaggerDecorator } from './decorators/get-list-product-swagger-decorator';
+import { GetListProductByBrandIdSwaggerDecorator } from './decorators/get-list-product-by-brand-id-swagger-decorator';
+import { GetListProductByCategoryIdSwaggerDecorator } from './decorators/get-list-product-by-category-id-swagger-decorator';
+import { GetAllByBrandIdAndCategoryIdSwaggerDecorator } from './decorators/get-all-by-brand-id-and-category-id-swagger-decorator';
+import { UpdateProductSwaggerDecorator } from './decorators/update-product-swagger-decorator';
+import { RemoveProductSwaggerDecorator } from './decorators/remove-product-swagger-decorator';
 import { CreateProductResponse } from './responses/create-product.response';
 import { GetProductResponse } from './responses/get-product.response';
 import { GetListProductResponse } from './responses/get-list-product.response';
@@ -45,7 +45,7 @@ import { RemoveProductResponse } from './responses/remove-product.response';
 @Controller('product')
 export class ProductController {
     constructor(private readonly productService: ProductService) {}
-    @CreateProductDocumentation()
+    @CreateProductSwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -59,7 +59,7 @@ export class ProductController {
         return this.productService.productCreate(dto, image);
     }
 
-    @GetProductDocumentation()
+    @GetProductSwaggerDecorator()
     @HttpCode(200)
     @Get('/one/:id([0-9]+)')
     public async getProduct(
@@ -68,7 +68,7 @@ export class ProductController {
         return this.productService.getProduct(id);
     }
 
-    @GetListProductDocumentation()
+    @GetListProductSwaggerDecorator()
     @HttpCode(200)
     @Get('/all')
     public async getListProduct(
@@ -85,7 +85,7 @@ export class ProductController {
         );
     }
 
-    @GetListProductByBrandIdDocumentation()
+    @GetListProductByBrandIdSwaggerDecorator()
     @HttpCode(200)
     @Get('/all/brandId/:brandId([0-9]+)')
     public async getListProductByBrandId(
@@ -104,7 +104,7 @@ export class ProductController {
         );
     }
 
-    @GetListProductByCategoryIdDocumentation()
+    @GetListProductByCategoryIdSwaggerDecorator()
     @HttpCode(200)
     @Get('/all/categoryId/:categoryId([0-9]+)')
     public async getListProductByCategoryId(
@@ -123,7 +123,7 @@ export class ProductController {
         );
     }
 
-    @GetAllByBrandIdAndCategoryIdDocumentation()
+    @GetAllByBrandIdAndCategoryIdSwaggerDecorator()
     @HttpCode(200)
     @Get('/all/brandId/:brandId([0-9]+)/categoryId/:categoryId([0-9]+)')
     public async getAllByBrandIdAndCategoryId(
@@ -144,7 +144,7 @@ export class ProductController {
         );
     }
 
-    @UpdateProductDocumentation()
+    @UpdateProductSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -158,7 +158,7 @@ export class ProductController {
         return this.productService.updateProduct(id, dto, image);
     }
 
-    @RemoveProductDocumentation()
+    @RemoveProductSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)

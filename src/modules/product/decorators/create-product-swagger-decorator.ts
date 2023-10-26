@@ -4,48 +4,26 @@ import {
     ApiBody,
     ApiConflictResponse,
     ApiConsumes,
-    ApiNotFoundResponse,
     ApiOperation,
-    ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
-import { UpdateProductResponse } from '../responses/update-product.response';
+import { CreateProductResponse } from '../responses/create-product.response';
 
-export function UpdateProductDocumentation() {
+export function CreateProductSwaggerDecorator() {
     return applyDecorators(
-        ApiOperation({ summary: 'Обновление продукта' }),
+        ApiOperation({ summary: 'Создание продукта' }),
         ApiBearerAuth('JWT-auth'),
         ApiConsumes('multipart/form-data'),
-        ApiParam({
-            name: 'id',
-            type: String,
-            description: 'идентификатор продукта',
-            required: true,
-        }),
         ApiBody({
             type: CreateProductDto,
-            description: 'Структура входных данных для обновления продукта',
+            description: 'Структура входных данных для создания продукта',
         }),
         ApiResponse({
-            description: 'Updated product',
-            status: HttpStatus.OK,
-            type: UpdateProductResponse,
-        }),
-        ApiNotFoundResponse({
-            description: 'Not found updated product',
-            status: HttpStatus.NOT_FOUND,
-            schema: {
-                title: 'Продукт не найден в БД',
-                example: {
-                    statusCode: HttpStatus.NOT_FOUND,
-                    url: '/online-store/product/update/111',
-                    path: '/online-store/product/update/111',
-                    name: 'NotFoundException',
-                    message: 'Продукт не найден в БД',
-                },
-            },
+            description: 'Created product',
+            status: HttpStatus.CREATED,
+            type: CreateProductResponse,
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',

@@ -6,23 +6,19 @@ import {
     ApiQuery,
     ApiResponse,
 } from '@nestjs/swagger';
-import { GetAllByBrandIdAndCategoryIdResponse } from '../responses/get-all-by-brand-id-and-category-id.response';
+import { GetListProductByBrandIdResponse } from '../responses/get-list-product-by-brand-id.response';
 
-export function GetAllByBrandIdAndCategoryIdDocumentation() {
+export function GetListProductByBrandIdSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({
             summary:
-                'Получение отсортированного списка продуктов по бренду и по категории товара',
+                'Получение отсортированного списка продуктов по бренду товара',
         }),
         ApiParam({
             name: 'brandId',
             type: String,
             description: 'идентификатор бренда',
             required: true,
-        }),
-        ApiOperation({
-            summary:
-                'Получение отсортированного списка продуктов по категории и по бренду товара',
         }),
         ApiQuery({ name: 'search', type: 'string', required: false }),
         ApiQuery({ name: 'sort', type: 'string', required: false }),
@@ -39,9 +35,9 @@ export function GetAllByBrandIdAndCategoryIdDocumentation() {
             description: 'Количество элементов на странице',
         }),
         ApiResponse({
-            description: 'Get list products by brand and category',
+            description: 'Get list products by brand',
             status: HttpStatus.OK,
-            type: GetAllByBrandIdAndCategoryIdResponse,
+            type: GetListProductByBrandIdResponse,
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
@@ -50,8 +46,8 @@ export function GetAllByBrandIdAndCategoryIdDocumentation() {
                 title: 'Список найденных продуктов пуст',
                 example: {
                     statusCode: HttpStatus.NOT_FOUND,
-                    url: '/online-store/product/all/brandId/1/categoryId/2?page=1&size=1',
-                    path: '/online-store/product/all/brandId/1/categoryId/2',
+                    url: '/online-store/product/all/brandId/2',
+                    path: '/online-store/product/all/brandId/2',
                     name: 'NotFoundException',
                     message: 'По вашему запросу ничего не найдено',
                 },

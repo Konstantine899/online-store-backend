@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { GetListProductByCategoryIdResponse } from '../responses/get-list-product-by-category-id.response';
 
-export function GetListProductByCategoryIdDocumentation() {
+export function GetListProductByCategoryIdSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({
             summary:
