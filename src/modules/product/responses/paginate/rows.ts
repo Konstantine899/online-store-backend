@@ -1,8 +1,20 @@
 import { ProductModel } from '../../product.model';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class Rows extends ProductModel {
-    @ApiProperty({ example: 1, description: 'Идентификатор продукта' })
+interface IRows {
+    id: number;
+    name: string;
+    price: number;
+    image: string;
+    category_id: number;
+    brand_id: number;
+}
+
+export class Rows extends ProductModel implements IRows {
+    @ApiProperty({
+        example: 1,
+        description: 'Идентификатор продукта',
+    })
     id: number;
 
     @ApiProperty({
@@ -11,10 +23,16 @@ export class Rows extends ProductModel {
     })
     name: string;
 
-    @ApiProperty({ example: 1000, description: 'Цена продукта' })
+    @ApiProperty({
+        example: 1000,
+        description: 'Цена продукта',
+    })
     price: number;
 
-    @ApiProperty({ example: 5, description: 'Рейтинг продукта' })
+    @ApiProperty({
+        example: 5,
+        description: 'Рейтинг продукта',
+    })
     rating: number;
     @ApiProperty({
         example: '471d35be-9906-4cee-a681-76a53a19bd25.png',
@@ -22,9 +40,15 @@ export class Rows extends ProductModel {
     })
     image: string;
 
-    @ApiProperty({ example: 1, description: 'Идентификатор категории' })
+    @ApiProperty({
+        example: 1,
+        description: 'Идентификатор категории',
+    })
     category_id: number;
 
-    @ApiProperty({ example: 1, description: 'Идентификатор бренда' })
+    @ApiProperty({
+        example: 1,
+        description: 'Идентификатор бренда',
+    })
     brand_id: number;
 }

@@ -2,11 +2,22 @@ import { ApiProperty } from '@nestjs/swagger';
 import { MetaData } from './paginate/meta-data';
 import { Rows } from './paginate/rows';
 
-export class GetListProductByCategoryIdResponse {
+interface IGetListProductByCategoryIdResponse {
+    metaData: MetaData;
+    count: number;
+    rows: Rows[];
+}
+
+export class GetListProductByCategoryIdResponse
+    implements IGetListProductByCategoryIdResponse
+{
     @ApiProperty()
     metaData: MetaData;
 
-    @ApiProperty({ example: 1, description: 'Количество найденных элементов' })
+    @ApiProperty({
+        example: 1,
+        description: 'Количество найденных элементов',
+    })
     count: number;
 
     @ApiProperty({ type: () => [Rows] })

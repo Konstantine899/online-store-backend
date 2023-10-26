@@ -2,10 +2,16 @@ import { ProductModel } from '../product.model';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateProductResponse extends ProductModel {
-    @ApiProperty({ example: 5, description: 'Рейтинг продукта' })
+    @ApiProperty({
+        example: 5,
+        description: 'Рейтинг продукта',
+    })
     rating: number;
 
-    @ApiProperty({ example: 1, description: 'Идентификатор продукта' })
+    @ApiProperty({
+        example: 1,
+        description: 'Идентификатор продукта',
+    })
     id: number;
 
     @ApiProperty({
@@ -14,13 +20,22 @@ export class CreateProductResponse extends ProductModel {
     })
     name: string;
 
-    @ApiProperty({ example: 1000, description: 'Цена продукта' })
+    @ApiProperty({
+        example: 1000,
+        description: 'Цена продукта',
+    })
     price: number;
 
-    @ApiProperty({ example: 1, description: 'Идентификатор бренда' })
+    @ApiProperty({
+        example: 1,
+        description: 'Идентификатор бренда',
+    })
     brand_id: number;
 
-    @ApiProperty({ example: 1, description: 'Идентификатор категории' })
+    @ApiProperty({
+        example: 1,
+        description: 'Идентификатор категории',
+    })
     category_id: number;
 
     @ApiProperty({

@@ -19,8 +19,57 @@ import { GetAllByBrandIdAndCategoryIdResponse } from './responses/get-all-by-bra
 import { UpdateProductResponse } from './responses/update-product.response';
 import { RemoveProductResponse } from './responses/remove-product.response';
 
+interface IProductService {
+    productCreate(
+        dto: CreateProductDto,
+        image: Express.Multer.File,
+    ): Promise<CreateProductResponse>;
+
+    getProduct(id: number): Promise<GetProductResponse>;
+
+    getListProduct(
+        searchQuery: SearchQueryDto,
+        sortQuery: SortQueryDto,
+        page: number,
+        size: number,
+    ): Promise<GetListProductResponse>;
+
+    getListProductByBrandId(
+        brandId: number,
+        searchQuery: SearchQueryDto,
+        sortQuery: SortQueryDto,
+        page: number,
+        size: number,
+    ): Promise<GetListProductByBrandIdResponse>;
+
+    getListProductByCategoryId(
+        categoryId: number,
+        searchQuery: SearchQueryDto,
+        sortQuery: SortQueryDto,
+        page: number,
+        size: number,
+    ): Promise<GetListProductByCategoryIdResponse>;
+
+    getAllByBrandIdAndCategoryId(
+        brandId: number,
+        categoryId: number,
+        searchQuery: SearchQueryDto,
+        sortQuery: SortQueryDto,
+        page: number,
+        size: number,
+    ): Promise<GetAllByBrandIdAndCategoryIdResponse>;
+
+    removeProduct(id: number): Promise<RemoveProductResponse>;
+
+    updateProduct(
+        id: number,
+        dto: CreateProductDto,
+        image: Express.Multer.File,
+    ): Promise<UpdateProductResponse>;
+}
+
 @Injectable()
-export class ProductService {
+export class ProductService implements IProductService {
     constructor(
         private readonly productRepository: ProductRepository,
         private readonly fileService: FileService,
@@ -169,7 +218,10 @@ export class ProductService {
         if (!removedFile || !removedProduct) {
             this.conflict('Произошел конфликт во время удаления продукта');
         }
-        return { status: HttpStatus.OK, message: 'success' };
+        return {
+            status: HttpStatus.OK,
+            message: 'success',
+        };
     }
 
     public async updateProduct(
@@ -201,7 +253,10 @@ export class ProductService {
     } {
         const limit = size;
         const offset = (page - 1) * limit;
-        return { limit, offset };
+        return {
+            limit,
+            offset,
+        };
     }
 
     private getMetadata(count: number, page: number, limit: number): MetaData {

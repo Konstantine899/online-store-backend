@@ -16,9 +16,9 @@ import { RequestSignedCookies } from '../../modules/order/dto/request-signed-coo
 import { RequestUser } from '../../modules/order/dto/request-user.dto';
 import { IMakePaymentDto } from '../../modules/payment/dto/make-payment.dto';
 import { CreateProduct } from '../../modules/product/dto/create-product.dto';
-import { PaginateProduct } from '../../modules/product/dto/paginate-product.dto';
+import { IPaginateProductDto } from '../../modules/product/dto/paginate-product.dto';
 import { SearchQuery } from '../../modules/product/dto/search-query.dto';
-import { SortQuery } from '../../modules/product/dto/sort-query.dto';
+import { ISortQueryDto } from '../../modules/product/dto/sort-query.dto';
 import { CreateProductProperty } from '../../modules/product-property/dto/create-product-property.dto';
 import { CreateRole } from '../../modules/role/dto/create-role.dto';
 import { AddRole } from '../../modules/user/dto/add-role.dto';
@@ -31,7 +31,11 @@ type BrandValue = ICreateBrand;
 type CategoryValue = ICreateCategory;
 type OrderValue = Order | RequestSignedCookies | RequestUser;
 type PaymentValue = IMakePaymentDto;
-type ProductValue = CreateProduct | PaginateProduct | SearchQuery | SortQuery;
+type ProductValue =
+    | CreateProduct
+    | IPaginateProductDto
+    | SearchQuery
+    | ISortQueryDto;
 type ProductPropertyValue = CreateProductProperty;
 type RoleValue = CreateRole;
 type UserValue = AddRole | CreateUser | RemoveRole;

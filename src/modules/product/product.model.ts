@@ -22,7 +22,7 @@ interface IUserCreationAttributes {
     image: string;
 }
 
-interface Product {
+interface IProduct {
     id: number;
     name: string;
     price: number;
@@ -46,7 +46,7 @@ interface Product {
 })
 export class ProductModel
     extends Model<ProductModel, IUserCreationAttributes>
-    implements Product
+    implements IProduct
 {
     @Column({
         type: DataType.INTEGER,

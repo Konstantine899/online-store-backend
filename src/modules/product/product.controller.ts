@@ -41,10 +41,60 @@ import { GetAllByBrandIdAndCategoryIdResponse } from './responses/get-all-by-bra
 import { UpdateProductResponse } from './responses/update-product.response';
 import { RemoveProductResponse } from './responses/remove-product.response';
 
+interface IProductController {
+    create(
+        dto: CreateProductDto,
+        image: Express.Multer.File,
+    ): Promise<CreateProductResponse>;
+
+    getProduct(id: number): Promise<GetProductResponse>;
+
+    getListProduct(
+        searchQuery: SearchQueryDto,
+        sortQuery: SortQueryDto,
+        page: number,
+        size: number,
+    ): Promise<GetListProductResponse>;
+
+    getListProductByBrandId(
+        brandId: number,
+        searchQuery: SearchQueryDto,
+        sortQuery: SortQueryDto,
+        page: number,
+        size: number,
+    ): Promise<GetListProductByBrandIdResponse>;
+
+    getListProductByCategoryId(
+        categoryId: number,
+        searchQuery: SearchQueryDto,
+        sortQuery: SortQueryDto,
+        page: number,
+        size: number,
+    ): Promise<GetListProductByCategoryIdResponse>;
+
+    getAllByBrandIdAndCategoryId(
+        brandId: number,
+        categoryId: number,
+        searchQuery: SearchQueryDto,
+        sortQuery: SortQueryDto,
+        page: number,
+        size: number,
+    ): Promise<GetAllByBrandIdAndCategoryIdResponse>;
+
+    update(
+        id: number,
+        dto: CreateProductDto,
+        image: Express.Multer.File,
+    ): Promise<UpdateProductResponse>;
+
+    removeProduct(id: number): Promise<RemoveProductResponse>;
+}
+
 @ApiTags('Продукт')
 @Controller('product')
-export class ProductController {
+export class ProductController implements IProductController {
     constructor(private readonly productService: ProductService) {}
+
     @CreateProductSwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
