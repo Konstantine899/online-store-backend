@@ -9,7 +9,7 @@ import { UserModel } from '../user/user.model';
 import { UserRoleModel } from './user-role.model';
 import { ApiProperty } from '@nestjs/swagger';
 
-interface Role {
+interface IRoleModel {
     id: number;
     role: string;
     description: string;
@@ -23,7 +23,7 @@ interface Role {
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
 })
-export class RoleModel extends Model<RoleModel> implements Role {
+export class RoleModel extends Model<RoleModel> implements IRoleModel {
     @ApiProperty({
         example: 1,
         description: 'Идентификатор роли',

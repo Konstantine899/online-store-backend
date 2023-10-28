@@ -20,9 +20,17 @@ import { CreateRoleResponse } from './responses/create-role.response';
 import { GetRoleResponse } from './responses/get-role.response';
 import { GetListRoleResponse } from './responses/get-list-role.response';
 
+interface IRoleController {
+    createRole(dto: CreateRoleDto): Promise<CreateRoleResponse>;
+
+    getRole(role: string): Promise<GetRoleResponse>;
+
+    getListRole(): Promise<GetListRoleResponse[]>;
+}
+
 @ApiTags('Роль')
 @Controller('role')
-export class RoleController {
+export class RoleController implements IRoleController {
     constructor(private readonly roleService: RoleService) {}
 
     @CreateRoleSwaggerDecorator()

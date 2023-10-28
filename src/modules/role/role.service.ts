@@ -5,8 +5,16 @@ import { CreateRoleResponse } from './responses/create-role.response';
 import { GetRoleResponse } from './responses/get-role.response';
 import { GetListRoleResponse } from './responses/get-list-role.response';
 
+interface IRoleService {
+    createRole(dto: CreateRoleDto): Promise<CreateRoleResponse>;
+
+    getRole(role: string): Promise<GetRoleResponse>;
+
+    getListRole(): Promise<GetListRoleResponse[]>;
+}
+
 @Injectable()
-export class RoleService {
+export class RoleService implements IRoleService {
     constructor(private readonly roleRepository: RoleRepository) {}
 
     public async createRole(dto: CreateRoleDto): Promise<CreateRoleResponse> {
