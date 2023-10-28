@@ -12,10 +12,35 @@ import { UserRepository } from '../user/user.repository';
 import { RefreshTokenModel } from './refresh-token.model';
 import { RoleModel } from '../role/role.model';
 
+interface ITokenService {
+    generateAccessToken(user: UserModel): Promise<string>;
+
+    generateRefreshToken(user: UserModel, expiresIn: number): Promise<string>;
+
+    getUserFromRefreshTokenPayload(
+        payload: IRefreshTokenPayload,
+    ): Promise<UserModel>;
+
+    getStoredRefreshTokenFromRefreshTokenPayload(
+        payload: IRefreshTokenPayload,
+    ): Promise<RefreshTokenModel | null>;
+
+    decodeRefreshToken(refreshToken: string): Promise<IRefreshTokenPayload>;
+
+    updateRefreshToken(
+        encoded: string,
+    ): Promise<{ user: UserModel; refreshToken: RefreshTokenModel }>;
+
+    createAccessTokenFromRefreshToken(
+        refreshToken: string,
+    ): Promise<{ accessToken: string; user: UserModel }>;
+
+    removeRefreshToken(refreshTokenId: number, userId: number): Promise<number>;
+}
+
 export interface IRefreshTokenPayload {
     sub: number;
     email: string;
-
     jti: number;
 }
 
@@ -25,7 +50,7 @@ export interface IAccessTokenPayload {
 }
 
 @Injectable()
-export class TokenService {
+export class TokenService implements ITokenService {
     constructor(
         private readonly jwtService: JwtService,
         private readonly refreshTokenRepository: RefreshTokenRepository,
@@ -33,7 +58,10 @@ export class TokenService {
     ) {}
 
     public async generateAccessToken(user: UserModel): Promise<string> {
-        const payload: IAccessTokenPayload = { id: user.id, roles: user.roles };
+        const payload: IAccessTokenPayload = {
+            id: user.id,
+            roles: user.roles,
+        };
         const options: SignOptions = {
             subject: String(user.id),
         };
@@ -117,7 +145,10 @@ export class TokenService {
                 'Не верный формат refresh token',
             );
         }
-        return { user, refreshToken };
+        return {
+            user,
+            refreshToken,
+        };
     }
 
     public async createAccessTokenFromRefreshToken(
@@ -125,7 +156,10 @@ export class TokenService {
     ): Promise<{ accessToken: string; user: UserModel }> {
         const { user } = await this.updateRefreshToken(refreshToken);
         const accessToken = await this.generateAccessToken(user);
-        return { accessToken, user };
+        return {
+            accessToken,
+            user,
+        };
     }
 
     public async removeRefreshToken(

@@ -3,8 +3,23 @@ import { InjectModel } from '@nestjs/sequelize';
 import { RefreshTokenModel } from './refresh-token.model';
 import { UserModel } from '../user/user.model';
 
+interface IRefreshTokenRepository {
+    createRefreshToken(
+        user: UserModel,
+        ttl: number,
+    ): Promise<RefreshTokenModel>;
+
+    findRefreshTokenById(id: number): Promise<RefreshTokenModel | null>;
+
+    findListRefreshTokens(userId: number): Promise<RefreshTokenModel[]>;
+
+    removeListRefreshTokens(userId: number): Promise<number>;
+
+    removeRefreshToken(refreshTokenId: number): Promise<number>;
+}
+
 @Injectable()
-export class RefreshTokenRepository {
+export class RefreshTokenRepository implements IRefreshTokenRepository {
     constructor(
         @InjectModel(RefreshTokenModel)
         private readonly refreshTokenModel: typeof RefreshTokenModel,

@@ -8,7 +8,7 @@ import {
 } from 'sequelize-typescript';
 import { UserModel } from '../user/user.model';
 
-interface RefreshToken {
+interface IRefreshTokenModel {
     id: number;
     is_revoked: boolean;
     expires: Date;
@@ -25,7 +25,7 @@ interface RefreshToken {
 })
 export class RefreshTokenModel
     extends Model<RefreshTokenModel>
-    implements RefreshToken
+    implements IRefreshTokenModel
 {
     @Column({
         type: DataType.INTEGER,
