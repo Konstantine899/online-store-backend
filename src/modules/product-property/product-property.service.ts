@@ -15,8 +15,35 @@ import { GetListProductPropertyResponse } from './responses/get-list-product-pro
 import { UpdateProductPropertyResponse } from './responses/update-product-property.response';
 import { RemoveProductPropertyResponse } from './responses/remove-product-property.response';
 
+interface IProductPropertyService {
+    createProductProperty(
+        productId: number,
+        dto: CreateProductPropertyDto,
+    ): Promise<CreateProductPropertyResponse>;
+
+    getProductProperty(
+        productId: number,
+        id: number,
+    ): Promise<GetProductPropertyResponse>;
+
+    getListProductProperty(
+        productId: number,
+    ): Promise<GetListProductPropertyResponse[]>;
+
+    updateProductProperty(
+        productId: number,
+        id: number,
+        dto: CreateProductPropertyDto,
+    ): Promise<ProductPropertyModel>;
+
+    removeProductProperty(
+        productId: number,
+        id: number,
+    ): Promise<RemoveProductPropertyResponse>;
+}
+
 @Injectable()
-export class ProductPropertyService {
+export class ProductPropertyService implements IProductPropertyService {
     constructor(
         private readonly propertyProductRepository: ProductPropertyRepository,
         private readonly productRepository: ProductRepository,
@@ -130,7 +157,10 @@ export class ProductPropertyService {
         id: number,
     ): Promise<RemoveProductPropertyResponse> {
         await this.propertyProductRepository.removeProductProperty(id);
-        return { status: HttpStatus.OK, message: 'success' };
+        return {
+            status: HttpStatus.OK,
+            message: 'success',
+        };
     }
 
     private notFound(message: string): void {

@@ -19,7 +19,7 @@ import { CreateProduct } from '../../modules/product/dto/create-product.dto';
 import { IPaginateProductDto } from '../../modules/product/dto/paginate-product.dto';
 import { SearchQuery } from '../../modules/product/dto/search-query.dto';
 import { ISortQueryDto } from '../../modules/product/dto/sort-query.dto';
-import { CreateProductProperty } from '../../modules/product-property/dto/create-product-property.dto';
+import { ICreateProductPropertyDto } from '../../modules/product-property/dto/create-product-property.dto';
 import { CreateRole } from '../../modules/role/dto/create-role.dto';
 import { AddRole } from '../../modules/user/dto/add-role.dto';
 import { CreateUser } from '../../modules/user/dto/create-user.dto';
@@ -36,7 +36,7 @@ type ProductValue =
     | IPaginateProductDto
     | SearchQuery
     | ISortQueryDto;
-type ProductPropertyValue = CreateProductProperty;
+type ProductPropertyValue = ICreateProductPropertyDto;
 type RoleValue = CreateRole;
 type UserValue = AddRole | CreateUser | RemoveRole;
 

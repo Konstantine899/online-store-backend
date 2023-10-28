@@ -27,9 +27,36 @@ import { GetListProductPropertyResponse } from './responses/get-list-product-pro
 import { UpdateProductPropertyResponse } from './responses/update-product-property.response';
 import { RemoveProductPropertyResponse } from './responses/remove-product-property.response';
 
+interface IProductPropertyController {
+    createProductProperty(
+        productId: number,
+        dto: CreateProductPropertyDto,
+    ): Promise<CreateProductPropertyResponse>;
+
+    getProductProperty(
+        productId: number,
+        id: number,
+    ): Promise<GetProductPropertyResponse>;
+
+    getListProductProperty(
+        productId: number,
+    ): Promise<GetListProductPropertyResponse[]>;
+
+    updateProductProperty(
+        productId: number,
+        id: number,
+        dto: CreateProductPropertyDto,
+    ): Promise<UpdateProductPropertyResponse>;
+
+    removeProductProperty(
+        productId: number,
+        id: number,
+    ): Promise<RemoveProductPropertyResponse>;
+}
+
 @ApiTags('Свойства продукта')
 @Controller('product-property')
-export class ProductPropertyController {
+export class ProductPropertyController implements IProductPropertyController {
     constructor(
         private readonly productPropertyService: ProductPropertyService,
     ) {}
