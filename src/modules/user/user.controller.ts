@@ -33,9 +33,25 @@ import { RemoveUserResponse } from './responses/remove-user.response';
 import { AddRoleResponse } from './responses/add-role.response';
 import { RemoveRoleResponse } from './responses/remove-role.response';
 
+interface IUserController {
+    createUser(dto: CreateUserDto): Promise<CreateUserResponse>;
+
+    getListUsers(): Promise<GetListUsersResponse[]>;
+
+    getUser(id: number): Promise<GetUserResponse>;
+
+    updateUser(id: number, dto: CreateUserDto): Promise<UpdateUserResponse>;
+
+    removeUser(id: number): Promise<RemoveUserResponse>;
+
+    addRole(dto: AddRoleDto): Promise<AddRoleResponse>;
+
+    removeRole(dto: RemoveRoleDto): Promise<RemoveRoleResponse>;
+}
+
 @ApiTags('Пользователи')
 @Controller('user')
-export class UserController {
+export class UserController implements IUserController {
     constructor(private readonly userService: UserService) {}
 
     @CreateUserSwaggerDecorator()

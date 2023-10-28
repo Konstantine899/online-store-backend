@@ -2,12 +2,12 @@ import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export interface RemoveRole {
+export interface IRemoveRoleDto {
     userId: number;
     role: string;
 }
 
-export class RemoveRoleDto implements RemoveRole {
+export class RemoveRoleDto implements IRemoveRoleDto {
     @ApiProperty({ example: '1', description: 'Идентификатор пользователя' })
     @Transform((value) => Number(value))
     readonly userId: number;

@@ -21,9 +21,9 @@ import { SearchQuery } from '../../modules/product/dto/search-query.dto';
 import { ISortQueryDto } from '../../modules/product/dto/sort-query.dto';
 import { ICreateProductPropertyDto } from '../../modules/product-property/dto/create-product-property.dto';
 import { ICreateRoleDto } from '../../modules/role/dto/create-role.dto';
-import { AddRole } from '../../modules/user/dto/add-role.dto';
-import { CreateUser } from '../../modules/user/dto/create-user.dto';
-import { RemoveRole } from '../../modules/user/dto/remove-role.dto';
+import { IAddRoleDto } from '../../modules/user/dto/add-role.dto';
+import { ICreateUserDto } from '../../modules/user/dto/create-user.dto';
+import { IRemoveRoleDto } from '../../modules/user/dto/remove-role.dto';
 import { TRegistration } from '../../modules/auth/dto/registration.dto';
 
 type AuthValue = TRegistration | TLogin | IRefresh;
@@ -38,7 +38,7 @@ type ProductValue =
     | ISortQueryDto;
 type ProductPropertyValue = ICreateProductPropertyDto;
 type RoleValue = ICreateRoleDto;
-type UserValue = AddRole | CreateUser | RemoveRole;
+type UserValue = IAddRoleDto | ICreateUserDto | IRemoveRoleDto;
 
 type Value =
     | AuthValue

@@ -18,7 +18,7 @@ interface IUserCreationAttributes {
     password: string;
 }
 
-interface User {
+interface IUserModel {
     id: number;
     email: string;
     password: string;
@@ -37,7 +37,7 @@ interface User {
 })
 export class UserModel
     extends Model<UserModel, IUserCreationAttributes>
-    implements User
+    implements IUserModel
 {
     @Column({
         type: DataType.INTEGER,

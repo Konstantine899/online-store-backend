@@ -9,9 +9,32 @@ import { GetListUsersResponse } from './responses/get-list-users.response';
 import { GetUserResponse } from './responses/get-user-response';
 import { UpdateUserResponse } from './responses/update-user-response';
 
+interface IUserRepository {
+    createUser(dto: CreateUserDto): Promise<UserModel>;
+
+    updateUser(
+        user: UserModel,
+        dto: CreateUserDto,
+    ): Promise<UpdateUserResponse>;
+
+    findUser(id: number): Promise<GetUserResponse>;
+
+    findUserByPkId(userId: number): Promise<UserModel>;
+
+    findRegisteredUser(userId: number): Promise<CreateUserResponse>;
+
+    findAuthenticatedUser(userId: number): Promise<UserModel>;
+
+    findUserByEmail(email: string): Promise<UserModel>;
+
+    findListUsers(): Promise<GetListUsersResponse[]>;
+
+    removeUser(id: number): Promise<number>;
+}
+
 Injectable();
 
-export class UserRepository {
+export class UserRepository implements IUserRepository {
     constructor(@InjectModel(UserModel) private userModel: typeof UserModel) {}
 
     public async createUser(dto: CreateUserDto): Promise<UserModel> {
@@ -33,9 +56,12 @@ export class UserRepository {
 
         return this.userModel.findByPk(user.id, {
             attributes: { exclude: ['password'] },
-            include: { model: RoleModel, through: { attributes: [] } },
+            include: {
+                model: RoleModel,
+                through: { attributes: [] },
+            },
             /*Так как при обновлении всего объекта пользователя я обновляю и его роль, то роли тоже возвращаю,
- кроме данных из связующей таблицы user-role*/
+кроме данных из связующей таблицы user-role*/
         });
     }
 
@@ -95,7 +121,7 @@ export class UserRepository {
         });
     }
 
-    public async removeUser(id: number) {
+    public async removeUser(id: number): Promise<number> {
         return this.userModel.destroy({ where: { id } });
     }
 }

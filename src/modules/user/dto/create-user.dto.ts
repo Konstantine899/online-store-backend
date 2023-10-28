@@ -1,12 +1,12 @@
 import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export interface CreateUser {
+export interface ICreateUserDto {
     email: string;
     password: string;
 }
 
-export class CreateUserDto implements CreateUser {
+export class CreateUserDto implements ICreateUserDto {
     @ApiProperty({
         example: 'test@mail.com',
         description: 'Электронный адрес пользователя',
