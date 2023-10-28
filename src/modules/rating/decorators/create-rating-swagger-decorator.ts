@@ -11,7 +11,7 @@ import {
 import { UserRequest } from '../requests/user.request';
 import { CreateRatingResponse } from '../responses/create-rating.response';
 
-export function CreateRatingDocumentation() {
+export function CreateRatingSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({ summary: 'Создание рейтинга' }),
         ApiBearerAuth('JWT-auth'),

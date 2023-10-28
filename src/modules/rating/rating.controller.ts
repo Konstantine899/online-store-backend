@@ -10,11 +10,11 @@ import {
 } from '@nestjs/common';
 import { RatingService } from './rating.service';
 import { JwtGuard } from '../token/jwt.guard';
-import { CreateRatingDocumentation } from './decorators/create-rating.documentation';
+import { CreateRatingSwaggerDecorator } from './decorators/create-rating-swagger-decorator';
 import { ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { UserRequest } from './requests/user.request';
-import { GetRatingDocumentation } from './decorators/get-rating.documentation';
+import { GetRatingSwaggerDecorator } from './decorators/get-rating-swagger-decorator';
 import { CreateRatingResponse } from './responses/create-rating.response';
 import { GetRatingResponse } from './responses/get-rating.response';
 
@@ -23,7 +23,7 @@ import { GetRatingResponse } from './responses/get-rating.response';
 export class RatingController {
     constructor(private readonly ratingService: RatingService) {}
 
-    @CreateRatingDocumentation()
+    @CreateRatingSwaggerDecorator()
     @HttpCode(201)
     @UseGuards(JwtGuard)
     @Post('/product/:productId([0-9]+)/rating/:rating([1-5])')
@@ -36,7 +36,7 @@ export class RatingController {
         return this.ratingService.createRating(id, productId, rating);
     }
 
-    @GetRatingDocumentation()
+    @GetRatingSwaggerDecorator()
     @HttpCode(200)
     @Get('/product/:productId([0-9]+)')
     public async getRating(
