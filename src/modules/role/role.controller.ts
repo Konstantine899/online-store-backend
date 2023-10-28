@@ -10,12 +10,12 @@ import {
 import { RoleService } from './role.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateRoleDocumentation } from './decorators/create-role.documentation';
+import { CreateRoleSwaggerDecorator } from './decorators/create-role-swagger-decorator';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from './role.guard';
-import { GetListRoleDocumentation } from './decorators/get-list-role-documentation';
-import { GetRoleDocumentation } from './decorators/get-role.documentation';
+import { GetListRoleSwaggerDecorator } from './decorators/get-list-role-swagger-decorator';
+import { GetRoleSwaggerDecorator } from './decorators/get-role-swagger-decorator';
 import { CreateRoleResponse } from './responses/create-role.response';
 import { GetRoleResponse } from './responses/get-role.response';
 import { GetListRoleResponse } from './responses/get-list-role.response';
@@ -25,7 +25,7 @@ import { GetListRoleResponse } from './responses/get-list-role.response';
 export class RoleController {
     constructor(private readonly roleService: RoleService) {}
 
-    @CreateRoleDocumentation()
+    @CreateRoleSwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -36,7 +36,7 @@ export class RoleController {
         return this.roleService.createRole(dto);
     }
 
-    @GetRoleDocumentation()
+    @GetRoleSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -47,7 +47,7 @@ export class RoleController {
         return this.roleService.getRole(role);
     }
 
-    @GetListRoleDocumentation()
+    @GetListRoleSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
