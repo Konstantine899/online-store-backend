@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { GetListUsersResponse } from '../responses/get-list-users.response';
 
-export function GetListUsersDocumentation() {
+export function GetListUsersSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({ summary: 'Получение списка всех пользователей' }),
         ApiBearerAuth('JWT-auth'),

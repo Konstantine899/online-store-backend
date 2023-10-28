@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { GetUserResponse } from '../responses/get-user-response';
 
-export function GetUserDocumentation() {
+export function GetUserSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({ summary: 'Получение пользователя по идентификатору' }),
         ApiBearerAuth('JWT-auth'),

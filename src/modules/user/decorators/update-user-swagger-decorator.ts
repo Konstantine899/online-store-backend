@@ -4,24 +4,31 @@ import {
     ApiBody,
     ApiNotFoundResponse,
     ApiOperation,
+    ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
-import { CreateUserResponse } from '../responses/create-user.response';
+import { UpdateUserResponse } from '../responses/update-user-response';
 
-export function CreateUserDocumentation() {
+export function UpdateUserSwaggerDecorator() {
     return applyDecorators(
+        ApiOperation({ summary: 'Обновление пользователя' }),
         ApiBearerAuth('JWT-auth'),
-        ApiOperation({ summary: 'Создание пользователя' }),
+        ApiParam({
+            name: 'id',
+            type: 'string',
+            description: 'идентификатор пользователя',
+            required: true,
+        }),
         ApiBody({
             type: CreateUserDto,
-            description: 'Структура входных данных для создания пользователя',
+            description: 'Структура входных данных для обновления пользователя',
         }),
         ApiResponse({
-            description: 'Created user',
-            status: HttpStatus.CREATED,
-            type: CreateUserResponse,
+            description: 'Updated user',
+            status: HttpStatus.OK,
+            type: UpdateUserResponse,
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',
@@ -65,11 +72,22 @@ export function CreateUserDocumentation() {
             description: 'Not Found',
             status: HttpStatus.NOT_FOUND,
             schema: {
-                title: 'Роль USER не найдена в БД',
-                example: {
-                    status: 404,
-                    message: 'Роль USER не найдена в БД',
-                },
+                anyOf: [
+                    {
+                        title: 'Роль пользователя не найдена',
+                        example: {
+                            status: HttpStatus.NOT_FOUND,
+                            message: 'Пользователь с id: 61 не найден в БД',
+                        },
+                    },
+                    {
+                        title: 'Роль пользователя не найдена',
+                        example: {
+                            status: HttpStatus.NOT_FOUND,
+                            message: 'Роль USER не найдена',
+                        },
+                    },
+                ],
             },
         }),
     );

@@ -18,13 +18,13 @@ import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateUserDocumentation } from './decorators/create-user.documentation';
-import { GetListUsersDocumentation } from './decorators/get-list-users.documentation';
-import { GetUserDocumentation } from './decorators/get-user.documentation';
-import { UpdateUserDocumentation } from './decorators/update-user.documentation';
-import { RemoveUserDocumentation } from './decorators/remove-user.documentation';
-import { AddRoleUserDocumentation } from './decorators/add-role-user.documentation';
-import { RemoveRoleUserDocumentation } from './decorators/remove-role-user.documentation';
+import { CreateUserSwaggerDecorator } from './decorators/create-user-swagger-decorator';
+import { GetListUsersSwaggerDecorator } from './decorators/get-list-users-swagger-decorator';
+import { GetUserSwaggerDecorator } from './decorators/get-user-swagger-decorator';
+import { UpdateUserSwaggerDecorator } from './decorators/update-user-swagger-decorator';
+import { RemoveUserSwaggerDecorator } from './decorators/remove-user-swagger-decorator';
+import { AddRoleUserSwaggerDecorator } from './decorators/add-role-user-swagger-decorator';
+import { RemoveRoleUserSwaggerDecorator } from './decorators/remove-role-user-swagger-decorator';
 import { CreateUserResponse } from './responses/create-user.response';
 import { GetListUsersResponse } from './responses/get-list-users.response';
 import { GetUserResponse } from './responses/get-user-response';
@@ -38,7 +38,7 @@ import { RemoveRoleResponse } from './responses/remove-role.response';
 export class UserController {
     constructor(private readonly userService: UserService) {}
 
-    @CreateUserDocumentation()
+    @CreateUserSwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -49,7 +49,7 @@ export class UserController {
         return this.userService.createUser(dto);
     }
 
-    @GetListUsersDocumentation()
+    @GetListUsersSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -58,7 +58,7 @@ export class UserController {
         return this.userService.getListUsers();
     }
 
-    @GetUserDocumentation()
+    @GetUserSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -69,7 +69,7 @@ export class UserController {
         return this.userService.getUser(id);
     }
 
-    @UpdateUserDocumentation()
+    @UpdateUserSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -81,7 +81,7 @@ export class UserController {
         return this.userService.updateUser(id, dto);
     }
 
-    @RemoveUserDocumentation()
+    @RemoveUserSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -92,7 +92,7 @@ export class UserController {
         return this.userService.removeUser(id);
     }
 
-    @AddRoleUserDocumentation()
+    @AddRoleUserSwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
@@ -101,7 +101,7 @@ export class UserController {
         return this.userService.addRole(dto);
     }
 
-    @RemoveRoleUserDocumentation()
+    @RemoveRoleUserSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
