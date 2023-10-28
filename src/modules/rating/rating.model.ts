@@ -8,7 +8,7 @@ import {
 import { UserModel } from '../user/user.model';
 import { ProductModel } from '../product/product.model';
 
-interface Rating {
+interface IRatingModel {
     rating: number;
     user_id: number;
     product_id: number;
@@ -21,7 +21,7 @@ interface Rating {
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
 })
-export class RatingModel extends Model<RatingModel> implements Rating {
+export class RatingModel extends Model<RatingModel> implements IRatingModel {
     @Column({
         type: DataType.INTEGER,
         allowNull: false,

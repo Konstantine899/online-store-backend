@@ -18,9 +18,19 @@ import { GetRatingSwaggerDecorator } from './decorators/get-rating-swagger-decor
 import { CreateRatingResponse } from './responses/create-rating.response';
 import { GetRatingResponse } from './responses/get-rating.response';
 
+interface IRatingController {
+    createRating(
+        request: Request,
+        productId: number,
+        rating: number,
+    ): Promise<CreateRatingResponse>;
+
+    getRating(productId: number): Promise<GetRatingResponse>;
+}
+
 @ApiTags('Рейтинг')
 @Controller('rating')
-export class RatingController {
+export class RatingController implements IRatingController {
     constructor(private readonly ratingService: RatingService) {}
 
     @CreateRatingSwaggerDecorator()

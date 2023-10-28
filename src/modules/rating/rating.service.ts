@@ -10,8 +10,18 @@ import { UserRepository } from '../user/user.repository';
 import { CreateRatingResponse } from './responses/create-rating.response';
 import { GetRatingResponse } from './responses/get-rating.response';
 
+interface IRatingService {
+    createRating(
+        userId: number,
+        productId: number,
+        rating: number,
+    ): Promise<CreateRatingResponse>;
+
+    getRating(productId: number): Promise<GetRatingResponse>;
+}
+
 @Injectable()
-export class RatingService {
+export class RatingService implements IRatingService {
     constructor(
         private readonly ratingRepository: RatingRepository,
         private readonly productRepository: ProductRepository,
@@ -51,10 +61,18 @@ export class RatingService {
         }
         const votes = await this.ratingRepository.countRating(productId);
         if (!votes) {
-            return { ratingsSum: 0, votes: 0, rating: 0 };
+            return {
+                ratingsSum: 0,
+                votes: 0,
+                rating: 0,
+            };
         }
         const ratingsSum = await this.ratingRepository.ratingsSum(productId);
-        return { ratingsSum, votes, rating: ratingsSum / votes };
+        return {
+            ratingsSum,
+            votes,
+            rating: ratingsSum / votes,
+        };
     }
 
     private notFound(message: string): void {
@@ -63,6 +81,7 @@ export class RatingService {
             message,
         });
     }
+
     private badRequest(message: string): void {
         throw new BadRequestException({
             status: HttpStatus.BAD_REQUEST,
