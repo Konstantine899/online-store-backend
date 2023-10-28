@@ -8,7 +8,7 @@ import {
 import { OrderDto } from '../dto/order.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { validateOrder } from './helpers/validate-order';
-import { AdminCreateOrderResponse } from '../response/admin-create-order.response';
+import { AdminCreateOrderResponse } from '../responses/admin-create-order.response';
 
 export function AdminCreateOrderSwaggerDecorator() {
     return applyDecorators(

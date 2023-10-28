@@ -12,7 +12,7 @@ import { ProductModel } from '../product/product.model';
 import { CreateProductPropertyResponse } from './responses/create-product-property.response';
 import { GetProductPropertyResponse } from './responses/get-product-property.response';
 import { GetListProductPropertyResponse } from './responses/get-list-product-property.response';
-import { UpdateProductPropertyResponse } from './decorators/update-product-property.response';
+import { UpdateProductPropertyResponse } from './responses/update-product-property.response';
 import { RemoveProductPropertyResponse } from './responses/remove-product-property.response';
 
 @Injectable()

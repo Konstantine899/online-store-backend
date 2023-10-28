@@ -13,18 +13,18 @@ import {
 import { CreateProductPropertyDto } from './dto/create-product-property.dto';
 import { ProductPropertyService } from './product-property.service';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateProductPropertyDocumentation } from './decorators/create-product-property.documentation';
-import { GetProductPropertyDocumentation } from './decorators/get-product-property.documentation';
-import { GetListProductPropertyDocumentation } from './decorators/get-list-product-property.documentation';
-import { UpdateProductPropertyDocumentation } from './decorators/update-product-property.documentation';
-import { RemoveProductPropertyDocumentation } from './decorators/remove-product-property.documentation';
+import { CreateProductPropertySwaggerDecorator } from './decorators/create-product-property-swagger-decorator';
+import { GetProductPropertySwaggerDecorator } from './decorators/get-product-property-swagger-decorator';
+import { GetListProductPropertySwaggerDecorator } from './decorators/get-list-product-property-swagger-decorator';
+import { UpdateProductPropertySwaggerDecorator } from './decorators/update-product-property-swagger-decorator';
+import { RemoveProductPropertySwaggerDecorator } from './decorators/remove-product-property-swagger-decorator';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { CreateProductPropertyResponse } from './responses/create-product-property.response';
 import { GetProductPropertyResponse } from './responses/get-product-property.response';
 import { GetListProductPropertyResponse } from './responses/get-list-product-property.response';
-import { UpdateProductPropertyResponse } from './decorators/update-product-property.response';
+import { UpdateProductPropertyResponse } from './responses/update-product-property.response';
 import { RemoveProductPropertyResponse } from './responses/remove-product-property.response';
 
 @ApiTags('Свойства продукта')
@@ -34,7 +34,7 @@ export class ProductPropertyController {
         private readonly productPropertyService: ProductPropertyService,
     ) {}
 
-    @CreateProductPropertyDocumentation()
+    @CreateProductPropertySwaggerDecorator()
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
     @HttpCode(201)
@@ -49,7 +49,7 @@ export class ProductPropertyController {
         );
     }
 
-    @GetProductPropertyDocumentation()
+    @GetProductPropertySwaggerDecorator()
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
     @HttpCode(200)
@@ -61,7 +61,7 @@ export class ProductPropertyController {
         return this.productPropertyService.getProductProperty(productId, id);
     }
 
-    @GetListProductPropertyDocumentation()
+    @GetListProductPropertySwaggerDecorator()
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
     @HttpCode(200)
@@ -72,7 +72,7 @@ export class ProductPropertyController {
         return this.productPropertyService.getListProductProperty(productId);
     }
 
-    @UpdateProductPropertyDocumentation()
+    @UpdateProductPropertySwaggerDecorator()
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
     @HttpCode(200)
@@ -89,7 +89,7 @@ export class ProductPropertyController {
         );
     }
 
-    @RemoveProductPropertyDocumentation()
+    @RemoveProductPropertySwaggerDecorator()
     @Roles('ADMIN')
     @UseGuards(JwtGuard, RoleGuard)
     @HttpCode(200)

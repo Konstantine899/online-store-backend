@@ -28,15 +28,15 @@ import { UserCreateOrderSwaggerDecorator } from './decorators/user-create-order-
 import { UserGetOrderSwaggerDecorator } from './decorators/user-get-order-swagger-decorator';
 import { UserGetOrderListSwaggerDecorator } from './decorators/user-get-order-list-swagger-decorator';
 import { GuestCreateOrderSwaggerDecorator } from './decorators/guest-create-order-swagger-decorator';
-import { AdminGetStoreOrderListResponse } from './response/admin-get-store-order-list.response';
-import { AdminGetOrderListUserResponse } from './response/admin-get-order-list-user.response';
-import { AdminGetOrderUserResponse } from './response/admin-get-order-user.response';
-import { AdminCreateOrderResponse } from './response/admin-create-order.response';
-import { AdminRemoveOrderResponse } from './response/admin-remove-order.response';
-import { UserGetOrderListResponse } from './response/user-get-order-list.response';
-import { UserGetOrderResponse } from './response/user-get-order.response';
-import { UserCreateOrderResponse } from './response/user-create-order.response';
-import { GuestCreateOrderResponse } from './response/guest-create-order.response';
+import { AdminGetStoreOrderListResponse } from './responses/admin-get-store-order-list.response';
+import { AdminGetOrderListUserResponse } from './responses/admin-get-order-list-user.response';
+import { AdminGetOrderUserResponse } from './responses/admin-get-order-user.response';
+import { AdminCreateOrderResponse } from './responses/admin-create-order.response';
+import { AdminRemoveOrderResponse } from './responses/admin-remove-order.response';
+import { UserGetOrderListResponse } from './responses/user-get-order-list.response';
+import { UserGetOrderResponse } from './responses/user-get-order.response';
+import { UserCreateOrderResponse } from './responses/user-create-order.response';
+import { GuestCreateOrderResponse } from './responses/guest-create-order.response';
 
 interface IOrderController {
     adminGetStoreOrderList(): Promise<AdminGetStoreOrderListResponse[]>;

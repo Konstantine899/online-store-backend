@@ -6,11 +6,11 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { GetProductPropertyResponse } from '../responses/get-product-property.response';
+import { RemoveProductPropertyResponse } from '../responses/remove-product-property.response';
 
-export function GetProductPropertyDocumentation() {
+export function RemoveProductPropertySwaggerDecorator() {
     return applyDecorators(
-        ApiOperation({ summary: 'Получение свойства продукта' }),
+        ApiOperation({ summary: 'Удаление свойства продукта' }),
         ApiBearerAuth('JWT-auth'),
         ApiParam({
             name: 'productId',
@@ -25,9 +25,9 @@ export function GetProductPropertyDocumentation() {
             required: true,
         }),
         ApiResponse({
-            description: 'Get product property',
+            description: 'Remove product property',
             status: HttpStatus.OK,
-            type: GetProductPropertyResponse,
+            type: RemoveProductPropertyResponse,
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
@@ -35,19 +35,21 @@ export function GetProductPropertyDocumentation() {
             schema: {
                 anyOf: [
                     {
+                        title: 'Продукт не найден',
                         example: {
                             statusCode: HttpStatus.NOT_FOUND,
-                            url: '/online-store/product-property/product_id/566/get-property/10',
-                            path: '/online-store/product-property/product_id/566/get-property/10',
+                            url: '/online-store/product-property/product_id/566/remove-product-property/16',
+                            path: '/online-store/product-property/product_id/566/remove-product-property/16',
                             name: 'NotFoundException',
                             message: 'Продукт не найден',
                         },
                     },
                     {
+                        title: 'Свойство продукта не найдено',
                         example: {
-                            statusCode: HttpStatus.NOT_FOUND,
-                            url: '/online-store/product-property/product_id/56/get-property/101',
-                            path: '/online-store/product-property/product_id/56/get-property/101',
+                            statusCode: 404,
+                            url: '/online-store/product-property/product_id/56/remove-product-property/166',
+                            path: '/online-store/product-property/product_id/56/remove-product-property/166',
                             name: 'NotFoundException',
                             message: 'Свойство продукта не найдено',
                         },

@@ -9,12 +9,11 @@ import {
 } from '@nestjs/swagger';
 import { CreateProductPropertyDto } from '../dto/create-product-property.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
-import { CreateProductPropertyResponse } from '../responses/create-product-property.response';
+import { UpdateProductPropertyResponse } from '../responses/update-product-property.response';
 
-export function CreateProductPropertyDocumentation() {
+export function UpdateProductPropertySwaggerDecorator() {
     return applyDecorators(
-        ApiOperation({ summary: 'Создать свойство продукта' }),
-        ApiBearerAuth('JWT-auth'),
+        ApiOperation({ summary: 'Обновление свойства продукта' }),
         ApiBearerAuth('JWT-auth'),
         ApiParam({
             name: 'productId',
@@ -22,14 +21,20 @@ export function CreateProductPropertyDocumentation() {
             description: 'Идентификатор  продукта',
             required: true,
         }),
+        ApiParam({
+            name: 'id',
+            type: String,
+            description: 'Идентификатор свойства  продукта',
+            required: true,
+        }),
         ApiBody({
             type: CreateProductPropertyDto,
-            description: 'Структура данных для создания свойства продукта',
+            description: 'Структура данных для обновления свойства продукта',
         }),
         ApiResponse({
-            description: 'Created product property',
-            status: HttpStatus.CREATED,
-            type: CreateProductPropertyResponse,
+            description: 'Updated product property',
+            status: HttpStatus.OK,
+            type: UpdateProductPropertyResponse,
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',
@@ -37,6 +42,7 @@ export function CreateProductPropertyDocumentation() {
             schema: {
                 anyOf: [
                     {
+                        title: 'Имя свойства не должно быть пустым',
                         example: {
                             status: HttpStatus.BAD_REQUEST,
                             property: 'name',
@@ -45,6 +51,7 @@ export function CreateProductPropertyDocumentation() {
                         },
                     },
                     {
+                        title: 'Значение свойства не должно быть пустым',
                         example: {
                             status: HttpStatus.BAD_REQUEST,
                             property: 'value',
@@ -55,6 +62,7 @@ export function CreateProductPropertyDocumentation() {
                         },
                     },
                     {
+                        title: 'Имя свойства  должно быть строкой',
                         example: {
                             status: HttpStatus.BAD_REQUEST,
                             property: 'name',
@@ -63,6 +71,7 @@ export function CreateProductPropertyDocumentation() {
                         },
                     },
                     {
+                        title: 'Значение свойства  должно быть строкой',
                         example: {
                             status: HttpStatus.BAD_REQUEST,
                             property: 'value',
@@ -79,14 +88,28 @@ export function CreateProductPropertyDocumentation() {
             description: 'Not Found',
             status: HttpStatus.NOT_FOUND,
             schema: {
-                title: 'Не найден продукт',
-                example: {
-                    statusCode: HttpStatus.NOT_FOUND,
-                    url: '/online-store/product-property/product_id/566/create',
-                    path: '/online-store/product-property/product_id/566/create',
-                    name: 'NotFoundException',
-                    message: 'Продукт не найден',
-                },
+                anyOf: [
+                    {
+                        title: 'Продукт не найден',
+                        example: {
+                            statusCode: HttpStatus.NOT_FOUND,
+                            url: '/online-store/product-property/product_id/566/create',
+                            path: '/online-store/product-property/product_id/566/create',
+                            name: 'NotFoundException',
+                            message: 'Продукт не найден',
+                        },
+                    },
+                    {
+                        title: 'Свойство продукта не найдено',
+                        example: {
+                            statusCode: HttpStatus.NOT_FOUND,
+                            url: '/online-store/product-property/product_id/56/update_property/134',
+                            path: '/online-store/product-property/product_id/56/update_property/134',
+                            name: 'NotFoundException',
+                            message: 'Свойство продукта не найдено',
+                        },
+                    },
+                ],
             },
         }),
     );

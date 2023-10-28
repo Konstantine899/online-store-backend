@@ -5,7 +5,7 @@ import { CreateProductPropertyDto } from './dto/create-product-property.dto';
 import { CreateProductPropertyResponse } from './responses/create-product-property.response';
 import { GetProductPropertyResponse } from './responses/get-product-property.response';
 import { GetListProductPropertyResponse } from './responses/get-list-product-property.response';
-import { UpdateProductPropertyResponse } from './decorators/update-product-property.response';
+import { UpdateProductPropertyResponse } from './responses/update-product-property.response';
 
 @Injectable()
 export class ProductPropertyRepository {
