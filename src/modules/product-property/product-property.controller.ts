@@ -19,13 +19,13 @@ import { GetListProductPropertySwaggerDecorator } from './decorators/get-list-pr
 import { UpdateProductPropertySwaggerDecorator } from './decorators/update-product-property-swagger-decorator';
 import { RemoveProductPropertySwaggerDecorator } from './decorators/remove-product-property-swagger-decorator';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
-import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { CreateProductPropertyResponse } from './responses/create-product-property.response';
 import { GetProductPropertyResponse } from './responses/get-product-property.response';
 import { GetListProductPropertyResponse } from './responses/get-list-product-property.response';
 import { UpdateProductPropertyResponse } from './responses/update-product-property.response';
 import { RemoveProductPropertyResponse } from './responses/remove-product-property.response';
+import { AuthGuard } from '../auth/auth.guard';
 
 interface IProductPropertyController {
     createProductProperty(
@@ -63,7 +63,7 @@ export class ProductPropertyController implements IProductPropertyController {
 
     @CreateProductPropertySwaggerDecorator()
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @HttpCode(201)
     @Post('/product_id/:productId([0-9]+)/create')
     public async createProductProperty(
@@ -78,7 +78,7 @@ export class ProductPropertyController implements IProductPropertyController {
 
     @GetProductPropertySwaggerDecorator()
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @HttpCode(200)
     @Get('/product_id/:productId([0-9]+)/get-property/:id([0-9]+)')
     public async getProductProperty(
@@ -90,7 +90,7 @@ export class ProductPropertyController implements IProductPropertyController {
 
     @GetListProductPropertySwaggerDecorator()
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @HttpCode(200)
     @Get('/product_id/:productId([0-9]+)/properties')
     public async getListProductProperty(
@@ -101,7 +101,7 @@ export class ProductPropertyController implements IProductPropertyController {
 
     @UpdateProductPropertySwaggerDecorator()
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @HttpCode(200)
     @Put('/product_id/:productId([0-9]+)/update_property/:id([0-9]+)')
     public async updateProductProperty(
@@ -118,7 +118,7 @@ export class ProductPropertyController implements IProductPropertyController {
 
     @RemoveProductPropertySwaggerDecorator()
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @HttpCode(200)
     @Delete(
         '/product_id/:productId([0-9]+)/remove-product-property/:id([0-9]+)',

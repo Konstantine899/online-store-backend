@@ -6,7 +6,6 @@ import { RefreshTokenModel } from './refresh-token.model';
 import { RefreshTokenRepository } from './refresh-token.repository';
 import { UserModule } from '../user/user.module';
 import { JwtStrategy } from './jwt.strategy';
-import { JwtGuard } from './jwt.guard';
 
 import { jwtConfig } from './helpers/jwt.config';
 
@@ -16,7 +15,7 @@ import { jwtConfig } from './helpers/jwt.config';
         SequelizeModule.forFeature([RefreshTokenModel]),
         UserModule,
     ],
-    providers: [TokenService, RefreshTokenRepository, JwtStrategy, JwtGuard],
-    exports: [TokenService, JwtStrategy, JwtGuard],
+    providers: [TokenService, RefreshTokenRepository, JwtStrategy],
+    exports: [TokenService, JwtStrategy],
 })
 export class TokenModule {}

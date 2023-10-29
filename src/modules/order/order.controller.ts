@@ -11,7 +11,6 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
-import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
 import { OrderDto } from './dto/order.dto';
@@ -37,6 +36,7 @@ import { UserGetOrderListResponse } from './responses/user-get-order-list.respon
 import { UserGetOrderResponse } from './responses/user-get-order.response';
 import { UserCreateOrderResponse } from './responses/user-create-order.response';
 import { GuestCreateOrderResponse } from './responses/guest-create-order.response';
+import { AuthGuard } from '../auth/auth.guard';
 
 interface IOrderController {
     adminGetStoreOrderList(): Promise<AdminGetStoreOrderListResponse[]>;
@@ -80,7 +80,7 @@ export class OrderController implements IOrderController {
     @AdminGetStoreOrderListSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Get('/admin/get-all-order')
     public async adminGetStoreOrderList(): Promise<
         AdminGetStoreOrderListResponse[]
@@ -92,7 +92,7 @@ export class OrderController implements IOrderController {
     @AdminGetOrderListUsersSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Get('/admin/get-all-order/user/:userId([0-9]+)')
     public async adminGetOrderListUser(
         @Param('userId', ParseIntPipe) userId: number,
@@ -104,7 +104,7 @@ export class OrderController implements IOrderController {
     @AdminGetOrderUsersSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Get('/admin/get-order/:orderId([0-9]+)')
     public async adminGetOrderUser(
         @Param('orderId', ParseIntPipe) orderId: number,
@@ -116,7 +116,7 @@ export class OrderController implements IOrderController {
     @AdminCreateOrderSwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Post('/admin/create-order')
     public async adminCreateOrder(
         @Body() dto: OrderDto,
@@ -128,7 +128,7 @@ export class OrderController implements IOrderController {
     @AdminRemoveOrderSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Delete('/admin/delete-order/:orderId([0-9]+)')
     public async adminRemoveOrder(
         @Param('orderId', ParseIntPipe) orderId: number,
@@ -142,7 +142,7 @@ export class OrderController implements IOrderController {
     @UserGetOrderListSwaggerDecorator()
     @HttpCode(200)
     @Roles('USER')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Get('/user/get-all-order')
     public async userGetOrderList(
         @Req() request: Request,
@@ -155,7 +155,7 @@ export class OrderController implements IOrderController {
     @UserGetOrderSwaggerDecorator()
     @HttpCode(200)
     @Roles('USER')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Get('/user/get-order/:orderId([0-9]+)')
     public async userGetOrder(
         @Req() request: Request,
@@ -168,7 +168,7 @@ export class OrderController implements IOrderController {
     @UserCreateOrderSwaggerDecorator()
     @HttpCode(201)
     @Roles('USER')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Post('/user/create-order')
     public async userCreateOrder(
         @Req() request: Request,

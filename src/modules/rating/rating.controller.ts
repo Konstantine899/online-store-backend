@@ -9,7 +9,6 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { RatingService } from './rating.service';
-import { JwtGuard } from '../token/jwt.guard';
 import { CreateRatingSwaggerDecorator } from './decorators/create-rating-swagger-decorator';
 import { ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
@@ -17,6 +16,7 @@ import { UserRequest } from './requests/user.request';
 import { GetRatingSwaggerDecorator } from './decorators/get-rating-swagger-decorator';
 import { CreateRatingResponse } from './responses/create-rating.response';
 import { GetRatingResponse } from './responses/get-rating.response';
+import { AuthGuard } from '../auth/auth.guard';
 
 interface IRatingController {
     createRating(
@@ -35,7 +35,7 @@ export class RatingController implements IRatingController {
 
     @CreateRatingSwaggerDecorator()
     @HttpCode(201)
-    @UseGuards(JwtGuard)
+    @UseGuards(AuthGuard)
     @Post('/product/:productId([0-9]+)/rating/:rating([1-5])')
     public async createRating(
         @Req() request: Request,

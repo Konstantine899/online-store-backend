@@ -14,7 +14,6 @@ import { RegistrationDto } from './dto/registration.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { UserService } from '../user/user.service';
-import { JwtGuard } from '../token/jwt.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { RegistrationSwaggerDecorator } from './decorators/swagger/registration.swagger.decorator';
 import { LoginSwaggerDecorator } from './decorators/swagger/login.swagger.decorator';
@@ -27,6 +26,7 @@ import { UpdateAccessTokenResponse } from './responses/update-access-token.respo
 import { CheckResponse } from './responses/check-response';
 import { LogoutResponse } from './responses/logout.response';
 import { UserModel } from '../user/user.model';
+import { AuthGuard } from './auth.guard';
 
 interface IAuthController {
     registration(dto: RegistrationDto): Promise<RegistrationResponse>;
@@ -74,7 +74,7 @@ export class AuthController implements IAuthController {
     }
 
     @CheckUserAuthSwaggerDecorator()
-    @UseGuards(JwtGuard)
+    @UseGuards(AuthGuard)
     @Get('/check')
     public async checkUserAuth(
         @Req() request: Request,
@@ -84,7 +84,7 @@ export class AuthController implements IAuthController {
     }
 
     @LogoutSwaggerDecorator()
-    @UseGuards(JwtGuard)
+    @UseGuards(AuthGuard)
     @Delete('/logout')
     public async logout(
         @Req() request: Request,

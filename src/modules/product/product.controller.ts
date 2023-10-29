@@ -18,7 +18,6 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { ProductService } from './product.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
-import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { imageMulterOptions } from '../file/image-multer.options';
 import { CreateProductSwaggerDecorator } from './decorators/create-product-swagger-decorator';
@@ -99,7 +98,7 @@ export class ProductController implements IProductController {
     @CreateProductSwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
-    @UseGuards(AuthGuard, JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Post('/create')
     @UseInterceptors(FileInterceptor('image', imageMulterOptions))
     public async create(
@@ -198,7 +197,7 @@ export class ProductController implements IProductController {
     @UpdateProductSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Put('/update/:id([0-9]+)')
     @UseInterceptors(FileInterceptor('image', imageMulterOptions))
     public async update(
@@ -212,7 +211,7 @@ export class ProductController implements IProductController {
     @RemoveProductSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Delete('/delete/:id([0-9]+)')
     public async removeProduct(
         @Param('id', ParseIntPipe) id: number,

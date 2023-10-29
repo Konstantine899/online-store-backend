@@ -13,7 +13,6 @@ import {
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
-import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateCategorySwaggerDecorator } from './decorators/create-category-swagger-decorator';
@@ -26,6 +25,7 @@ import { ListAllCategoriesResponse } from './responses/list-all-categories.respo
 import { CategoryResponse } from './responses/category.response';
 import { UpdateCategoryResponse } from './responses/update-category.response';
 import { RemoveCategoryResponse } from './responses/remove-category.response';
+import { AuthGuard } from '../auth/auth.guard';
 
 interface ICategoryController {
     createCategory(dto: CreateCategoryDto): Promise<CreateCategoryResponse>;
@@ -50,7 +50,7 @@ export class CategoryController implements ICategoryController {
     @CreateCategorySwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Post('/create')
     public async createCategory(
         @Body() dto: CreateCategoryDto,
@@ -77,7 +77,7 @@ export class CategoryController implements ICategoryController {
     @UpdateCategorySwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Put('/update/:id([0-9]+)')
     public async updateCategory(
         @Param('id', ParseIntPipe) id: number,
@@ -89,7 +89,7 @@ export class CategoryController implements ICategoryController {
     @RemoveCategorySwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Delete('/delete/:id([0-9]+)')
     public async removeCategory(
         @Param('id', ParseIntPipe) id: number,

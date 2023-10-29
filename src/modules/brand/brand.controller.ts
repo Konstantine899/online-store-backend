@@ -13,7 +13,6 @@ import {
 import { BrandService } from './brand.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
-import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateBrandSwaggerDecorator } from './decorators/swagger/create-brand-swagger-decorator';
@@ -26,6 +25,7 @@ import { ListAllBrandsResponse } from './responses/list-all-brands.response';
 import { BrandResponse } from './responses/brand.response';
 import { UpdateBrandResponse } from './responses/update-brand.response';
 import { RemoveBrandResponse } from './responses/remove-brand.response';
+import { AuthGuard } from '../auth/auth.guard';
 
 interface IBrandController {
     createBrand(dto: CreateBrandDto): Promise<CreateBrandResponse>;
@@ -47,7 +47,7 @@ export class BrandController implements IBrandController {
     @CreateBrandSwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Post('/create')
     public async createBrand(
         @Body() dto: CreateBrandDto,
@@ -74,7 +74,7 @@ export class BrandController implements IBrandController {
     @UpdateBrandSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Put('/update/:id([0-9]+)')
     public async updateBrand(
         @Param('id', ParseIntPipe) id: number,
@@ -86,7 +86,7 @@ export class BrandController implements IBrandController {
     @RemoveBrandSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Delete('/delete/:id([0-9]+)')
     public async removeBrand(
         @Param('id', ParseIntPipe) id: number,

@@ -5,10 +5,12 @@ import { UserModule } from '../user/user.module';
 import { TokenModule } from '../token/token.module';
 import { RoleModule } from '../role/role.module';
 import { JwtModule } from '@nestjs/jwt';
+import { AuthGuard } from './auth.guard';
 
 @Module({
     imports: [UserModule, TokenModule, RoleModule, JwtModule],
     controllers: [AuthController],
-    providers: [AuthService],
+    providers: [AuthService, AuthGuard],
+    exports: [AuthGuard],
 })
 export class AuthModule {}

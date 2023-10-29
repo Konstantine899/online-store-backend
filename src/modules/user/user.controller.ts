@@ -15,7 +15,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { AddRoleDto } from './dto/add-role.dto';
 import { RemoveRoleDto } from './dto/remove-role.dto';
 import { Roles } from '../auth/decorators/roles-auth.decorator';
-import { JwtGuard } from '../token/jwt.guard';
 import { RoleGuard } from '../role/role.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateUserSwaggerDecorator } from './decorators/create-user-swagger-decorator';
@@ -32,6 +31,7 @@ import { UpdateUserResponse } from './responses/update-user-response';
 import { RemoveUserResponse } from './responses/remove-user.response';
 import { AddRoleResponse } from './responses/add-role.response';
 import { RemoveRoleResponse } from './responses/remove-role.response';
+import { AuthGuard } from '../auth/auth.guard';
 
 interface IUserController {
     createUser(dto: CreateUserDto): Promise<CreateUserResponse>;
@@ -57,7 +57,7 @@ export class UserController implements IUserController {
     @CreateUserSwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Post('/create')
     public async createUser(
         @Body() dto: CreateUserDto,
@@ -68,7 +68,7 @@ export class UserController implements IUserController {
     @GetListUsersSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Get('/get-list-users')
     public async getListUsers(): Promise<GetListUsersResponse[]> {
         return this.userService.getListUsers();
@@ -77,7 +77,7 @@ export class UserController implements IUserController {
     @GetUserSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Get('/:id')
     public async getUser(
         @Param('id', ParseIntPipe) id: number,
@@ -88,7 +88,7 @@ export class UserController implements IUserController {
     @UpdateUserSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Put('/update/:id')
     public async updateUser(
         @Param('id', ParseIntPipe) id: number,
@@ -100,7 +100,7 @@ export class UserController implements IUserController {
     @RemoveUserSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Delete('/delete/:id')
     public async removeUser(
         @Param('id', ParseIntPipe) id: number,
@@ -111,7 +111,7 @@ export class UserController implements IUserController {
     @AddRoleUserSwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Post('/role/add')
     public async addRole(@Body() dto: AddRoleDto): Promise<AddRoleResponse> {
         return this.userService.addRole(dto);
@@ -120,7 +120,7 @@ export class UserController implements IUserController {
     @RemoveRoleUserSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, RoleGuard)
     @Delete('/role/delete')
     public async removeRole(
         @Body() dto: RemoveRoleDto,
