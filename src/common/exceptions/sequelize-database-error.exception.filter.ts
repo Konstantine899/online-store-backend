@@ -8,7 +8,7 @@ import { DatabaseError } from 'sequelize';
 import { Request, Response } from 'express';
 @Catch(DatabaseError)
 export class SequelizeDatabaseErrorExceptionFilter implements ExceptionFilter {
-    catch(exception: DatabaseError, host: ArgumentsHost) {
+    catch(exception: DatabaseError, host: ArgumentsHost): void {
         const context = host.switchToHttp();
         const response = context.getResponse<Response>();
         const { url, path } = context.getRequest<Request>();

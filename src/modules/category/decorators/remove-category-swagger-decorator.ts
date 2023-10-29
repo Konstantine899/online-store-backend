@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { RemoveCategoryResponse } from '../responses/remove-category.response';
 
-export function RemoveCategorySwaggerDecorator() {
+export function RemoveCategorySwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Удаление категории' }),
         ApiBearerAuth('JWT-auth'),

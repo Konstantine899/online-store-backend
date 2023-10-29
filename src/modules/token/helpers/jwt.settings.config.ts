@@ -1,4 +1,4 @@
-interface IExpiresIn {
+export interface IExpiresIn {
     expiresIn: string;
 }
 

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/swagger';
 import { ListAllBrandsResponse } from '../../responses/list-all-brands.response';
 
-export function GetListAllBrandsSwaggerDecorator() {
+export function GetListAllBrandsSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Получить список всех брендов' }),
         ApiResponse({

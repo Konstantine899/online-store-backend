@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { AdminGetOrderUserResponse } from '../responses/admin-get-order-user.response';
 
-export function AdminGetOrderUsersSwaggerDecorator() {
+export function AdminGetOrderUsersSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({
             summary: 'Получение заказа пользователя администратором',

@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { GetAllByBrandIdAndCategoryIdResponse } from '../responses/get-all-by-brand-id-and-category-id.response';
 
-export function GetAllByBrandIdAndCategoryIdSwaggerDecorator() {
+export function GetAllByBrandIdAndCategoryIdSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({
             summary:

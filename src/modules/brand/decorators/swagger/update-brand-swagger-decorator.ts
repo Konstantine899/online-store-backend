@@ -10,7 +10,7 @@ import { CreateBrandDto } from '../../dto/create-brand.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { UpdateBrandResponse } from '../../responses/update-brand.response';
 
-export function UpdateBrandSwaggerDecorator() {
+export function UpdateBrandSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Обновление бренда' }),
         ApiBearerAuth('JWT-auth'),

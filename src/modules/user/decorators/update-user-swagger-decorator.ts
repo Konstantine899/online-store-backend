@@ -11,7 +11,7 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { UpdateUserResponse } from '../responses/update-user-response';
 
-export function UpdateUserSwaggerDecorator() {
+export function UpdateUserSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Обновление пользователя' }),
         ApiBearerAuth('JWT-auth'),

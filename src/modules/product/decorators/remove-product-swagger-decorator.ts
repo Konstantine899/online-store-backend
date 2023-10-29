@@ -9,7 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { RemoveProductResponse } from '../responses/remove-product.response';
 
-export function RemoveProductSwaggerDecorator() {
+export function RemoveProductSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Удаление продукта' }),
         ApiBearerAuth('JWT-auth'),

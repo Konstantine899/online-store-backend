@@ -8,7 +8,7 @@ import {
 import { validateOrder } from './helpers/validate-order';
 import { GuestCreateOrderResponse } from '../responses/guest-create-order.response';
 
-export function GuestCreateOrderSwaggerDecorator() {
+export function GuestCreateOrderSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Создание заказа гостем' }),
         ApiResponse({

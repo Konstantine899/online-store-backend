@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { GetRatingResponse } from '../responses/get-rating.response';
 
-export function GetRatingSwaggerDecorator() {
+export function GetRatingSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({
             summary: 'Получение рейтинга продукта',

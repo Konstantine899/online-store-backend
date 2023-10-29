@@ -8,7 +8,7 @@ import { SequelizeDatabaseErrorExceptionFilter } from './common/exceptions/seque
 import * as cookieParser from 'cookie-parser';
 import { swaggerConfig } from '../config/swagger/swagger.config';
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
     const PORT = process.env.PORT || 5000;
     const app = await NestFactory.create(AppModule, { cors: true });
     app.setGlobalPrefix('online-store');

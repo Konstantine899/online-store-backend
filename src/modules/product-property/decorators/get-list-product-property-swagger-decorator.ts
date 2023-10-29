@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { GetListProductPropertyResponse } from '../responses/get-list-product-property.response';
 
-export function GetListProductPropertySwaggerDecorator() {
+export function GetListProductPropertySwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Получение всех свойств продукта' }),
         ApiBearerAuth('JWT-auth'),

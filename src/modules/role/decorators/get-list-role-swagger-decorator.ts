@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { GetListRoleResponse } from '../responses/get-list-role.response';
 
-export function GetListRoleSwaggerDecorator() {
+export function GetListRoleSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Список ролей' }),
         ApiBearerAuth('JWT-auth'),

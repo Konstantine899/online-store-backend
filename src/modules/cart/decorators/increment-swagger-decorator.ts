@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { IncrementResponse } from '../responses/increment.response';
 
-export function IncrementSwaggerDecorator() {
+export function IncrementSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Увеличение количества товара в корзине' }),
         ApiCookieAuth(),

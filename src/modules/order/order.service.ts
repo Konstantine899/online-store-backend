@@ -186,7 +186,7 @@ export class OrderService implements IOrderService {
         return order;
     }
 
-    private notFound(message: string) {
+    private notFound(message: string): void {
         throw new NotFoundException({
             status: HttpStatus.NOT_FOUND,
             message,

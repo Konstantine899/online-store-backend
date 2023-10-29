@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { RemoveUserResponse } from '../responses/remove-user.response';
 
-export function RemoveUserSwaggerDecorator() {
+export function RemoveUserSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Удаление пользователя' }),
         ApiBearerAuth('JWT-auth'),

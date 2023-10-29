@@ -11,7 +11,7 @@ import { CreateProductPropertyDto } from '../dto/create-product-property.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { CreateProductPropertyResponse } from '../responses/create-product-property.response';
 
-export function CreateProductPropertySwaggerDecorator() {
+export function CreateProductPropertySwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Создать свойство продукта' }),
         ApiBearerAuth('JWT-auth'),

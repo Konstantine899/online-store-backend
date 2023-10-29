@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { UserGetOrderResponse } from '../responses/user-get-order.response';
 
-export function UserGetOrderSwaggerDecorator() {
+export function UserGetOrderSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Получение заказа пользователем' }),
         ApiBearerAuth('JWT-auth'),

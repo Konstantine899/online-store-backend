@@ -10,7 +10,7 @@ import {
 import { RemoveRoleDto } from '../dto/remove-role.dto';
 import { RemoveRoleResponse } from '../responses/remove-role.response';
 
-export function RemoveRoleUserSwaggerDecorator() {
+export function RemoveRoleUserSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Удаление роли у пользователя' }),
         ApiBearerAuth('JWT-auth'),

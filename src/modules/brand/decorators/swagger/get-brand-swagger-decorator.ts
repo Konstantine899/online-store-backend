@@ -6,7 +6,7 @@ import {
     ApiResponse,
 } from '@nestjs/swagger';
 
-export function GetBrandSwaggerDecorator() {
+export function GetBrandSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Получить бренд' }),
         ApiParam({

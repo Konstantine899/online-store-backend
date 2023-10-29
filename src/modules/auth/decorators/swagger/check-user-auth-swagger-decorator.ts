@@ -9,7 +9,7 @@ import {
 import { CheckResponse } from '../../responses/check-response';
 import { UserModel } from '../../../user/user.model';
 
-export function CheckUserAuthSwaggerDecorator() {
+export function CheckUserAuthSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Проверка авторизации пользователя' }),
         ApiBearerAuth('JWT-auth'),

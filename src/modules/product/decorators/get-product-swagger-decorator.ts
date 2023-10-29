@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { GetProductResponse } from '../responses/get-product.response';
 
-export function GetProductSwaggerDecorator() {
+export function GetProductSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Получение продукта' }),
         ApiParam({

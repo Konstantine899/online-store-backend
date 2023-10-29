@@ -11,7 +11,7 @@ import { AddRoleDto } from '../dto/add-role.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { AddRoleResponse } from '../responses/add-role.response';
 
-export function AddRoleUserSwaggerDecorator() {
+export function AddRoleUserSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Добавление роли пользователю' }),
         ApiBearerAuth('JWT-auth'),

@@ -11,7 +11,7 @@ import { Request, Response } from 'express';
 export class SequelizeUniqueConstraintExceptionFilter
     implements ExceptionFilter
 {
-    catch(exception: UniqueConstraintError, host: ArgumentsHost) {
+    catch(exception: UniqueConstraintError, host: ArgumentsHost): void {
         const context = host.switchToHttp();
         const response = context.getResponse<Response>();
         const request = context.getRequest<Request>();

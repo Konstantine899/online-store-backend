@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { CartResponse } from '../responses/cart.response';
 
-export function GetCartSwaggerDecorator() {
+export function GetCartSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Получение корзины' }),
         ApiCookieAuth(),

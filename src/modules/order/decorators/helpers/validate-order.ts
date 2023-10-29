@@ -1,6 +1,28 @@
 import { HttpStatus } from '@nestjs/common';
 
-export function validateOrder() {
+interface IExample {
+    status: number;
+    property: string;
+    messages: string[];
+    value?: string;
+}
+
+interface IAnyOf {
+    example: IExample;
+}
+
+interface ISchema {
+    title: string;
+    anyOf: IAnyOf[];
+}
+
+interface IValidateOrderResponse {
+    description: string;
+    status: number;
+    schema: ISchema;
+}
+
+export function validateOrder(): IValidateOrderResponse {
     return {
         description: 'Bad Request',
         status: HttpStatus.BAD_REQUEST,

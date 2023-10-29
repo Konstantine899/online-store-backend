@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { RemoveBrandResponse } from '../../responses/remove-brand.response';
 
-export function RemoveBrandSwaggerDecorator() {
+export function RemoveBrandSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Удаление бренда' }),
         ApiBearerAuth('JWT-auth'),

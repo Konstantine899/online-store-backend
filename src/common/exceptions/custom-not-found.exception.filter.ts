@@ -7,7 +7,7 @@ import {
 import { Request, Response } from 'express';
 @Catch(NotFoundException)
 export class CustomNotFoundExceptionFilter implements ExceptionFilter {
-    catch(exception: NotFoundException, host: ArgumentsHost) {
+    catch(exception: NotFoundException, host: ArgumentsHost): void {
         const context = host.switchToHttp();
         const { url, path } = context.getRequest<Request>();
         const response = context.getResponse<Response>();

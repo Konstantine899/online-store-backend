@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { AdminRemoveOrderResponse } from '../responses/admin-remove-order.response';
 
-export function AdminRemoveOrderSwaggerDecorator() {
+export function AdminRemoveOrderSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Удаление заказа администратором' }),
         ApiBearerAuth('JWT-auth'),

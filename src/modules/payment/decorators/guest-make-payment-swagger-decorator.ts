@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MakePaymentDto } from '../dto/make-payment.dto';
 import { GuestMakePaymentResponse } from '../responses/guest-make-payment.response';
 
-export function GuestMakePaymentSwaggerDecorator() {
+export function GuestMakePaymentSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Оплата заказа гостем' }),
         ApiBody({

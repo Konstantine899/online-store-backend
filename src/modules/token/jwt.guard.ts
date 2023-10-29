@@ -3,6 +3,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 
 @Injectable()
 export class JwtGuard extends AuthGuard('jwt') {
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     handleRequest(error, user, info: Error) {
         if (error || info || !user) {
             throw error || info || new UnauthorizedException();

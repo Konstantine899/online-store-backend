@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { ClearCartResponse } from '../responses/clear-cart.response';
 
-export function ClearCartSwaggerDecorator() {
+export function ClearCartSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Очистка корзины' }),
         ApiCookieAuth(),

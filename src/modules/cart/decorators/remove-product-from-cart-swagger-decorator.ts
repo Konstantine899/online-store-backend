@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { RemoveProductFromCartResponse } from '../responses/remove-product-from-cart.response';
 
-export function RemoveProductFromCartSwaggerDecorator() {
+export function RemoveProductFromCartSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Удаление продукта из корзины' }),
         ApiCookieAuth(),

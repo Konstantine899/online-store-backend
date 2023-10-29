@@ -11,7 +11,7 @@ import { CreateProductDto } from '../dto/create-product.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { CreateProductResponse } from '../responses/create-product.response';
 
-export function CreateProductSwaggerDecorator() {
+export function CreateProductSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Создание продукта' }),
         ApiBearerAuth('JWT-auth'),

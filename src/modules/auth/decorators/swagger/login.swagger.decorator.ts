@@ -8,7 +8,7 @@ import {
 import { LoginDto } from '../../dto/login.dto';
 import { LoginResponse } from '../../responses/login.response';
 
-export function LoginSwaggerDecorator() {
+export function LoginSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Аутентификация' }),
         ApiBody({

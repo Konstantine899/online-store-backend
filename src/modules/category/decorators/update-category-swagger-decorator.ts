@@ -11,7 +11,7 @@ import { CreateCategoryDto } from '../dto/create-category.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { UpdateCategoryResponse } from '../responses/update-category.response';
 
-export function UpdateCategorySwaggerDecorator() {
+export function UpdateCategorySwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Обновление категории' }),
         ApiBearerAuth('JWT-auth'),

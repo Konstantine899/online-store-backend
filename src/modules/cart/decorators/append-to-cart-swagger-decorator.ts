@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { AppendToCartResponse } from '../responses/append-to-cart.response';
 
-export function AppendToCartSwaggerDecorator() {
+export function AppendToCartSwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Добавление продукта в корзину' }),
         ApiCookieAuth(),

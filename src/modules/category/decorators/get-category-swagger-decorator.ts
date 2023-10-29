@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { CategoryResponse } from '../responses/category.response';
 
-export function GetCategorySwaggerDecorator() {
+export function GetCategorySwaggerDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Получение категории' }),
         ApiParam({

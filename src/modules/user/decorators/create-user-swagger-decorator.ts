@@ -10,7 +10,7 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { CreateUserResponse } from '../responses/create-user.response';
 
-export function CreateUserSwaggerDecorator() {
+export function CreateUserSwaggerDecorator(): Function {
     return applyDecorators(
         ApiBearerAuth('JWT-auth'),
         ApiOperation({ summary: 'Создание пользователя' }),
