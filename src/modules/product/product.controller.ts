@@ -40,6 +40,7 @@ import { GetListProductByCategoryIdResponse } from './responses/get-list-product
 import { GetAllByBrandIdAndCategoryIdResponse } from './responses/get-all-by-brand-id-and-category-id.response';
 import { UpdateProductResponse } from './responses/update-product.response';
 import { RemoveProductResponse } from './responses/remove-product.response';
+import { AuthGuard } from '../auth/auth.guard';
 
 interface IProductController {
     create(
@@ -98,7 +99,7 @@ export class ProductController implements IProductController {
     @CreateProductSwaggerDecorator()
     @HttpCode(201)
     @Roles('ADMIN')
-    @UseGuards(JwtGuard, RoleGuard)
+    @UseGuards(AuthGuard, JwtGuard, RoleGuard)
     @Post('/create')
     @UseInterceptors(FileInterceptor('image', imageMulterOptions))
     public async create(
