@@ -11,7 +11,6 @@ import { ProductPropertyModule } from './modules/product-property/product-proper
 import { UserModule } from './modules/user/user.module';
 import { RoleModule } from './modules/role/role.module';
 import { TokenModule } from './modules/token/token.module';
-import { CartModule } from './modules/cart/cart.module';
 import { RatingModule } from './modules/rating/rating.module';
 import { OrderModule } from './modules/order/order.module';
 import { OrderItemModule } from './modules/order-item/order-item.module';
@@ -43,7 +42,6 @@ import { RepositoriesModule } from './infrastructure/repositories/repositories.m
         UserModule,
         RoleModule,
         TokenModule,
-        CartModule,
         RatingModule,
         OrderModule,
         OrderItemModule,

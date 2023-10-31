@@ -1,5 +1,5 @@
 'use strict';
-const {Model} = require('sequelize');
+const { Model } = require('sequelize');
 const {
     BRAND,
     CATEGORY,
@@ -10,13 +10,12 @@ const {
     CART,
     PRODUCT,
 } = require('../consts');
-// eslint-disable-next-line prettier/prettier
-module.exports = (sequelize, DataTypes): void => {
+module.exports = (sequelize, DataTypes) => {
     class product extends Model {
-        static associate(models): void {
+        static associate(models) {
             models.cart = undefined;
-            this.belongsTo(models.brand, {as: `${BRAND}`});
-            this.belongsTo(models.category, {as: `${CATEGORY}`});
+            this.belongsTo(models.brand, { as: `${BRAND}` });
+            this.belongsTo(models.category, { as: `${CATEGORY}` });
             this.hasMany(models.property, {
                 as: `${PRODUCT_PROPERTY}`,
                 onDelete: 'CASCADE',

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { CartModel } from './cart.model';
-import { ProductModel } from '../product/product.model';
-import { CartProductModel } from './cart-product.model';
+import { CartModel } from '../../../domain/models/cart.model';
+import { ProductModel } from '../../../modules/product/product.model';
+import { CartProductModel } from '../../../domain/models/cart-product.model';
 
 interface ICartRepository {
     findCart(cartId: number): Promise<CartModel>;

@@ -2,8 +2,7 @@
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-    // eslint-disable-next-line prettier/prettier
-    async up(queryInterface): Promise<any> {
+    async up(queryInterface) {
         return await queryInterface.bulkInsert('role', [
             {
                 role: 'ADMIN',
@@ -20,7 +19,7 @@ module.exports = {
         ]);
     },
 
-    async down(queryInterface): Promise<void> {
+    async down(queryInterface) {
         await queryInterface.bulkDelete('role', null, {});
     },
 };

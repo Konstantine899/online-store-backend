@@ -1,10 +1,10 @@
 'use strict';
-const {Model} = require('sequelize');
-const {CART_PRODUCT, PRODUCT, CART} = require('../consts');
+const { Model } = require('sequelize');
+const { CART_PRODUCT, PRODUCT, CART } = require('../consts');
 // eslint-disable-next-line prettier/prettier
-module.exports = (sequelize): void => {
+module.exports = (sequelize) => {
     class Cart extends Model {
-        static associate(models): void {
+        static associate(models) {
             this.belongsToMany(models.product, {
                 through: `${CART_PRODUCT}`,
                 as: `${PRODUCT}`,

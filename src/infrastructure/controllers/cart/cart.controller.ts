@@ -8,22 +8,22 @@ import {
     Req,
     Res,
 } from '@nestjs/common';
-import { CartService } from './cart.service';
+import { CartService } from '../../services/cart/cart.service';
 import { Request, Response } from 'express';
-import { AppendToCartSwaggerDecorator } from './decorators/append-to-cart-swagger-decorator';
+import { AppendToCartSwaggerDecorator } from '../../common/decorators/swagger/cart/append-to-cart-swagger-decorator';
 import { ApiTags } from '@nestjs/swagger';
 
-import { CartResponse } from './responses/cart.response';
-import { AppendToCartResponse } from './responses/append-to-cart.response';
-import { IncrementResponse } from './responses/increment.response';
-import { DecrementResponse } from './responses/decrement.response';
-import { RemoveProductFromCartResponse } from './responses/remove-product-from-cart.response';
-import { ClearCartResponse } from './responses/clear-cart.response';
-import { GetCartSwaggerDecorator } from './decorators/get-cart-swagger-decorator';
-import { IncrementSwaggerDecorator } from './decorators/increment-swagger-decorator';
-import { DecrementSwaggerDecorator } from './decorators/decrement-swagger-decorator';
-import { RemoveProductFromCartSwaggerDecorator } from './decorators/remove-product-from-cart-swagger-decorator';
-import { ClearCartSwaggerDecorator } from './decorators/clear-cart-swagger-decorator';
+import { CartResponse } from '../../responses/cart/cart.response';
+import { AppendToCartResponse } from '../../responses/cart/append-to-cart.response';
+import { IncrementResponse } from '../../responses/cart/increment.response';
+import { DecrementResponse } from '../../responses/cart/decrement.response';
+import { RemoveProductFromCartResponse } from '../../responses/cart/remove-product-from-cart.response';
+import { ClearCartResponse } from '../../responses/cart/clear-cart.response';
+import { GetCartSwaggerDecorator } from '../../common/decorators/swagger/cart/get-cart-swagger-decorator';
+import { IncrementSwaggerDecorator } from '../../common/decorators/swagger/cart/increment-swagger-decorator';
+import { DecrementSwaggerDecorator } from '../../common/decorators/swagger/cart/decrement-swagger-decorator';
+import { RemoveProductFromCartSwaggerDecorator } from '../../common/decorators/swagger/cart/remove-product-from-cart-swagger-decorator';
+import { ClearCartSwaggerDecorator } from '../../common/decorators/swagger/cart/clear-cart-swagger-decorator';
 
 interface ICartController {
     getCart(request: Request, response: Response): Promise<CartResponse>;
@@ -83,10 +83,12 @@ export class CartController implements ICartController {
         @Param('productId', ParseIntPipe) productId: number,
         @Param('quantity', ParseIntPipe) quantity: number,
     ): Promise<AppendToCartResponse> {
-        return this.cartService.appendToCart(request, response, {
+        return this.cartService.appendToCart(
+            request,
+            response,
             productId,
             quantity,
-        });
+        );
     }
 
     @IncrementSwaggerDecorator()
@@ -98,10 +100,12 @@ export class CartController implements ICartController {
         @Param('productId', ParseIntPipe) productId: number,
         @Param('quantity', ParseIntPipe) quantity: number,
     ): Promise<IncrementResponse> {
-        return this.cartService.increment(request, response, {
+        return this.cartService.increment(
+            request,
+            response,
             productId,
             quantity,
-        });
+        );
     }
 
     @DecrementSwaggerDecorator()
@@ -113,10 +117,12 @@ export class CartController implements ICartController {
         @Param('productId', ParseIntPipe) productId: number,
         @Param('quantity', ParseIntPipe) quantity: number,
     ): Promise<DecrementResponse> {
-        return this.cartService.decrement(request, response, {
+        return this.cartService.decrement(
+            request,
+            response,
             productId,
             quantity,
-        });
+        );
     }
 
     @RemoveProductFromCartSwaggerDecorator()
@@ -127,9 +133,11 @@ export class CartController implements ICartController {
         @Res({ passthrough: true }) response: Response,
         @Param('productId', ParseIntPipe) productId: number,
     ): Promise<RemoveProductFromCartResponse> {
-        return this.cartService.removeProductFromCart(request, response, {
+        return this.cartService.removeProductFromCart(
+            request,
+            response,
             productId,
-        });
+        );
     }
 
     @ClearCartSwaggerDecorator()

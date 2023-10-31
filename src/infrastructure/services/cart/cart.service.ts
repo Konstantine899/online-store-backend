@@ -1,18 +1,16 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { CartRepository } from './cart.repository';
+import { CartRepository } from '../../repositories/cart/cart.repository';
 import { Request, Response } from 'express';
-import { CartModel } from './cart.model';
-import { ProductModel } from '../product/product.model';
-import { ProductRepository } from '../product/product.repository';
-import { CartResponse } from './responses/cart.response';
-import { ITransformData } from './interfaces/i-transform-data';
-import { IParams } from './interfaces/i-params';
-import { AppendToCartResponse } from './responses/append-to-cart.response';
-import { IncrementResponse } from './responses/increment.response';
-import { DecrementResponse } from './responses/decrement.response';
-import { RemoveProductFromCartResponse } from './responses/remove-product-from-cart.response';
-import { ClearCartResponse } from './responses/clear-cart.response';
-import { TransformResponse } from './responses/transform.response';
+import { CartModel } from '../../../domain/models/cart.model';
+import { ProductModel } from '../../../modules/product/product.model';
+import { ProductRepository } from '../../../modules/product/product.repository';
+import { CartResponse } from '../../responses/cart/cart.response';
+import { ICartTransformData } from '../../../domain/transform/cart/i-cart-transform-data';
+import { AppendToCartResponse } from '../../responses/cart/append-to-cart.response';
+import { IncrementResponse } from '../../responses/cart/increment.response';
+import { DecrementResponse } from '../../responses/cart/decrement.response';
+import { RemoveProductFromCartResponse } from '../../responses/cart/remove-product-from-cart.response';
+import { ClearCartResponse } from '../../responses/cart/clear-cart.response';
 
 interface ICartService {
     getCart(request: Request, response: Response): Promise<CartResponse>;
@@ -20,25 +18,28 @@ interface ICartService {
     appendToCart(
         request: Request,
         response: Response,
-        params: IParams,
+        productId: number,
+        quantity: number,
     ): Promise<AppendToCartResponse>;
 
     increment(
         request: Request,
         response: Response,
-        params: IParams,
+        productId: number,
+        quantity: number,
     ): Promise<IncrementResponse>;
 
     decrement(
         request: Request,
         response: Response,
-        params: IParams,
+        productId: number,
+        quantity: number,
     ): Promise<DecrementResponse>;
 
     removeProductFromCart(
         request: Request,
         response: Response,
-        params: IParams,
+        productId: number,
     ): Promise<RemoveProductFromCartResponse>;
 
     clearCart(request: Request, response: Response): Promise<ClearCartResponse>;
@@ -76,10 +77,10 @@ export class CartService implements ICartService {
     public async appendToCart(
         request: Request,
         response: Response,
-        params: IParams,
+        productId: number,
+        quantity: number,
     ): Promise<AppendToCartResponse> {
         let { cartId } = request.signedCookies as { cartId: number };
-        const { productId, quantity } = params;
         const product = await this.findProduct(productId);
         if (!cartId) {
             const created = await this.cartRepository.createCart();
@@ -101,9 +102,9 @@ export class CartService implements ICartService {
     public async increment(
         request: Request,
         response: Response,
-        params: IParams,
+        productId: number,
+        quantity: number,
     ): Promise<IncrementResponse> {
-        const { productId, quantity } = params;
         const product = await this.findProduct(productId);
         let { cartId } = request.signedCookies as { cartId: number };
         if (!cartId) {
@@ -126,9 +127,9 @@ export class CartService implements ICartService {
     public async decrement(
         request: Request,
         response: Response,
-        params: IParams,
+        productId: number,
+        quantity: number,
     ): Promise<DecrementResponse> {
-        const { productId, quantity } = params;
         const product = await this.findProduct(productId);
         let { cartId } = request.signedCookies as { cartId: number };
         if (!cartId) {
@@ -151,9 +152,8 @@ export class CartService implements ICartService {
     public async removeProductFromCart(
         request: Request,
         response: Response,
-        params: IParams,
+        productId: number,
     ): Promise<RemoveProductFromCartResponse> {
-        const { productId } = params;
         const product = await this.findProduct(productId);
         let { cartId } = request.signedCookies as { cartId: number };
         if (!cartId) {
@@ -190,8 +190,8 @@ export class CartService implements ICartService {
         return this.TransformData(cart);
     }
 
-    private TransformData(cart: any): ITransformData {
-        const data: ITransformData = {
+    private TransformData(cart: CartModel): ICartTransformData {
+        const data: ICartTransformData = {
             cartId: undefined,
             products: undefined,
         };
@@ -199,7 +199,7 @@ export class CartService implements ICartService {
 
         data.cartId = cart.id;
         if (cart.products) {
-            data.products = cart.products.map((item): TransformResponse => {
+            data.products = cart.products.map((item: ProductModel): any => {
                 return {
                     productId: item.id,
                     name: item.name,

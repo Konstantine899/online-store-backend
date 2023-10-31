@@ -1,8 +1,8 @@
-import { ITransformData } from '../interfaces/i-transform-data';
+import { ICartTransformData } from '../../../domain/transform/cart/i-cart-transform-data';
 import { ApiProperty } from '@nestjs/swagger';
-import { ProductModel } from '../../product/product.model';
+import { ProductModel } from '../../../modules/product/product.model';
 
-export class ClearCartResponse implements ITransformData {
+export class ClearCartResponse implements ICartTransformData {
     @ApiProperty({ example: 26, description: 'Идентификатор корзины' })
     readonly cartId: number;
 

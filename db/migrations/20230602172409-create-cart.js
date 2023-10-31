@@ -2,8 +2,7 @@
 const { CART } = require('../consts');
 /** @type {import("sequelize-cli").Migration} */
 module.exports = {
-    // eslint-disable-next-line prettier/prettier
-    async up(queryInterface, Sequelize): Promise<void> {
+    async up(queryInterface, Sequelize) {
         await queryInterface.createTable(`${CART}`, {
             id: {
                 allowNull: false,
@@ -22,7 +21,7 @@ module.exports = {
             },
         });
     },
-    async down(queryInterface): Promise<void> {
+    async down(queryInterface) {
         await queryInterface.dropTable(`${CART}`);
     },
 };

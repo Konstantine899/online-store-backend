@@ -11,8 +11,8 @@ import {
 import { CategoryModel } from '../category/category-model';
 import { BrandModel } from '../../domain/models/brand.model';
 import { ProductPropertyModel } from '../product-property/product-property.model';
-import { CartProductModel } from '../cart/cart-product.model';
-import { CartModel } from '../cart/cart.model';
+import { CartProductModel } from '../../domain/models/cart-product.model';
+import { CartModel } from '../../domain/models/cart.model';
 import { UserModel } from '../user/user.model';
 import { RatingModel } from '../rating/rating.model';
 

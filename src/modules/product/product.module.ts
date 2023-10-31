@@ -8,7 +8,7 @@ import { CategoryModel } from '../category/category-model';
 import { BrandModel } from '../../domain/models/brand.model';
 import { ProductPropertyModel } from '../product-property/product-property.model';
 import { ProductRepository } from './product.repository';
-import { CartModel } from '../cart/cart.model';
+import { CartModel } from '../../domain/models/cart.model';
 import { RatingModel } from '../rating/rating.model';
 import { JwtModule } from '@nestjs/jwt';
 

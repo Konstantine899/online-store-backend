@@ -6,11 +6,11 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { DecrementResponse } from '../responses/decrement.response';
+import { RemoveProductFromCartResponse } from '../../../../responses/cart/remove-product-from-cart.response';
 
-export function DecrementSwaggerDecorator(): Function {
+export function RemoveProductFromCartSwaggerDecorator(): Function {
     return applyDecorators(
-        ApiOperation({ summary: 'Уменьшение количества товара в корзине' }),
+        ApiOperation({ summary: 'Удаление продукта из корзины' }),
         ApiCookieAuth(),
         ApiParam({
             name: 'productId',
@@ -18,16 +18,10 @@ export function DecrementSwaggerDecorator(): Function {
             description: 'Идентификатор продукта',
             required: true,
         }),
-        ApiParam({
-            name: 'quantity',
-            type: String,
-            description: 'Количество продуктов',
-            required: true,
-        }),
         ApiResponse({
-            description: 'decrement quantity',
+            description: 'remove product from cart',
             status: HttpStatus.OK,
-            type: DecrementResponse,
+            type: RemoveProductFromCartResponse,
         }),
         ApiNotFoundResponse({
             description: 'Not found',
@@ -38,8 +32,8 @@ export function DecrementSwaggerDecorator(): Function {
                         title: 'Корзина не найдена в БД',
                         example: {
                             statusCode: HttpStatus.NOT_FOUND,
-                            url: '/online-store/cart/product/55/decrement/1',
-                            path: '/online-store/cart/product/55/decrement/1',
+                            url: '/online-store/cart/product/55/remove',
+                            path: '/online-store/cart/product/55/remove',
                             name: 'NotFoundException',
                             message: 'Корзина с id:26 не найдена в БД',
                         },
@@ -48,8 +42,8 @@ export function DecrementSwaggerDecorator(): Function {
                         title: 'Продукт не найден в БД',
                         example: {
                             statusCode: HttpStatus.NOT_FOUND,
-                            url: '/online-store/cart/product/56/decrement/1',
-                            path: '/online-store/cart/product/56/decrement/1',
+                            url: '/online-store/cart/product/56/remove',
+                            path: '/online-store/cart/product/56/remove',
                             name: 'NotFoundException',
                             message: 'Продукт с id:56 не найден в БД',
                         },

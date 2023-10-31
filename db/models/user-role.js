@@ -1,11 +1,9 @@
 'use strict';
-const {Model} = require('sequelize');
-const {USER_ROLE} = require('../consts');
-// eslint-disable-next-line prettier/prettier
-module.exports = (sequelize, DataTypes): void => {
+const { Model } = require('sequelize');
+const { USER_ROLE } = require('../consts');
+module.exports = (sequelize, DataTypes) => {
     class UserRole extends Model {
-        static associate(): void {
-        }
+        static associate() {}
     }
 
     UserRole.init(

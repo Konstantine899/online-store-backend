@@ -1,11 +1,11 @@
+import { ProductModel } from '../../../modules/product/product.model';
 import { ApiProperty } from '@nestjs/swagger';
-import { ProductModel } from '../../product/product.model';
-import { ITransformData } from '../interfaces/i-transform-data';
+import { ICartTransformData } from '../../../domain/transform/cart/i-cart-transform-data';
 import { TransformResponse } from './transform.response';
 import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class IncrementResponse implements ITransformData {
+export class CartResponse implements ICartTransformData {
     @ApiProperty({ example: 26, description: 'Идентификатор корзины' })
     readonly cartId: number;
 
