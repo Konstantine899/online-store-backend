@@ -14,7 +14,7 @@ import { ICreateCategory } from '../dto/category/create-category.dto';
 import { Order } from '../dto/order/order.dto';
 import { RequestSignedCookies } from '../dto/order/request-signed-cookies.dto';
 import { RequestUser } from '../dto/order/request-user.dto';
-import { IMakePaymentDto } from '../../modules/payment/dto/make-payment.dto';
+import { IMakePaymentDto } from '../dto/payment/make.payment.dto';
 import { CreateProduct } from '../dto/product/create-product.dto';
 import { IPaginateProductDto } from '../dto/product/paginate-product.dto';
 import { SearchQuery } from '../dto/product/search-query.dto';

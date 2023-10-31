@@ -12,6 +12,7 @@ import { FileService } from './file/file.service';
 import { ProductService } from './product/product.service';
 import { ProductPropertyService } from './product-property/product-property.service';
 import { OrderService } from './order/order.service';
+import { PaymentService } from './payment/payment.service';
 
 @Module({
     imports: [
@@ -30,6 +31,7 @@ import { OrderService } from './order/order.service';
         ProductService,
         ProductPropertyService,
         OrderService,
+        PaymentService,
     ],
     exports: [
         AuthService,
@@ -40,6 +42,7 @@ import { OrderService } from './order/order.service';
         ProductService,
         ProductPropertyService,
         OrderService,
+        PaymentService,
     ],
 })
 export class ServicesModule {}

@@ -8,7 +8,6 @@ import { UserModule } from './modules/user/user.module';
 import { RoleModule } from './modules/role/role.module';
 import { TokenModule } from './modules/token/token.module';
 import { RatingModule } from './modules/rating/rating.module';
-import { PaymentModule } from './modules/payment/payment.module';
 import { SequelizeConfigService } from './infrastructure/config/seauelize/config/sequelize.config.service';
 import { databaseConfig } from './infrastructure/config/seauelize/config/config';
 import { ControllersModule } from './infrastructure/controllers/controllers.module';
@@ -34,7 +33,6 @@ import { RepositoriesModule } from './infrastructure/repositories/repositories.m
         RoleModule,
         TokenModule,
         RatingModule,
-        PaymentModule,
         ControllersModule,
         ServicesModule,
         RepositoriesModule,
