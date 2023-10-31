@@ -4,19 +4,19 @@ import {
 } from '@nestjs/sequelize';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ProductModel } from '../../../src/modules/product/product.model';
-import { CategoryModel } from '../../../src/domain/models/category-model';
-import { BrandModel } from '../../../src/domain/models/brand.model';
-import { ProductPropertyModel } from '../../../src/modules/product-property/product-property.model';
-import { UserModel } from '../../../src/modules/user/user.model';
-import { RoleModel } from '../../../src/modules/role/role.model';
-import { UserRoleModel } from '../../../src/modules/role/user-role.model';
-import { RefreshTokenModel } from '../../../src/modules/token/refresh-token.model';
-import { CartModel } from '../../../src/domain/models/cart.model';
-import { CartProductModel } from '../../../src/domain/models/cart-product.model';
-import { RatingModel } from '../../../src/modules/rating/rating.model';
-import { OrderModel } from '../../../src/modules/order/order.model';
-import { OrderItemModel } from '../../../src/modules/order-item/order-item.model';
+import { ProductModel } from '../../../../modules/product/product.model';
+import { CategoryModel } from '../../../../domain/models/category-model';
+import { BrandModel } from '../../../../domain/models/brand.model';
+import { ProductPropertyModel } from '../../../../modules/product-property/product-property.model';
+import { UserModel } from '../../../../modules/user/user.model';
+import { RoleModel } from '../../../../modules/role/role.model';
+import { UserRoleModel } from '../../../../modules/role/user-role.model';
+import { RefreshTokenModel } from '../../../../modules/token/refresh-token.model';
+import { CartModel } from '../../../../domain/models/cart.model';
+import { CartProductModel } from '../../../../domain/models/cart-product.model';
+import { RatingModel } from '../../../../modules/rating/rating.model';
+import { OrderModel } from '../../../../modules/order/order.model';
+import { OrderItemModel } from '../../../../modules/order-item/order-item.model';
 
 @Injectable()
 export class SequelizeConfigService implements SequelizeOptionsFactory {

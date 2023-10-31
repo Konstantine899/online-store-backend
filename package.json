@@ -11,7 +11,7 @@
     "start:dev": "cross-env NODE_ENV=development nest start --watch",
     "lint:ts": "eslint \"{src,config}/**/*.ts\"",
     "lint:ts:fix": "eslint \"{src,config}/**/*.ts\" --fix",
-    "prettier": "prettier --write \"src/**/*.ts\" \"config/**/*.ts\" \"db/**/*.js\"",
+    "prettier": "prettier --write \"src/**/*.ts\" \"db/**/*.js\"",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

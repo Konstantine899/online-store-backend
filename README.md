@@ -32,7 +32,7 @@ npm run start:dev
 
 # Конфигурация проекта
 
-- `config/sequelize` - [настройка конфигурации sequelize и подключения к БД](config/sequelize/configuration-and-connection-db.md)
+- `config/sequelize` - [настройка конфигурации sequelize и подключения к БД](src/infrastructure/config/seauelize/configuration-and-connection-db.md)
 - `config/swagger` - [настройка конфигурации swagger](config/swagger/docs/swagger.config.md)
 
 Подробнее о конфигурации `nestjs` можно почитать в
