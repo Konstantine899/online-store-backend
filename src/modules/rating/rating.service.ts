@@ -5,7 +5,7 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { RatingRepository } from './rating.repository';
-import { ProductRepository } from '../product/product.repository';
+import { ProductRepository } from '../../infrastructure/repositories/product/product.repository';
 import { UserRepository } from '../user/user.repository';
 import { CreateRatingResponse } from './responses/create-rating.response';
 import { GetRatingResponse } from './responses/get-rating.response';

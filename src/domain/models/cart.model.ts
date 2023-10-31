@@ -5,7 +5,7 @@ import {
     Model,
     Table,
 } from 'sequelize-typescript';
-import { ProductModel } from '../../modules/product/product.model';
+import { ProductModel } from './product.model';
 import { CartProductModel } from './cart-product.model';
 
 interface ICart {

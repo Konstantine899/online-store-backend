@@ -4,10 +4,10 @@ import {
 } from '@nestjs/sequelize';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ProductModel } from '../../../../modules/product/product.model';
+import { ProductModel } from '../../../../domain/models/product.model';
 import { CategoryModel } from '../../../../domain/models/category-model';
 import { BrandModel } from '../../../../domain/models/brand.model';
-import { ProductPropertyModel } from '../../../../modules/product-property/product-property.model';
+import { ProductPropertyModel } from '../../../../domain/models/product-property.model';
 import { UserModel } from '../../../../modules/user/user.model';
 import { RoleModel } from '../../../../modules/role/role.model';
 import { UserRoleModel } from '../../../../modules/role/user-role.model';

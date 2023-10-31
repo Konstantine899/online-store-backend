@@ -1,12 +1,9 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule } from '@nestjs/config';
-import { ProductModule } from './modules/product/product.module';
 import * as process from 'process';
-import { FileModule } from './modules/file/file.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import * as path from 'path';
-import { ProductPropertyModule } from './modules/product-property/product-property.module';
 import { UserModule } from './modules/user/user.module';
 import { RoleModule } from './modules/role/role.module';
 import { TokenModule } from './modules/token/token.module';
@@ -34,9 +31,7 @@ import { RepositoriesModule } from './infrastructure/repositories/repositories.m
             envFilePath: `.${process.env.NODE_ENV}.env`,
             load: [databaseConfig],
         }),
-        ProductModule,
-        FileModule,
-        ProductPropertyModule,
+
         UserModule,
         RoleModule,
         TokenModule,

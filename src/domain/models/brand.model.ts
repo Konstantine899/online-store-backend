@@ -1,5 +1,5 @@
 import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
-import { ProductModel } from '../../modules/product/product.model';
+import { ProductModel } from './product.model';
 
 interface ICreateBrandAttributes {
     name: string;

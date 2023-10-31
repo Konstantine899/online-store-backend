@@ -1,1 +1,0 @@
-## Модуль product-property
