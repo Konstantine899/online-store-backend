@@ -2,7 +2,8 @@
 const { ORDER, USER_ID, USER } = require('../consts');
 /** @type {import("sequelize-cli").Migration} */
 module.exports = {
-    async up(queryInterface, Sequelize) {
+    // eslint-disable-next-line prettier/prettier
+    async up(queryInterface, Sequelize): Promise<void> {
         await queryInterface.createTable(`${ORDER}`, {
             id: {
                 allowNull: false,
@@ -53,7 +54,7 @@ module.exports = {
             allowNull: false,
         });
     },
-    async down(queryInterface) {
+    async down(queryInterface): Promise<void> {
         await queryInterface.removeColumn(`${ORDER}`, `${USER_ID}`);
         await queryInterface.dropTable(`${ORDER}`);
     },

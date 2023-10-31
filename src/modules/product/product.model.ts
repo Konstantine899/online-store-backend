@@ -9,7 +9,7 @@ import {
     Table,
 } from 'sequelize-typescript';
 import { CategoryModel } from '../category/category-model';
-import { BrandModel } from '../brand/brand.model';
+import { BrandModel } from '../../domain/models/brand.model';
 import { ProductPropertyModel } from '../product-property/product-property.model';
 import { CartProductModel } from '../cart/cart-product.model';
 import { CartModel } from '../cart/cart.model';

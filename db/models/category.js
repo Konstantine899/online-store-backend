@@ -1,9 +1,10 @@
 'use strict';
-const { Model } = require('sequelize');
-const { PRODUCT, CATEGORY } = require('../consts');
-module.exports = (sequelize, DataTypes) => {
+const {Model} = require('sequelize');
+const {PRODUCT, CATEGORY} = require('../consts');
+// eslint-disable-next-line prettier/prettier
+module.exports = (sequelize, DataTypes): void => {
     class category extends Model {
-        static associate(models) {
+        static associate(models): void {
             this.hasMany(models.product, {
                 as: `${PRODUCT}`,
                 onDelete: 'RESTRICT',

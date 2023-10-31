@@ -18,14 +18,14 @@ import { GetProductPropertySwaggerDecorator } from './decorators/get-product-pro
 import { GetListProductPropertySwaggerDecorator } from './decorators/get-list-product-property-swagger-decorator';
 import { UpdateProductPropertySwaggerDecorator } from './decorators/update-product-property-swagger-decorator';
 import { RemoveProductPropertySwaggerDecorator } from './decorators/remove-product-property-swagger-decorator';
-import { Roles } from '../auth/decorators/roles-auth.decorator';
+import { Roles } from '../../infrastructure/common/decorators/roles-auth.decorator';
 import { RoleGuard } from '../role/role.guard';
 import { CreateProductPropertyResponse } from './responses/create-product-property.response';
 import { GetProductPropertyResponse } from './responses/get-product-property.response';
 import { GetListProductPropertyResponse } from './responses/get-list-product-property.response';
 import { UpdateProductPropertyResponse } from './responses/update-product-property.response';
 import { RemoveProductPropertyResponse } from './responses/remove-product-property.response';
-import { AuthGuard } from '../auth/auth.guard';
+import { AuthGuard } from '../../infrastructure/common/guards/auth.guard';
 
 interface IProductPropertyController {
     createProductProperty(

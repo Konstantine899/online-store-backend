@@ -1,10 +1,11 @@
 'use strict';
-const { Model } = require('sequelize');
-const { PRODUCT_PROPERTY, PRODUCT } = require('../consts');
-module.exports = (sequelize, DataTypes) => {
+const {Model} = require('sequelize');
+const {PRODUCT_PROPERTY, PRODUCT} = require('../consts');
+// eslint-disable-next-line prettier/prettier
+module.exports = (sequelize, DataTypes): void => {
     class Property extends Model {
-        static associate(models) {
-            this.belongsTo(models.product, { as: `${PRODUCT}` });
+        static associate(models): void {
+            this.belongsTo(models.product, {as: `${PRODUCT}`});
         }
     }
 

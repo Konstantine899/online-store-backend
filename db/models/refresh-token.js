@@ -1,10 +1,11 @@
 'use strict';
-const { Model } = require('sequelize');
-const { USER, REFRESH_TOKEN } = require('../consts');
-module.exports = (sequelize, DataTypes) => {
+const {Model} = require('sequelize');
+const {USER, REFRESH_TOKEN} = require('../consts');
+// eslint-disable-next-line prettier/prettier
+module.exports = (sequelize, DataTypes): void => {
     class RefreshToken extends Model {
-        static associate(models) {
-            this.belongsTo(models.user, { as: `${USER}` });
+        static associate(models): void {
+            this.belongsTo(models.user, {as: `${USER}`});
         }
     }
 

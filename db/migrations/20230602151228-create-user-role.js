@@ -2,7 +2,8 @@
 const { USER_ROLE, ROLE, USER } = require('../consts');
 /** @type {import("sequelize-cli").Migration} */
 module.exports = {
-    async up(queryInterface, Sequelize) {
+    // eslint-disable-next-line prettier/prettier
+    async up(queryInterface, Sequelize): Promise<void> {
         await queryInterface.createTable(`${USER_ROLE}`, {
             roleId: {
                 type: Sequelize.INTEGER,
@@ -22,7 +23,7 @@ module.exports = {
             },
         });
     },
-    async down(queryInterface) {
+    async down(queryInterface): Promise<void> {
         await queryInterface.dropTable(`${USER_ROLE}`);
     },
 };

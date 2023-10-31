@@ -2,7 +2,8 @@
 const { REFRESH_TOKEN, USER_ID, USER } = require('../consts');
 /** @type {import("sequelize-cli").Migration} */
 module.exports = {
-    async up(queryInterface, Sequelize) {
+    // eslint-disable-next-line prettier/prettier
+    async up(queryInterface, Sequelize): Promise<void> {
         await queryInterface.createTable(`${REFRESH_TOKEN}`, {
             id: {
                 allowNull: false,
@@ -37,7 +38,7 @@ module.exports = {
             onUpdate: 'CASCADE',
         });
     },
-    async down(queryInterface) {
+    async down(queryInterface): Promise<void> {
         await queryInterface.removeColumn(`${REFRESH_TOKEN}`, `${USER_ID}`);
         await queryInterface.dropTable(`${REFRESH_TOKEN}`);
     },

@@ -17,7 +17,7 @@ import {
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductService } from './product.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Roles } from '../auth/decorators/roles-auth.decorator';
+import { Roles } from '../../infrastructure/common/decorators/roles-auth.decorator';
 import { RoleGuard } from '../role/role.guard';
 import { imageMulterOptions } from '../file/image-multer.options';
 import { CreateProductSwaggerDecorator } from './decorators/create-product-swagger-decorator';
@@ -39,7 +39,7 @@ import { GetListProductByCategoryIdResponse } from './responses/get-list-product
 import { GetAllByBrandIdAndCategoryIdResponse } from './responses/get-all-by-brand-id-and-category-id.response';
 import { UpdateProductResponse } from './responses/update-product.response';
 import { RemoveProductResponse } from './responses/remove-product.response';
-import { AuthGuard } from '../auth/auth.guard';
+import { AuthGuard } from '../../infrastructure/common/guards/auth.guard';
 
 interface IProductController {
     create(

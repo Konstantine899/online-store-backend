@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { Roles } from '../auth/decorators/roles-auth.decorator';
+import { Roles } from '../../infrastructure/common/decorators/roles-auth.decorator';
 import { RoleGuard } from '../role/role.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateCategorySwaggerDecorator } from './decorators/create-category-swagger-decorator';
@@ -25,7 +25,7 @@ import { ListAllCategoriesResponse } from './responses/list-all-categories.respo
 import { CategoryResponse } from './responses/category.response';
 import { UpdateCategoryResponse } from './responses/update-category.response';
 import { RemoveCategoryResponse } from './responses/remove-category.response';
-import { AuthGuard } from '../auth/auth.guard';
+import { AuthGuard } from '../../infrastructure/common/guards/auth.guard';
 
 interface ICategoryController {
     createCategory(dto: CreateCategoryDto): Promise<CreateCategoryResponse>;

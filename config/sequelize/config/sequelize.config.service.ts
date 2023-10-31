@@ -6,7 +6,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ProductModel } from '../../../src/modules/product/product.model';
 import { CategoryModel } from '../../../src/modules/category/category-model';
-import { BrandModel } from '../../../src/modules/brand/brand.model';
+import { BrandModel } from '../../../src/domain/models/brand.model';
 import { ProductPropertyModel } from '../../../src/modules/product-property/product-property.model';
 import { UserModel } from '../../../src/modules/user/user.model';
 import { RoleModel } from '../../../src/modules/role/role.model';

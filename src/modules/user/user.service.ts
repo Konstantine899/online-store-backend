@@ -18,7 +18,7 @@ import { UpdateUserResponse } from './responses/update-user-response';
 import { RemoveUserResponse } from './responses/remove-user.response';
 import { AddRoleResponse } from './responses/add-role.response';
 import { RemoveRoleResponse } from './responses/remove-role.response';
-import { CheckResponse } from '../auth/responses/check-response';
+import { CheckResponse } from '../../infrastructure/responses/auth/check-response';
 
 interface IUserService {
     createUser(dto: CreateUserDto): Promise<CreateUserResponse>;

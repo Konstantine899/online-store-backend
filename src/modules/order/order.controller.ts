@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { RoleGuard } from '../role/role.guard';
-import { Roles } from '../auth/decorators/roles-auth.decorator';
+import { Roles } from '../../infrastructure/common/decorators/roles-auth.decorator';
 import { OrderDto } from './dto/order.dto';
 import { Request } from 'express';
 import { AdminGetStoreOrderListSwaggerDecorator } from './decorators/admin-get-store-order-list-swagger-decorator';
@@ -36,7 +36,7 @@ import { UserGetOrderListResponse } from './responses/user-get-order-list.respon
 import { UserGetOrderResponse } from './responses/user-get-order.response';
 import { UserCreateOrderResponse } from './responses/user-create-order.response';
 import { GuestCreateOrderResponse } from './responses/guest-create-order.response';
-import { AuthGuard } from '../auth/auth.guard';
+import { AuthGuard } from '../../infrastructure/common/guards/auth.guard';
 
 interface IOrderController {
     adminGetStoreOrderList(): Promise<AdminGetStoreOrderListResponse[]>;

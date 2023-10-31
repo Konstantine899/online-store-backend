@@ -2,7 +2,8 @@
 const { PRODUCT_PROPERTY, PRODUCT_ID, PRODUCT } = require('../consts');
 /** @type {import("sequelize-cli").Migration} */
 module.exports = {
-    async up(queryInterface, Sequelize) {
+    // eslint-disable-next-line prettier/prettier
+    async up(queryInterface, Sequelize): Promise<void> {
         await queryInterface.createTable(`${PRODUCT_PROPERTY}`, {
             id: {
                 allowNull: false,
@@ -37,7 +38,7 @@ module.exports = {
             allowNull: false,
         });
     },
-    async down(queryInterface) {
+    async down(queryInterface): Promise<void> {
         await queryInterface.removeColumn(
             `${PRODUCT_PROPERTY}`,
             `${PRODUCT_ID}`,

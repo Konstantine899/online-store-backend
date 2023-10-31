@@ -1,10 +1,11 @@
 'use strict';
-const { Model } = require('sequelize');
-const { USER, ORDER_ITEM, ORDER } = require('../consts');
-module.exports = (sequelize, DataTypes) => {
+const {Model} = require('sequelize');
+const {USER, ORDER_ITEM, ORDER} = require('../consts');
+// eslint-disable-next-line prettier/prettier
+module.exports = (sequelize, DataTypes): void => {
     class order extends Model {
-        static associate(models) {
-            this.belongsTo(models.user, { as: `${USER}` });
+        static associate(models): void {
+            this.belongsTo(models.user, {as: `${USER}`});
             this.hasMany(models.item, {
                 as: `${ORDER_ITEM}`,
                 onDelete: 'CASCADE',

@@ -1,5 +1,5 @@
 'use strict';
-const { Model } = require('sequelize');
+const {Model} = require('sequelize');
 const {
     REFRESH_TOKEN,
     ORDER,
@@ -9,9 +9,10 @@ const {
     PRODUCT,
     USER,
 } = require('../consts');
-module.exports = (sequelize, DataTypes) => {
+// eslint-disable-next-line prettier/prettier
+module.exports = (sequelize, DataTypes): void => {
     class User extends Model {
-        static associate(models) {
+        static associate(models): void {
             this.hasMany(models.refreshToken, {
                 as: `${REFRESH_TOKEN}`,
                 onDelete: 'CASCADE',

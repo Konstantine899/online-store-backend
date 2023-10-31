@@ -72,11 +72,11 @@ npm run start:dev
 
 ## Common
 
-- Подробнее о `src/common/pipes` использующихся в проекте, можно ознакомиться здесь - [pipes](src/common/pipes/pipes.md)
+- Подробнее о `src/common/pipes` использующихся в проекте, можно ознакомиться здесь - [pipes](src/infrastructure/pipes/pipes.md)
 
 Подробнее о `pipes` можно почитать в документации - [pipes](https://docs.nestjs.com/pipes)
 
-- Подробнее о `src/common/exceptions` использующихся в проекте, можно ознакомиться здесь - [exceptions](src/common/exceptions/exceptions.md)
+- Подробнее о `src/common/exceptions` использующихся в проекте, можно ознакомиться здесь - [exceptions](src/infrastructure/exceptions/exceptions.md)
 
 Подробнее о `exceptions` можно почитать в документации - [exception-filters](https://docs.nestjs.com/exception-filters)
 

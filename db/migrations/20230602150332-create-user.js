@@ -1,8 +1,9 @@
 'use strict';
-const { USER } = require('../consts');
+const {USER} = require('../consts');
 /** @type {import("sequelize-cli").Migration} */
 module.exports = {
-    async up(queryInterface, Sequelize) {
+    // eslint-disable-next-line prettier/prettier
+    async up(queryInterface, Sequelize): Promise<void> {
         await queryInterface.createTable(`${USER}`, {
             id: {
                 allowNull: false,
@@ -27,7 +28,7 @@ module.exports = {
             },
         });
     },
-    async down(queryInterface) {
+    async down(queryInterface): Promise<void> {
         await queryInterface.dropTable(`${USER}`);
     },
 };

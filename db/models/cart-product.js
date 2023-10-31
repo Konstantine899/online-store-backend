@@ -1,9 +1,11 @@
 'use strict';
-const { Model } = require('sequelize');
-const { CART_PRODUCT } = require('../consts');
-module.exports = (sequelize, DataTypes) => {
+const {Model} = require('sequelize');
+const {CART_PRODUCT} = require('../consts');
+// eslint-disable-next-line prettier/prettier
+module.exports = (sequelize, DataTypes): void => {
     class CartProduct extends Model {
-        static associate() {}
+        static associate(): void {
+        }
     }
 
     CartProduct.init(

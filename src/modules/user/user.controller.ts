@@ -14,7 +14,7 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { AddRoleDto } from './dto/add-role.dto';
 import { RemoveRoleDto } from './dto/remove-role.dto';
-import { Roles } from '../auth/decorators/roles-auth.decorator';
+import { Roles } from '../../infrastructure/common/decorators/roles-auth.decorator';
 import { RoleGuard } from '../role/role.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateUserSwaggerDecorator } from './decorators/create-user-swagger-decorator';
@@ -31,7 +31,7 @@ import { UpdateUserResponse } from './responses/update-user-response';
 import { RemoveUserResponse } from './responses/remove-user.response';
 import { AddRoleResponse } from './responses/add-role.response';
 import { RemoveRoleResponse } from './responses/remove-role.response';
-import { AuthGuard } from '../auth/auth.guard';
+import { AuthGuard } from '../../infrastructure/common/guards/auth.guard';
 
 interface IUserController {
     createUser(dto: CreateUserDto): Promise<CreateUserResponse>;

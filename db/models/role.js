@@ -1,9 +1,10 @@
 'use strict';
-const { Model } = require('sequelize');
-const { USER_ROLE, USER, ROLE } = require('../consts');
-module.exports = (sequelize, DataTypes) => {
+const {Model} = require('sequelize');
+const {USER_ROLE, USER, ROLE} = require('../consts');
+// eslint-disable-next-line prettier/prettier
+module.exports = (sequelize, DataTypes): void => {
     class role extends Model {
-        static associate(models) {
+        static associate(models): void {
             this.belongsToMany(models.user, {
                 through: `${USER_ROLE}`,
                 as: `${USER}`,

@@ -9,7 +9,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
-import { ROLES_KEY } from '../auth/decorators/roles-auth.decorator';
+import { ROLES_KEY } from '../../infrastructure/common/decorators/roles-auth.decorator';
 import * as process from 'process';
 import { RoleModel } from './role.model';
 

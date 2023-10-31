@@ -16,7 +16,7 @@ import { UserRequest } from './requests/user.request';
 import { GetRatingSwaggerDecorator } from './decorators/get-rating-swagger-decorator';
 import { CreateRatingResponse } from './responses/create-rating.response';
 import { GetRatingResponse } from './responses/get-rating.response';
-import { AuthGuard } from '../auth/auth.guard';
+import { AuthGuard } from '../../infrastructure/common/guards/auth.guard';
 
 interface IRatingController {
     createRating(
