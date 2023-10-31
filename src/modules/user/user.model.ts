@@ -11,7 +11,7 @@ import { RoleModel } from '../role/role.model';
 import { RefreshTokenModel } from '../token/refresh-token.model';
 import { RatingModel } from '../rating/rating.model';
 import { ProductModel } from '../../domain/models/product.model';
-import { OrderModel } from '../order/order.model';
+import { OrderModel } from '../../domain/models/order.model';
 
 interface IUserCreationAttributes {
     email: string;

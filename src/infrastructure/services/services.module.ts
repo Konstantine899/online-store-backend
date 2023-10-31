@@ -11,9 +11,16 @@ import { CategoryService } from './category/category.service';
 import { FileService } from './file/file.service';
 import { ProductService } from './product/product.service';
 import { ProductPropertyService } from './product-property/product-property.service';
+import { OrderService } from './order/order.service';
 
 @Module({
-    imports: [RepositoriesModule, UserModule, TokenModule, JwtModule],
+    imports: [
+        RepositoriesModule,
+        UserModule,
+        TokenModule,
+        JwtModule,
+        UserModule,
+    ],
     providers: [
         AuthService,
         BrandService,
@@ -22,6 +29,7 @@ import { ProductPropertyService } from './product-property/product-property.serv
         FileService,
         ProductService,
         ProductPropertyService,
+        OrderService,
     ],
     exports: [
         AuthService,
@@ -31,6 +39,7 @@ import { ProductPropertyService } from './product-property/product-property.serv
         FileService,
         ProductService,
         ProductPropertyService,
+        OrderService,
     ],
 })
 export class ServicesModule {}

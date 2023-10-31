@@ -8,6 +8,7 @@ import { CartController } from './cart/cart.controller';
 import { CategoryController } from './category/category.controller';
 import { ProductController } from './product/product.controller';
 import { ProductPropertyController } from './product-property/product-property.controller';
+import { OrderController } from './order/order.controller';
 
 @Module({
     imports: [ServicesModule, ControllersModule, JwtModule, UserModule],
@@ -18,6 +19,7 @@ import { ProductPropertyController } from './product-property/product-property.c
         CategoryController,
         ProductController,
         ProductPropertyController,
+        OrderController,
     ],
 })
 export class ControllersModule {}

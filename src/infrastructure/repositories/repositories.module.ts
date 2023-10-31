@@ -12,6 +12,10 @@ import { ProductPropertyModel } from '../../domain/models/product-property.model
 import { RatingModel } from '../../modules/rating/rating.model';
 import { ProductRepository } from './product/product.repository';
 import { ProductPropertyRepository } from './product-property/product-property.repository';
+import { OrderModel } from '../../domain/models/order.model';
+import { OrderRepository } from './order/order.repository';
+import { OrderItemModel } from '../../domain/models/order-item.model';
+import { OrderItemRepository } from './order-item/order-item.repository';
 
 @Module({
     imports: [
@@ -23,6 +27,8 @@ import { ProductPropertyRepository } from './product-property/product-property.r
             BrandModel,
             ProductPropertyModel,
             RatingModel,
+            OrderModel,
+            OrderItemModel,
         ]),
     ],
     providers: [
@@ -31,6 +37,8 @@ import { ProductPropertyRepository } from './product-property/product-property.r
         CategoryRepository,
         ProductRepository,
         ProductPropertyRepository,
+        OrderRepository,
+        OrderItemRepository,
     ],
     exports: [
         BrandRepository,
@@ -38,6 +46,8 @@ import { ProductPropertyRepository } from './product-property/product-property.r
         CategoryRepository,
         ProductRepository,
         ProductPropertyRepository,
+        OrderRepository,
+        OrderItemRepository,
     ],
 })
 export class RepositoriesModule {}

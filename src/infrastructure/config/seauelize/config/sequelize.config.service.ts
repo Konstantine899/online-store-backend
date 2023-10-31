@@ -15,8 +15,8 @@ import { RefreshTokenModel } from '../../../../modules/token/refresh-token.model
 import { CartModel } from '../../../../domain/models/cart.model';
 import { CartProductModel } from '../../../../domain/models/cart-product.model';
 import { RatingModel } from '../../../../modules/rating/rating.model';
-import { OrderModel } from '../../../../modules/order/order.model';
-import { OrderItemModel } from '../../../../modules/order-item/order-item.model';
+import { OrderModel } from '../../../../domain/models/order.model';
+import { OrderItemModel } from '../../../../domain/models/order-item.model';
 
 @Injectable()
 export class SequelizeConfigService implements SequelizeOptionsFactory {
