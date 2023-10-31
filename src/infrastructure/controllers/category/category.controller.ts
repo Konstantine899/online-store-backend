@@ -10,22 +10,22 @@ import {
     Put,
     UseGuards,
 } from '@nestjs/common';
-import { CategoryService } from './category.service';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { Roles } from '../../infrastructure/common/decorators/roles-auth.decorator';
-import { RoleGuard } from '../role/role.guard';
+import { CategoryService } from '../../services/category/category.service';
+import { CreateCategoryDto } from '../../dto/category/create-category.dto';
+import { Roles } from '../../common/decorators/roles-auth.decorator';
+import { RoleGuard } from '../../../modules/role/role.guard';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateCategorySwaggerDecorator } from './decorators/create-category-swagger-decorator';
-import { GetListAllCategoriesSwaggerDecorator } from './decorators/get-list-all-categories-swagger-decorator';
-import { GetCategorySwaggerDecorator } from './decorators/get-category-swagger-decorator';
-import { UpdateCategorySwaggerDecorator } from './decorators/update-category-swagger-decorator';
-import { RemoveCategorySwaggerDecorator } from './decorators/remove-category-swagger-decorator';
-import { CreateCategoryResponse } from './responses/create-category.response';
-import { ListAllCategoriesResponse } from './responses/list-all-categories.response';
-import { CategoryResponse } from './responses/category.response';
-import { UpdateCategoryResponse } from './responses/update-category.response';
-import { RemoveCategoryResponse } from './responses/remove-category.response';
-import { AuthGuard } from '../../infrastructure/common/guards/auth.guard';
+import { CreateCategorySwaggerDecorator } from '../../common/decorators/swagger/category/create-category-swagger-decorator';
+import { GetListAllCategoriesSwaggerDecorator } from '../../common/decorators/swagger/category/get-list-all-categories-swagger-decorator';
+import { GetCategorySwaggerDecorator } from '../../common/decorators/swagger/category/get-category-swagger-decorator';
+import { UpdateCategorySwaggerDecorator } from '../../common/decorators/swagger/category/update-category-swagger-decorator';
+import { RemoveCategorySwaggerDecorator } from '../../common/decorators/swagger/category/remove-category-swagger-decorator';
+import { CreateCategoryResponse } from '../../responses/category/create-category.response';
+import { ListAllCategoriesResponse } from '../../responses/category/list-all-categories.response';
+import { CategoryResponse } from '../../responses/category/category.response';
+import { UpdateCategoryResponse } from '../../responses/category/update-category.response';
+import { RemoveCategoryResponse } from '../../responses/category/remove-category.response';
+import { AuthGuard } from '../../common/guards/auth.guard';
 
 interface ICategoryController {
     createCategory(dto: CreateCategoryDto): Promise<CreateCategoryResponse>;

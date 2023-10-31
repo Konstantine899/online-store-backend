@@ -7,6 +7,7 @@ import { BrandService } from './brand/brand.service';
 import { RepositoriesModule } from '../repositories/repositories.module';
 import { CartService } from './cart/cart.service';
 import { ProductModule } from '../../modules/product/product.module';
+import { CategoryService } from './category/category.service';
 
 @Module({
     imports: [
@@ -16,7 +17,7 @@ import { ProductModule } from '../../modules/product/product.module';
         JwtModule,
         ProductModule,
     ],
-    providers: [AuthService, BrandService, CartService],
-    exports: [AuthService, BrandService, CartService],
+    providers: [AuthService, BrandService, CartService, CategoryService],
+    exports: [AuthService, BrandService, CartService, CategoryService],
 })
 export class ServicesModule {}

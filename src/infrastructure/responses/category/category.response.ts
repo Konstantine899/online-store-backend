@@ -1,4 +1,4 @@
-import { CategoryModel } from '../category-model';
+import { CategoryModel } from '../../../domain/models/category-model';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CategoryResponse extends CategoryModel {

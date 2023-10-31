@@ -1,16 +1,22 @@
-import { CategoryModel } from '../category-model';
+import { CategoryModel } from '../../../domain/models/category-model';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class UpdateCategoryResponse extends CategoryModel {
+export class CreateCategoryResponse extends CategoryModel {
     @ApiProperty({ example: 1, description: 'Идентификатор категории' })
     readonly id: number;
-
     @ApiProperty({ example: 'Смартфоны', description: 'Имя категории' })
     readonly name: string;
 
     @ApiProperty({
-        example: '2023-05-11T13:23:32.511Z',
+        example: '2023-05-11T12:24:33.702Z',
+        required: false,
         description: 'Время обновления',
     })
     readonly updatedAt?: string;
+    @ApiProperty({
+        example: '2023-05-11T12:24:33.702Z',
+        required: false,
+        description: 'Время создания',
+    })
+    readonly createdAt?: string;
 }

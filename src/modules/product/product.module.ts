@@ -4,7 +4,7 @@ import { ProductController } from './product.controller';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ProductModel } from './product.model';
 import { FileModule } from '../file/file.module';
-import { CategoryModel } from '../category/category-model';
+import { CategoryModel } from '../../domain/models/category-model';
 import { BrandModel } from '../../domain/models/brand.model';
 import { ProductPropertyModel } from '../product-property/product-property.model';
 import { ProductRepository } from './product.repository';

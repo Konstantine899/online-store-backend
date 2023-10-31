@@ -8,7 +8,7 @@ import {
     Model,
     Table,
 } from 'sequelize-typescript';
-import { CategoryModel } from '../category/category-model';
+import { CategoryModel } from '../../domain/models/category-model';
 import { BrandModel } from '../../domain/models/brand.model';
 import { ProductPropertyModel } from '../product-property/product-property.model';
 import { CartProductModel } from '../../domain/models/cart-product.model';

@@ -2,33 +2,25 @@ import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
     ApiBearerAuth,
     ApiBody,
-    ApiNotFoundResponse,
     ApiOperation,
-    ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CreateCategoryDto } from '../dto/create-category.dto';
+import { CreateCategoryDto } from '../../../../dto/category/create-category.dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
-import { UpdateCategoryResponse } from '../responses/update-category.response';
+import { CreateCategoryResponse } from '../../../../responses/category/create-category.response';
 
-export function UpdateCategorySwaggerDecorator(): Function {
+export function CreateCategorySwaggerDecorator(): Function {
     return applyDecorators(
-        ApiOperation({ summary: 'Обновление категории' }),
+        ApiOperation({ summary: 'Создание категории' }),
         ApiBearerAuth('JWT-auth'),
-        ApiParam({
-            name: 'id',
-            type: 'string',
-            description: 'Идентификатор категории',
-            required: true,
-        }),
         ApiBody({
             type: CreateCategoryDto,
-            description: 'Структура данных для обновления категории',
+            description: 'Структура данных для создания категории',
         }),
         ApiResponse({
-            description: 'Updated category',
-            status: HttpStatus.OK,
-            type: UpdateCategoryResponse,
+            description: 'Created category',
+            status: HttpStatus.CREATED,
+            type: CreateCategoryResponse,
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',
@@ -55,20 +47,6 @@ export function UpdateCategorySwaggerDecorator(): Function {
                         },
                     },
                 ],
-            },
-        }),
-        ApiNotFoundResponse({
-            description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
-            schema: {
-                title: 'Категория не найдена',
-                example: {
-                    statusCode: HttpStatus.NOT_FOUND,
-                    url: '/online-store/category/update/44',
-                    path: '/online-store/category/update/44',
-                    name: 'NotFoundException',
-                    message: 'Категория товара не найдена',
-                },
             },
         }),
     );

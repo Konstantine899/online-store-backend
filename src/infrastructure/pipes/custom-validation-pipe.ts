@@ -10,7 +10,7 @@ import { validate } from 'class-validator';
 import { TLogin } from '../dto/auth/login.dto';
 import { IRefresh } from '../dto/auth/refresh.dto';
 import { ICreateBrand } from '../dto/brand/create-brand.dto';
-import { ICreateCategory } from '../../modules/category/dto/create-category.dto';
+import { ICreateCategory } from '../dto/category/create-category.dto';
 import { Order } from '../../modules/order/dto/order.dto';
 import { RequestSignedCookies } from '../../modules/order/dto/request-signed-cookies.dto';
 import { RequestUser } from '../../modules/order/dto/request-user.dto';

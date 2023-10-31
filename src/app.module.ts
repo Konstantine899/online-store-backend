@@ -5,7 +5,6 @@ import { ProductModule } from './modules/product/product.module';
 import * as process from 'process';
 import { FileModule } from './modules/file/file.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { CategoryModule } from './modules/category/category.module';
 import * as path from 'path';
 import { ProductPropertyModule } from './modules/product-property/product-property.module';
 import { UserModule } from './modules/user/user.module';
@@ -37,7 +36,6 @@ import { RepositoriesModule } from './infrastructure/repositories/repositories.m
         }),
         ProductModule,
         FileModule,
-        CategoryModule,
         ProductPropertyModule,
         UserModule,
         RoleModule,

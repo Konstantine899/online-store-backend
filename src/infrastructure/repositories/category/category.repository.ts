@@ -1,11 +1,11 @@
 import { InjectModel } from '@nestjs/sequelize';
-import { CategoryModel } from './category-model';
+import { CategoryModel } from '../../../domain/models/category-model';
 import { Injectable } from '@nestjs/common';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { CreateCategoryResponse } from './responses/create-category.response';
-import { ListAllCategoriesResponse } from './responses/list-all-categories.response';
-import { CategoryResponse } from './responses/category.response';
-import { UpdateCategoryResponse } from './responses/update-category.response';
+import { CreateCategoryDto } from '../../dto/category/create-category.dto';
+import { CreateCategoryResponse } from '../../responses/category/create-category.response';
+import { ListAllCategoriesResponse } from '../../responses/category/list-all-categories.response';
+import { CategoryResponse } from '../../responses/category/category.response';
+import { UpdateCategoryResponse } from '../../responses/category/update-category.response';
 
 interface ICategoryRepository {
     createCategory(dto: CreateCategoryDto): Promise<CreateCategoryResponse>;
