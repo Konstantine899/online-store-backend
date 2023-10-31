@@ -14,7 +14,7 @@ import { UserRoleModel } from '../../../../modules/role/user-role.model';
 import { RefreshTokenModel } from '../../../../modules/token/refresh-token.model';
 import { CartModel } from '../../../../domain/models/cart.model';
 import { CartProductModel } from '../../../../domain/models/cart-product.model';
-import { RatingModel } from '../../../../modules/rating/rating.model';
+import { RatingModel } from '../../../../domain/models/rating.model';
 import { OrderModel } from '../../../../domain/models/order.model';
 import { OrderItemModel } from '../../../../domain/models/order-item.model';
 

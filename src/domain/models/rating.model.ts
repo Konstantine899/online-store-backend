@@ -5,8 +5,8 @@ import {
     Model,
     Table,
 } from 'sequelize-typescript';
-import { UserModel } from '../user/user.model';
-import { ProductModel } from '../../domain/models/product.model';
+import { UserModel } from '../../modules/user/user.model';
+import { ProductModel } from './product.model';
 
 interface IRatingModel {
     rating: number;

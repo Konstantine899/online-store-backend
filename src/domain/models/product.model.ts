@@ -14,7 +14,7 @@ import { ProductPropertyModel } from './product-property.model';
 import { CartProductModel } from './cart-product.model';
 import { CartModel } from './cart.model';
 import { UserModel } from '../../modules/user/user.model';
-import { RatingModel } from '../../modules/rating/rating.model';
+import { RatingModel } from './rating.model';
 
 interface IUserCreationAttributes {
     name: string;

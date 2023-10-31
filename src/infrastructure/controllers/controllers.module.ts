@@ -10,6 +10,7 @@ import { ProductController } from './product/product.controller';
 import { ProductPropertyController } from './product-property/product-property.controller';
 import { OrderController } from './order/order.controller';
 import { PaymentController } from './payment/payment.controller';
+import { RatingController } from './rating/rating.controller';
 
 @Module({
     imports: [ServicesModule, ControllersModule, JwtModule, UserModule],
@@ -22,6 +23,7 @@ import { PaymentController } from './payment/payment.controller';
         ProductPropertyController,
         OrderController,
         PaymentController,
+        RatingController,
     ],
 })
 export class ControllersModule {}

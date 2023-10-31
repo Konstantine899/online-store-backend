@@ -7,7 +7,6 @@ import * as path from 'path';
 import { UserModule } from './modules/user/user.module';
 import { RoleModule } from './modules/role/role.module';
 import { TokenModule } from './modules/token/token.module';
-import { RatingModule } from './modules/rating/rating.module';
 import { SequelizeConfigService } from './infrastructure/config/seauelize/config/sequelize.config.service';
 import { databaseConfig } from './infrastructure/config/seauelize/config/config';
 import { ControllersModule } from './infrastructure/controllers/controllers.module';
@@ -32,7 +31,6 @@ import { RepositoriesModule } from './infrastructure/repositories/repositories.m
         UserModule,
         RoleModule,
         TokenModule,
-        RatingModule,
         ControllersModule,
         ServicesModule,
         RepositoriesModule,

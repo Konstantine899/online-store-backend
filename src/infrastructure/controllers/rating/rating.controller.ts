@@ -8,15 +8,15 @@ import {
     Req,
     UseGuards,
 } from '@nestjs/common';
-import { RatingService } from './rating.service';
-import { CreateRatingSwaggerDecorator } from './decorators/create-rating-swagger-decorator';
+import { RatingService } from '../../services/rating/rating.service';
+import { CreateRatingSwaggerDecorator } from '../../common/decorators/swagger/rating/create-rating-swagger-decorator';
 import { ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
-import { UserRequest } from './requests/user.request';
-import { GetRatingSwaggerDecorator } from './decorators/get-rating-swagger-decorator';
-import { CreateRatingResponse } from './responses/create-rating.response';
-import { GetRatingResponse } from './responses/get-rating.response';
-import { AuthGuard } from '../../infrastructure/common/guards/auth.guard';
+import { UserRequest } from '../../requests/rating/user.request';
+import { GetRatingSwaggerDecorator } from '../../common/decorators/swagger/rating/get-rating-swagger-decorator';
+import { CreateRatingResponse } from '../../responses/rating/create-rating.response';
+import { GetRatingResponse } from '../../responses/rating/get-rating.response';
+import { AuthGuard } from '../../common/guards/auth.guard';
 
 interface IRatingController {
     createRating(

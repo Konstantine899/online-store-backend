@@ -13,6 +13,7 @@ import { ProductService } from './product/product.service';
 import { ProductPropertyService } from './product-property/product-property.service';
 import { OrderService } from './order/order.service';
 import { PaymentService } from './payment/payment.service';
+import { RatingService } from './rating/rating.service';
 
 @Module({
     imports: [
@@ -32,6 +33,10 @@ import { PaymentService } from './payment/payment.service';
         ProductPropertyService,
         OrderService,
         PaymentService,
+        RatingService,
+        ServicesModule,
+        UserModule,
+        JwtModule,
     ],
     exports: [
         AuthService,
@@ -43,6 +48,7 @@ import { PaymentService } from './payment/payment.service';
         ProductPropertyService,
         OrderService,
         PaymentService,
+        RatingService,
     ],
 })
 export class ServicesModule {}

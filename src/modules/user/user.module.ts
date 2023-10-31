@@ -6,7 +6,7 @@ import { UserModel } from './user.model';
 import { RoleModel } from '../role/role.model';
 import { RoleModule } from '../role/role.module';
 import { UserRepository } from './user.repository';
-import { RatingModel } from '../rating/rating.model';
+import { RatingModel } from '../../domain/models/rating.model';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({

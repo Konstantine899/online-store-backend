@@ -5,7 +5,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { GetRatingResponse } from '../responses/get-rating.response';
+import { GetRatingResponse } from '../../../../responses/rating/get-rating.response';
 
 export function GetRatingSwaggerDecorator(): Function {
     return applyDecorators(
