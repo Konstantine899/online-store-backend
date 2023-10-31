@@ -18,7 +18,7 @@ import { CreateProductDto } from '../../dto/product/create-product.dto';
 import { ProductService } from '../../services/product/product.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Roles } from '../../common/decorators/roles-auth.decorator';
-import { RoleGuard } from '../../../modules/role/role.guard';
+import { RoleGuard } from '../../common/guards/role.guard';
 import { multerConfig } from '../../config/multer/multer.config';
 import { CreateProductSwaggerDecorator } from '../../common/decorators/swagger/product/create-product-swagger-decorator';
 import { ApiTags } from '@nestjs/swagger';

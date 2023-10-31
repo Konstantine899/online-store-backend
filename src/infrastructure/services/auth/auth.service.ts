@@ -4,11 +4,11 @@ import {
     Injectable,
     UnauthorizedException,
 } from '@nestjs/common';
-import { UserService } from '../../../modules/user/user.service';
-import { CreateUserDto } from '../../../modules/user/dto/create-user.dto';
+import { UserService } from '../user/user.service';
+import { CreateUserDto } from '../../dto/user/create-user.dto';
 import * as bcrypt from 'bcrypt';
-import { UserModel } from '../../../modules/user/user.model';
-import { TokenService } from '../../../modules/token/token.service';
+import { UserModel } from '../../../domain/models/user.model';
+import { TokenService } from '../token/token.service';
 import { RefreshDto } from '../../dto/auth/refresh.dto';
 import { Request } from 'express';
 import { LogoutResponse } from '../../responses/auth/logout.response';

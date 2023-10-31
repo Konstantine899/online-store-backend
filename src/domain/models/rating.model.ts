@@ -5,7 +5,7 @@ import {
     Model,
     Table,
 } from 'sequelize-typescript';
-import { UserModel } from '../../modules/user/user.model';
+import { UserModel } from './user.model';
 import { ProductModel } from './product.model';
 
 interface IRatingModel {

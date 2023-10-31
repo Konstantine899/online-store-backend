@@ -8,7 +8,7 @@ import {
     Table,
 } from 'sequelize-typescript';
 import { OrderItemModel } from './order-item.model';
-import { UserModel } from '../../modules/user/user.model';
+import { UserModel } from './user.model';
 
 interface IOrderModel {
     id: number;

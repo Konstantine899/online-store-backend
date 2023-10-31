@@ -2,7 +2,7 @@ import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { PaymentService } from '../../services/payment/payment.service';
 import { MakePaymentDto } from '../../dto/payment/make.payment.dto';
 import { Roles } from '../../common/decorators/roles-auth.decorator';
-import { RoleGuard } from '../../../modules/role/role.guard';
+import { RoleGuard } from '../../common/guards/role.guard';
 import { UserMakePaymentResponse } from '../../responses/payment/user-make-payment.response';
 import { GuestMakePaymentResponse } from '../../responses/payment/guest-make-payment.response';
 import { ApiTags } from '@nestjs/swagger';

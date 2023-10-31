@@ -19,7 +19,7 @@ import { GetListProductPropertySwaggerDecorator } from '../../common/decorators/
 import { UpdateProductPropertySwaggerDecorator } from '../../common/decorators/swagger/product-property/update-product-property-swagger-decorator';
 import { RemoveProductPropertySwaggerDecorator } from '../../common/decorators/swagger/product-property/remove-product-property-swagger-decorator';
 import { Roles } from '../../common/decorators/roles-auth.decorator';
-import { RoleGuard } from '../../../modules/role/role.guard';
+import { RoleGuard } from '../../common/guards/role.guard';
 import { CreateProductPropertyResponse } from '../../responses/product-property/create-product-property.response';
 import { GetProductPropertyResponse } from '../../responses/product-property/get-product-property.response';
 import { GetListProductPropertyResponse } from '../../responses/product-property/get-list-product-property.response';

@@ -1,19 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { UserModel } from '../../../domain/models/user.model';
 import { RoleModel } from '../../../domain/models/role.model';
 import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 
-interface ICheckResponse {
-    id: number;
-    email: string;
-    roles: RoleModel[];
-}
-
-export class CheckResponse implements ICheckResponse {
-    @ApiProperty({
-        example: 1,
-        description: 'Идентификатор пользователя',
-    })
+export class CreateUserResponse extends UserModel {
+    @ApiProperty({ example: 1, description: 'Идентификатор пользователя' })
     id: number;
 
     @ApiProperty({

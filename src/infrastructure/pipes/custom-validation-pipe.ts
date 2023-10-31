@@ -20,10 +20,10 @@ import { IPaginateProductDto } from '../dto/product/paginate-product.dto';
 import { SearchQuery } from '../dto/product/search-query.dto';
 import { ISortQueryDto } from '../dto/product/sort-query.dto';
 import { ICreateProductPropertyDto } from '../dto/product-property/create-product-property.dto';
-import { ICreateRoleDto } from '../../modules/role/dto/create-role.dto';
-import { IAddRoleDto } from '../../modules/user/dto/add-role.dto';
-import { ICreateUserDto } from '../../modules/user/dto/create-user.dto';
-import { IRemoveRoleDto } from '../../modules/user/dto/remove-role.dto';
+import { ICreateRoleDto } from '../dto/role/create-role.dto';
+import { IAddRoleDto } from '../dto/user/add-role.dto';
+import { ICreateUserDto } from '../dto/user/create-user.dto';
+import { IRemoveRoleDto } from '../dto/user/remove-role.dto';
 import { TRegistration } from '../dto/auth/registration.dto';
 
 type AuthValue = TRegistration | TLogin | IRefresh;

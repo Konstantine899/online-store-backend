@@ -6,8 +6,8 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import jwtSettingsConfig from '../../../modules/token/helpers/jwt.settings.config';
-import { IDecodedPayload } from '../../../modules/role/role.guard';
+import jwtSettingsConfig from '../../config/jwt/jwt.settings.config';
+import { IDecodedPayload } from './role.guard';
 
 interface IRequestHeaders {
     authorization: string;

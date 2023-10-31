@@ -13,7 +13,7 @@ import { AuthService } from '../../services/auth/auth.service';
 import { RegistrationDto } from '../../dto/auth/registration.dto';
 import { LoginDto } from '../../dto/auth/login.dto';
 import { RefreshDto } from '../../dto/auth/refresh.dto';
-import { UserService } from '../../../modules/user/user.service';
+import { UserService } from '../../services/user/user.service';
 import { ApiTags } from '@nestjs/swagger';
 import { RegistrationSwaggerDecorator } from '../../common/decorators/swagger/auth/registration.swagger.decorator';
 import { LoginSwaggerDecorator } from '../../common/decorators/swagger/auth/login.swagger.decorator';
@@ -25,7 +25,7 @@ import { RegistrationResponse } from '../../responses/auth/registration.response
 import { UpdateAccessTokenResponse } from '../../responses/auth/update-access-token.response';
 import { CheckResponse } from '../../responses/auth/check-response';
 import { LogoutResponse } from '../../responses/auth/logout.response';
-import { UserModel } from '../../../modules/user/user.model';
+import { UserModel } from '../../../domain/models/user.model';
 import { AuthGuard } from '../../common/guards/auth.guard';
 
 interface IAuthController {

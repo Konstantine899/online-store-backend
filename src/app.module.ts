@@ -4,9 +4,6 @@ import { ConfigModule } from '@nestjs/config';
 import * as process from 'process';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import * as path from 'path';
-import { UserModule } from './modules/user/user.module';
-import { RoleModule } from './modules/role/role.module';
-import { TokenModule } from './modules/token/token.module';
 import { SequelizeConfigService } from './infrastructure/config/seauelize/config/sequelize.config.service';
 import { databaseConfig } from './infrastructure/config/seauelize/config/config';
 import { ControllersModule } from './infrastructure/controllers/controllers.module';
@@ -28,9 +25,6 @@ import { RepositoriesModule } from './infrastructure/repositories/repositories.m
             load: [databaseConfig],
         }),
 
-        UserModule,
-        RoleModule,
-        TokenModule,
         ControllersModule,
         ServicesModule,
         RepositoriesModule,

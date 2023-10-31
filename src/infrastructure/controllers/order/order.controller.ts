@@ -11,7 +11,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { OrderService } from '../../services/order/order.service';
-import { RoleGuard } from '../../../modules/role/role.guard';
+import { RoleGuard } from '../../common/guards/role.guard';
 import { Roles } from '../../common/decorators/roles-auth.decorator';
 import { OrderDto } from '../../dto/order/order.dto';
 import { Request } from 'express';

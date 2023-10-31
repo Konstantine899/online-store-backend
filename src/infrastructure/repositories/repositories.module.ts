@@ -17,6 +17,13 @@ import { OrderRepository } from './order/order.repository';
 import { OrderItemModel } from '../../domain/models/order-item.model';
 import { OrderItemRepository } from './order-item/order-item.repository';
 import { RatingRepository } from './rating/rating.repository';
+import { RoleModel } from '../../domain/models/role.model';
+import { UserModel } from '../../domain/models/user.model';
+import { UserRoleModel } from '../../domain/models/user-role.model';
+import { RoleRepository } from './role/role.repository';
+import { RefreshTokenModel } from '../../domain/models/refresh-token.model';
+import { RefreshTokenRepository } from './refresh-token/refresh-token.repository';
+import { UserRepository } from './user/user.repository';
 
 @Module({
     imports: [
@@ -30,7 +37,10 @@ import { RatingRepository } from './rating/rating.repository';
             RatingModel,
             OrderModel,
             OrderItemModel,
-            RatingModel,
+            RoleModel,
+            UserModel,
+            UserRoleModel,
+            RefreshTokenModel,
         ]),
     ],
     providers: [
@@ -42,6 +52,9 @@ import { RatingRepository } from './rating/rating.repository';
         OrderRepository,
         OrderItemRepository,
         RatingRepository,
+        RoleRepository,
+        RefreshTokenRepository,
+        UserRepository,
     ],
     exports: [
         BrandRepository,
@@ -52,6 +65,9 @@ import { RatingRepository } from './rating/rating.repository';
         OrderRepository,
         OrderItemRepository,
         RatingRepository,
+        RoleRepository,
+        RefreshTokenRepository,
+        UserRepository,
     ],
 })
 export class RepositoriesModule {}

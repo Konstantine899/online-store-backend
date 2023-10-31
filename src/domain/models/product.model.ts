@@ -13,7 +13,7 @@ import { BrandModel } from './brand.model';
 import { ProductPropertyModel } from './product-property.model';
 import { CartProductModel } from './cart-product.model';
 import { CartModel } from './cart.model';
-import { UserModel } from '../../modules/user/user.model';
+import { UserModel } from './user.model';
 import { RatingModel } from './rating.model';
 
 interface IUserCreationAttributes {
