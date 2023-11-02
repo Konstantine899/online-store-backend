@@ -8,32 +8,9 @@ import { CreateUserResponse } from '../../responses/user/create-user.response';
 import { GetListUsersResponse } from '../../responses/user/get-list-users.response';
 import { GetUserResponse } from '../../responses/user/get-user-response';
 import { UpdateUserResponse } from '../../responses/user/update-user-response';
+import { IUserRepository } from '../../../domain/repositories/user/i-user-repository';
 
-interface IUserRepository {
-    createUser(dto: CreateUserDto): Promise<UserModel>;
-
-    updateUser(
-        user: UserModel,
-        dto: CreateUserDto,
-    ): Promise<UpdateUserResponse>;
-
-    findUser(id: number): Promise<GetUserResponse>;
-
-    findUserByPkId(userId: number): Promise<UserModel>;
-
-    findRegisteredUser(userId: number): Promise<CreateUserResponse>;
-
-    findAuthenticatedUser(userId: number): Promise<UserModel>;
-
-    findUserByEmail(email: string): Promise<UserModel>;
-
-    findListUsers(): Promise<GetListUsersResponse[]>;
-
-    removeUser(id: number): Promise<number>;
-}
-
-Injectable();
-
+@Injectable()
 export class UserRepository implements IUserRepository {
     constructor(@InjectModel(UserModel) private userModel: typeof UserModel) {}
 

@@ -3,42 +3,13 @@ import { InjectModel } from '@nestjs/sequelize';
 import { OrderModel } from '../../../domain/models/order.model';
 import { OrderItemModel } from '../../../domain/models/order-item.model';
 import { OrderDto } from '../../dto/order/order.dto';
-import { OrderItemRepository } from '../order-item/order-item.repository';
+import { OrderItemRepository } from '../order-item/order-item-repository';
 import { AdminGetStoreOrderListResponse } from '../../responses/order/admin-get-store-order-list.response';
 import { AdminGetOrderListUserResponse } from '../../responses/order/admin-get-order-list-user.response';
 import { AdminGetOrderUserResponse } from '../../responses/order/admin-get-order-user.response';
 import { AdminCreateOrderResponse } from '../../responses/order/admin-create-order.response';
 import { UserGetOrderListResponse } from '../../responses/order/user-get-order-list.response';
-
-interface IOrderRepository {
-    adminFindOrderListUser(
-        user_id?: number,
-    ): Promise<
-        AdminGetStoreOrderListResponse[] | AdminGetOrderListUserResponse[]
-    >;
-
-    adminFindOrderUser(
-        id: number,
-        user_id?: number,
-    ): Promise<AdminGetOrderUserResponse>;
-
-    findUserAndHisOrders(user_id: number): Promise<AdminCreateOrderResponse>;
-
-    adminCreateOrder(dto: OrderDto): Promise<AdminCreateOrderResponse>;
-
-    findOrder(orderId: number): Promise<OrderModel>;
-
-    removeOrder(id: number): Promise<number>;
-
-    userFindOrderList(user_id: number): Promise<UserGetOrderListResponse[]>;
-
-    userFindOrder(order_id: number, user_id?: number): Promise<OrderModel>;
-
-    createOrder(
-        dto: Omit<OrderDto, 'userId'>,
-        userId: number,
-    ): Promise<OrderModel>;
-}
+import { IOrderRepository } from '../../../domain/repositories/order/i-order-repository';
 
 @Injectable()
 export class OrderRepository implements IOrderRepository {

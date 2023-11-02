@@ -2,21 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { RefreshTokenModel } from '../../../domain/models/refresh-token.model';
 import { UserModel } from '../../../domain/models/user.model';
-
-interface IRefreshTokenRepository {
-    createRefreshToken(
-        user: UserModel,
-        ttl: number,
-    ): Promise<RefreshTokenModel>;
-
-    findRefreshTokenById(id: number): Promise<RefreshTokenModel | null>;
-
-    findListRefreshTokens(userId: number): Promise<RefreshTokenModel[]>;
-
-    removeListRefreshTokens(userId: number): Promise<number>;
-
-    removeRefreshToken(refreshTokenId: number): Promise<number>;
-}
+import { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token/i-refresh-token-repository';
 
 @Injectable()
 export class RefreshTokenRepository implements IRefreshTokenRepository {

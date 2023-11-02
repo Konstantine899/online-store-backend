@@ -6,29 +6,7 @@ import { CreateProductPropertyResponse } from '../../responses/product-property/
 import { GetProductPropertyResponse } from '../../responses/product-property/get-product-property.response';
 import { GetListProductPropertyResponse } from '../../responses/product-property/get-list-product-property.response';
 import { UpdateProductPropertyResponse } from '../../responses/product-property/update-product-property.response';
-
-interface IProductPropertyRepository {
-    create(
-        product_id: number,
-        dto: CreateProductPropertyDto,
-    ): Promise<CreateProductPropertyResponse>;
-
-    findOneProductProperty(
-        product_id: number,
-        id: number,
-    ): Promise<GetProductPropertyResponse>;
-
-    findListProductProperty(
-        product_id: number,
-    ): Promise<GetListProductPropertyResponse[]>;
-
-    updateProductProperty(
-        property: ProductPropertyModel,
-        dto: CreateProductPropertyDto,
-    ): Promise<UpdateProductPropertyResponse>;
-
-    removeProductProperty(id: number): Promise<number>;
-}
+import { IProductPropertyRepository } from '../../../domain/repositories/product-property/i-product-property-repository';
 
 @Injectable()
 export class ProductPropertyRepository implements IProductPropertyRepository {

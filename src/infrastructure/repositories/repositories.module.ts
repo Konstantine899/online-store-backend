@@ -15,7 +15,7 @@ import { ProductPropertyRepository } from './product-property/product-property.r
 import { OrderModel } from '../../domain/models/order.model';
 import { OrderRepository } from './order/order.repository';
 import { OrderItemModel } from '../../domain/models/order-item.model';
-import { OrderItemRepository } from './order-item/order-item.repository';
+import { OrderItemRepository } from './order-item/order-item-repository';
 import { RatingRepository } from './rating/rating.repository';
 import { RoleModel } from '../../domain/models/role.model';
 import { UserModel } from '../../domain/models/user.model';

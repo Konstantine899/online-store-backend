@@ -6,21 +6,7 @@ import { CreateCategoryResponse } from '../../responses/category/create-category
 import { ListAllCategoriesResponse } from '../../responses/category/list-all-categories.response';
 import { CategoryResponse } from '../../responses/category/category.response';
 import { UpdateCategoryResponse } from '../../responses/category/update-category.response';
-
-interface ICategoryRepository {
-    createCategory(dto: CreateCategoryDto): Promise<CreateCategoryResponse>;
-
-    findListAllCategories(): Promise<ListAllCategoriesResponse[]>;
-
-    findCategory(id: number): Promise<CategoryResponse>;
-
-    updateCategory(
-        dto: CreateCategoryDto,
-        category: CategoryModel,
-    ): Promise<UpdateCategoryResponse>;
-
-    removeCategory(id: number): Promise<number>;
-}
+import { ICategoryRepository } from '../../../domain/repositories/category/i-category-repository';
 
 @Injectable()
 export class CategoryRepository implements ICategoryRepository {

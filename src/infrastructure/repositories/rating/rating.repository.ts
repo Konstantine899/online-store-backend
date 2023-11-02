@@ -2,24 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { RatingModel } from '../../../domain/models/rating.model';
 import { CreateRatingResponse } from '../../responses/rating/create-rating.response';
-
-interface IRatingRepository {
-    createRating(
-        userId: number,
-        productId: number,
-        rating: number,
-    ): Promise<CreateRatingResponse>;
-
-    findVote(
-        user_id: number,
-        product_id: number,
-        rating: number,
-    ): Promise<RatingModel>;
-
-    countRating(product_id: number): Promise<number>;
-
-    ratingsSum(product_id: number): Promise<number>;
-}
+import { IRatingRepository } from '../../../domain/repositories/rating/i-rating-repository';
 
 @Injectable()
 export class RatingRepository implements IRatingRepository {

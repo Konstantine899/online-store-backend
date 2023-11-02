@@ -7,57 +7,7 @@ import { CreateProductResponse } from '../../responses/product/create-product.re
 import { GetProductResponse } from '../../responses/product/get-product.response';
 import { Rows } from '../../paginate/rows';
 import { UpdateProductResponse } from '../../responses/product/update-product.response';
-
-interface IProductRepository {
-    create(
-        dto: CreateProductDto,
-        imageName: string,
-    ): Promise<CreateProductResponse>;
-
-    fidProductByPkId(productId: number): Promise<ProductModel>;
-
-    findProduct(id: number): Promise<GetProductResponse>;
-
-    findListProduct(
-        search: string,
-        sort: string,
-        limit: number,
-        offset: number,
-    ): Promise<{ count: number; rows: Rows[] }>;
-
-    findListProductByBrandId(
-        brandId: number,
-        search: string,
-        sort: string,
-        limit: number,
-        offset: number,
-    ): Promise<{ count: number; rows: Rows[] }>;
-
-    findListProductByCategoryId(
-        categoryId: number,
-        search: string,
-        sort: string,
-        limit: number,
-        offset: number,
-    ): Promise<{ count: number; rows: Rows[] }>;
-
-    findAllByBrandIdAndCategoryId(
-        brandId: number,
-        categoryId: number,
-        search: string,
-        sort: string,
-        limit: number,
-        offset: number,
-    ): Promise<{ count: number; rows: Rows[] }>;
-
-    removedProduct(id: number): Promise<number>;
-
-    updateProduct(
-        dto: CreateProductDto,
-        findProduct: ProductModel,
-        updatedNameImage: string,
-    ): Promise<UpdateProductResponse>;
-}
+import { IProductRepository } from '../../../domain/repositories/product/i-product-repository';
 
 export class ProductRepository implements IProductRepository {
     constructor(

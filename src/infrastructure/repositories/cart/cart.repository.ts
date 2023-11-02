@@ -3,34 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { CartModel } from '../../../domain/models/cart.model';
 import { ProductModel } from '../../../domain/models/product.model';
 import { CartProductModel } from '../../../domain/models/cart-product.model';
-
-interface ICartRepository {
-    findCart(cartId: number): Promise<CartModel>;
-
-    createCart(): Promise<CartModel>;
-
-    appendToCart(
-        cart_id: number,
-        product_id: number,
-        quantity: number,
-    ): Promise<CartModel>;
-
-    increment(
-        cart_id: number,
-        product_id: number,
-        quantity: number,
-    ): Promise<CartModel>;
-
-    decrement(
-        cart_id: number,
-        product_id: number,
-        quantity: number,
-    ): Promise<CartModel>;
-
-    removeFromCart(cart_id: number, product_id: number): Promise<CartModel>;
-
-    clearCart(cart_id: number): Promise<CartModel>;
-}
+import { ICartRepository } from '../../../domain/repositories/cart/i-cart-repository';
 
 @Injectable()
 export class CartRepository implements ICartRepository {

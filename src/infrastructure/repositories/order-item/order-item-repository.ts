@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { OrderItemModel } from '../../../domain/models/order-item.model';
-
-interface IOrderItemRepository {
-    createItem(order_id: number, item: OrderItemModel): Promise<OrderItemModel>;
-}
+import { IOrderItemRepository } from '../../../domain/repositories/order-item/i-order-item-repository';
 
 @Injectable()
 export class OrderItemRepository implements IOrderItemRepository {
