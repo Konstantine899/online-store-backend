@@ -26,21 +26,7 @@ import { CategoryResponse } from '../../responses/category/category.response';
 import { UpdateCategoryResponse } from '../../responses/category/update-category.response';
 import { RemoveCategoryResponse } from '../../responses/category/remove-category.response';
 import { AuthGuard } from '../../common/guards/auth.guard';
-
-interface ICategoryController {
-    createCategory(dto: CreateCategoryDto): Promise<CreateCategoryResponse>;
-
-    getListAllCategories(): Promise<ListAllCategoriesResponse[]>;
-
-    getCategory(id: number): Promise<CategoryResponse>;
-
-    updateCategory(
-        id: number,
-        dto: CreateCategoryDto,
-    ): Promise<UpdateCategoryResponse>;
-
-    removeCategory(id: number): Promise<RemoveCategoryResponse>;
-}
+import { ICategoryController } from '../../../domain/controllers/i-category-controller';
 
 @ApiTags('Категория')
 @Controller('category')

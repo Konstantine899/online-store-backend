@@ -37,37 +37,7 @@ import { UserGetOrderResponse } from '../../responses/order/user-get-order.respo
 import { UserCreateOrderResponse } from '../../responses/order/user-create-order.response';
 import { GuestCreateOrderResponse } from '../../responses/order/guest-create-order.response';
 import { AuthGuard } from '../../common/guards/auth.guard';
-
-interface IOrderController {
-    adminGetStoreOrderList(): Promise<AdminGetStoreOrderListResponse[]>;
-
-    adminGetOrderListUser(
-        userId: number,
-    ): Promise<AdminGetOrderListUserResponse[]>;
-
-    adminGetOrderUser(orderId: number): Promise<AdminGetOrderUserResponse>;
-
-    adminCreateOrder(dto: OrderDto): Promise<AdminCreateOrderResponse>;
-
-    adminRemoveOrder(orderId: number): Promise<AdminRemoveOrderResponse>;
-
-    userGetOrderList(request: Request): Promise<UserGetOrderListResponse[]>;
-
-    userGetOrder(
-        request: Request,
-        orderId: number,
-    ): Promise<UserGetOrderResponse>;
-
-    userCreateOrder(
-        request: Request,
-        dto: Omit<OrderDto, 'userId'>,
-    ): Promise<UserCreateOrderResponse>;
-
-    guestCreateOrder(
-        request: Request,
-        dto: OrderDto,
-    ): Promise<GuestCreateOrderResponse>;
-}
+import { IOrderController } from '../../../domain/controllers/i-order-controller';
 
 @ApiTags('Заказы')
 @Controller('order')

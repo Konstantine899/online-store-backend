@@ -32,22 +32,7 @@ import { RemoveUserResponse } from '../../responses/user/remove-user.response';
 import { AddRoleResponse } from '../../responses/user/add-role.response';
 import { RemoveRoleResponse } from '../../responses/user/remove-role.response';
 import { AuthGuard } from '../../common/guards/auth.guard';
-
-interface IUserController {
-    createUser(dto: CreateUserDto): Promise<CreateUserResponse>;
-
-    getListUsers(): Promise<GetListUsersResponse[]>;
-
-    getUser(id: number): Promise<GetUserResponse>;
-
-    updateUser(id: number, dto: CreateUserDto): Promise<UpdateUserResponse>;
-
-    removeUser(id: number): Promise<RemoveUserResponse>;
-
-    addRole(dto: AddRoleDto): Promise<AddRoleResponse>;
-
-    removeRole(dto: RemoveRoleDto): Promise<RemoveRoleResponse>;
-}
+import { IUserController } from '../../../domain/controllers/i-user-controller';
 
 @ApiTags('Пользователи')
 @Controller('user')

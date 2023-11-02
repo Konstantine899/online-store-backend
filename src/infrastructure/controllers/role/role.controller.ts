@@ -19,14 +19,7 @@ import { CreateRoleResponse } from '../../responses/role/create-role.response';
 import { GetRoleResponse } from '../../responses/role/get-role.response';
 import { GetListRoleResponse } from '../../responses/role/get-list-role.response';
 import { AuthGuard } from '../../common/guards/auth.guard';
-
-interface IRoleController {
-    createRole(dto: CreateRoleDto): Promise<CreateRoleResponse>;
-
-    getRole(role: string): Promise<GetRoleResponse>;
-
-    getListRole(): Promise<GetListRoleResponse[]>;
-}
+import { IRoleController } from '../../../domain/controllers/i-role-controller';
 
 @ApiTags('Роль')
 @Controller('role')

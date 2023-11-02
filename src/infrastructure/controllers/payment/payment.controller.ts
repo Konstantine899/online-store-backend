@@ -9,16 +9,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { GuestMakePaymentSwaggerDecorator } from '../../common/decorators/swagger/payment/guest-make-payment-swagger-decorator';
 import { UserMakePaymentSwaggerDecorator } from '../../common/decorators/swagger/payment/user-make-payment-swagger-decorator';
 import { AuthGuard } from '../../common/guards/auth.guard';
-
-interface IPaymentController {
-    userMakePayment(
-        makePaymentDto: MakePaymentDto,
-    ): Promise<UserMakePaymentResponse>;
-
-    guestMakePayment(
-        makePaymentDto: MakePaymentDto,
-    ): Promise<GuestMakePaymentResponse>;
-}
+import { IPaymentController } from '../../../domain/controllers/i-payment-controller';
 
 @ApiTags('Оплата')
 @Controller('payment')

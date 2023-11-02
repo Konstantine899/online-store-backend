@@ -26,18 +26,7 @@ import { BrandResponse } from '../../responses/brand/brand.response';
 import { UpdateBrandResponse } from '../../responses/brand/update-brand.response';
 import { RemoveBrandResponse } from '../../responses/brand/remove-brand.response';
 import { AuthGuard } from '../../common/guards/auth.guard';
-
-interface IBrandController {
-    createBrand(dto: CreateBrandDto): Promise<CreateBrandResponse>;
-
-    getListAllBrands(): Promise<ListAllBrandsResponse[]>;
-
-    getBrand(id: number): Promise<BrandResponse>;
-
-    updateBrand(id: number, dto: CreateBrandDto): Promise<UpdateBrandResponse>;
-
-    removeBrand(id: number): Promise<RemoveBrandResponse>;
-}
+import { IBrandController } from '../../../domain/controllers/i-brand-controller';
 
 @ApiTags('Бренд')
 @Controller('brand')

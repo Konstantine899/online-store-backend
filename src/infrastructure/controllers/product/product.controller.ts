@@ -40,55 +40,7 @@ import { GetAllByBrandIdAndCategoryIdResponse } from '../../responses/product/ge
 import { UpdateProductResponse } from '../../responses/product/update-product.response';
 import { RemoveProductResponse } from '../../responses/product/remove-product.response';
 import { AuthGuard } from '../../common/guards/auth.guard';
-
-interface IProductController {
-    create(
-        dto: CreateProductDto,
-        image: Express.Multer.File,
-    ): Promise<CreateProductResponse>;
-
-    getProduct(id: number): Promise<GetProductResponse>;
-
-    getListProduct(
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
-        page: number,
-        size: number,
-    ): Promise<GetListProductResponse>;
-
-    getListProductByBrandId(
-        brandId: number,
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
-        page: number,
-        size: number,
-    ): Promise<GetListProductByBrandIdResponse>;
-
-    getListProductByCategoryId(
-        categoryId: number,
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
-        page: number,
-        size: number,
-    ): Promise<GetListProductByCategoryIdResponse>;
-
-    getAllByBrandIdAndCategoryId(
-        brandId: number,
-        categoryId: number,
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
-        page: number,
-        size: number,
-    ): Promise<GetAllByBrandIdAndCategoryIdResponse>;
-
-    update(
-        id: number,
-        dto: CreateProductDto,
-        image: Express.Multer.File,
-    ): Promise<UpdateProductResponse>;
-
-    removeProduct(id: number): Promise<RemoveProductResponse>;
-}
+import { IProductController } from '../../../domain/controllers/i-product-controller';
 
 @ApiTags('Продукт')
 @Controller('product')

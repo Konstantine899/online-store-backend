@@ -27,18 +27,7 @@ import { CheckResponse } from '../../responses/auth/check-response';
 import { LogoutResponse } from '../../responses/auth/logout.response';
 import { UserModel } from '../../../domain/models/user.model';
 import { AuthGuard } from '../../common/guards/auth.guard';
-
-interface IAuthController {
-    registration(dto: RegistrationDto): Promise<RegistrationResponse>;
-
-    login(dto: LoginDto): Promise<LoginResponse>;
-
-    updateAccessToken(dto: RefreshDto): Promise<UpdateAccessTokenResponse>;
-
-    checkUserAuth(request: Request): Promise<CheckResponse>;
-
-    logout(request: Request, refresh: RefreshDto): Promise<LogoutResponse>;
-}
+import { IAuthController } from '../../../domain/controllers/i-auth-controller';
 
 @ApiTags('Аутентификация')
 @Controller('auth')

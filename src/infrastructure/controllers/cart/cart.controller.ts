@@ -24,39 +24,7 @@ import { IncrementSwaggerDecorator } from '../../common/decorators/swagger/cart/
 import { DecrementSwaggerDecorator } from '../../common/decorators/swagger/cart/decrement-swagger-decorator';
 import { RemoveProductFromCartSwaggerDecorator } from '../../common/decorators/swagger/cart/remove-product-from-cart-swagger-decorator';
 import { ClearCartSwaggerDecorator } from '../../common/decorators/swagger/cart/clear-cart-swagger-decorator';
-
-interface ICartController {
-    getCart(request: Request, response: Response): Promise<CartResponse>;
-
-    appendToCart(
-        request: Request,
-        response: Response,
-        productId: number,
-        quantity: number,
-    ): Promise<AppendToCartResponse>;
-
-    increment(
-        request: Request,
-        response: Response,
-        productId: number,
-        quantity: number,
-    ): Promise<IncrementResponse>;
-
-    decrement(
-        request: Request,
-        response: Response,
-        productId: number,
-        quantity: number,
-    ): Promise<DecrementResponse>;
-
-    removeProductFromCart(
-        request: Request,
-        response: Response,
-        productId: number,
-    ): Promise<RemoveProductFromCartResponse>;
-
-    clearCart(request: Request, response: Response): Promise<ClearCartResponse>;
-}
+import { ICartController } from '../../../domain/controllers/i-cart-controller';
 
 @ApiTags('Корзина')
 @Controller('cart')

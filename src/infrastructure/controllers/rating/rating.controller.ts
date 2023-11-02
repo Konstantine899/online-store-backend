@@ -17,16 +17,7 @@ import { GetRatingSwaggerDecorator } from '../../common/decorators/swagger/ratin
 import { CreateRatingResponse } from '../../responses/rating/create-rating.response';
 import { GetRatingResponse } from '../../responses/rating/get-rating.response';
 import { AuthGuard } from '../../common/guards/auth.guard';
-
-interface IRatingController {
-    createRating(
-        request: Request,
-        productId: number,
-        rating: number,
-    ): Promise<CreateRatingResponse>;
-
-    getRating(productId: number): Promise<GetRatingResponse>;
-}
+import { IRatingController } from '../../../domain/controllers/i-rating-controller';
 
 @ApiTags('Рейтинг')
 @Controller('rating')
