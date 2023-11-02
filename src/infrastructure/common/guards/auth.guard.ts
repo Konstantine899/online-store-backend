@@ -8,13 +8,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import jwtSettingsConfig from '../../config/jwt/jwt.settings.config';
 import { IDecodedPayload } from './role.guard';
-
-interface IRequestHeaders {
-    authorization: string;
-    ['user-agent']: string;
-    accept: string;
-    host: string;
-}
+import { IHeaders } from '../../../domain/headers/i-headers';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -23,7 +17,7 @@ export class AuthGuard implements CanActivate {
     async canActivate(context: ExecutionContext): Promise<boolean> {
         try {
             const request = context.switchToHttp().getRequest();
-            const { authorization }: IRequestHeaders = request.headers;
+            const { authorization }: IHeaders = request.headers;
             if (!authorization || authorization.trim() === '') {
                 throw new UnauthorizedException('Please provide token');
             }
