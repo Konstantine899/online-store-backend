@@ -1,8 +1,6 @@
 import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IAuthDto } from '../../../domain/dto/I-auth-dto';
-
-export type TRegistration = IAuthDto;
+import { TRegistration } from '../../../domain/dto/auth/I-auth-dto';
 
 export class RegistrationDto implements TRegistration {
     @ApiProperty({
