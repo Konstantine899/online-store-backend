@@ -23,8 +23,8 @@ import { multerConfig } from '../../config/multer/multer.config';
 import { CreateProductSwaggerDecorator } from '../../common/decorators/swagger/product/create-product-swagger-decorator';
 import { ApiTags } from '@nestjs/swagger';
 import { GetProductSwaggerDecorator } from '../../common/decorators/swagger/product/get-product-swagger-decorator';
-import { SearchQueryDto } from '../../dto/product/search-query.dto';
-import { SortQueryDto } from '../../dto/product/sort-query.dto';
+import { SearchDto } from '../../dto/product/search-dto';
+import { SortingDto } from '../../dto/product/sorting-dto';
 import { GetListProductSwaggerDecorator } from '../../common/decorators/swagger/product/get-list-product-swagger-decorator';
 import { GetListProductByBrandIdSwaggerDecorator } from '../../common/decorators/swagger/product/get-list-product-by-brand-id-swagger-decorator';
 import { GetListProductByCategoryIdSwaggerDecorator } from '../../common/decorators/swagger/product/get-list-product-by-category-id-swagger-decorator';
@@ -74,8 +74,8 @@ export class ProductController implements IProductController {
     @HttpCode(200)
     @Get('/all')
     public async getListProduct(
-        @Query() searchQuery: SearchQueryDto,
-        @Query() sortQuery: SortQueryDto,
+        @Query() searchQuery: SearchDto,
+        @Query() sortQuery: SortingDto,
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
     ): Promise<GetListProductResponse> {
@@ -92,8 +92,8 @@ export class ProductController implements IProductController {
     @Get('/all/brandId/:brandId([0-9]+)')
     public async getListProductByBrandId(
         @Param('brandId', ParseIntPipe) brandId: number,
-        @Query() searchQuery: SearchQueryDto,
-        @Query() sortQuery: SortQueryDto,
+        @Query() searchQuery: SearchDto,
+        @Query() sortQuery: SortingDto,
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
     ): Promise<GetListProductByBrandIdResponse> {
@@ -111,8 +111,8 @@ export class ProductController implements IProductController {
     @Get('/all/categoryId/:categoryId([0-9]+)')
     public async getListProductByCategoryId(
         @Param('categoryId', ParseIntPipe) categoryId: number,
-        @Query() searchQuery: SearchQueryDto,
-        @Query() sortQuery: SortQueryDto,
+        @Query() searchQuery: SearchDto,
+        @Query() sortQuery: SortingDto,
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
     ): Promise<GetListProductByCategoryIdResponse> {
@@ -131,8 +131,8 @@ export class ProductController implements IProductController {
     public async getAllByBrandIdAndCategoryId(
         @Param('brandId', ParseIntPipe) brandId: number,
         @Param('categoryId', ParseIntPipe) categoryId: number,
-        @Query() searchQuery: SearchQueryDto,
-        @Query() sortQuery: SortQueryDto,
+        @Query() searchQuery: SearchDto,
+        @Query() sortQuery: SortingDto,
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
     ): Promise<GetAllByBrandIdAndCategoryIdResponse> {

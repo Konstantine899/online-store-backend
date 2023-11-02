@@ -1,8 +1,8 @@
 import { CreateProductDto } from '../../infrastructure/dto/product/create-product.dto';
 import { CreateProductResponse } from '../../infrastructure/responses/product/create-product.response';
 import { GetProductResponse } from '../../infrastructure/responses/product/get-product.response';
-import { SearchQueryDto } from '../../infrastructure/dto/product/search-query.dto';
-import { SortQueryDto } from '../../infrastructure/dto/product/sort-query.dto';
+import { SearchDto } from '../../infrastructure/dto/product/search-dto';
+import { SortingDto } from '../../infrastructure/dto/product/sorting-dto';
 import { GetListProductResponse } from '../../infrastructure/responses/product/get-list-product.response';
 import { GetListProductByBrandIdResponse } from '../../infrastructure/responses/product/get-list-product-by-brand-id.response';
 import { GetListProductByCategoryIdResponse } from '../../infrastructure/responses/product/get-list-product-by-category-id.response';
@@ -19,24 +19,24 @@ export interface IProductController {
     getProduct(id: number): Promise<GetProductResponse>;
 
     getListProduct(
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
         page: number,
         size: number,
     ): Promise<GetListProductResponse>;
 
     getListProductByBrandId(
         brandId: number,
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
         page: number,
         size: number,
     ): Promise<GetListProductByBrandIdResponse>;
 
     getListProductByCategoryId(
         categoryId: number,
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
         page: number,
         size: number,
     ): Promise<GetListProductByCategoryIdResponse>;
@@ -44,8 +44,8 @@ export interface IProductController {
     getAllByBrandIdAndCategoryId(
         brandId: number,
         categoryId: number,
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
         page: number,
         size: number,
     ): Promise<GetAllByBrandIdAndCategoryIdResponse>;

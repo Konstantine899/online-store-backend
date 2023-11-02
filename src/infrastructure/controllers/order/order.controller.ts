@@ -21,8 +21,8 @@ import { AdminGetOrderListUsersSwaggerDecorator } from '../../common/decorators/
 import { AdminGetOrderUsersSwaggerDecorator } from '../../common/decorators/swagger/order/admin-get-order-users-swagger-decorator';
 import { AdminCreateOrderSwaggerDecorator } from '../../common/decorators/swagger/order/admin-create-order-swagger-decorator';
 import { AdminRemoveOrderSwaggerDecorator } from '../../common/decorators/swagger/order/admin-remove-order-swagger-decorator';
-import { RequestUserDto } from '../../dto/order/request-user.dto';
-import { RequestSignedCookiesDto } from '../../dto/order/request-signed-cookies.dto';
+import { UserOrderDto } from '../../dto/order/user-order-dto';
+import { SignedCookiesDto } from '../../dto/order/signed-cookies.dto';
 import { UserCreateOrderSwaggerDecorator } from '../../common/decorators/swagger/order/user-create-order-swagger-decorator';
 import { UserGetOrderSwaggerDecorator } from '../../common/decorators/swagger/order/user-get-order-swagger-decorator';
 import { UserGetOrderListSwaggerDecorator } from '../../common/decorators/swagger/order/user-get-order-list-swagger-decorator';
@@ -117,7 +117,7 @@ export class OrderController implements IOrderController {
     public async userGetOrderList(
         @Req() request: Request,
     ): Promise<UserGetOrderListResponse[]> {
-        const { id } = request.user as RequestUserDto;
+        const { id } = request.user as UserOrderDto;
         return this.orderService.userGetOrderList(id);
     }
 
@@ -131,7 +131,7 @@ export class OrderController implements IOrderController {
         @Req() request: Request,
         @Param('orderId', ParseIntPipe) orderId: number,
     ): Promise<UserGetOrderResponse> {
-        const { id } = request.user as RequestUserDto;
+        const { id } = request.user as UserOrderDto;
         return this.orderService.userGetOrder(orderId, id);
     }
 
@@ -144,8 +144,8 @@ export class OrderController implements IOrderController {
         @Req() request: Request,
         @Body() dto: Omit<OrderDto, 'userId'>,
     ): Promise<UserCreateOrderResponse> {
-        const { id } = request.user as RequestUserDto;
-        const { cartId } = request.signedCookies as RequestSignedCookiesDto;
+        const { id } = request.user as UserOrderDto;
+        const { cartId } = request.signedCookies as SignedCookiesDto;
         return this.orderService.userCreateOrder(dto, id, cartId);
     }
 

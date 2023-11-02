@@ -1,9 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-
-export interface ICreateCategory {
-    name: string;
-}
+import { ICreateCategory } from '../../../domain/dto/category/i-create-category-dto';
 
 export class CreateCategoryDto implements ICreateCategory {
     @ApiProperty({ example: 'Смартфоны' })

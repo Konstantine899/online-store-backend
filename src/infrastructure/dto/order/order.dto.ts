@@ -9,18 +9,9 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { IOrderDto } from '../../../domain/dto/order/i-order-dto';
 
-export interface Order {
-    userId?: number;
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
-    comment: string;
-    items: OrderItemModel[];
-}
-
-export class OrderDto implements Order {
+export class OrderDto implements IOrderDto {
     @ApiProperty({
         example: 1,
         description: 'Идентификатор заказчика',

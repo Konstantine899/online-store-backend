@@ -7,8 +7,8 @@ import {
 import { CreateProductDto } from '../../dto/product/create-product.dto';
 import { FileService } from '../file/file.service';
 import { ProductRepository } from '../../repositories/product/product.repository';
-import { SearchQueryDto } from '../../dto/product/search-query.dto';
-import { Sort, SortQueryDto } from '../../dto/product/sort-query.dto';
+import { SearchDto } from '../../dto/product/search-dto';
+import { SortingDto } from '../../dto/product/sorting-dto';
 import { CreateProductResponse } from '../../responses/product/create-product.response';
 import { GetProductResponse } from '../../responses/product/get-product.response';
 import { GetListProductResponse } from '../../responses/product/get-list-product.response';
@@ -18,6 +18,7 @@ import { GetListProductByCategoryIdResponse } from '../../responses/product/get-
 import { GetAllByBrandIdAndCategoryIdResponse } from '../../responses/product/get-all-by-brand-id-and-category-id.response';
 import { UpdateProductResponse } from '../../responses/product/update-product.response';
 import { RemoveProductResponse } from '../../responses/product/remove-product.response';
+import { SortingEnum } from '../../../domain/dto/product/i-sorting-dto';
 
 interface IProductService {
     productCreate(
@@ -28,24 +29,24 @@ interface IProductService {
     getProduct(id: number): Promise<GetProductResponse>;
 
     getListProduct(
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
         page: number,
         size: number,
     ): Promise<GetListProductResponse>;
 
     getListProductByBrandId(
         brandId: number,
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
         page: number,
         size: number,
     ): Promise<GetListProductByBrandIdResponse>;
 
     getListProductByCategoryId(
         categoryId: number,
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
         page: number,
         size: number,
     ): Promise<GetListProductByCategoryIdResponse>;
@@ -53,8 +54,8 @@ interface IProductService {
     getAllByBrandIdAndCategoryId(
         brandId: number,
         categoryId: number,
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
         page: number,
         size: number,
     ): Promise<GetAllByBrandIdAndCategoryIdResponse>;
@@ -92,13 +93,13 @@ export class ProductService implements IProductService {
     }
 
     public async getListProduct(
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
         page: number,
         size: number,
     ): Promise<GetListProductResponse> {
         const { search } = searchQuery;
-        const { sort = Sort.DESC } = sortQuery;
+        const { sort = SortingEnum.DESC } = sortQuery;
         const { limit, offset } = this.getPaginate(page, size);
         const products = await this.productRepository.findListProduct(
             search,
@@ -119,14 +120,14 @@ export class ProductService implements IProductService {
 
     public async getListProductByBrandId(
         brandId: number,
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
         page: number,
         size: number,
     ): Promise<GetListProductByBrandIdResponse> {
         const { limit, offset } = this.getPaginate(page, size);
         const { search } = searchQuery;
-        const { sort = Sort.DESC } = sortQuery;
+        const { sort = SortingEnum.DESC } = sortQuery;
         const products = await this.productRepository.findListProductByBrandId(
             brandId,
             search,
@@ -147,14 +148,14 @@ export class ProductService implements IProductService {
 
     public async getListProductByCategoryId(
         categoryId: number,
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
         page: number,
         size: number,
     ): Promise<GetListProductByCategoryIdResponse> {
         const { limit, offset } = this.getPaginate(page, size);
         const { search } = searchQuery;
-        const { sort = Sort.DESC } = sortQuery;
+        const { sort = SortingEnum.DESC } = sortQuery;
         const products =
             await this.productRepository.findListProductByCategoryId(
                 categoryId,
@@ -178,14 +179,14 @@ export class ProductService implements IProductService {
     public async getAllByBrandIdAndCategoryId(
         brandId: number,
         categoryId: number,
-        searchQuery: SearchQueryDto,
-        sortQuery: SortQueryDto,
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
         page: number,
         size: number,
     ): Promise<GetAllByBrandIdAndCategoryIdResponse> {
         const { limit, offset } = this.getPaginate(page, size);
         const { search } = searchQuery;
-        const { sort = Sort.DESC } = sortQuery;
+        const { sort = SortingEnum.DESC } = sortQuery;
         const products =
             await this.productRepository.findAllByBrandIdAndCategoryId(
                 brandId,

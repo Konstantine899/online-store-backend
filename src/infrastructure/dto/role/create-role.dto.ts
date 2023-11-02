@@ -1,10 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-
-export interface ICreateRoleDto {
-    role: string;
-    description: string;
-}
+import { ICreateRoleDto } from '../../../domain/dto/role/i-create-role-dto';
 
 export class CreateRoleDto implements ICreateRoleDto {
     @ApiProperty({

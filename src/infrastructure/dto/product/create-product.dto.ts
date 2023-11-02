@@ -1,16 +1,9 @@
 import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { ICreateProductDto } from '../../../domain/dto/product/i-create-product-dto';
 
-export interface CreateProduct {
-    name: string;
-    price: number;
-    image: Express.Multer.File;
-    brandId: number;
-    categoryId: number;
-}
-
-export class CreateProductDto implements CreateProduct {
+export class CreateProductDto implements ICreateProductDto {
     @ApiProperty({
         example: 'Xiaomi Redmi 10 pro',
         description: 'Название продукта',

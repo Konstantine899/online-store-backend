@@ -7,34 +7,29 @@ import {
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { ICreateBrand } from '../dto/brand/create-brand.dto';
-import { ICreateCategory } from '../dto/category/create-category.dto';
-import { Order } from '../dto/order/order.dto';
-import { RequestSignedCookies } from '../dto/order/request-signed-cookies.dto';
-import { RequestUser } from '../dto/order/request-user.dto';
-import { IMakePaymentDto } from '../dto/payment/make.payment.dto';
-import { CreateProduct } from '../dto/product/create-product.dto';
-import { IPaginateProductDto } from '../dto/product/paginate-product.dto';
-import { SearchQuery } from '../dto/product/search-query.dto';
-import { ISortQueryDto } from '../dto/product/sort-query.dto';
-import { ICreateProductPropertyDto } from '../dto/product-property/create-product-property.dto';
-import { ICreateRoleDto } from '../dto/role/create-role.dto';
-import { IAddRoleDto } from '../dto/user/add-role.dto';
-import { ICreateUserDto } from '../dto/user/create-user.dto';
-import { IRemoveRoleDto } from '../dto/user/remove-role.dto';
 import { IRefreshDto } from '../../domain/dto/auth/i-refresh-dto';
 import { TLogin, TRegistration } from '../../domain/dto/auth/I-auth-dto';
+import { ICreateBrand } from '../../domain/dto/brand/i-create-brand-dto';
+import { ICreateCategory } from '../../domain/dto/category/i-create-category-dto';
+import { IOrderDto } from '../../domain/dto/order/i-order-dto';
+import { ISignedCookiesDto } from '../../domain/dto/order/i-signed-cookies-dto';
+import { IUserOrderDto } from '../../domain/dto/order/i-user-order-dto';
+import { IMakePaymentDto } from '../../domain/dto/payment/i-make-payment-dto';
+import { ICreateProductDto } from '../../domain/dto/product/i-create-product-dto';
+import { ISearchDto } from '../../domain/dto/product/i-search-dto';
+import { ISortingDto } from '../../domain/dto/product/i-sorting-dto';
+import { ICreateProductPropertyDto } from '../../domain/dto/product-property/i-create-product-property-dto';
+import { ICreateRoleDto } from '../../domain/dto/role/i-create-role-dto';
+import { IAddRoleDto } from '../../domain/dto/user/i-add-role-dto';
+import { ICreateUserDto } from '../../domain/dto/user/i-create-user-dto';
+import { IRemoveRoleDto } from '../../domain/dto/user/i-remove-role-dto';
 
 type AuthValue = TRegistration | TLogin | IRefreshDto;
 type BrandValue = ICreateBrand;
 type CategoryValue = ICreateCategory;
-type OrderValue = Order | RequestSignedCookies | RequestUser;
+type OrderValue = IOrderDto | ISignedCookiesDto | IUserOrderDto;
 type PaymentValue = IMakePaymentDto;
-type ProductValue =
-    | CreateProduct
-    | IPaginateProductDto
-    | SearchQuery
-    | ISortQueryDto;
+type ProductValue = ICreateProductDto | ISearchDto | ISortingDto;
 type ProductPropertyValue = ICreateProductPropertyDto;
 type RoleValue = ICreateRoleDto;
 type UserValue = IAddRoleDto | ICreateUserDto | IRemoveRoleDto;

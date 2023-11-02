@@ -1,9 +1,6 @@
 import { IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-
-export interface IMakePaymentDto {
-    amount: number;
-}
+import { IMakePaymentDto } from '../../../domain/dto/payment/i-make-payment-dto';
 
 export class MakePaymentDto implements IMakePaymentDto {
     @ApiProperty({ example: 1000 })
