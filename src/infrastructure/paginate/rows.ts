@@ -1,14 +1,6 @@
 import { ProductModel } from '../../domain/models/product.model';
 import { ApiProperty } from '@nestjs/swagger';
-
-interface IRows {
-    id: number;
-    name: string;
-    price: number;
-    image: string;
-    category_id: number;
-    brand_id: number;
-}
+import { IRows } from '../../domain/paginate/i-rows';
 
 export class Rows extends ProductModel implements IRows {
     @ApiProperty({

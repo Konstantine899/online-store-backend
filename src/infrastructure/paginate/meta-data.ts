@@ -1,12 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-
-interface IMetaData {
-    totalCount: number;
-    lastPage: number;
-    currentPage: number;
-    nextPage: number;
-    previousPage: number;
-}
+import { IMetaData } from '../../domain/paginate/i-meta-data';
 
 export class MetaData implements IMetaData {
     @ApiProperty({
