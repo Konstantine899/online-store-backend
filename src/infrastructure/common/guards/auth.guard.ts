@@ -7,8 +7,8 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import jwtSettingsConfig from '../../config/jwt/jwt.settings.config';
-import { IDecodedPayload } from './role.guard';
 import { IHeaders } from '../../../domain/headers/i-headers';
+import { IDecodedAccessToken } from '../../../domain/jwt/i-decoded-access-token';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -34,7 +34,9 @@ export class AuthGuard implements CanActivate {
         }
     }
 
-    private async validateAccessToken(token: string): Promise<IDecodedPayload> {
+    private async validateAccessToken(
+        token: string,
+    ): Promise<IDecodedAccessToken> {
         return await this.jwtService.verifyAsync(token, {
             secret: jwtSettingsConfig().jwtSecretKey,
         });

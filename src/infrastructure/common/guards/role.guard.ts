@@ -11,15 +11,7 @@ import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { ROLES_KEY } from '../decorators/roles-auth.decorator';
 import * as process from 'process';
-import { RoleModel } from '../../../domain/models/role.model';
-
-export interface IDecodedPayload {
-    id?: number;
-    roles?: RoleModel[];
-    iat?: number;
-    exp?: number;
-    sub?: string;
-}
+import { IDecodedAccessToken } from '../../../domain/jwt/i-decoded-access-token';
 
 @Injectable()
 export class RoleGuard implements CanActivate {
@@ -52,7 +44,7 @@ export class RoleGuard implements CanActivate {
             });
         }
 
-        const user: IDecodedPayload = this.jwtService.verify(accessToken, {
+        const user: IDecodedAccessToken = this.jwtService.verify(accessToken, {
             secret: process.env.JWT_PRIVATE_KEY,
         });
         request.user = user;
