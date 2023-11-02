@@ -1,9 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-
-interface IAmountResponse {
-    value: string;
-    currency: string;
-}
+import { IAmountResponse } from '../../../domain/responses/payment/i-amount-response';
 
 export class AmountResponse implements IAmountResponse {
     @ApiProperty({

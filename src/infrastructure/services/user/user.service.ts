@@ -17,7 +17,7 @@ import { GetUserResponse } from '../../responses/user/get-user-response';
 import { UpdateUserResponse } from '../../responses/user/update-user-response';
 import { RemoveUserResponse } from '../../responses/user/remove-user.response';
 import { AddRoleResponse } from '../../responses/user/add-role.response';
-import { RemoveRoleResponse } from '../../responses/user/remove-role.response';
+import { RemoveUserRoleResponse } from '../../responses/user/remove-user-role-response';
 import { CheckResponse } from '../../responses/auth/check-response';
 
 interface IUserService {
@@ -39,7 +39,7 @@ interface IUserService {
 
     addRole(dto: AddRoleDto): Promise<AddRoleResponse>;
 
-    removeUserRole(dto: RemoveRoleDto): Promise<RemoveRoleResponse>;
+    removeUserRole(dto: RemoveRoleDto): Promise<RemoveUserRoleResponse>;
 }
 
 @Injectable()
@@ -167,7 +167,7 @@ export class UserService implements IUserService {
 
     public async removeUserRole(
         dto: RemoveRoleDto,
-    ): Promise<RemoveRoleResponse> {
+    ): Promise<RemoveUserRoleResponse> {
         const user = await this.userRepository.findUser(dto.userId);
         if (!user) {
             this.notFound('Пользователь не найден в БД');

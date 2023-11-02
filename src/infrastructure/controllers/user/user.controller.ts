@@ -30,7 +30,7 @@ import { GetUserResponse } from '../../responses/user/get-user-response';
 import { UpdateUserResponse } from '../../responses/user/update-user-response';
 import { RemoveUserResponse } from '../../responses/user/remove-user.response';
 import { AddRoleResponse } from '../../responses/user/add-role.response';
-import { RemoveRoleResponse } from '../../responses/user/remove-role.response';
+import { RemoveUserRoleResponse } from '../../responses/user/remove-user-role-response';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { IUserController } from '../../../domain/controllers/i-user-controller';
 
@@ -109,7 +109,7 @@ export class UserController implements IUserController {
     @Delete('/role/delete')
     public async removeRole(
         @Body() dto: RemoveRoleDto,
-    ): Promise<RemoveRoleResponse> {
+    ): Promise<RemoveUserRoleResponse> {
         return this.userService.removeUserRole(dto);
     }
 }

@@ -1,10 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { HttpStatus } from '@nestjs/common';
-
-interface ILogoutResponse {
-    status: number;
-    message: string;
-}
+import { ILogoutResponse } from '../../../domain/responses/auth/i-logout-response';
 
 export class LogoutResponse implements ILogoutResponse {
     @ApiProperty({ example: HttpStatus.OK })

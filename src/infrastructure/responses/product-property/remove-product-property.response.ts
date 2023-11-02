@@ -1,10 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { HttpStatus } from '@nestjs/common';
-
-interface IRemoveProductPropertyResponse {
-    status: number;
-    message: string;
-}
+import { IRemoveProductPropertyResponse } from '../../../domain/responses/product-property/product-property-response';
 
 export class RemoveProductPropertyResponse
     implements IRemoveProductPropertyResponse

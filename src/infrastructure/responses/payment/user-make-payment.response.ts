@@ -3,19 +3,7 @@ import { AmountResponse } from './amount-response';
 import { RecipientResponse } from './recipient-response';
 import { ConfirmationResponse } from './confirmation-response';
 import { UserMetadataResponse } from './user-metadata-response';
-
-interface IUserMakePaymentResponse {
-    id: string;
-    status: string;
-    amount: AmountResponse;
-    recipient: RecipientResponse;
-    created_at: string;
-    confirmation: ConfirmationResponse;
-    test: boolean;
-    paid: boolean;
-    refundable: boolean;
-    metadata: UserMetadataResponse;
-}
+import { IUserMakePaymentResponse } from '../../../domain/responses/payment/i-user-make-payment-response';
 
 export class UserMakePaymentResponse implements IUserMakePaymentResponse {
     @ApiProperty({

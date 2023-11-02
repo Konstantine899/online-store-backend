@@ -3,19 +3,7 @@ import { AmountResponse } from './amount-response';
 import { RecipientResponse } from './recipient-response';
 import { ConfirmationResponse } from './confirmation-response';
 import { GuestMetadataResponse } from './guest-metadata-response';
-
-interface IGuestMakePaymentResponse {
-    id: string;
-    status: string;
-    amount: AmountResponse;
-    recipient: RecipientResponse;
-    created_at: string;
-    confirmation: ConfirmationResponse;
-    test: boolean;
-    paid: boolean;
-    refundable: boolean;
-    metadata: GuestMetadataResponse;
-}
+import { IGuestMakePaymentResponse } from '../../../domain/responses/payment/i-guest-make-payment-response';
 
 export class GuestMakePaymentResponse implements IGuestMakePaymentResponse {
     @ApiProperty({

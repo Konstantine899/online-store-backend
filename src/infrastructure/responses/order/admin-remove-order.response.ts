@@ -1,10 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { HttpStatus } from '@nestjs/common';
-
-interface IAdminRemoveOrderResponse {
-    status: number;
-    message: string;
-}
+import { IAdminRemoveOrderResponse } from '../../../domain/responses/order/i-admin-remove-order-response';
 
 export class AdminRemoveOrderResponse implements IAdminRemoveOrderResponse {
     @ApiProperty({ example: HttpStatus.OK })

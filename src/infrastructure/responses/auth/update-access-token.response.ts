@@ -1,9 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-
-interface IUpdateAccessTokenResponse {
-    type: string;
-    accessToken: string;
-}
+import { IUpdateAccessTokenResponse } from '../../../domain/responses/auth/i-update-access-token-response';
 
 export class UpdateAccessTokenResponse implements IUpdateAccessTokenResponse {
     @ApiProperty({

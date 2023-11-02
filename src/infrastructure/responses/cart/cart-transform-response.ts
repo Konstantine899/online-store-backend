@@ -1,13 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ICartTransformResponse } from '../../../domain/responses/cart/i-cart-transform-response';
 
-interface ITransformResponse {
-    productId: number;
-    name: string;
-    price: number;
-    quantity: number;
-}
-
-export class TransformResponse implements ITransformResponse {
+export class CartTransformResponse implements ICartTransformResponse {
     @ApiProperty({
         example: 1,
         description: 'Идентификатор продукта',

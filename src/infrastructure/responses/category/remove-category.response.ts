@@ -1,10 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { HttpStatus } from '@nestjs/common';
-
-interface IRemoveCategoryResponse {
-    status: number;
-    message: string;
-}
+import { IRemoveCategoryResponse } from '../../../domain/responses/category/i-remove-category-response';
 
 export class RemoveCategoryResponse implements IRemoveCategoryResponse {
     @ApiProperty({ example: HttpStatus.OK })

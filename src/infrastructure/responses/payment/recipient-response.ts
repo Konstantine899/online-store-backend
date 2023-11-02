@@ -1,9 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-
-interface IRecipientResponse {
-    account_id: string;
-    gateway_id: string;
-}
+import { IRecipientResponse } from '../../../domain/responses/payment/i-recipient-response';
 
 export class RecipientResponse implements IRecipientResponse {
     @ApiProperty({

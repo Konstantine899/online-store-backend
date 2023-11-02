@@ -1,12 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { MetaData } from '../../paginate/meta-data';
 import { Rows } from '../../paginate/rows';
-
-interface IGetAllByBrandIdAndCategoryIdResponse {
-    metaData: MetaData;
-    count: number;
-    rows: Rows[];
-}
+import { IGetAllByBrandIdAndCategoryIdResponse } from '../../../domain/responses/product/i-get-all-by-brandid-and-categoryid-response';
 
 export class GetAllByBrandIdAndCategoryIdResponse
     implements IGetAllByBrandIdAndCategoryIdResponse

@@ -1,12 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { HttpStatus } from '@nestjs/common';
+import { IRemoveUserRoleResponse } from '../../../domain/responses/user/i-remove-user-role-response';
 
-interface IRemoveRoleResponse {
-    status: number;
-    message: string;
-}
-
-export class RemoveRoleResponse implements IRemoveRoleResponse {
+export class RemoveUserRoleResponse implements IRemoveUserRoleResponse {
     @ApiProperty({ example: HttpStatus.OK })
     readonly status: number;
 

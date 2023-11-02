@@ -7,7 +7,7 @@ import { RemoveUserResponse } from '../../infrastructure/responses/user/remove-u
 import { AddRoleDto } from '../../infrastructure/dto/user/add-role.dto';
 import { AddRoleResponse } from '../../infrastructure/responses/user/add-role.response';
 import { RemoveRoleDto } from '../../infrastructure/dto/user/remove-role.dto';
-import { RemoveRoleResponse } from '../../infrastructure/responses/user/remove-role.response';
+import { RemoveUserRoleResponse } from '../../infrastructure/responses/user/remove-user-role-response';
 
 export interface IUserController {
     createUser(dto: CreateUserDto): Promise<CreateUserResponse>;
@@ -22,5 +22,5 @@ export interface IUserController {
 
     addRole(dto: AddRoleDto): Promise<AddRoleResponse>;
 
-    removeRole(dto: RemoveRoleDto): Promise<RemoveRoleResponse>;
+    removeRole(dto: RemoveRoleDto): Promise<RemoveUserRoleResponse>;
 }

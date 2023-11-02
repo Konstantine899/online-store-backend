@@ -1,9 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-
-interface IConfirmationResponse {
-    type: string;
-    confirmation_url: string;
-}
+import { IConfirmationResponse } from '../../../domain/responses/payment/i-confirmation-response';
 
 export class ConfirmationResponse implements IConfirmationResponse {
     @ApiProperty({

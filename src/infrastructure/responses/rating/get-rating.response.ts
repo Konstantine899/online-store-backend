@@ -1,10 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-
-interface IGetRatingResponse {
-    ratingsSum: number;
-    votes: number;
-    rating: number;
-}
+import { IGetRatingResponse } from '../../../domain/responses/rating/i-get-rating-response';
 
 export class GetRatingResponse implements IGetRatingResponse {
     @ApiProperty({
