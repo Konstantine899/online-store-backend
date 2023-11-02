@@ -4,14 +4,7 @@ import { RoleRepository } from '../../repositories/role/role.repository';
 import { CreateRoleResponse } from '../../responses/role/create-role.response';
 import { GetRoleResponse } from '../../responses/role/get-role.response';
 import { GetListRoleResponse } from '../../responses/role/get-list-role.response';
-
-interface IRoleService {
-    createRole(dto: CreateRoleDto): Promise<CreateRoleResponse>;
-
-    getRole(role: string): Promise<GetRoleResponse>;
-
-    getListRole(): Promise<GetListRoleResponse[]>;
-}
+import { IRoleService } from '../../../domain/services/role/i-role-service';
 
 @Injectable()
 export class RoleService implements IRoleService {

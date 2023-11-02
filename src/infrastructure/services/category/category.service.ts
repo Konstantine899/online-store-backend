@@ -6,21 +6,7 @@ import { ListAllCategoriesResponse } from '../../responses/category/list-all-cat
 import { CategoryResponse } from '../../responses/category/category.response';
 import { UpdateCategoryResponse } from '../../responses/category/update-category.response';
 import { RemoveCategoryResponse } from '../../responses/category/remove-category.response';
-
-interface ICategoryService {
-    createCategory(dto: CreateCategoryDto): Promise<CreateCategoryResponse>;
-
-    getListAllCategories(): Promise<ListAllCategoriesResponse[]>;
-
-    getCategory(id: number): Promise<CategoryResponse>;
-
-    updateCategory(
-        id: number,
-        dto: CreateCategoryDto,
-    ): Promise<UpdateCategoryResponse>;
-
-    removeCategory(id: number): Promise<RemoveCategoryResponse>;
-}
+import { ICategoryService } from '../../../domain/services/category/i-category-service';
 
 @Injectable()
 export class CategoryService implements ICategoryService {

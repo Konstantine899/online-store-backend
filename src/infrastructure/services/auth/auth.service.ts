@@ -16,16 +16,7 @@ import { LoginResponse } from '../../responses/auth/login.response';
 import { UpdateAccessTokenResponse } from '../../responses/auth/update-access-token.response';
 import { RegistrationResponse } from '../../responses/auth/registration.response';
 import { IAuthResponse } from '../../../domain/responses/auth/i-auth-response';
-
-interface IAuthService {
-    registration(dto: CreateUserDto): Promise<RegistrationResponse>;
-
-    login(dto: CreateUserDto): Promise<LoginResponse>;
-
-    logout(refresh: RefreshDto, request: Request): Promise<LogoutResponse>;
-
-    updateAccessToken(refreshToken: string): Promise<UpdateAccessTokenResponse>;
-}
+import { IAuthService } from '../../../domain/services/auth/i-auth-service';
 
 @Injectable()
 export class AuthService implements IAuthService {

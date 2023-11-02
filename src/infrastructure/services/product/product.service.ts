@@ -19,55 +19,7 @@ import { GetAllByBrandIdAndCategoryIdResponse } from '../../responses/product/ge
 import { UpdateProductResponse } from '../../responses/product/update-product.response';
 import { RemoveProductResponse } from '../../responses/product/remove-product.response';
 import { SortingEnum } from '../../../domain/dto/product/i-sorting-dto';
-
-interface IProductService {
-    productCreate(
-        dto: CreateProductDto,
-        image: Express.Multer.File,
-    ): Promise<CreateProductResponse>;
-
-    getProduct(id: number): Promise<GetProductResponse>;
-
-    getListProduct(
-        searchQuery: SearchDto,
-        sortQuery: SortingDto,
-        page: number,
-        size: number,
-    ): Promise<GetListProductResponse>;
-
-    getListProductByBrandId(
-        brandId: number,
-        searchQuery: SearchDto,
-        sortQuery: SortingDto,
-        page: number,
-        size: number,
-    ): Promise<GetListProductByBrandIdResponse>;
-
-    getListProductByCategoryId(
-        categoryId: number,
-        searchQuery: SearchDto,
-        sortQuery: SortingDto,
-        page: number,
-        size: number,
-    ): Promise<GetListProductByCategoryIdResponse>;
-
-    getAllByBrandIdAndCategoryId(
-        brandId: number,
-        categoryId: number,
-        searchQuery: SearchDto,
-        sortQuery: SortingDto,
-        page: number,
-        size: number,
-    ): Promise<GetAllByBrandIdAndCategoryIdResponse>;
-
-    removeProduct(id: number): Promise<RemoveProductResponse>;
-
-    updateProduct(
-        id: number,
-        dto: CreateProductDto,
-        image: Express.Multer.File,
-    ): Promise<UpdateProductResponse>;
-}
+import { IProductService } from '../../../domain/services/product/i-product-service';
 
 @Injectable()
 export class ProductService implements IProductService {

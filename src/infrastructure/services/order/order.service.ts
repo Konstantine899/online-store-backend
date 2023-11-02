@@ -13,39 +13,7 @@ import { UserGetOrderListResponse } from '../../responses/order/user-get-order-l
 import { UserGetOrderResponse } from '../../responses/order/user-get-order.response';
 import { UserCreateOrderResponse } from '../../responses/order/user-create-order.response';
 import { GuestCreateOrderResponse } from '../../responses/order/guest-create-order.response';
-
-interface IOrderService {
-    adminGetStoreOrderList(): Promise<AdminGetStoreOrderListResponse[]>;
-
-    adminGetOrderListUser(
-        userId: number,
-    ): Promise<AdminGetOrderListUserResponse[]>;
-
-    adminGetOrderUser(orderId: number): Promise<AdminGetOrderUserResponse>;
-
-    adminCreateOrder(dto: OrderDto): Promise<AdminCreateOrderResponse>;
-
-    adminRemoveOrder(orderId: number): Promise<AdminRemoveOrderResponse>;
-
-    userGetOrderList(userId: number): Promise<UserGetOrderListResponse[]>;
-
-    userGetOrder(
-        orderId: number,
-        userId: number,
-    ): Promise<UserGetOrderResponse>;
-
-    userCreateOrder(
-        dto: Omit<OrderDto, 'userId'>,
-        userId: number,
-        cartId: number,
-    ): Promise<UserCreateOrderResponse>;
-
-    guestCreateOrder(
-        dto: OrderDto,
-        userId?: number,
-        cartId?: number,
-    ): Promise<GuestCreateOrderResponse>;
-}
+import { IOrderService } from '../../../domain/services/order/i-order-service';
 
 @Injectable()
 export class OrderService implements IOrderService {

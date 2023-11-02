@@ -11,39 +11,7 @@ import { IncrementResponse } from '../../responses/cart/increment.response';
 import { DecrementResponse } from '../../responses/cart/decrement.response';
 import { RemoveProductFromCartResponse } from '../../responses/cart/remove-product-from-cart.response';
 import { ClearCartResponse } from '../../responses/cart/clear-cart.response';
-
-interface ICartService {
-    getCart(request: Request, response: Response): Promise<CartResponse>;
-
-    appendToCart(
-        request: Request,
-        response: Response,
-        productId: number,
-        quantity: number,
-    ): Promise<AppendToCartResponse>;
-
-    increment(
-        request: Request,
-        response: Response,
-        productId: number,
-        quantity: number,
-    ): Promise<IncrementResponse>;
-
-    decrement(
-        request: Request,
-        response: Response,
-        productId: number,
-        quantity: number,
-    ): Promise<DecrementResponse>;
-
-    removeProductFromCart(
-        request: Request,
-        response: Response,
-        productId: number,
-    ): Promise<RemoveProductFromCartResponse>;
-
-    clearCart(request: Request, response: Response): Promise<ClearCartResponse>;
-}
+import { ICartService } from '../../../domain/services/cart/i-cart-service';
 
 @Injectable()
 export class CartService implements ICartService {

@@ -19,28 +19,7 @@ import { RemoveUserResponse } from '../../responses/user/remove-user.response';
 import { AddRoleResponse } from '../../responses/user/add-role.response';
 import { RemoveUserRoleResponse } from '../../responses/user/remove-user-role-response';
 import { CheckResponse } from '../../responses/auth/check-response';
-
-interface IUserService {
-    createUser(dto: CreateUserDto): Promise<CreateUserResponse>;
-
-    findAuthenticatedUser(userId: number): Promise<UserModel>;
-
-    getUser(id: number): Promise<GetUserResponse>;
-
-    checkUserAuth(id: number): Promise<CheckResponse>;
-
-    findUserByEmail(email: string): Promise<UserModel>;
-
-    getListUsers(): Promise<GetListUsersResponse[]>;
-
-    updateUser(id: number, dto: CreateUserDto): Promise<UpdateUserResponse>;
-
-    removeUser(id: number): Promise<RemoveUserResponse>;
-
-    addRole(dto: AddRoleDto): Promise<AddRoleResponse>;
-
-    removeUserRole(dto: RemoveRoleDto): Promise<RemoveUserRoleResponse>;
-}
+import { IUserService } from '../../../domain/services/user/i-user-service';
 
 @Injectable()
 export class UserService implements IUserService {

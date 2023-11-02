@@ -9,16 +9,7 @@ import { ProductRepository } from '../../repositories/product/product.repository
 import { UserRepository } from '../../repositories/user/user.repository';
 import { CreateRatingResponse } from '../../responses/rating/create-rating.response';
 import { GetRatingResponse } from '../../responses/rating/get-rating.response';
-
-interface IRatingService {
-    createRating(
-        userId: number,
-        productId: number,
-        rating: number,
-    ): Promise<CreateRatingResponse>;
-
-    getRating(productId: number): Promise<GetRatingResponse>;
-}
+import { IRatingService } from '../../../domain/services/rating/i-rating-service';
 
 @Injectable()
 export class RatingService implements IRatingService {

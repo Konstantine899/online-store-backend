@@ -4,14 +4,7 @@ import * as fs from 'fs';
 import { readdir } from 'fs/promises';
 import * as uuid from 'uuid';
 import * as process from 'process';
-
-interface IFileService {
-    createFile(image: Express.Multer.File): Promise<string>;
-
-    removeFile(file: string): Promise<boolean>;
-
-    updateFile(oldFile: string, newFile: Express.Multer.File): Promise<string>;
-}
+import { IFileService } from '../../../domain/services/file/i-file-service';
 
 @Injectable()
 export class FileService implements IFileService {

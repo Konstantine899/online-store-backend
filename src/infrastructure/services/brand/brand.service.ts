@@ -6,18 +6,7 @@ import { ListAllBrandsResponse } from '../../responses/brand/list-all-brands.res
 import { BrandResponse } from '../../responses/brand/brand.response';
 import { UpdateBrandResponse } from '../../responses/brand/update-brand.response';
 import { RemoveBrandResponse } from '../../responses/brand/remove-brand.response';
-
-interface IBrandService {
-    createBrand(dto: CreateBrandDto): Promise<CreateBrandResponse>;
-
-    getListAllBrands(): Promise<ListAllBrandsResponse[]>;
-
-    getBrand(id: number): Promise<BrandResponse>;
-
-    updateBrand(id: number, dto: CreateBrandDto): Promise<UpdateBrandResponse>;
-
-    removeBrand(id: number): Promise<RemoveBrandResponse>;
-}
+import { IBrandService } from '../../../domain/services/brand/i-brand-service';
 
 @Injectable()
 export class BrandService implements IBrandService {

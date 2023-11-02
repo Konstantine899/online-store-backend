@@ -10,44 +10,11 @@ import { SignOptions, TokenExpiredError } from 'jsonwebtoken';
 import { RefreshTokenRepository } from '../../repositories/refresh-token/refresh-token.repository';
 import { UserRepository } from '../../repositories/user/user.repository';
 import { RefreshTokenModel } from '../../../domain/models/refresh-token.model';
-import { RoleModel } from '../../../domain/models/role.model';
-
-interface ITokenService {
-    generateAccessToken(user: UserModel): Promise<string>;
-
-    generateRefreshToken(user: UserModel, expiresIn: number): Promise<string>;
-
-    getUserFromRefreshTokenPayload(
-        payload: IRefreshTokenPayload,
-    ): Promise<UserModel>;
-
-    getStoredRefreshTokenFromRefreshTokenPayload(
-        payload: IRefreshTokenPayload,
-    ): Promise<RefreshTokenModel | null>;
-
-    decodeRefreshToken(refreshToken: string): Promise<IRefreshTokenPayload>;
-
-    updateRefreshToken(
-        encoded: string,
-    ): Promise<{ user: UserModel; refreshToken: RefreshTokenModel }>;
-
-    createAccessTokenFromRefreshToken(
-        refreshToken: string,
-    ): Promise<{ accessToken: string; user: UserModel }>;
-
-    removeRefreshToken(refreshTokenId: number, userId: number): Promise<number>;
-}
-
-export interface IRefreshTokenPayload {
-    sub: number;
-    email: string;
-    jti: number;
-}
-
-export interface IAccessTokenPayload {
-    id: number;
-    roles: RoleModel[];
-}
+import {
+    IAccessTokenPayload,
+    IRefreshTokenPayload,
+    ITokenService,
+} from '../../../domain/services/token/i-token-service';
 
 @Injectable()
 export class TokenService implements ITokenService {

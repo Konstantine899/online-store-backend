@@ -14,33 +14,7 @@ import { GetProductPropertyResponse } from '../../responses/product-property/get
 import { GetListProductPropertyResponse } from '../../responses/product-property/get-list-product-property.response';
 import { UpdateProductPropertyResponse } from '../../responses/product-property/update-product-property.response';
 import { RemoveProductPropertyResponse } from '../../responses/product-property/remove-product-property.response';
-
-interface IProductPropertyService {
-    createProductProperty(
-        productId: number,
-        dto: CreateProductPropertyDto,
-    ): Promise<CreateProductPropertyResponse>;
-
-    getProductProperty(
-        productId: number,
-        id: number,
-    ): Promise<GetProductPropertyResponse>;
-
-    getListProductProperty(
-        productId: number,
-    ): Promise<GetListProductPropertyResponse[]>;
-
-    updateProductProperty(
-        productId: number,
-        id: number,
-        dto: CreateProductPropertyDto,
-    ): Promise<ProductPropertyModel>;
-
-    removeProductProperty(
-        productId: number,
-        id: number,
-    ): Promise<RemoveProductPropertyResponse>;
-}
+import { IProductPropertyService } from '../../../domain/services/product-property/i-product-property-service';
 
 @Injectable()
 export class ProductPropertyService implements IProductPropertyService {
