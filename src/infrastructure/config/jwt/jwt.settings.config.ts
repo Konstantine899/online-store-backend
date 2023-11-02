@@ -1,13 +1,6 @@
-export interface IExpiresIn {
-    expiresIn: string;
-}
+import { IJwtSettings } from '../../../domain/jwt/i-jwt-settings';
 
-interface IJwtSettingsConfig {
-    jwtSecretKey: string;
-    expiresIn: IExpiresIn;
-}
-
-export default (): IJwtSettingsConfig => ({
+export const JwtSettings = (): IJwtSettings => ({
     jwtSecretKey: process.env.JWT_PRIVATE_KEY,
     expiresIn: { expiresIn: '24h' },
 });

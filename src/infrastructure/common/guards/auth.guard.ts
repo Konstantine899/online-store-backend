@@ -6,7 +6,7 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import jwtSettingsConfig from '../../config/jwt/jwt.settings.config';
+import { JwtSettings } from '../../config/jwt/jwt.settings.config';
 import { IHeaders } from '../../../domain/headers/i-headers';
 import { IDecodedAccessToken } from '../../../domain/jwt/i-decoded-access-token';
 
@@ -38,7 +38,7 @@ export class AuthGuard implements CanActivate {
         token: string,
     ): Promise<IDecodedAccessToken> {
         return await this.jwtService.verifyAsync(token, {
-            secret: jwtSettingsConfig().jwtSecretKey,
+            secret: JwtSettings().jwtSecretKey,
         });
     }
 }

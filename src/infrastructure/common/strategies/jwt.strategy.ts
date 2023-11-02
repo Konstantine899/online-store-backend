@@ -3,7 +3,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Injectable } from '@nestjs/common';
 import { UserService } from '../../services/user/user.service';
 import { CheckResponse } from '../../responses/auth/check-response';
-import jwtSettingsConfig from '../../config/jwt/jwt.settings.config';
+import { JwtSettings } from '../../config/jwt/jwt.settings.config';
 import { IAccessTokenSubject } from '../../../domain/jwt/i-access-token-subject';
 
 @Injectable()
@@ -12,8 +12,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            secretOrKey: jwtSettingsConfig().jwtSecretKey,
-            signOptions: jwtSettingsConfig().expiresIn,
+            secretOrKey: JwtSettings().jwtSecretKey,
+            signOptions: JwtSettings().expiresIn,
         });
     }
 
