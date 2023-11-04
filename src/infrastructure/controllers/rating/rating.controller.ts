@@ -9,11 +9,13 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { RatingService } from '../../services/rating/rating.service';
-import { CreateRatingSwaggerDecorator } from '../../common/decorators/swagger/rating/create-rating-swagger-decorator';
+import {
+    CreateRatingSwaggerDecorator,
+    GetRatingSwaggerDecorator,
+} from '@app/infrastructure/common/decorators';
 import { ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { UserRequest } from '../../requests/rating/user.request';
-import { GetRatingSwaggerDecorator } from '../../common/decorators/swagger/rating/get-rating-swagger-decorator';
 import { CreateRatingResponse } from '../../responses/rating/create-rating.response';
 import { GetRatingResponse } from '../../responses/rating/get-rating.response';
 import { AuthGuard } from '../../common/guards/auth.guard';

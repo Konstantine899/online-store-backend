@@ -13,12 +13,15 @@ import {
 import { CreateProductPropertyDto } from '../../dto/product-property/create-product-property.dto';
 import { ProductPropertyService } from '../../services/product-property/product-property.service';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateProductPropertySwaggerDecorator } from '../../common/decorators/swagger/product-property/create-product-property-swagger-decorator';
-import { GetProductPropertySwaggerDecorator } from '../../common/decorators/swagger/product-property/get-product-property-swagger-decorator';
-import { GetListProductPropertySwaggerDecorator } from '../../common/decorators/swagger/product-property/get-list-product-property-swagger-decorator';
-import { UpdateProductPropertySwaggerDecorator } from '../../common/decorators/swagger/product-property/update-product-property-swagger-decorator';
-import { RemoveProductPropertySwaggerDecorator } from '../../common/decorators/swagger/product-property/remove-product-property-swagger-decorator';
-import { Roles } from '../../common/decorators/roles-auth.decorator';
+import {
+    CreateProductPropertySwaggerDecorator,
+    GetProductPropertySwaggerDecorator,
+    GetListProductPropertySwaggerDecorator,
+    UpdateProductPropertySwaggerDecorator,
+    RemoveProductPropertySwaggerDecorator,
+    Roles,
+} from '@app/infrastructure/common/decorators';
+
 import { RoleGuard } from '../../common/guards/role.guard';
 import { CreateProductPropertyResponse } from '../../responses/product-property/create-product-property.response';
 import { GetProductPropertyResponse } from '../../responses/product-property/get-product-property.response';

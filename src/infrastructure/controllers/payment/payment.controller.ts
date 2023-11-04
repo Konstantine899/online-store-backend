@@ -1,13 +1,15 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { PaymentService } from '../../services/payment/payment.service';
 import { MakePaymentDto } from '../../dto/payment/make.payment.dto';
-import { Roles } from '../../common/decorators/roles-auth.decorator';
+import {
+    Roles,
+    GuestMakePaymentSwaggerDecorator,
+    UserMakePaymentSwaggerDecorator,
+} from '@app/infrastructure/common/decorators';
 import { RoleGuard } from '../../common/guards/role.guard';
 import { UserMakePaymentResponse } from '../../responses/payment/user-make-payment.response';
 import { GuestMakePaymentResponse } from '../../responses/payment/guest-make-payment.response';
 import { ApiTags } from '@nestjs/swagger';
-import { GuestMakePaymentSwaggerDecorator } from '../../common/decorators/swagger/payment/guest-make-payment-swagger-decorator';
-import { UserMakePaymentSwaggerDecorator } from '../../common/decorators/swagger/payment/user-make-payment-swagger-decorator';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { IPaymentController } from '@app/domain/controllers';
 

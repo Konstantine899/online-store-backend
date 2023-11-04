@@ -12,14 +12,16 @@ import {
 } from '@nestjs/common';
 import { BrandService } from '../../services/brand/brand.service';
 import { CreateBrandDto } from '../../dto/brand/create-brand.dto';
-import { Roles } from '../../common/decorators/roles-auth.decorator';
+import {
+    Roles,
+    CreateBrandSwaggerDecorator,
+    GetListAllBrandsSwaggerDecorator,
+    GetBrandSwaggerDecorator,
+    UpdateBrandSwaggerDecorator,
+    RemoveBrandSwaggerDecorator,
+} from '@app/infrastructure/common/decorators';
 import { RoleGuard } from '../../common/guards/role.guard';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateBrandSwaggerDecorator } from '../../common/decorators/swagger/brand/create-brand-swagger-decorator';
-import { GetListAllBrandsSwaggerDecorator } from '../../common/decorators/swagger/brand/get-list-all-brands-swagger-decorator';
-import { GetBrandSwaggerDecorator } from '../../common/decorators/swagger/brand/get-brand-swagger-decorator';
-import { UpdateBrandSwaggerDecorator } from '../../common/decorators/swagger/brand/update-brand-swagger-decorator';
-import { RemoveBrandSwaggerDecorator } from '../../common/decorators/swagger/brand/remove-brand-swagger-decorator';
 import { CreateBrandResponse } from '../../responses/brand/create-brand.response';
 import { ListAllBrandsResponse } from '../../responses/brand/list-all-brands.response';
 import { BrandResponse } from '../../responses/brand/brand.response';

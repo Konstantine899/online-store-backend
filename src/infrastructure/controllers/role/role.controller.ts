@@ -10,11 +10,13 @@ import {
 import { RoleService } from '../../services/role/role.service';
 import { CreateRoleDto } from '../../dto/role/create-role.dto';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateRoleSwaggerDecorator } from '../../common/decorators/swagger/role/create-role-swagger-decorator';
-import { Roles } from '../../common/decorators/roles-auth.decorator';
+import {
+    CreateRoleSwaggerDecorator,
+    Roles,
+    GetListRoleSwaggerDecorator,
+    GetRoleSwaggerDecorator,
+} from '@app/infrastructure/common/decorators';
 import { RoleGuard } from '../../common/guards/role.guard';
-import { GetListRoleSwaggerDecorator } from '../../common/decorators/swagger/role/get-list-role-swagger-decorator';
-import { GetRoleSwaggerDecorator } from '../../common/decorators/swagger/role/get-role-swagger-decorator';
 import { CreateRoleResponse } from '../../responses/role/create-role.response';
 import { GetRoleResponse } from '../../responses/role/get-role.response';
 import { GetListRoleResponse } from '../../responses/role/get-list-role.response';

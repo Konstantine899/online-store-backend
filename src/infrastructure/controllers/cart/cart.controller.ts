@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { CartService } from '../../services/cart/cart.service';
 import { Request, Response } from 'express';
-import { AppendToCartSwaggerDecorator } from '../../common/decorators/swagger/cart/append-to-cart-swagger-decorator';
 import { ApiTags } from '@nestjs/swagger';
 
 import { CartResponse } from '../../responses/cart/cart.response';
@@ -19,11 +18,15 @@ import { IncrementResponse } from '../../responses/cart/increment.response';
 import { DecrementResponse } from '../../responses/cart/decrement.response';
 import { RemoveProductFromCartResponse } from '../../responses/cart/remove-product-from-cart.response';
 import { ClearCartResponse } from '../../responses/cart/clear-cart.response';
-import { GetCartSwaggerDecorator } from '../../common/decorators/swagger/cart/get-cart-swagger-decorator';
-import { IncrementSwaggerDecorator } from '../../common/decorators/swagger/cart/increment-swagger-decorator';
-import { DecrementSwaggerDecorator } from '../../common/decorators/swagger/cart/decrement-swagger-decorator';
-import { RemoveProductFromCartSwaggerDecorator } from '../../common/decorators/swagger/cart/remove-product-from-cart-swagger-decorator';
-import { ClearCartSwaggerDecorator } from '../../common/decorators/swagger/cart/clear-cart-swagger-decorator';
+import {
+    GetCartSwaggerDecorator,
+    IncrementSwaggerDecorator,
+    DecrementSwaggerDecorator,
+    RemoveProductFromCartSwaggerDecorator,
+    ClearCartSwaggerDecorator,
+    AppendToCartSwaggerDecorator,
+} from '@app/infrastructure/common/decorators';
+
 import { ICartController } from '@app/domain/controllers';
 
 @ApiTags('Корзина')

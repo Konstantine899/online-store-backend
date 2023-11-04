@@ -14,16 +14,19 @@ import { UserService } from '../../services/user/user.service';
 import { CreateUserDto } from '../../dto/user/create-user.dto';
 import { AddRoleDto } from '../../dto/user/add-role.dto';
 import { RemoveRoleDto } from '../../dto/user/remove-role.dto';
-import { Roles } from '../../common/decorators/roles-auth.decorator';
+import {
+    Roles,
+    CreateUserSwaggerDecorator,
+    GetListUsersSwaggerDecorator,
+    GetUserSwaggerDecorator,
+    UpdateUserSwaggerDecorator,
+    RemoveUserSwaggerDecorator,
+    AddRoleUserSwaggerDecorator,
+    RemoveRoleUserSwaggerDecorator,
+} from '@app/infrastructure/common/decorators';
 import { RoleGuard } from '../../common/guards/role.guard';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateUserSwaggerDecorator } from '../../common/decorators/swagger/user/create-user-swagger-decorator';
-import { GetListUsersSwaggerDecorator } from '../../common/decorators/swagger/user/get-list-users-swagger-decorator';
-import { GetUserSwaggerDecorator } from '../../common/decorators/swagger/user/get-user-swagger-decorator';
-import { UpdateUserSwaggerDecorator } from '../../common/decorators/swagger/user/update-user-swagger-decorator';
-import { RemoveUserSwaggerDecorator } from '../../common/decorators/swagger/user/remove-user-swagger-decorator';
-import { AddRoleUserSwaggerDecorator } from '../../common/decorators/swagger/user/add-role-user-swagger-decorator';
-import { RemoveRoleUserSwaggerDecorator } from '../../common/decorators/swagger/user/remove-role-user-swagger-decorator';
+
 import { CreateUserResponse } from '../../responses/user/create-user.response';
 import { GetListUsersResponse } from '../../responses/user/get-list-users.response';
 import { GetUserResponse } from '../../responses/user/get-user-response';

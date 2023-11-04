@@ -12,14 +12,16 @@ import {
 } from '@nestjs/common';
 import { CategoryService } from '../../services/category/category.service';
 import { CreateCategoryDto } from '../../dto/category/create-category.dto';
-import { Roles } from '../../common/decorators/roles-auth.decorator';
+import {
+    Roles,
+    CreateCategorySwaggerDecorator,
+    GetListAllCategoriesSwaggerDecorator,
+    GetCategorySwaggerDecorator,
+    UpdateCategorySwaggerDecorator,
+    RemoveCategorySwaggerDecorator,
+} from '@app/infrastructure/common/decorators';
 import { RoleGuard } from '../../common/guards/role.guard';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateCategorySwaggerDecorator } from '../../common/decorators/swagger/category/create-category-swagger-decorator';
-import { GetListAllCategoriesSwaggerDecorator } from '../../common/decorators/swagger/category/get-list-all-categories-swagger-decorator';
-import { GetCategorySwaggerDecorator } from '../../common/decorators/swagger/category/get-category-swagger-decorator';
-import { UpdateCategorySwaggerDecorator } from '../../common/decorators/swagger/category/update-category-swagger-decorator';
-import { RemoveCategorySwaggerDecorator } from '../../common/decorators/swagger/category/remove-category-swagger-decorator';
 import { CreateCategoryResponse } from '../../responses/category/create-category.response';
 import { ListAllCategoriesResponse } from '../../responses/category/list-all-categories.response';
 import { CategoryResponse } from '../../responses/category/category.response';

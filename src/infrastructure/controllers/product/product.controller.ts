@@ -17,20 +17,22 @@ import {
 import { CreateProductDto } from '../../dto/product/create-product.dto';
 import { ProductService } from '../../services/product/product.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Roles } from '../../common/decorators/roles-auth.decorator';
+import {
+    Roles,
+    CreateProductSwaggerDecorator,
+    GetProductSwaggerDecorator,
+    GetListProductSwaggerDecorator,
+    GetListProductByBrandIdSwaggerDecorator,
+    GetListProductByCategoryIdSwaggerDecorator,
+    GetAllByBrandIdAndCategoryIdSwaggerDecorator,
+    UpdateProductSwaggerDecorator,
+    RemoveProductSwaggerDecorator,
+} from '@app/infrastructure/common/decorators';
 import { RoleGuard } from '../../common/guards/role.guard';
 import { multerConfig } from '../../config/multer/multer.config';
-import { CreateProductSwaggerDecorator } from '../../common/decorators/swagger/product/create-product-swagger-decorator';
 import { ApiTags } from '@nestjs/swagger';
-import { GetProductSwaggerDecorator } from '../../common/decorators/swagger/product/get-product-swagger-decorator';
 import { SearchDto } from '../../dto/product/search-dto';
 import { SortingDto } from '../../dto/product/sorting-dto';
-import { GetListProductSwaggerDecorator } from '../../common/decorators/swagger/product/get-list-product-swagger-decorator';
-import { GetListProductByBrandIdSwaggerDecorator } from '../../common/decorators/swagger/product/get-list-product-by-brand-id-swagger-decorator';
-import { GetListProductByCategoryIdSwaggerDecorator } from '../../common/decorators/swagger/product/get-list-product-by-category-id-swagger-decorator';
-import { GetAllByBrandIdAndCategoryIdSwaggerDecorator } from '../../common/decorators/swagger/product/get-all-by-brand-id-and-category-id-swagger-decorator';
-import { UpdateProductSwaggerDecorator } from '../../common/decorators/swagger/product/update-product-swagger-decorator';
-import { RemoveProductSwaggerDecorator } from '../../common/decorators/swagger/product/remove-product-swagger-decorator';
 import { CreateProductResponse } from '../../responses/product/create-product.response';
 import { GetProductResponse } from '../../responses/product/get-product.response';
 import { GetListProductResponse } from '../../responses/product/get-list-product.response';

@@ -21,7 +21,7 @@ import {
     LoginSwaggerDecorator,
     CheckUserAuthSwaggerDecorator,
     UpdateAccessTokenSwaggerDecorator,
-} from '@app/infrastructure/common/decorators/swagger/auth';
+} from '@app/infrastructure/common/decorators';
 
 import { LoginResponse } from '../../responses/auth/login.response';
 import { RegistrationResponse } from '../../responses/auth/registration.response';
