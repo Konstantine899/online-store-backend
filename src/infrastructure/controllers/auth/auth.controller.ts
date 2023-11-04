@@ -29,7 +29,7 @@ import { UpdateAccessTokenResponse } from '../../responses/auth/update-access-to
 import { CheckResponse } from '../../responses/auth/check-response';
 import { LogoutResponse } from '../../responses/auth/logout.response';
 
-import { AuthGuard } from '../../common/guards/auth.guard';
+import { AuthGuard } from '@app/infrastructure/common/guards';
 import { IAuthController } from '@app/domain/controllers';
 import { UserModel } from '@app/domain/models/user.model';
 

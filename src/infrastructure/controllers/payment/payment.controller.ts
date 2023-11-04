@@ -6,11 +6,10 @@ import {
     GuestMakePaymentSwaggerDecorator,
     UserMakePaymentSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
-import { RoleGuard } from '../../common/guards/role.guard';
+import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
 import { UserMakePaymentResponse } from '../../responses/payment/user-make-payment.response';
 import { GuestMakePaymentResponse } from '../../responses/payment/guest-make-payment.response';
 import { ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from '../../common/guards/auth.guard';
 import { IPaymentController } from '@app/domain/controllers';
 
 @ApiTags('Оплата')

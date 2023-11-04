@@ -20,14 +20,13 @@ import {
     UpdateCategorySwaggerDecorator,
     RemoveCategorySwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
-import { RoleGuard } from '../../common/guards/role.guard';
+import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateCategoryResponse } from '../../responses/category/create-category.response';
 import { ListAllCategoriesResponse } from '../../responses/category/list-all-categories.response';
 import { CategoryResponse } from '../../responses/category/category.response';
 import { UpdateCategoryResponse } from '../../responses/category/update-category.response';
 import { RemoveCategoryResponse } from '../../responses/category/remove-category.response';
-import { AuthGuard } from '../../common/guards/auth.guard';
 import { ICategoryController } from '@app/domain/controllers';
 
 @ApiTags('Категория')

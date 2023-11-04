@@ -20,14 +20,13 @@ import {
     UpdateBrandSwaggerDecorator,
     RemoveBrandSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
-import { RoleGuard } from '../../common/guards/role.guard';
+import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateBrandResponse } from '../../responses/brand/create-brand.response';
 import { ListAllBrandsResponse } from '../../responses/brand/list-all-brands.response';
 import { BrandResponse } from '../../responses/brand/brand.response';
 import { UpdateBrandResponse } from '../../responses/brand/update-brand.response';
 import { RemoveBrandResponse } from '../../responses/brand/remove-brand.response';
-import { AuthGuard } from '../../common/guards/auth.guard';
 import { IBrandController } from '@app/domain/controllers';
 
 @ApiTags('Бренд')

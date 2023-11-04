@@ -28,7 +28,7 @@ import {
     UpdateProductSwaggerDecorator,
     RemoveProductSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
-import { RoleGuard } from '../../common/guards/role.guard';
+import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
 import { multerConfig } from '../../config/multer/multer.config';
 import { ApiTags } from '@nestjs/swagger';
 import { SearchDto } from '../../dto/product/search-dto';
@@ -41,7 +41,6 @@ import { GetListProductByCategoryIdResponse } from '../../responses/product/get-
 import { GetAllByBrandIdAndCategoryIdResponse } from '../../responses/product/get-all-by-brand-id-and-category-id.response';
 import { UpdateProductResponse } from '../../responses/product/update-product.response';
 import { RemoveProductResponse } from '../../responses/product/remove-product.response';
-import { AuthGuard } from '../../common/guards/auth.guard';
 import { IProductController } from '@app/domain/controllers';
 
 @ApiTags('Продукт')

@@ -11,7 +11,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { OrderService } from '../../services/order/order.service';
-import { RoleGuard } from '../../common/guards/role.guard';
+import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
 import {
     Roles,
     AdminGetStoreOrderListSwaggerDecorator,
@@ -38,7 +38,6 @@ import { UserGetOrderListResponse } from '../../responses/order/user-get-order-l
 import { UserGetOrderResponse } from '../../responses/order/user-get-order.response';
 import { UserCreateOrderResponse } from '../../responses/order/user-create-order.response';
 import { GuestCreateOrderResponse } from '../../responses/order/guest-create-order.response';
-import { AuthGuard } from '../../common/guards/auth.guard';
 import { IOrderController } from '@app/domain/controllers';
 
 @ApiTags('Заказы')

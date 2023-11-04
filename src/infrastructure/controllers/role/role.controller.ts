@@ -16,11 +16,10 @@ import {
     GetListRoleSwaggerDecorator,
     GetRoleSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
-import { RoleGuard } from '../../common/guards/role.guard';
+import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
 import { CreateRoleResponse } from '../../responses/role/create-role.response';
 import { GetRoleResponse } from '../../responses/role/get-role.response';
 import { GetListRoleResponse } from '../../responses/role/get-list-role.response';
-import { AuthGuard } from '../../common/guards/auth.guard';
 import { IRoleController } from '@app/domain/controllers';
 
 @ApiTags('Роль')
