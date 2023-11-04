@@ -3,7 +3,7 @@ import { AmountResponse } from './amount-response';
 import { RecipientResponse } from './recipient-response';
 import { ConfirmationResponse } from './confirmation-response';
 import { UserMetadataResponse } from './user-metadata-response';
-import { IUserMakePaymentResponse } from '../../../domain/responses/payment/i-user-make-payment-response';
+import { IUserMakePaymentResponse } from '@app/domain/responses';
 
 export class UserMakePaymentResponse implements IUserMakePaymentResponse {
     @ApiProperty({

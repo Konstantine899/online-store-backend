@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IRecipientResponse } from '../../../domain/responses/payment/i-recipient-response';
+import { IRecipientResponse } from '@app/domain/responses';
 
 export class RecipientResponse implements IRecipientResponse {
     @ApiProperty({

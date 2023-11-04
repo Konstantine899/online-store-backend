@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ICartTransformResponse } from '../../../domain/responses/cart/i-cart-transform-response';
+import { ICartTransformResponse } from '@app/domain/responses';
 
 export class CartTransformResponse implements ICartTransformResponse {
     @ApiProperty({

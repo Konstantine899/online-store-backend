@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { MetaData } from '../../paginate/meta-data';
 import { Rows } from '../../paginate/rows';
-import { IGetListProductResponse } from '../../../domain/responses/product/i-get-list-product-response';
+import { IGetListProductResponse } from '@app/domain/responses';
 
 export class GetListProductResponse implements IGetListProductResponse {
     @ApiProperty()

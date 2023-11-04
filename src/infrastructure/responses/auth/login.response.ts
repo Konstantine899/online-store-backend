@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IAuthResponse } from '../../../domain/responses/auth/i-auth-response';
+import { IAuthResponse } from '@app/domain/responses';
 
 export class LoginResponse implements IAuthResponse {
     @ApiProperty({ example: 'Bearer', description: 'Тип токена' })

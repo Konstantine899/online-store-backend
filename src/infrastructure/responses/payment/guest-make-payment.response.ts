@@ -3,7 +3,7 @@ import { AmountResponse } from './amount-response';
 import { RecipientResponse } from './recipient-response';
 import { ConfirmationResponse } from './confirmation-response';
 import { GuestMetadataResponse } from './guest-metadata-response';
-import { IGuestMakePaymentResponse } from '../../../domain/responses/payment/i-guest-make-payment-response';
+import { IGuestMakePaymentResponse } from '@app/domain/responses';
 
 export class GuestMakePaymentResponse implements IGuestMakePaymentResponse {
     @ApiProperty({
