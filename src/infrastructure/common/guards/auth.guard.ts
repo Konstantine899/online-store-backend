@@ -6,7 +6,7 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { JwtSettings } from '../../config/jwt/jwt.settings.config';
+import { JwtSettings } from '@app/infrastructure/config/jwt';
 import { IHeaders } from '@app/domain/headers';
 import { IDecodedAccessToken } from '@app/domain/jwt';
 

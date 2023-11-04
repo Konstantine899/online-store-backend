@@ -12,7 +12,7 @@ import { OrderService } from './order/order.service';
 import { PaymentService } from './payment/payment.service';
 import { RatingService } from './rating/rating.service';
 import { RoleService } from './role/role.service';
-import { jwtConfig } from '../config/jwt/jwt.config';
+import { jwtConfig } from '@app/infrastructure/config/jwt';
 import { TokenService } from './token/token.service';
 import { UserService } from './user/user.service';
 
