@@ -3,7 +3,7 @@ require('module-alias/register');
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as process from 'process';
-import { CustomValidationPipe } from './infrastructure/pipes/custom-validation-pipe';
+import { CustomValidationPipe } from '@app/infrastructure/pipes';
 import {
     SequelizeUniqueConstraintExceptionFilter,
     SequelizeDatabaseErrorExceptionFilter,
