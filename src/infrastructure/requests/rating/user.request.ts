@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IUserRequest } from '../../../domain/requests/rating/i-user-request';
+import { IUserRequest } from '@app/domain/requests';
 
 export class UserRequest implements IUserRequest {
     @ApiProperty({
