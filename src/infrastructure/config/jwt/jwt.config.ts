@@ -1,6 +1,6 @@
 import { JwtModuleAsyncOptions } from '@nestjs/jwt';
 import { JwtSettings } from './jwt.settings.config';
-import { IJwtConfig } from '../../../domain/jwt/i-jwt-config';
+import { IJwtConfig } from '@app/domain/jwt';
 
 export const jwtConfig = (): JwtModuleAsyncOptions => ({
     useFactory: (): IJwtConfig => {

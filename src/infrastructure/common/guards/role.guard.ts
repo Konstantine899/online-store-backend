@@ -11,7 +11,7 @@ import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { ROLES_KEY } from '../decorators/roles-auth.decorator';
 import * as process from 'process';
-import { IDecodedAccessToken } from '@app/domain/jwt/i-decoded-access-token';
+import { IDecodedAccessToken } from '@app/domain/jwt';
 
 @Injectable()
 export class RoleGuard implements CanActivate {
@@ -48,9 +48,9 @@ export class RoleGuard implements CanActivate {
             secret: process.env.JWT_PRIVATE_KEY,
         });
         request.user = user;
-        const isRole = user.roles.some((role): boolean =>
-            requiredRoles.includes(role.role),
-        );
+        const isRole = user.roles.some((role): boolean => {
+            return requiredRoles.includes(role.role);
+        });
         if (!isRole) {
             throw new ForbiddenException({
                 status: HttpStatus.FORBIDDEN,

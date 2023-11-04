@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { UserService } from '../../services/user/user.service';
 import { CheckResponse } from '../../responses/auth/check-response';
 import { JwtSettings } from '../../config/jwt/jwt.settings.config';
-import { IAccessTokenSubject } from '../../../domain/jwt/i-access-token-subject';
+import { IAccessTokenSubject } from '@app/domain/jwt';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
