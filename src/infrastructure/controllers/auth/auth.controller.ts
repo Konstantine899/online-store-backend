@@ -30,7 +30,7 @@ import { CheckResponse } from '../../responses/auth/check-response';
 import { LogoutResponse } from '../../responses/auth/logout.response';
 
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { IAuthController } from '@app/domain/controllers/i-auth-controller';
+import { IAuthController } from '@app/domain/controllers';
 import { UserModel } from '@app/domain/models/user.model';
 
 @ApiTags('Аутентификация')

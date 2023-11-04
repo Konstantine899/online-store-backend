@@ -40,7 +40,7 @@ import { GetAllByBrandIdAndCategoryIdResponse } from '../../responses/product/ge
 import { UpdateProductResponse } from '../../responses/product/update-product.response';
 import { RemoveProductResponse } from '../../responses/product/remove-product.response';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { IProductController } from '../../../domain/controllers/i-product-controller';
+import { IProductController } from '@app/domain/controllers';
 
 @ApiTags('Продукт')
 @Controller('product')

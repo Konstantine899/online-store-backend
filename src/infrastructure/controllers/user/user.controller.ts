@@ -32,7 +32,7 @@ import { RemoveUserResponse } from '../../responses/user/remove-user.response';
 import { AddRoleResponse } from '../../responses/user/add-role.response';
 import { RemoveUserRoleResponse } from '../../responses/user/remove-user-role-response';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { IUserController } from '../../../domain/controllers/i-user-controller';
+import { IUserController } from '@app/domain/controllers';
 
 @ApiTags('Пользователи')
 @Controller('user')

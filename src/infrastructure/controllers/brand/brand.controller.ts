@@ -26,7 +26,7 @@ import { BrandResponse } from '../../responses/brand/brand.response';
 import { UpdateBrandResponse } from '../../responses/brand/update-brand.response';
 import { RemoveBrandResponse } from '../../responses/brand/remove-brand.response';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { IBrandController } from '../../../domain/controllers/i-brand-controller';
+import { IBrandController } from '@app/domain/controllers';
 
 @ApiTags('Бренд')
 @Controller('brand')

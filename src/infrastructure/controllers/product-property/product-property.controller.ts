@@ -26,7 +26,7 @@ import { GetListProductPropertyResponse } from '../../responses/product-property
 import { UpdateProductPropertyResponse } from '../../responses/product-property/update-product-property.response';
 import { RemoveProductPropertyResponse } from '../../responses/product-property/remove-product-property.response';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { IProductPropertyController } from '../../../domain/controllers/i-product-property-controller';
+import { IProductPropertyController } from '@app/domain/controllers';
 
 @ApiTags('Свойства продукта')
 @Controller('product-property')

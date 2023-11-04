@@ -17,7 +17,7 @@ import { GetRatingSwaggerDecorator } from '../../common/decorators/swagger/ratin
 import { CreateRatingResponse } from '../../responses/rating/create-rating.response';
 import { GetRatingResponse } from '../../responses/rating/get-rating.response';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { IRatingController } from '../../../domain/controllers/i-rating-controller';
+import { IRatingController } from '@app/domain/controllers';
 
 @ApiTags('Рейтинг')
 @Controller('rating')

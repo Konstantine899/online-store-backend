@@ -26,7 +26,7 @@ import { CategoryResponse } from '../../responses/category/category.response';
 import { UpdateCategoryResponse } from '../../responses/category/update-category.response';
 import { RemoveCategoryResponse } from '../../responses/category/remove-category.response';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { ICategoryController } from '../../../domain/controllers/i-category-controller';
+import { ICategoryController } from '@app/domain/controllers';
 
 @ApiTags('Категория')
 @Controller('category')

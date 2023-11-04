@@ -24,7 +24,7 @@ import { IncrementSwaggerDecorator } from '../../common/decorators/swagger/cart/
 import { DecrementSwaggerDecorator } from '../../common/decorators/swagger/cart/decrement-swagger-decorator';
 import { RemoveProductFromCartSwaggerDecorator } from '../../common/decorators/swagger/cart/remove-product-from-cart-swagger-decorator';
 import { ClearCartSwaggerDecorator } from '../../common/decorators/swagger/cart/clear-cart-swagger-decorator';
-import { ICartController } from '../../../domain/controllers/i-cart-controller';
+import { ICartController } from '@app/domain/controllers';
 
 @ApiTags('Корзина')
 @Controller('cart')

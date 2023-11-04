@@ -37,7 +37,7 @@ import { UserGetOrderResponse } from '../../responses/order/user-get-order.respo
 import { UserCreateOrderResponse } from '../../responses/order/user-create-order.response';
 import { GuestCreateOrderResponse } from '../../responses/order/guest-create-order.response';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { IOrderController } from '../../../domain/controllers/i-order-controller';
+import { IOrderController } from '@app/domain/controllers';
 
 @ApiTags('Заказы')
 @Controller('order')
