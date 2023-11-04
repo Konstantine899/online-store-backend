@@ -13,7 +13,7 @@ import {
     IAccessTokenPayload,
     IRefreshTokenPayload,
     ITokenService,
-} from '@app/domain/services/token/i-token-service';
+} from '@app/domain/services';
 
 @Injectable()
 export class TokenService implements ITokenService {

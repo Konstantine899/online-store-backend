@@ -3,7 +3,7 @@ import { MakePaymentDto } from '../../dto/payment/make.payment.dto';
 import axios from 'axios';
 import { GuestMakePaymentResponse } from '../../responses/payment/guest-make-payment.response';
 import { UserMakePaymentResponse } from '../../responses/payment/user-make-payment.response';
-import { IPaymentService } from '../../../domain/services/payment/i-payment-service';
+import { IPaymentService } from '@app/domain/services';
 
 @Injectable()
 export class PaymentService implements IPaymentService {

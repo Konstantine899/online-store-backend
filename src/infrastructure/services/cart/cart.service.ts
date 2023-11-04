@@ -10,7 +10,7 @@ import { IncrementResponse } from '../../responses/cart/increment.response';
 import { DecrementResponse } from '../../responses/cart/decrement.response';
 import { RemoveProductFromCartResponse } from '../../responses/cart/remove-product-from-cart.response';
 import { ClearCartResponse } from '../../responses/cart/clear-cart.response';
-import { ICartService } from '../../../domain/services/cart/i-cart-service';
+import { ICartService } from '@app/domain/services';
 
 @Injectable()
 export class CartService implements ICartService {

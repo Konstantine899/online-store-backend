@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { readdir } from 'fs/promises';
 import * as uuid from 'uuid';
 import * as process from 'process';
-import { IFileService } from '../../../domain/services/file/i-file-service';
+import { IFileService } from '@app/domain/services';
 
 @Injectable()
 export class FileService implements IFileService {

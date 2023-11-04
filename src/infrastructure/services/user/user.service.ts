@@ -19,7 +19,7 @@ import { RemoveUserResponse } from '../../responses/user/remove-user.response';
 import { AddRoleResponse } from '../../responses/user/add-role.response';
 import { RemoveUserRoleResponse } from '../../responses/user/remove-user-role-response';
 import { CheckResponse } from '../../responses/auth/check-response';
-import { IUserService } from '../../../domain/services/user/i-user-service';
+import { IUserService } from '@app/domain/services';
 
 @Injectable()
 export class UserService implements IUserService {

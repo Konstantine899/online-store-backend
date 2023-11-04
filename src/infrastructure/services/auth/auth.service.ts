@@ -16,7 +16,7 @@ import { LoginResponse } from '../../responses/auth/login.response';
 import { UpdateAccessTokenResponse } from '../../responses/auth/update-access-token.response';
 import { RegistrationResponse } from '../../responses/auth/registration.response';
 import { IAuthResponse } from '@app/domain/responses';
-import { IAuthService } from '../../../domain/services/auth/i-auth-service';
+import { IAuthService } from '@app/domain/services';
 
 @Injectable()
 export class AuthService implements IAuthService {

@@ -9,7 +9,7 @@ import { ProductRepository } from '../../repositories/product/product.repository
 import { UserRepository } from '../../repositories/user/user.repository';
 import { CreateRatingResponse } from '../../responses/rating/create-rating.response';
 import { GetRatingResponse } from '../../responses/rating/get-rating.response';
-import { IRatingService } from '../../../domain/services/rating/i-rating-service';
+import { IRatingService } from '@app/domain/services';
 
 @Injectable()
 export class RatingService implements IRatingService {

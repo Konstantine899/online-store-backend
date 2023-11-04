@@ -13,7 +13,7 @@ import { UserGetOrderListResponse } from '../../responses/order/user-get-order-l
 import { UserGetOrderResponse } from '../../responses/order/user-get-order.response';
 import { UserCreateOrderResponse } from '../../responses/order/user-create-order.response';
 import { GuestCreateOrderResponse } from '../../responses/order/guest-create-order.response';
-import { IOrderService } from '../../../domain/services/order/i-order-service';
+import { IOrderService } from '@app/domain/services';
 
 @Injectable()
 export class OrderService implements IOrderService {

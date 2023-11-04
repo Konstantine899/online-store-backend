@@ -6,7 +6,7 @@ import { ListAllCategoriesResponse } from '../../responses/category/list-all-cat
 import { CategoryResponse } from '../../responses/category/category.response';
 import { UpdateCategoryResponse } from '../../responses/category/update-category.response';
 import { RemoveCategoryResponse } from '../../responses/category/remove-category.response';
-import { ICategoryService } from '../../../domain/services/category/i-category-service';
+import { ICategoryService } from '@app/domain/services';
 
 @Injectable()
 export class CategoryService implements ICategoryService {

@@ -19,7 +19,7 @@ import { GetAllByBrandIdAndCategoryIdResponse } from '../../responses/product/ge
 import { UpdateProductResponse } from '../../responses/product/update-product.response';
 import { RemoveProductResponse } from '../../responses/product/remove-product.response';
 import { SortingEnum } from '@app/domain/dto';
-import { IProductService } from '../../../domain/services/product/i-product-service';
+import { IProductService } from '@app/domain/services';
 
 @Injectable()
 export class ProductService implements IProductService {

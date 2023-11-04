@@ -6,7 +6,7 @@ import { ListAllBrandsResponse } from '../../responses/brand/list-all-brands.res
 import { BrandResponse } from '../../responses/brand/brand.response';
 import { UpdateBrandResponse } from '../../responses/brand/update-brand.response';
 import { RemoveBrandResponse } from '../../responses/brand/remove-brand.response';
-import { IBrandService } from '../../../domain/services/brand/i-brand-service';
+import { IBrandService } from '@app/domain/services';
 
 @Injectable()
 export class BrandService implements IBrandService {
