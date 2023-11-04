@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { JwtSettings } from '../../config/jwt/jwt.settings.config';
-import { IHeaders } from '@app/domain/headers/i-headers';
+import { IHeaders } from '@app/domain/headers';
 import { IDecodedAccessToken } from '@app/domain/jwt/i-decoded-access-token';
 
 @Injectable()
