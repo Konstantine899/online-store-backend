@@ -5,7 +5,7 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CreateBrandDto } from '../../../../dto/brand/create-brand.dto';
+import { CreateBrandDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { CreateBrandResponse } from '../../../../responses/brand/create-brand.response';
 

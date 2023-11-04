@@ -1,4 +1,4 @@
-import { CreateBrandDto } from '../../../infrastructure/dto/brand/create-brand.dto';
+import { CreateBrandDto } from '@app/infrastructure/dto';
 import { CreateBrandResponse } from '../../../infrastructure/responses/brand/create-brand.response';
 import { ListAllBrandsResponse } from '../../../infrastructure/responses/brand/list-all-brands.response';
 import { BrandResponse } from '../../../infrastructure/responses/brand/brand.response';

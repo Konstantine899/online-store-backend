@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { BrandModel } from '@app/domain/models';
-import { CreateBrandDto } from '../../dto/brand/create-brand.dto';
+import { CreateBrandDto } from '@app/infrastructure/dto';
 import { CreateBrandResponse } from '../../responses/brand/create-brand.response';
 import { ListAllBrandsResponse } from '../../responses/brand/list-all-brands.response';
 import { BrandResponse } from '../../responses/brand/brand.response';

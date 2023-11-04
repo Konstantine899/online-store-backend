@@ -11,7 +11,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { BrandService } from '../../services/brand/brand.service';
-import { CreateBrandDto } from '../../dto/brand/create-brand.dto';
+import { CreateBrandDto } from '@app/infrastructure/dto';
 import {
     Roles,
     CreateBrandSwaggerDecorator,
