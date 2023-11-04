@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { MetaData } from '../../paginate/meta-data';
-import { Rows } from '../../paginate/rows';
+import { Rows, MetaData } from '@app/infrastructure/paginate';
 import { IGetListProductByCategoryIdResponse } from '@app/domain/responses';
 
 export class GetListProductByCategoryIdResponse

@@ -2,7 +2,7 @@ import { CreateProductDto } from '../../../infrastructure/dto/product/create-pro
 import { CreateProductResponse } from '../../../infrastructure/responses/product/create-product.response';
 import { ProductModel } from '@app/domain/models';
 import { GetProductResponse } from '../../../infrastructure/responses/product/get-product.response';
-import { Rows } from '../../../infrastructure/paginate/rows';
+import { Rows } from '@app/infrastructure/paginate';
 import { UpdateProductResponse } from '../../../infrastructure/responses/product/update-product.response';
 
 export interface IProductRepository {

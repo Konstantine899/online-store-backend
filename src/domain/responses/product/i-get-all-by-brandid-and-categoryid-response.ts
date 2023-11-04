@@ -1,5 +1,4 @@
-import { MetaData } from '../../../infrastructure/paginate/meta-data';
-import { Rows } from '../../../infrastructure/paginate/rows';
+import { Rows, MetaData } from '@app/infrastructure/paginate';
 
 export interface IGetAllByBrandIdAndCategoryIdResponse {
     metaData: MetaData;

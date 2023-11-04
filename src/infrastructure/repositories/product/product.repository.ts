@@ -4,7 +4,7 @@ import { CreateProductDto } from '../../dto/product/create-product.dto';
 import { Op } from 'sequelize';
 import { CreateProductResponse } from '../../responses/product/create-product.response';
 import { GetProductResponse } from '../../responses/product/get-product.response';
-import { Rows } from '../../paginate/rows';
+import { Rows } from '@app/infrastructure/paginate';
 import { UpdateProductResponse } from '../../responses/product/update-product.response';
 import { IProductRepository } from '@app/domain/repositories';
 

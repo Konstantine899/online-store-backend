@@ -12,7 +12,7 @@ import { SortingDto } from '../../dto/product/sorting-dto';
 import { CreateProductResponse } from '../../responses/product/create-product.response';
 import { GetProductResponse } from '../../responses/product/get-product.response';
 import { GetListProductResponse } from '../../responses/product/get-list-product.response';
-import { MetaData } from '../../paginate/meta-data';
+import { MetaData } from '@app/infrastructure/paginate';
 import { GetListProductByBrandIdResponse } from '../../responses/product/get-list-product-by-brand-id.response';
 import { GetListProductByCategoryIdResponse } from '../../responses/product/get-list-product-by-category-id.response';
 import { GetAllByBrandIdAndCategoryIdResponse } from '../../responses/product/get-all-by-brand-id-and-category-id.response';
