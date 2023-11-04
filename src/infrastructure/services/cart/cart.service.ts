@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { CartModel, ProductModel } from '@app/domain/models';
 import { ProductRepository } from '../../repositories/product/product.repository';
 import { CartResponse } from '../../responses/cart/cart.response';
-import { ICartTransformData } from '../../../domain/transform/cart/i-cart-transform-data';
+import { ICartTransformData } from '@app/domain/transform';
 import { AppendToCartResponse } from '../../responses/cart/append-to-cart.response';
 import { IncrementResponse } from '../../responses/cart/increment.response';
 import { DecrementResponse } from '../../responses/cart/decrement.response';
