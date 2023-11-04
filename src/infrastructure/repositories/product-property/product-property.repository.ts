@@ -6,7 +6,7 @@ import { CreateProductPropertyResponse } from '../../responses/product-property/
 import { GetProductPropertyResponse } from '../../responses/product-property/get-product-property.response';
 import { GetListProductPropertyResponse } from '../../responses/product-property/get-list-product-property.response';
 import { UpdateProductPropertyResponse } from '../../responses/product-property/update-product-property.response';
-import { IProductPropertyRepository } from '../../../domain/repositories/product-property/i-product-property-repository';
+import { IProductPropertyRepository } from '@app/domain/repositories';
 
 @Injectable()
 export class ProductPropertyRepository implements IProductPropertyRepository {

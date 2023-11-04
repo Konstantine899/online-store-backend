@@ -8,7 +8,7 @@ import { AdminGetOrderListUserResponse } from '../../responses/order/admin-get-o
 import { AdminGetOrderUserResponse } from '../../responses/order/admin-get-order-user.response';
 import { AdminCreateOrderResponse } from '../../responses/order/admin-create-order.response';
 import { UserGetOrderListResponse } from '../../responses/order/user-get-order-list.response';
-import { IOrderRepository } from '../../../domain/repositories/order/i-order-repository';
+import { IOrderRepository } from '@app/domain/repositories';
 
 @Injectable()
 export class OrderRepository implements IOrderRepository {

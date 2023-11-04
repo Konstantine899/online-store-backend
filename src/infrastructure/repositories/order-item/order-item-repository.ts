@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { OrderItemModel } from '@app/domain/models';
-import { IOrderItemRepository } from '../../../domain/repositories/order-item/i-order-item-repository';
+import { IOrderItemRepository } from '@app/domain/repositories';
 
 @Injectable()
 export class OrderItemRepository implements IOrderItemRepository {

@@ -6,7 +6,7 @@ import { CreateProductResponse } from '../../responses/product/create-product.re
 import { GetProductResponse } from '../../responses/product/get-product.response';
 import { Rows } from '../../paginate/rows';
 import { UpdateProductResponse } from '../../responses/product/update-product.response';
-import { IProductRepository } from '../../../domain/repositories/product/i-product-repository';
+import { IProductRepository } from '@app/domain/repositories';
 
 export class ProductRepository implements IProductRepository {
     constructor(

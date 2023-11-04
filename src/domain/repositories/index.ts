@@ -1,0 +1,11 @@
+export { IRoleRepository } from './role/i-role-repository';
+export { IUserRepository } from './user/i-user-repository';
+export { ICartRepository } from './cart/i-cart-repository';
+export { IOrderRepository } from './order/i-order-repository';
+export { IRatingRepository } from './rating/i-rating-repository';
+export { IProductPropertyRepository } from './product-property/i-product-property-repository';
+export { ICategoryRepository } from './category/i-category-repository';
+export { IBrandRepository } from './brand/i-brand-repository';
+export { IProductRepository } from './product/i-product-repository';
+export { IOrderItemRepository } from './order-item/i-order-item-repository';
+export { IRefreshTokenRepository } from './refresh-token/i-refresh-token-repository';

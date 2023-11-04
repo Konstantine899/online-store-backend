@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { CartModel, ProductModel, CartProductModel } from '@app/domain/models';
-import { ICartRepository } from '../../../domain/repositories/cart/i-cart-repository';
+import { ICartRepository } from '@app/domain/repositories';
 
 @Injectable()
 export class CartRepository implements ICartRepository {

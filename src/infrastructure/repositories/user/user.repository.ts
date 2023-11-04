@@ -7,7 +7,7 @@ import { CreateUserResponse } from '../../responses/user/create-user.response';
 import { GetListUsersResponse } from '../../responses/user/get-list-users.response';
 import { GetUserResponse } from '../../responses/user/get-user-response';
 import { UpdateUserResponse } from '../../responses/user/update-user-response';
-import { IUserRepository } from '../../../domain/repositories/user/i-user-repository';
+import { IUserRepository } from '@app/domain/repositories';
 
 @Injectable()
 export class UserRepository implements IUserRepository {

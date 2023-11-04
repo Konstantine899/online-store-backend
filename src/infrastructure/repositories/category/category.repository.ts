@@ -6,7 +6,7 @@ import { CreateCategoryResponse } from '../../responses/category/create-category
 import { ListAllCategoriesResponse } from '../../responses/category/list-all-categories.response';
 import { CategoryResponse } from '../../responses/category/category.response';
 import { UpdateCategoryResponse } from '../../responses/category/update-category.response';
-import { ICategoryRepository } from '../../../domain/repositories/category/i-category-repository';
+import { ICategoryRepository } from '@app/domain/repositories';
 
 @Injectable()
 export class CategoryRepository implements ICategoryRepository {

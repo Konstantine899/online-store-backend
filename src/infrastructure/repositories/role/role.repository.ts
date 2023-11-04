@@ -5,7 +5,7 @@ import { CreateRoleDto } from '../../dto/role/create-role.dto';
 import { CreateRoleResponse } from '../../responses/role/create-role.response';
 import { GetRoleResponse } from '../../responses/role/get-role.response';
 import { GetListRoleResponse } from '../../responses/role/get-list-role.response';
-import { IRoleRepository } from '../../../domain/repositories/role/i-role-repository';
+import { IRoleRepository } from '@app/domain/repositories';
 
 @Injectable()
 export class RoleRepository implements IRoleRepository {

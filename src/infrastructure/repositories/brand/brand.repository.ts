@@ -6,7 +6,7 @@ import { CreateBrandResponse } from '../../responses/brand/create-brand.response
 import { ListAllBrandsResponse } from '../../responses/brand/list-all-brands.response';
 import { BrandResponse } from '../../responses/brand/brand.response';
 import { UpdateBrandResponse } from '../../responses/brand/update-brand.response';
-import { IBrandRepository } from '../../../domain/repositories/brand/i-brand-repository';
+import { IBrandRepository } from '@app/domain/repositories';
 
 @Injectable()
 export class BrandRepository implements IBrandRepository {
