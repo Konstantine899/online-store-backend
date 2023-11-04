@@ -29,7 +29,7 @@ import {
     RemoveProductSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
 import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
-import { multerConfig } from '../../config/multer/multer.config';
+import { multerConfig } from '@app/infrastructure/config/multer';
 import { ApiTags } from '@nestjs/swagger';
 import { SearchDto } from '../../dto/product/search-dto';
 import { SortingDto } from '../../dto/product/sorting-dto';
