@@ -1,7 +1,7 @@
 import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IRemoveRoleDto } from '../../../domain/dto/user/i-remove-role-dto';
+import { IRemoveRoleDto } from '@app/domain/dto';
 
 export class RemoveRoleDto implements IRemoveRoleDto {
     @ApiProperty({ example: '1', description: 'Идентификатор пользователя' })

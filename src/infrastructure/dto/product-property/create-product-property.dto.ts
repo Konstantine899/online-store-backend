@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { ICreateProductPropertyDto } from '../../../domain/dto/product-property/i-create-product-property-dto';
+import { ICreateProductPropertyDto } from '@app/domain/dto';
 
 export class CreateProductPropertyDto implements ICreateProductPropertyDto {
     @ApiProperty({

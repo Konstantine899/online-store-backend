@@ -1,6 +1,6 @@
 import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { ICreateUserDto } from '../../../domain/dto/user/i-create-user-dto';
+import { ICreateUserDto } from '@app/domain/dto';
 
 export class CreateUserDto implements ICreateUserDto {
     @ApiProperty({

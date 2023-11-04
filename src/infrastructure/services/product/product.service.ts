@@ -18,7 +18,7 @@ import { GetListProductByCategoryIdResponse } from '../../responses/product/get-
 import { GetAllByBrandIdAndCategoryIdResponse } from '../../responses/product/get-all-by-brand-id-and-category-id.response';
 import { UpdateProductResponse } from '../../responses/product/update-product.response';
 import { RemoveProductResponse } from '../../responses/product/remove-product.response';
-import { SortingEnum } from '../../../domain/dto/product/i-sorting-dto';
+import { SortingEnum } from '@app/domain/dto';
 import { IProductService } from '../../../domain/services/product/i-product-service';
 
 @Injectable()

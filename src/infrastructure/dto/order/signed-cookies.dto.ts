@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { ISignedCookiesDto } from '../../../domain/dto/order/i-signed-cookies-dto';
+import { ISignedCookiesDto } from '@app/domain/dto';
 
 export class SignedCookiesDto implements ISignedCookiesDto {
     @Transform((value) => Number(value))

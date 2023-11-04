@@ -1,7 +1,7 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { IAddRoleDto } from '../../../domain/dto/user/i-add-role-dto';
+import { IAddRoleDto } from '@app/domain/dto';
 
 export class AddRoleDto implements IAddRoleDto {
     @ApiProperty({

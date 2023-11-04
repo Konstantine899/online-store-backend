@@ -1,20 +1,21 @@
-import { ICreateProductPropertyDto } from '../dto/product-property/i-create-product-property-dto';
-import { ICreateProductDto } from '../dto/product/i-create-product-dto';
-import { ISearchDto } from '../dto/product/i-search-dto';
-import { ISortingDto } from '../dto/product/i-sorting-dto';
-import { ICreateCategory } from '../dto/category/i-create-category-dto';
-import { ICreateRoleDto } from '../dto/role/i-create-role-dto';
-import { IMakePaymentDto } from '../dto/payment/i-make-payment-dto';
-import { TLogin, TRegistration } from '../dto/auth/I-auth-dto';
-import { IRefreshDto } from '../dto/auth/i-refresh-dto';
+import {
+    TLogin,
+    TRegistration,
+    IRefreshDto,
+    ICreateBrand,
+    ICreateCategory,
+    IMakePaymentDto,
+    ICreateProductDto,
+    ISearchDto,
+    ISortingDto,
+    ICreateProductPropertyDto,
+    ICreateRoleDto,
+    IAddRoleDto,
+    ICreateUserDto,
+    IRemoveRoleDto,
+} from '@app/domain/dto';
 import { HttpStatus } from '@nestjs/common';
-import { ICreateBrand } from '../dto/brand/i-create-brand-dto';
-import { IAddRoleDto } from '../dto/user/i-add-role-dto';
-import { ICreateUserDto } from '../dto/user/i-create-user-dto';
-import { IRemoveRoleDto } from '../dto/user/i-remove-role-dto';
-import { IOrderDto } from '../dto/order/i-order-dto';
-import { ISignedCookiesDto } from '../dto/order/i-signed-cookies-dto';
-import { IUserOrderDto } from '../dto/order/i-user-order-dto';
+import { IOrderDto, ISignedCookiesDto, IUserOrderDto } from '@app/domain/dto';
 
 type TAuthValue = TRegistration | TLogin | IRefreshDto;
 type TBrandValue = ICreateBrand;

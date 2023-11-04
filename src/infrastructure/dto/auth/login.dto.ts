@@ -1,6 +1,6 @@
 import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { TLogin } from '../../../domain/dto/auth/I-auth-dto';
+import { TLogin } from '@app/domain/dto';
 
 export class LoginDto implements TLogin {
     @ApiProperty({

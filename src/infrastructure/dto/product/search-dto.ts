@@ -1,6 +1,6 @@
 import { IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { ISearchDto } from '../../../domain/dto/product/i-search-dto';
+import { ISearchDto } from '@app/domain/dto';
 
 export class SearchDto implements ISearchDto {
     @ApiProperty({

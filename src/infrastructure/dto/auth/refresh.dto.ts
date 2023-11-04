@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IRefreshDto } from '../../../domain/dto/auth/i-refresh-dto';
+import { IRefreshDto } from '@app/domain/dto';
 
 export class RefreshDto implements IRefreshDto {
     @ApiProperty({
