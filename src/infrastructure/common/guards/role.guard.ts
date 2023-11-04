@@ -11,7 +11,7 @@ import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { ROLES_KEY } from '../decorators/roles-auth.decorator';
 import * as process from 'process';
-import { IDecodedAccessToken } from '../../../domain/jwt/i-decoded-access-token';
+import { IDecodedAccessToken } from '@app/domain/jwt/i-decoded-access-token';
 
 @Injectable()
 export class RoleGuard implements CanActivate {

@@ -40,6 +40,7 @@
     "cookie-parser": "^1.4.6",
     "cross-env": "^7.0.3",
     "dotenv": "^16.1.1",
+    "module-alias": "^2.2.3",
     "mysql2": "^3.1.2",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.1",
@@ -100,5 +101,8 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "moduleAliases": {
+    "@app": "./dist"
   }
 }

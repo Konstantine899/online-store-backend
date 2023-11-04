@@ -15,19 +15,23 @@ import { LoginDto } from '../../dto/auth/login.dto';
 import { RefreshDto } from '../../dto/auth/refresh.dto';
 import { UserService } from '../../services/user/user.service';
 import { ApiTags } from '@nestjs/swagger';
-import { RegistrationSwaggerDecorator } from '../../common/decorators/swagger/auth/registration.swagger.decorator';
-import { LoginSwaggerDecorator } from '../../common/decorators/swagger/auth/login.swagger.decorator';
-import { UpdateAccessTokenSwaggerDecorator } from '../../common/decorators/swagger/auth/update-access-token.swagger.decorator';
-import { CheckUserAuthSwaggerDecorator } from '../../common/decorators/swagger/auth/check-user-auth-swagger-decorator';
-import { LogoutSwaggerDecorator } from '../../common/decorators/swagger/auth/logout.swagger.decorator';
+import {
+    RegistrationSwaggerDecorator,
+    LogoutSwaggerDecorator,
+    LoginSwaggerDecorator,
+    CheckUserAuthSwaggerDecorator,
+    UpdateAccessTokenSwaggerDecorator,
+} from '@app/infrastructure/common/decorators/swagger/auth';
+
 import { LoginResponse } from '../../responses/auth/login.response';
 import { RegistrationResponse } from '../../responses/auth/registration.response';
 import { UpdateAccessTokenResponse } from '../../responses/auth/update-access-token.response';
 import { CheckResponse } from '../../responses/auth/check-response';
 import { LogoutResponse } from '../../responses/auth/logout.response';
-import { UserModel } from '../../../domain/models/user.model';
+
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { IAuthController } from '../../../domain/controllers/i-auth-controller';
+import { IAuthController } from '@app/domain/controllers/i-auth-controller';
+import { UserModel } from '@app/domain/models/user.model';
 
 @ApiTags('Аутентификация')
 @Controller('auth')

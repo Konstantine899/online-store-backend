@@ -5,16 +5,16 @@ import {
     UnprocessableEntityException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserModel } from '../../../domain/models/user.model';
+import { UserModel } from '@app/domain/models/user.model';
 import { SignOptions, TokenExpiredError } from 'jsonwebtoken';
 import { RefreshTokenRepository } from '../../repositories/refresh-token/refresh-token.repository';
 import { UserRepository } from '../../repositories/user/user.repository';
-import { RefreshTokenModel } from '../../../domain/models/refresh-token.model';
+import { RefreshTokenModel } from '@app/domain/models/refresh-token.model';
 import {
     IAccessTokenPayload,
     IRefreshTokenPayload,
     ITokenService,
-} from '../../../domain/services/token/i-token-service';
+} from '@app/domain/services/token/i-token-service';
 
 @Injectable()
 export class TokenService implements ITokenService {
