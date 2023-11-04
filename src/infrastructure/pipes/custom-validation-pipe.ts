@@ -7,10 +7,7 @@ import {
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import {
-    ICustomValidationPipe,
-    TValue,
-} from '../../domain/pipes/i-custom-validation-pipe';
+import { ICustomValidationPipe, TValue } from '@app/domain/pipes';
 
 @Injectable()
 export class CustomValidationPipe
