@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { RefreshTokenModel } from '../../../domain/models/refresh-token.model';
-import { UserModel } from '../../../domain/models/user.model';
+import { RefreshTokenModel, UserModel } from '@app/domain/models';
 import { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token/i-refresh-token-repository';
 
 @Injectable()

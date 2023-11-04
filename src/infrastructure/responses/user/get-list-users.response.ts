@@ -1,4 +1,4 @@
-import { UserModel } from '../../../domain/models/user.model';
+import { UserModel } from '@app/domain/models';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class GetListUsersResponse extends UserModel {

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { OrderModel } from '../../../domain/models/order.model';
-import { OrderItemModel } from '../../../domain/models/order-item.model';
+import { OrderModel, OrderItemModel } from '@app/domain/models';
 import { OrderDto } from '../../dto/order/order.dto';
 import { OrderItemRepository } from '../order-item/order-item-repository';
 import { AdminGetStoreOrderListResponse } from '../../responses/order/admin-get-store-order-list.response';

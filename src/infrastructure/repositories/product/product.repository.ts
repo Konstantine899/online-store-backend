@@ -1,7 +1,6 @@
 import { InjectModel } from '@nestjs/sequelize';
-import { ProductModel } from '../../../domain/models/product.model';
+import { ProductModel, ProductPropertyModel } from '@app/domain/models';
 import { CreateProductDto } from '../../dto/product/create-product.dto';
-import { ProductPropertyModel } from '../../../domain/models/product-property.model';
 import { Op } from 'sequelize';
 import { CreateProductResponse } from '../../responses/product/create-product.response';
 import { GetProductResponse } from '../../responses/product/get-product.response';

@@ -1,5 +1,5 @@
 import { CreateUserDto } from '../../../infrastructure/dto/user/create-user.dto';
-import { UserModel } from '../../models/user.model';
+import { UserModel } from '@app/domain/models';
 import { UpdateUserResponse } from '../../../infrastructure/responses/user/update-user-response';
 import { GetUserResponse } from '../../../infrastructure/responses/user/get-user-response';
 import { CreateUserResponse } from '../../../infrastructure/responses/user/create-user.response';

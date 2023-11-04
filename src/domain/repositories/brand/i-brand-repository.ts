@@ -2,7 +2,7 @@ import { CreateBrandDto } from '../../../infrastructure/dto/brand/create-brand.d
 import { CreateBrandResponse } from '../../../infrastructure/responses/brand/create-brand.response';
 import { ListAllBrandsResponse } from '../../../infrastructure/responses/brand/list-all-brands.response';
 import { BrandResponse } from '../../../infrastructure/responses/brand/brand.response';
-import { BrandModel } from '../../models/brand.model';
+import { BrandModel } from '@app/domain/models';
 import { UpdateBrandResponse } from '../../../infrastructure/responses/brand/update-brand.response';
 
 export interface IBrandRepository {

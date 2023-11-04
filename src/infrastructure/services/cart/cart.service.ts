@@ -1,8 +1,7 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { CartRepository } from '../../repositories/cart/cart.repository';
 import { Request, Response } from 'express';
-import { CartModel } from '../../../domain/models/cart.model';
-import { ProductModel } from '../../../domain/models/product.model';
+import { CartModel, ProductModel } from '@app/domain/models';
 import { ProductRepository } from '../../repositories/product/product.repository';
 import { CartResponse } from '../../responses/cart/cart.response';
 import { ICartTransformData } from '../../../domain/transform/cart/i-cart-transform-data';

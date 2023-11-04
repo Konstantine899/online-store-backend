@@ -5,7 +5,7 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
-import { UserModel } from '../../../domain/models/user.model';
+import { UserModel } from '@app/domain/models';
 import { CreateUserDto } from '../../dto/user/create-user.dto';
 import { RoleService } from '../role/role.service';
 import { UserRepository } from '../../repositories/user/user.repository';

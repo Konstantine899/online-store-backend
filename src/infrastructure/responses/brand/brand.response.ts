@@ -1,4 +1,4 @@
-import { BrandModel } from '../../../domain/models/brand.model';
+import { BrandModel } from '@app/domain/models';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class BrandResponse extends BrandModel {

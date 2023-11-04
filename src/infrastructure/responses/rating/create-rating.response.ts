@@ -1,4 +1,4 @@
-import { RatingModel } from '../../../domain/models/rating.model';
+import { RatingModel } from '@app/domain/models';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateRatingResponse extends RatingModel {

@@ -1,4 +1,4 @@
-import { RoleModel } from '../../../domain/models/role.model';
+import { RoleModel } from '@app/domain/models';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class GetRoleResponse extends RoleModel {

@@ -1,5 +1,4 @@
-import { RoleModel } from '../../../domain/models/role.model';
-import { UserModel } from '../../../domain/models/user.model';
+import { RoleModel, UserModel } from '@app/domain/models';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';

@@ -1,6 +1,6 @@
 import { CreateProductDto } from '../../../infrastructure/dto/product/create-product.dto';
 import { CreateProductResponse } from '../../../infrastructure/responses/product/create-product.response';
-import { ProductModel } from '../../models/product.model';
+import { ProductModel } from '@app/domain/models';
 import { GetProductResponse } from '../../../infrastructure/responses/product/get-product.response';
 import { Rows } from '../../../infrastructure/paginate/rows';
 import { UpdateProductResponse } from '../../../infrastructure/responses/product/update-product.response';

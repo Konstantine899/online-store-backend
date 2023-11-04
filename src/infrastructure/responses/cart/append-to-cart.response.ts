@@ -1,6 +1,6 @@
 import { ICartTransformData } from '../../../domain/transform/cart/i-cart-transform-data';
 import { ApiProperty } from '@nestjs/swagger';
-import { ProductModel } from '../../../domain/models/product.model';
+import { ProductModel } from '@app/domain/models';
 import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CartTransformResponse } from './cart-transform-response';

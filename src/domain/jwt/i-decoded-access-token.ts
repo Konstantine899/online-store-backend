@@ -1,4 +1,4 @@
-import { RoleModel } from '../models/role.model';
+import { RoleModel } from '@app/domain/models';
 
 export interface IDecodedAccessToken {
     id?: number;

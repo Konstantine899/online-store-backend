@@ -1,4 +1,4 @@
-import { ProductModel } from '../../models/product.model';
+import { ProductModel } from '@app/domain/models';
 
 export interface ICartTransformData {
     cartId: number;

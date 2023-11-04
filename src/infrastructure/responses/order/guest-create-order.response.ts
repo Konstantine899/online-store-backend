@@ -1,8 +1,7 @@
-import { OrderModel } from '../../../domain/models/order.model';
+import { OrderModel, OrderItemModel } from '@app/domain/models';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { OrderItemModel } from '../../../domain/models/order-item.model';
 
 export class GuestCreateOrderResponse extends OrderModel {
     @ApiProperty({ example: 1, description: 'Идентификатор заказа' })

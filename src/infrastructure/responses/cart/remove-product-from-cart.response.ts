@@ -1,6 +1,6 @@
 import { ICartTransformData } from '../../../domain/transform/cart/i-cart-transform-data';
 import { ApiProperty } from '@nestjs/swagger';
-import { ProductModel } from '../../../domain/models/product.model';
+import { ProductModel } from '@app/domain/models';
 
 export class RemoveProductFromCartResponse implements ICartTransformData {
     @ApiProperty({ example: 26, description: 'Идентификатор корзины' })

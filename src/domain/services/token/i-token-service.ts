@@ -1,6 +1,4 @@
-import { UserModel } from '../../models/user.model';
-import { RefreshTokenModel } from '../../models/refresh-token.model';
-import { RoleModel } from '../../models/role.model';
+import { UserModel, RefreshTokenModel, RoleModel } from '@app/domain/models';
 
 export interface ITokenService {
     generateAccessToken(user: UserModel): Promise<string>;

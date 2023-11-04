@@ -5,10 +5,9 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { CreateProductPropertyDto } from '../../dto/product-property/create-product-property.dto';
-import { ProductPropertyModel } from '../../../domain/models/product-property.model';
+import { ProductPropertyModel, ProductModel } from '@app/domain/models';
 import { ProductPropertyRepository } from '../../repositories/product-property/product-property.repository';
 import { ProductRepository } from '../../repositories/product/product.repository';
-import { ProductModel } from '../../../domain/models/product.model';
 import { CreateProductPropertyResponse } from '../../responses/product-property/create-product-property.response';
 import { GetProductPropertyResponse } from '../../responses/product-property/get-product-property.response';
 import { GetListProductPropertyResponse } from '../../responses/product-property/get-list-product-property.response';

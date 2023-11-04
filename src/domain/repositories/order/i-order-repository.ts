@@ -3,7 +3,7 @@ import { AdminGetOrderListUserResponse } from '../../../infrastructure/responses
 import { AdminGetOrderUserResponse } from '../../../infrastructure/responses/order/admin-get-order-user.response';
 import { AdminCreateOrderResponse } from '../../../infrastructure/responses/order/admin-create-order.response';
 import { OrderDto } from '../../../infrastructure/dto/order/order.dto';
-import { OrderModel } from '../../models/order.model';
+import { OrderModel } from '@app/domain/models';
 import { UserGetOrderListResponse } from '../../../infrastructure/responses/order/user-get-order-list.response';
 
 export interface IOrderRepository {

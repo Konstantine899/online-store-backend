@@ -2,7 +2,7 @@ import { CreateProductPropertyDto } from '../../../infrastructure/dto/product-pr
 import { CreateProductPropertyResponse } from '../../../infrastructure/responses/product-property/create-product-property.response';
 import { GetProductPropertyResponse } from '../../../infrastructure/responses/product-property/get-product-property.response';
 import { GetListProductPropertyResponse } from '../../../infrastructure/responses/product-property/get-list-product-property.response';
-import { ProductPropertyModel } from '../../models/product-property.model';
+import { ProductPropertyModel } from '@app/domain/models';
 import { UpdateProductPropertyResponse } from '../../../infrastructure/responses/product-property/update-product-property.response';
 
 export interface IProductPropertyRepository {

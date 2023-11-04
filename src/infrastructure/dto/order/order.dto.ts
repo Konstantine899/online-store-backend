@@ -1,4 +1,4 @@
-import { OrderItemModel } from '../../../domain/models/order-item.model';
+import { OrderItemModel } from '@app/domain/models';
 import {
     IsArray,
     IsEmail,

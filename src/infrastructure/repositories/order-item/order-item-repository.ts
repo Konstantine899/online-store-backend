@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { OrderItemModel } from '../../../domain/models/order-item.model';
+import { OrderItemModel } from '@app/domain/models';
 import { IOrderItemRepository } from '../../../domain/repositories/order-item/i-order-item-repository';
 
 @Injectable()

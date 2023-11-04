@@ -1,4 +1,4 @@
-import { ProductModel } from '../../../domain/models/product.model';
+import { ProductModel } from '@app/domain/models';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateProductResponse extends ProductModel {

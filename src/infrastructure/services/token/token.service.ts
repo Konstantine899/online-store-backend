@@ -5,11 +5,10 @@ import {
     UnprocessableEntityException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserModel } from '@app/domain/models/user.model';
 import { SignOptions, TokenExpiredError } from 'jsonwebtoken';
 import { RefreshTokenRepository } from '../../repositories/refresh-token/refresh-token.repository';
 import { UserRepository } from '../../repositories/user/user.repository';
-import { RefreshTokenModel } from '@app/domain/models/refresh-token.model';
+import { RefreshTokenModel, UserModel } from '@app/domain/models';
 import {
     IAccessTokenPayload,
     IRefreshTokenPayload,

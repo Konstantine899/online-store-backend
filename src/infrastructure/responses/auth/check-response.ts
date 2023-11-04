@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { RoleModel } from '../../../domain/models/role.model';
+import { RoleModel } from '@app/domain/models';
 import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ICheckResponse } from '../../../domain/responses/auth/i-check-response';

@@ -1,6 +1,5 @@
-import { ProductModel } from '../../../domain/models/product.model';
+import { ProductModel, ProductPropertyModel } from '@app/domain/models';
 import { ApiProperty } from '@nestjs/swagger';
-import { ProductPropertyModel } from '../../../domain/models/product-property.model';
 import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 

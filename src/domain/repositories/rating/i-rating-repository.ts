@@ -1,5 +1,5 @@
 import { CreateRatingResponse } from '../../../infrastructure/responses/rating/create-rating.response';
-import { RatingModel } from '../../models/rating.model';
+import { RatingModel } from '@app/domain/models';
 
 export interface IRatingRepository {
     createRating(

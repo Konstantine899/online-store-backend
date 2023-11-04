@@ -1,6 +1,6 @@
 import { CreateUserDto } from '../../../infrastructure/dto/user/create-user.dto';
 import { CreateUserResponse } from '../../../infrastructure/responses/user/create-user.response';
-import { UserModel } from '../../models/user.model';
+import { UserModel } from '@app/domain/models';
 import { GetUserResponse } from '../../../infrastructure/responses/user/get-user-response';
 import { CheckResponse } from '../../../infrastructure/responses/auth/check-response';
 import { GetListUsersResponse } from '../../../infrastructure/responses/user/get-list-users.response';
