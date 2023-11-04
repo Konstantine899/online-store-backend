@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IMetaData } from '../../domain/paginate/i-meta-data';
+import { IMetaData } from '@app/domain/paginate';
 
 export class MetaData implements IMetaData {
     @ApiProperty({
