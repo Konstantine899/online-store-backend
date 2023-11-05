@@ -7,7 +7,7 @@ import {
     ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { RefreshDto } from '@app/infrastructure/dto';
-import { UpdateAccessTokenResponse } from '../../../../responses/auth/update-access-token.response';
+import { UpdateAccessTokenResponse } from '@app/infrastructure/responses';
 
 export function UpdateAccessTokenSwaggerDecorator(): Function {
     return applyDecorators(

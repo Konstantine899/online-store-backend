@@ -3,14 +3,16 @@ import {
     SearchDto,
     SortingDto,
 } from '@app/infrastructure/dto';
-import { CreateProductResponse } from '../../../infrastructure/responses/product/create-product.response';
-import { GetProductResponse } from '../../../infrastructure/responses/product/get-product.response';
-import { GetListProductResponse } from '../../../infrastructure/responses/product/get-list-product.response';
-import { GetListProductByBrandIdResponse } from '../../../infrastructure/responses/product/get-list-product-by-brand-id.response';
-import { GetListProductByCategoryIdResponse } from '../../../infrastructure/responses/product/get-list-product-by-category-id.response';
-import { GetAllByBrandIdAndCategoryIdResponse } from '../../../infrastructure/responses/product/get-all-by-brand-id-and-category-id.response';
-import { RemoveProductResponse } from '../../../infrastructure/responses/product/remove-product.response';
-import { UpdateProductResponse } from '../../../infrastructure/responses/product/update-product.response';
+import {
+    CreateProductResponse,
+    GetProductResponse,
+    GetListProductResponse,
+    GetListProductByBrandIdResponse,
+    RemoveProductResponse,
+    GetListProductByCategoryIdResponse,
+    GetAllByBrandIdAndCategoryIdResponse,
+    UpdateProductResponse,
+} from '@app/infrastructure/responses';
 
 export interface IProductService {
     productCreate(

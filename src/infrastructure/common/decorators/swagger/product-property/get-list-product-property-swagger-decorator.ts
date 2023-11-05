@@ -6,7 +6,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { GetListProductPropertyResponse } from '../../../../responses/product-property/get-list-product-property.response';
+import { GetListProductPropertyResponse } from '@app/infrastructure/responses';
 
 export function GetListProductPropertySwaggerDecorator(): Function {
     return applyDecorators(

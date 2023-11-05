@@ -11,15 +11,17 @@ import {
 } from '@app/infrastructure/dto';
 import { FileService } from '../file/file.service';
 import { ProductRepository } from '@app/infrastructure/repositories';
-import { CreateProductResponse } from '../../responses/product/create-product.response';
-import { GetProductResponse } from '../../responses/product/get-product.response';
-import { GetListProductResponse } from '../../responses/product/get-list-product.response';
+import {
+    CreateProductResponse,
+    GetProductResponse,
+    GetListProductResponse,
+    GetListProductByBrandIdResponse,
+    GetListProductByCategoryIdResponse,
+    GetAllByBrandIdAndCategoryIdResponse,
+    UpdateProductResponse,
+    RemoveProductResponse,
+} from '@app/infrastructure/responses';
 import { MetaData } from '@app/infrastructure/paginate';
-import { GetListProductByBrandIdResponse } from '../../responses/product/get-list-product-by-brand-id.response';
-import { GetListProductByCategoryIdResponse } from '../../responses/product/get-list-product-by-category-id.response';
-import { GetAllByBrandIdAndCategoryIdResponse } from '../../responses/product/get-all-by-brand-id-and-category-id.response';
-import { UpdateProductResponse } from '../../responses/product/update-product.response';
-import { RemoveProductResponse } from '../../responses/product/remove-product.response';
 import { SortingEnum } from '@app/domain/dto';
 import { IProductService } from '@app/domain/services';
 

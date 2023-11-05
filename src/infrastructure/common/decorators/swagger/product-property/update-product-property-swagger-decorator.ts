@@ -9,7 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateProductPropertyDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
-import { UpdateProductPropertyResponse } from '../../../../responses/product-property/update-product-property.response';
+import { UpdateProductPropertyResponse } from '@app/infrastructure/responses';
 
 export function UpdateProductPropertySwaggerDecorator(): Function {
     return applyDecorators(

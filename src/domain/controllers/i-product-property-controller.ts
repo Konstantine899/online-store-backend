@@ -1,9 +1,11 @@
 import { CreateProductPropertyDto } from '@app/infrastructure/dto';
-import { CreateProductPropertyResponse } from '../../infrastructure/responses/product-property/create-product-property.response';
-import { GetProductPropertyResponse } from '../../infrastructure/responses/product-property/get-product-property.response';
-import { GetListProductPropertyResponse } from '../../infrastructure/responses/product-property/get-list-product-property.response';
-import { UpdateProductPropertyResponse } from '../../infrastructure/responses/product-property/update-product-property.response';
-import { RemoveProductPropertyResponse } from '../../infrastructure/responses/product-property/remove-product-property.response';
+import {
+    CreateProductPropertyResponse,
+    GetProductPropertyResponse,
+    GetListProductPropertyResponse,
+    UpdateProductPropertyResponse,
+    RemoveProductPropertyResponse,
+} from '@app/infrastructure/responses';
 
 export interface IProductPropertyController {
     createProductProperty(

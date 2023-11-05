@@ -13,14 +13,16 @@ import {
 } from '@app/infrastructure/dto';
 import { RoleService } from '../role/role.service';
 import { UserRepository } from '@app/infrastructure/repositories';
-import { CreateUserResponse } from '../../responses/user/create-user.response';
-import { GetListUsersResponse } from '../../responses/user/get-list-users.response';
-import { GetUserResponse } from '../../responses/user/get-user-response';
-import { UpdateUserResponse } from '../../responses/user/update-user-response';
-import { RemoveUserResponse } from '../../responses/user/remove-user.response';
-import { AddRoleResponse } from '../../responses/user/add-role.response';
-import { RemoveUserRoleResponse } from '../../responses/user/remove-user-role-response';
-import { CheckResponse } from '../../responses/auth/check-response';
+import {
+    CreateUserResponse,
+    GetListUsersResponse,
+    GetUserResponse,
+    UpdateUserResponse,
+    RemoveUserResponse,
+    AddRoleResponse,
+    RemoveUserRoleResponse,
+    CheckResponse,
+} from '@app/infrastructure/responses';
 import { IUserService } from '@app/domain/services';
 
 @Injectable()

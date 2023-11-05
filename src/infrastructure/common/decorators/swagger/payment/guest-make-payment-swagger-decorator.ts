@@ -1,7 +1,7 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MakePaymentDto } from '@app/infrastructure/dto';
-import { GuestMakePaymentResponse } from '../../../../responses/payment/guest-make-payment.response';
+import { GuestMakePaymentResponse } from '@app/infrastructure/responses';
 
 export function GuestMakePaymentSwaggerDecorator(): Function {
     return applyDecorators(

@@ -1,9 +1,11 @@
 import { CreateProductPropertyDto } from '@app/infrastructure/dto';
-import { CreateProductPropertyResponse } from '../../../infrastructure/responses/product-property/create-product-property.response';
-import { GetProductPropertyResponse } from '../../../infrastructure/responses/product-property/get-product-property.response';
-import { GetListProductPropertyResponse } from '../../../infrastructure/responses/product-property/get-list-product-property.response';
+import {
+    CreateProductPropertyResponse,
+    GetListProductPropertyResponse,
+    GetProductPropertyResponse,
+    UpdateProductPropertyResponse,
+} from '@app/infrastructure/responses';
 import { ProductPropertyModel } from '@app/domain/models';
-import { UpdateProductPropertyResponse } from '../../../infrastructure/responses/product-property/update-product-property.response';
 
 export interface IProductPropertyRepository {
     create(

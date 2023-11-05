@@ -10,10 +10,12 @@ import * as bcrypt from 'bcrypt';
 import { UserModel } from '@app/domain/models';
 import { TokenService } from '../token/token.service';
 import { Request } from 'express';
-import { LogoutResponse } from '../../responses/auth/logout.response';
-import { LoginResponse } from '../../responses/auth/login.response';
-import { UpdateAccessTokenResponse } from '../../responses/auth/update-access-token.response';
-import { RegistrationResponse } from '../../responses/auth/registration.response';
+import {
+    LogoutResponse,
+    LoginResponse,
+    UpdateAccessTokenResponse,
+    RegistrationResponse,
+} from '@app/infrastructure/responses';
 import { IAuthResponse } from '@app/domain/responses';
 import { IAuthService } from '@app/domain/services';
 

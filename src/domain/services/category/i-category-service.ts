@@ -1,9 +1,11 @@
 import { CreateCategoryDto } from '@app/infrastructure/dto';
-import { CreateCategoryResponse } from '../../../infrastructure/responses/category/create-category.response';
-import { ListAllCategoriesResponse } from '../../../infrastructure/responses/category/list-all-categories.response';
-import { CategoryResponse } from '../../../infrastructure/responses/category/category.response';
-import { UpdateCategoryResponse } from '../../../infrastructure/responses/category/update-category.response';
-import { RemoveCategoryResponse } from '../../../infrastructure/responses/category/remove-category.response';
+import {
+    CreateCategoryResponse,
+    ListAllCategoriesResponse,
+    CategoryResponse,
+    UpdateCategoryResponse,
+    RemoveCategoryResponse,
+} from '@app/infrastructure/responses';
 
 export interface ICategoryService {
     createCategory(dto: CreateCategoryDto): Promise<CreateCategoryResponse>;

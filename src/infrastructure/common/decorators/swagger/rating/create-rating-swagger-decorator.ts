@@ -9,7 +9,7 @@ import {
     ApiBearerAuth,
 } from '@nestjs/swagger';
 import { UserRequest } from '@app/infrastructure/requests';
-import { CreateRatingResponse } from '../../../../responses/rating/create-rating.response';
+import { CreateRatingResponse } from '@app/infrastructure/responses';
 
 export function CreateRatingSwaggerDecorator(): Function {
     return applyDecorators(

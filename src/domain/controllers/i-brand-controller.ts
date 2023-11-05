@@ -1,9 +1,11 @@
 import { CreateBrandDto } from '@app/infrastructure/dto';
-import { CreateBrandResponse } from '../../infrastructure/responses/brand/create-brand.response';
-import { ListAllBrandsResponse } from '../../infrastructure/responses/brand/list-all-brands.response';
-import { BrandResponse } from '../../infrastructure/responses/brand/brand.response';
-import { UpdateBrandResponse } from '../../infrastructure/responses/brand/update-brand.response';
-import { RemoveBrandResponse } from '../../infrastructure/responses/brand/remove-brand.response';
+import {
+    CreateBrandResponse,
+    ListAllBrandsResponse,
+    BrandResponse,
+    UpdateBrandResponse,
+    RemoveBrandResponse,
+} from '@app/infrastructure/responses';
 
 export interface IBrandController {
     createBrand(dto: CreateBrandDto): Promise<CreateBrandResponse>;

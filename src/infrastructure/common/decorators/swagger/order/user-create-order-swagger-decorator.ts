@@ -10,7 +10,7 @@ import {
 } from '@nestjs/swagger';
 import { OrderDto } from '@app/infrastructure/dto';
 import { orderValidation } from './order.validation';
-import { UserCreateOrderResponse } from '../../../../responses/order/user-create-order.response';
+import { UserCreateOrderResponse } from '@app/infrastructure/responses';
 
 export function UserCreateOrderSwaggerDecorator(): Function {
     return applyDecorators(

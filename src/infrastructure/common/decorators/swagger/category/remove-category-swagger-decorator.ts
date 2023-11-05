@@ -6,7 +6,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { RemoveCategoryResponse } from '../../../../responses/category/remove-category.response';
+import { RemoveCategoryResponse } from '@app/infrastructure/responses';
 
 export function RemoveCategorySwaggerDecorator(): Function {
     return applyDecorators(

@@ -6,7 +6,7 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CheckResponse } from '../../../../responses/auth/check-response';
+import { CheckResponse } from '@app/infrastructure/responses';
 import { UserModel } from '@app/domain/models';
 
 export function CheckUserAuthSwaggerDecorator(): Function {

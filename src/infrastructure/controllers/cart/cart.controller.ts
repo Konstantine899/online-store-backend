@@ -12,12 +12,14 @@ import { CartService } from '../../services/cart/cart.service';
 import { Request, Response } from 'express';
 import { ApiTags } from '@nestjs/swagger';
 
-import { CartResponse } from '../../responses/cart/cart.response';
-import { AppendToCartResponse } from '../../responses/cart/append-to-cart.response';
-import { IncrementResponse } from '../../responses/cart/increment.response';
-import { DecrementResponse } from '../../responses/cart/decrement.response';
-import { RemoveProductFromCartResponse } from '../../responses/cart/remove-product-from-cart.response';
-import { ClearCartResponse } from '../../responses/cart/clear-cart.response';
+import {
+    CartResponse,
+    AppendToCartResponse,
+    IncrementResponse,
+    DecrementResponse,
+    RemoveProductFromCartResponse,
+    ClearCartResponse,
+} from '@app/infrastructure/responses';
 import {
     GetCartSwaggerDecorator,
     IncrementSwaggerDecorator,

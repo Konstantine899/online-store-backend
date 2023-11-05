@@ -2,10 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ProductPropertyModel } from '@app/domain/models';
 import { CreateProductPropertyDto } from '@app/infrastructure/dto';
-import { CreateProductPropertyResponse } from '../../responses/product-property/create-product-property.response';
-import { GetProductPropertyResponse } from '../../responses/product-property/get-product-property.response';
-import { GetListProductPropertyResponse } from '../../responses/product-property/get-list-product-property.response';
-import { UpdateProductPropertyResponse } from '../../responses/product-property/update-product-property.response';
+import {
+    CreateProductPropertyResponse,
+    GetProductPropertyResponse,
+    GetListProductPropertyResponse,
+    UpdateProductPropertyResponse,
+} from '@app/infrastructure/responses';
 import { IProductPropertyRepository } from '@app/domain/repositories';
 
 @Injectable()

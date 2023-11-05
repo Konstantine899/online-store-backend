@@ -5,7 +5,7 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { UserGetOrderResponse } from '../../../../responses/order/user-get-order.response';
+import { UserGetOrderResponse } from '@app/infrastructure/responses';
 
 export function UserGetOrderSwaggerDecorator(): Function {
     return applyDecorators(

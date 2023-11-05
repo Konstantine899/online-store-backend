@@ -1,8 +1,10 @@
 import { ForbiddenException, HttpStatus, Injectable } from '@nestjs/common';
 import { MakePaymentDto } from '@app/infrastructure/dto';
 import axios from 'axios';
-import { GuestMakePaymentResponse } from '../../responses/payment/guest-make-payment.response';
-import { UserMakePaymentResponse } from '../../responses/payment/user-make-payment.response';
+import {
+    GuestMakePaymentResponse,
+    UserMakePaymentResponse,
+} from '@app/infrastructure/responses';
 import { IPaymentService } from '@app/domain/services';
 
 @Injectable()

@@ -11,7 +11,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateProductDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
-import { UpdateProductResponse } from '../../../../responses/product/update-product.response';
+import { UpdateProductResponse } from '@app/infrastructure/responses';
 
 export function UpdateProductSwaggerDecorator(): Function {
     return applyDecorators(

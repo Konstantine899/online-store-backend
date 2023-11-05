@@ -9,7 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateUserDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
-import { UpdateUserResponse } from '../../../../responses/user/update-user-response';
+import { UpdateUserResponse } from '@app/infrastructure/responses';
 
 export function UpdateUserSwaggerDecorator(): Function {
     return applyDecorators(

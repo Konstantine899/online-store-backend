@@ -5,7 +5,7 @@ import {
     ApiQuery,
     ApiResponse,
 } from '@nestjs/swagger';
-import { GetListProductResponse } from '../../../../responses/product/get-list-product.response';
+import { GetListProductResponse } from '@app/infrastructure/responses';
 
 export function GetListProductSwaggerDecorator(): Function {
     return applyDecorators(

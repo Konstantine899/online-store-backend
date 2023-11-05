@@ -31,15 +31,17 @@ import {
 } from '@app/infrastructure/dto';
 import { Request } from 'express';
 import { ApiTags } from '@nestjs/swagger';
-import { AdminGetStoreOrderListResponse } from '../../responses/order/admin-get-store-order-list.response';
-import { AdminGetOrderListUserResponse } from '../../responses/order/admin-get-order-list-user.response';
-import { AdminGetOrderUserResponse } from '../../responses/order/admin-get-order-user.response';
-import { AdminCreateOrderResponse } from '../../responses/order/admin-create-order.response';
-import { AdminRemoveOrderResponse } from '../../responses/order/admin-remove-order.response';
-import { UserGetOrderListResponse } from '../../responses/order/user-get-order-list.response';
-import { UserGetOrderResponse } from '../../responses/order/user-get-order.response';
-import { UserCreateOrderResponse } from '../../responses/order/user-create-order.response';
-import { GuestCreateOrderResponse } from '../../responses/order/guest-create-order.response';
+import {
+    AdminGetStoreOrderListResponse,
+    AdminGetOrderListUserResponse,
+    AdminCreateOrderResponse,
+    AdminGetOrderUserResponse,
+    AdminRemoveOrderResponse,
+    UserGetOrderResponse,
+    UserCreateOrderResponse,
+    GuestCreateOrderResponse,
+    UserGetOrderListResponse,
+} from '@app/infrastructure/responses';
 import { IOrderController } from '@app/domain/controllers';
 
 @ApiTags('Заказы')

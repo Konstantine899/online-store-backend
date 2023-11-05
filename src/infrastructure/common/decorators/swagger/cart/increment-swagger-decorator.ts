@@ -6,7 +6,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { IncrementResponse } from '../../../../responses/cart/increment.response';
+import { IncrementResponse } from '@app/infrastructure/responses';
 
 export function IncrementSwaggerDecorator(): Function {
     return applyDecorators(

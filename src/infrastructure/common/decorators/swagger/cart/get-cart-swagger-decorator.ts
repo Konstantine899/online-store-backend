@@ -5,7 +5,7 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CartResponse } from '../../../../responses/cart/cart.response';
+import { CartResponse } from '@app/infrastructure/responses';
 
 export function GetCartSwaggerDecorator(): Function {
     return applyDecorators(

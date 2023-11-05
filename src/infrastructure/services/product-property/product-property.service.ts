@@ -10,11 +10,13 @@ import {
     ProductPropertyRepository,
     ProductRepository,
 } from '@app/infrastructure/repositories';
-import { CreateProductPropertyResponse } from '../../responses/product-property/create-product-property.response';
-import { GetProductPropertyResponse } from '../../responses/product-property/get-product-property.response';
-import { GetListProductPropertyResponse } from '../../responses/product-property/get-list-product-property.response';
-import { UpdateProductPropertyResponse } from '../../responses/product-property/update-product-property.response';
-import { RemoveProductPropertyResponse } from '../../responses/product-property/remove-product-property.response';
+import {
+    CreateProductPropertyResponse,
+    GetProductPropertyResponse,
+    GetListProductPropertyResponse,
+    UpdateProductPropertyResponse,
+    RemoveProductPropertyResponse,
+} from '@app/infrastructure/responses';
 import { IProductPropertyService } from '@app/domain/services';
 
 @Injectable()

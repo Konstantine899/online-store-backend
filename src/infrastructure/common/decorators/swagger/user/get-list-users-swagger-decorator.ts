@@ -5,7 +5,7 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { GetListUsersResponse } from '../../../../responses/user/get-list-users.response';
+import { GetListUsersResponse } from '@app/infrastructure/responses';
 
 export function GetListUsersSwaggerDecorator(): Function {
     return applyDecorators(

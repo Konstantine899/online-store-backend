@@ -6,7 +6,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { GetRoleResponse } from '../../../../responses/role/get-role.response';
+import { GetRoleResponse } from '@app/infrastructure/responses';
 
 export function GetRoleSwaggerDecorator(): Function {
     return applyDecorators(

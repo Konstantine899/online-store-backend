@@ -17,9 +17,12 @@ import {
     GetRoleSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
 import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
-import { CreateRoleResponse } from '../../responses/role/create-role.response';
-import { GetRoleResponse } from '../../responses/role/get-role.response';
-import { GetListRoleResponse } from '../../responses/role/get-list-role.response';
+import {
+    CreateRoleResponse,
+    GetRoleResponse,
+    GetListRoleResponse,
+} from '@app/infrastructure/responses';
+
 import { IRoleController } from '@app/domain/controllers';
 
 @ApiTags('Роль')

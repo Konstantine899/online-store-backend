@@ -35,14 +35,17 @@ import {
 import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
 import { multerConfig } from '@app/infrastructure/config/multer';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateProductResponse } from '../../responses/product/create-product.response';
-import { GetProductResponse } from '../../responses/product/get-product.response';
-import { GetListProductResponse } from '../../responses/product/get-list-product.response';
-import { GetListProductByBrandIdResponse } from '../../responses/product/get-list-product-by-brand-id.response';
-import { GetListProductByCategoryIdResponse } from '../../responses/product/get-list-product-by-category-id.response';
-import { GetAllByBrandIdAndCategoryIdResponse } from '../../responses/product/get-all-by-brand-id-and-category-id.response';
-import { UpdateProductResponse } from '../../responses/product/update-product.response';
-import { RemoveProductResponse } from '../../responses/product/remove-product.response';
+import {
+    CreateProductResponse,
+    GetProductResponse,
+    GetListProductResponse,
+    GetListProductByBrandIdResponse,
+    GetListProductByCategoryIdResponse,
+    GetAllByBrandIdAndCategoryIdResponse,
+    UpdateProductResponse,
+    RemoveProductResponse,
+} from '@app/infrastructure/responses';
+
 import { IProductController } from '@app/domain/controllers';
 
 @ApiTags('Продукт')

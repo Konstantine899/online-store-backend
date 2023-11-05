@@ -6,7 +6,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { RemoveProductPropertyResponse } from '../../../../responses/product-property/remove-product-property.response';
+import { RemoveProductPropertyResponse } from '@app/infrastructure/responses';
 
 export function RemoveProductPropertySwaggerDecorator(): Function {
     return applyDecorators(

@@ -6,7 +6,7 @@ import {
     ApiResponse,
 } from '@nestjs/swagger';
 import { MakePaymentDto } from '@app/infrastructure/dto';
-import { UserMakePaymentResponse } from '../../../../responses/payment/user-make-payment.response';
+import { UserMakePaymentResponse } from '@app/infrastructure/responses';
 
 export function UserMakePaymentSwaggerDecorator(): Function {
     return applyDecorators(

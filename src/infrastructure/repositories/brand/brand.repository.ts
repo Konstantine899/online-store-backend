@@ -2,10 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { BrandModel } from '@app/domain/models';
 import { CreateBrandDto } from '@app/infrastructure/dto';
-import { CreateBrandResponse } from '../../responses/brand/create-brand.response';
-import { ListAllBrandsResponse } from '../../responses/brand/list-all-brands.response';
-import { BrandResponse } from '../../responses/brand/brand.response';
-import { UpdateBrandResponse } from '../../responses/brand/update-brand.response';
+import {
+    CreateBrandResponse,
+    ListAllBrandsResponse,
+    BrandResponse,
+    UpdateBrandResponse,
+} from '@app/infrastructure/responses';
 import { IBrandRepository } from '@app/domain/repositories';
 
 @Injectable()

@@ -5,14 +5,16 @@ import {
 } from '@app/infrastructure/repositories';
 import { Request, Response } from 'express';
 import { CartModel, ProductModel } from '@app/domain/models';
-import { CartResponse } from '../../responses/cart/cart.response';
-import { ICartTransformData } from '@app/domain/transform';
-import { AppendToCartResponse } from '../../responses/cart/append-to-cart.response';
-import { IncrementResponse } from '../../responses/cart/increment.response';
-import { DecrementResponse } from '../../responses/cart/decrement.response';
-import { RemoveProductFromCartResponse } from '../../responses/cart/remove-product-from-cart.response';
-import { ClearCartResponse } from '../../responses/cart/clear-cart.response';
+import {
+    CartResponse,
+    AppendToCartResponse,
+    IncrementResponse,
+    DecrementResponse,
+    RemoveProductFromCartResponse,
+    ClearCartResponse,
+} from '@app/infrastructure/responses';
 import { ICartService } from '@app/domain/services';
+import { ICartTransformData } from '@app/domain/transform';
 
 @Injectable()
 export class CartService implements ICartService {

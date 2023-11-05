@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { RefreshDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
-import { LogoutResponse } from '../../../../responses/auth/logout.response';
+import { LogoutResponse } from '@app/infrastructure/responses';
 
 export function LogoutSwaggerDecorator(): Function {
     return applyDecorators(

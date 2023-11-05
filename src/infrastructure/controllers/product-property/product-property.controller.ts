@@ -23,11 +23,13 @@ import {
 } from '@app/infrastructure/common/decorators';
 
 import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
-import { CreateProductPropertyResponse } from '../../responses/product-property/create-product-property.response';
-import { GetProductPropertyResponse } from '../../responses/product-property/get-product-property.response';
-import { GetListProductPropertyResponse } from '../../responses/product-property/get-list-product-property.response';
-import { UpdateProductPropertyResponse } from '../../responses/product-property/update-product-property.response';
-import { RemoveProductPropertyResponse } from '../../responses/product-property/remove-product-property.response';
+import {
+    CreateProductPropertyResponse,
+    GetListProductPropertyResponse,
+    GetProductPropertyResponse,
+    UpdateProductPropertyResponse,
+    RemoveProductPropertyResponse,
+} from '@app/infrastructure/responses';
 import { IProductPropertyController } from '@app/domain/controllers';
 
 @ApiTags('Свойства продукта')

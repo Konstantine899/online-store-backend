@@ -1,5 +1,7 @@
-import { CreateRatingResponse } from '../../../infrastructure/responses/rating/create-rating.response';
-import { GetRatingResponse } from '../../../infrastructure/responses/rating/get-rating.response';
+import {
+    CreateRatingResponse,
+    GetRatingResponse,
+} from '@app/infrastructure/responses';
 
 export interface IRatingService {
     createRating(

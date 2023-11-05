@@ -6,7 +6,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { GetUserResponse } from '../../../../responses/user/get-user-response';
+import { GetUserResponse } from '@app/infrastructure/responses';
 
 export function GetUserSwaggerDecorator(): Function {
     return applyDecorators(

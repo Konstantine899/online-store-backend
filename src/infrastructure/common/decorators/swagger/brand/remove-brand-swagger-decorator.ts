@@ -6,7 +6,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { RemoveBrandResponse } from '../../../../responses/brand/remove-brand.response';
+import { RemoveBrandResponse } from '@app/infrastructure/responses';
 
 export function RemoveBrandSwaggerDecorator(): Function {
     return applyDecorators(

@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateBrandDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
-import { UpdateBrandResponse } from '../../../../responses/brand/update-brand.response';
+import { UpdateBrandResponse } from '@app/infrastructure/responses';
 
 export function UpdateBrandSwaggerDecorator(): Function {
     return applyDecorators(

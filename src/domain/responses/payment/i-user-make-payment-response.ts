@@ -1,7 +1,9 @@
-import { AmountResponse } from '../../../infrastructure/responses/payment/amount-response';
-import { RecipientResponse } from '../../../infrastructure/responses/payment/recipient-response';
-import { ConfirmationResponse } from '../../../infrastructure/responses/payment/confirmation-response';
-import { UserMetadataResponse } from '../../../infrastructure/responses/payment/user-metadata-response';
+import {
+    AmountResponse,
+    RecipientResponse,
+    ConfirmationResponse,
+    UserMetadataResponse,
+} from '@app/infrastructure/responses';
 
 export interface IUserMakePaymentResponse {
     id: string;

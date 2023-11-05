@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateCategoryDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
-import { CreateCategoryResponse } from '../../../../responses/category/create-category.response';
+import { CreateCategoryResponse } from '@app/infrastructure/responses';
 
 export function CreateCategorySwaggerDecorator(): Function {
     return applyDecorators(

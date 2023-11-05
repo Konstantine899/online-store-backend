@@ -6,7 +6,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { RemoveUserResponse } from '../../../../responses/user/remove-user.response';
+import { RemoveUserResponse } from '@app/infrastructure/responses';
 
 export function RemoveUserSwaggerDecorator(): Function {
     return applyDecorators(

@@ -4,7 +4,7 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { ListAllBrandsResponse } from '../../../../responses/brand/list-all-brands.response';
+import { ListAllBrandsResponse } from '@app/infrastructure/responses';
 
 export function GetListAllBrandsSwaggerDecorator(): Function {
     return applyDecorators(

@@ -2,9 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { RoleModel } from '@app/domain/models';
 import { CreateRoleDto } from '@app/infrastructure/dto';
-import { CreateRoleResponse } from '../../responses/role/create-role.response';
-import { GetRoleResponse } from '../../responses/role/get-role.response';
-import { GetListRoleResponse } from '../../responses/role/get-list-role.response';
+import {
+    CreateRoleResponse,
+    GetRoleResponse,
+    GetListRoleResponse,
+} from '@app/infrastructure/responses';
 import { IRoleRepository } from '@app/domain/repositories';
 
 @Injectable()

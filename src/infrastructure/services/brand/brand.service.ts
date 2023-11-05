@@ -1,11 +1,13 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateBrandDto } from '@app/infrastructure/dto';
 import { BrandRepository } from '@app/infrastructure/repositories';
-import { CreateBrandResponse } from '../../responses/brand/create-brand.response';
-import { ListAllBrandsResponse } from '../../responses/brand/list-all-brands.response';
-import { BrandResponse } from '../../responses/brand/brand.response';
-import { UpdateBrandResponse } from '../../responses/brand/update-brand.response';
-import { RemoveBrandResponse } from '../../responses/brand/remove-brand.response';
+import {
+    CreateBrandResponse,
+    ListAllBrandsResponse,
+    BrandResponse,
+    UpdateBrandResponse,
+    RemoveBrandResponse,
+} from '@app/infrastructure/responses';
 import { IBrandService } from '@app/domain/services';
 
 @Injectable()

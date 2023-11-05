@@ -6,7 +6,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { AdminRemoveOrderResponse } from '../../../../responses/order/admin-remove-order.response';
+import { AdminRemoveOrderResponse } from '@app/infrastructure/responses';
 
 export function AdminRemoveOrderSwaggerDecorator(): Function {
     return applyDecorators(

@@ -10,8 +10,10 @@ import {
     UserRepository,
 } from '@app/infrastructure/repositories';
 
-import { CreateRatingResponse } from '../../responses/rating/create-rating.response';
-import { GetRatingResponse } from '../../responses/rating/get-rating.response';
+import {
+    CreateRatingResponse,
+    GetRatingResponse,
+} from '@app/infrastructure/responses';
 import { IRatingService } from '@app/domain/services';
 
 @Injectable()

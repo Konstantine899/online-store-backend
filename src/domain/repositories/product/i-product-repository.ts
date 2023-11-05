@@ -1,9 +1,11 @@
 import { CreateProductDto } from '@app/infrastructure/dto';
-import { CreateProductResponse } from '../../../infrastructure/responses/product/create-product.response';
+import {
+    CreateProductResponse,
+    GetProductResponse,
+    UpdateProductResponse,
+} from '@app/infrastructure/responses';
 import { ProductModel } from '@app/domain/models';
-import { GetProductResponse } from '../../../infrastructure/responses/product/get-product.response';
 import { Rows } from '@app/infrastructure/paginate';
-import { UpdateProductResponse } from '../../../infrastructure/responses/product/update-product.response';
 
 export interface IProductRepository {
     create(

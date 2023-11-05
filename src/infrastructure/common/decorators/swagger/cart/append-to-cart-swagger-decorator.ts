@@ -6,7 +6,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { AppendToCartResponse } from '../../../../responses/cart/append-to-cart.response';
+import { AppendToCartResponse } from '@app/infrastructure/responses';
 
 export function AppendToCartSwaggerDecorator(): Function {
     return applyDecorators(

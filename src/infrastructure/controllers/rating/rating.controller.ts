@@ -16,8 +16,10 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { UserRequest } from '@app/infrastructure/requests';
-import { CreateRatingResponse } from '../../responses/rating/create-rating.response';
-import { GetRatingResponse } from '../../responses/rating/get-rating.response';
+import {
+    CreateRatingResponse,
+    GetRatingResponse,
+} from '@app/infrastructure/responses';
 import { AuthGuard } from '@app/infrastructure/common/guards';
 import { IRatingController } from '@app/domain/controllers';
 

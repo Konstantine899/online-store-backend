@@ -6,7 +6,7 @@ import {
     ApiResponse,
 } from '@nestjs/swagger';
 import { orderValidation } from './order.validation';
-import { GuestCreateOrderResponse } from '../../../../responses/order/guest-create-order.response';
+import { GuestCreateOrderResponse } from '@app/infrastructure/responses';
 
 export function GuestCreateOrderSwaggerDecorator(): Function {
     return applyDecorators(

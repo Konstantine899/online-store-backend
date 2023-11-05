@@ -6,7 +6,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { DecrementResponse } from '../../../../responses/cart/decrement.response';
+import { DecrementResponse } from '@app/infrastructure/responses';
 
 export function DecrementSwaggerDecorator(): Function {
     return applyDecorators(

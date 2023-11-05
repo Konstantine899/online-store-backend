@@ -3,13 +3,15 @@ import {
     AddRoleDto,
     RemoveRoleDto,
 } from '@app/infrastructure/dto';
-import { CreateUserResponse } from '../../infrastructure/responses/user/create-user.response';
-import { GetListUsersResponse } from '../../infrastructure/responses/user/get-list-users.response';
-import { GetUserResponse } from '../../infrastructure/responses/user/get-user-response';
-import { UpdateUserResponse } from '../../infrastructure/responses/user/update-user-response';
-import { RemoveUserResponse } from '../../infrastructure/responses/user/remove-user.response';
-import { AddRoleResponse } from '../../infrastructure/responses/user/add-role.response';
-import { RemoveUserRoleResponse } from '../../infrastructure/responses/user/remove-user-role-response';
+import {
+    CreateUserResponse,
+    GetListUsersResponse,
+    GetUserResponse,
+    UpdateUserResponse,
+    RemoveUserResponse,
+    AddRoleResponse,
+    RemoveUserRoleResponse,
+} from '@app/infrastructure/responses';
 
 export interface IUserController {
     createUser(dto: CreateUserDto): Promise<CreateUserResponse>;

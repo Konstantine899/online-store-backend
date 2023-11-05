@@ -7,8 +7,10 @@ import {
     UserMakePaymentSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
 import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
-import { UserMakePaymentResponse } from '../../responses/payment/user-make-payment.response';
-import { GuestMakePaymentResponse } from '../../responses/payment/guest-make-payment.response';
+import {
+    UserMakePaymentResponse,
+    GuestMakePaymentResponse,
+} from '@app/infrastructure/responses';
 import { ApiTags } from '@nestjs/swagger';
 import { IPaymentController } from '@app/domain/controllers';
 

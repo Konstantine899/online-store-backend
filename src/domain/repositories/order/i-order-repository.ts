@@ -1,10 +1,12 @@
-import { AdminGetStoreOrderListResponse } from '../../../infrastructure/responses/order/admin-get-store-order-list.response';
-import { AdminGetOrderListUserResponse } from '../../../infrastructure/responses/order/admin-get-order-list-user.response';
-import { AdminGetOrderUserResponse } from '../../../infrastructure/responses/order/admin-get-order-user.response';
-import { AdminCreateOrderResponse } from '../../../infrastructure/responses/order/admin-create-order.response';
+import {
+    AdminGetStoreOrderListResponse,
+    AdminGetOrderListUserResponse,
+    AdminCreateOrderResponse,
+    AdminGetOrderUserResponse,
+    UserGetOrderListResponse,
+} from '@app/infrastructure/responses';
 import { OrderDto } from '@app/infrastructure/dto';
 import { OrderModel } from '@app/domain/models';
-import { UserGetOrderListResponse } from '../../../infrastructure/responses/order/user-get-order-list.response';
 
 export interface IOrderRepository {
     adminFindOrderListUser(

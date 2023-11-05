@@ -1,6 +1,8 @@
 import { MakePaymentDto } from '@app/infrastructure/dto';
-import { UserMakePaymentResponse } from '../../infrastructure/responses/payment/user-make-payment.response';
-import { GuestMakePaymentResponse } from '../../infrastructure/responses/payment/guest-make-payment.response';
+import {
+    UserMakePaymentResponse,
+    GuestMakePaymentResponse,
+} from '@app/infrastructure/responses';
 
 export interface IPaymentController {
     userMakePayment(

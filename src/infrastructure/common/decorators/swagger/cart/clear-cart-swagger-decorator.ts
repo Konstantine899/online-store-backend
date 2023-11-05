@@ -5,7 +5,7 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { ClearCartResponse } from '../../../../responses/cart/clear-cart.response';
+import { ClearCartResponse } from '@app/infrastructure/responses';
 
 export function ClearCartSwaggerDecorator(): Function {
     return applyDecorators(

@@ -21,11 +21,13 @@ import {
     UpdateAccessTokenSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
 
-import { LoginResponse } from '../../responses/auth/login.response';
-import { RegistrationResponse } from '../../responses/auth/registration.response';
-import { UpdateAccessTokenResponse } from '../../responses/auth/update-access-token.response';
-import { CheckResponse } from '../../responses/auth/check-response';
-import { LogoutResponse } from '../../responses/auth/logout.response';
+import {
+    LoginResponse,
+    RegistrationResponse,
+    UpdateAccessTokenResponse,
+    CheckResponse,
+    LogoutResponse,
+} from '@app/infrastructure/responses';
 
 import { AuthGuard } from '@app/infrastructure/common/guards';
 import { IAuthController } from '@app/domain/controllers';

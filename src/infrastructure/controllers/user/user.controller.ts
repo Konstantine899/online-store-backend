@@ -30,13 +30,16 @@ import {
 import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
 import { ApiTags } from '@nestjs/swagger';
 
-import { CreateUserResponse } from '../../responses/user/create-user.response';
-import { GetListUsersResponse } from '../../responses/user/get-list-users.response';
-import { GetUserResponse } from '../../responses/user/get-user-response';
-import { UpdateUserResponse } from '../../responses/user/update-user-response';
-import { RemoveUserResponse } from '../../responses/user/remove-user.response';
-import { AddRoleResponse } from '../../responses/user/add-role.response';
-import { RemoveUserRoleResponse } from '../../responses/user/remove-user-role-response';
+import {
+    CreateUserResponse,
+    GetListUsersResponse,
+    GetUserResponse,
+    UpdateUserResponse,
+    RemoveUserResponse,
+    AddRoleResponse,
+    RemoveUserRoleResponse,
+} from '@app/infrastructure/responses';
+
 import { IUserController } from '@app/domain/controllers';
 
 @ApiTags('Пользователи')

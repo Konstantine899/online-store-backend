@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { RatingModel } from '@app/domain/models';
-import { CreateRatingResponse } from '../../responses/rating/create-rating.response';
+import { CreateRatingResponse } from '@app/infrastructure/responses';
 import { IRatingRepository } from '@app/domain/repositories';
 
 @Injectable()
