@@ -5,11 +5,10 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import { CreateUserDto } from '../../dto/user/create-user.dto';
+import { CreateUserDto, RefreshDto } from '@app/infrastructure/dto';
 import * as bcrypt from 'bcrypt';
 import { UserModel } from '@app/domain/models';
 import { TokenService } from '../token/token.service';
-import { RefreshDto } from '../../dto/auth/refresh.dto';
 import { Request } from 'express';
 import { LogoutResponse } from '../../responses/auth/logout.response';
 import { LoginResponse } from '../../responses/auth/login.response';

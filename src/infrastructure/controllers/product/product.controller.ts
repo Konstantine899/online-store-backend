@@ -14,7 +14,11 @@ import {
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
-import { CreateProductDto } from '../../dto/product/create-product.dto';
+import {
+    CreateProductDto,
+    SearchDto,
+    SortingDto,
+} from '@app/infrastructure/dto';
 import { ProductService } from '../../services/product/product.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -31,8 +35,6 @@ import {
 import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
 import { multerConfig } from '@app/infrastructure/config/multer';
 import { ApiTags } from '@nestjs/swagger';
-import { SearchDto } from '../../dto/product/search-dto';
-import { SortingDto } from '../../dto/product/sorting-dto';
 import { CreateProductResponse } from '../../responses/product/create-product.response';
 import { GetProductResponse } from '../../responses/product/get-product.response';
 import { GetListProductResponse } from '../../responses/product/get-list-product.response';

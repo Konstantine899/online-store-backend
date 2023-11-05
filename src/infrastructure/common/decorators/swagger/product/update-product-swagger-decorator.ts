@@ -9,7 +9,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CreateProductDto } from '../../../../dto/product/create-product.dto';
+import { CreateProductDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { UpdateProductResponse } from '../../../../responses/product/update-product.response';
 

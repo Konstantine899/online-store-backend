@@ -6,7 +6,7 @@ import {
     ApiResponse,
     ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
-import { RefreshDto } from '../../../../dto/auth/refresh.dto';
+import { RefreshDto } from '@app/infrastructure/dto';
 import { UpdateAccessTokenResponse } from '../../../../responses/auth/update-access-token.response';
 
 export function UpdateAccessTokenSwaggerDecorator(): Function {

@@ -7,7 +7,7 @@ import {
     ApiNotFoundResponse,
     ApiOperation,
 } from '@nestjs/swagger';
-import { AddRoleDto } from '../../../../dto/user/add-role.dto';
+import { AddRoleDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { AddRoleResponse } from '../../../../responses/user/add-role.response';
 

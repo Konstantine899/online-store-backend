@@ -11,7 +11,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { CategoryService } from '../../services/category/category.service';
-import { CreateCategoryDto } from '../../dto/category/create-category.dto';
+import { CreateCategoryDto } from '@app/infrastructure/dto';
 import {
     Roles,
     CreateCategorySwaggerDecorator,

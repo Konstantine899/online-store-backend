@@ -1,4 +1,4 @@
-import { CreateProductDto } from '../../../infrastructure/dto/product/create-product.dto';
+import { CreateProductDto } from '@app/infrastructure/dto';
 import { CreateProductResponse } from '../../../infrastructure/responses/product/create-product.response';
 import { ProductModel } from '@app/domain/models';
 import { GetProductResponse } from '../../../infrastructure/responses/product/get-product.response';

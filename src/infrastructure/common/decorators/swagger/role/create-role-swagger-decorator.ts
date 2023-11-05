@@ -5,7 +5,7 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CreateRoleDto } from '../../../../dto/role/create-role.dto';
+import { CreateRoleDto } from '@app/infrastructure/dto';
 import { CreateRoleResponse } from '../../../../responses/role/create-role.response';
 
 export function CreateRoleSwaggerDecorator(): Function {

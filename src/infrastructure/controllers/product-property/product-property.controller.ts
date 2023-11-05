@@ -10,7 +10,7 @@ import {
     Put,
     UseGuards,
 } from '@nestjs/common';
-import { CreateProductPropertyDto } from '../../dto/product-property/create-product-property.dto';
+import { CreateProductPropertyDto } from '@app/infrastructure/dto';
 import { ProductPropertyService } from '../../services/product-property/product-property.service';
 import { ApiTags } from '@nestjs/swagger';
 import {

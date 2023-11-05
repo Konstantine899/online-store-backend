@@ -7,7 +7,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CreateCategoryDto } from '../../../../dto/category/create-category.dto';
+import { CreateCategoryDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { UpdateCategoryResponse } from '../../../../responses/category/update-category.response';
 

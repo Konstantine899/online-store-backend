@@ -1,8 +1,6 @@
-import { RegistrationDto } from '../../infrastructure/dto/auth/registration.dto';
+import { RegistrationDto, LoginDto, RefreshDto } from '@app/infrastructure/dto';
 import { RegistrationResponse } from '../../infrastructure/responses/auth/registration.response';
-import { LoginDto } from '../../infrastructure/dto/auth/login.dto';
 import { LoginResponse } from '../../infrastructure/responses/auth/login.response';
-import { RefreshDto } from '../../infrastructure/dto/auth/refresh.dto';
 import { UpdateAccessTokenResponse } from '../../infrastructure/responses/auth/update-access-token.response';
 import { Request } from 'express';
 import { CheckResponse } from '../../infrastructure/responses/auth/check-response';

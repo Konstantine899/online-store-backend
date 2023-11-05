@@ -1,4 +1,4 @@
-import { CreateProductPropertyDto } from '../../../infrastructure/dto/product-property/create-product-property.dto';
+import { CreateProductPropertyDto } from '@app/infrastructure/dto';
 import { CreateProductPropertyResponse } from '../../../infrastructure/responses/product-property/create-product-property.response';
 import { GetProductPropertyResponse } from '../../../infrastructure/responses/product-property/get-product-property.response';
 import { GetListProductPropertyResponse } from '../../../infrastructure/responses/product-property/get-list-product-property.response';

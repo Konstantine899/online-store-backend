@@ -10,9 +10,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from '../../services/auth/auth.service';
-import { RegistrationDto } from '../../dto/auth/registration.dto';
-import { LoginDto } from '../../dto/auth/login.dto';
-import { RefreshDto } from '../../dto/auth/refresh.dto';
+import { RegistrationDto, LoginDto, RefreshDto } from '@app/infrastructure/dto';
 import { UserService } from '../../services/user/user.service';
 import { ApiTags } from '@nestjs/swagger';
 import {

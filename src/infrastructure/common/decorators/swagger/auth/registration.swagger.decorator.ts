@@ -1,6 +1,6 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { RegistrationDto } from '../../../../dto/auth/registration.dto';
+import { RegistrationDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { RegistrationResponse } from '../../../../responses/auth/registration.response';
 

@@ -1,7 +1,7 @@
 import { InjectModel } from '@nestjs/sequelize';
 import { CategoryModel } from '@app/domain/models';
 import { Injectable } from '@nestjs/common';
-import { CreateCategoryDto } from '../../dto/category/create-category.dto';
+import { CreateCategoryDto } from '@app/infrastructure/dto';
 import { CreateCategoryResponse } from '../../responses/category/create-category.response';
 import { ListAllCategoriesResponse } from '../../responses/category/list-all-categories.response';
 import { CategoryResponse } from '../../responses/category/category.response';

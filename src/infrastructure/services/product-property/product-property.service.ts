@@ -4,7 +4,7 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
-import { CreateProductPropertyDto } from '../../dto/product-property/create-product-property.dto';
+import { CreateProductPropertyDto } from '@app/infrastructure/dto';
 import { ProductPropertyModel, ProductModel } from '@app/domain/models';
 import { ProductPropertyRepository } from '../../repositories/product-property/product-property.repository';
 import { ProductRepository } from '../../repositories/product/product.repository';

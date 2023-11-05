@@ -5,7 +5,7 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { OrderDto } from '../../../../dto/order/order.dto';
+import { OrderDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { orderValidation } from './order.validation';
 import { AdminCreateOrderResponse } from '../../../../responses/order/admin-create-order.response';

@@ -1,7 +1,7 @@
 import { AdminGetStoreOrderListResponse } from '../../infrastructure/responses/order/admin-get-store-order-list.response';
 import { AdminGetOrderListUserResponse } from '../../infrastructure/responses/order/admin-get-order-list-user.response';
 import { AdminGetOrderUserResponse } from '../../infrastructure/responses/order/admin-get-order-user.response';
-import { OrderDto } from '../../infrastructure/dto/order/order.dto';
+import { OrderDto } from '@app/infrastructure/dto';
 import { AdminCreateOrderResponse } from '../../infrastructure/responses/order/admin-create-order.response';
 import { AdminRemoveOrderResponse } from '../../infrastructure/responses/order/admin-remove-order.response';
 import { Request } from 'express';

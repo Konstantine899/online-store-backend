@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UserModel, RoleModel } from '@app/domain/models';
-import { CreateUserDto } from '../../dto/user/create-user.dto';
+import { CreateUserDto } from '@app/infrastructure/dto';
 import { hash } from 'bcrypt';
 import { CreateUserResponse } from '../../responses/user/create-user.response';
 import { GetListUsersResponse } from '../../responses/user/get-list-users.response';

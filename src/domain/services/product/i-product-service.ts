@@ -1,8 +1,10 @@
-import { CreateProductDto } from '../../../infrastructure/dto/product/create-product.dto';
+import {
+    CreateProductDto,
+    SearchDto,
+    SortingDto,
+} from '@app/infrastructure/dto';
 import { CreateProductResponse } from '../../../infrastructure/responses/product/create-product.response';
 import { GetProductResponse } from '../../../infrastructure/responses/product/get-product.response';
-import { SearchDto } from '../../../infrastructure/dto/product/search-dto';
-import { SortingDto } from '../../../infrastructure/dto/product/sorting-dto';
 import { GetListProductResponse } from '../../../infrastructure/responses/product/get-list-product.response';
 import { GetListProductByBrandIdResponse } from '../../../infrastructure/responses/product/get-list-product-by-brand-id.response';
 import { GetListProductByCategoryIdResponse } from '../../../infrastructure/responses/product/get-list-product-by-category-id.response';

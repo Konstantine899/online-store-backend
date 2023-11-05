@@ -7,7 +7,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CreateUserDto } from '../../../../dto/user/create-user.dto';
+import { CreateUserDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { UpdateUserResponse } from '../../../../responses/user/update-user-response';
 

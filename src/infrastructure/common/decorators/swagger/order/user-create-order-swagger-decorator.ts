@@ -8,7 +8,7 @@ import {
     ApiResponse,
     OmitType,
 } from '@nestjs/swagger';
-import { OrderDto } from '../../../../dto/order/order.dto';
+import { OrderDto } from '@app/infrastructure/dto';
 import { orderValidation } from './order.validation';
 import { UserCreateOrderResponse } from '../../../../responses/order/user-create-order.response';
 

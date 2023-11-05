@@ -7,7 +7,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CreateProductPropertyDto } from '../../../../dto/product-property/create-product-property.dto';
+import { CreateProductPropertyDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { CreateProductPropertyResponse } from '../../../../responses/product-property/create-product-property.response';
 

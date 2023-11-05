@@ -6,11 +6,13 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { UserModel } from '@app/domain/models';
-import { CreateUserDto } from '../../dto/user/create-user.dto';
+import {
+    CreateUserDto,
+    AddRoleDto,
+    RemoveRoleDto,
+} from '@app/infrastructure/dto';
 import { RoleService } from '../role/role.service';
 import { UserRepository } from '../../repositories/user/user.repository';
-import { AddRoleDto } from '../../dto/user/add-role.dto';
-import { RemoveRoleDto } from '../../dto/user/remove-role.dto';
 import { CreateUserResponse } from '../../responses/user/create-user.response';
 import { GetListUsersResponse } from '../../responses/user/get-list-users.response';
 import { GetUserResponse } from '../../responses/user/get-user-response';

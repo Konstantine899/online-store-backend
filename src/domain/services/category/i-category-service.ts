@@ -1,4 +1,4 @@
-import { CreateCategoryDto } from '../../../infrastructure/dto/category/create-category.dto';
+import { CreateCategoryDto } from '@app/infrastructure/dto';
 import { CreateCategoryResponse } from '../../../infrastructure/responses/category/create-category.response';
 import { ListAllCategoriesResponse } from '../../../infrastructure/responses/category/list-all-categories.response';
 import { CategoryResponse } from '../../../infrastructure/responses/category/category.response';

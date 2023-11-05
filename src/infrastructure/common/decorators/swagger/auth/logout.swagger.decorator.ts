@@ -6,7 +6,7 @@ import {
     ApiResponse,
     ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
-import { RefreshDto } from '../../../../dto/auth/refresh.dto';
+import { RefreshDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { LogoutResponse } from '../../../../responses/auth/logout.response';
 

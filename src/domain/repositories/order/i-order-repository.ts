@@ -2,7 +2,7 @@ import { AdminGetStoreOrderListResponse } from '../../../infrastructure/response
 import { AdminGetOrderListUserResponse } from '../../../infrastructure/responses/order/admin-get-order-list-user.response';
 import { AdminGetOrderUserResponse } from '../../../infrastructure/responses/order/admin-get-order-user.response';
 import { AdminCreateOrderResponse } from '../../../infrastructure/responses/order/admin-create-order.response';
-import { OrderDto } from '../../../infrastructure/dto/order/order.dto';
+import { OrderDto } from '@app/infrastructure/dto';
 import { OrderModel } from '@app/domain/models';
 import { UserGetOrderListResponse } from '../../../infrastructure/responses/order/user-get-order-list.response';
 

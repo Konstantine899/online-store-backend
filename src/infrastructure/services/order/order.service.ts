@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { OrderRepository } from '../../repositories/order/order.repository';
-import { OrderDto } from '../../dto/order/order.dto';
+import { OrderDto } from '@app/infrastructure/dto';
 import { CartRepository } from '../../repositories/cart/cart.repository';
 import { UserService } from '../user/user.service';
 import { UserRepository } from '../../repositories/user/user.repository';

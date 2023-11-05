@@ -7,7 +7,7 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { RemoveRoleDto } from '../../../../dto/user/remove-role.dto';
+import { RemoveRoleDto } from '@app/infrastructure/dto';
 import { RemoveUserRoleResponse } from '../../../../responses/user/remove-user-role-response';
 
 export function RemoveRoleUserSwaggerDecorator(): Function {

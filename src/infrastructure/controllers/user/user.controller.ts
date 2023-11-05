@@ -11,9 +11,12 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { UserService } from '../../services/user/user.service';
-import { CreateUserDto } from '../../dto/user/create-user.dto';
-import { AddRoleDto } from '../../dto/user/add-role.dto';
-import { RemoveRoleDto } from '../../dto/user/remove-role.dto';
+import {
+    CreateUserDto,
+    AddRoleDto,
+    RemoveRoleDto,
+} from '@app/infrastructure/dto';
+
 import {
     Roles,
     CreateUserSwaggerDecorator,
