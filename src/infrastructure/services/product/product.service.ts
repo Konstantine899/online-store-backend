@@ -10,7 +10,7 @@ import {
     SortingDto,
 } from '@app/infrastructure/dto';
 import { FileService } from '../file/file.service';
-import { ProductRepository } from '../../repositories/product/product.repository';
+import { ProductRepository } from '@app/infrastructure/repositories';
 import { CreateProductResponse } from '../../responses/product/create-product.response';
 import { GetProductResponse } from '../../responses/product/get-product.response';
 import { GetListProductResponse } from '../../responses/product/get-list-product.response';

@@ -4,9 +4,12 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
-import { RatingRepository } from '../../repositories/rating/rating.repository';
-import { ProductRepository } from '../../repositories/product/product.repository';
-import { UserRepository } from '../../repositories/user/user.repository';
+import {
+    RatingRepository,
+    ProductRepository,
+    UserRepository,
+} from '@app/infrastructure/repositories';
+
 import { CreateRatingResponse } from '../../responses/rating/create-rating.response';
 import { GetRatingResponse } from '../../responses/rating/get-rating.response';
 import { IRatingService } from '@app/domain/services';

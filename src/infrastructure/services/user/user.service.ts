@@ -12,7 +12,7 @@ import {
     RemoveRoleDto,
 } from '@app/infrastructure/dto';
 import { RoleService } from '../role/role.service';
-import { UserRepository } from '../../repositories/user/user.repository';
+import { UserRepository } from '@app/infrastructure/repositories';
 import { CreateUserResponse } from '../../responses/user/create-user.response';
 import { GetListUsersResponse } from '../../responses/user/get-list-users.response';
 import { GetUserResponse } from '../../responses/user/get-user-response';

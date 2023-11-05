@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateRoleDto } from '@app/infrastructure/dto';
-import { RoleRepository } from '../../repositories/role/role.repository';
+import { RoleRepository } from '@app/infrastructure/repositories';
 import { CreateRoleResponse } from '../../responses/role/create-role.response';
 import { GetRoleResponse } from '../../responses/role/get-role.response';
 import { GetListRoleResponse } from '../../responses/role/get-list-role.response';

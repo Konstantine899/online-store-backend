@@ -6,8 +6,10 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { SignOptions, TokenExpiredError } from 'jsonwebtoken';
-import { RefreshTokenRepository } from '../../repositories/refresh-token/refresh-token.repository';
-import { UserRepository } from '../../repositories/user/user.repository';
+import {
+    RefreshTokenRepository,
+    UserRepository,
+} from '@app/infrastructure/repositories';
 import { RefreshTokenModel, UserModel } from '@app/domain/models';
 import {
     IAccessTokenPayload,

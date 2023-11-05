@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCategoryDto } from '@app/infrastructure/dto';
-import { CategoryRepository } from '../../repositories/category/category.repository';
+import { CategoryRepository } from '@app/infrastructure/repositories';
 import { CreateCategoryResponse } from '../../responses/category/create-category.response';
 import { ListAllCategoriesResponse } from '../../responses/category/list-all-categories.response';
 import { CategoryResponse } from '../../responses/category/category.response';

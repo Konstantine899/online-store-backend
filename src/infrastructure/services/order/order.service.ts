@@ -1,9 +1,11 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { OrderRepository } from '../../repositories/order/order.repository';
 import { OrderDto } from '@app/infrastructure/dto';
-import { CartRepository } from '../../repositories/cart/cart.repository';
+import {
+    CartRepository,
+    OrderRepository,
+    UserRepository,
+} from '@app/infrastructure/repositories';
 import { UserService } from '../user/user.service';
-import { UserRepository } from '../../repositories/user/user.repository';
 import { AdminGetStoreOrderListResponse } from '../../responses/order/admin-get-store-order-list.response';
 import { AdminGetOrderListUserResponse } from '../../responses/order/admin-get-order-list-user.response';
 import { AdminGetOrderUserResponse } from '../../responses/order/admin-get-order-user.response';

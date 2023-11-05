@@ -6,8 +6,10 @@ import {
 } from '@nestjs/common';
 import { CreateProductPropertyDto } from '@app/infrastructure/dto';
 import { ProductPropertyModel, ProductModel } from '@app/domain/models';
-import { ProductPropertyRepository } from '../../repositories/product-property/product-property.repository';
-import { ProductRepository } from '../../repositories/product/product.repository';
+import {
+    ProductPropertyRepository,
+    ProductRepository,
+} from '@app/infrastructure/repositories';
 import { CreateProductPropertyResponse } from '../../responses/product-property/create-product-property.response';
 import { GetProductPropertyResponse } from '../../responses/product-property/get-product-property.response';
 import { GetListProductPropertyResponse } from '../../responses/product-property/get-list-product-property.response';
