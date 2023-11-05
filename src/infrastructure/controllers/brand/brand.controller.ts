@@ -10,7 +10,7 @@ import {
     Put,
     UseGuards,
 } from '@nestjs/common';
-import { BrandService } from '../../services/brand/brand.service';
+import { BrandService } from '@app/infrastructure/services';
 import { CreateBrandDto } from '@app/infrastructure/dto';
 import {
     Roles,

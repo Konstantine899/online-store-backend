@@ -7,7 +7,7 @@ import {
     Post,
     UseGuards,
 } from '@nestjs/common';
-import { RoleService } from '../../services/role/role.service';
+import { RoleService } from '@app/infrastructure/services';
 import { CreateRoleDto } from '@app/infrastructure/dto';
 import { ApiTags } from '@nestjs/swagger';
 import {

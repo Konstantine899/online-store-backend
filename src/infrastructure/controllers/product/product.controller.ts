@@ -19,7 +19,7 @@ import {
     SearchDto,
     SortingDto,
 } from '@app/infrastructure/dto';
-import { ProductService } from '../../services/product/product.service';
+import { ProductService } from '@app/infrastructure/services';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
     Roles,

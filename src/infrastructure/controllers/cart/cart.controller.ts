@@ -8,7 +8,7 @@ import {
     Req,
     Res,
 } from '@nestjs/common';
-import { CartService } from '../../services/cart/cart.service';
+import { CartService } from '@app/infrastructure/services';
 import { Request, Response } from 'express';
 import { ApiTags } from '@nestjs/swagger';
 

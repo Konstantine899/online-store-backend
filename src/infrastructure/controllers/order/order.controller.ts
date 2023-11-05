@@ -10,7 +10,7 @@ import {
     Req,
     UseGuards,
 } from '@nestjs/common';
-import { OrderService } from '../../services/order/order.service';
+import { OrderService } from '@app/infrastructure/services';
 import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
 import {
     Roles,

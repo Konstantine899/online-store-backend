@@ -1,5 +1,5 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
-import { PaymentService } from '../../services/payment/payment.service';
+import { PaymentService } from '@app/infrastructure/services';
 import { MakePaymentDto } from '@app/infrastructure/dto';
 import {
     Roles,

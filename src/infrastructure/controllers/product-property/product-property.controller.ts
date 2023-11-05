@@ -11,7 +11,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { CreateProductPropertyDto } from '@app/infrastructure/dto';
-import { ProductPropertyService } from '../../services/product-property/product-property.service';
+import { ProductPropertyService } from '@app/infrastructure/services';
 import { ApiTags } from '@nestjs/swagger';
 import {
     CreateProductPropertySwaggerDecorator,

@@ -8,7 +8,7 @@ import {
     Req,
     UseGuards,
 } from '@nestjs/common';
-import { RatingService } from '../../services/rating/rating.service';
+import { RatingService } from '@app/infrastructure/services';
 import {
     CreateRatingSwaggerDecorator,
     GetRatingSwaggerDecorator,

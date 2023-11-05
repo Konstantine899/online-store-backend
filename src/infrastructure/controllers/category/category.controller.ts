@@ -10,7 +10,7 @@ import {
     Put,
     UseGuards,
 } from '@nestjs/common';
-import { CategoryService } from '../../services/category/category.service';
+import { CategoryService } from '@app/infrastructure/services';
 import { CreateCategoryDto } from '@app/infrastructure/dto';
 import {
     Roles,

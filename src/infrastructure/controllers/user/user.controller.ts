@@ -10,7 +10,7 @@ import {
     Put,
     UseGuards,
 } from '@nestjs/common';
-import { UserService } from '../../services/user/user.service';
+import { UserService } from '@app/infrastructure/services';
 import {
     CreateUserDto,
     AddRoleDto,

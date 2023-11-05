@@ -9,9 +9,8 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { AuthService } from '../../services/auth/auth.service';
+import { AuthService, UserService } from '@app/infrastructure/services';
 import { RegistrationDto, LoginDto, RefreshDto } from '@app/infrastructure/dto';
-import { UserService } from '../../services/user/user.service';
 import { ApiTags } from '@nestjs/swagger';
 import {
     RegistrationSwaggerDecorator,
