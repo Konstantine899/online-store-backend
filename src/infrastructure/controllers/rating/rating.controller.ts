@@ -15,7 +15,7 @@ import {
 } from '@app/infrastructure/common/decorators';
 import { ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
-import { UserRequest } from '../../requests/rating/user.request';
+import { UserRequest } from '@app/infrastructure/requests';
 import { CreateRatingResponse } from '../../responses/rating/create-rating.response';
 import { GetRatingResponse } from '../../responses/rating/get-rating.response';
 import { AuthGuard } from '@app/infrastructure/common/guards';
