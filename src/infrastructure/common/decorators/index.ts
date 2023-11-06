@@ -52,7 +52,7 @@ export { UserCreateOrderSwaggerDecorator } from './swagger/order/user-create-ord
 export { GuestCreateOrderSwaggerDecorator } from './swagger/order/guest-create-order-swagger-decorator';
 export { AdminRemoveOrderSwaggerDecorator } from './swagger/order/admin-remove-order-swagger-decorator';
 export { AdminGetStoreOrderListSwaggerDecorator } from './swagger/order/admin-get-store-order-list-swagger-decorator';
-export { AdminGetOrderUsersSwaggerDecorator } from './swagger/order/admin-get-order-users-swagger-decorator';
+export { AdminGetOrderUserSwaggerDecorator } from './swagger/order/admin-get-order-user-swagger-decorator';
 export { AdminGetOrderListUsersSwaggerDecorator } from './swagger/order/admin-get-order-list-users-swagger-decorator';
 export { AdminCreateOrderSwaggerDecorator } from './swagger/order/admin-create-order-swagger-decorator';
 export { Roles, ROLES_KEY } from './roles-auth.decorator';

@@ -10,7 +10,7 @@ import { UserMakePaymentResponse } from '@app/infrastructure/responses';
 
 export function UserMakePaymentSwaggerDecorator(): Function {
     return applyDecorators(
-        ApiOperation({ summary: 'Оплата заказа гостем' }),
+        ApiOperation({ summary: 'Оплата заказа авторизованным пользователем' }),
         ApiBearerAuth('JWT-auth'),
         ApiBody({
             type: MakePaymentDto,

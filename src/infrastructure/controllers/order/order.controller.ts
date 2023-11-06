@@ -16,7 +16,7 @@ import {
     Roles,
     AdminGetStoreOrderListSwaggerDecorator,
     AdminGetOrderListUsersSwaggerDecorator,
-    AdminGetOrderUsersSwaggerDecorator,
+    AdminGetOrderUserSwaggerDecorator,
     AdminCreateOrderSwaggerDecorator,
     AdminRemoveOrderSwaggerDecorator,
     UserCreateOrderSwaggerDecorator,
@@ -76,7 +76,7 @@ export class OrderController implements IOrderController {
     }
 
     /*Получение заказа пользователя по id заказа*/
-    @AdminGetOrderUsersSwaggerDecorator()
+    @AdminGetOrderUserSwaggerDecorator()
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
