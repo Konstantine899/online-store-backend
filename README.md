@@ -75,21 +75,21 @@ npm run start:dev
 
 ## Слой infrastructure
 
-- `infrastructure/common` - директория в которой используются функции decorators, guards, strategies. Они
+- `infrastructure/common` - директория в которой используются функции `decorators`, `guards`, `strategies`. Они
   взаимодействуют со всем приложением.
-- `infrastructure/common/decorators` - общие декораторы для всего проекта, например: roles-auth.decorator.ts, декоратор
-  проверяющий роли пользователя в endpoints. Для более подробного ознакомления
+- `infrastructure/common/decorators` - общие декораторы для всего проекта, например: `roles-auth.decorator.ts`, декоратор
+  проверяющий роли пользователя в `endpoints`. Для более подробного ознакомления
   перейдите [decorators.md](src/infrastructure/common/decorators/decorators.md)
-- `infrastructure/common/decorators/swagger` - декораторы с помощью которых задокументированы endpoints. Для более
-  подробного ознакомления использующихся в проекте swagger decorators
+- `infrastructure/common/decorators/swagger` - декораторы с помощью которых задокументированы `endpoints`. Для более
+  подробного ознакомления использующихся в проекте `swagger` `decorators`
   перейдите [swagger.decorators.md](src/infrastructure/common/decorators/swagger/swagger.decorators.md)
-- `infrastructure/common/guards` - защитники, например: auth.guard.ts - проверяет авторизацию пользователя,
-  role.guard.ts - проверяет роль пользователя. Для более подробного ознакомления использующихся в проекте guards
+- `infrastructure/common/guards` - защитники, например: `auth.guard.ts` - проверяет авторизацию пользователя,
+  `role.guard.ts` - проверяет роль пользователя. Для более подробного ознакомления использующихся в проекте `guards`
   перейдите [guards.md](src/infrastructure/common/guards/guards.md) или
   документацию [guards](https://docs.nestjs.com/websockets/guards#binding-guards)
 - `infrastructure/common/strategies` - стратегии использующиеся для аутентификации и авторизации пользователя в
-  приложении. Например: JwtStrategy, GoogleStrategy, GithubStrategy и т.д. Для более подробного ознакомления
-  использующихся в проекте strategies
+  приложении. Например: `JwtStrategy`, `GoogleStrategy`, `GithubStrategy` и т.д. Для более подробного ознакомления
+  использующихся в проекте `strategies`
   перейдите [strategies.md](src/infrastructure/common/strategies/strategies.md) или
   документацию [Passport (authentication)](https://docs.nestjs.com/recipes/passport#implementing-passport-strategies).
 
@@ -104,7 +104,7 @@ npm run start:dev
 - `infrastructure/dto` - в этой директории содержится структура входящих данных. Более подробно можно
   ознакомится [dto.md](src/infrastructure/dto/dto.md)
 - `infrastructure/exceptions` - в этой директории содержутся исключения с помощью которых выводим частичную или более
-  подробную информацию об ошибке. Для более подробного ознакомления о custom exceptions использующихся в проекте
+  подробную информацию об ошибке. Для более подробного ознакомления о `custom` `exceptions` использующихся в проекте
   ознакомьтесь [exceptions.md](src/infrastructure/exceptions/exceptions.md). Для более подробного ознакомления
   перейдите в документацию [exceptions](https://docs.nestjs.com/exception-filters#throwing-standard-exceptions)
 - `infrastructure/paginate` - методы требующиеся для постраничного вывода. Более подробно можно
@@ -119,6 +119,6 @@ npm run start:dev
   ознакомится [requests.md](src/infrastructure/requests/requests.md)
 - `infrastructure/responses` - ответы возвращаемые функциями и методами. Более подробно можно
   ознакомится [responses.md](src/infrastructure/responses/responses.md)
-- `infrastructure/services - в этой директории бизнес логика сервисов. Более подробно можно
+- `infrastructure/services` - в этой директории бизнес логика сервисов. Более подробно можно
   ознакомится [services.md](src/infrastructure/services/services.md)
 
