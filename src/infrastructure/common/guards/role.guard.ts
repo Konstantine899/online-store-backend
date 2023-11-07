@@ -46,13 +46,20 @@ export class RoleGuard implements CanActivate {
                     accessToken,
                     request,
                 );
-            return user.roles.some((role): boolean => {
+            const isRole = user.roles.some((role): boolean => {
                 return requiredRoles.includes(role.role);
             });
+            if (!isRole) {
+                throw new ForbiddenException({
+                    status: HttpStatus.FORBIDDEN,
+                    message: 'У вас недостаточно прав доступа',
+                });
+            }
+            return isRole;
         } catch (error) {
             throw new ForbiddenException({
                 status: HttpStatus.FORBIDDEN,
-                message: 'У вас не достаточно прав доступа',
+                message: `${error.message}!`,
             });
         }
     }
