@@ -62,7 +62,9 @@ export const sqlConfig = registerAs(dbToken, () => ({
 - `autoLoadModels` - автоматическая загрузка моделей
 - `synchronize` - синхронизация моделей с таблицами в БД
 
-
+<br/>
+<br/>
+<br/>
 
 ## config.ts
 
@@ -81,6 +83,10 @@ export const databaseConfig = registerAs(dbToken, () => ({
 
 - `databaseConfig` - первым аргументом в функцию registerAs передаю token. Данная функцию будет возвращать объект
   конфигурации. В поле sql разворачиваю все настройки из sql.config.ts.
+
+<br/>
+<br/>
+<br/>
 
 ## sequelize.config.service
 
