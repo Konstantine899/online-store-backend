@@ -7,7 +7,7 @@ import * as path from 'path';
 import {
     SequelizeConfigService,
     databaseConfig,
-} from '@app/infrastructure/config/seauelize';
+} from '@app/infrastructure/config/sequelize';
 import { ControllersModule } from './infrastructure/controllers/controllers.module';
 import { ServicesModule } from './infrastructure/services/services.module';
 import { RepositoriesModule } from './infrastructure/repositories/repositories.module';

@@ -30,7 +30,7 @@ import {
 
 import { AuthGuard } from '@app/infrastructure/common/guards';
 import { IAuthController } from '@app/domain/controllers';
-import { UserModel } from '@app/domain/models/user.model';
+import { IDecodedAccessToken } from '@app/domain/jwt';
 
 @ApiTags('Аутентификация')
 @Controller('auth')
@@ -71,7 +71,7 @@ export class AuthController implements IAuthController {
     public async checkUserAuth(
         @Req() request: Request,
     ): Promise<CheckResponse> {
-        const { id } = request.user as UserModel;
+        const { id } = request.user as IDecodedAccessToken;
         return this.userService.checkUserAuth(id);
     }
 

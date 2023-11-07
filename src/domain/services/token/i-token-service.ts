@@ -1,4 +1,5 @@
 import { UserModel, RefreshTokenModel, RoleModel } from '@app/domain/models';
+import { IDecodedAccessToken } from '@app/domain/jwt';
 
 export interface ITokenService {
     generateAccessToken(user: UserModel): Promise<string>;
@@ -12,6 +13,11 @@ export interface ITokenService {
     getStoredRefreshTokenFromRefreshTokenPayload(
         payload: IRefreshTokenPayload,
     ): Promise<RefreshTokenModel | null>;
+
+    decodedAccessToken(
+        token: string,
+        request: any,
+    ): Promise<IDecodedAccessToken>;
 
     decodeRefreshToken(refreshToken: string): Promise<IRefreshTokenPayload>;
 

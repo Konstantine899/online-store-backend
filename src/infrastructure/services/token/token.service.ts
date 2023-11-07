@@ -16,6 +16,8 @@ import {
     IRefreshTokenPayload,
     ITokenService,
 } from '@app/domain/services';
+import { IDecodedAccessToken } from '@app/domain/jwt';
+import { JwtSettings } from '@app/infrastructure/config/jwt';
 
 @Injectable()
 export class TokenService implements ITokenService {
@@ -76,6 +78,15 @@ export class TokenService implements ITokenService {
             );
         }
         return this.refreshTokenRepository.findRefreshTokenById(refreshTokenId);
+    }
+
+    public async decodedAccessToken(
+        token: string,
+        request: any,
+    ): Promise<IDecodedAccessToken> {
+        return (request.user = await this.jwtService.verifyAsync(token, {
+            secret: JwtSettings().jwtSecretKey,
+        }));
     }
 
     //декодирую refresh token

@@ -2,17 +2,16 @@ import {
     CanActivate,
     ExecutionContext,
     ForbiddenException,
+    HttpStatus,
     Injectable,
     UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { JwtSettings } from '@app/infrastructure/config/jwt';
 import { IHeaders } from '@app/domain/headers';
-import { IDecodedAccessToken } from '@app/domain/jwt';
+import { TokenService } from '@app/infrastructure/services/token/token.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-    constructor(private readonly jwtService: JwtService) {}
+    constructor(private readonly tokenService: TokenService) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         try {
@@ -22,21 +21,18 @@ export class AuthGuard implements CanActivate {
                 throw new UnauthorizedException('Please provide token');
             }
             const authToken = authorization.replace('Bearer', '').trim();
-            request.decodedData = await this.decodeAccessToken(authToken);
+            request.user = await this.tokenService.decodedAccessToken(
+                authToken,
+                request,
+            );
             return true;
         } catch (error) {
-            throw new ForbiddenException(
-                `${error.message}! Please authorization` ||
+            throw new ForbiddenException({
+                status: HttpStatus.FORBIDDEN,
+                message:
+                    `${error.message}! Please authorization` ||
                     'session expired! Please authorization',
-            );
+            });
         }
-    }
-
-    private async decodeAccessToken(
-        token: string,
-    ): Promise<IDecodedAccessToken> {
-        return await this.jwtService.verifyAsync(token, {
-            secret: JwtSettings().jwtSecretKey,
-        });
     }
 }
