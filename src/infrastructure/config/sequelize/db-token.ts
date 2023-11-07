@@ -1,0 +1,1 @@
+export const dbToken = 'database';

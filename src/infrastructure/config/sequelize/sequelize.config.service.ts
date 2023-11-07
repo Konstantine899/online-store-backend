@@ -19,6 +19,7 @@ import {
     OrderModel,
     OrderItemModel,
 } from '@app/domain/models';
+import { dbToken } from '@app/infrastructure/config/sequelize/db-token';
 
 @Injectable()
 export class SequelizeConfigService implements SequelizeOptionsFactory {
@@ -27,7 +28,7 @@ export class SequelizeConfigService implements SequelizeOptionsFactory {
     createSequelizeOptions(): SequelizeModuleOptions {
         const {
             sql: { dialect, host, port, username, password, database },
-        } = this.configService.get('online-store');
+        } = this.configService.get(dbToken);
 
         return {
             dialect,

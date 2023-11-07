@@ -1,7 +1,8 @@
 import { registerAs } from '@nestjs/config';
 import { Dialect } from 'sequelize';
+import { dbToken } from '@app/infrastructure/config/sequelize/db-token';
 
-export const sqlConfig = registerAs('online-store', () => ({
+export const sqlConfig = registerAs(dbToken, () => ({
     dialect: <Dialect>process.env.DIALECT || 'mysql',
     logging: process.env.SQL_LOGGING === 'true',
     host: process.env.MYSQL_HOST,
