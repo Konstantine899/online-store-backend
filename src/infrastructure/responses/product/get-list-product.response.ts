@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Rows, MetaData } from '@app/infrastructure/paginate';
+import { ProductInfo, MetaData } from '@app/infrastructure/paginate';
 import { IGetListProductResponse } from '@app/domain/responses';
 
 export class GetListProductResponse implements IGetListProductResponse {
@@ -12,6 +12,6 @@ export class GetListProductResponse implements IGetListProductResponse {
     })
     count: number;
 
-    @ApiProperty({ type: () => [Rows] })
-    rows: Rows[];
+    @ApiProperty({ type: () => [ProductInfo] })
+    rows: ProductInfo[];
 }

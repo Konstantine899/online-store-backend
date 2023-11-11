@@ -1,2 +1,2 @@
-export { Rows } from './rows';
+export { ProductInfo } from './product-info';
 export { MetaData } from './meta-data';

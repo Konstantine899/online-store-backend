@@ -5,7 +5,7 @@ import {
     UpdateProductResponse,
 } from '@app/infrastructure/responses';
 import { ProductModel } from '@app/domain/models';
-import { Rows } from '@app/infrastructure/paginate';
+import { ProductInfo } from '@app/infrastructure/paginate';
 
 export interface IProductRepository {
     create(
@@ -22,7 +22,7 @@ export interface IProductRepository {
         sort: string,
         limit: number,
         offset: number,
-    ): Promise<{ count: number; rows: Rows[] }>;
+    ): Promise<{ count: number; rows: ProductInfo[] }>;
 
     findListProductByBrandId(
         brandId: number,
@@ -30,7 +30,7 @@ export interface IProductRepository {
         sort: string,
         limit: number,
         offset: number,
-    ): Promise<{ count: number; rows: Rows[] }>;
+    ): Promise<{ count: number; rows: ProductInfo[] }>;
 
     findListProductByCategoryId(
         categoryId: number,
@@ -38,7 +38,7 @@ export interface IProductRepository {
         sort: string,
         limit: number,
         offset: number,
-    ): Promise<{ count: number; rows: Rows[] }>;
+    ): Promise<{ count: number; rows: ProductInfo[] }>;
 
     findAllByBrandIdAndCategoryId(
         brandId: number,
@@ -47,7 +47,7 @@ export interface IProductRepository {
         sort: string,
         limit: number,
         offset: number,
-    ): Promise<{ count: number; rows: Rows[] }>;
+    ): Promise<{ count: number; rows: ProductInfo[] }>;
 
     removedProduct(id: number): Promise<number>;
 

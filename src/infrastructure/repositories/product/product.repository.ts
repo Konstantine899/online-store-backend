@@ -7,7 +7,7 @@ import {
     GetProductResponse,
     UpdateProductResponse,
 } from '@app/infrastructure/responses';
-import { Rows } from '@app/infrastructure/paginate';
+import { ProductInfo } from '@app/infrastructure/paginate';
 import { IProductRepository } from '@app/domain/repositories';
 
 export class ProductRepository implements IProductRepository {
@@ -45,7 +45,7 @@ export class ProductRepository implements IProductRepository {
         sort: string,
         limit: number,
         offset: number,
-    ): Promise<{ count: number; rows: Rows[] }> {
+    ): Promise<{ count: number; rows: ProductInfo[] }> {
         return this.productModel.findAndCountAll({
             where: search ? { name: { [Op.like]: `%${search}%` } } : null,
             order: sort ? [['price', sort.toUpperCase()]] : null,
@@ -60,7 +60,7 @@ export class ProductRepository implements IProductRepository {
         sort: string,
         limit: number,
         offset: number,
-    ): Promise<{ count: number; rows: Rows[] }> {
+    ): Promise<{ count: number; rows: ProductInfo[] }> {
         return this.productModel.findAndCountAll({
             where: { brand_id: brandId },
             order: sort ? [['price', sort.toUpperCase()]] : null,
@@ -75,7 +75,7 @@ export class ProductRepository implements IProductRepository {
         sort: string,
         limit: number,
         offset: number,
-    ): Promise<{ count: number; rows: Rows[] }> {
+    ): Promise<{ count: number; rows: ProductInfo[] }> {
         return this.productModel.findAndCountAll({
             where: { category_id: categoryId },
             order: sort ? [['price', sort.toUpperCase()]] : null,
@@ -91,7 +91,7 @@ export class ProductRepository implements IProductRepository {
         sort: string,
         limit: number,
         offset: number,
-    ): Promise<{ count: number; rows: Rows[] }> {
+    ): Promise<{ count: number; rows: ProductInfo[] }> {
         return this.productModel.findAndCountAll({
             where: {
                 brand_id: brandId,
