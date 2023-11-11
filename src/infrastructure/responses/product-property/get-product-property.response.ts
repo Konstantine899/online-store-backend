@@ -9,10 +9,10 @@ export class GetProductPropertyResponse extends ProductPropertyModel {
         example: 'Емкость аккумулятора:',
         description: 'Имя свойства',
     })
-    'name': string;
+    name: string;
 
     @ApiProperty({ example: '5000 мА·ч', description: 'Значение свойства' })
-    'value': string;
+    value: string;
 
     @ApiProperty({ example: 1, description: 'Идентификатор продукта' })
     product_id: number;
