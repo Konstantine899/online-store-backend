@@ -41,7 +41,7 @@ export class ProductService implements IProductService {
     }
 
     public async getProduct(id: number): Promise<GetProductResponse> {
-        const product = await this.productRepository.findProduct(id);
+        const product = await this.productRepository.findProductProperty(id);
         if (!product) {
             this.notFound('Продукт не найден');
         }
@@ -164,7 +164,8 @@ export class ProductService implements IProductService {
     }
 
     public async removeProduct(id: number): Promise<RemoveProductResponse> {
-        const findProduct = await this.productRepository.findProduct(id);
+        const findProduct =
+            await this.productRepository.findProductProperty(id);
         if (!findProduct) {
             this.notFound('Продукт не найден в БД');
         }
@@ -186,7 +187,8 @@ export class ProductService implements IProductService {
         dto: CreateProductDto,
         image: Express.Multer.File,
     ): Promise<UpdateProductResponse> {
-        const findProduct = await this.productRepository.findProduct(id);
+        const findProduct =
+            await this.productRepository.findProductProperty(id);
         if (!findProduct) {
             this.notFound('Продукт не найден в БД');
         }

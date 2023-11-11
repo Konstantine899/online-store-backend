@@ -99,7 +99,7 @@ export class ProductPropertyService implements IProductPropertyService {
     }
 
     private async findProduct(productId: number): Promise<ProductModel> {
-        return this.productRepository.findProduct(productId);
+        return this.productRepository.findProductProperty(productId);
     }
 
     private async findListProductProperty(

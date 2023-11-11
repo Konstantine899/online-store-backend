@@ -33,7 +33,7 @@ export class ProductRepository implements IProductRepository {
         return this.productModel.findByPk(productId);
     }
 
-    public async findProduct(id: number): Promise<GetProductResponse> {
+    public async findProductProperty(id: number): Promise<GetProductResponse> {
         return this.productModel.findOne({
             where: { id },
             include: [{ model: ProductPropertyModel }],

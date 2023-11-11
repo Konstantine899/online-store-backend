@@ -15,7 +15,7 @@ export interface IProductRepository {
 
     fidProductByPkId(productId: number): Promise<ProductModel>;
 
-    findProduct(id: number): Promise<GetProductResponse>;
+    findProductProperty(id: number): Promise<GetProductResponse>;
 
     findListProduct(
         search: string,
