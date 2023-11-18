@@ -58,6 +58,7 @@ export class AuthController implements IAuthController {
 
     @UpdateAccessTokenSwaggerDecorator()
     @HttpCode(201)
+    @UseGuards(AuthGuard)
     @Post('/refresh')
     public async updateAccessToken(
         @Body() dto: RefreshDto,
