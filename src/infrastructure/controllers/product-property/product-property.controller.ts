@@ -55,8 +55,6 @@ export class ProductPropertyController implements IProductPropertyController {
     }
 
     @GetProductPropertySwaggerDecorator()
-    @Roles('ADMIN')
-    @UseGuards(AuthGuard, RoleGuard)
     @HttpCode(200)
     @Get('/product_id/:productId([0-9]+)/get-property/:id([0-9]+)')
     public async getProductProperty(
@@ -67,8 +65,6 @@ export class ProductPropertyController implements IProductPropertyController {
     }
 
     @GetListProductPropertySwaggerDecorator()
-    @Roles('ADMIN')
-    @UseGuards(AuthGuard, RoleGuard)
     @HttpCode(200)
     @Get('/product_id/:productId([0-9]+)/properties')
     public async getListProductProperty(
