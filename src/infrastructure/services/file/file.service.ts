@@ -10,6 +10,7 @@ import { IFileService } from '@app/domain/services';
 export class FileService implements IFileService {
     public async createFile(image: Express.Multer.File): Promise<string> {
         const filePath = await this.getFilePath();
+        console.log(filePath);
         return this.generateFile(filePath, image);
     }
 
@@ -51,8 +52,8 @@ export class FileService implements IFileService {
     private async getFilePath(): Promise<string> {
         const filePath =
             process.env.NODE_ENV === 'development'
-                ? path.resolve(__dirname, '..', '..', 'static')
-                : path.resolve(__dirname, '..', 'static'); // получаю путь к директории где хранятся статические файлы
+                ? path.resolve(__dirname, '..', '..', '..', 'static')
+                : path.resolve(__dirname, '..', '..', '..', 'static'); // получаю путь к директории где хранятся статические файлы
         /*Проверяю если директория хранения статических файлов не существует, то создаю ее*/
         if (!fs.existsSync(filePath)) {
             fs.mkdirSync(filePath, { recursive: true }); // создаю директорию
