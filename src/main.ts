@@ -1,5 +1,3 @@
-require('module-alias/register');
-
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as process from 'process';
@@ -15,7 +13,7 @@ import { swaggerConfig } from '@app/infrastructure/config/swagger';
 
 async function bootstrap(): Promise<void> {
     const PORT = process.env.PORT || 5000;
-    const app = await NestFactory.create(AppModule, { cors: true });
+    const app = await NestFactory.create(AppModule);
     app.setGlobalPrefix('online-store');
     app.useGlobalPipes(...[new CustomValidationPipe()]);
     app.useGlobalFilters(
@@ -27,10 +25,10 @@ async function bootstrap(): Promise<void> {
     );
     app.enableCors({
         credentials: true,
-        origin: [
-            'http://localhost:5000/online-store',
-            'http://localhost:3000/online-store',
-        ],
+        origin: ['http://localhost:3000/online-store/*'],
+        allowedHeaders: ['Content-Type', 'Authorization'], // Настраивает заголовок CORS Access-Control-Allow-Headers.
+        exposedHeaders: ['Content-Range', 'X-Content-Range'], // Настраивает заголовок CORS Access-Control-Expose-Headers
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     });
     app.use(cookieParser(process.env.COOKIE_PARSER_SECRET_KEY));
     swaggerConfig(app);
