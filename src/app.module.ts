@@ -15,7 +15,8 @@ import { RepositoriesModule } from './infrastructure/repositories/repositories.m
 @Module({
     imports: [
         ServeStaticModule.forRoot({
-            rootPath: path.resolve(__dirname, 'static'),
+            rootPath: path.join(__dirname, 'static'),
+            serveStaticOptions: { index: false, redirect: false }, // Для SPA
         }),
 
         SequelizeModule.forRootAsync({

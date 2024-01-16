@@ -52,8 +52,8 @@ export class FileService implements IFileService {
     private async getFilePath(): Promise<string> {
         const filePath =
             process.env.NODE_ENV === 'development'
-                ? path.resolve(__dirname, '..', '..', '..', 'static')
-                : path.resolve(__dirname, '..', '..', '..', 'static'); // получаю путь к директории где хранятся статические файлы
+                ? path.join(__dirname, '..', '..', '..', 'static')
+                : null; // получаю путь к директории где хранятся статические файлы
         /*Проверяю если директория хранения статических файлов не существует, то создаю ее*/
         if (!fs.existsSync(filePath)) {
             fs.mkdirSync(filePath, { recursive: true }); // создаю директорию

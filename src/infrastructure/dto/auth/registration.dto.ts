@@ -7,7 +7,7 @@ export class RegistrationDto implements TRegistration {
         example: 'test@mail.com',
         description: 'Адрес электронной почты',
     })
-    @IsNotEmpty({ message: 'Укажите email' })
+    @IsNotEmpty({ message: 'Поле email не должно быть пустым' })
     @IsString({ message: 'Поле email должно быть строкой' })
     @IsEmail({}, { message: 'Не верный формат email' })
     readonly email: string;
@@ -16,7 +16,7 @@ export class RegistrationDto implements TRegistration {
         example: '123456',
         description: 'Пароль',
     })
-    @IsNotEmpty({ message: 'Укажите пароль' })
+    @IsNotEmpty({ message: 'Поле пароль не должно быть пустым' })
     @IsString({ message: 'Поле пароля должно быть строкой' })
     @MinLength(6, {
         message: 'Пароль пользователя должен быть не менее 6 символов',

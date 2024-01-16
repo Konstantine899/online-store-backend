@@ -10,11 +10,16 @@ import {
 
 import * as cookieParser from 'cookie-parser';
 import { swaggerConfig } from '@app/infrastructure/config/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import * as path from 'path';
 
 async function bootstrap(): Promise<void> {
     const PORT = process.env.PORT || 5000;
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create<NestExpressApplication>(AppModule);
     app.setGlobalPrefix('online-store');
+    app.useStaticAssets(path.join(__dirname, 'static'), {
+        prefix: '/static/',
+    });
     app.useGlobalPipes(...[new CustomValidationPipe()]);
     app.useGlobalFilters(
         ...[
@@ -25,7 +30,7 @@ async function bootstrap(): Promise<void> {
     );
     app.enableCors({
         credentials: true,
-        origin: ['http://localhost:3000/online-store/*'],
+        origin: true,
         allowedHeaders: ['Content-Type', 'Authorization'], // Настраивает заголовок CORS Access-Control-Allow-Headers.
         exposedHeaders: ['Content-Range', 'X-Content-Range'], // Настраивает заголовок CORS Access-Control-Expose-Headers
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
