@@ -10,7 +10,6 @@ import { IFileService } from '@app/domain/services';
 export class FileService implements IFileService {
     public async createFile(image: Express.Multer.File): Promise<string> {
         const filePath = await this.getFilePath();
-        console.log(filePath);
         return this.generateFile(filePath, image);
     }
 
