@@ -67,7 +67,7 @@ export class RatingService implements IRatingService {
         return {
             ratingsSum,
             votes,
-            rating: ratingsSum / votes,
+            rating: Math.floor(ratingsSum / votes),
         };
     }
 
