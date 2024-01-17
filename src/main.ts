@@ -18,7 +18,7 @@ async function bootstrap(): Promise<void> {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
     app.setGlobalPrefix('online-store');
     app.useStaticAssets(path.join(__dirname, 'static'), {
-        prefix: '/static/',
+        prefix: '/online-store/static/',
     });
     app.useGlobalPipes(...[new CustomValidationPipe()]);
     app.useGlobalFilters(
