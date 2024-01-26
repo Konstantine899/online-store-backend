@@ -83,13 +83,13 @@ export class ProductController implements IProductController {
         @Query() searchQuery: SearchDto,
         @Query() sortQuery: SortingDto,
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-        @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
+        @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
     ): Promise<GetListProductResponse> {
         return this.productService.getListProduct(
             searchQuery,
             sortQuery,
             page,
-            size,
+            limit,
         );
     }
 
@@ -101,14 +101,14 @@ export class ProductController implements IProductController {
         @Query() searchQuery: SearchDto,
         @Query() sortQuery: SortingDto,
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-        @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
+        @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
     ): Promise<GetListProductByBrandIdResponse> {
         return this.productService.getListProductByBrandId(
             brandId,
             searchQuery,
             sortQuery,
             page,
-            size,
+            limit,
         );
     }
 
@@ -120,14 +120,14 @@ export class ProductController implements IProductController {
         @Query() searchQuery: SearchDto,
         @Query() sortQuery: SortingDto,
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-        @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
+        @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
     ): Promise<GetListProductByCategoryIdResponse> {
         return this.productService.getListProductByCategoryId(
             categoryId,
             searchQuery,
             sortQuery,
             page,
-            size,
+            limit,
         );
     }
 
@@ -140,7 +140,7 @@ export class ProductController implements IProductController {
         @Query() searchQuery: SearchDto,
         @Query() sortQuery: SortingDto,
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-        @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
+        @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
     ): Promise<GetAllByBrandIdAndCategoryIdResponse> {
         return this.productService.getAllByBrandIdAndCategoryId(
             brandId,
@@ -148,7 +148,7 @@ export class ProductController implements IProductController {
             searchQuery,
             sortQuery,
             page,
-            size,
+            limit,
         );
     }
 
