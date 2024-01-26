@@ -4,4 +4,5 @@ export interface IMetaData {
     currentPage: number;
     nextPage: number;
     previousPage: number;
+    limit: number;
 }

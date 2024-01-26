@@ -225,6 +225,7 @@ export class ProductService implements IProductService {
             currentPage: page,
             nextPage: page + 1,
             previousPage: page - 1,
+            limit,
         };
     }
 

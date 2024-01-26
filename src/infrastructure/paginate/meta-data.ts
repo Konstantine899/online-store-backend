@@ -31,4 +31,10 @@ export class MetaData implements IMetaData {
         description: 'Предыдущая страница',
     })
     previousPage: number;
+
+    @ApiProperty({
+        example: 0,
+        description: 'Количество элементов на странице',
+    })
+    limit: number;
 }
