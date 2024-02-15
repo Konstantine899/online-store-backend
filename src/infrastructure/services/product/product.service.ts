@@ -64,9 +64,6 @@ export class ProductService implements IProductService {
             offset,
         );
         const metaData = this.getMetadata(products.count, page, limit);
-        if (!products.rows.length) {
-            this.notFound('По вашему запросу ничего не найдено');
-        }
         return {
             metaData,
             count: products.count,
@@ -92,9 +89,7 @@ export class ProductService implements IProductService {
             offset,
         );
         const metaData = this.getMetadata(products.count, page, limit);
-        if (!products.rows.length) {
-            this.notFound('По вашему запросу ничего не найдено');
-        }
+
         return {
             metaData,
             count: products.count,
@@ -122,9 +117,7 @@ export class ProductService implements IProductService {
             );
 
         const metaData = this.getMetadata(products.count, page, limit);
-        if (!products.rows.length) {
-            this.notFound('По вашему запросу ничего не найдено');
-        }
+
         return {
             metaData,
             count: products.count,
@@ -153,9 +146,6 @@ export class ProductService implements IProductService {
                 offset,
             );
         const metaData = this.getMetadata(products.count, page, limit);
-        if (!products.rows.length) {
-            this.notFound('По вашему запросу ничего не найдено');
-        }
         return {
             metaData,
             count: products.count,
