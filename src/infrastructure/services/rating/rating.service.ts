@@ -64,10 +64,11 @@ export class RatingService implements IRatingService {
             };
         }
         const ratingsSum = await this.ratingRepository.ratingsSum(productId);
+        const rating = Number((ratingsSum / votes).toFixed(1));
         return {
             ratingsSum,
             votes,
-            rating: Math.floor(ratingsSum / votes),
+            rating,
         };
     }
 
