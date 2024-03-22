@@ -26,7 +26,7 @@ module.exports = {
                 allowNull: false,
             },
             rating: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.FLOAT,
                 defaultValue: 0,
             },
             image: {

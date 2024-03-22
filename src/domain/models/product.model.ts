@@ -70,7 +70,7 @@ export class ProductModel
     price: number;
 
     @Column({
-        type: DataType.INTEGER,
+        type: DataType.FLOAT,
         defaultValue: 0,
     })
     rating: number;
