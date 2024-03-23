@@ -61,4 +61,12 @@ export class ProductPropertyRepository implements IProductPropertyRepository {
     public async removeProductProperty(id: number): Promise<number> {
         return this.productPropertyModel.destroy({ where: { id } });
     }
+
+    public async removeProductPropertiesListByProductId(
+        productId: number,
+    ): Promise<number> {
+        return this.productPropertyModel.destroy({
+            where: { product_id: productId },
+        });
+    }
 }

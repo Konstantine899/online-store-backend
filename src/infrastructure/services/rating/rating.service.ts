@@ -77,7 +77,7 @@ export class RatingService implements IRatingService {
         };
     }
 
-    public async removeRatingsListByProductId(
+    public async removeAllRatingsByProductId(
         productId: number,
     ): Promise<number> {
         return await this.ratingRepository.removeRatingsListByProductId(

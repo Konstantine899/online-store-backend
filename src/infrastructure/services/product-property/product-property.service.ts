@@ -22,7 +22,7 @@ import { IProductPropertyService } from '@app/domain/services';
 @Injectable()
 export class ProductPropertyService implements IProductPropertyService {
     constructor(
-        private readonly propertyProductRepository: ProductPropertyRepository,
+        private readonly productPropertyRepository: ProductPropertyRepository,
         private readonly productRepository: ProductRepository,
     ) {}
 
@@ -34,7 +34,7 @@ export class ProductPropertyService implements IProductPropertyService {
         if (!product) {
             this.notFound('Продукт не найден');
         }
-        return this.propertyProductRepository.create(product.id, dto);
+        return this.productPropertyRepository.create(product.id, dto);
     }
 
     public async getProductProperty(
@@ -98,6 +98,14 @@ export class ProductPropertyService implements IProductPropertyService {
         return this.removeProperty(property.id);
     }
 
+    public async removeProductPropertiesListByProductId(
+        productId: number,
+    ): Promise<number> {
+        return await this.productPropertyRepository.removeProductPropertiesListByProductId(
+            productId,
+        );
+    }
+
     private async findProduct(productId: number): Promise<ProductModel> {
         return this.productRepository.findProductProperty(productId);
     }
@@ -105,7 +113,7 @@ export class ProductPropertyService implements IProductPropertyService {
     private async findListProductProperty(
         productId: number,
     ): Promise<GetListProductPropertyResponse[]> {
-        return this.propertyProductRepository.findListProductProperty(
+        return this.productPropertyRepository.findListProductProperty(
             productId,
         );
     }
@@ -114,7 +122,7 @@ export class ProductPropertyService implements IProductPropertyService {
         productId: number,
         id: number,
     ): Promise<GetProductPropertyResponse> {
-        return this.propertyProductRepository.findOneProductProperty(
+        return this.productPropertyRepository.findOneProductProperty(
             productId,
             id,
         );
@@ -124,7 +132,7 @@ export class ProductPropertyService implements IProductPropertyService {
         property: ProductPropertyModel,
         dto: CreateProductPropertyDto,
     ): Promise<UpdateProductPropertyResponse> {
-        return this.propertyProductRepository.updateProductProperty(
+        return this.productPropertyRepository.updateProductProperty(
             property,
             dto,
         );
@@ -133,7 +141,7 @@ export class ProductPropertyService implements IProductPropertyService {
     private async removeProperty(
         id: number,
     ): Promise<RemoveProductPropertyResponse> {
-        await this.propertyProductRepository.removeProductProperty(id);
+        await this.productPropertyRepository.removeProductProperty(id);
         return {
             status: HttpStatus.OK,
             message: 'success',

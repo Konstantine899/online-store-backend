@@ -10,7 +10,10 @@ import {
     SortingDto,
 } from '@app/infrastructure/dto';
 import { FileService } from '../file/file.service';
-import { ProductRepository } from '@app/infrastructure/repositories';
+import {
+    ProductPropertyRepository,
+    ProductRepository,
+} from '@app/infrastructure/repositories';
 import {
     CreateProductResponse,
     GetProductResponse,
@@ -29,6 +32,7 @@ import { RatingService } from '@app/infrastructure/services';
 @Injectable()
 export class ProductService implements IProductService {
     constructor(
+        private readonly productPropertyRepository: ProductPropertyRepository,
         private readonly productRepository: ProductRepository,
         private readonly ratingService: RatingService,
         private readonly fileService: FileService,
@@ -167,10 +171,20 @@ export class ProductService implements IProductService {
             findProduct.image,
         );
         const removedRating =
-            await this.ratingService.removeRatingsListByProductId(productId);
+            await this.ratingService.removeAllRatingsByProductId(productId);
+        const removedProductProperties =
+            await this.productPropertyRepository.removeProductPropertiesListByProductId(
+                productId,
+            );
+
         const removedProduct =
             await this.productRepository.removedProduct(productId);
-        if (!removedFile || !removedProduct || !removedRating) {
+        if (
+            !removedFile ||
+            !removedProduct ||
+            !removedRating ||
+            !removedProductProperties
+        ) {
             this.conflict('Произошел конфликт во время удаления продукта');
         }
         return {
