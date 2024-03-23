@@ -1,6 +1,6 @@
 import { Request } from 'express';
 import {
-    CreateRatingResponse,
+    RatingResponse,
     GetRatingResponse,
 } from '@app/infrastructure/responses';
 
@@ -9,7 +9,7 @@ export interface IRatingController {
         request: Request,
         productId: number,
         rating: number,
-    ): Promise<CreateRatingResponse>;
+    ): Promise<RatingResponse>;
 
     getRating(productId: number): Promise<GetRatingResponse>;
 }

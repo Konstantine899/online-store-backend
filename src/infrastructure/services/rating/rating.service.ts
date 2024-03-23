@@ -11,7 +11,7 @@ import {
 } from '@app/infrastructure/repositories';
 
 import {
-    CreateRatingResponse,
+    RatingResponse,
     GetRatingResponse,
 } from '@app/infrastructure/responses';
 import { IRatingService } from '@app/domain/services';
@@ -28,7 +28,7 @@ export class RatingService implements IRatingService {
         userId: number,
         productId: number,
         rating: number,
-    ): Promise<CreateRatingResponse> {
+    ): Promise<RatingResponse> {
         const product =
             await this.productRepository.fidProductByPkId(productId);
         if (!product) {
@@ -46,7 +46,11 @@ export class RatingService implements IRatingService {
         if (reviewVote) {
             this.badRequest('Оценка рейтинга выми была выставлена ранее');
         }
-        return this.ratingRepository.createRating(user.id, product.id, rating);
+        return await this.ratingRepository.createRating(
+            user.id,
+            product.id,
+            rating,
+        );
     }
 
     public async getRating(productId: number): Promise<GetRatingResponse> {
@@ -65,11 +69,20 @@ export class RatingService implements IRatingService {
         }
         const ratingsSum = await this.ratingRepository.ratingsSum(productId);
         const rating = Number((ratingsSum / votes).toFixed(1));
+
         return {
             ratingsSum,
             votes,
             rating,
         };
+    }
+
+    public async removeRatingsListByProductId(
+        productId: number,
+    ): Promise<number> {
+        return await this.ratingRepository.removeRatingsListByProductId(
+            productId,
+        );
     }
 
     private notFound(message: string): void {

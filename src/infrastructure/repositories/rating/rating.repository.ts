@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { RatingModel } from '@app/domain/models';
-import { CreateRatingResponse } from '@app/infrastructure/responses';
+import { RatingResponse } from '@app/infrastructure/responses';
 import { IRatingRepository } from '@app/domain/repositories';
 
 @Injectable()
@@ -14,12 +14,18 @@ export class RatingRepository implements IRatingRepository {
         userId: number,
         productId: number,
         rating: number,
-    ): Promise<CreateRatingResponse> {
+    ): Promise<RatingResponse> {
         const productRating = new RatingModel();
         productRating.user_id = userId;
         productRating.product_id = productId;
         productRating.rating = rating;
         return productRating.save();
+    }
+
+    public async removeRatingsListByProductId(
+        productId: number,
+    ): Promise<number> {
+        return this.ratingModel.destroy({ where: { product_id: productId } });
     }
 
     public async findVote(

@@ -30,6 +30,7 @@ module.exports = (sequelize, DataTypes) => {
                 through: `${RATING}`,
                 as: `${PRODUCT}`,
                 onDelete: 'CASCADE',
+                onUpdate: 'CASCADE',
             });
         }
     }

@@ -70,6 +70,7 @@ export class UserModel
     @BelongsToMany(() => ProductModel, {
         through: () => RatingModel,
         onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
     })
     products: ProductModel[];
 

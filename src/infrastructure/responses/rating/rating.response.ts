@@ -1,7 +1,7 @@
 import { RatingModel } from '@app/domain/models';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CreateRatingResponse extends RatingModel {
+export class RatingResponse extends RatingModel {
     @ApiProperty({ example: 1, description: 'Идентификатор пользователя' })
     user_id: number;
 

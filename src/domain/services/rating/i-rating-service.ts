@@ -1,5 +1,5 @@
 import {
-    CreateRatingResponse,
+    RatingResponse,
     GetRatingResponse,
 } from '@app/infrastructure/responses';
 
@@ -8,7 +8,7 @@ export interface IRatingService {
         userId: number,
         productId: number,
         rating: number,
-    ): Promise<CreateRatingResponse>;
+    ): Promise<RatingResponse>;
 
     getRating(productId: number): Promise<GetRatingResponse>;
 }

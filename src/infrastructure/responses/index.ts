@@ -15,7 +15,7 @@ export { RemoveProductFromCartResponse } from './cart/remove-product-from-cart.r
 export { DecrementResponse } from './cart/decrement.response';
 export { IncrementResponse } from './cart/increment.response';
 export { GetRatingResponse } from './rating/get-rating.response';
-export { CreateRatingResponse } from './rating/create-rating.response';
+export { RatingResponse } from './rating/rating.response';
 export { CreateProductResponse } from './product/create-product.response';
 export { GetListProductByCategoryIdResponse } from './product/get-list-product-by-category-id.response';
 export { GetListProductByBrandIdResponse } from './product/get-list-product-by-brand-id.response';

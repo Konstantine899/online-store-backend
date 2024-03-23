@@ -24,11 +24,13 @@ import {
 import { MetaData } from '@app/infrastructure/paginate';
 import { SortingEnum } from '@app/domain/dto';
 import { IProductService } from '@app/domain/services';
+import { RatingService } from '@app/infrastructure/services';
 
 @Injectable()
 export class ProductService implements IProductService {
     constructor(
         private readonly productRepository: ProductRepository,
+        private readonly ratingService: RatingService,
         private readonly fileService: FileService,
     ) {}
 
@@ -153,17 +155,22 @@ export class ProductService implements IProductService {
         };
     }
 
-    public async removeProduct(id: number): Promise<RemoveProductResponse> {
+    public async removeProduct(
+        productId: number,
+    ): Promise<RemoveProductResponse> {
         const findProduct =
-            await this.productRepository.findProductProperty(id);
+            await this.productRepository.findProductProperty(productId);
         if (!findProduct) {
             this.notFound('Продукт не найден в БД');
         }
         const removedFile = await this.fileService.removeFile(
             findProduct.image,
         );
-        const removedProduct = await this.productRepository.removedProduct(id);
-        if (!removedFile || !removedProduct) {
+        const removedRating =
+            await this.ratingService.removeRatingsListByProductId(productId);
+        const removedProduct =
+            await this.productRepository.removedProduct(productId);
+        if (!removedFile || !removedProduct || !removedRating) {
             this.conflict('Произошел конфликт во время удаления продукта');
         }
         return {

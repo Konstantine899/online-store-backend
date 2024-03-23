@@ -24,6 +24,7 @@ module.exports = (sequelize, DataTypes) => {
                 through: `${RATING}`,
                 as: `${USER}`,
                 onDelete: 'CASCADE',
+                onUpdate: 'CASCADE',
             });
             this.belongsToMany(models.cart, {
                 through: `${CART_PRODUCT}`,

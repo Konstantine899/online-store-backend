@@ -1,4 +1,4 @@
-import { CreateRatingResponse } from '@app/infrastructure/responses';
+import { RatingResponse } from '@app/infrastructure/responses';
 import { RatingModel } from '@app/domain/models';
 
 export interface IRatingRepository {
@@ -6,7 +6,7 @@ export interface IRatingRepository {
         userId: number,
         productId: number,
         rating: number,
-    ): Promise<CreateRatingResponse>;
+    ): Promise<RatingResponse>;
 
     findVote(
         user_id: number,

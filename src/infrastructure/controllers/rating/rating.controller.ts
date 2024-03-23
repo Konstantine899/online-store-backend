@@ -17,7 +17,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { UserRequest } from '@app/infrastructure/requests';
 import {
-    CreateRatingResponse,
+    RatingResponse,
     GetRatingResponse,
 } from '@app/infrastructure/responses';
 import { AuthGuard } from '@app/infrastructure/common/guards';
@@ -36,7 +36,7 @@ export class RatingController implements IRatingController {
         @Req() request: Request,
         @Param('productId', ParseIntPipe) productId: number,
         @Param('rating', ParseIntPipe) rating: number,
-    ): Promise<CreateRatingResponse> {
+    ): Promise<RatingResponse> {
         const { id } = request.user as UserRequest;
         return this.ratingService.createRating(id, productId, rating);
     }
