@@ -1,5 +1,6 @@
 import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
 import { ProductModel } from './product.model';
+import { BrandModel } from '@app/domain/models/brand.model';
 
 interface ICategoryCreationAttributes {
     name: string;
@@ -39,4 +40,7 @@ export class CategoryModel
 
     @HasMany(() => ProductModel, { onDelete: 'RESTRICT' })
     products: ProductModel[];
+
+    @HasMany(() => BrandModel, { onDelete: 'RESTRICT' })
+    brands: BrandModel[];
 }

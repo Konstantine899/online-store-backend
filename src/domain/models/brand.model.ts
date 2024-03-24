@@ -1,5 +1,14 @@
-import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
+import {
+    BelongsTo,
+    Column,
+    DataType,
+    ForeignKey,
+    HasMany,
+    Model,
+    Table,
+} from 'sequelize-typescript';
 import { ProductModel } from './product.model';
+import { CategoryModel } from '@app/domain/models/category-model';
 
 interface ICreateBrandAttributes {
     name: string;
@@ -39,4 +48,14 @@ export class BrandModel
 
     @HasMany(() => ProductModel, { onDelete: 'RESTRICT' })
     products: ProductModel[];
+
+    @ForeignKey(() => CategoryModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    category_id: number;
+
+    @BelongsTo(() => CategoryModel, 'category_id')
+    category: CategoryModel;
 }

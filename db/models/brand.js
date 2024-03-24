@@ -1,6 +1,6 @@
 'use strict';
 const { Model } = require('sequelize');
-const { PRODUCT, BRAND } = require('../consts');
+const { PRODUCT, BRAND, CATEGORY } = require('../consts');
 module.exports = (sequelize, DataTypes) => {
     class brand extends Model {
         static associate(models) {
@@ -8,12 +8,14 @@ module.exports = (sequelize, DataTypes) => {
                 as: `${PRODUCT}`,
                 onDelete: 'RESTRICT',
             });
+            this.belongsTo(models.category, { as: `${CATEGORY}` });
         }
     }
 
     brand.init(
         {
             name: DataTypes.STRING,
+            category_id: DataTypes.Number,
         },
         {
             sequelize,
