@@ -15,4 +15,7 @@ export class UpdateBrandResponse extends BrandModel {
         description: 'Время обновления',
     })
     readonly updatedAt?: string;
+
+    @ApiProperty({ example: 1, description: 'category_id' })
+    readonly category_id: number;
 }

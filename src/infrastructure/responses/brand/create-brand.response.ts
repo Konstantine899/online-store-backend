@@ -24,4 +24,7 @@ export class CreateBrandResponse extends BrandModel {
         description: 'Время создания',
     })
     readonly createdAt?: string;
+
+    @ApiProperty({ example: 1, description: 'category_id' })
+    readonly category_id: number;
 }

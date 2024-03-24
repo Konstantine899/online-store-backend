@@ -46,6 +46,24 @@ export function CreateBrandSwaggerDecorator(): Function {
                             value: 1,
                         },
                     },
+                    {
+                        title: 'Поле category_id не может быть пустым',
+                        example: {
+                            status: HttpStatus.BAD_REQUEST,
+                            property: 'category_id',
+                            messages: ['Поле category_id не может быть пустым'],
+                            value: undefined,
+                        },
+                    },
+                    {
+                        title: 'Поле category_id должно быть number',
+                        example: {
+                            status: HttpStatus.BAD_REQUEST,
+                            property: 'category_id',
+                            messages: ['Поле category_id должно быть number'],
+                            value: '',
+                        },
+                    },
                 ],
             },
         }),

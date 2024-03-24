@@ -21,6 +21,7 @@ export class BrandRepository implements IBrandRepository {
     ): Promise<CreateBrandResponse> {
         const brand = new BrandModel();
         brand.name = dto.name;
+        brand.category_id = dto.category_id;
         await brand.save();
         return brand;
     }
