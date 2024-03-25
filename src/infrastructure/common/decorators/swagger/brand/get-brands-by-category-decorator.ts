@@ -1,17 +1,21 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
-    ApiBody,
     ApiNotFoundResponse,
     ApiOperation,
+    ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { BrandByCategoryDto } from '@app/infrastructure/dto/brand/brand-by-category.dto';
 import { ListAllBrandsResponse } from '@app/infrastructure/responses';
 
 export function GetBrandsByCategoryDecorator(): Function {
     return applyDecorators(
         ApiOperation({ summary: 'Получение списка брендов по category_id' }),
-        ApiBody({ description: 'Body', type: BrandByCategoryDto }),
+        ApiParam({
+            name: 'categoryId',
+            type: 'number',
+            description: 'category id',
+            required: true,
+        }),
         ApiResponse({
             description: 'Список всех brands по category_id',
             status: HttpStatus.OK,

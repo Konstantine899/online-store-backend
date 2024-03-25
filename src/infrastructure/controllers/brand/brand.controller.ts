@@ -31,7 +31,6 @@ import {
 } from '@app/infrastructure/responses';
 import { IBrandController } from '@app/domain/controllers';
 import { ListAllBrandsByCategoryResponse } from '@app/infrastructure/responses/brand/ListAllBrandsByCategoryResponse';
-import { BrandByCategoryDto } from '@app/infrastructure/dto/brand/brand-by-category.dto';
 import { GetBrandsByCategoryDecorator } from '@app/infrastructure/common/decorators/swagger/brand/get-brands-by-category-decorator';
 
 @ApiTags('Бренд')
@@ -59,11 +58,11 @@ export class BrandController implements IBrandController {
 
     @GetBrandsByCategoryDecorator()
     @HttpCode(200)
-    @Get('/brands-by-category')
+    @Get('/brand_list_by_category/:categoryId')
     public async getListAllBrandsByCategory(
-        @Body() dto: BrandByCategoryDto,
+        @Param('categoryId', ParseIntPipe) categoryId: number,
     ): Promise<ListAllBrandsByCategoryResponse[]> {
-        return this.brandService.getListAllBrandsByCategory(dto.category_id);
+        return this.brandService.getListAllBrandsByCategory(categoryId);
     }
 
     @GetBrandSwaggerDecorator()
