@@ -5,7 +5,7 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CreateBrandDto } from '@app/infrastructure/dto';
+import { BrandDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { CreateBrandResponse } from '@app/infrastructure/responses';
 
@@ -14,7 +14,7 @@ export function CreateBrandSwaggerDecorator(): Function {
         ApiOperation({ summary: 'Создание бренда продукта' }),
         ApiBearerAuth('JWT-auth'),
         ApiBody({
-            type: CreateBrandDto,
+            type: BrandDto,
             description: 'Структура входящих данных для создания бренда',
         }),
         ApiResponse({

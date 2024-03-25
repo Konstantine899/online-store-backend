@@ -1,4 +1,4 @@
-import { CreateBrandDto } from '@app/infrastructure/dto';
+import { BrandDto } from '@app/infrastructure/dto';
 import {
     CreateBrandResponse,
     ListAllBrandsResponse,
@@ -8,13 +8,13 @@ import {
 } from '@app/infrastructure/responses';
 
 export interface IBrandController {
-    createBrand(dto: CreateBrandDto): Promise<CreateBrandResponse>;
+    createBrand(dto: BrandDto): Promise<CreateBrandResponse>;
 
     getListAllBrands(): Promise<ListAllBrandsResponse[]>;
 
     getBrand(id: number): Promise<BrandResponse>;
 
-    updateBrand(id: number, dto: CreateBrandDto): Promise<UpdateBrandResponse>;
+    updateBrand(id: number, dto: BrandDto): Promise<UpdateBrandResponse>;
 
     removeBrand(id: number): Promise<RemoveBrandResponse>;
 }

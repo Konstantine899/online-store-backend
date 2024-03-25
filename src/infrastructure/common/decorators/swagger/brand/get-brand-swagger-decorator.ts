@@ -22,7 +22,7 @@ export function GetBrandSwaggerDecorator(): Function {
                 title: 'Бренд',
                 example: {
                     id: 1,
-                    name: 'xiomi',
+                    name: 'xiaomi',
                 },
             },
         }),
@@ -33,8 +33,8 @@ export function GetBrandSwaggerDecorator(): Function {
                 title: 'Бренд не найден',
                 example: {
                     statusCode: HttpStatus.NOT_FOUND,
-                    url: '/online-store/brand/one/11',
-                    path: '/online-store/brand/one/11',
+                    url: '/online-store/brand/11',
+                    path: '/online-store/brand/11',
                     name: 'NotFoundException',
                     message: 'Бренд не найден',
                 },

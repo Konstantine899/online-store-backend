@@ -28,9 +28,9 @@
 Класс RegistrationDto имплементирует  type TRegistration
 Поля email и password принимают значения типа string.
 
-### CreateBrandDto
+### BrandDto
 
-Класс CreateBrandDto имплементирует  ICreateBrand
+Класс BrandDto имплементирует  ICreateBrand
 Поле name принимает значение типа string.
 
 ### CreateCategoryDto

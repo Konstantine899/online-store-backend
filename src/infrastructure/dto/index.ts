@@ -1,4 +1,4 @@
-export { CreateBrandDto } from './brand/create-brand.dto';
+export { BrandDto } from './brand/brand.dto';
 export { CreateUserDto } from './user/create-user.dto';
 export { AddRoleDto } from './user/add-role.dto';
 export { RemoveRoleDto } from './user/remove-role.dto';

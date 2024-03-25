@@ -6,7 +6,7 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CreateBrandDto } from '@app/infrastructure/dto';
+import { BrandDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { UpdateBrandResponse } from '@app/infrastructure/responses';
 
@@ -21,7 +21,7 @@ export function UpdateBrandSwaggerDecorator(): Function {
             required: true,
         }),
         ApiBody({
-            type: CreateBrandDto,
+            type: BrandDto,
             description: 'Структура входящих данных для обновления бренда',
         }),
         ApiResponse({

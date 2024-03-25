@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateBrandDto } from '@app/infrastructure/dto';
+import { BrandDto } from '@app/infrastructure/dto';
 import { BrandRepository } from '@app/infrastructure/repositories';
 import {
     CreateBrandResponse,
@@ -9,19 +9,29 @@ import {
     RemoveBrandResponse,
 } from '@app/infrastructure/responses';
 import { IBrandService } from '@app/domain/services';
+import { ListAllBrandsByCategoryResponse } from '@app/infrastructure/responses/brand/ListAllBrandsByCategoryResponse';
 
 @Injectable()
 export class BrandService implements IBrandService {
     constructor(private readonly brandRepository: BrandRepository) {}
 
-    public async createBrand(
-        dto: CreateBrandDto,
-    ): Promise<CreateBrandResponse> {
+    public async createBrand(dto: BrandDto): Promise<CreateBrandResponse> {
         return this.brandRepository.createBrand(dto);
     }
 
     public async getListAllBrands(): Promise<ListAllBrandsResponse[]> {
         const brands = await this.brandRepository.findListAllBrands();
+        if (!brands.length) {
+            this.notFound('К сожалению по вашему запросу ничего не найдено');
+        }
+        return brands;
+    }
+
+    public async getListAllBrandsByCategory(
+        categoryId: number,
+    ): Promise<ListAllBrandsByCategoryResponse[]> {
+        const brands =
+            await this.brandRepository.findListAllBrandsByCategory(categoryId);
         if (!brands.length) {
             this.notFound('К сожалению по вашему запросу ничего не найдено');
         }
@@ -38,7 +48,7 @@ export class BrandService implements IBrandService {
 
     public async updateBrand(
         id: number,
-        dto: CreateBrandDto,
+        dto: BrandDto,
     ): Promise<UpdateBrandResponse> {
         const brand = await this.getBrand(id);
         return this.brandRepository.updateBrand(dto, brand);

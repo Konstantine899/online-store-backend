@@ -11,7 +11,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { BrandService } from '@app/infrastructure/services';
-import { CreateBrandDto } from '@app/infrastructure/dto';
+import { BrandDto } from '@app/infrastructure/dto';
 import {
     Roles,
     CreateBrandSwaggerDecorator,
@@ -30,6 +30,9 @@ import {
     RemoveBrandResponse,
 } from '@app/infrastructure/responses';
 import { IBrandController } from '@app/domain/controllers';
+import { ListAllBrandsByCategoryResponse } from '@app/infrastructure/responses/brand/ListAllBrandsByCategoryResponse';
+import { BrandByCategoryDto } from '@app/infrastructure/dto/brand/brand-by-category.dto';
+import { GetBrandsByCategoryDecorator } from '@app/infrastructure/common/decorators/swagger/brand/get-brands-by-category-decorator';
 
 @ApiTags('Бренд')
 @Controller('brand')
@@ -42,7 +45,7 @@ export class BrandController implements IBrandController {
     @UseGuards(AuthGuard, RoleGuard)
     @Post('/create')
     public async createBrand(
-        @Body() dto: CreateBrandDto,
+        @Body() dto: BrandDto,
     ): Promise<CreateBrandResponse> {
         return this.brandService.createBrand(dto);
     }
@@ -54,9 +57,18 @@ export class BrandController implements IBrandController {
         return this.brandService.getListAllBrands();
     }
 
+    @GetBrandsByCategoryDecorator()
+    @HttpCode(200)
+    @Get('/brands-by-category')
+    public async getListAllBrandsByCategory(
+        @Body() dto: BrandByCategoryDto,
+    ): Promise<ListAllBrandsByCategoryResponse[]> {
+        return this.brandService.getListAllBrandsByCategory(dto.category_id);
+    }
+
     @GetBrandSwaggerDecorator()
     @HttpCode(200)
-    @Get('/one/:id([0-9]+)')
+    @Get('/:id([0-9]+)')
     public async getBrand(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<BrandResponse> {
@@ -70,7 +82,7 @@ export class BrandController implements IBrandController {
     @Put('/update/:id([0-9]+)')
     public async updateBrand(
         @Param('id', ParseIntPipe) id: number,
-        @Body() dto: CreateBrandDto,
+        @Body() dto: BrandDto,
     ): Promise<UpdateBrandResponse> {
         return this.brandService.updateBrand(id, dto);
     }

@@ -2,7 +2,7 @@ import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ICreateBrand } from '@app/domain/dto';
 
-export class CreateBrandDto implements ICreateBrand {
+export class BrandDto implements ICreateBrand {
     @ApiProperty({
         example: 'Bosh',
         description: 'Имя бренда',
