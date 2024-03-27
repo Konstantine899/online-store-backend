@@ -179,12 +179,20 @@ export class ProductService implements IProductService {
 
         const removedProduct =
             await this.productRepository.removedProduct(productId);
-        if (
-            !removedFile ||
-            !removedProduct ||
-            !removedRating ||
-            !removedProductProperties
-        ) {
+        if (!removedFile) {
+            this.conflict('Произошел конфликт во время удаления файла');
+            if (!removedProductProperties) {
+                this.conflict(
+                    'Произошел конфликт во время удаления характеристик продукта',
+                );
+            }
+            if (!removedRating) {
+                this.conflict(
+                    'Произошел конфликт во время удаления рейтинга продукта',
+                );
+            }
+        }
+        if (!removedProduct) {
             this.conflict('Произошел конфликт во время удаления продукта');
         }
         return {
