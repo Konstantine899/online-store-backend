@@ -8,7 +8,10 @@ import {
 import { CategoryModel } from '@app/domain/models';
 
 export interface ICategoryRepository {
-    createCategory(dto: CreateCategoryDto): Promise<CreateCategoryResponse>;
+    createCategory(
+        dto: CreateCategoryDto,
+        imageName: string,
+    ): Promise<CreateCategoryResponse>;
 
     findListAllCategories(): Promise<ListAllCategoriesResponse[]>;
 
@@ -17,6 +20,7 @@ export interface ICategoryRepository {
     updateCategory(
         dto: CreateCategoryDto,
         category: CategoryModel,
+        updatedNameImage: string,
     ): Promise<UpdateCategoryResponse>;
 
     removeCategory(id: number): Promise<number>;

@@ -1,4 +1,9 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import {
+    ConflictException,
+    HttpStatus,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { CreateCategoryDto } from '@app/infrastructure/dto';
 import { CategoryRepository } from '@app/infrastructure/repositories';
 import {
@@ -9,15 +14,21 @@ import {
     RemoveCategoryResponse,
 } from '@app/infrastructure/responses';
 import { ICategoryService } from '@app/domain/services';
+import { FileService } from '@app/infrastructure/services/file/file.service';
 
 @Injectable()
 export class CategoryService implements ICategoryService {
-    constructor(private readonly categoryRepository: CategoryRepository) {}
+    constructor(
+        private readonly categoryRepository: CategoryRepository,
+        private readonly fileService: FileService,
+    ) {}
 
     public async createCategory(
         dto: CreateCategoryDto,
+        image: Express.Multer.File,
     ): Promise<CreateCategoryResponse> {
-        return this.categoryRepository.createCategory(dto);
+        const imageName = await this.fileService.createFile(image);
+        return this.categoryRepository.createCategory(dto, imageName);
     }
 
     public async getListAllCategories(): Promise<ListAllCategoriesResponse[]> {
@@ -40,9 +51,21 @@ export class CategoryService implements ICategoryService {
     public async updateCategory(
         id: number,
         dto: CreateCategoryDto,
+        image: Express.Multer.File,
     ): Promise<UpdateCategoryResponse> {
         const category = await this.getCategory(id);
-        return this.categoryRepository.updateCategory(dto, category);
+        if (!category) {
+            this.notFound('Категория не найдена в БД');
+        }
+        const updatedNameImage = await this.fileService.updateFile(
+            category.image,
+            image,
+        );
+        return this.categoryRepository.updateCategory(
+            dto,
+            category,
+            updatedNameImage,
+        );
     }
 
     public async removeCategory(id: number): Promise<RemoveCategoryResponse> {
@@ -50,7 +73,12 @@ export class CategoryService implements ICategoryService {
         if (!category) {
             this.notFound('Категория товара не найдена');
         }
+        const removedFile = await this.fileService.removeFile(category.image);
+
         await this.categoryRepository.removeCategory(category.id);
+        if (!removedFile) {
+            this.conflict('Произошел конфликт во время удаления файла');
+        }
         return {
             status: HttpStatus.OK,
             message: 'success',
@@ -60,6 +88,13 @@ export class CategoryService implements ICategoryService {
     private notFound(message: string): void {
         throw new NotFoundException({
             status: HttpStatus.NOT_FOUND,
+            message,
+        });
+    }
+
+    private conflict(message: string): void {
+        throw new ConflictException({
+            status: HttpStatus.CONFLICT,
             message,
         });
     }

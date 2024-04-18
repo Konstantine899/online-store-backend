@@ -8,7 +8,10 @@ import {
 } from '@app/infrastructure/responses';
 
 export interface ICategoryService {
-    createCategory(dto: CreateCategoryDto): Promise<CreateCategoryResponse>;
+    createCategory(
+        dto: CreateCategoryDto,
+        image: Express.Multer.File,
+    ): Promise<CreateCategoryResponse>;
 
     getListAllCategories(): Promise<ListAllCategoriesResponse[]>;
 
@@ -17,6 +20,7 @@ export interface ICategoryService {
     updateCategory(
         id: number,
         dto: CreateCategoryDto,
+        image: Express.Multer.File,
     ): Promise<UpdateCategoryResponse>;
 
     removeCategory(id: number): Promise<RemoveCategoryResponse>;

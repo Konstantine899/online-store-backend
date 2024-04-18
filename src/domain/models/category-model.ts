@@ -4,11 +4,13 @@ import { BrandModel } from '@app/domain/models/brand.model';
 
 interface ICategoryCreationAttributes {
     name: string;
+    image: string;
 }
 
 interface ICategoryModel {
     id: number;
     name: string;
+    image: string;
     products: ProductModel[];
 }
 
@@ -37,6 +39,12 @@ export class CategoryModel
         allowNull: false,
     })
     name: string;
+
+    @Column({
+        type: DataType.STRING,
+        allowNull: false,
+    })
+    image: string;
 
     @HasMany(() => ProductModel, { onDelete: 'RESTRICT' })
     products: ProductModel[];

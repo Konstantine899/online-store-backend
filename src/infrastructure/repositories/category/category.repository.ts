@@ -19,9 +19,11 @@ export class CategoryRepository implements ICategoryRepository {
 
     public async createCategory(
         dto: CreateCategoryDto,
+        imageName: string,
     ): Promise<CreateCategoryResponse> {
         const category = new CategoryModel();
         category.name = dto.name;
+        category.image = imageName;
         return category.save();
     }
 
@@ -36,10 +38,12 @@ export class CategoryRepository implements ICategoryRepository {
     public async updateCategory(
         dto: CreateCategoryDto,
         category: CategoryModel,
+        updatedNameImage: string,
     ): Promise<UpdateCategoryResponse> {
         return category.update({
             ...dto,
             name: dto.name,
+            image: updatedNameImage,
         });
     }
 

@@ -8,7 +8,9 @@ import {
     ParseIntPipe,
     Post,
     Put,
+    UploadedFile,
     UseGuards,
+    UseInterceptors,
 } from '@nestjs/common';
 import { CategoryService } from '@app/infrastructure/services';
 import { CreateCategoryDto } from '@app/infrastructure/dto';
@@ -30,6 +32,8 @@ import {
     RemoveCategoryResponse,
 } from '@app/infrastructure/responses';
 import { ICategoryController } from '@app/domain/controllers';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { multerConfig } from '@app/infrastructure/config/multer';
 
 @ApiTags('Категория')
 @Controller('category')
@@ -41,10 +45,12 @@ export class CategoryController implements ICategoryController {
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
     @Post('/create')
+    @UseInterceptors(FileInterceptor('image', multerConfig))
     public async createCategory(
         @Body() dto: CreateCategoryDto,
+        @UploadedFile() image: Express.Multer.File,
     ): Promise<CreateCategoryResponse> {
-        return this.categoryService.createCategory(dto);
+        return this.categoryService.createCategory(dto, image);
     }
 
     @GetListAllCategoriesSwaggerDecorator()
@@ -68,11 +74,13 @@ export class CategoryController implements ICategoryController {
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
     @Put('/update/:id([0-9]+)')
+    @UseInterceptors(FileInterceptor('image', multerConfig))
     public async updateCategory(
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: CreateCategoryDto,
+        @UploadedFile() image: Express.Multer.File,
     ): Promise<UpdateCategoryResponse> {
-        return this.categoryService.updateCategory(id, dto);
+        return this.categoryService.updateCategory(id, dto, image);
     }
 
     @RemoveCategorySwaggerDecorator()
