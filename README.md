@@ -24,8 +24,14 @@ npm run start:dev
 - `npm run db:migrate:undo:all` - Удаление всех миграций
 - `npm run db:seed:all` - Добавление данных в таблицы
 - `npm run db:seed:undo:all` - Удаление всех данных из таблиц
-
 ---
+
+<br/>
+<br/>
+
+### Swagger
+
+Swagger - доступен по [http://localhost:5000/online-store/docs](http://localhost:5000/online-store/docs)
 
 <br/>
 <br/>
