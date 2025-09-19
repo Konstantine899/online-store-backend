@@ -54,10 +54,10 @@ export class FileService implements IFileService {
                 ? path.join(__dirname, '..', '..', '..', 'static')
                 : null; // получаю путь к директории где хранятся статические файлы
         /*Проверяю если директория хранения статических файлов не существует, то создаю ее*/
-        if (!fs.existsSync(filePath)) {
-            fs.mkdirSync(filePath, { recursive: true }); // создаю директорию
+        if (!fs.existsSync(filePath!)) {
+            fs.mkdirSync(filePath!, { recursive: true }); // создаю директорию
         }
-        return filePath;
+        return filePath!;
     }
 
     private async generateFile(

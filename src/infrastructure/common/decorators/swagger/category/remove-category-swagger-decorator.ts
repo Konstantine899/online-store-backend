@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { RemoveCategoryResponse } from '@app/infrastructure/responses';
 
-export function RemoveCategorySwaggerDecorator(): Function {
+export function RemoveCategorySwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Удаление категории' }),
         ApiBearerAuth('JWT-auth'),
@@ -25,7 +25,6 @@ export function RemoveCategorySwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Категория не найдена',
                 example: {

@@ -9,7 +9,7 @@ import { CreateCategoryDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { CreateCategoryResponse } from '@app/infrastructure/responses';
 
-export function CreateCategorySwaggerDecorator(): Function {
+export function CreateCategorySwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Создание категории' }),
         ApiBearerAuth('JWT-auth'),
@@ -24,7 +24,6 @@ export function CreateCategorySwaggerDecorator(): Function {
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',
-            status: HttpStatus.BAD_REQUEST,
             schema: {
                 title: 'Валидация',
                 anyOf: [

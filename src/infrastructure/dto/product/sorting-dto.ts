@@ -8,5 +8,5 @@ import {
 export class SortingDto implements ISortingDto {
     @ApiProperty({ enum: SortingEnum, description: 'Сортировка цены' })
     @IsOptional()
-    readonly sort: string;
+    declare readonly sort: string;
 }

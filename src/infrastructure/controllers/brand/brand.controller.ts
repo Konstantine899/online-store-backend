@@ -67,7 +67,7 @@ export class BrandController implements IBrandController {
 
     @GetBrandSwaggerDecorator()
     @HttpCode(200)
-    @Get('/:id([0-9]+)')
+    @Get(':id')
     public async getBrand(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<BrandResponse> {
@@ -78,7 +78,7 @@ export class BrandController implements IBrandController {
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
-    @Put('/update/:id([0-9]+)')
+    @Put('/update/:id')
     public async updateBrand(
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: BrandDto,
@@ -90,7 +90,7 @@ export class BrandController implements IBrandController {
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
-    @Delete('/delete/:id([0-9]+)')
+    @Delete('/delete/:id')
     public async removeBrand(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<RemoveBrandResponse> {

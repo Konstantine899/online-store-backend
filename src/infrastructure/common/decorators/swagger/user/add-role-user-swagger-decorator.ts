@@ -11,7 +11,7 @@ import { AddRoleDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { AddRoleResponse } from '@app/infrastructure/responses';
 
-export function AddRoleUserSwaggerDecorator(): Function {
+export function AddRoleUserSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Добавление роли пользователю' }),
         ApiBearerAuth('JWT-auth'),
@@ -22,12 +22,10 @@ export function AddRoleUserSwaggerDecorator(): Function {
         }),
         ApiCreatedResponse({
             description: 'Add Role',
-            status: HttpStatus.CREATED,
             type: AddRoleResponse,
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 anyOf: [
                     {
@@ -57,7 +55,6 @@ export function AddRoleUserSwaggerDecorator(): Function {
         }),
         ApiConflictResponse({
             description: 'Conflict',
-            status: HttpStatus.CONFLICT,
             schema: {
                 example: {
                     statusCode: HttpStatus.CONFLICT,
@@ -67,7 +64,6 @@ export function AddRoleUserSwaggerDecorator(): Function {
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',
-            status: HttpStatus.BAD_REQUEST,
             schema: {
                 title: 'Валидация',
                 anyOf: [

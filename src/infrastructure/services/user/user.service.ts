@@ -122,7 +122,7 @@ export class UserService implements IUserService {
             this.notFound('Пользователь не найден в БД');
         }
         const roleId = await this.getRolesUser(user);
-        await user.$remove('role', roleId);
+        await user.$remove('role', roleId!);
         await this.userRepository.removeUser(user.id);
         return {
             status: HttpStatus.OK,
@@ -156,7 +156,7 @@ export class UserService implements IUserService {
             this.notFound('Пользователь не найден в БД');
         }
         const roleId = await this.getRolesUser(user);
-        await user.$remove('role', roleId);
+        await user.$remove('role', roleId!);
         return {
             status: HttpStatus.OK,
             message: 'success',

@@ -3,11 +3,11 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class RatingResponse extends RatingModel {
     @ApiProperty({ example: 1, description: 'Идентификатор пользователя' })
-    user_id: number;
+    declare user_id: number;
 
     @ApiProperty({ example: 1, description: 'Идентификатор продукта' })
-    product_id: number;
+    declare product_id: number;
 
     @ApiProperty({ example: 5, description: 'Рейтинг продукта' })
-    rating: number;
+    declare rating: number;
 }

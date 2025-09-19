@@ -11,7 +11,7 @@ import { CreateProductPropertyDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { UpdateProductPropertyResponse } from '@app/infrastructure/responses';
 
-export function UpdateProductPropertySwaggerDecorator(): Function {
+export function UpdateProductPropertySwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Обновление свойства продукта' }),
         ApiBearerAuth('JWT-auth'),
@@ -38,7 +38,6 @@ export function UpdateProductPropertySwaggerDecorator(): Function {
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',
-            status: HttpStatus.BAD_REQUEST,
             schema: {
                 anyOf: [
                     {
@@ -86,7 +85,6 @@ export function UpdateProductPropertySwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 anyOf: [
                     {

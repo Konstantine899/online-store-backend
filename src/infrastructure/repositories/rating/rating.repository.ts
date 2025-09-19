@@ -39,7 +39,7 @@ export class RatingRepository implements IRatingRepository {
                 product_id,
                 rating,
             },
-        });
+        }) as Promise<RatingModel>;
     }
 
     public async countRating(product_id: number): Promise<number> {

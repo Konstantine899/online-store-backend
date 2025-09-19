@@ -6,23 +6,23 @@ export class CartTransformResponse implements ICartTransformResponse {
         example: 1,
         description: 'Идентификатор продукта',
     })
-    productId: number;
+    declare readonly productId: number;
 
     @ApiProperty({
         example: 'Xiaomi Redmi Note 10 pro',
         description: 'Имя продукта',
     })
-    name: string;
+    declare readonly name: string;
 
     @ApiProperty({
         example: 1000,
         description: 'Цена продукта',
     })
-    price: number;
+    declare readonly price: number;
 
     @ApiProperty({
         example: 1,
         description: 'Количество',
     })
-    quantity: number;
+    declare readonly quantity: number;
 }

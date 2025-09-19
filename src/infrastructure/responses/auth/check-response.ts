@@ -9,17 +9,17 @@ export class CheckResponse implements ICheckResponse {
         example: 1,
         description: 'Идентификатор пользователя',
     })
-    id: number;
+    declare readonly id: number;
 
     @ApiProperty({
         example: 'test@mail.com',
         description: 'Электронная почта пользователя',
     })
-    email: string;
+    declare readonly email: string;
 
     @ApiProperty({ type: () => [RoleModel] })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => RoleModel)
-    roles: RoleModel[];
+    declare readonly roles: RoleModel[];
 }

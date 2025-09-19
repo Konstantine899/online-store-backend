@@ -38,58 +38,58 @@ export class OrderModel extends Model<OrderModel> implements IOrderModel {
         primaryKey: true,
         autoIncrement: true,
     })
-    id: number;
+    declare id: number;
 
     @Column({
         type: DataType.STRING,
         allowNull: false,
     })
-    name: string;
+    name!: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: false,
     })
-    email: string;
+    email!: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: false,
     })
-    phone: string;
+    phone!: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: false,
     })
-    address: string;
+    address!: string;
 
     @Column({
         type: DataType.FLOAT,
         allowNull: false,
     })
-    amount: number;
+    amount!: number;
 
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
         defaultValue: 0,
     })
-    status: number;
+    status!: number;
 
     @Column({ type: DataType.STRING(2200) })
-    comment: string;
+    comment!: string;
 
     @HasMany(() => OrderItemModel, { onDelete: 'CASCADE' })
-    items: OrderItemModel[];
+    items!: OrderItemModel[];
 
     @ForeignKey(() => UserModel)
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
     })
-    user_id: number;
+    user_id!: number;
 
     @BelongsTo(() => UserModel)
-    user: UserModel;
+    user!: UserModel;
 }

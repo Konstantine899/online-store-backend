@@ -46,7 +46,7 @@ export class RoleGuard implements CanActivate {
                     accessToken,
                     request,
                 );
-            const isRole = user.roles.some((role): boolean => {
+            const isRole = user.roles?.some((role): boolean => {
                 return requiredRoles.includes(role.role);
             });
             if (!isRole) {
@@ -57,10 +57,11 @@ export class RoleGuard implements CanActivate {
             }
             return isRole;
         } catch (error) {
-            throw new ForbiddenException({
-                status: HttpStatus.FORBIDDEN,
-                message: `${error.message}!`,
-            });
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new ForbiddenException({
+        status: HttpStatus.FORBIDDEN,
+        message: `${errorMessage}!`,
+    });
         }
     }
 }

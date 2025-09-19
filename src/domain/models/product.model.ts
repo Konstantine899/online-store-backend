@@ -54,66 +54,66 @@ export class ProductModel
         primaryKey: true,
         autoIncrement: true,
     })
-    id: number;
+   declare id: number;
 
     @Column({
         type: DataType.STRING,
         unique: true,
         allowNull: false,
     })
-    name: string;
+    name!: string;
 
     @Column({
         type: DataType.FLOAT,
         allowNull: false,
     })
-    price: number;
+    price!: number;
 
     @Column({
         type: DataType.FLOAT,
         defaultValue: 0,
     })
-    rating: number;
+    rating!: number;
 
     @Column({
         type: DataType.STRING,
         allowNull: false,
     })
-    image: string;
+    image!: string;
 
     @ForeignKey(() => CategoryModel)
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
     })
-    category_id: number;
+    category_id!: number;
 
     @BelongsTo(() => CategoryModel, 'category_id')
-    category: CategoryModel;
+    category!: CategoryModel;
 
     @ForeignKey(() => BrandModel)
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
     })
-    brand_id: number;
+    brand_id!: number;
 
     @BelongsTo(() => BrandModel, 'brand_id')
-    brand: BrandModel;
+    brand!: BrandModel;
 
     @HasMany(() => ProductPropertyModel, { onDelete: 'CASCADE' })
-    properties: ProductPropertyModel[];
+    properties!: ProductPropertyModel[];
 
     @BelongsToMany(() => CartModel, {
         through: () => CartProductModel,
         onDelete: 'CASCADE',
     })
-    baskets: CartModel[];
+    baskets!: CartModel[];
 
     @BelongsToMany(() => UserModel, {
         through: () => RatingModel,
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
     })
-    users: UserModel[];
+    users!: UserModel[];
 }

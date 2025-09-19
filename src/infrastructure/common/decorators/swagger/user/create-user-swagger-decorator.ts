@@ -10,7 +10,7 @@ import { CreateUserDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { CreateUserResponse } from '@app/infrastructure/responses';
 
-export function CreateUserSwaggerDecorator(): Function {
+export function CreateUserSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiBearerAuth('JWT-auth'),
         ApiOperation({ summary: 'Создание пользователя' }),
@@ -25,7 +25,6 @@ export function CreateUserSwaggerDecorator(): Function {
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',
-            status: HttpStatus.BAD_REQUEST,
             schema: {
                 anyOf: [
                     {
@@ -63,7 +62,6 @@ export function CreateUserSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Роль USER не найдена в БД',
                 example: {

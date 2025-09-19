@@ -34,7 +34,7 @@ export class RoleModel extends Model<RoleModel> implements IRoleModel {
         autoIncrement: true,
         primaryKey: true,
     })
-    id: number;
+    declare id: number;
 
     @ApiProperty({
         example: 'USER',
@@ -45,7 +45,7 @@ export class RoleModel extends Model<RoleModel> implements IRoleModel {
         unique: true,
         allowNull: false,
     })
-    role: string;
+    role!: string;
 
     @ApiProperty({
         example: 'Пользователь',
@@ -55,9 +55,9 @@ export class RoleModel extends Model<RoleModel> implements IRoleModel {
         type: DataType.STRING,
         allowNull: false,
     })
-    description: string;
+    description!: string;
 
     // Многие ко многим через промежуточную таблицу UserRoleModel
     @BelongsToMany(() => UserModel, () => UserRoleModel)
-    users: UserModel[];
+    users!: UserModel[];
 }

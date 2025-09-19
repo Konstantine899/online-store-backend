@@ -69,7 +69,7 @@ export class ProductController implements IProductController {
 
     @GetProductSwaggerDecorator()
     @HttpCode(200)
-    @Get('/one/:id([0-9]+)')
+    @Get('/one/:id')
     public async getProduct(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<GetProductResponse> {
@@ -95,7 +95,7 @@ export class ProductController implements IProductController {
 
     @GetListProductByBrandIdSwaggerDecorator()
     @HttpCode(200)
-    @Get('/all/brandId/:brandId([0-9]+)')
+    @Get('/all/brandId/:brandId')
     public async getListProductByBrandId(
         @Param('brandId', ParseIntPipe) brandId: number,
         @Query() searchQuery: SearchDto,
@@ -114,7 +114,7 @@ export class ProductController implements IProductController {
 
     @GetListProductByCategoryIdSwaggerDecorator()
     @HttpCode(200)
-    @Get('/all/categoryId/:categoryId([0-9]+)')
+    @Get('/all/categoryId/:categoryId')
     public async getListProductByCategoryId(
         @Param('categoryId', ParseIntPipe) categoryId: number,
         @Query() searchQuery: SearchDto,
@@ -133,7 +133,7 @@ export class ProductController implements IProductController {
 
     @GetAllByBrandIdAndCategoryIdSwaggerDecorator()
     @HttpCode(200)
-    @Get('/all/brandId/:brandId([0-9]+)/categoryId/:categoryId([0-9]+)')
+    @Get('/all/brandId/:brandId/categoryId/:categoryId')
     public async getAllByBrandIdAndCategoryId(
         @Param('brandId', ParseIntPipe) brandId: number,
         @Param('categoryId', ParseIntPipe) categoryId: number,
@@ -156,7 +156,7 @@ export class ProductController implements IProductController {
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
-    @Put('/update/:id([0-9]+)')
+    @Put('/update/:id')
     @UseInterceptors(FileInterceptor('image', multerConfig))
     public async update(
         @Param('id', ParseIntPipe) id: number,
@@ -170,7 +170,7 @@ export class ProductController implements IProductController {
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
-    @Delete('/delete/:id([0-9]+)')
+    @Delete('/delete/:id')
     public async removeProduct(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<RemoveProductResponse> {

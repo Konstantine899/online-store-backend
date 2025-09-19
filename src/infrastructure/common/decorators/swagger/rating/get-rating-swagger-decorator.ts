@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { GetRatingResponse } from '@app/infrastructure/responses';
 
-export function GetRatingSwaggerDecorator(): Function {
+export function GetRatingSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({
             summary: 'Получение рейтинга продукта',
@@ -26,7 +26,6 @@ export function GetRatingSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Продукт не найден',
                 anyOf: [

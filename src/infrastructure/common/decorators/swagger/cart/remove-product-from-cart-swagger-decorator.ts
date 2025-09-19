@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { RemoveProductFromCartResponse } from '@app/infrastructure/responses';
 
-export function RemoveProductFromCartSwaggerDecorator(): Function {
+export function RemoveProductFromCartSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Удаление продукта из корзины' }),
         ApiCookieAuth(),
@@ -25,7 +25,6 @@ export function RemoveProductFromCartSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 anyOf: [
                     {

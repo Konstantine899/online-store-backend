@@ -62,7 +62,7 @@ export class CategoryController implements ICategoryController {
 
     @GetCategorySwaggerDecorator()
     @HttpCode(200)
-    @Get('/one/:id([0-9]+)')
+    @Get('/one/:id')
     public async getCategory(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<CategoryResponse> {
@@ -73,7 +73,7 @@ export class CategoryController implements ICategoryController {
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
-    @Put('/update/:id([0-9]+)')
+    @Put('/update/:id')
     @UseInterceptors(FileInterceptor('image', multerConfig))
     public async updateCategory(
         @Param('id', ParseIntPipe) id: number,
@@ -87,7 +87,7 @@ export class CategoryController implements ICategoryController {
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
-    @Delete('/delete/:id([0-9]+)')
+    @Delete('/delete/:id')
     public async removeCategory(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<RemoveCategoryResponse> {

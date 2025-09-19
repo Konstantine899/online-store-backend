@@ -38,7 +38,7 @@ export class ProductPropertyModel
         autoIncrement: true,
         allowNull: false,
     })
-    id: number;
+   declare id: number;
 
     @ApiProperty({
         example: 'Экран:',
@@ -48,7 +48,7 @@ export class ProductPropertyModel
         type: DataType.STRING,
         allowNull: false,
     })
-    name: string;
+    name!: string;
 
     @ApiProperty({
         example: '6.67  1080x2400 пикселей, AMOLED',
@@ -58,7 +58,7 @@ export class ProductPropertyModel
         type: DataType.STRING,
         allowNull: false,
     })
-    value: string;
+    value!: string;
 
     @ApiProperty({
         example: 1,
@@ -69,8 +69,8 @@ export class ProductPropertyModel
         type: DataType.INTEGER,
         allowNull: false,
     })
-    product_id: number;
+    product_id!: number;
 
     @BelongsTo(() => ProductModel)
-    product: ProductModel;
+    product!: ProductModel;
 }

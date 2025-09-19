@@ -8,47 +8,47 @@ export class GetProductResponse extends ProductModel {
         example: 54,
         description: 'Идентификатор продукта',
     })
-    id: number;
+    declare id: number;
 
     @ApiProperty({
         example: 'Смартфон Xiaomi Redmi Note 12 Pro 4G 8GB/256GB RU (синий)',
         description: 'Имя продукта',
     })
-    name: string;
+    declare name: string;
 
     @ApiProperty({
         example: 1000,
         description: 'Цена продукта',
     })
-    price: number;
+    declare price: number;
 
     @ApiProperty({
         example: 5,
         description: 'Рейтинг продукта',
     })
-    rating: number;
+    declare rating: number;
 
     @ApiProperty({
         example: '926429b8-69bf-439b-b9be-6f4893d7bab9.jpg',
         description: 'Имя и расширение изображения продукта',
     })
-    image: string;
+    declare image: string;
 
     @ApiProperty({
         example: 1,
         description: 'Идентификатор категории',
     })
-    category_id: number;
+    declare category_id: number;
 
     @ApiProperty({
         example: 1,
         description: 'Идентификатор бренда',
     })
-    brand_id: number;
+    declare brand_id: number;
 
     @ApiProperty({ type: () => [ProductPropertyModel] })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => ProductPropertyModel)
-    properties: ProductPropertyModel[];
+    declare properties: ProductPropertyModel[];
 }

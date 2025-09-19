@@ -10,7 +10,7 @@ export class CreateProductDto implements ICreateProductDto {
     })
     @IsNotEmpty({ message: 'Имя не должно быть пустым' })
     @IsString({ message: 'Имя  должно быть строкой' })
-    readonly name: string;
+    declare readonly name: string;
 
     @ApiProperty({ example: 2000, description: 'Цена продукта' })
     @IsNumber(
@@ -21,24 +21,23 @@ export class CreateProductDto implements ICreateProductDto {
         },
     )
     @Transform(({ value }): number => Number.parseFloat(value))
-    readonly price: number;
+    declare readonly price: number;
 
     @ApiProperty({
-        type: 'file',
+        type: 'string',
         example: 'fafacc43-51a8-4ce9-9062-8b5e3c12a500.png',
         description: 'Изображение',
-        properties: { image: { type: 'string', format: 'binary' } },
     })
-    readonly image: Express.Multer.File;
+    declare readonly image: Express.Multer.File;
 
     @ApiProperty({ example: 1, description: 'Идентификатор бренда продукта' })
     @Transform(({ value }): number => Number.parseFloat(value))
-    readonly brandId: number;
+    declare readonly brandId: number;
 
     @ApiProperty({
         example: 1,
         description: 'Идентификатор категории продукта',
     })
     @Transform(({ value }): number => Number.parseFloat(value))
-    readonly categoryId: number;
+    declare readonly categoryId: number;
 }

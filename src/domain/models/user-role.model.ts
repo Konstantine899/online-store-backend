@@ -24,12 +24,12 @@ export class UserRoleModel extends Model<UserModel> implements IUserRoleModel {
         type: DataType.INTEGER,
         allowNull: false,
     })
-    roleId: number;
+    roleId!: number;
 
     @ForeignKey(() => UserModel)
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
     })
-    userId: number;
+    userId!: number;
 }

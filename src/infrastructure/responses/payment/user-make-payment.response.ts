@@ -10,46 +10,46 @@ export class UserMakePaymentResponse implements IUserMakePaymentResponse {
         example: 1,
         description: 'Идентификатор заказа',
     })
-    id: string;
+    declare id: string;
 
     @ApiProperty({
         example: 'pending',
         description: 'Статус заказа',
     })
-    status: string;
+    declare status: string;
 
     @ApiProperty()
-    amount: AmountResponse;
+    declare amount: AmountResponse;
 
     @ApiProperty()
-    recipient: RecipientResponse;
+    declare recipient: RecipientResponse;
 
     @ApiProperty({
         example: '2023-06-07T10:39:00.236Z',
         description: 'Время оплаты',
     })
-    created_at: string;
+    declare created_at: string;
 
     @ApiProperty()
-    confirmation: ConfirmationResponse;
+    declare confirmation: ConfirmationResponse;
 
     @ApiProperty({
         example: true,
         description: 'Тестова среда',
     })
-    test: boolean;
+    declare test: boolean;
 
     @ApiProperty({
         example: false,
         description: 'Оплаченный',
     })
-    paid: boolean;
+    declare paid: boolean;
 
     @ApiProperty({
         example: false,
         description: 'Возмещаемый',
     })
-    refundable: boolean;
+    declare refundable: boolean;
     @ApiProperty()
-    metadata: UserMetadataResponse;
+    declare metadata: UserMetadataResponse;
 }

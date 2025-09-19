@@ -5,5 +5,5 @@ import { IMakePaymentDto } from '@app/domain/dto';
 export class MakePaymentDto implements IMakePaymentDto {
     @ApiProperty({ example: 1000 })
     @IsNotEmpty({ message: 'Поле amount не может быть пустым' })
-    readonly amount: number;
+    declare readonly amount: number;
 }

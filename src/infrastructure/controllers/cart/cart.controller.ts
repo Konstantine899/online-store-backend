@@ -49,7 +49,7 @@ export class CartController implements ICartController {
 
     @AppendToCartSwaggerDecorator()
     @HttpCode(200)
-    @Put('/product/:productId([0-9]+)/append/:quantity([0-9]+)')
+    @Put('/product/:productId/append/:quantity')
     public async appendToCart(
         @Req() request: Request,
         @Res({ passthrough: true }) response: Response,
@@ -66,7 +66,7 @@ export class CartController implements ICartController {
 
     @IncrementSwaggerDecorator()
     @HttpCode(200)
-    @Put('/product/:productId([0-9]+)/increment/:quantity([0-9]+)')
+    @Put('/product/:productId/increment/:quantity')
     public async increment(
         @Req() request: Request,
         @Res({ passthrough: true }) response: Response,
@@ -83,7 +83,7 @@ export class CartController implements ICartController {
 
     @DecrementSwaggerDecorator()
     @HttpCode(200)
-    @Put('/product/:productId([0-9]+)/decrement/:quantity([0-9]+)')
+    @Put('/product/:productId/decrement/:quantity')
     public async decrement(
         @Req() request: Request,
         @Res({ passthrough: true }) response: Response,
@@ -100,7 +100,7 @@ export class CartController implements ICartController {
 
     @RemoveProductFromCartSwaggerDecorator()
     @HttpCode(200)
-    @Put('/product/:productId([0-9]+)/remove')
+    @Put('/product/:productId/remove')
     public async removeProductFromCart(
         @Req() request: Request,
         @Res({ passthrough: true }) response: Response,

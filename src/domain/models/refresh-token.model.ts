@@ -33,26 +33,26 @@ export class RefreshTokenModel
         primaryKey: true,
         autoIncrement: true,
     })
-    id: number;
+    declare id: number;
 
     @Column({
         type: DataType.BOOLEAN,
         defaultValue: false,
     })
-    is_revoked: boolean; // аннулировать или нет
+    is_revoked!: boolean; // аннулировать или нет
 
     @Column({
         type: DataType.DATE,
         allowNull: false,
     })
-    expires: Date;
+    expires!: Date;
 
     @ForeignKey(() => UserModel)
     @Column({ type: DataType.INTEGER })
-    user_id: number;
+    user_id!: number;
 
     // У одного refresh token может быть только один пользователь
 
     @BelongsTo(() => UserModel)
-    user: UserModel;
+    user!: UserModel;
 }

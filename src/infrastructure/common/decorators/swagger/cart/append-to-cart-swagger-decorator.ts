@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { AppendToCartResponse } from '@app/infrastructure/responses';
 
-export function AppendToCartSwaggerDecorator(): Function {
+export function AppendToCartSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Добавление продукта в корзину' }),
         ApiCookieAuth(),
@@ -31,7 +31,6 @@ export function AppendToCartSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 anyOf: [
                     {

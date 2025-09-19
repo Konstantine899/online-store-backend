@@ -10,7 +10,7 @@ import {
 import { RemoveRoleDto } from '@app/infrastructure/dto';
 import { RemoveUserRoleResponse } from '@app/infrastructure/responses';
 
-export function RemoveRoleUserSwaggerDecorator(): Function {
+export function RemoveRoleUserSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Удаление роли у пользователя' }),
         ApiBearerAuth('JWT-auth'),
@@ -25,7 +25,6 @@ export function RemoveRoleUserSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 anyOf: [
                     {
@@ -53,7 +52,6 @@ export function RemoveRoleUserSwaggerDecorator(): Function {
         }),
         ApiForbiddenResponse({
             description: 'Forbidden',
-            status: HttpStatus.FORBIDDEN,
             schema: {
                 title: 'Запрет удаления роли USER',
                 example: {

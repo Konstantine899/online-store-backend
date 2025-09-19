@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { RemoveUserResponse } from '@app/infrastructure/responses';
 
-export function RemoveUserSwaggerDecorator(): Function {
+export function RemoveUserSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Удаление пользователя' }),
         ApiBearerAuth('JWT-auth'),
@@ -25,7 +25,6 @@ export function RemoveUserSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Пользователь не найден В БД',
                 example: {

@@ -26,13 +26,13 @@ export class CartProductModel
         type: DataType.INTEGER,
         defaultValue: 1,
     })
-    quantity: number;
+    quantity!: number;
 
     @ForeignKey(() => CartModel)
     @Column({ type: DataType.INTEGER })
-    cart_id: number;
+    cart_id!: number;
 
     @ForeignKey(() => ProductModel)
     @Column({ type: DataType.INTEGER })
-    product_id: number;
+    product_id!: number;
 }

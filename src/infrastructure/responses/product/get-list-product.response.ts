@@ -4,14 +4,14 @@ import { IGetListProductResponse } from '@app/domain/responses';
 
 export class GetListProductResponse implements IGetListProductResponse {
     @ApiProperty()
-    metaData: MetaData;
+    declare metaData: MetaData;
 
     @ApiProperty({
         example: 1,
         description: 'Количество найденных элементов',
     })
-    count: number;
+    declare count: number;
 
     @ApiProperty({ type: () => [ProductInfo] })
-    rows: ProductInfo[];
+    declare rows: ProductInfo[];
 }

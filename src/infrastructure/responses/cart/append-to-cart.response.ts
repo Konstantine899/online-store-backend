@@ -7,11 +7,11 @@ import { CartTransformResponse } from './cart-transform-response';
 
 export class AppendToCartResponse implements ICartTransformData {
     @ApiProperty({ example: 26, description: 'Идентификатор корзины' })
-    readonly cartId: number;
+    declare readonly cartId: number;
 
     @ApiProperty({ type: () => [CartTransformResponse] })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => CartTransformResponse)
-    readonly products: ProductModel[];
+    declare readonly products: ProductModel[];
 }

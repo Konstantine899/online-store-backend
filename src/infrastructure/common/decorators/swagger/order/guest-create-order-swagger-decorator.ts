@@ -8,7 +8,7 @@ import {
 import { orderValidation } from './order.validation';
 import { GuestCreateOrderResponse } from '@app/infrastructure/responses';
 
-export function GuestCreateOrderSwaggerDecorator(): Function {
+export function GuestCreateOrderSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Создание заказа гостем' }),
         ApiResponse({
@@ -18,7 +18,6 @@ export function GuestCreateOrderSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 anyOf: [
                     {

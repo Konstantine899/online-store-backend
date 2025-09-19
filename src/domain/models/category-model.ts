@@ -31,24 +31,24 @@ export class CategoryModel
         primaryKey: true,
         autoIncrement: true,
     })
-    id: number;
+    declare id: number;
 
     @Column({
         type: DataType.STRING,
         unique: true,
         allowNull: false,
     })
-    name: string;
+    name!: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: false,
     })
-    image: string;
+    image!: string;
 
     @HasMany(() => ProductModel, { onDelete: 'RESTRICT' })
-    products: ProductModel[];
+    products!: ProductModel[];
 
     @HasMany(() => BrandModel, { onDelete: 'RESTRICT' })
-    brands: BrandModel[];
+    brands!: BrandModel[];
 }

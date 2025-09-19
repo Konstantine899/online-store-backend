@@ -4,8 +4,8 @@ import { IRemoveCategoryResponse } from '@app/domain/responses';
 
 export class RemoveCategoryResponse implements IRemoveCategoryResponse {
     @ApiProperty({ example: HttpStatus.OK })
-    readonly status: number;
+    declare readonly status: number;
 
     @ApiProperty({ example: 'success' })
-    readonly message: string;
+    declare readonly message: string;
 }

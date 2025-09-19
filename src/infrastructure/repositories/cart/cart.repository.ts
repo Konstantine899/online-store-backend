@@ -20,7 +20,7 @@ export class CartRepository implements ICartRepository {
                     attributes: ['id', 'name', 'price'],
                 },
             ],
-        });
+        }) as Promise<CartModel>;
     }
 
     public async createCart(): Promise<CartModel> {
@@ -60,7 +60,7 @@ export class CartRepository implements ICartRepository {
             cart_id,
             product_id,
             quantity,
-        });
+        } as any);
         await cart.reload();
         return cart;
     }
@@ -118,7 +118,7 @@ export class CartRepository implements ICartRepository {
         });
         // Если продукт в корзине не найден удаляем его из таблицы CartProductModel
         if (!cart_product) {
-            await cart_product.destroy();
+            return cart;
         }
         // если количество продуктов в корзине больше переданного количества,
         // то уменьшаем количество товаров в корзине
@@ -143,7 +143,7 @@ export class CartRepository implements ICartRepository {
             ],
         });
         if (!cart) {
-            await this.cartModel.create();
+            return await this.cartModel.create();
         }
         const cart_product = await this.cartProductModel.findOne({
             where: {

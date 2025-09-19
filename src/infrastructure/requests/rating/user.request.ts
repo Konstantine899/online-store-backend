@@ -6,5 +6,5 @@ export class UserRequest implements IUserRequest {
         example: 1,
         description: 'Идентификатор пользователя',
     })
-    id: number;
+    declare readonly id: number;
 }

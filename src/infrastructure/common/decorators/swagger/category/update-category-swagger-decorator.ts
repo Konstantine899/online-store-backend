@@ -11,7 +11,7 @@ import { CreateCategoryDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { UpdateCategoryResponse } from '@app/infrastructure/responses';
 
-export function UpdateCategorySwaggerDecorator(): Function {
+export function UpdateCategorySwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Обновление категории' }),
         ApiBearerAuth('JWT-auth'),
@@ -32,7 +32,6 @@ export function UpdateCategorySwaggerDecorator(): Function {
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',
-            status: HttpStatus.BAD_REQUEST,
             schema: {
                 title: 'Валидация',
                 anyOf: [
@@ -59,7 +58,6 @@ export function UpdateCategorySwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Категория не найдена',
                 example: {

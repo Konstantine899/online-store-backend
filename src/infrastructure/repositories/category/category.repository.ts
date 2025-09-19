@@ -32,7 +32,7 @@ export class CategoryRepository implements ICategoryRepository {
     }
 
     public async findCategory(id: number): Promise<CategoryResponse> {
-        return this.categoryModel.findByPk(id);
+        return this.categoryModel.findByPk(id) as Promise<CategoryResponse>;
     }
 
     public async updateCategory(

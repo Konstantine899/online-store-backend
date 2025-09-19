@@ -24,7 +24,7 @@ export class ProductPropertyRepository implements IProductPropertyRepository {
         return this.productPropertyModel.create({
             product_id,
             ...dto,
-        });
+        } as any) as Promise<CreateProductPropertyResponse>;
     }
 
     public async findOneProductProperty(
@@ -36,7 +36,7 @@ export class ProductPropertyRepository implements IProductPropertyRepository {
                 product_id,
                 id,
             },
-        });
+        }) as Promise<GetProductPropertyResponse>;
     }
 
     public async findListProductProperty(

@@ -4,10 +4,10 @@ import { IsOptional } from 'class-validator';
 
 export class CreateBrandResponse extends BrandModel {
     @ApiProperty({ example: 1, description: 'Идентификатор бренда' })
-    readonly id: number;
+    declare readonly id: number;
 
     @ApiProperty({ example: 'Bosh', description: 'Имя бренда' })
-    readonly name: string;
+    declare readonly name: string;
 
     @IsOptional()
     @ApiProperty({
@@ -15,7 +15,7 @@ export class CreateBrandResponse extends BrandModel {
         required: false,
         description: 'Время обновления',
     })
-    readonly updatedAt?: string;
+    declare readonly updatedAt?: string;
 
     @IsOptional()
     @ApiProperty({
@@ -23,8 +23,8 @@ export class CreateBrandResponse extends BrandModel {
         required: false,
         description: 'Время создания',
     })
-    readonly createdAt?: string;
+    declare readonly createdAt?: string;
 
     @ApiProperty({ example: 1, description: 'category_id' })
-    readonly category_id: number;
+    declare readonly category_id: number;
 }

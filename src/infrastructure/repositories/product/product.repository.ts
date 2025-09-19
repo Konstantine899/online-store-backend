@@ -30,14 +30,14 @@ export class ProductRepository implements IProductRepository {
 
     // Используется в модуле Rating
     public async fidProductByPkId(productId: number): Promise<ProductModel> {
-        return this.productModel.findByPk(productId);
+        return this.productModel.findByPk(productId) as Promise<ProductModel>;
     }
 
     public async findProductProperty(id: number): Promise<GetProductResponse> {
         return this.productModel.findOne({
             where: { id },
             include: [{ model: ProductPropertyModel }],
-        });
+        }) as Promise<GetProductResponse>;
     }
 
     public async findListProduct(
@@ -47,8 +47,8 @@ export class ProductRepository implements IProductRepository {
         offset: number,
     ): Promise<{ count: number; rows: ProductInfo[] }> {
         return this.productModel.findAndCountAll({
-            where: search ? { name: { [Op.like]: `%${search}%` } } : null,
-            order: sort ? [['price', sort.toUpperCase()]] : null,
+            where: search ? { name: { [Op.like]: `%${search}%` } } : undefined,
+            order: sort ? [['price', sort.toUpperCase()]] : undefined,
             limit: limit ? limit : 5,
             offset,
         });
@@ -63,7 +63,7 @@ export class ProductRepository implements IProductRepository {
     ): Promise<{ count: number; rows: ProductInfo[] }> {
         return this.productModel.findAndCountAll({
             where: { brand_id: brandId },
-            order: sort ? [['price', sort.toUpperCase()]] : null,
+            order: sort ? [['price', sort.toUpperCase()]] : undefined,
             limit: limit ? limit : 5,
             offset,
         });
@@ -78,7 +78,7 @@ export class ProductRepository implements IProductRepository {
     ): Promise<{ count: number; rows: ProductInfo[] }> {
         return this.productModel.findAndCountAll({
             where: { category_id: categoryId },
-            order: sort ? [['price', sort.toUpperCase()]] : null,
+            order: sort ? [['price', sort.toUpperCase()]] : undefined,
             limit: limit ? limit : 5,
             offset,
         });
@@ -97,7 +97,7 @@ export class ProductRepository implements IProductRepository {
                 brand_id: brandId,
                 category_id: categoryId,
             },
-            order: sort ? [['price', sort.toUpperCase()]] : null,
+            order: sort ? [['price', sort.toUpperCase()]] : undefined,
             limit: limit ? limit : 5,
             offset,
         });

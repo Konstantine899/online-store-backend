@@ -10,7 +10,7 @@ export class LoginDto implements TLogin {
     @IsNotEmpty({ message: 'Укажите email' })
     @IsString({ message: 'Поле email должно быть строкой' })
     @IsEmail({}, { message: 'Не верный формат email' })
-    readonly email: string;
+    declare readonly email: string;
 
     @ApiProperty({
         example: '123456',
@@ -21,5 +21,5 @@ export class LoginDto implements TLogin {
     @MinLength(6, {
         message: 'Пароль пользователя должен быть не менее 6 символов',
     })
-    readonly password: string;
+    declare readonly password: string;
 }

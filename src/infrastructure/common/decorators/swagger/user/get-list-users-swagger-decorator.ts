@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { GetListUsersResponse } from '@app/infrastructure/responses';
 
-export function GetListUsersSwaggerDecorator(): Function {
+export function GetListUsersSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Получение списка всех пользователей' }),
         ApiBearerAuth('JWT-auth'),
@@ -18,7 +18,6 @@ export function GetListUsersSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'List users is empty',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Список пользователей пуст',
                 example: {

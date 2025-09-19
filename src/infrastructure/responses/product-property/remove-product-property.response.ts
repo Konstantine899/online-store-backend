@@ -6,8 +6,8 @@ export class RemoveProductPropertyResponse
     implements IRemoveProductPropertyResponse
 {
     @ApiProperty({ example: HttpStatus.OK })
-    readonly status: number;
+    readonly status!: number;
 
     @ApiProperty({ example: 'success' })
-    readonly message: string;
+    readonly message!: string;
 }

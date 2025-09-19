@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { AdminGetOrderUserResponse } from '@app/infrastructure/responses';
 
-export function AdminGetOrderUserSwaggerDecorator(): Function {
+export function AdminGetOrderUserSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({
             summary: 'Получение заказа пользователя администратором',
@@ -27,7 +27,6 @@ export function AdminGetOrderUserSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Заказ не найден',
                 example: {

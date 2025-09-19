@@ -6,7 +6,7 @@ import {
     ApiResponse,
 } from '@nestjs/swagger';
 
-export function GetBrandSwaggerDecorator(): Function {
+export function GetBrandSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Получить бренд' }),
         ApiParam({
@@ -28,7 +28,6 @@ export function GetBrandSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Бренд не найден',
                 example: {

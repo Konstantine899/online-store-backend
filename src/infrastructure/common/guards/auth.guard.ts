@@ -27,10 +27,12 @@ export class AuthGuard implements CanActivate {
             );
             return true;
         } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             throw new ForbiddenException({
                 status: HttpStatus.FORBIDDEN,
                 message:
-                    `${error.message}! Please authorization` ||
+                    `${errorMessage}! Please authorization` ||
                     'session expired! Please authorization',
             });
         }

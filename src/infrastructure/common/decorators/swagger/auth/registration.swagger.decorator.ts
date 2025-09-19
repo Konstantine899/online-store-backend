@@ -4,7 +4,7 @@ import { RegistrationDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { RegistrationResponse } from '@app/infrastructure/responses';
 
-export function RegistrationSwaggerDecorator(): Function {
+export function RegistrationSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Регистрация' }),
         ApiBody({
@@ -19,7 +19,6 @@ export function RegistrationSwaggerDecorator(): Function {
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',
-            status: HttpStatus.BAD_REQUEST,
             schema: {
                 title: 'Электронная почта найдена в БД',
                 description: 'Электронная почта должна быть уникальной',
