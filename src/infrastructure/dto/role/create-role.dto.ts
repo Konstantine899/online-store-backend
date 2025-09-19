@@ -9,7 +9,7 @@ export class CreateRoleDto implements ICreateRoleDto {
     })
     @IsNotEmpty({ message: 'Укажите роль пользователя' })
     @IsString({ message: 'Поле role должно быть строкой' })
-    readonly role: string;
+    declare readonly role: string;
 
     @ApiProperty({
         example: 'Пользователь',
@@ -17,5 +17,5 @@ export class CreateRoleDto implements ICreateRoleDto {
     })
     @IsNotEmpty({ message: 'Укажите описание роли пользователя' })
     @IsString({ message: 'Поле описания роли должно быть строкой' })
-    readonly description: string;
+    declare readonly description: string;
 }

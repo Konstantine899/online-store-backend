@@ -6,11 +6,11 @@ export class RecipientResponse implements IRecipientResponse {
         example: '111111',
         description: 'Идентификатор аккаунта',
     })
-    account_id: string;
+    declare account_id: string;
 
     @ApiProperty({
         example: '1111111',
         description: 'Идентификатор шлюза',
     })
-    gateway_id: string;
+    declare gateway_id: string;
 }

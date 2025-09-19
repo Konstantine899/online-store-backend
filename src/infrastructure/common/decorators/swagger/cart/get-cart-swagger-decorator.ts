@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { CartResponse } from '@app/infrastructure/responses';
 
-export function GetCartSwaggerDecorator(): Function {
+export function GetCartSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Получение корзины' }),
         ApiCookieAuth(),
@@ -18,7 +18,6 @@ export function GetCartSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Корзина не найдена в БД',
                 example: {

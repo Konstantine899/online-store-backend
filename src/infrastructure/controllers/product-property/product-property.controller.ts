@@ -43,7 +43,7 @@ export class ProductPropertyController implements IProductPropertyController {
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
     @HttpCode(201)
-    @Post('/product_id/:productId([0-9]+)/create')
+    @Post('/product_id/:productId/create')
     public async createProductProperty(
         @Param('productId', ParseIntPipe) productId: number,
         @Body() dto: CreateProductPropertyDto,
@@ -56,7 +56,7 @@ export class ProductPropertyController implements IProductPropertyController {
 
     @GetProductPropertySwaggerDecorator()
     @HttpCode(200)
-    @Get('/product_id/:productId([0-9]+)/get-property/:id([0-9]+)')
+    @Get('/product_id/:productId/get-property/:id')
     public async getProductProperty(
         @Param('productId', ParseIntPipe) productId: number,
         @Param('id', ParseIntPipe) id: number,
@@ -66,7 +66,7 @@ export class ProductPropertyController implements IProductPropertyController {
 
     @GetListProductPropertySwaggerDecorator()
     @HttpCode(200)
-    @Get('/product_id/:productId([0-9]+)/properties')
+    @Get('/product_id/:productId/properties')
     public async getListProductProperty(
         @Param('productId', ParseIntPipe) productId: number,
     ): Promise<GetListProductPropertyResponse[]> {
@@ -77,7 +77,7 @@ export class ProductPropertyController implements IProductPropertyController {
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
     @HttpCode(200)
-    @Put('/product_id/:productId([0-9]+)/update_property/:id([0-9]+)')
+    @Put('/product_id/:productId/update_property/:id')
     public async updateProductProperty(
         @Param('productId', ParseIntPipe) productId: number,
         @Param('id', ParseIntPipe) id: number,
@@ -95,7 +95,7 @@ export class ProductPropertyController implements IProductPropertyController {
     @UseGuards(AuthGuard, RoleGuard)
     @HttpCode(200)
     @Delete(
-        '/product_id/:productId([0-9]+)/remove-product-property/:id([0-9]+)',
+        '/product_id/:productId/remove-product-property/:id',
     )
     public async removeProductProperty(
         @Param('productId', ParseIntPipe) productId: number,

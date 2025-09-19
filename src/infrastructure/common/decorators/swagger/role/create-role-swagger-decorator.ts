@@ -8,7 +8,7 @@ import {
 import { CreateRoleDto } from '@app/infrastructure/dto';
 import { CreateRoleResponse } from '@app/infrastructure/responses';
 
-export function CreateRoleSwaggerDecorator(): Function {
+export function CreateRoleSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Создание роли пользователя' }),
         ApiBearerAuth('JWT-auth'),

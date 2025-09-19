@@ -6,17 +6,17 @@ export class GetRatingResponse implements IGetRatingResponse {
         example: 10,
         description: 'Сумма рейтингов',
     })
-    ratingsSum: number;
+    declare ratingsSum: number;
 
     @ApiProperty({
         example: 2,
         description: 'Количество голосов',
     })
-    votes: number;
+    declare votes: number;
 
     @ApiProperty({
         example: 5,
         description: 'Сумма рейтингов / Количество голосов',
     })
-    rating: number;
+    declare rating: number;
 }

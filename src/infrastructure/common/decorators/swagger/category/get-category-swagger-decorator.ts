@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { CategoryResponse } from '@app/infrastructure/responses';
 
-export function GetCategorySwaggerDecorator(): Function {
+export function GetCategorySwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Получение категории' }),
         ApiParam({
@@ -23,7 +23,6 @@ export function GetCategorySwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Категория не найдена',
                 example: {

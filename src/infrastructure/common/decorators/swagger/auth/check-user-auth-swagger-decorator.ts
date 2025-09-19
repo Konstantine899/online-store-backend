@@ -9,7 +9,7 @@ import {
 import { CheckResponse } from '@app/infrastructure/responses';
 import { UserModel } from '@app/domain/models';
 
-export function CheckUserAuthSwaggerDecorator(): Function {
+export function CheckUserAuthSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Проверка авторизации пользователя' }),
         ApiBearerAuth('JWT-auth'),
@@ -23,7 +23,6 @@ export function CheckUserAuthSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Профиль пользователя не найден в БД',
                 example: {

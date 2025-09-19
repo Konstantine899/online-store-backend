@@ -10,5 +10,5 @@ export class RefreshDto implements IRefreshDto {
     })
     @IsNotEmpty({ message: 'Refresh token не моет быть пустым' })
     @IsString({ message: 'Refresh token должен быть строкой' })
-    readonly refreshToken: string;
+    declare readonly refreshToken: string;
 }

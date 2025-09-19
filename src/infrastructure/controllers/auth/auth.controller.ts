@@ -73,6 +73,9 @@ export class AuthController implements IAuthController {
         @Req() request: Request,
     ): Promise<CheckResponse> {
         const { id } = request.user as IDecodedAccessToken;
+        if (id === undefined) {
+            throw new Error('User ID is required');
+        }
         return this.userService.checkUserAuth(id);
     }
 

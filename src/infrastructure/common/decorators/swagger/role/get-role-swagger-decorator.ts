@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { GetRoleResponse } from '@app/infrastructure/responses';
 
-export function GetRoleSwaggerDecorator(): Function {
+export function GetRoleSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Получение роли' }),
         ApiBearerAuth('JWT-auth'),
@@ -24,7 +24,6 @@ export function GetRoleSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Роль не найдена',
                 example: {

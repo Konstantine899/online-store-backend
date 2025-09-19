@@ -6,35 +6,35 @@ export class MetaData implements IMetaData {
         example: 7,
         description: 'Общее количество продуктов',
     })
-    totalCount: number;
+   declare totalCount: number;
 
     @ApiProperty({
         example: 7,
         description: 'Общее количество страниц',
     })
-    lastPage: number;
+   declare lastPage: number;
 
     @ApiProperty({
         example: 1,
         description: 'Текущая страница',
     })
-    currentPage: number;
+   declare currentPage: number;
 
     @ApiProperty({
         example: 2,
         description: 'Следующая страница',
     })
-    nextPage: number;
+   declare nextPage: number;
 
     @ApiProperty({
         example: 0,
         description: 'Предыдущая страница',
     })
-    previousPage: number;
+   declare previousPage: number;
 
     @ApiProperty({
         example: 0,
         description: 'Количество элементов на странице',
     })
-    limit: number;
+   declare limit: number;
 }

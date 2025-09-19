@@ -9,7 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { RemoveProductResponse } from '@app/infrastructure/responses';
 
-export function RemoveProductSwaggerDecorator(): Function {
+export function RemoveProductSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Удаление продукта' }),
         ApiBearerAuth('JWT-auth'),
@@ -26,7 +26,6 @@ export function RemoveProductSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Поиск не существующего продукта',
                 description: 'Продукт не найден в БД',
@@ -42,7 +41,6 @@ export function RemoveProductSwaggerDecorator(): Function {
         }),
         ApiConflictResponse({
             description: 'Conflict',
-            status: HttpStatus.CONFLICT,
             schema: {
                 title: 'Конфликт при удалении продукта',
                 example: {

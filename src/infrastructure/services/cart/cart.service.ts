@@ -163,8 +163,8 @@ export class CartService implements ICartService {
 
     private TransformData(cart: CartModel): ICartTransformData {
         const data: ICartTransformData = {
-            cartId: undefined,
-            products: undefined,
+            cartId: cart.id,
+            products: [],
         };
         data.products = [];
 
@@ -174,8 +174,8 @@ export class CartService implements ICartService {
                 return {
                     productId: item.id,
                     name: item.name,
-                    price: item.price * item['CartProductModel'].quantity,
-                    quantity: item['CartProductModel'].quantity,
+                    price: item.price * (item as any)['CartProductModel'].quantity,
+                    quantity: (item as any)['CartProductModel'].quantity,
                 };
             });
         }

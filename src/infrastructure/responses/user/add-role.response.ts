@@ -5,17 +5,17 @@ import { Type } from 'class-transformer';
 
 export class AddRoleResponse extends UserModel {
     @ApiProperty({ example: 1, description: 'Идентификатор пользователя' })
-    id: number;
+    declare id: number;
 
     @ApiProperty({
         example: 'test@mail.com',
         description: 'Электронная почта пользователя',
     })
-    email: string;
+    declare email: string;
 
     @ApiProperty({ type: () => [RoleModel] })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => RoleModel)
-    roles: RoleModel[];
+    declare roles: RoleModel[];
 }

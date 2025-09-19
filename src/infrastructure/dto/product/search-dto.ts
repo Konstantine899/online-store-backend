@@ -8,5 +8,5 @@ export class SearchDto implements ISearchDto {
         description: 'Поиск производится по имени продукта',
     })
     @IsOptional()
-    readonly search: string;
+    declare readonly search: string;
 }

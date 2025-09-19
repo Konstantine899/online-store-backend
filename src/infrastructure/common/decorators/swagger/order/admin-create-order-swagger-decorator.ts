@@ -10,7 +10,7 @@ import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-respo
 import { orderValidation } from './order.validation';
 import { AdminCreateOrderResponse } from '@app/infrastructure/responses';
 
-export function AdminCreateOrderSwaggerDecorator(): Function {
+export function AdminCreateOrderSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Создание заказа администратором' }),
         ApiBearerAuth('JWT-auth'),

@@ -31,7 +31,7 @@ export class RatingController implements IRatingController {
     @CreateRatingSwaggerDecorator()
     @HttpCode(201)
     @UseGuards(AuthGuard)
-    @Post('/product/:productId([0-9]+)/rating/:rating([1-5])')
+    @Post('/product/:productId/rating/:rating')
     public async createRating(
         @Req() request: Request,
         @Param('productId', ParseIntPipe) productId: number,
@@ -43,7 +43,7 @@ export class RatingController implements IRatingController {
 
     @GetRatingSwaggerDecorator()
     @HttpCode(200)
-    @Get('/product/:productId([0-9]+)')
+    @Get('/product/:productId')
     public async getRating(
         @Param('productId', ParseIntPipe) productId: number,
     ): Promise<GetRatingResponse> {

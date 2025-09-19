@@ -36,7 +36,7 @@ export class BrandRepository implements IBrandRepository {
     }
 
     public async findBrand(id: number): Promise<BrandResponse> {
-        return this.brandModel.findByPk(id);
+        return this.brandModel.findByPk(id) as Promise<BrandResponse>;
     }
 
     public async updateBrand(

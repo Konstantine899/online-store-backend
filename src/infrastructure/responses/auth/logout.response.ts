@@ -4,8 +4,8 @@ import { ILogoutResponse } from '@app/domain/responses';
 
 export class LogoutResponse implements ILogoutResponse {
     @ApiProperty({ example: HttpStatus.OK })
-    readonly status: number;
+    declare readonly status: number;
 
     @ApiProperty({ example: 'success' })
-    readonly message: string;
+    declare readonly message: string;
 }

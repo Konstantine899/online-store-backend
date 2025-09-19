@@ -19,6 +19,6 @@ export class OrderItemRepository implements IOrderItemRepository {
             name: item.name,
             price: item.price,
             quantity: item.quantity,
-        });
+        } as any) as Promise<OrderItemModel>;
     }
 }

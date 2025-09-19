@@ -9,7 +9,7 @@ import {
 import { RefreshDto } from '@app/infrastructure/dto';
 import { UpdateAccessTokenResponse } from '@app/infrastructure/responses';
 
-export function UpdateAccessTokenSwaggerDecorator(): Function {
+export function UpdateAccessTokenSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Обновление access token' }),
         ApiBody({
@@ -22,7 +22,6 @@ export function UpdateAccessTokenSwaggerDecorator(): Function {
             type: UpdateAccessTokenResponse,
         }),
         ApiNotFoundResponse({
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 example: {
                     title: 'Refresh token не найден в БД',
@@ -36,7 +35,6 @@ export function UpdateAccessTokenSwaggerDecorator(): Function {
         }),
         ApiUnprocessableEntityResponse({
             description: 'Unprocessable Entity',
-            status: HttpStatus.UNPROCESSABLE_ENTITY,
             schema: {
                 anyOf: [
                     {

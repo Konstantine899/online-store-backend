@@ -6,11 +6,11 @@ export class AmountResponse implements IAmountResponse {
         example: '1000,00',
         description: 'Цена',
     })
-    value: string;
+    declare value: string;
 
     @ApiProperty({
         example: 'RUB',
         description: 'Валюта',
     })
-    currency: string;
+    declare currency: string;
 }

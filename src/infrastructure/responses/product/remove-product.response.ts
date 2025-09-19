@@ -4,8 +4,8 @@ import { IRemoveProductResponse } from '@app/domain/responses';
 
 export class RemoveProductResponse implements IRemoveProductResponse {
     @ApiProperty({ example: HttpStatus.OK })
-    readonly status: number;
+    readonly status!: number;
 
     @ApiProperty({ example: 'success' })
-    readonly message: string;
+    readonly message!: string;
 }

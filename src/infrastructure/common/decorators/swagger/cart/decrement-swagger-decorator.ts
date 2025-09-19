@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { DecrementResponse } from '@app/infrastructure/responses';
 
-export function DecrementSwaggerDecorator(): Function {
+export function DecrementSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Уменьшение количества товара в корзине' }),
         ApiCookieAuth(),
@@ -31,7 +31,6 @@ export function DecrementSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 anyOf: [
                     {

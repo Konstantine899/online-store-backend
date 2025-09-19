@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { UserGetOrderResponse } from '@app/infrastructure/responses';
 
-export function UserGetOrderSwaggerDecorator(): Function {
+export function UserGetOrderSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Получение заказа пользователем' }),
         ApiBearerAuth('JWT-auth'),
@@ -18,7 +18,6 @@ export function UserGetOrderSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Заказ не найден',
                 example: {

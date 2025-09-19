@@ -8,7 +8,7 @@ import {
 import { LoginDto } from '@app/infrastructure/dto';
 import { LoginResponse } from '@app/infrastructure/responses';
 
-export function LoginSwaggerDecorator(): Function {
+export function LoginSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Аутентификация' }),
         ApiBody({
@@ -23,7 +23,6 @@ export function LoginSwaggerDecorator(): Function {
         }),
         ApiUnauthorizedResponse({
             description: 'Unauthorized Response',
-            status: HttpStatus.UNAUTHORIZED,
             schema: {
                 anyOf: [
                     {

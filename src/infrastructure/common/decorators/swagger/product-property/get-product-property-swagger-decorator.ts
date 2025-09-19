@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { GetProductPropertyResponse } from '@app/infrastructure/responses';
 
-export function GetProductPropertySwaggerDecorator(): Function {
+export function GetProductPropertySwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Получение свойства продукта' }),
         ApiBearerAuth('JWT-auth'),
@@ -31,7 +31,6 @@ export function GetProductPropertySwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 anyOf: [
                     {

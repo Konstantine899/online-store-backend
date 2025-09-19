@@ -40,7 +40,7 @@ export class UserRepository implements IUserRepository {
             },
             /*Так как при обновлении всего объекта пользователя я обновляю и его роль, то роли тоже возвращаю,
 кроме данных из связующей таблицы user-role*/
-        });
+        }) as Promise<UpdateUserResponse>;
     }
 
     public async findUser(id: number): Promise<GetUserResponse> {
@@ -53,12 +53,12 @@ export class UserRepository implements IUserRepository {
                     through: { attributes: [] },
                 },
             ],
-        });
+        }) as Promise<GetUserResponse>;
     }
 
     // Используется в модуле Rating и Order
     public async findUserByPkId(userId: number): Promise<UserModel> {
-        return this.userModel.findByPk(userId, {});
+        return this.userModel.findByPk(userId, {}) as Promise<UserModel>;
     }
 
     public async findRegisteredUser(
@@ -72,7 +72,7 @@ export class UserRepository implements IUserRepository {
                     through: { attributes: [] }, // ограничиваю получение данных из промежуточной таблицы user-role
                 },
             ],
-        });
+        }) as Promise<UserModel>;
     }
 
     public async findAuthenticatedUser(userId: number): Promise<UserModel> {
@@ -84,13 +84,13 @@ export class UserRepository implements IUserRepository {
                     through: { attributes: [] }, // this may not be needed
                 },
             ],
-        });
+        }) as Promise<UserModel>;
     }
 
     public async findUserByEmail(email: string): Promise<UserModel> {
         return this.userModel.findOne({
             where: { email },
-        });
+        }) as  Promise<UserModel>;
     }
 
     public async findListUsers(): Promise<GetListUsersResponse[]> {

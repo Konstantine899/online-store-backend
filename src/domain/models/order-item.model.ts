@@ -35,7 +35,7 @@ export class OrderItemModel
         primaryKey: true,
         autoIncrement: true,
     })
-    id: number;
+    declare id: number;
 
     @ApiProperty({
         example: 'Xiaomi 10pro',
@@ -45,7 +45,7 @@ export class OrderItemModel
         type: DataType.STRING,
         allowNull: false,
     })
-    name: string;
+    name!: string;
 
     @ApiProperty({
         example: 1000,
@@ -55,7 +55,7 @@ export class OrderItemModel
         type: DataType.FLOAT,
         allowNull: false,
     })
-    price: number;
+    price!: number;
 
     @ApiProperty({
         example: 1,
@@ -65,15 +65,15 @@ export class OrderItemModel
         type: DataType.INTEGER,
         allowNull: false,
     })
-    quantity: number;
+    quantity!: number;
 
     @ForeignKey(() => OrderModel)
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
     })
-    order_id: number;
+    order_id!: number;
 
     @BelongsTo(() => OrderModel)
-    order: OrderModel;
+    order!: OrderModel;
 }

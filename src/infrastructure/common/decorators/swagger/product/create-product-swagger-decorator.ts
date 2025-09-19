@@ -11,7 +11,7 @@ import { CreateProductDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { CreateProductResponse } from '@app/infrastructure/responses';
 
-export function CreateProductSwaggerDecorator(): Function {
+export function CreateProductSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Создание продукта' }),
         ApiBearerAuth('JWT-auth'),
@@ -27,7 +27,6 @@ export function CreateProductSwaggerDecorator(): Function {
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',
-            status: HttpStatus.BAD_REQUEST,
             schema: {
                 title: 'Валидация',
                 anyOf: [
@@ -73,7 +72,6 @@ export function CreateProductSwaggerDecorator(): Function {
         }),
         ApiConflictResponse({
             description: 'Conflict',
-            status: HttpStatus.CONFLICT,
             schema: {
                 example: {
                     statusCode: HttpStatus.CONFLICT,

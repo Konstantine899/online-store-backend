@@ -25,7 +25,7 @@ export class OrderDto implements IOrderDto {
     })
     @IsNotEmpty({ message: 'Укажите ФИО заказчика' })
     @MaxLength(100, { message: 'Поле ФИО не должно превышать 100 символов' })
-    readonly name: string;
+    declare readonly name: string;
 
     @ApiProperty({
         example: 'test@mail.com',
@@ -33,7 +33,7 @@ export class OrderDto implements IOrderDto {
     })
     @IsNotEmpty({ message: 'Укажите email заказчика' })
     @IsEmail()
-    readonly email: string;
+    declare readonly email: string;
 
     @ApiProperty({
         example: '375298918971',
@@ -41,7 +41,7 @@ export class OrderDto implements IOrderDto {
     })
     @IsNotEmpty({ message: 'Укажите контактный номер заказчика' })
     @MaxLength(15, { message: 'Максимальная длинна телефона 15 символов' })
-    readonly phone: string;
+    declare readonly phone: string;
 
     @ApiProperty({
         example: 'г. Витебск ул Чкалова 41 к1 кв 73',
@@ -49,7 +49,7 @@ export class OrderDto implements IOrderDto {
     })
     @IsNotEmpty({ message: 'Укажите адрес доставки' })
     @MaxLength(200, { message: 'Максимальная длинна 200 символов' })
-    readonly address: string;
+    declare readonly address: string;
 
     @ApiProperty({
         example: 'Комментарий заказчика',
@@ -57,7 +57,7 @@ export class OrderDto implements IOrderDto {
     })
     @IsOptional()
     @MaxLength(2200, { message: 'Максимальная длинна 2200 символов' })
-    readonly comment: string;
+    declare readonly comment: string;
 
     @ApiProperty({
         example: [
@@ -72,5 +72,5 @@ export class OrderDto implements IOrderDto {
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => OrderItemModel)
-    readonly items: OrderItemModel[];
+    declare readonly items: OrderItemModel[];
 }

@@ -68,7 +68,7 @@ export class OrderController implements IOrderController {
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
-    @Get('/admin/get-all-order/user/:userId([0-9]+)')
+    @Get('/admin/get-all-order/user/:userId')
     public async adminGetOrderListUser(
         @Param('userId', ParseIntPipe) userId: number,
     ): Promise<AdminGetOrderListUserResponse[]> {
@@ -80,7 +80,7 @@ export class OrderController implements IOrderController {
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
-    @Get('/admin/get-order/:orderId([0-9]+)')
+    @Get('/admin/get-order/:orderId')
     public async adminGetOrderUser(
         @Param('orderId', ParseIntPipe) orderId: number,
     ): Promise<AdminGetOrderUserResponse> {
@@ -104,7 +104,7 @@ export class OrderController implements IOrderController {
     @HttpCode(200)
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
-    @Delete('/admin/delete-order/:orderId([0-9]+)')
+    @Delete('/admin/delete-order/:orderId')
     public async adminRemoveOrder(
         @Param('orderId', ParseIntPipe) orderId: number,
     ): Promise<AdminRemoveOrderResponse> {
@@ -131,7 +131,7 @@ export class OrderController implements IOrderController {
     @HttpCode(200)
     @Roles('USER')
     @UseGuards(AuthGuard, RoleGuard)
-    @Get('/user/get-order/:orderId([0-9]+)')
+    @Get('/user/get-order/:orderId')
     public async userGetOrder(
         @Req() request: Request,
         @Param('orderId', ParseIntPipe) orderId: number,

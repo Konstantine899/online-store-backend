@@ -37,25 +37,25 @@ export class BrandModel
         primaryKey: true,
         autoIncrement: true,
     })
-    id: number;
+    declare id: number;
 
     @Column({
         type: DataType.STRING,
         unique: true,
         allowNull: false,
     })
-    name: string;
+    name!: string;
 
     @HasMany(() => ProductModel, { onDelete: 'RESTRICT' })
-    products: ProductModel[];
+    products!: ProductModel[];
 
     @ForeignKey(() => CategoryModel)
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
     })
-    category_id: number;
+    category_id!: number;
 
     @BelongsTo(() => CategoryModel, 'category_id')
-    category: CategoryModel;
+    category!: CategoryModel;
 }

@@ -9,7 +9,7 @@ export class AddRoleDto implements IAddRoleDto {
         description: 'Идентификатор пользователя',
     })
     @Transform((value) => Number(value))
-    readonly userId: number;
+    declare readonly userId: number;
 
     @ApiProperty({
         example: 'ADMIN',
@@ -17,5 +17,5 @@ export class AddRoleDto implements IAddRoleDto {
     })
     @IsNotEmpty({ message: 'Укажите role пользователя' })
     @IsString({ message: 'Поле role должно быть строкой' })
-    readonly role: string;
+    declare readonly role: string;
 }

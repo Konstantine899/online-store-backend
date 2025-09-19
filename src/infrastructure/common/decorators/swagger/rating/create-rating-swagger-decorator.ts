@@ -11,7 +11,7 @@ import {
 import { UserRequest } from '@app/infrastructure/requests';
 import { RatingResponse } from '@app/infrastructure/responses';
 
-export function CreateRatingSwaggerDecorator(): Function {
+export function CreateRatingSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Создание рейтинга' }),
         ApiBearerAuth('JWT-auth'),
@@ -40,7 +40,6 @@ export function CreateRatingSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Не найдено',
                 anyOf: [
@@ -61,7 +60,6 @@ export function CreateRatingSwaggerDecorator(): Function {
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',
-            status: HttpStatus.BAD_REQUEST,
             schema: {
                 title: 'Оценка рейтинга ставится повторно',
                 description:

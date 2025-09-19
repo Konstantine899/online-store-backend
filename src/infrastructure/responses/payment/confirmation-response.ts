@@ -6,12 +6,12 @@ export class ConfirmationResponse implements IConfirmationResponse {
         example: 'redirect',
         description: 'Тип редирект',
     })
-    type: string;
+    declare type: string;
 
     @ApiProperty({
         example:
             'https://yoomoney.ru/checkout/payments/v2/contract?orderId=2c127204-000f-5000-8000-1fea3fd6f83e',
         description: 'URL на который происходит редирект',
     })
-    confirmation_url: string;
+    declare confirmation_url: string;
 }

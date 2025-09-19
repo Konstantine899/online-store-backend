@@ -8,7 +8,7 @@ import {
 import { MakePaymentDto } from '@app/infrastructure/dto';
 import { UserMakePaymentResponse } from '@app/infrastructure/responses';
 
-export function UserMakePaymentSwaggerDecorator(): Function {
+export function UserMakePaymentSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Оплата заказа авторизованным пользователем' }),
         ApiBearerAuth('JWT-auth'),

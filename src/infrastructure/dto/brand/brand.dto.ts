@@ -9,7 +9,7 @@ export class BrandDto implements ICreateBrand {
     })
     @IsNotEmpty({ message: 'Поле name не может быть пустым' })
     @IsString({ message: 'Поле name должно быть строкой' })
-    readonly name: string;
+    declare readonly name: string;
 
     @ApiProperty({
         example: 1,
@@ -17,5 +17,5 @@ export class BrandDto implements ICreateBrand {
     })
     @IsNotEmpty({ message: 'Поле category_id не может быть пустым' })
     @IsNumber({}, { message: 'Поле category_id должно быть number ' })
-    readonly category_id: number;
+    declare readonly category_id: number;
 }

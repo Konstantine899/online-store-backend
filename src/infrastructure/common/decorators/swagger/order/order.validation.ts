@@ -50,7 +50,7 @@ export function orderValidation(): IValidateOrderResponse {
                         status: HttpStatus.BAD_REQUEST,
                         property: 'email',
                         messages: ['Укажите email заказчика'],
-                        value: null,
+                        value: undefined,
                     },
                 },
                 {

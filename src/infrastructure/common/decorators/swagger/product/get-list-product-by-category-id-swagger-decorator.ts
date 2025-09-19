@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { GetListProductByCategoryIdResponse } from '@app/infrastructure/responses';
 
-export function GetListProductByCategoryIdSwaggerDecorator(): Function {
+export function GetListProductByCategoryIdSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({
             summary:
@@ -34,7 +34,6 @@ export function GetListProductByCategoryIdSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Список найденных продуктов пуст',
                 example: {

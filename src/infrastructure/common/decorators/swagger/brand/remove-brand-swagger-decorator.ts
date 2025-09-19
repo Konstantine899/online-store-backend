@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { RemoveBrandResponse } from '@app/infrastructure/responses';
 
-export function RemoveBrandSwaggerDecorator(): Function {
+export function RemoveBrandSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Удаление бренда' }),
         ApiBearerAuth('JWT-auth'),
@@ -25,7 +25,6 @@ export function RemoveBrandSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 title: 'Бренд не найден',
                 example: {

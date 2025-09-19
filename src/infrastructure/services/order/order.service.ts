@@ -35,7 +35,7 @@ export class OrderService implements IOrderService {
         if (!orders.length) {
             this.notFound('Список заказов магазина пуст');
         }
-        return orders;
+        return orders as AdminGetStoreOrderListResponse[];
     }
 
     public async adminGetOrderListUser(
@@ -69,6 +69,9 @@ export class OrderService implements IOrderService {
     public async adminCreateOrder(
         dto: OrderDto,
     ): Promise<AdminCreateOrderResponse> {
+        if (dto.userId === undefined) {
+            throw new Error('userId обязательно для создания заказа');
+        }
         const userAndHisOrders =
             await this.orderRepository.findUserAndHisOrders(dto.userId);
         // Если у пользователя нет заказа, то создаю его
@@ -131,6 +134,9 @@ export class OrderService implements IOrderService {
         userId?: number,
         cartId?: number,
     ): Promise<GuestCreateOrderResponse> {
+        if (userId === undefined || cartId === undefined) {
+            throw new Error('userId и cartId обязательны для создания заказа');
+        }
         return this.createOrder(dto, userId, cartId);
     }
 
@@ -138,7 +144,7 @@ export class OrderService implements IOrderService {
         dto: Omit<OrderDto, 'userId'>,
         userId: number,
         cartId: number,
-    ): Promise<UserCreateOrderResponse | GuestCreateOrderResponse> {
+    ): Promise<UserCreateOrderResponse> {
         /*Если есть userId ищем пользователя в БД. Если пользователь не найден выдаст исключение*/
         if (userId) {
             await this.userService.getUser(userId);

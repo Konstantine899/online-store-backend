@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { IncrementResponse } from '@app/infrastructure/responses';
 
-export function IncrementSwaggerDecorator(): Function {
+export function IncrementSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Увеличение количества товара в корзине' }),
         ApiCookieAuth(),
@@ -31,7 +31,6 @@ export function IncrementSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 anyOf: [
                     {

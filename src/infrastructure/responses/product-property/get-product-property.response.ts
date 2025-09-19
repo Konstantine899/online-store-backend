@@ -3,17 +3,17 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class GetProductPropertyResponse extends ProductPropertyModel {
     @ApiProperty({ example: 1, description: 'Идентификатор свойства' })
-    id: number;
+    declare id: number;
 
     @ApiProperty({
         example: 'Емкость аккумулятора:',
         description: 'Имя свойства',
     })
-    name: string;
+    declare name: string;
 
     @ApiProperty({ example: '5000 мА·ч', description: 'Значение свойства' })
-    value: string;
+    declare value: string;
 
     @ApiProperty({ example: 1, description: 'Идентификатор продукта' })
-    product_id: number;
+    declare product_id: number;
 }

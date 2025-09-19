@@ -11,7 +11,7 @@ import { CreateUserDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { UpdateUserResponse } from '@app/infrastructure/responses';
 
-export function UpdateUserSwaggerDecorator(): Function {
+export function UpdateUserSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Обновление пользователя' }),
         ApiBearerAuth('JWT-auth'),
@@ -32,7 +32,6 @@ export function UpdateUserSwaggerDecorator(): Function {
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',
-            status: HttpStatus.BAD_REQUEST,
             schema: {
                 anyOf: [
                     {
@@ -70,7 +69,6 @@ export function UpdateUserSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 anyOf: [
                     {

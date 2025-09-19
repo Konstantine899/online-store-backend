@@ -70,7 +70,7 @@ export class OrderRepository implements IOrderRepository {
                         attributes: ['name', 'price', 'quantity'],
                     },
                 ],
-            });
+            }) as AdminGetOrderUserResponse;
             return order;
         }
         order = await this.orderModel.findByPk(id, {
@@ -81,7 +81,7 @@ export class OrderRepository implements IOrderRepository {
                     attributes: ['name', 'price', 'quantity'],
                 },
             ],
-        });
+        }) as AdminGetOrderUserResponse;
         return order;
     }
 
@@ -97,13 +97,16 @@ export class OrderRepository implements IOrderRepository {
                     attributes: ['name', 'price', 'quantity'],
                 },
             ],
-        });
+        })as AdminCreateOrderResponse;
     }
 
     public async adminCreateOrder(
         dto: OrderDto,
     ): Promise<AdminCreateOrderResponse> {
         const { userId } = dto;
+        if (userId === undefined) {
+            throw new Error('userId обязательно для создания заказа');
+        }
         return this.createOrder(dto, userId);
     }
 
@@ -116,7 +119,7 @@ export class OrderRepository implements IOrderRepository {
                     attributes: ['name', 'price', 'quantity'],
                 },
             ],
-        });
+        }) as Promise<OrderModel>;
     }
 
     public async removeOrder(id: number): Promise<number> {
@@ -161,7 +164,7 @@ export class OrderRepository implements IOrderRepository {
                     attributes: ['name', 'price', 'quantity'],
                 },
             ],
-        });
+        }) as Promise<OrderModel>;
     }
 
     public async createOrder(
@@ -192,6 +195,6 @@ export class OrderRepository implements IOrderRepository {
                     attributes: ['name', 'price', 'quantity'],
                 },
             ],
-        });
+        }) as Promise<OrderModel>;
     }
 }

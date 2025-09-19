@@ -9,7 +9,7 @@ import { BrandDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { CreateBrandResponse } from '@app/infrastructure/responses';
 
-export function CreateBrandSwaggerDecorator(): Function {
+export function CreateBrandSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Создание бренда продукта' }),
         ApiBearerAuth('JWT-auth'),
@@ -24,7 +24,6 @@ export function CreateBrandSwaggerDecorator(): Function {
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',
-            status: HttpStatus.BAD_REQUEST,
             schema: {
                 title: 'Валидация',
                 anyOf: [

@@ -10,7 +10,7 @@ import { RefreshDto } from '@app/infrastructure/dto';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { LogoutResponse } from '@app/infrastructure/responses';
 
-export function LogoutSwaggerDecorator(): Function {
+export function LogoutSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Выход пользователя' }),
         ApiBearerAuth('JWT-auth'),
@@ -21,7 +21,6 @@ export function LogoutSwaggerDecorator(): Function {
         }),
         ApiBadRequestResponse({
             description: 'Bad Request',
-            status: HttpStatus.BAD_REQUEST,
             schema: {
                 anyOf: [
                     {
@@ -51,7 +50,6 @@ export function LogoutSwaggerDecorator(): Function {
             type: LogoutResponse,
         }),
         ApiUnprocessableEntityResponse({
-            status: HttpStatus.UNPROCESSABLE_ENTITY,
             schema: {
                 anyOf: [
                     {

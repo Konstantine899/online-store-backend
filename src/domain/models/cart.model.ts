@@ -27,11 +27,11 @@ export class CartModel extends Model<CartModel> implements ICart {
         primaryKey: true,
         autoIncrement: true,
     })
-    id: number;
+    declare id: number;
 
     @BelongsToMany(() => ProductModel, {
         through: () => CartProductModel,
         onDelete: 'CASCADE',
     })
-    products: ProductModel[];
+    products!: ProductModel[];
 }

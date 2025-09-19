@@ -12,7 +12,7 @@ import { OrderDto } from '@app/infrastructure/dto';
 import { orderValidation } from './order.validation';
 import { UserCreateOrderResponse } from '@app/infrastructure/responses';
 
-export function UserCreateOrderSwaggerDecorator(): Function {
+export function UserCreateOrderSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Создание заказа пользователем' }),
         ApiBearerAuth('JWT-auth'),
@@ -27,7 +27,6 @@ export function UserCreateOrderSwaggerDecorator(): Function {
         }),
         ApiNotFoundResponse({
             description: 'Not found',
-            status: HttpStatus.NOT_FOUND,
             schema: {
                 anyOf: [
                     {

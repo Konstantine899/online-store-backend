@@ -30,9 +30,9 @@ export class CustomValidationPipe
                     return {
                         status: HttpStatus.BAD_REQUEST,
                         property: error.property,
-                        messages: `${Object.values(error.constraints).join(
-                            ', ',
-                        )}`.split(', '),
+                        messages: Object.values(error.constraints || {})
+                            .join(', ')
+                            .split(', '),
                         value: error.value,
                     };
                 },
@@ -42,8 +42,14 @@ export class CustomValidationPipe
         return value;
     }
 
-    private validateMetaType(metatype: Function): boolean {
-        const types: Function[] = [Boolean, String, Number, Array, Object];
+    private validateMetaType(metatype: new (...args: any[]) => any): boolean {
+        const types: (new (...args: any[]) => any)[] = [
+            Boolean,
+            String,
+            Number,
+            Array,
+            Object,
+        ];
         return !types.includes(metatype);
     }
 }

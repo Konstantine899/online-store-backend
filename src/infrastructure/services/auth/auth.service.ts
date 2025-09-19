@@ -62,7 +62,7 @@ export class AuthService implements IAuthService {
             refresh.refreshToken,
         );
         await this.tokenService.removeRefreshToken(payload.jti, payload.sub);
-        request.headers.authorization = null; // обнуляю access token
+        request.headers.authorization = undefined; // обнуляю access token
         return {
             status: HttpStatus.OK,
             message: 'success',

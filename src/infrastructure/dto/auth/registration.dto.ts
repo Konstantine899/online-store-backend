@@ -10,7 +10,7 @@ export class RegistrationDto implements TRegistration {
     @IsNotEmpty({ message: 'Поле email не должно быть пустым' })
     @IsString({ message: 'Поле email должно быть строкой' })
     @IsEmail({}, { message: 'Не верный формат email' })
-    readonly email: string;
+    declare readonly email: string;
 
     @ApiProperty({
         example: '123456',
@@ -21,5 +21,5 @@ export class RegistrationDto implements TRegistration {
     @MinLength(6, {
         message: 'Пароль пользователя должен быть не менее 6 символов',
     })
-    readonly password: string;
+    declare readonly password: string;
 }
