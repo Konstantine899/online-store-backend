@@ -14,7 +14,7 @@ export class RoleRepository implements IRoleRepository {
     constructor(@InjectModel(RoleModel) private roleModel: typeof RoleModel) {}
 
     public async createRole(dto: CreateRoleDto): Promise<CreateRoleResponse> {
-        const role = await this.roleModel.create(dto as any);
+        const role = await this.roleModel.create(dto as any); // eslint-disable-line @typescript-eslint/no-explicit-any
         return this.roleModel.findByPk(role.id) as Promise<CreateRoleResponse>;
     }
 

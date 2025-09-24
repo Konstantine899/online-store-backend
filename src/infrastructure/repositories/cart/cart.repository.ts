@@ -60,7 +60,7 @@ export class CartRepository implements ICartRepository {
             cart_id,
             product_id,
             quantity,
-        } as any);
+        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
         await cart.reload();
         return cart;
     }

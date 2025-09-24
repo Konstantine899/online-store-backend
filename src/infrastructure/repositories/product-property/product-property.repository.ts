@@ -24,7 +24,7 @@ export class ProductPropertyRepository implements IProductPropertyRepository {
         return this.productPropertyModel.create({
             product_id,
             ...dto,
-        } as any) as Promise<CreateProductPropertyResponse>;
+        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
     }
 
     public async findOneProductProperty(

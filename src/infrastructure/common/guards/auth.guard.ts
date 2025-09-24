@@ -31,9 +31,7 @@ export class AuthGuard implements CanActivate {
                 error instanceof Error ? error.message : 'Unknown error';
             throw new ForbiddenException({
                 status: HttpStatus.FORBIDDEN,
-                message:
-                    `${errorMessage}! Please authorization` ||
-                    'session expired! Please authorization',
+                message: `${errorMessage}! Please authorization`,
             });
         }
     }

@@ -1,6 +1,5 @@
-import { ICartTransformData } from '@app/domain/transform';
+import { ICartTransformData, ICartProductItem } from '@app/domain/transform';
 import { ApiProperty } from '@nestjs/swagger';
-import { ProductModel } from '@app/domain/models';
 import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CartTransformResponse } from './cart-transform-response';
@@ -13,5 +12,5 @@ export class AppendToCartResponse implements ICartTransformData {
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => CartTransformResponse)
-    declare readonly products: ProductModel[];
+    declare readonly products: ICartProductItem[];
 }

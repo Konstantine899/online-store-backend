@@ -42,8 +42,8 @@ export class CustomValidationPipe
         return value;
     }
 
-    private validateMetaType(metatype: new (...args: any[]) => any): boolean {
-        const types: (new (...args: any[]) => any)[] = [
+    private validateMetaType(metatype: new (...args: unknown[]) => unknown): boolean {
+        const types: (new (...args: unknown[]) => unknown)[] = [
             Boolean,
             String,
             Number,

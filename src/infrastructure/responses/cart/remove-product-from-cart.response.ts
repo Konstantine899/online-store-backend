@@ -1,6 +1,6 @@
-import { ICartTransformData } from '@app/domain/transform';
+import { ICartTransformData, ICartProductItem } from '@app/domain/transform';
 import { ApiProperty } from '@nestjs/swagger';
-import { ProductModel } from '@app/domain/models';
+
 
 export class RemoveProductFromCartResponse implements ICartTransformData {
     @ApiProperty({ example: 26, description: 'Идентификатор корзины' })
@@ -10,5 +10,5 @@ export class RemoveProductFromCartResponse implements ICartTransformData {
         example: [],
         description: 'Удаление одной позиции из корзины',
     })
-    declare readonly products: ProductModel[];
+    declare readonly products: ICartProductItem[];
 }

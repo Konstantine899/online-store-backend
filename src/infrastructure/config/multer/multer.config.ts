@@ -5,7 +5,7 @@ export const multerConfig = {
     fileFilter: (
         request: Request,
         image: Express.Multer.File,
-        cb: any,
+        cb: (error: Error | null, acceptFile: boolean) => void,
     ): void => {
         if (image.originalname.match(/(jpg|jpeg|png|gif)$/)) {
             cb(null, true);

@@ -1,1 +1,1 @@
-export { ICartTransformData } from './cart/i-cart-transform-data';
+export { ICartTransformData, ICartProductItem } from './cart/i-cart-transform-data';

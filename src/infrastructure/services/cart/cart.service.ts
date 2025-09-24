@@ -5,6 +5,7 @@ import {
 } from '@app/infrastructure/repositories';
 import { Request, Response } from 'express';
 import { CartModel, ProductModel } from '@app/domain/models';
+
 import {
     CartResponse,
     AppendToCartResponse,
@@ -14,7 +15,7 @@ import {
     ClearCartResponse,
 } from '@app/infrastructure/responses';
 import { ICartService } from '@app/domain/services';
-import { ICartTransformData } from '@app/domain/transform';
+import { ICartTransformData, ICartProductItem } from '@app/domain/transform';
 
 @Injectable()
 export class CartService implements ICartService {
@@ -170,12 +171,12 @@ export class CartService implements ICartService {
 
         data.cartId = cart.id;
         if (cart.products) {
-            data.products = cart.products.map((item: ProductModel): any => {
+            data.products = cart.products.map((item: any): ICartProductItem => { // eslint-disable-line @typescript-eslint/no-explicit-any
                 return {
                     productId: item.id,
                     name: item.name,
-                    price: item.price * (item as any)['CartProductModel'].quantity,
-                    quantity: (item as any)['CartProductModel'].quantity,
+                    price: item.price * item.CartProductModel.quantity,
+                    quantity: item.CartProductModel.quantity,
                 };
             });
         }

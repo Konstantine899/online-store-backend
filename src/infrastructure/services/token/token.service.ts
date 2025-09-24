@@ -18,6 +18,7 @@ import {
 } from '@app/domain/services';
 import { IDecodedAccessToken } from '@app/domain/jwt';
 import { JwtSettings } from '@app/infrastructure/config/jwt';
+import { Request } from 'express';
 
 @Injectable()
 export class TokenService implements ITokenService {
@@ -82,7 +83,7 @@ export class TokenService implements ITokenService {
 
     public async decodedAccessToken(
         token: string,
-        request: any,
+        request: Request,
     ): Promise<IDecodedAccessToken> {
         return (request.user = await this.jwtService.verifyAsync(token, {
             secret: JwtSettings().jwtSecretKey,
