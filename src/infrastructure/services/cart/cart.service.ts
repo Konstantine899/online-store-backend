@@ -174,11 +174,13 @@ export class CartService implements ICartService {
         if (cart.products) {
             data.products = cart.products.map((item: any): ICartProductItem => {
                 // eslint-disable-line @typescript-eslint/no-explicit-any
+                const unitPrice = Number(item.price);
+                const quantity = item.CartProductModel.quantity;
                 return {
                     productId: item.id,
                     name: item.name,
-                    price: item.price * item.CartProductModel.quantity,
-                    quantity: item.CartProductModel.quantity,
+                    price: Number((unitPrice * quantity).toFixed(2)),
+                    quantity: quantity,
                 };
             });
         }

@@ -1,0 +1,28 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const migration = {
+    async up(queryInterface, Sequelize) {
+        await queryInterface.createTable('user-role', {
+            roleId: {
+                type: Sequelize.INTEGER,
+                references: {
+                    model: 'role',
+                    key: 'id',
+                },
+                allowNull: false,
+            },
+            userId: {
+                type: Sequelize.INTEGER,
+                references: {
+                    model: 'user',
+                    key: 'id',
+                },
+                allowNull: false,
+            },
+        });
+    },
+    async down(queryInterface) {
+        await queryInterface.dropTable('user-role');
+    },
+};
+exports.default = migration;

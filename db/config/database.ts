@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import { Dialect } from 'sequelize';
 
 // Load environment variables from .migrate.env
 dotenv.config({ path: path.join(__dirname, '../../.migrate.env') });
@@ -10,7 +11,8 @@ interface DatabaseConfig {
   database: string;
   host: string;
   port: number;
-  dialect: string;
+  dialect: Dialect;
+  use_env_variable?: string;
 }
 
 interface Config {
@@ -50,7 +52,7 @@ const config: Config = {
     database: DEV_MYSQL_DATABASE || '',
     host: DEV_MYSQL_HOST || 'localhost',
     port: parseInt(DEV_MYSQL_PORT || '3306', 10),
-    dialect: DEV_DIALECT || 'mysql',
+    dialect: (DEV_DIALECT as Dialect) || 'mysql',
   },
   test: {
     username: TEST_MYSQL_USER || '',
@@ -58,7 +60,7 @@ const config: Config = {
     database: TEST_MYSQL_DATABASE || '',
     host: TEST_MYSQL_HOST || 'localhost',
     port: parseInt(TEST_MYSQL_PORT || '3306', 10),
-    dialect: TEST_DIALECT || 'mysql',
+    dialect: (TEST_DIALECT as Dialect) || 'mysql',
   },
   production: {
     username: PROD_MYSQL_USER || '',
@@ -66,7 +68,7 @@ const config: Config = {
     database: PROD_MYSQL_DATABASE || '',
     host: PROD_MYSQL_HOST || 'localhost',
     port: parseInt(PROD_MYSQL_PORT || '3306', 10),
-    dialect: PROD_DIALECT || 'mysql',
+    dialect: (PROD_DIALECT as Dialect) || 'mysql',
   },
 };
 
