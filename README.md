@@ -15,6 +15,9 @@ npm run start:dev
    ```bash
    cp .development.env.example .development.env
    ```
+2a. Убедитесь, что существует файл `.migrate.env` для `sequelize-cli` (используется `db/config/database.js`).
+    Значения DEV_* должны соответствовать runtime-настройкам из `.development.env`:
+    DEV_MYSQL_HOST, DEV_MYSQL_PORT, DEV_MYSQL_DATABASE, DEV_MYSQL_USER, DEV_MYSQL_PASSWORD, DEV_DIALECT.
 2. Установите зависимости:
    ```bash
    npm install
@@ -44,7 +47,7 @@ Health:         http://localhost:5000/online-store/health
 - `npm run lint:ts` - Проверка ts файлов линтером
 - `npm run lint:ts:fix` - Исправление `ts` файлов линтером
 - `npm run prettier` - Форматирование файлов линтером
-- `npm run db:migrate` - Создание таблиц в БД с помощь миграции
+- `npm run db:migrate` - Создание таблиц в БД с помощь миграции (использует `.migrate.env`)
 - `npm run db:migrate:undo` - Удаление последней миграции
 - `npm run db:migrate:undo:all` - Удаление всех миграций
 - `npm run db:seed:all` - Добавление данных в таблицы
@@ -65,7 +68,7 @@ Swagger - доступен по [http://localhost:5000/online-store/docs](http:/
 
 ```bash
 # Health
-curl -i http://localhost:5000/health
+curl -i http://localhost:5000/online-store/health
 
 # Регистрация
 curl -s -X POST http://localhost:5000/online-store/auth/registration \
