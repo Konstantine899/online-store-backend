@@ -36,8 +36,8 @@ const seeder: Seeder = {
 
   async down(queryInterface: QueryInterface): Promise<void> {
     await queryInterface.sequelize.query('SET FOREIGN_KEY_CHECKS=0;'); // Отключаю проверку внешнего ключа
-    await queryInterface.bulkDelete('user-role', null, {});
-    await queryInterface.bulkDelete('user', null, {});
+    await queryInterface.bulkDelete('user-role', {}, {});
+    await queryInterface.bulkDelete('user', {}, {});
   },
 };
 

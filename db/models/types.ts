@@ -9,7 +9,7 @@ export interface UserAttributes {
   updated_at: Date;
 }
 
-export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'created_at' | 'updated_at'> {}
+export type UserCreationAttributes = Optional<UserAttributes, 'id' | 'created_at' | 'updated_at'>
 
 // Role types
 export interface RoleAttributes {
@@ -20,7 +20,7 @@ export interface RoleAttributes {
   updated_at: Date;
 }
 
-export interface RoleCreationAttributes extends Optional<RoleAttributes, 'id' | 'created_at' | 'updated_at'> {}
+export type RoleCreationAttributes = Optional<RoleAttributes, 'id' | 'created_at' | 'updated_at'>
 
 // Category types
 export interface CategoryAttributes {
@@ -31,7 +31,7 @@ export interface CategoryAttributes {
   updated_at: Date;
 }
 
-export interface CategoryCreationAttributes extends Optional<CategoryAttributes, 'id' | 'created_at' | 'updated_at'> {}
+export type CategoryCreationAttributes = Optional<CategoryAttributes, 'id' | 'created_at' | 'updated_at'>
 
 // Brand types
 export interface BrandAttributes {
@@ -42,7 +42,7 @@ export interface BrandAttributes {
   updated_at: Date;
 }
 
-export interface BrandCreationAttributes extends Optional<BrandAttributes, 'id' | 'created_at' | 'updated_at'> {}
+export type BrandCreationAttributes = Optional<BrandAttributes, 'id' | 'created_at' | 'updated_at'>
 
 // Product types
 export interface ProductAttributes {
@@ -57,7 +57,7 @@ export interface ProductAttributes {
   updated_at: Date;
 }
 
-export interface ProductCreationAttributes extends Optional<ProductAttributes, 'id' | 'created_at' | 'updated_at'> {}
+export type ProductCreationAttributes = Optional<ProductAttributes, 'id' | 'created_at' | 'updated_at'>
 
 // Rating types
 export interface RatingAttributes {
@@ -69,7 +69,7 @@ export interface RatingAttributes {
   updated_at: Date;
 }
 
-export interface RatingCreationAttributes extends Optional<RatingAttributes, 'id' | 'created_at' | 'updated_at'> {}
+export type RatingCreationAttributes = Optional<RatingAttributes, 'id' | 'created_at' | 'updated_at'>
 
 // Product Property types
 export interface ProductPropertyAttributes {
@@ -81,7 +81,7 @@ export interface ProductPropertyAttributes {
   updated_at: Date;
 }
 
-export interface ProductPropertyCreationAttributes extends Optional<ProductPropertyAttributes, 'id' | 'created_at' | 'updated_at'> {}
+export type ProductPropertyCreationAttributes = Optional<ProductPropertyAttributes, 'id' | 'created_at' | 'updated_at'>
 
 // Order types
 export interface OrderAttributes {
@@ -98,7 +98,7 @@ export interface OrderAttributes {
   updated_at: Date;
 }
 
-export interface OrderCreationAttributes extends Optional<OrderAttributes, 'id' | 'created_at' | 'updated_at'> {}
+export type OrderCreationAttributes = Optional<OrderAttributes, 'id' | 'created_at' | 'updated_at'>
 
 // Order Item types
 export interface OrderItemAttributes {
@@ -111,7 +111,7 @@ export interface OrderItemAttributes {
   updated_at: Date;
 }
 
-export interface OrderItemCreationAttributes extends Optional<OrderItemAttributes, 'id' | 'created_at' | 'updated_at'> {}
+export type OrderItemCreationAttributes = Optional<OrderItemAttributes, 'id' | 'created_at' | 'updated_at'>
 
 // Cart types
 export interface CartAttributes {
@@ -120,7 +120,7 @@ export interface CartAttributes {
   updated_at: Date;
 }
 
-export interface CartCreationAttributes extends Optional<CartAttributes, 'id' | 'created_at' | 'updated_at'> {}
+export type CartCreationAttributes = Optional<CartAttributes, 'id' | 'created_at' | 'updated_at'>
 
 // Cart Product types
 export interface CartProductAttributes {
@@ -132,7 +132,7 @@ export interface CartProductAttributes {
   updated_at: Date;
 }
 
-export interface CartProductCreationAttributes extends Optional<CartProductAttributes, 'id' | 'created_at' | 'updated_at'> {}
+export type CartProductCreationAttributes = Optional<CartProductAttributes, 'id' | 'created_at' | 'updated_at'>
 
 // User Role types
 export interface UserRoleAttributes {
@@ -143,7 +143,7 @@ export interface UserRoleAttributes {
   updated_at: Date;
 }
 
-export interface UserRoleCreationAttributes extends Optional<UserRoleAttributes, 'id' | 'created_at' | 'updated_at'> {}
+export type UserRoleCreationAttributes = Optional<UserRoleAttributes, 'id' | 'created_at' | 'updated_at'>
 
 // Refresh Token types
 export interface RefreshTokenAttributes {
@@ -155,7 +155,7 @@ export interface RefreshTokenAttributes {
   updated_at: Date;
 }
 
-export interface RefreshTokenCreationAttributes extends Optional<RefreshTokenAttributes, 'id' | 'created_at' | 'updated_at'> {}
+export type RefreshTokenCreationAttributes = Optional<RefreshTokenAttributes, 'id' | 'created_at' | 'updated_at'>
 
 // Model interfaces
 export interface UserModel extends Model<UserAttributes, UserCreationAttributes>, UserAttributes {}

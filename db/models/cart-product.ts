@@ -2,8 +2,7 @@ import { Model, DataTypes, Sequelize } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
 import { CartProductModel, CartProductCreationAttributes } from './types';
 
-export default (sequelize: Sequelize, DataTypes: typeof DataTypes) => {
-  class CartProduct extends Model<CartProductModel, CartProductCreationAttributes> implements CartProductModel {
+class CartProduct extends Model<CartProductModel, CartProductCreationAttributes> implements CartProductModel {
     declare id: number;
     declare quantity: number;
     declare cart_id: number;
@@ -14,8 +13,9 @@ export default (sequelize: Sequelize, DataTypes: typeof DataTypes) => {
     static associate(): void {
       // CartProduct is a junction table, associations are handled by the main models
     }
-  }
+}
 
+export default function defineCartProduct(sequelize: Sequelize): typeof CartProduct {
   CartProduct.init(
     {
       id: {
@@ -23,45 +23,45 @@ export default (sequelize: Sequelize, DataTypes: typeof DataTypes) => {
         primaryKey: true,
         autoIncrement: true,
         allowNull: false,
-      },
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       quantity: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 1,
-      },
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       cart_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
           model: TABLE_NAMES.CART,
           key: 'id',
-        },
-      },
+        } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       product_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
           model: TABLE_NAMES.PRODUCT,
           key: 'id',
-        },
-      },
+        } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
-      },
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
-      },
-    },
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
     {
       sequelize,
       modelName: TABLE_NAMES.CART_PRODUCT,
       tableName: TABLE_NAMES.CART_PRODUCT,
       timestamps: true,
       underscored: true,
-    },
+    } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
   );
 
   return CartProduct;
-};
+}

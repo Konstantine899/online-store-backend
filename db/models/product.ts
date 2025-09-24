@@ -2,8 +2,7 @@ import { Model, DataTypes, Sequelize } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
 import { ProductModel, ProductCreationAttributes } from './types';
 
-export default (sequelize: Sequelize, DataTypes: typeof DataTypes) => {
-  class Product extends Model<ProductModel, ProductCreationAttributes> implements ProductModel {
+class Product extends Model<ProductModel, ProductCreationAttributes> implements ProductModel {
     declare id: number;
     declare name: string;
     declare price: number;
@@ -14,7 +13,7 @@ export default (sequelize: Sequelize, DataTypes: typeof DataTypes) => {
     declare created_at: Date;
     declare updated_at: Date;
 
-    static associate(models: any): void {
+    static associate(models: Record<string, any>): void { // eslint-disable-line @typescript-eslint/no-explicit-any
       // Remove cart from models to avoid circular reference
       const modelsCopy = { ...models };
       modelsCopy.cart = undefined;
@@ -44,8 +43,9 @@ export default (sequelize: Sequelize, DataTypes: typeof DataTypes) => {
         onDelete: 'CASCADE',
       });
     }
-  }
+}
 
+export default function defineProduct(sequelize: Sequelize): typeof Product {
   Product.init(
     {
       id: {
@@ -53,58 +53,58 @@ export default (sequelize: Sequelize, DataTypes: typeof DataTypes) => {
         primaryKey: true,
         autoIncrement: true,
         allowNull: false,
-      },
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       name: {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
-      },
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       price: {
         type: DataTypes.FLOAT,
         allowNull: false,
-      },
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       rating: {
         type: DataTypes.FLOAT,
         allowNull: false,
         defaultValue: 0,
-      },
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       image: {
         type: DataTypes.STRING,
         allowNull: false,
-      },
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       category_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
           model: TABLE_NAMES.CATEGORY,
           key: 'id',
-        },
-      },
+        } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       brand_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
           model: TABLE_NAMES.BRAND,
           key: 'id',
-        },
-      },
+        } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
-      },
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
-      },
-    },
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
     {
       sequelize,
       modelName: TABLE_NAMES.PRODUCT,
       tableName: TABLE_NAMES.PRODUCT,
       timestamps: true,
       underscored: true,
-    },
+    } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
   );
 
   return Product;
-};
+}

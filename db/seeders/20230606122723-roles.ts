@@ -7,7 +7,7 @@ interface Seeder {
 
 const seeder: Seeder = {
   async up(queryInterface: QueryInterface): Promise<void> {
-    return await queryInterface.bulkInsert('role', [
+    await queryInterface.bulkInsert('role', [
       {
         role: 'ADMIN',
         description: 'Администратор',
@@ -24,7 +24,7 @@ const seeder: Seeder = {
   },
 
   async down(queryInterface: QueryInterface): Promise<void> {
-    await queryInterface.bulkDelete('role', null, {});
+    await queryInterface.bulkDelete('role', {}, {});
   },
 };
 

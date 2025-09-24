@@ -1,25 +1,6 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { Sequelize, DataTypes } from 'sequelize';
+import { Sequelize } from 'sequelize';
 import * as process from 'process';
 import config from '../config/database';
-
-// Import all model types
-import {
-  UserModel,
-  RoleModel,
-  CategoryModel,
-  BrandModel,
-  ProductModel,
-  RatingModel,
-  ProductPropertyModel,
-  OrderModel,
-  OrderItemModel,
-  CartModel,
-  CartProductModel,
-  UserRoleModel,
-  RefreshTokenModel,
-} from './types';
 
 // Import all models
 import User from './user';
@@ -36,26 +17,25 @@ import CartProduct from './cart-product';
 import UserRole from './user-role';
 import RefreshToken from './refresh-token';
 
-const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
-const dbConfig = config[env];
+const dbConfig = config[env as keyof typeof config];
 
 interface Database {
   sequelize: Sequelize;
   Sequelize: typeof Sequelize;
-  user: typeof User;
-  role: typeof Role;
-  category: typeof Category;
-  brand: typeof Brand;
-  product: typeof Product;
-  rating: typeof Rating;
-  property: typeof ProductProperty;
-  order: typeof Order;
-  item: typeof OrderItem;
-  cart: typeof Cart;
-  cartProduct: typeof CartProduct;
-  userRole: typeof UserRole;
-  refreshToken: typeof RefreshToken;
+  user: ReturnType<typeof User>;
+  role: ReturnType<typeof Role>;
+  category: ReturnType<typeof Category>;
+  brand: ReturnType<typeof Brand>;
+  product: ReturnType<typeof Product>;
+  rating: ReturnType<typeof Rating>;
+  property: ReturnType<typeof ProductProperty>;
+  order: ReturnType<typeof Order>;
+  item: ReturnType<typeof OrderItem>;
+  cart: ReturnType<typeof Cart>;
+  cartProduct: ReturnType<typeof CartProduct>;
+  userRole: ReturnType<typeof UserRole>;
+  refreshToken: ReturnType<typeof RefreshToken>;
 }
 
 const db: Database = {} as Database;
@@ -73,24 +53,24 @@ if (dbConfig.use_env_variable) {
 }
 
 // Initialize all models
-db.user = User(sequelize, DataTypes);
-db.role = Role(sequelize, DataTypes);
-db.category = Category(sequelize, DataTypes);
-db.brand = Brand(sequelize, DataTypes);
-db.product = Product(sequelize, DataTypes);
-db.rating = Rating(sequelize, DataTypes);
-db.property = ProductProperty(sequelize, DataTypes);
-db.order = Order(sequelize, DataTypes);
-db.item = OrderItem(sequelize, DataTypes);
-db.cart = Cart(sequelize, DataTypes);
-db.cartProduct = CartProduct(sequelize, DataTypes);
-db.userRole = UserRole(sequelize, DataTypes);
-db.refreshToken = RefreshToken(sequelize, DataTypes);
+db.user = User(sequelize);
+db.role = Role(sequelize);
+db.category = Category(sequelize);
+db.brand = Brand(sequelize);
+db.product = Product(sequelize);
+db.rating = Rating(sequelize);
+db.property = ProductProperty(sequelize);
+db.order = Order(sequelize);
+db.item = OrderItem(sequelize);
+db.cart = Cart(sequelize);
+db.cartProduct = CartProduct(sequelize);
+db.userRole = UserRole(sequelize);
+db.refreshToken = RefreshToken(sequelize);
 
 // Set up associations
 Object.keys(db).forEach((modelName) => {
   if (db[modelName as keyof Database] && typeof db[modelName as keyof Database] === 'function') {
-    const model = db[modelName as keyof Database] as any;
+    const model = db[modelName as keyof Database] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     if (model.associate) {
       model.associate(db);
     }
