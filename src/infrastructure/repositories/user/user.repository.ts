@@ -90,7 +90,7 @@ export class UserRepository implements IUserRepository {
     public async findUserByEmail(email: string): Promise<UserModel> {
         return this.userModel.findOne({
             where: { email },
-        }) as  Promise<UserModel>;
+        }) as Promise<UserModel>;
     }
 
     public async findListUsers(): Promise<GetListUsersResponse[]> {

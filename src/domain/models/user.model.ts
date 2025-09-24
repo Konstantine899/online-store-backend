@@ -44,7 +44,7 @@ export class UserModel
         primaryKey: true,
         autoIncrement: true,
     })
-   declare id: number;
+    declare id: number;
 
     @Column({
         type: DataType.STRING,

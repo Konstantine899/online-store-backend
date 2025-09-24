@@ -58,7 +58,7 @@ export class OrderRepository implements IOrderRepository {
     ): Promise<AdminGetOrderUserResponse> {
         let order: OrderModel;
         if (user_id) {
-            order = await this.orderModel.findOne({
+            order = (await this.orderModel.findOne({
                 where: {
                     id,
                     user_id,
@@ -70,10 +70,10 @@ export class OrderRepository implements IOrderRepository {
                         attributes: ['name', 'price', 'quantity'],
                     },
                 ],
-            }) as AdminGetOrderUserResponse;
+            })) as AdminGetOrderUserResponse;
             return order;
         }
-        order = await this.orderModel.findByPk(id, {
+        order = (await this.orderModel.findByPk(id, {
             include: [
                 {
                     model: OrderItemModel,
@@ -81,14 +81,14 @@ export class OrderRepository implements IOrderRepository {
                     attributes: ['name', 'price', 'quantity'],
                 },
             ],
-        }) as AdminGetOrderUserResponse;
+        })) as AdminGetOrderUserResponse;
         return order;
     }
 
     public async findUserAndHisOrders(
         user_id: number,
     ): Promise<AdminCreateOrderResponse> {
-        return await this.orderModel.findOne({
+        return (await this.orderModel.findOne({
             where: { user_id },
             include: [
                 {
@@ -97,7 +97,7 @@ export class OrderRepository implements IOrderRepository {
                     attributes: ['name', 'price', 'quantity'],
                 },
             ],
-        })as AdminCreateOrderResponse;
+        })) as AdminCreateOrderResponse;
     }
 
     public async adminCreateOrder(

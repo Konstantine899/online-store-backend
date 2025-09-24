@@ -12,7 +12,7 @@ export class CreateCategoryResponse extends CategoryModel {
         required: false,
         description: 'Время обновления',
     })
-   declare readonly updatedAt?: string;
+    declare readonly updatedAt?: string;
     @ApiProperty({
         example: '2023-05-11T12:24:33.702Z',
         required: false,

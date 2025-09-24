@@ -57,11 +57,12 @@ export class RoleGuard implements CanActivate {
             }
             return isRole;
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    throw new ForbiddenException({
-        status: HttpStatus.FORBIDDEN,
-        message: `${errorMessage}!`,
-    });
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            throw new ForbiddenException({
+                status: HttpStatus.FORBIDDEN,
+                message: `${errorMessage}!`,
+            });
         }
     }
 }

@@ -54,7 +54,7 @@ export class ProductModel
         primaryKey: true,
         autoIncrement: true,
     })
-   declare id: number;
+    declare id: number;
 
     @Column({
         type: DataType.STRING,

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import {
     CartRepository,
@@ -171,7 +172,8 @@ export class CartService implements ICartService {
 
         data.cartId = cart.id;
         if (cart.products) {
-            data.products = cart.products.map((item: any): ICartProductItem => { // eslint-disable-line @typescript-eslint/no-explicit-any
+            data.products = cart.products.map((item: any): ICartProductItem => {
+                // eslint-disable-line @typescript-eslint/no-explicit-any
                 return {
                     productId: item.id,
                     name: item.name,

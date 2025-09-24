@@ -38,7 +38,7 @@ export class ProductPropertyModel
         autoIncrement: true,
         allowNull: false,
     })
-   declare id: number;
+    declare id: number;
 
     @ApiProperty({
         example: 'Экран:',

@@ -17,5 +17,5 @@ export class UpdateUserResponse extends UserModel {
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => RoleModel)
-   declare roles: RoleModel[];
+    declare roles: RoleModel[];
 }

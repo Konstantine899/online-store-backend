@@ -18,13 +18,10 @@ import { CorrelationIdMiddleware } from '@app/infrastructure/common/middleware/c
 import { IncomingMessage } from 'http';
 import { randomUUID } from 'crypto';
 
-
 type ReqWithCorrelation = IncomingMessage & {
-  correlationId?: string;
-  headers: Record<string, string | string[] | undefined>;
+    correlationId?: string;
+    headers: Record<string, string | string[] | undefined>;
 };
-
-
 
 async function bootstrap(): Promise<void> {
     const PORT = process.env.PORT || 5000;
@@ -43,28 +40,26 @@ async function bootstrap(): Promise<void> {
             new CustomNotFoundExceptionFilter(),
         ],
     );
-    app.use(helmet(
-        {crossOriginResourcePolicy: { policy: 'cross-origin' }}
-    ));
+    app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
     const corsOrigins = (process.env.ALLOWED_ORIGINS || '')
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
 
     app.enableCors({
-        origin: (origin, cb) =>{
-            if(!origin || corsOrigins.includes(origin)){
-                return  cb(null, true);
+        origin: (origin, cb) => {
+            if (!origin || corsOrigins.includes(origin)) {
+                return cb(null, true);
             }
             return cb(new Error('Not allowed by CORS'), false);
-            },
+        },
         credentials: true,
         allowedHeaders: ['Content-Type', 'Authorization'], // Настраивает заголовок CORS Access-Control-Allow-Headers.
         exposedHeaders: ['Content-Range', 'X-Content-Range'], // Настраивает заголовок CORS Access-Control-Expose-Headers
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     });
-    
+
     app.use(cookieParser(process.env.COOKIE_PARSER_SECRET_KEY || 'change-me'));
 
     const correlation = new CorrelationIdMiddleware();

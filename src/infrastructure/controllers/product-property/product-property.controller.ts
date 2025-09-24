@@ -94,9 +94,7 @@ export class ProductPropertyController implements IProductPropertyController {
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
     @HttpCode(200)
-    @Delete(
-        '/product_id/:productId/remove-product-property/:id',
-    )
+    @Delete('/product_id/:productId/remove-product-property/:id')
     public async removeProductProperty(
         @Param('productId', ParseIntPipe) productId: number,
         @Param('id', ParseIntPipe) id: number,
