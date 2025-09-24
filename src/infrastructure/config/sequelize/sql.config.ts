@@ -11,5 +11,5 @@ export const sqlConfig = registerAs(dbToken, () => ({
     password: process.env.MYSQL_PASSWORD,
     database: process.env.MYSQL_DATABASE,
     autoLoadModels: true,
-    synchronize: true,
+    synchronize: false, // отключаю автосинхронизацию
 }));

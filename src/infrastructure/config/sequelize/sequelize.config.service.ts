@@ -53,7 +53,7 @@ export class SequelizeConfigService implements SequelizeOptionsFactory {
                 OrderItemModel,
             ],
             autoLoadModels: true,
-            synchronize: true,
+            synchronize: false, // отключаю автосинхронизацию
 
             define: {
                 charset: 'utf8mb4',
