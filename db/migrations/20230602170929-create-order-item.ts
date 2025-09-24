@@ -19,7 +19,7 @@ const migration: Migration = {
         allowNull: false,
       },
       price: {
-        type: Sequelize.FLOAT,
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false,
       },
       quantity: {
@@ -44,9 +44,17 @@ const migration: Migration = {
       },
       allowNull: false,
     });
+// Добавляем индекс для быстрого поиска позиций заказа
+await queryInterface.addIndex('order-item', ['order_id'], {
+  name: 'idx_order_item_order_id'
+});
+
   },
 
   async down(queryInterface: QueryInterface): Promise<void> {
+      // Удаляем индекс
+      await queryInterface.removeIndex('order-item', 'idx_order_item_order_id');
+      
     await queryInterface.removeColumn('order-item', 'order_id');
     await queryInterface.dropTable('order-item');
   },

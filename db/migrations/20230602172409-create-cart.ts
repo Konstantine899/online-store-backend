@@ -23,9 +23,16 @@ const migration: Migration = {
         type: Sequelize.DATE,
       },
     });
+    // Индекс для быстрого поиска корзин (если понадобится)
+   await queryInterface.addIndex('cart', ['id'], {
+   name: 'idx_cart_id'
+});
   },
 
   async down(queryInterface: QueryInterface): Promise<void> {
+    // Удаляем индекс
+    await queryInterface.removeIndex('cart', 'idx_cart_id');
+    
     await queryInterface.dropTable('cart');
   },
 };

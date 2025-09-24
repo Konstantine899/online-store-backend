@@ -65,7 +65,7 @@ export class OrderModel extends Model<OrderModel> implements IOrderModel {
     address!: string;
 
     @Column({
-        type: DataType.FLOAT,
+        type: DataType.DECIMAL(10, 2),
         allowNull: false,
     })
     amount!: number;

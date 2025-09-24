@@ -20,7 +20,7 @@ const migration: Migration = {
         allowNull: false,
       },
       price: {
-        type: Sequelize.FLOAT,
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false,
       },
       rating: {
@@ -58,9 +58,26 @@ const migration: Migration = {
       },
       allowNull: false,
     });
+    await queryInterface.addIndex('product', ['category_id'], {
+      name: 'idx_product_category_id'
+    });
+
+    await queryInterface.addIndex('product', ['brand_id'], {
+      name: 'idx_product_brand_id'
+    });
+
+    // Составной индекс для частых запросов по категории и бренду
+    await queryInterface.addIndex('product', ['category_id', 'brand_id'], {
+      name: 'idx_product_category_brand'
+    });
   },
 
   async down(queryInterface: QueryInterface): Promise<void> {
+    // Удаляем индексы
+    await queryInterface.removeIndex('product', 'idx_product_category_brand');
+    await queryInterface.removeIndex('product', 'idx_product_brand_id');
+    await queryInterface.removeIndex('product', 'idx_product_category_id');
+    
     await queryInterface.removeColumn('product', 'brand_id');
     await queryInterface.removeColumn('product', 'category_id');
     await queryInterface.dropTable('product');

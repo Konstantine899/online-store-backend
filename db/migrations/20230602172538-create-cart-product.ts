@@ -37,9 +37,24 @@ const migration: Migration = {
         key: 'id',
       },
     });
+
+     // Добавляем индексы для производительности
+     await queryInterface.addIndex('cart-product', ['cart_id', 'product_id'], {
+      name: 'idx_cart_product_unique',
+      unique: true
+    });
+
+    await queryInterface.addIndex('cart-product', ['cart_id'], {
+      name: 'idx_cart_product_cart_id'
+    });
   },
 
   async down(queryInterface: QueryInterface): Promise<void> {
+    // Удаляем индексы
+    await queryInterface.removeIndex('cart-product', 'idx_cart_product_cart_id');
+    await queryInterface.removeIndex('cart-product', 'idx_cart_product_unique');
+
+    
     await queryInterface.removeColumn('cart-product', 'cart_id');
     await queryInterface.removeColumn('cart-product', 'product_id');
     await queryInterface.dropTable('cart-product');

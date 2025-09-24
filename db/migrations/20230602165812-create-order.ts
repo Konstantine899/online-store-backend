@@ -31,7 +31,7 @@ const migration: Migration = {
         allowNull: false,
       },
       amount: {
-        type: Sequelize.FLOAT,
+        type: Sequelize.DECIMAL(10, 2),
         allowNull: false,
       },
       status: {
@@ -59,9 +59,21 @@ const migration: Migration = {
       },
       allowNull: false,
     });
+     // Добавляем индексы для производительности
+     await queryInterface.addIndex('order', ['user_id'], {
+      name: 'idx_order_user_id'
+    });
+
+    await queryInterface.addIndex('order', ['status'], {
+      name: 'idx_order_status'
+    });
   },
 
   async down(queryInterface: QueryInterface): Promise<void> {
+     // Удаляем индексы
+     await queryInterface.removeIndex('order', 'idx_order_status');
+     await queryInterface.removeIndex('order', 'idx_order_user_id');
+     
     await queryInterface.removeColumn('order', 'user_id');
     await queryInterface.dropTable('order');
   },

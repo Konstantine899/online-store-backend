@@ -52,7 +52,7 @@ export class OrderItemModel
         description: 'Цена продукта',
     })
     @Column({
-        type: DataType.FLOAT,
+        type: DataType.DECIMAL(10, 2),
         allowNull: false,
     })
     price!: number;
