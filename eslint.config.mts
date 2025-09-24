@@ -7,6 +7,20 @@ export default defineConfig([
   { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: globals.browser } },
   tseslint.configs.recommended,
   {
+    files: ["db/**/*.ts"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        require: "readonly",
+        module: "readonly",
+        exports: "readonly",
+        __dirname: "readonly",
+        __filename: "readonly",
+        process: "readonly"
+      }
+    }
+  },
+  {
     ignores: [
       "**/.history/**",
       "**/node_modules/**",
