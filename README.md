@@ -9,6 +9,28 @@ npm run start:dev
 
 ```
 
+### Быстрый старт (development)
+
+1. Скопируйте пример окружения и заполните значения:
+   ```bash
+   cp .development.env.example .development.env
+   ```
+2. Установите зависимости:
+   ```bash
+   npm install
+   ```
+3. Примените миграции (если требуется):
+   ```bash
+   npm run db:migrate
+   ```
+4. Запустите приложение:
+   ```bash
+   npm run start:dev
+   ```
+
+Swagger (dev): http://localhost:5000/online-store/docs
+Health:         http://localhost:5000/online-store/health
+
 ---
 
 <br/>
@@ -38,6 +60,30 @@ Swagger - доступен по [http://localhost:5000/online-store/docs](http:/
 
 <br/>
 <br/>
+
+### Примеры запросов (curl)
+
+```bash
+# Health
+curl -i http://localhost:5000/health
+
+# Регистрация
+curl -s -X POST http://localhost:5000/online-store/auth/registration \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"Pass123!","name":"User"}'
+
+# Логин
+curl -s -X POST http://localhost:5000/online-store/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"Pass123!"}'
+
+# Список категорий
+curl -s http://localhost:5000/online-store/category
+
+# Авторизованный запрос (подставьте токен)
+curl -s http://localhost:5000/online-store/user/me \
+  -H "Authorization: Bearer <ACCESS_TOKEN>"
+```
 
 ## Миграции
 
