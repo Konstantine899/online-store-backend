@@ -15,6 +15,31 @@ export function LoginSwaggerDecorator(): MethodDecorator {
             type: LoginDto,
             description:
                 'Структура входных данных для аутентификации пользователя',
+            schema: {
+                examples: {
+                    valid: {
+                        summary: 'Валидный вход',
+                        value: {
+                            email: 'user@example.com',
+                            password: 'MySecure123!',
+                        },
+                    },
+                    invalid_email: {
+                        summary: 'Невалидный email',
+                        value: {
+                            email: 'not-an-email',
+                            password: 'MySecure123!',
+                        },
+                    },
+                    weak_password: {
+                        summary: 'Слабый пароль (не пройдёт IsPasswordStrong)',
+                        value: {
+                            email: 'user@example.com',
+                            password: '123456',
+                        },
+                    },
+                },
+            },
         }),
         ApiResponse({
             description: 'Login',

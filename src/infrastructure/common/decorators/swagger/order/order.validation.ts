@@ -57,7 +57,7 @@ export function orderValidation(): IValidateOrderResponse {
                     example: {
                         status: HttpStatus.BAD_REQUEST,
                         property: 'email',
-                        messages: ['email must be an email'],
+                        messages: ['Неверный формат email'],
                         value: '375298918971gmail.com',
                     },
                 },
@@ -73,7 +73,14 @@ export function orderValidation(): IValidateOrderResponse {
                     example: {
                         status: HttpStatus.BAD_REQUEST,
                         property: 'phone',
-                        messages: ['Максимальная длинна телефона 15 символов'],
+                        messages: ['Максимальная длина телефона 15 символов'],
+                    },
+                },
+                {
+                    example: {
+                        status: HttpStatus.BAD_REQUEST,
+                        property: 'address',
+                        messages: ['Адрес содержит недопустимые символы'],
                     },
                 },
                 {
@@ -87,21 +94,38 @@ export function orderValidation(): IValidateOrderResponse {
                     example: {
                         status: HttpStatus.BAD_REQUEST,
                         property: 'address',
-                        messages: ['Укажите адрес доставки'],
-                    },
-                },
-                {
-                    example: {
-                        status: HttpStatus.BAD_REQUEST,
-                        property: 'address',
-                        messages: ['Максимальная длинна 200 символов'],
+                        messages: ['Максимальная длина 200 символов'],
                     },
                 },
                 {
                     example: {
                         status: HttpStatus.BAD_REQUEST,
                         property: 'comment',
-                        messages: ['Максимальная длинна 2200 символов'],
+                        messages: ['Максимальная длина 2200 символов'],
+                    },
+                },
+                {
+                    example: {
+                        status: HttpStatus.BAD_REQUEST,
+                        property: 'name',
+                        messages: ['ФИО содержит недопустимые символы'],
+                        value: 'Иванов Иван 123',
+                    },
+                },
+                {
+                    example: {
+                        status: HttpStatus.BAD_REQUEST,
+                        property: 'phone',
+                        messages: ['Неверный формат номера телефона'],
+                        value: '12-34',
+                    },
+                },
+                {
+                    example: {
+                        status: HttpStatus.BAD_REQUEST,
+                        property: 'comment',
+                        messages: ['Комментарий содержит недопустимые символы'],
+                        value: '<script>alert(1)</script>',
                     },
                 },
             ],

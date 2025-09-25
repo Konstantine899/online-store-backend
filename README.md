@@ -64,29 +64,7 @@ Swagger - доступен по [http://localhost:5000/online-store/docs](http:/
 <br/>
 <br/>
 
-### Примеры запросов (curl)
 
-```bash
-# Health
-curl -i http://localhost:5000/online-store/health
-
-# Регистрация
-curl -s -X POST http://localhost:5000/online-store/auth/registration \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"Pass123!","name":"User"}'
-
-# Логин
-curl -s -X POST http://localhost:5000/online-store/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"Pass123!"}'
-
-# Список категорий
-curl -s http://localhost:5000/online-store/category
-
-# Авторизованный запрос (подставьте токен)
-curl -s http://localhost:5000/online-store/user/me \
-  -H "Authorization: Bearer <ACCESS_TOKEN>"
-```
 
 ## Миграции
 

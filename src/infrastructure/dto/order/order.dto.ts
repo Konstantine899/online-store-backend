@@ -52,7 +52,7 @@ export class OrderDto implements IOrderDto {
     @IsNotEmpty({ message: 'Укажите контактный номер заказчика' })
     @IsString({ message: 'Телефон должен быть строкой' })
     @IsValidPhone({ message: 'Неверный формат номера телефона' })
-    @MaxLength(15, { message: 'Максимальная длинна телефона 15 символов' })
+    @MaxLength(15, { message: 'Максимальная длина телефона 15 символов' })
     declare readonly phone: string;
 
     @ApiProperty({
@@ -62,7 +62,7 @@ export class OrderDto implements IOrderDto {
     @IsNotEmpty({ message: 'Укажите адрес доставки' })
     @IsString({ message: 'Адрес должен быть строкой' })
     @IsSanitizedString({ message: 'Адрес содержит недопустимые символы' })
-    @MaxLength(200, { message: 'Максимальная длинна 200 символов' })
+    @MaxLength(200, { message: 'Максимальная длина 200 символов' })
     declare readonly address: string;
 
     @ApiProperty({
@@ -72,7 +72,7 @@ export class OrderDto implements IOrderDto {
     @IsOptional()
     @IsString({ message: 'Комментарий должен быть строкой' })
     @IsSanitizedString({ message: 'Комментарий содержит недопустимые символы' })
-    @MaxLength(2200, { message: 'Максимальная длинна 2200 символов' })
+    @MaxLength(2200, { message: 'Максимальная длина 2200 символов' })
     declare readonly comment: string;
 
     @ApiProperty({
