@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { BruteforceGuard } from './infrastructure/common/guards';
+import { APP_GUARD } from '@nestjs/core';
+
 import * as process from 'process';
 import * as Joi from 'joi';
 import {
@@ -75,12 +79,50 @@ import { HealthModule } from './infrastructure/controllers/health/health.module'
             },
         }),
 
+        ThrottlerModule.forRoot([
+            {
+                name: 'short',
+                ttl: 1000, // 1 секунда
+                limit: 3, // 3 запроса в секунду
+            },
+            {
+                name: 'medium', 
+                ttl: 10000, // 10 секунд
+                limit: 20, // 20 запросов в 10 секунд
+            },
+            {
+                name: 'long',
+                ttl: 60000, // 1 минута
+                limit: 100, // 100 запросов в минуту
+            },
+            {
+                name: 'login',
+                ttl: 15 * 60 * 1000, // 15 минут
+                limit: 5, // 5 попыток логина в 15 минут
+            },
+            {
+                name: 'refresh',
+                ttl: 5 * 60 * 1000, // 5 минут
+                limit: 10, // 10 попыток refresh в 5 минут
+            },
+            {
+                name: 'registration',
+                ttl: 60 * 1000, // 1 минута
+                limit: 3, // 3 попытки регистрации в минуту
+            }
+        ]),
+
         ControllersModule,
         ServicesModule,
         RepositoriesModule,
         HealthModule,
     ],
     controllers: [],
-    providers: [],
+    providers: [
+        {
+            provide: APP_GUARD,
+            useClass: BruteforceGuard,
+        },
+    ],
 })
 export class AppModule {}

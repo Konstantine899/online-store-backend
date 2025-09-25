@@ -158,3 +158,19 @@ Swagger - доступен по [http://localhost:5000/online-store/docs](http:/
 - `infrastructure/services` - в этой директории бизнес логика сервисов. Более подробно можно
   ознакомится [services.md](src/infrastructure/services/services.md)
 
+## Тестирование
+
+Проект включает интеграционные тесты для проверки критических функций.
+
+### Запуск тестов
+
+```bash
+# Убедитесь, что сервер запущен
+npm run start:dev
+
+# Запустите тесты rate limiting
+node tests/integration/rate-limiting.test.js
+```
+
+Подробнее о тестах см. [tests/README.md](tests/README.md).
+
