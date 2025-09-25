@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { SignOptions, TokenExpiredError } from 'jsonwebtoken';
+import * as bcrypt from 'bcrypt';
 import {
     RefreshTokenRepository,
     UserRepository,
@@ -140,6 +141,22 @@ export class TokenService implements ITokenService {
             accessToken,
             user,
         };
+    }
+
+    // Возвращает синхронный хэш refresh токена для сохранения в БД
+    public hashRefreshToken(encoded: string): string {
+        // Соль по умолчанию 10; синхронный чтобы вызывать без await там, где удобно
+        return bcrypt.hashSync(encoded, 10);
+    }
+
+    // Возвращает дату истечения refresh токена из его payload (поле exp)
+    public getRefreshExpiresAt(encoded: string): Date | undefined {
+        const decoded: any = this.jwtService.decode(encoded);
+        if (decoded && typeof decoded === 'object' && decoded.exp) {
+            // exp в секундах от Unix epoch
+            return new Date(decoded.exp * 1000);
+        }
+        return undefined;
     }
 
     public async removeRefreshToken(

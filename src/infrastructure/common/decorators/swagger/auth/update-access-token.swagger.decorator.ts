@@ -1,24 +1,20 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
-    ApiBody,
+    ApiCookieAuth,
     ApiNotFoundResponse,
     ApiOperation,
     ApiResponse,
     ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
-import { RefreshDto } from '@app/infrastructure/dto';
 import { UpdateAccessTokenResponse } from '@app/infrastructure/responses';
 
 export function UpdateAccessTokenSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
-        ApiOperation({ summary: 'Обновление access token' }),
-        ApiBody({
-            type: RefreshDto,
-            description: 'Структура данных для обновления access token',
-        }),
+        ApiOperation({ summary: 'Обновление access token по refresh из HttpOnly cookie' }),
+        ApiCookieAuth('refreshToken'),
         ApiResponse({
             description: 'Updated Access Token',
-            status: HttpStatus.CREATED,
+            status: HttpStatus.OK,
             type: UpdateAccessTokenResponse,
         }),
         ApiNotFoundResponse({

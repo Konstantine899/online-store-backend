@@ -19,6 +19,8 @@ import {
 import { IAuthResponse } from '@app/domain/responses';
 import { IAuthService } from '@app/domain/services';
 
+// removed unused types
+
 @Injectable()
 export class AuthService implements IAuthService {
     constructor(
@@ -29,18 +31,13 @@ export class AuthService implements IAuthService {
     public async registration(
         dto: CreateUserDto,
     ): Promise<RegistrationResponse> {
-        const candidate = await this.userService.findUserByEmail(dto.email);
-        if (candidate) {
-            this.badRequest(
-                `Пользователь с таким email: ${candidate.email} уже существует`,
-            );
-        }
         const user = await this.userService.createUser(dto);
         const accessToken = await this.tokenService.generateAccessToken(user);
         const refreshToken = await this.tokenService.generateRefreshToken(
             user,
             60 * 60 * 24 * 30,
         );
+
         return this.getToken(accessToken, refreshToken);
     }
 
@@ -62,7 +59,7 @@ export class AuthService implements IAuthService {
             refresh.refreshToken,
         );
         await this.tokenService.removeRefreshToken(payload.jti, payload.sub);
-        request.headers.authorization = undefined; // обнуляю access token
+        request.headers.authorization = undefined;
         return {
             status: HttpStatus.OK,
             message: 'success',
@@ -77,17 +74,6 @@ export class AuthService implements IAuthService {
                 refreshToken,
             );
         return this.getToken(accessToken);
-    }
-
-    private getToken(
-        accessToken: string,
-        refreshToken?: string,
-    ): IAuthResponse {
-        return {
-            type: 'Bearer',
-            accessToken,
-            ...(refreshToken ? { refreshToken } : {}),
-        };
     }
 
     private async validateUser(dto: CreateUserDto): Promise<UserModel> {
@@ -114,5 +100,16 @@ export class AuthService implements IAuthService {
             status: HttpStatus.BAD_REQUEST,
             message,
         });
+    }
+
+    private getToken(
+        accessToken: string,
+        refreshToken?: string,
+    ): IAuthResponse {
+        return {
+            type: 'Bearer',
+            accessToken,
+            ...(refreshToken ? { refreshToken } : {}),
+        };
     }
 }

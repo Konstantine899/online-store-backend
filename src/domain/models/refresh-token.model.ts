@@ -17,7 +17,7 @@ interface IRefreshTokenModel {
 }
 
 @Table({
-    tableName: 'refresh-token',
+    tableName: 'refresh_token',
     underscored: true,
     defaultScope: {
         attributes: { exclude: ['updatedAt', 'createdAt'] },
@@ -39,17 +39,17 @@ export class RefreshTokenModel
         type: DataType.BOOLEAN,
         defaultValue: false,
     })
-    is_revoked!: boolean; // аннулировать или нет
+    declare is_revoked: boolean; // аннулировать или нет
 
     @Column({
         type: DataType.DATE,
         allowNull: false,
     })
-    expires!: Date;
+    declare expires: Date;
 
     @ForeignKey(() => UserModel)
     @Column({ type: DataType.INTEGER })
-    user_id!: number;
+    declare user_id: number;
 
     // У одного refresh token может быть только один пользователь
 

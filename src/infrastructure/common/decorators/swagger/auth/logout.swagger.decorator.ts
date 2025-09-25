@@ -1,24 +1,13 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
-import {
-    ApiBearerAuth,
-    ApiBody,
-    ApiOperation,
-    ApiResponse,
-    ApiUnprocessableEntityResponse,
-} from '@nestjs/swagger';
-import { RefreshDto } from '@app/infrastructure/dto';
+import {ApiBearerAuth, ApiCookieAuth, ApiOperation, ApiResponse, ApiUnprocessableEntityResponse } from '@nestjs/swagger';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { LogoutResponse } from '@app/infrastructure/responses';
 
 export function LogoutSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Выход пользователя' }),
+        ApiCookieAuth('refreshToken'),
         ApiBearerAuth('JWT-auth'),
-        ApiBody({
-            type: RefreshDto,
-            description: 'Refresh token пользователя',
-            required: true,
-        }),
         ApiBadRequestResponse({
             description: 'Bad Request',
             schema: {

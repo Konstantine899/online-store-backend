@@ -30,7 +30,11 @@ export function UserCreateOrderSwaggerDecorator(): MethodDecorator {
                             address: 'г. Минск, ул. Ленина 1',
                             comment: 'Позвонить перед доставкой',
                             items: [
-                                { name: 'Xiaomi 10pro', price: 1000, quantity: 1 },
+                                {
+                                    name: 'Xiaomi 10pro',
+                                    price: 1000,
+                                    quantity: 1,
+                                },
                             ],
                         },
                     },
@@ -41,7 +45,13 @@ export function UserCreateOrderSwaggerDecorator(): MethodDecorator {
                             email: 'user@example.com',
                             phone: '+375298918971',
                             address: 'г. Минск, ул. Ленина 1',
-                            items: [{ name: 'Xiaomi 10pro', price: 1000, quantity: 1 }],
+                            items: [
+                                {
+                                    name: 'Xiaomi 10pro',
+                                    price: 1000,
+                                    quantity: 1,
+                                },
+                            ],
                         },
                     },
                     invalid_email: {
@@ -51,7 +61,13 @@ export function UserCreateOrderSwaggerDecorator(): MethodDecorator {
                             email: 'not-an-email',
                             phone: '+375298918971',
                             address: 'г. Минск, ул. Ленина 1',
-                            items: [{ name: 'Xiaomi 10pro', price: 1000, quantity: 1 }],
+                            items: [
+                                {
+                                    name: 'Xiaomi 10pro',
+                                    price: 1000,
+                                    quantity: 1,
+                                },
+                            ],
                         },
                     },
                     invalid_phone: {
@@ -61,7 +77,13 @@ export function UserCreateOrderSwaggerDecorator(): MethodDecorator {
                             email: 'user@example.com',
                             phone: '12-34',
                             address: 'г. Минск, ул. Ленина 1',
-                            items: [{ name: 'Xiaomi 10pro', price: 1000, quantity: 1 }],
+                            items: [
+                                {
+                                    name: 'Xiaomi 10pro',
+                                    price: 1000,
+                                    quantity: 1,
+                                },
+                            ],
                         },
                     },
                     invalid_address: {
@@ -71,7 +93,13 @@ export function UserCreateOrderSwaggerDecorator(): MethodDecorator {
                             email: 'user@example.com',
                             phone: '+375298918971',
                             address: '<script>alert(1)</script>',
-                            items: [{ name: 'Xiaomi 10pro', price: 1000, quantity: 1 }],
+                            items: [
+                                {
+                                    name: 'Xiaomi 10pro',
+                                    price: 1000,
+                                    quantity: 1,
+                                },
+                            ],
                         },
                     },
                 },

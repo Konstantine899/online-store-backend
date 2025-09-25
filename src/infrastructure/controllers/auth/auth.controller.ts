@@ -6,11 +6,13 @@ import {
     HttpCode,
     Post,
     Req,
+    Res,
     UseGuards,
+    UnauthorizedException,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { AuthService, UserService } from '@app/infrastructure/services';
-import { RegistrationDto, LoginDto, RefreshDto } from '@app/infrastructure/dto';
+import { RegistrationDto, LoginDto } from '@app/infrastructure/dto';
 import { ApiTags } from '@nestjs/swagger';
 import {
     RegistrationSwaggerDecorator,
@@ -29,12 +31,12 @@ import {
 } from '@app/infrastructure/responses';
 
 import { AuthGuard } from '@app/infrastructure/common/guards';
-import { IAuthController } from '@app/domain/controllers';
 import { IDecodedAccessToken } from '@app/domain/jwt';
+import { getRefreshCookieName, buildRefreshCookieOptions } from '@app/infrastructure/common/utils/cookie-options';
 
 @ApiTags('Аутентификация')
 @Controller('auth')
-export class AuthController implements IAuthController {
+export class AuthController  {
     constructor(
         private readonly authService: AuthService,
         private readonly userService: UserService,
@@ -44,27 +46,58 @@ export class AuthController implements IAuthController {
     @HttpCode(201)
     @Post('/registration')
     public async registration(
-        @Body() dto: RegistrationDto,
-    ): Promise<RegistrationResponse> {
-        return this.authService.registration(dto);
-    }
+	@Body() dto: RegistrationDto,
+	@Req() req: Request,
+	@Res({ passthrough: true }) res: Response,
+): Promise<RegistrationResponse> {
+	const result = await this.authService.registration(dto);
+
+	const cookieName = getRefreshCookieName();
+	res.cookie(cookieName, result.refreshToken, buildRefreshCookieOptions(req));
+
+	return {
+		type: result.type,
+		accessToken: result.accessToken,
+	};
+}
 
     @LoginSwaggerDecorator()
     @HttpCode(200)
     @Post('/login')
-    public async login(@Body() dto: LoginDto): Promise<LoginResponse> {
-        return this.authService.login(dto);
+    public async login(@Body() dto: LoginDto, @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,): Promise<LoginResponse> {
+        const result = await this.authService.login(dto);
+        // ставим refresh в HttpOnly cookie
+        const cookieName = getRefreshCookieName();
+        res.cookie(cookieName, result.refreshToken, buildRefreshCookieOptions(req));
+
+        // Возвращаем только поля, определённые в LoginResponse, без refreshToken в теле
+        return { type: result.type, accessToken: result.accessToken };
     }
 
     @UpdateAccessTokenSwaggerDecorator()
-    @HttpCode(201)
-    @UseGuards(AuthGuard)
+    @HttpCode(200)
     @Post('/refresh')
     public async updateAccessToken(
-        @Body() dto: RefreshDto,
-    ): Promise<UpdateAccessTokenResponse> {
-        return this.authService.updateAccessToken(dto.refreshToken);
-    }
+	@Req() req: Request,
+): Promise<UpdateAccessTokenResponse> {
+	const cookieName = getRefreshCookieName();
+	const refreshFromCookie: string | undefined =
+		req.signedCookies?.[cookieName] || req.cookies?.[cookieName];
+
+        if (!refreshFromCookie) {
+            // cookie ожидается подписанной; отсутствует = невалидна/не отправлена
+            throw new UnauthorizedException('Refresh token cookie is missing or invalid');
+        }
+
+	const result = await this.authService.updateAccessToken(refreshFromCookie);
+
+	// Phase A: без ротации — cookie не переписываем
+	return {
+		type: result.type,
+		accessToken: result.accessToken,
+	};
+}
 
     @CheckUserAuthSwaggerDecorator()
     @UseGuards(AuthGuard)
@@ -81,11 +114,28 @@ export class AuthController implements IAuthController {
 
     @LogoutSwaggerDecorator()
     @UseGuards(AuthGuard)
+    @HttpCode(200)
     @Delete('/logout')
     public async logout(
-        @Req() request: Request,
-        @Body() refresh: RefreshDto,
-    ): Promise<LogoutResponse> {
-        return this.authService.logout(refresh, request);
-    }
+	@Req() req: Request,
+	@Res({ passthrough: true }) res: Response,
+): Promise<LogoutResponse> {
+	const cookieName = getRefreshCookieName();
+	const refreshFromCookie: string | undefined =
+		req.signedCookies?.[cookieName] || req.cookies?.[cookieName];
+
+        if (!refreshFromCookie) {
+            // cookie ожидается подписанной; отсутствует = невалидна/не отправлена
+            throw new UnauthorizedException('Refresh token cookie is missing or invalid');
+        }
+
+	// 1) Отзываю refresh в БД (чтобы он больше нигде не сработал)
+    await this.authService.logout({ refreshToken: refreshFromCookie }, req);
+
+    // 2) Очистить cookie у клиента
+    const opts = buildRefreshCookieOptions(req);
+    res.clearCookie(cookieName, { ...opts, maxAge: undefined, expires: new Date(0) });
+
+    return { status: 200, message: 'success' } as LogoutResponse;
+}
 }

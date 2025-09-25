@@ -50,14 +50,14 @@ export class UserModel
         type: DataType.STRING,
         unique: true,
     })
-    email!: string;
+   declare email: string;
 
     @Column({ type: DataType.STRING })
-    password!: string;
+    declare password: string;
 
     // Многие ко многим через промежуточную таблицу UserRoleModel
     @BelongsToMany(() => RoleModel, () => UserRoleModel)
-    roles!: RoleModel[];
+    declare roles: RoleModel[];
 
     //У одного пользователя могут быть несколько refresh tokens
 
@@ -65,15 +65,15 @@ export class UserModel
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
     })
-    refresh_tokens!: RefreshTokenModel[];
+   declare refresh_tokens: RefreshTokenModel[];
 
     @BelongsToMany(() => ProductModel, {
         through: () => RatingModel,
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
     })
-    products!: ProductModel[];
+   declare products: ProductModel[];
 
     @HasMany(() => OrderModel, { onDelete: 'SET NULL' })
-    orders!: OrderModel[];
+   declare orders: OrderModel[];
 }
