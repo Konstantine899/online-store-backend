@@ -151,6 +151,7 @@ export class TokenService implements ITokenService {
 
     // Возвращает дату истечения refresh токена из его payload (поле exp)
     public getRefreshExpiresAt(encoded: string): Date | undefined {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const decoded: any = this.jwtService.decode(encoded);
         if (decoded && typeof decoded === 'object' && decoded.exp) {
             // exp в секундах от Unix epoch
@@ -170,6 +171,66 @@ export class TokenService implements ITokenService {
         }
         return this.refreshTokenRepository.removeRefreshToken(refreshTokenId);
     }
+
+    public async rotateRefreshToken(encodedRefreshToken: string): Promise<{ accessToken: string; refreshToken: string; user: UserModel }> {
+        const payload = await this.decodeRefreshToken(encodedRefreshToken);
+        const userId = Number(payload.sub);
+        const tokenId = Number(payload.jti);
+
+        if(!userId || !tokenId){
+            throw new UnprocessableEntityException('Invalid refresh token payload');
+        }
+
+        // Ищем токен в БД
+        const storedToken =  await this.refreshTokenRepository.findRefreshTokenById(tokenId);
+
+        if(!storedToken){
+            // Удаляем ВСЕ refresh токены пользователя для безопасности
+            await this.refreshTokenRepository.removeListRefreshTokens(userId).catch(() => {
+                // Игнорируем ошибки при удалении
+            });
+            throw new NotFoundException('Refresh token not found or already used (possible theft detected)');
+    }
+    // Проверяем, что токен принадлежит правильному пользователю
+    if (storedToken.user_id !== userId) {
+        throw new UnprocessableEntityException('Token user mismatch');
+    }
+    //  Проверяем срок действия (если есть поле expires)
+    if (storedToken.expires && storedToken.expires <= new Date()) {
+        await this.refreshTokenRepository.removeRefreshToken(tokenId);
+        throw new UnprocessableEntityException('Refresh token expired');
+    }
+    //  Удаляем старый токен (одноразовость)
+    await this.refreshTokenRepository.removeRefreshToken(tokenId);
+
+    // Загружаем пользователя
+    const user = await this.userRepository.findUserByPkId(userId);
+    if (!user) {
+        throw new NotFoundException('User not found');
+    }
+    // Создаём новый refresh токен
+    const ttlSeconds = 60 * 60 * 24 * 30; // 30 дней (можно вынести в конфиг)
+    const newRefreshTokenRecord = await this.refreshTokenRepository.createRefreshToken(
+        user,
+        ttlSeconds
+    );
+    // Подписываем новый refresh токен
+    const newRefreshTokenOptions: SignOptions = {
+        subject: String(user.id),
+        jwtid: String(newRefreshTokenRecord.id),
+    };
+    const newRefreshToken = await this.jwtService.signAsync({}, newRefreshTokenOptions);
+
+    // Генерируем новый access токен
+    const accessToken = await this.generateAccessToken(user);
+
+    return {
+        accessToken,
+        refreshToken: newRefreshToken,
+        user,
+    };
+
+}
 
     private notFound(message: string): void {
         throw new NotFoundException({

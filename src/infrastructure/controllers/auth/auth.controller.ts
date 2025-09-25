@@ -4,11 +4,13 @@ import {
     Delete,
     Get,
     HttpCode,
+    NotFoundException,
     Post,
     Req,
     Res,
     UseGuards,
     UnauthorizedException,
+    UnprocessableEntityException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService, UserService } from '@app/infrastructure/services';
@@ -80,6 +82,7 @@ export class AuthController  {
     @Post('/refresh')
     public async updateAccessToken(
 	@Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
 ): Promise<UpdateAccessTokenResponse> {
 	const cookieName = getRefreshCookieName();
 	const refreshFromCookie: string | undefined =
@@ -90,13 +93,33 @@ export class AuthController  {
             throw new UnauthorizedException('Refresh token cookie is missing or invalid');
         }
 
-	const result = await this.authService.updateAccessToken(refreshFromCookie);
-
-	// Phase A: без ротации — cookie не переписываем
-	return {
-		type: result.type,
-		accessToken: result.accessToken,
-	};
+	try{
+        // Получаем новый access и новый refresh
+        const result = await this.authService.updateAccessToken(refreshFromCookie);
+        // Если получили новый refresh токен - обновляем cookie
+        if (result.refreshToken) {
+            res.cookie(cookieName, result.refreshToken, buildRefreshCookieOptions(req));
+        }
+        // Возвращаем только access токен в теле ответа
+        return {
+            type: result.type,
+            accessToken: result.accessToken,
+        };
+    }catch(error){
+        if (error instanceof NotFoundException) {
+            // Reuse detection - очищаем cookie
+            const opts = buildRefreshCookieOptions(req);
+            res.clearCookie(cookieName, { ...opts, maxAge: undefined, expires: new Date(0) });
+            throw new UnauthorizedException('Refresh token compromised. Please log in again.');
+        }
+        
+        if (error instanceof UnprocessableEntityException) {
+            // Неверный формат, истёкший токен, user mismatch
+            throw new UnauthorizedException('Invalid refresh token');
+        }
+        
+        throw error;
+    }
 }
 
     @CheckUserAuthSwaggerDecorator()

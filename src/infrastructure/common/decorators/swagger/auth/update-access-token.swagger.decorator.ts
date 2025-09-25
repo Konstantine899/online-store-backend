@@ -10,12 +10,19 @@ import { UpdateAccessTokenResponse } from '@app/infrastructure/responses';
 
 export function UpdateAccessTokenSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
-        ApiOperation({ summary: 'Обновление access token по refresh из HttpOnly cookie' }),
+        ApiOperation({
+            summary: 'Обновить access токен',
+            description: 'Обновляет access токен используя refresh токен. Refresh токен ротируется (старый удаляется, новый создаётся). При обнаружении повторного использования токена все refresh токены пользователя удаляются.',
+        }),
         ApiCookieAuth('refreshToken'),
         ApiResponse({
-            description: 'Updated Access Token',
-            status: HttpStatus.OK,
+            status: 200,
+            description: 'Токен успешно обновлён',
             type: UpdateAccessTokenResponse,
+        }),
+        ApiResponse({
+            status: 401,
+            description: 'Refresh токен недействителен или скомпрометирован',
         }),
         ApiNotFoundResponse({
             schema: {

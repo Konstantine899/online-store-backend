@@ -19,6 +19,10 @@ import {
 import { IAuthResponse } from '@app/domain/responses';
 import { IAuthService } from '@app/domain/services';
 
+interface IUpdateAccessTokenResponse extends UpdateAccessTokenResponse {
+    refreshToken?: string; // Опционально для внутреннего использования
+}
+
 // removed unused types
 
 @Injectable()
@@ -68,12 +72,21 @@ export class AuthService implements IAuthService {
 
     public async updateAccessToken(
         refreshToken: string,
-    ): Promise<UpdateAccessTokenResponse> {
-        const { accessToken } =
-            await this.tokenService.createAccessTokenFromRefreshToken(
-                refreshToken,
-            );
-        return this.getToken(accessToken);
+    ): Promise<IUpdateAccessTokenResponse> {
+       try{
+        const{accessToken,refreshToken: newRefreshToken} = await this.tokenService.rotateRefreshToken(refreshToken);
+        
+        return {
+            type: 'Bearer',
+            accessToken,
+            refreshToken: newRefreshToken, // Возвращаем новый refresh для cookie
+        };   
+    }catch(error){
+         // Логируем для отладки
+         console.error('Token rotation failed:', error);
+        // Пробрасываем все ошибки наверх - пусть контроллер решает что делать
+        throw error;
+    }
     }
 
     private async validateUser(dto: CreateUserDto): Promise<UserModel> {

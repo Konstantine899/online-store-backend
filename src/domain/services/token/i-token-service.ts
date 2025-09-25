@@ -31,6 +31,17 @@ export interface ITokenService {
     ): Promise<{ accessToken: string; user: UserModel }>;
 
     removeRefreshToken(refreshTokenId: number, userId: number): Promise<number>;
+
+/**
+     * Ротирует refresh токен: удаляет старый, создаёт новый
+     * @param encodedRefreshToken - закодированный refresh токен
+     * @returns новый access токен, новый refresh токен и пользователя
+     * @throws NotFoundException если токен не найден (reuse detection)
+     */
+rotateRefreshToken(
+    encodedRefreshToken: string,
+): Promise<{ accessToken: string; refreshToken: string; user: UserModel }>;
+
 }
 
 export interface IRefreshTokenPayload {
