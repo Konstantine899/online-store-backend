@@ -6,16 +6,18 @@ import {
 } from 'class-validator';
 
 @ValidatorConstraint({ name: 'isSanitizedString', async: false })
-export class IsSanitizedStringConstraint implements ValidatorConstraintInterface {
+export class IsSanitizedStringConstraint
+    implements ValidatorConstraintInterface
+{
     validate(value: string) {
         if (typeof value !== 'string') return false;
 
         // Удаляем HTML теги
         const sanitized = value.replace(/<[^>]*>/g, '');
-        
+
         // Удаляем лишние пробелы
         const trimmed = sanitized.trim();
-        
+
         // Проверяем, что строка не пустая после санитизации
         if (trimmed.length === 0) return false;
 
@@ -25,7 +27,7 @@ export class IsSanitizedStringConstraint implements ValidatorConstraintInterface
             /javascript:/i,
             /on\w+\s*=/i,
             /data:text\/html/i,
-            /vbscript:/i
+            /vbscript:/i,
         ];
 
         for (const pattern of suspiciousPatterns) {

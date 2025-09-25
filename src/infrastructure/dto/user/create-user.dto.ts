@@ -17,10 +17,13 @@ export class CreateUserDto implements ICreateUserDto {
 
     @ApiProperty({
         example: 'MySecure123!',
-        description: 'Пароль пользователя (минимум 8 символов, включая заглавные, строчные буквы, цифры и спецсимволы)',
+        description:
+            'Пароль пользователя (минимум 8 символов, включая заглавные, строчные буквы, цифры и спецсимволы)',
     })
     @IsNotEmpty({ message: 'Поле пароль не должно быть пустым' })
     @IsString({ message: 'Поле пароля должно быть строкой' })
-    @IsPasswordStrong({ message: 'Пароль не соответствует требованиям безопасности' })
+    @IsPasswordStrong({
+        message: 'Пароль не соответствует требованиям безопасности',
+    })
     declare readonly password: string;
 }

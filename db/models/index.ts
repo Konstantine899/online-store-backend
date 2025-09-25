@@ -21,35 +21,38 @@ const env = process.env.NODE_ENV || 'development';
 const dbConfig = config[env as keyof typeof config];
 
 interface Database {
-  sequelize: Sequelize;
-  Sequelize: typeof Sequelize;
-  user: ReturnType<typeof User>;
-  role: ReturnType<typeof Role>;
-  category: ReturnType<typeof Category>;
-  brand: ReturnType<typeof Brand>;
-  product: ReturnType<typeof Product>;
-  rating: ReturnType<typeof Rating>;
-  property: ReturnType<typeof ProductProperty>;
-  order: ReturnType<typeof Order>;
-  item: ReturnType<typeof OrderItem>;
-  cart: ReturnType<typeof Cart>;
-  cartProduct: ReturnType<typeof CartProduct>;
-  userRole: ReturnType<typeof UserRole>;
-  refreshToken: ReturnType<typeof RefreshToken>;
+    sequelize: Sequelize;
+    Sequelize: typeof Sequelize;
+    user: ReturnType<typeof User>;
+    role: ReturnType<typeof Role>;
+    category: ReturnType<typeof Category>;
+    brand: ReturnType<typeof Brand>;
+    product: ReturnType<typeof Product>;
+    rating: ReturnType<typeof Rating>;
+    property: ReturnType<typeof ProductProperty>;
+    order: ReturnType<typeof Order>;
+    item: ReturnType<typeof OrderItem>;
+    cart: ReturnType<typeof Cart>;
+    cartProduct: ReturnType<typeof CartProduct>;
+    userRole: ReturnType<typeof UserRole>;
+    refreshToken: ReturnType<typeof RefreshToken>;
 }
 
 const db: Database = {} as Database;
 
 let sequelize: Sequelize;
 if (dbConfig.use_env_variable) {
-  sequelize = new Sequelize(process.env[dbConfig.use_env_variable] as string, dbConfig);
+    sequelize = new Sequelize(
+        process.env[dbConfig.use_env_variable] as string,
+        dbConfig,
+    );
 } else {
-  sequelize = new Sequelize(
-    dbConfig.database,
-    dbConfig.username,
-    dbConfig.password,
-    dbConfig,
-  );
+    sequelize = new Sequelize(
+        dbConfig.database,
+        dbConfig.username,
+        dbConfig.password,
+        dbConfig,
+    );
 }
 
 // Initialize all models
@@ -69,12 +72,15 @@ db.refreshToken = RefreshToken(sequelize);
 
 // Set up associations
 Object.keys(db).forEach((modelName) => {
-  if (db[modelName as keyof Database] && typeof db[modelName as keyof Database] === 'function') {
-    const model = db[modelName as keyof Database] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
-    if (model.associate) {
-      model.associate(db);
+    if (
+        db[modelName as keyof Database] &&
+        typeof db[modelName as keyof Database] === 'function'
+    ) {
+        const model = db[modelName as keyof Database] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+        if (model.associate) {
+            model.associate(db);
+        }
     }
-  }
 });
 
 db.sequelize = sequelize;

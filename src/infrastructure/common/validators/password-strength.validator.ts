@@ -6,7 +6,9 @@ import {
 } from 'class-validator';
 
 @ValidatorConstraint({ name: 'isPasswordStrong', async: false })
-export class IsPasswordStrongConstraint implements ValidatorConstraintInterface {
+export class IsPasswordStrongConstraint
+    implements ValidatorConstraintInterface
+{
     validate(password: string) {
         if (!password) return false;
 
@@ -27,11 +29,23 @@ export class IsPasswordStrongConstraint implements ValidatorConstraintInterface 
 
         // Запрещенные простые пароли
         const commonPasswords = [
-            'password', '123456', '123456789', 'qwerty', 'abc123',
-            'password123', 'admin', 'letmein', 'welcome', 'monkey',
-            '1234567890', 'password1', 'qwerty123', 'dragon', 'master'
+            'password',
+            '123456',
+            '123456789',
+            'qwerty',
+            'abc123',
+            'password123',
+            'admin',
+            'letmein',
+            'welcome',
+            'monkey',
+            '1234567890',
+            'password1',
+            'qwerty123',
+            'dragon',
+            'master',
         ];
-        
+
         if (commonPasswords.includes(password.toLowerCase())) return false;
 
         return true;

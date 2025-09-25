@@ -36,7 +36,9 @@ import { HealthModule } from './infrastructure/controllers/health/health.module'
                 DIALECT: Joi.string()
                     .valid('mysql', 'mariadb', 'postgres', 'sqlite', 'mssql')
                     .default('mysql'),
-                SQL_LOGGING: Joi.string().valid('true', 'false').default('false'),
+                SQL_LOGGING: Joi.string()
+                    .valid('true', 'false')
+                    .default('false'),
                 MYSQL_HOST: Joi.string().required(),
                 MYSQL_PORT: Joi.number().integer().min(1).max(65535).required(),
                 MYSQL_DATABASE: Joi.string().required(),
