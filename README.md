@@ -158,6 +158,56 @@ Swagger - доступен по [http://localhost:5000/online-store/docs](http:/
 - `infrastructure/services` - в этой директории бизнес логика сервисов. Более подробно можно
   ознакомится [services.md](src/infrastructure/services/services.md)
 
+## API Endpoints
+
+### Продукты (V2 - новый формат пагинации)
+
+Все endpoints для работы с продуктами теперь используют новый формат пагинации `{ data, meta }`:
+
+- `GET /online-store/product/list-v2` - Получение списка продуктов
+- `GET /online-store/product/brand/{brandId}/list-v2` - Получение продуктов по бренду
+- `GET /online-store/product/category/{categoryId}/list-v2` - Получение продуктов по категории
+- `GET /online-store/product/brand/{brandId}/category/{categoryId}/list-v2` - Получение продуктов по бренду и категории
+
+#### Формат ответа V2
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "iPhone 15",
+      "price": 999.99,
+      "rating": 4.5,
+      "image": "iphone15.jpg",
+      "category_id": 1,
+      "brand_id": 1
+    }
+  ],
+  "meta": {
+    "totalCount": 10,
+    "lastPage": 2,
+    "currentPage": 1,
+    "nextPage": 2,
+    "previousPage": null,
+    "limit": 5
+  }
+}
+```
+
+#### Параметры запроса
+
+- `search` (required) - Поиск по имени продукта
+- `sort` (required) - Сортировка цены (`asc` или `desc`)
+- `page` (optional) - Номер страницы (по умолчанию: 1)
+- `size` (optional) - Количество элементов на странице (по умолчанию: 5)
+
+#### Важные изменения
+
+- **Исправлен баг с `page=0`**: Теперь параметр `page=0` автоматически корректируется до `page=1`
+- **Универсальный формат**: Все endpoints используют единый формат `{ data, meta }`
+- **Улучшенная пагинация**: Более детальная информация о страницах в `meta`
+
 ## Тестирование
 
 Проект включает интеграционные тесты для проверки критических функций.
@@ -165,11 +215,14 @@ Swagger - доступен по [http://localhost:5000/online-store/docs](http:/
 ### Запуск тестов
 
 ```bash
-# Убедитесь, что сервер запущен
-npm run start:dev
+# Запуск всех тестов (unit + integration)
+npm run test
 
-# Запустите тесты rate limiting
-node tests/integration/rate-limiting.test.js
+# Запуск только unit тестов
+npm run test:unit
+
+# Запуск только integration тестов
+npm run test:integration
 ```
 
 Подробнее о тестах см. [tests/README.md](tests/README.md).
