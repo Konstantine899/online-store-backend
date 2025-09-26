@@ -31,12 +31,21 @@ export class RoleGuard implements CanActivate {
 
             const request = context.switchToHttp().getRequest();
             const authorizationHeader: string = request.headers.authorization;
+
+           // проверка на отсутствие заголовка
+            if (!authorizationHeader) {
+                throw new UnauthorizedException({
+                    statusCode: HttpStatus.UNAUTHORIZED,
+                    message: 'Пользователь не авторизован',
+                });
+            }
+
             const bearer: string = authorizationHeader.split(' ')[0];
             const accessToken: string = authorizationHeader.split(' ')[1];
 
             if (bearer !== 'Bearer' || !accessToken) {
                 throw new UnauthorizedException({
-                    status: HttpStatus.UNAUTHORIZED,
+                    statusCode: HttpStatus.UNAUTHORIZED,
                     message: 'Пользователь не авторизован',
                 });
             }
@@ -51,17 +60,22 @@ export class RoleGuard implements CanActivate {
             });
             if (!isRole) {
                 throw new ForbiddenException({
-                    status: HttpStatus.FORBIDDEN,
+                    statusCode: HttpStatus.FORBIDDEN,
                     message: 'У вас недостаточно прав доступа',
                 });
             }
             return isRole;
         } catch (error) {
+
+            if (error instanceof UnauthorizedException || error instanceof ForbiddenException) {
+                throw error; // Пробрасываем уже сформированные ошибки
+            }
+
             const errorMessage =
-                error instanceof Error ? error.message : 'Unknown error';
+                error instanceof Error ? error.message : 'Неизвестная ошибка';
             throw new ForbiddenException({
-                status: HttpStatus.FORBIDDEN,
-                message: `${errorMessage}!`,
+                statusCode: HttpStatus.FORBIDDEN, 
+                message: `Ошибка авторизации: ${errorMessage}`,
             });
         }
     }
