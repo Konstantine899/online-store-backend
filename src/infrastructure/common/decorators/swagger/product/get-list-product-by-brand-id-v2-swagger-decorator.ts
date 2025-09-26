@@ -6,7 +6,7 @@ import {
     ApiQuery,
 } from '@nestjs/swagger';
 import { ProductInfo } from '@app/infrastructure/paginate';
-import { PaginatedResponse } from '@app/infrastructure/responses/paginated.response';
+import { PaginatedResponse } from '@app/infrastructure/responses/paginate/paginated.response';
 
 export function GetListProductByBrandIdV2SwaggerDecorator(): MethodDecorator {
     return applyDecorators(

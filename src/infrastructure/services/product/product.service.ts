@@ -17,10 +17,6 @@ import {
 import {
     CreateProductResponse,
     GetProductResponse,
-    GetListProductResponse,
-    GetListProductByBrandIdResponse,
-    GetListProductByCategoryIdResponse,
-    GetAllByBrandIdAndCategoryIdResponse,
     UpdateProductResponse,
     RemoveProductResponse,
 } from '@app/infrastructure/responses';
@@ -29,7 +25,7 @@ import { SortingEnum } from '@app/domain/dto';
 import { IProductService } from '@app/domain/services';
 import { RatingService } from '@app/infrastructure/services';
 import { GetListProductV2Response } from '@app/infrastructure/responses/product/get-list-product-v2.response';
-import { PaginatedResponse } from '@app/infrastructure/responses/paginated.response';
+import { PaginatedResponse } from '@app/infrastructure/responses/paginate/paginated.response';
 
 @Injectable()
 export class ProductService implements IProductService {
@@ -154,111 +150,6 @@ export class ProductService implements IProductService {
         return new PaginatedResponse(products.rows, metaData);
     }
 
-    public async getListProduct(
-        searchQuery: SearchDto,
-        sortQuery: SortingDto,
-        page: number,
-        size: number,
-    ): Promise<GetListProductResponse> {
-        const { search } = searchQuery;
-        const { sort = SortingEnum.DESC } = sortQuery;
-        const { limit, offset } = this.getPaginate(page, size);
-        const products = await this.productRepository.findListProduct(
-            search,
-            sort,
-            limit,
-            offset,
-        );
-        const metaData = this.getMetadata(products.count, page, limit);
-        return {
-            metaData,
-            count: products.count,
-            rows: products.rows,
-        };
-    }
-
-    public async getListProductByBrandId(
-        brandId: number,
-        searchQuery: SearchDto,
-        sortQuery: SortingDto,
-        page: number,
-        size: number,
-    ): Promise<GetListProductByBrandIdResponse> {
-        const { limit, offset } = this.getPaginate(page, size);
-        const { search } = searchQuery;
-        const { sort = SortingEnum.DESC } = sortQuery;
-        const products = await this.productRepository.findListProductByBrandId(
-            brandId,
-            search,
-            sort,
-            limit,
-            offset,
-        );
-        const metaData = this.getMetadata(products.count, page, limit);
-
-        return {
-            metaData,
-            count: products.count,
-            rows: products.rows,
-        };
-    }
-
-    public async getListProductByCategoryId(
-        categoryId: number,
-        searchQuery: SearchDto,
-        sortQuery: SortingDto,
-        page: number,
-        size: number,
-    ): Promise<GetListProductByCategoryIdResponse> {
-        const { limit, offset } = this.getPaginate(page, size);
-        const { search } = searchQuery;
-        const { sort = SortingEnum.DESC } = sortQuery;
-        const products =
-            await this.productRepository.findListProductByCategoryId(
-                categoryId,
-                search,
-                sort,
-                limit,
-                offset,
-            );
-
-        const metaData = this.getMetadata(products.count, page, limit);
-
-        return {
-            metaData,
-            count: products.count,
-            rows: products.rows,
-        };
-    }
-
-    public async getAllByBrandIdAndCategoryId(
-        brandId: number,
-        categoryId: number,
-        searchQuery: SearchDto,
-        sortQuery: SortingDto,
-        page: number,
-        size: number,
-    ): Promise<GetAllByBrandIdAndCategoryIdResponse> {
-        const { limit, offset } = this.getPaginate(page, size);
-        const { search } = searchQuery;
-        const { sort = SortingEnum.DESC } = sortQuery;
-        const products =
-            await this.productRepository.findAllByBrandIdAndCategoryId(
-                brandId,
-                categoryId,
-                search,
-                sort,
-                limit,
-                offset,
-            );
-        const metaData = this.getMetadata(products.count, page, limit);
-        return {
-            metaData,
-            count: products.count,
-            rows: products.rows,
-        };
-    }
-
     public async removeProduct(
         productId: number,
     ): Promise<RemoveProductResponse> {
@@ -330,7 +221,9 @@ export class ProductService implements IProductService {
         offset: number;
     } {
         const limit = size;
-        const offset = (page - 1) * limit;
+        // Исправляем page=0 на page=1 для корректного offset
+        const correctedPage = Math.max(1, page);
+        const offset = (correctedPage - 1) * limit;
         return {
             limit,
             offset,

@@ -25,10 +25,6 @@ import {
     Roles,
     CreateProductSwaggerDecorator,
     GetProductSwaggerDecorator,
-    GetListProductSwaggerDecorator,
-    GetListProductByBrandIdSwaggerDecorator,
-    GetListProductByCategoryIdSwaggerDecorator,
-    GetAllByBrandIdAndCategoryIdSwaggerDecorator,
     UpdateProductSwaggerDecorator,
     RemoveProductSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
@@ -38,10 +34,6 @@ import { ApiTags } from '@nestjs/swagger';
 import {
     CreateProductResponse,
     GetProductResponse,
-    GetListProductResponse,
-    GetListProductByBrandIdResponse,
-    GetListProductByCategoryIdResponse,
-    GetAllByBrandIdAndCategoryIdResponse,
     UpdateProductResponse,
     RemoveProductResponse,
 } from '@app/infrastructure/responses';
@@ -49,7 +41,7 @@ import {
 import { IProductController } from '@app/domain/controllers';
 
 import { GetListProductV2Response } from '@app/infrastructure/responses/product/get-list-product-v2.response';
-import { PaginatedResponse } from '@app/infrastructure/responses/paginated.response';
+import { PaginatedResponse } from '@app/infrastructure/responses/paginate/paginated.response';
 import { GetListProductV2SwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/product/get-list-product-v2-swagger-decorator';
 import { GetListProductByBrandIdV2SwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/product/get-list-product-by-brand-id-v2-swagger-decorator';
 import { ProductInfo } from '@app/infrastructure/paginate';
@@ -139,82 +131,6 @@ export class ProductController implements IProductController {
         @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
     ): Promise<PaginatedResponse<ProductInfo>> {
         return this.productService.getAllByBrandIdAndCategoryIdV2(brandId, categoryId, searchQuery, sortQuery, page, size);
-    }
-
-    @GetListProductSwaggerDecorator()
-    @HttpCode(200)
-    @Get('/all')
-    public async getListProduct(
-        @Query() searchQuery: SearchDto,
-        @Query() sortQuery: SortingDto,
-        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-        @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
-    ): Promise<GetListProductResponse> {
-        return this.productService.getListProduct(
-            searchQuery,
-            sortQuery,
-            page,
-            limit,
-        );
-    }
-
-    @GetListProductByBrandIdSwaggerDecorator()
-    @HttpCode(200)
-    @Get('/all/brandId/:brandId')
-    public async getListProductByBrandId(
-        @Param('brandId', ParseIntPipe) brandId: number,
-        @Query() searchQuery: SearchDto,
-        @Query() sortQuery: SortingDto,
-        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-        @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
-    ): Promise<GetListProductByBrandIdResponse> {
-        return this.productService.getListProductByBrandId(
-            brandId,
-            searchQuery,
-            sortQuery,
-            page,
-            limit,
-        );
-    }
-
-    @GetListProductByCategoryIdSwaggerDecorator()
-    @HttpCode(200)
-    @Get('/all/categoryId/:categoryId')
-    public async getListProductByCategoryId(
-        @Param('categoryId', ParseIntPipe) categoryId: number,
-        @Query() searchQuery: SearchDto,
-        @Query() sortQuery: SortingDto,
-        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-        @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
-    ): Promise<GetListProductByCategoryIdResponse> {
-        return this.productService.getListProductByCategoryId(
-            categoryId,
-            searchQuery,
-            sortQuery,
-            page,
-            limit,
-        );
-    }
-
-    @GetAllByBrandIdAndCategoryIdSwaggerDecorator()
-    @HttpCode(200)
-    @Get('/all/brandId/:brandId/categoryId/:categoryId')
-    public async getAllByBrandIdAndCategoryId(
-        @Param('brandId', ParseIntPipe) brandId: number,
-        @Param('categoryId', ParseIntPipe) categoryId: number,
-        @Query() searchQuery: SearchDto,
-        @Query() sortQuery: SortingDto,
-        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-        @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
-    ): Promise<GetAllByBrandIdAndCategoryIdResponse> {
-        return this.productService.getAllByBrandIdAndCategoryId(
-            brandId,
-            categoryId,
-            searchQuery,
-            sortQuery,
-            page,
-            limit,
-        );
     }
 
     @UpdateProductSwaggerDecorator()

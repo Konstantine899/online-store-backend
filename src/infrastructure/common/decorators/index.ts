@@ -38,12 +38,12 @@ export { GetListProductPropertySwaggerDecorator } from './swagger/product-proper
 export { CreateProductPropertySwaggerDecorator } from './swagger/product-property/create-product-property-swagger-decorator';
 export { UpdateProductSwaggerDecorator } from './swagger/product/update-product-swagger-decorator';
 export { RemoveProductSwaggerDecorator } from './swagger/product/remove-product-swagger-decorator';
-export { GetListProductSwaggerDecorator } from './swagger/product/get-list-product-swagger-decorator';
 export { GetProductSwaggerDecorator } from './swagger/product/get-product-swagger-decorator';
-export { GetListProductByCategoryIdSwaggerDecorator } from './swagger/product/get-list-product-by-category-id-swagger-decorator';
-export { GetListProductByBrandIdSwaggerDecorator } from './swagger/product/get-list-product-by-brand-id-swagger-decorator';
-export { GetAllByBrandIdAndCategoryIdSwaggerDecorator } from './swagger/product/get-all-by-brand-id-and-category-id-swagger-decorator';
 export { CreateProductSwaggerDecorator } from './swagger/product/create-product-swagger-decorator';
+export { GetListProductV2SwaggerDecorator } from './swagger/product/get-list-product-v2-swagger-decorator';
+export { GetListProductByBrandIdV2SwaggerDecorator } from './swagger/product/get-list-product-by-brand-id-v2-swagger-decorator';
+export { GetListProductByCategoryIdV2SwaggerDecorator } from './swagger/product/get-list-product-by-category-id-v2-swagger-decorator';
+export { GetAllByBrandIdAndCategoryIdV2SwaggerDecorator } from './swagger/product/get-all-by-brand-id-and-category-id-v2-swagger-decorator';
 export { UserMakePaymentSwaggerDecorator } from './swagger/payment/user-make-payment-swagger-decorator';
 export { GuestMakePaymentSwaggerDecorator } from './swagger/payment/guest-make-payment-swagger-decorator';
 export { UserGetOrderSwaggerDecorator } from './swagger/order/user-get-order-swagger-decorator';

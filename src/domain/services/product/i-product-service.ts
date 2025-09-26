@@ -6,13 +6,12 @@ import {
 import {
     CreateProductResponse,
     GetProductResponse,
-    GetListProductResponse,
-    GetListProductByBrandIdResponse,
     RemoveProductResponse,
-    GetListProductByCategoryIdResponse,
-    GetAllByBrandIdAndCategoryIdResponse,
     UpdateProductResponse,
+    GetListProductV2Response,
+    PaginatedResponse,
 } from '@app/infrastructure/responses';
+import { ProductInfo } from '@app/infrastructure/paginate';
 
 export interface IProductService {
     productCreate(
@@ -22,37 +21,38 @@ export interface IProductService {
 
     getProduct(id: number): Promise<GetProductResponse>;
 
-    getListProduct(
+    // V2 методы с новым форматом { data, meta }
+    getListProductV2(
         searchQuery: SearchDto,
         sortQuery: SortingDto,
         page: number,
         size: number,
-    ): Promise<GetListProductResponse>;
+    ): Promise<GetListProductV2Response>;
 
-    getListProductByBrandId(
+    getListProductByBrandIdV2(
         brandId: number,
         searchQuery: SearchDto,
         sortQuery: SortingDto,
         page: number,
         size: number,
-    ): Promise<GetListProductByBrandIdResponse>;
+    ): Promise<PaginatedResponse<ProductInfo>>;
 
-    getListProductByCategoryId(
+    getListProductByCategoryIdV2(
         categoryId: number,
         searchQuery: SearchDto,
         sortQuery: SortingDto,
         page: number,
         size: number,
-    ): Promise<GetListProductByCategoryIdResponse>;
+    ): Promise<PaginatedResponse<ProductInfo>>;
 
-    getAllByBrandIdAndCategoryId(
+    getAllByBrandIdAndCategoryIdV2(
         brandId: number,
         categoryId: number,
         searchQuery: SearchDto,
         sortQuery: SortingDto,
         page: number,
         size: number,
-    ): Promise<GetAllByBrandIdAndCategoryIdResponse>;
+    ): Promise<PaginatedResponse<ProductInfo>>;
 
     removeProduct(id: number): Promise<RemoveProductResponse>;
 
