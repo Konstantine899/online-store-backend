@@ -18,7 +18,10 @@ export class AuthGuard implements CanActivate {
             const request = context.switchToHttp().getRequest();
             const { authorization }: IHeaders = request.headers;
             if (!authorization || authorization.trim() === '') {
-                throw new UnauthorizedException('Please provide token');
+                throw new UnauthorizedException({
+                    statusCode: HttpStatus.UNAUTHORIZED, 
+                    message: 'Пользователь не авторизован',
+                });
             }
             const authToken = authorization.replace('Bearer', '').trim();
             request.user = await this.tokenService.decodedAccessToken(
@@ -27,11 +30,15 @@ export class AuthGuard implements CanActivate {
             );
             return true;
         } catch (error) {
+            if (error instanceof UnauthorizedException) {
+                throw error; // Пробрасываем уже сформированные ошибки
+            }
+
             const errorMessage =
-                error instanceof Error ? error.message : 'Unknown error';
+                error instanceof Error ? error.message : 'Неизвестная ошибка';
             throw new ForbiddenException({
-                status: HttpStatus.FORBIDDEN,
-                message: `${errorMessage}! Please authorization`,
+                statusCode: HttpStatus.FORBIDDEN,
+                message: `Ошибка авторизации: ${errorMessage}`,
             });
         }
     }
