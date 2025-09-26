@@ -5,7 +5,6 @@ import {
     ApiQuery,
     ApiResponse,
 } from '@nestjs/swagger';
-import { GetListProductResponse } from '@app/infrastructure/responses';
 
 export function GetListProductSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
@@ -15,19 +14,21 @@ export function GetListProductSwaggerDecorator(): MethodDecorator {
         ApiQuery({
             name: 'page',
             type: 'number',
-            required: true,
-            description: 'Номер страницы',
+            required: false, // по умолчанию передаю 1
+            description: 'Номер страницы (по умолчанию 1)',
+            example: 1,
         }),
         ApiQuery({
             name: 'size',
             type: 'number',
-            required: true,
-            description: 'Количество элементов на странице',
+            required: false, // по умолчанию передаеться 5
+            description:
+                'Количество элементов на странице (по умолчанию 5, максимум 100)',
+            example: 5,
         }),
         ApiResponse({
-            description: 'Get list products',
-            status: HttpStatus.OK,
-            type: GetListProductResponse,
+            status: HttpStatus.TOO_MANY_REQUESTS,
+            description: 'Слишком много запросов', // НОВЫЙ КОД
         }),
         ApiNotFoundResponse({
             description: 'Not Found',

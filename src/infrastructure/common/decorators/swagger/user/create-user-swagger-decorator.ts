@@ -23,42 +23,20 @@ export function CreateUserSwaggerDecorator(): MethodDecorator {
             status: HttpStatus.CREATED,
             type: CreateUserResponse,
         }),
+        ApiResponse({
+            status: HttpStatus.CONFLICT,
+            description: 'Пользователь уже существует', 
+        }),
+        ApiResponse({
+            status: HttpStatus.UNAUTHORIZED,
+            description: 'Требуется аутентификация', 
+        }),
+        ApiResponse({
+            status: HttpStatus.FORBIDDEN,
+            description: 'Нет прав', 
+        }),
         ApiBadRequestResponse({
-            description: 'Bad Request',
-            schema: {
-                anyOf: [
-                    {
-                        title: 'Существующий email в БД',
-                        example: {
-                            statusCode: HttpStatus.BAD_REQUEST,
-                            message:
-                                'Пользователь с таким email: test@gmail.com уже существует',
-                            error: 'Bad Request',
-                        },
-                    },
-                    {
-                        title: 'Не верный формат email',
-                        example: {
-                            status: HttpStatus.BAD_REQUEST,
-                            property: 'email',
-                            messages: ['Не верный формат email'],
-                            value: 'testgmail.com',
-                        },
-                    },
-                    {
-                        title: 'Валидация пароля',
-                        example: {
-                            status: HttpStatus.BAD_REQUEST,
-                            property: 'password',
-                            messages: [
-                                'Пароль пользователя должен быть не менее 6 символов',
-                                'Поле пароль не должно быть пустым',
-                            ],
-                            value: '12345',
-                        },
-                    },
-                ],
-            },
+            description: 'Ошибка валидации', 
         }),
         ApiNotFoundResponse({
             description: 'Not Found',
