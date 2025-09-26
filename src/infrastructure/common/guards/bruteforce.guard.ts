@@ -1,9 +1,11 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ThrottlerGuard, ThrottlerRequest } from '@nestjs/throttler';
+import { Injectable, Logger } from '@nestjs/common';
+import { ThrottlerGuard, ThrottlerRequest, ThrottlerException } from '@nestjs/throttler';
 import { Request } from 'express';
 
 @Injectable()
 export class BruteforceGuard extends ThrottlerGuard {
+    private readonly logger = new Logger(BruteforceGuard.name);
+
     protected async handleRequest(requestProps: ThrottlerRequest): Promise<boolean> {
         const { context } = requestProps;
         const request = context.switchToHttp().getRequest<Request>();
@@ -37,9 +39,16 @@ export class BruteforceGuard extends ThrottlerGuard {
         const canProceed = await super.handleRequest(loginRequestProps);
         
         if (!canProceed) {
-            throw new UnauthorizedException(
-                'Too many login attempts. Please try again in 15 minutes.',
-            );
+            const request = requestProps.context.switchToHttp().getRequest<Request>();
+            
+            // Логирование блокировки на уровне warn с метаданными
+            this.logger.warn('Login rate limit exceeded', {
+                ip: request.ip,
+                userAgent: request.get('User-Agent'),
+                correlationId: request.headers['x-request-id'],
+            });
+            
+            throw new ThrottlerException('Слишком много попыток входа. Попробуйте через 15 минут.');
         }
         
         return true;
@@ -56,9 +65,15 @@ export class BruteforceGuard extends ThrottlerGuard {
         const canProceed = await super.handleRequest(refreshRequestProps);
         
         if (!canProceed) {
-            throw new UnauthorizedException(
-                'Too many refresh attempts. Please try again in 5 minutes.',
-            );
+            const request = requestProps.context.switchToHttp().getRequest<Request>();
+            
+            this.logger.warn('Refresh rate limit exceeded', {
+                ip: request.ip,
+                userAgent: request.get('User-Agent'),
+                correlationId: request.headers['x-request-id'],
+            });
+            
+            throw new ThrottlerException('Слишком много попыток обновления токена. Попробуйте через 5 минут.');
         }
         
         return true;
@@ -75,9 +90,15 @@ export class BruteforceGuard extends ThrottlerGuard {
         const canProceed = await super.handleRequest(registrationRequestProps);
         
         if (!canProceed) {
-            throw new UnauthorizedException(
-                'Too many registration attempts. Please try again in 1 minute.',
-            );
+            const request = requestProps.context.switchToHttp().getRequest<Request>();
+            
+            this.logger.warn('Registration rate limit exceeded', {
+                ip: request.ip,
+                userAgent: request.get('User-Agent'),
+                correlationId: request.headers['x-request-id'],
+            });
+            
+            throw new ThrottlerException('Слишком много попыток регистрации. Попробуйте через минуту.');
         }
         
         return true;
