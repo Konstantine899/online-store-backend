@@ -18,3 +18,5 @@ export { IAuthResponse } from './auth/i-auth-response';
 export { ICheckResponse } from './auth/i-check-response';
 export { ILogoutResponse } from './auth/i-logout-response';
 export { IUpdateAccessTokenResponse } from './auth/i-update-access-token-response';
+export { IPaginatedResponse } from './paginated-response';
+export { IGetListProductV2Response } from './paginated-response';
