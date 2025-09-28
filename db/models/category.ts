@@ -17,16 +17,15 @@ class Category
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static associate(models: Record<string, any>): void {
-        // eslint-disable-line @typescript-eslint/no-explicit-any
         this.hasMany(models.product, {
             as: TABLE_NAMES.PRODUCT,
             onDelete: 'RESTRICT',
-            onUpdate: 'RESTRICT',
+            onUpdate: 'CASCADE',
         });
         this.hasMany(models.brand, {
             as: TABLE_NAMES.BRAND,
             onDelete: 'RESTRICT',
-            onUpdate: 'RESTRICT',
+            onUpdate: 'CASCADE',
         });
     }
 }
@@ -66,18 +65,20 @@ export default function defineCategory(sequelize: Sequelize): typeof Category {
             created_at: {
                 type: DataTypes.DATE,
                 allowNull: false,
+                defaultValue: DataTypes.NOW,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             updated_at: {
                 type: DataTypes.DATE,
                 allowNull: false,
+                defaultValue: DataTypes.NOW,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         {
             sequelize,
             modelName: TABLE_NAMES.CATEGORY,
-            tableName: TABLE_NAMES.CATEGORY,
+            tableName: 'category',
             timestamps: true,
-            underscored: false,
+            underscored: true,
         } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
     );
 

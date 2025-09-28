@@ -1,14 +1,7 @@
-import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
+import { Column, DataType, HasMany, Model, Table, CreatedAt,
+    UpdatedAt, } from 'sequelize-typescript';
 import { ProductModel } from './product.model';
-import { BrandModel } from './brand.model';
 
-interface ICategoryCreationAttributes {
-    name: string;
-    image: string;
-    slug?: string;
-    description?: string;
-    isActive?: boolean;
-}
 
 interface ICategoryModel {
     id: number;
@@ -18,10 +11,18 @@ interface ICategoryModel {
     description?: string;
     isActive: boolean;
     products: ProductModel[];
-    brands?: BrandModel[];
-    productsCount?: number;
-    brandsCount?: number;
+    createdAt: Date; // НОВОЕ
+    updatedAt: Date; // НОВОЕ
 }
+
+interface ICategoryCreationAttributes {
+    name: string;
+    image: string;
+    slug?: string;
+    description?: string;
+    isActive?: boolean;
+}
+
 
 @Table({
     tableName: 'category',
@@ -36,34 +37,10 @@ interface ICategoryModel {
             where: { isActive: true },
         },
         withProducts: {
-            include: [ProductModel],
-        },
-        withBrands: {
-            include: [BrandModel],
-        },
-        withAll: {
-            include: [ProductModel, BrandModel],
-        },
-        withCounts: {
-            include: [
-                {
-                    model: ProductModel,
-                    as: 'products',
-                    attributes: [],
-                },
-                {
-                    model: BrandModel,
-                    as: 'brands',
-                    attributes: [],
-                },
-            ],
-            attributes: {
-                include: [
-                    ['COUNT(products.id)', 'productsCount'],
-                    ['COUNT(brands.id)', 'brandsCount'],
-                ],
-            },
-            group: ['CategoryModel.id'],
+            include: [{
+                model: ProductModel,
+                attributes: ['id', 'name', 'price', 'image'],
+            }],
         },
     },
     indexes: [
@@ -81,19 +58,9 @@ interface ICategoryModel {
             fields: ['isActive'],
             name: 'idx_category_is_active',
         },
-        {
-            fields: ['image'],
-            name: 'idx_category_image',
-        },
-        {
-            fields: ['isActive', 'name'],
-            name: 'idx_category_active_name',
-        },
     ],
 })
-export class CategoryModel
-    extends Model<CategoryModel, ICategoryCreationAttributes>
-    implements ICategoryModel
+export class CategoryModel extends Model<ICategoryModel, ICategoryCreationAttributes> implements ICategoryModel
 {
     @Column({
         type: DataType.INTEGER,
@@ -109,7 +76,7 @@ export class CategoryModel
         validate: {
             len: [1, 255],
             notEmpty: true,
-            is: /^[a-zA-Z0-9\s\-_]+$/i,
+            is: /^[а-яА-Яa-zA-Z0-9\s\-_.,!?()]+$/i,
         },
         set(value: string) {
             this.setDataValue('name', value?.trim()?.toLowerCase());
@@ -162,40 +129,30 @@ export class CategoryModel
     @HasMany(() => ProductModel, { 
         foreignKey: 'category_id',
         onDelete: 'RESTRICT', 
-        onUpdate: 'RESTRICT',
+        onUpdate: 'CASCADE',
         hooks: true,
         as: 'products',
     })
     products!: ProductModel[];
 
-    @HasMany(() => BrandModel, { 
-        foreignKey: 'category_id',
-        onDelete: 'RESTRICT', 
-        onUpdate: 'RESTRICT',
-        hooks: true,
-        as: 'brands',
+    @CreatedAt
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        field: 'created_at',
     })
-    brands!: BrandModel[];
+    declare createdAt: Date;
 
-    // Виртуальные поля для производительности
-    get productsCount(): number {
-        return this.products?.length || 0;
-    }
-
-    get brandsCount(): number {
-        return this.brands?.length || 0;
-    }
-
-    // Методы для оптимизации запросов
-    static async findActiveWithCounts(): Promise<CategoryModel[]> {
-        return this.scope(['active', 'withCounts']).findAll();
-    }
+    @UpdatedAt
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        field: 'updated_at',
+    })
+    declare updatedAt: Date;
+    
 
     static async findBySlug(slug: string): Promise<CategoryModel | null> {
         return this.findOne({ where: { slug, isActive: true } });
-    }
-
-    static async findWithProducts(categoryId: number): Promise<CategoryModel | null> {
-        return this.scope('withProducts').findByPk(categoryId);
     }
 }

@@ -46,30 +46,33 @@ const migration: Migration = {
             created_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
+                defaultValue: Sequelize.NOW,
             },
             updated_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
+                defaultValue: Sequelize.NOW,
             },
         });
-        await Promise.all([
-            queryInterface.addIndex('category', ['slug'], {
-                name: 'idx_category_slug_unique',
-                unique: true,
-            }),
-            queryInterface.addIndex('category', ['is_active'], {
-                name: 'idx_category_is_active',
-            }),
-            queryInterface.addIndex('category', ['image'], {
-                name: 'idx_category_image',
-            }),
-            queryInterface.addIndex('category', ['is_active', 'name'], {
-                name: 'idx_category_active_name',
-            }),
-        ]);
+        await queryInterface.addIndex('category', ['name'], {
+            name: 'idx_category_name_unique',
+            unique: true,
+        });
+
+        await queryInterface.addIndex('category', ['slug'], {
+            name: 'idx_category_slug_unique',
+            unique: true,
+        });
+
+        await queryInterface.addIndex('category', ['is_active'], {
+            name: 'idx_category_is_active',
+        });
     },
 
     async down(queryInterface: QueryInterface): Promise<void> {
+        await queryInterface.removeIndex('category', 'idx_category_name_unique');
+        await queryInterface.removeIndex('category', 'idx_category_slug_unique');
+        await queryInterface.removeIndex('category', 'idx_category_is_active');
         await queryInterface.dropTable('category');
     },
 };
