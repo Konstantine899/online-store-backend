@@ -32,8 +32,56 @@ interface IUserModel {
     tableName: 'user',
     underscored: true,
     defaultScope: {
-        attributes: { exclude: ['updatedAt', 'createdAt'] },
+        attributes: { 
+            exclude: ['updatedAt', 'createdAt', 'password'] // Исключаем пароль по умолчанию
+        },
     },
+    // ДОБАВЛЕНО: Scopes для разных сценариев использования
+    scopes: {
+        // Scope для аутентификации - только необходимые поля
+        forAuth: {
+            attributes: ['id', 'email'],
+            include: [{
+                model: RoleModel,
+                attributes: ['id', 'name'],
+                through: { attributes: [] } // Исключаем промежуточную таблицу
+            }]
+        },
+        // Scope для загрузки пользователя с ролями
+        withRoles: {
+            include: [{
+                model: RoleModel,
+                attributes: ['id', 'name'],
+                through: { attributes: [] }
+            }]
+        },
+        // Scope для работы с refresh токенами
+        withTokens: {
+            include: [{
+                model: RefreshTokenModel,
+                attributes: ['id', 'token', 'expires_at', 'is_active']
+            }]
+        },
+        // Scope для загрузки пользователя с заказами (с пагинацией)
+        withOrders: {
+            include: [{
+                model: OrderModel,
+                attributes: ['id', 'status', 'total_amount', 'created_at'],
+                limit: 10, // Ограничиваем количество заказов
+                order: [['created_at', 'DESC']] // Последние заказы
+            }]
+        },
+        // Scope для загрузки пользователя с продуктами (рейтинги)
+        withProducts: {
+            include: [{
+                model: ProductModel,
+                through: {
+                    attributes: ['rating', 'created_at']
+                },
+                attributes: ['id', 'name', 'price']
+            }]
+        }
+    }
 })
 export class UserModel
     extends Model<UserModel, IUserCreationAttributes>
@@ -47,12 +95,22 @@ export class UserModel
     declare id: number;
 
     @Column({
-        type: DataType.STRING,
+        type: DataType.STRING(255),
         unique: true,
+        allowNull: false,
+        validate: {
+            isEmail: true, 
+            len: [5, 255] 
+        }
     })
    declare email: string;
 
-    @Column({ type: DataType.STRING })
+    @Column({ type: DataType.STRING(255), 
+        allowNull: false,
+        validate: {
+            len: [6, 255] 
+        }
+     })
     declare password: string;
 
     // Многие ко многим через промежуточную таблицу UserRoleModel

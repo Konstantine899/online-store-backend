@@ -317,9 +317,9 @@ describe('UserService', () => {
                 mockUserInstance as unknown as GetUserResponse,
             );
 
-             const result = await service.addRole(addRoleDto);
+            const result = await service.addRole(addRoleDto);
 
-             expect(result).toBe(mockUserInstance);
+            expect(result).toBe(mockUserInstance);
             expect(userRepository.findUser).toHaveBeenCalledWith(
                 addRoleDto.userId,
             );
@@ -478,20 +478,43 @@ describe('UserService', () => {
     describe('getListUsers', () => {
         it('должен успешно получить список пользователей', async () => {
             const userList = [mockUser, mockAdminUser];
-            userRepository.findListUsers.mockResolvedValue(userList);
+            const mockResponse = {
+                data: userList,
+                meta: {
+                    totalCount: 2,
+                    lastPage: 1,
+                    currentPage: 1,
+                    nextPage: 0,
+                    previousPage: 0,
+                    limit: 5
+                }
+            };
+            userRepository.findListUsersPaginated.mockResolvedValue(mockResponse);
 
             const result = await service.getListUsers();
 
-            expect(result).toBe(userList);
-            expect(userRepository.findListUsers).toHaveBeenCalled();
+            expect(result).toEqual(mockResponse);
+            expect(userRepository.findListUsersPaginated).toHaveBeenCalledWith(1, 5);
         });
 
-         it('должен выбросить NotFoundException если список пуст', async () => {
-             (userRepository.findListUsers as jest.Mock).mockResolvedValue(null);
+        it('должен выбросить NotFoundException если список пуст', async () => {
+            const emptyResponse = {
+                data: [],
+                meta: {
+                    totalCount: 0,
+                    lastPage: 0,
+                    currentPage: 1,
+                    nextPage: 0,
+                    previousPage: 0,
+                    limit: 5
+                }
+            };
+            (
+                userRepository.findListUsersPaginated as jest.Mock
+            ).mockResolvedValue(emptyResponse);
 
-             const result = await service.getListUsers();
-             expect(result).toBeNull();
-         });
+            await expect(service.getListUsers()).rejects.toThrow('Список пользователей пуст');
+        });
     });
 
     describe('createUser - дополнительные случаи', () => {

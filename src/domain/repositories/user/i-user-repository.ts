@@ -4,7 +4,7 @@ import {
     UpdateUserResponse,
     GetUserResponse,
     CreateUserResponse,
-    GetListUsersResponse,
+    GetPaginatedUsersResponse,
 } from '@app/infrastructure/responses';
 
 export interface IUserRepository {
@@ -25,7 +25,10 @@ export interface IUserRepository {
 
     findUserByEmail(email: string): Promise<UserModel>;
 
-    findListUsers(): Promise<GetListUsersResponse[]>;
+    findListUsersPaginated(
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse>;
 
     removeUser(id: number): Promise<number>;
 }

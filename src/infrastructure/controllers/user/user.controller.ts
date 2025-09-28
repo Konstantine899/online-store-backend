@@ -38,6 +38,7 @@ import {
     RemoveUserResponse,
     AddRoleResponse,
     RemoveUserRoleResponse,
+    GetPaginatedUsersResponse,
 } from '@app/infrastructure/responses';
 
 import { IUserController } from '@app/domain/controllers';
@@ -63,7 +64,7 @@ export class UserController implements IUserController {
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
     @Get('/get-list-users')
-    public async getListUsers(): Promise<GetListUsersResponse[]> {
+    public async getListUsers(): Promise<GetPaginatedUsersResponse> {
         return this.userService.getListUsers();
     }
 

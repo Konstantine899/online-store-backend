@@ -11,12 +11,13 @@ import {
     RemoveUserResponse,
     AddRoleResponse,
     RemoveUserRoleResponse,
+    GetPaginatedUsersResponse,
 } from '@app/infrastructure/responses';
 
 export interface IUserController {
     createUser(dto: CreateUserDto): Promise<CreateUserResponse>;
 
-    getListUsers(): Promise<GetListUsersResponse[]>;
+    getListUsers(): Promise<GetPaginatedUsersResponse>;
 
     getUser(id: number): Promise<GetUserResponse>;
 

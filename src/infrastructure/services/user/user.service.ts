@@ -22,6 +22,7 @@ import {
     AddRoleResponse,
     RemoveUserRoleResponse,
     CheckResponse,
+    GetPaginatedUsersResponse,
 } from '@app/infrastructure/responses';
 import { IUserService } from '@app/domain/services';
 
@@ -83,9 +84,9 @@ export class UserService implements IUserService {
         return this.userRepository.findUserByEmail(email);
     }
 
-    public async getListUsers(): Promise<GetListUsersResponse[]> {
-        const listUsers = this.userRepository.findListUsers();
-        if (!listUsers) {
+    public async getListUsers(page: number = 1, limit: number = 5): Promise<GetPaginatedUsersResponse> {
+        const listUsers = await this.userRepository.findListUsersPaginated(page, limit);
+        if (!listUsers.data.length) {
             this.notFound('Список пользователей пуст');
         }
         return listUsers;

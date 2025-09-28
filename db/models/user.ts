@@ -47,13 +47,13 @@ export default function defineUser(sequelize: Sequelize): typeof User {
                 allowNull: false,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             email: {
-                type: DataTypes.STRING,
-                allowNull: true,
+                type: DataTypes.STRING(255),
+                allowNull: false,
                 unique: true,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             password: {
-                type: DataTypes.STRING,
-                allowNull: true,
+                type: DataTypes.STRING(255),
+                allowNull: false,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             created_at: {
                 type: DataTypes.DATE,

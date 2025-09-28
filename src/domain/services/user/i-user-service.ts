@@ -12,6 +12,7 @@ import {
     RemoveUserResponse,
     AddRoleResponse,
     RemoveUserRoleResponse,
+    GetPaginatedUsersResponse,
 } from '@app/infrastructure/responses';
 import { UserModel } from '@app/domain/models';
 
@@ -26,7 +27,7 @@ export interface IUserService {
 
     findUserByEmail(email: string): Promise<UserModel>;
 
-    getListUsers(): Promise<GetListUsersResponse[]>;
+    getListUsers(page?: number, limit?: number): Promise<GetPaginatedUsersResponse>;
 
     updateUser(id: number, dto: CreateUserDto): Promise<UpdateUserResponse>;
 

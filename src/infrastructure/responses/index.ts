@@ -58,3 +58,4 @@ export { LoginResponse } from './auth/login.response';
 export { LogoutResponse } from './auth/logout.response';
 export { RegistrationResponse } from './auth/registration.response';
 export { UpdateAccessTokenResponse } from './auth/update-access-token.response';
+export { GetPaginatedUsersResponse } from './user/get-paginated-users-response';
