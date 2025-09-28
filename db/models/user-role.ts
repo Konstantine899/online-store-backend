@@ -29,6 +29,7 @@ export default function defineUserRole(sequelize: Sequelize): typeof UserRole {
             roleId: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
+                field: 'role_id',
                 references: {
                     model: TABLE_NAMES.ROLE,
                     key: 'id',
@@ -37,6 +38,7 @@ export default function defineUserRole(sequelize: Sequelize): typeof UserRole {
             userId: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
+                field: 'user_id',
                 references: {
                     model: TABLE_NAMES.USER,
                     key: 'id',
@@ -45,16 +47,20 @@ export default function defineUserRole(sequelize: Sequelize): typeof UserRole {
             created_at: {
                 type: DataTypes.DATE,
                 allowNull: false,
+                field: 'created_at',
+                defaultValue: DataTypes.NOW,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             updated_at: {
                 type: DataTypes.DATE,
                 allowNull: false,
+                field: 'updated_at',
+                defaultValue: DataTypes.NOW,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         {
             sequelize,
             modelName: TABLE_NAMES.USER_ROLE,
-            tableName: TABLE_NAMES.USER_ROLE,
+            tableName: 'user_role',
             timestamps: true,
             underscored: false,
         } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
