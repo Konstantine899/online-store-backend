@@ -55,32 +55,6 @@ interface IUserModel {
                 through: { attributes: [] }
             }]
         },
-        // Scope для работы с refresh токенами
-        withTokens: {
-            include: [{
-                model: RefreshTokenModel,
-                attributes: ['id', 'token', 'expires_at', 'is_active']
-            }]
-        },
-        // Scope для загрузки пользователя с заказами (с пагинацией)
-        withOrders: {
-            include: [{
-                model: OrderModel,
-                attributes: ['id', 'status', 'total_amount', 'created_at'],
-                limit: 10, // Ограничиваем количество заказов
-                order: [['created_at', 'DESC']] // Последние заказы
-            }]
-        },
-        // Scope для загрузки пользователя с продуктами (рейтинги)
-        withProducts: {
-            include: [{
-                model: ProductModel,
-                through: {
-                    attributes: ['rating', 'created_at']
-                },
-                attributes: ['id', 'name', 'price']
-            }]
-        }
     }
 })
 export class UserModel

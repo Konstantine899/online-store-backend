@@ -66,32 +66,16 @@ interface IProduct {
             where: { stock: { [Op.gt]: 0 } },
         },
         withCategory: {
-            include: [CategoryModel],
+            include: [{
+                model: CategoryModel,
+                attributes: ['id', 'name', 'slug'],
+            }],
         },
         withBrand: {
-            include: [BrandModel],
-        },
-        withProperties: {
-            include: [ProductPropertyModel],
-        },
-        withAll: {
-            include: [CategoryModel, BrandModel, ProductPropertyModel],
-        },
-        withRatings: {
-            include: [
-                {
-                    model: RatingModel,
-                    as: 'users',
-                    attributes: [],
-                },
-            ],
-            attributes: {
-                include: [
-                    ['COUNT(users.id)', 'ratingsCount'],
-                    ['AVG(users.rating)', 'averageRating'],
-                ],
-            },
-            group: ['ProductModel.id'],
+            include: [{
+                model: BrandModel,
+                attributes: ['id', 'name', 'slug'],
+            }],
         },
     },
     indexes: [
@@ -110,16 +94,8 @@ interface IProduct {
             name: 'idx_product_is_active',
         },
         {
-            fields: ['stock'],
-            name: 'idx_product_stock',
-        },
-        {
             fields: ['price'],
             name: 'idx_product_price',
-        },
-        {
-            fields: ['rating'],
-            name: 'idx_product_rating',
         },
         {
             fields: ['category_id'],
@@ -128,18 +104,6 @@ interface IProduct {
         {
             fields: ['brand_id'],
             name: 'idx_product_brand_id',
-        },
-        {
-            fields: ['isActive', 'category_id'],
-            name: 'idx_product_active_category',
-        },
-        {
-            fields: ['isActive', 'brand_id'],
-            name: 'idx_product_active_brand',
-        },
-        {
-            fields: ['price', 'rating'],
-            name: 'idx_product_price_rating',
         },
     ],
 })
@@ -313,21 +277,13 @@ export class ProductModel
         return this.stock > 0;
     }
 
-    // Статические методы для оптимизации запросов
+    // Базовые статические методы
     static async findActiveInStock(): Promise<ProductModel[]> {
         return this.scope(['active', 'inStock']).findAll();
     }
 
     static async findBySlug(slug: string): Promise<ProductModel | null> {
         return this.scope('active').findOne({ where: { slug } });
-    }
-
-    static async findWithAllRelations(productId: number): Promise<ProductModel | null> {
-        return this.scope('withAll').findByPk(productId);
-    }
-
-    static async findWithRatings(productId: number): Promise<ProductModel | null> {
-        return this.scope('withRatings').findByPk(productId);
     }
 
     static async findByCategory(categoryId: number): Promise<ProductModel[]> {

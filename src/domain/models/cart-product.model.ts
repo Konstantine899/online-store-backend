@@ -9,7 +9,6 @@ import {
     CreatedAt,
     UpdatedAt,
 } from 'sequelize-typescript';
-import { Op } from 'sequelize';
 import { CartModel } from './cart.model';
 import { ProductModel } from './product.model';
 
@@ -37,31 +36,12 @@ interface ICartProductCreationAttributes {
     defaultScope: {
         attributes: { exclude: ['updatedAt', 'createdAt'] }, 
     },
-    // НОВЫЕ SCOPES для производительности
+    // Базовые scopes
     scopes: {
         // Scope для фильтрации по корзине
         byCart: (cartId: number) => ({
             where: { cart_id: cartId },
         }),
-        // Scope для фильтрации по продукту
-        byProduct: (productId: number) => ({
-            where: { product_id: productId },
-        }),
-        // Scope для больших количеств
-        highQuantity: (threshold: number = 5) => ({
-            where: {
-                quantity: {
-                    [Op.gte]: threshold,
-                },
-            },
-        }),
-        // Scope для загрузки с корзиной
-        withCart: {
-            include: [{
-                model: CartModel,
-                attributes: ['id', 'createdAt'],
-            }],
-        },
         // Scope для загрузки с продуктом
         withProduct: {
             include: [{
@@ -69,27 +49,6 @@ interface ICartProductCreationAttributes {
                 attributes: ['id', 'name', 'price', 'image'],
             }],
         },
-        // Scope для загрузки со всеми связанными данными
-        fullData: {
-            include: [
-                {
-                    model: CartModel,
-                    attributes: ['id', 'createdAt'],
-                },
-                {
-                    model: ProductModel,
-                    attributes: ['id', 'name', 'price', 'image', 'slug'],
-                },
-            ],
-        },
-        // Scope для недавних добавлений
-        recent: (days: number = 7) => ({
-            where: {
-                created_at: {
-                    [Op.gte]: new Date(Date.now() - days * 24 * 60 * 60 * 1000),
-                },
-            },
-        }),
     },
 })
 export class CartProductModel extends Model<ICartProductModel, ICartProductCreationAttributes>

@@ -36,41 +36,10 @@ interface ICartCreationAttributes {
         withProducts: {
             include: [{
                 model: ProductModel,
-                through: { attributes: ['quantity', 'created_at'] },
-                attributes: ['id', 'name', 'price', 'image', 'slug'],
+                through: { attributes: ['quantity'] },
+                attributes: ['id', 'name', 'price', 'image'],
             }],
         },
-        // Scope для активных корзин (с продуктами)
-        active: {
-            include: [{
-                model: ProductModel,
-                through: { attributes: [] },
-                attributes: [],
-                required: true,
-            }],
-        },
-        // Scope для корзин с количеством продуктов
-        withProductCount: {
-            include: [{
-                model: ProductModel,
-                through: { attributes: [] },
-                attributes: [],
-            }],
-            attributes: {
-                include: [
-                    ['COUNT(products.id)', 'productsCount'],
-                ],
-            },
-            group: ['CartModel.id'],
-        },
-        // Scope для недавних корзин
-        recent: (days: number = 7) => ({
-            where: {
-                created_at: {
-                    [Op.gte]: new Date(Date.now() - days * 24 * 60 * 60 * 1000),
-                },
-            },
-        }),
     },
 })
 export class CartModel extends Model<CartModel, ICartCreationAttributes> implements ICartModel {
