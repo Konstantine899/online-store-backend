@@ -40,7 +40,9 @@ export default function defineCartProduct(
                 references: {
                     model: TABLE_NAMES.CART,
                     key: 'id',
-                } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+                },
+                onUpdate: 'CASCADE',
+                onDelete: 'CASCADE',
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             product_id: {
                 type: DataTypes.INTEGER,
@@ -48,21 +50,25 @@ export default function defineCartProduct(
                 references: {
                     model: TABLE_NAMES.PRODUCT,
                     key: 'id',
-                } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+                },
+                onUpdate: 'CASCADE',
+                onDelete: 'CASCADE',
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             created_at: {
                 type: DataTypes.DATE,
                 allowNull: false,
+                defaultValue: DataTypes.NOW,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             updated_at: {
                 type: DataTypes.DATE,
                 allowNull: false,
+                defaultValue: DataTypes.NOW,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         {
             sequelize,
             modelName: TABLE_NAMES.CART_PRODUCT,
-            tableName: TABLE_NAMES.CART_PRODUCT,
+            tableName: 'cart-product',
             timestamps: true,
             underscored: true,
         } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
