@@ -18,15 +18,17 @@ class Order
     declare created_at: Date;
     declare updated_at: Date;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static associate(models: Record<string, any>): void {
         // eslint-disable-line @typescript-eslint/no-explicit-any
         this.belongsTo(models.user, {
             as: TABLE_NAMES.USER,
             foreignKey: 'user_id',
         });
-        this.hasMany(models.item, {
+        this.hasMany(models.order_item, {
             as: TABLE_NAMES.ORDER_ITEM,
             onDelete: 'CASCADE',
+            onUpdate: 'CASCADE',
             foreignKey: 'order_id',
         });
     }
@@ -58,12 +60,13 @@ export default function defineOrder(sequelize: Sequelize): typeof Order {
                 allowNull: false,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             amount: {
-                type: DataTypes.FLOAT,
+                type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             status: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
+                defaultValue: 0,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             comment: {
                 type: DataTypes.STRING(2200),
@@ -75,21 +78,25 @@ export default function defineOrder(sequelize: Sequelize): typeof Order {
                 references: {
                     model: TABLE_NAMES.USER,
                     key: 'id',
-                } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+                },
+                onUpdate: 'CASCADE',
+                onDelete: 'CASCADE',
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             created_at: {
                 type: DataTypes.DATE,
                 allowNull: false,
+                defaultValue: DataTypes.NOW,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             updated_at: {
                 type: DataTypes.DATE,
                 allowNull: false,
+                defaultValue: DataTypes.NOW,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         {
             sequelize,
             modelName: TABLE_NAMES.ORDER,
-            tableName: TABLE_NAMES.ORDER,
+            tableName: 'order',
             timestamps: true,
             underscored: true,
         } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
