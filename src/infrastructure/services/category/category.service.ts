@@ -32,12 +32,8 @@ export class CategoryService implements ICategoryService {
     }
 
     public async getListAllCategories(): Promise<ListAllCategoriesResponse[]> {
-        const categories =
-            await this.categoryRepository.findListAllCategories();
-        if (!categories) {
-            this.notFound('Категории товаров не найдены');
-        }
-        return categories;
+        const categories = await this.categoryRepository.findListAllCategories();
+        return categories; // Всегда возвращаем массив, даже пустой
     }
 
     public async getCategory(id: number): Promise<CategoryResponse> {
@@ -54,9 +50,6 @@ export class CategoryService implements ICategoryService {
         image: Express.Multer.File,
     ): Promise<UpdateCategoryResponse> {
         const category = await this.getCategory(id);
-        if (!category) {
-            this.notFound('Категория не найдена в БД');
-        }
         const updatedNameImage = await this.fileService.updateFile(
             category.image,
             image,

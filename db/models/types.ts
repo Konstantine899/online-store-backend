@@ -33,6 +33,9 @@ export interface CategoryAttributes {
     id: number;
     name: string;
     image: string;
+    slug: string;
+    description?: string;
+    isActive: boolean;
     created_at: Date;
     updated_at: Date;
 }
@@ -46,6 +49,10 @@ export type CategoryCreationAttributes = Optional<
 export interface BrandAttributes {
     id: number;
     name: string;
+    slug: string;
+    description?: string;
+    isActive: boolean;
+    logo?: string;
     category_id: number;
     created_at: Date;
     updated_at: Date;
@@ -63,6 +70,10 @@ export interface ProductAttributes {
     price: number;
     rating: number;
     image: string;
+    slug: string;
+    description?: string;
+    isActive: boolean;
+    stock: number;
     category_id: number;
     brand_id: number;
     created_at: Date;

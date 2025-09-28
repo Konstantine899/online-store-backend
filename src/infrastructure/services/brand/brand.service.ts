@@ -21,20 +21,13 @@ export class BrandService implements IBrandService {
 
     public async getListAllBrands(): Promise<ListAllBrandsResponse[]> {
         const brands = await this.brandRepository.findListAllBrands();
-        if (!brands.length) {
-            this.notFound('К сожалению по вашему запросу ничего не найдено');
-        }
         return brands;
     }
 
     public async getListAllBrandsByCategory(
         categoryId: number,
     ): Promise<ListAllBrandsByCategoryResponse[]> {
-        const brands =
-            await this.brandRepository.findListAllBrandsByCategory(categoryId);
-        if (!brands.length) {
-            this.notFound('К сожалению по вашему запросу ничего не найдено');
-        }
+        const brands = await this.brandRepository.findListAllBrandsByCategory(categoryId);
         return brands;
     }
 

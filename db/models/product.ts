@@ -11,11 +11,16 @@ class Product
     declare price: number;
     declare rating: number;
     declare image: string;
+    declare slug: string;
+    declare description?: string;
+    declare isActive: boolean;
+    declare stock: number;
     declare category_id: number;
     declare brand_id: number;
     declare created_at: Date;
     declare updated_at: Date;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static associate(models: Record<string, any>): void {
         // eslint-disable-line @typescript-eslint/no-explicit-any
         // Remove cart from models to avoid circular reference
@@ -25,10 +30,12 @@ class Product
         this.belongsTo(models.brand, {
             as: TABLE_NAMES.BRAND,
             foreignKey: 'brand_id',
+            onUpdate: 'RESTRICT',
         });
         this.belongsTo(models.category, {
             as: TABLE_NAMES.CATEGORY,
             foreignKey: 'category_id',
+            onUpdate: 'RESTRICT',
         });
         this.hasMany(models.property, {
             as: TABLE_NAMES.PRODUCT_PROPERTY,
@@ -64,7 +71,7 @@ export default function defineProduct(sequelize: Sequelize): typeof Product {
                 unique: true,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             price: {
-                type: DataTypes.FLOAT,
+                type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             rating: {
@@ -75,6 +82,25 @@ export default function defineProduct(sequelize: Sequelize): typeof Product {
             image: {
                 type: DataTypes.STRING,
                 allowNull: false,
+            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+            slug: {
+                type: DataTypes.STRING(255),
+                allowNull: false,
+                unique: true,
+            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+            description: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+            is_active: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: true,
+            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+            stock: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             category_id: {
                 type: DataTypes.INTEGER,

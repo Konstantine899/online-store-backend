@@ -1,10 +1,10 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
-import { UserModel, UserCreationAttributes } from './types';
+import { UserAttributes, UserCreationAttributes } from './types';
 
 class User
-    extends Model<UserModel, UserCreationAttributes>
-    implements UserModel
+    extends Model<UserAttributes, UserCreationAttributes>
+    implements UserAttributes
 {
     declare id: number;
     declare email: string;
@@ -12,6 +12,7 @@ class User
     declare created_at: Date;
     declare updated_at: Date;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static associate(models: Record<string, any>): void {
         // eslint-disable-line @typescript-eslint/no-explicit-any
         this.hasMany(models.refreshToken, {
