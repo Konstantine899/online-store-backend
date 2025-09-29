@@ -15,6 +15,7 @@ import { RoleService } from './role/role.service';
 import { jwtConfig } from '@app/infrastructure/config/jwt';
 import { TokenService } from './token/token.service';
 import { UserService } from './user/user.service';
+import { UserAddressService } from './user-address/user-address.service';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { UserModel } from '@app/domain/models';
 
@@ -41,6 +42,7 @@ import { UserModel } from '@app/domain/models';
         RoleService,
         TokenService,
         UserService,
+        UserAddressService,
     ],
     exports: [
         AuthService,
@@ -56,6 +58,7 @@ import { UserModel } from '@app/domain/models';
         RoleService,
         TokenService,
         UserService,
+        UserAddressService,
     ],
 })
 export class ServicesModule {}

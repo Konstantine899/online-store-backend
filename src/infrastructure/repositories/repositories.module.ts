@@ -17,6 +17,7 @@ import {
     UserModel,
     UserRoleModel,
     RefreshTokenModel,
+    UserAddressModel,
 } from '@app/domain/models';
 import { ProductRepository } from './product/product.repository';
 import { ProductPropertyRepository } from './product-property/product-property.repository';
@@ -26,6 +27,7 @@ import { RatingRepository } from './rating/rating.repository';
 import { RoleRepository } from './role/role.repository';
 import { RefreshTokenRepository } from './refresh-token/refresh-token.repository';
 import { UserRepository } from './user/user.repository';
+import { UserAddressRepository } from './user-address/user-address.repository';
 
 @Module({
     imports: [
@@ -43,6 +45,7 @@ import { UserRepository } from './user/user.repository';
             UserModel,
             UserRoleModel,
             RefreshTokenModel,
+            UserAddressModel,
         ]),
     ],
     providers: [
@@ -57,6 +60,7 @@ import { UserRepository } from './user/user.repository';
         RoleRepository,
         RefreshTokenRepository,
         UserRepository,
+        UserAddressRepository,
     ],
     exports: [
         BrandRepository,
@@ -70,6 +74,7 @@ import { UserRepository } from './user/user.repository';
         RoleRepository,
         RefreshTokenRepository,
         UserRepository,
+        UserAddressRepository,
     ],
 })
 export class RepositoriesModule {}

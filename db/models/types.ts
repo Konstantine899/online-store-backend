@@ -15,6 +15,32 @@ export type UserCreationAttributes = Optional<
     'id' | 'created_at' | 'updated_at'
 >;
 
+
+export interface UserAddressAttributes {
+    id: number;
+    user_id: number;
+    title: string;
+    street: string;
+    house: string;
+    apartment?: string;
+    city: string;
+    postal_code?: string;
+    country: string;
+    is_default: boolean;
+    created_at: Date;
+    updated_at: Date;
+}
+
+export type UserAddressCreationAttributes = Optional<
+    UserAddressAttributes,
+    'id' | 'apartment' | 'postal_code' | 'country' | 'is_default' | 'created_at' | 'updated_at'
+>;
+
+// В конец блока с интерфейсами моделей:
+export interface UserAddressModel
+    extends Model<UserAddressAttributes, UserAddressCreationAttributes>,
+        UserAddressAttributes {}
+
 // Role types
 export interface RoleAttributes {
     id: number;

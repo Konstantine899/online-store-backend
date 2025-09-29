@@ -9,3 +9,4 @@ export { ProductPropertyRepository } from './product-property/product-property.r
 export { RatingRepository } from './rating/rating.repository';
 export { OrderItemRepository } from './order-item/order-item-repository';
 export { RefreshTokenRepository } from './refresh-token/refresh-token.repository';
+export { UserAddressRepository } from './user-address/user-address.repository';

@@ -43,7 +43,8 @@ interface IUserModel {
             attributes: ['id', 'email'],
             include: [{
                 model: RoleModel,
-                attributes: ['id', 'name'],
+                as: 'roles',
+                attributes: ['id', 'role'],
                 through: { attributes: [] } // Исключаем промежуточную таблицу
             }]
         },
@@ -51,7 +52,8 @@ interface IUserModel {
         withRoles: {
             include: [{
                 model: RoleModel,
-                attributes: ['id', 'name'],
+                as: 'roles',
+                attributes: ['id', 'role'],
                 through: { attributes: [] }
             }]
         },
@@ -98,7 +100,7 @@ export class UserModel
     declare phone?: string;
 
     // Многие ко многим через промежуточную таблицу UserRoleModel
-    @BelongsToMany(() => RoleModel, () => UserRoleModel)
+    @BelongsToMany(() => RoleModel, () => UserRoleModel, 'user_id', 'role_id')
     declare roles: RoleModel[];
 
     //У одного пользователя могут быть несколько refresh tokens

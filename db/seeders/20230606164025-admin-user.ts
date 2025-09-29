@@ -8,7 +8,7 @@ interface Seeder {
 
 const seeder: Seeder = {
     async up(queryInterface: QueryInterface): Promise<void> {
-        const passwordHash = await bcrypt.hash('password', 10);
+        const passwordHash = await bcrypt.hash('Password123!', 10);
 
 
         await queryInterface.bulkInsert('user', [

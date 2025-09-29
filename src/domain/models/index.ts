@@ -11,3 +11,4 @@ export { CartProductModel } from './cart-product.model';
 export { OrderModel } from './order.model';
 export { BrandModel } from './brand.model';
 export { CategoryModel } from './category-model';
+export { UserAddressModel } from './user-address';

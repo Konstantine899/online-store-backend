@@ -9,3 +9,4 @@ export { CategoryService } from './category/category.service';
 export { RatingService } from './rating/rating.service';
 export { ProductPropertyService } from './product-property/product-property.service';
 export { ProductService } from './product/product.service';
+export { UserAddressService } from './user-address/user-address.service';

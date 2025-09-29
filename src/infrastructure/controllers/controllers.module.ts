@@ -12,6 +12,7 @@ import { PaymentController } from './payment/payment.controller';
 import { RatingController } from './rating/rating.controller';
 import { RoleController } from './role/role.controller';
 import { UserController } from './user/user.controller';
+import { UserAddressController } from './user-address/user-address.controller';
 
 @Module({
     imports: [ServicesModule, ControllersModule, JwtModule],
@@ -26,6 +27,7 @@ import { UserController } from './user/user.controller';
         PaymentController,
         RatingController,
         RoleController,
+        UserAddressController, // Более специфичный маршрут должен быть раньше
         UserController,
     ],
 })

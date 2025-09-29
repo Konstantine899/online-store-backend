@@ -18,6 +18,7 @@ import {
     RatingModel,
     OrderModel,
     OrderItemModel,
+    UserAddressModel,
 } from '@app/domain/models';
 import { dbToken } from '@app/infrastructure/config/sequelize/db-token';
 
@@ -51,6 +52,7 @@ export class SequelizeConfigService implements SequelizeOptionsFactory {
                 RatingModel,
                 OrderModel,
                 OrderItemModel,
+                UserAddressModel,
             ],
             autoLoadModels: true,
             synchronize: false, // отключаю автосинхронизацию

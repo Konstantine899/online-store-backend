@@ -16,3 +16,5 @@ export { CreateCategoryDto } from './category/create-category.dto';
 export { CreateProductPropertyDto } from './product-property/create-product-property.dto';
 export { MakePaymentDto } from './payment/make.payment.dto';
 export { UpdateUserPhoneDto } from './user/update-user-phone.dto';
+export { CreateUserAddressDto } from './user-address/create-user-address.dto';
+export { UpdateUserAddressDto } from './user-address/update-user-address.dto';
