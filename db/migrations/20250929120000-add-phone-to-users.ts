@@ -1,17 +1,45 @@
 import { QueryInterface, DataTypes } from 'sequelize';
 
 export const up = async (queryInterface: QueryInterface): Promise<void> => {
-    await queryInterface.addColumn('user', 'phone', {
-        type: DataTypes.STRING(20),
-        allowNull: true,
-    });
+    const transaction = await queryInterface.sequelize.transaction();
 
-    await queryInterface.addIndex('user', ['phone'], {
-        name: 'idx_user_phone',
-    });
+    try {
+        await queryInterface.addColumn(
+            'user',
+            'phone',
+            {
+                type: DataTypes.STRING(20),
+                allowNull: true,
+                comment: 'E.164 phone',
+            },
+            { transaction },
+        );
+
+        await queryInterface.addIndex(
+            'user',
+            ['phone'],
+            {
+                name: 'idx_user_phone',
+                using: 'BTREE',
+                transaction,
+            },
+        );
+
+        await transaction.commit();
+    } catch (error) {
+        await transaction.rollback();
+        throw error;
+    }
 };
 
 export const down = async (queryInterface: QueryInterface): Promise<void> => {
-    await queryInterface.removeIndex('user', 'idx_user_phone');
-    await queryInterface.removeColumn('user', 'phone');
+    const transaction = await queryInterface.sequelize.transaction();
+    try {
+        await queryInterface.removeIndex('user', 'idx_user_phone', { transaction });
+        await queryInterface.removeColumn('user', 'phone', { transaction });
+        await transaction.commit();
+    } catch (error) {
+        await transaction.rollback();
+        throw error;
+    }
 };
