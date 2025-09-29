@@ -54,15 +54,14 @@ export default function defineUser(sequelize: Sequelize): typeof User {
             password: {
                 type: DataTypes.STRING(255),
                 allowNull: false,
-                phone: {                      // ← добавлено
-                    type: DataTypes.STRING(20),
-                    allowNull: true,
-                    validate: {
-                        // E.164: начало с +, только цифры, до 16 символов включая +
-                        is: /^\+?[1-9]\d{0,15}$/,
-                    },
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } as any,
+            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+            phone: {
+                type: DataTypes.STRING(20),
+                allowNull: true,
+                validate: {
+                    // E.164: начало с +, только цифры, до 16 символов включая +
+                    is: /^\+?[1-9]\d{0,15}$/,
+                },
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             created_at: {
                 type: DataTypes.DATE,

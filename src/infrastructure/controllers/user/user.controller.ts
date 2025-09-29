@@ -48,10 +48,33 @@ import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validatio
 
 import { IUserController } from '@app/domain/controllers';
 
+// Типизированный интерфейс для Request
+interface AuthenticatedRequest extends Request {
+    user: { id: number };
+}
+
 @ApiTags('Пользователи')
 @Controller('user')
 export class UserController implements IUserController {
+    // Статические константы для переиспользования
+    private static readonly USER_ROLES = ['USER', 'ADMIN', 'MANAGER'] as const;
+    private static readonly ADMIN_ROLES = ['ADMIN'] as const;
+    private static readonly SUCCESS_DESCRIPTION = 'Успех';
+    private static readonly CREATED_DESCRIPTION = 'Создано';
+    private static readonly UPDATED_DESCRIPTION = 'Обновлено';
+    private static readonly DELETED_DESCRIPTION = 'Удалено';
+
     constructor(private readonly userService: UserService) {}
+
+    // Метод для извлечения userId с валидацией
+    private extractUserId(req: AuthenticatedRequest): number {
+        return req.user.id;
+    }
+
+    // Метод для создания ответа
+    private createResponse<T>(data: T): { data: T } {
+        return { data };
+    }
 
     @CreateUserSwaggerDecorator()
     @HttpCode(201)
@@ -127,20 +150,18 @@ export class UserController implements IUserController {
         return this.userService.removeUserRole(dto);
     }
 
-    @UpdateUserPhoneSwaggerDecorator()
+    @ApiOperation({ summary: 'Обновить номер телефона', description: 'Обновляет телефон текущего пользователя' })
+    @ApiOkResponse({ description: UserController.SUCCESS_DESCRIPTION })
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
     @Patch('profile/phone')
     @HttpCode(HttpStatus.OK)
-    @UseGuards(AuthGuard, RoleGuard)
-    @Roles('USER', 'ADMIN', 'MANAGER')
-    @ApiOperation({ summary: 'Обновить номер телефона пользователя', description: 'Обновляет телефон текущего пользователя' })
-    @ApiOkResponse({ description: 'Телефон успешно обновлён' })
     async updatePhone(
-        @Req() req: Request & { user: { id: number } },
+        @Req() req: AuthenticatedRequest,
         @Body(new CustomValidationPipe()) dto: UpdateUserPhoneDto,
     ) {
-       
-        const userId: number = req.user.id;
+        const userId = this.extractUserId(req);
         const user = await this.userService.updatePhone(userId, dto.phone);
-        return { data: { id: user.id, phone: user.phone } };
+        return this.createResponse({ id: user.id, phone: user.phone });
     }
 }

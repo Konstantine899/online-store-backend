@@ -15,13 +15,24 @@ import { MetaData } from '@app/infrastructure/paginate';
 
 @Injectable()
 export class UserRepository implements IUserRepository {
+    private static readonly BCRYPT_ROUNDS = 10;
+    private static readonly USER_FIELDS = ['email', 'password', 'phone'] as const;
+    
     constructor(@InjectModel(UserModel) private userModel: typeof UserModel) {}
 
+    private pickAllowedFromCreate(dto: CreateUserDto): { email: string; password: string } {
+        const { email, password } = dto;
+        return { email, password };
+    }
+
     public async createUser(dto: CreateUserDto): Promise<UserModel> {
-        const user = new UserModel();
-        user.email = dto.email;
-        user.password = await hash(dto.password, 10);
-        return user.save();
+        const allowedFields = this.pickAllowedFromCreate(dto);
+        const hashedPassword = await hash(allowedFields.password!, UserRepository.BCRYPT_ROUNDS);
+        
+        return this.userModel.create({
+            email: allowedFields.email,
+            password: hashedPassword,
+        });
     }
 
     public async updateUser(

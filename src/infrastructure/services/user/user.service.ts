@@ -28,6 +28,9 @@ import { IUserService } from '@app/domain/services';
 
 @Injectable()
 export class UserService implements IUserService {
+    private static readonly ADMIN_EMAILS = ['kostay375298918971@gmail.com'] as const;
+    private static readonly DEFAULT_ROLE = 'USER' as const;
+    
     constructor(
         private readonly userRepository: UserRepository,
         private roleService: RoleService,
@@ -41,19 +44,7 @@ export class UserService implements IUserService {
                 `Пользователь с таким email: ${dto.email} уже существует`,
             );
         }
-        let role = await this.roleService.getRole('USER');
-        if (dto.email === 'kostay375298918971@gmail.com') {
-            role = await this.roleService.createRole({
-                role: 'ADMIN',
-                description: 'Администратор',
-            });
-        }
-        if (!role) {
-            role = await this.roleService.createRole({
-                role: 'USER',
-                description: 'Пользователь',
-            });
-        }
+        const role = await this.determineUserRole(dto.email) as UserModel['roles'][0];
         const user = await this.userRepository.createUser(dto);
         await user.$set('roles', [role.id]); // #set перезаписываю поле только в БД
         user.roles = [role]; // Добавляю roles в сам объект user
@@ -165,18 +156,25 @@ export class UserService implements IUserService {
         };
     }
     async updatePhone(userId: number, phone: string): Promise<UserModel> {
-        const [updated] = await this.userModel.update(
-            { phone },
-            { where: { id: userId }, fields: ['phone'] },
-        );
-        
-        if (!updated) {
-            throw new NotFoundException('Пользователь не найден');
+        try {
+            const [updated] = await this.userModel.update(
+                { phone },
+                { where: { id: userId }, fields: ['phone'] },
+            );
+            
+            if (!updated) {
+                throw new NotFoundException('Пользователь не найден');
+            }
+            
+            return this.userModel.findByPk(userId, { 
+                attributes: ['id', 'email', 'phone'] 
+            }) as Promise<UserModel>;
+        } catch (error: unknown) {
+            if (error instanceof Error && error.name === 'SequelizeValidationError') {
+                throw new BadRequestException('Неверный формат номера телефона');
+            }
+            throw error;
         }
-        
-        return this.userModel.findByPk(userId, { 
-            attributes: ['id', 'email', 'phone'] 
-        }) as Promise<UserModel>;
     }
 
 
@@ -209,5 +207,27 @@ export class UserService implements IUserService {
             status: HttpStatus.CONFLICT,
             message,
         });
+    }
+
+    private async determineUserRole(email: string): Promise<unknown> {
+        if (UserService.ADMIN_EMAILS.includes(email as typeof UserService.ADMIN_EMAILS[number])) {
+            let role = await this.roleService.getRole('ADMIN');
+            if (!role) {
+                role = await this.roleService.createRole({
+                    role: 'ADMIN',
+                    description: 'Администратор',
+                });
+            }
+            return role;
+        }
+        
+        let role = await this.roleService.getRole(UserService.DEFAULT_ROLE);
+        if (!role) {
+            role = await this.roleService.createRole({
+                role: UserService.DEFAULT_ROLE,
+                description: 'Пользователь',
+            });
+        }
+        return role;
     }
 }
