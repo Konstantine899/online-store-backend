@@ -165,12 +165,18 @@ export class UserService implements IUserService {
         };
     }
     async updatePhone(userId: number, phone: string): Promise<UserModel> {
-        const user = await this.userModel.findByPk(userId);
-        if (!user) {
+        const [updated] = await this.userModel.update(
+            { phone },
+            { where: { id: userId }, fields: ['phone'] },
+        );
+        
+        if (!updated) {
             throw new NotFoundException('Пользователь не найден');
         }
-        await user.update({ phone });
-        return user;
+        
+        return this.userModel.findByPk(userId, { 
+            attributes: ['id', 'email', 'phone'] 
+        }) as Promise<UserModel>;
     }
 
 

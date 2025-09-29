@@ -138,14 +138,7 @@ export class UserController implements IUserController {
         @Req() req: Request & { user: { id: number } },
         @Body(new CustomValidationPipe()) dto: UpdateUserPhoneDto,
     ) {
-        // Дополнительная страховка на случай, если пайп валидации не сработал
-        const e164 = /^\+?[1-9]\d{0,15}$/;
-        if (!e164.test(dto.phone)) {
-            throw new (require('@nestjs/common').BadRequestException)({
-                status: HttpStatus.BAD_REQUEST,
-                message: ['Неверный формат номера телефона'],
-            });
-        }
+       
         const userId: number = req.user.id;
         const user = await this.userService.updatePhone(userId, dto.phone);
         return { data: { id: user.id, phone: user.phone } };
