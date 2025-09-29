@@ -13,9 +13,15 @@ import { TokenService } from '@app/infrastructure/services/token/token.service';
 
 @Injectable()
 export class RoleGuard implements CanActivate {
+    private static readonly BEARER_PREFIX = 'Bearer ';
+    private static readonly UNAUTHORIZED_MESSAGE = 'Пользователь не авторизован';
+    private static readonly FORBIDDEN_MESSAGE = 'У вас недостаточно прав доступа';
+    
+    private readonly roleSetsCache = new Map<string, Set<string>>();
+
     constructor(
         private readonly tokenService: TokenService,
-        private reflector: Reflector,
+        private readonly reflector: Reflector,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -30,53 +36,64 @@ export class RoleGuard implements CanActivate {
             }
 
             const request = context.switchToHttp().getRequest();
-            const authorizationHeader: string = request.headers.authorization;
+            const authorizationHeader = request.headers.authorization as
+                | string
+                | undefined;
 
-           // проверка на отсутствие заголовка
             if (!authorizationHeader) {
                 throw new UnauthorizedException({
                     statusCode: HttpStatus.UNAUTHORIZED,
-                    message: 'Пользователь не авторизован',
+                    message: RoleGuard.UNAUTHORIZED_MESSAGE,
                 });
             }
 
-            const bearer: string = authorizationHeader.split(' ')[0];
-            const accessToken: string = authorizationHeader.split(' ')[1];
-
-            if (bearer !== 'Bearer' || !accessToken) {
+            if (!authorizationHeader.startsWith(RoleGuard.BEARER_PREFIX)) {
                 throw new UnauthorizedException({
                     statusCode: HttpStatus.UNAUTHORIZED,
-                    message: 'Пользователь не авторизован',
+                    message: RoleGuard.UNAUTHORIZED_MESSAGE,
+                });
+            }
+            
+            const accessToken = authorizationHeader.slice(RoleGuard.BEARER_PREFIX.length);
+            if (!accessToken) {
+                throw new UnauthorizedException({
+                    statusCode: HttpStatus.UNAUTHORIZED,
+                    message: RoleGuard.UNAUTHORIZED_MESSAGE,
                 });
             }
 
-            const user: IDecodedAccessToken =
-                await this.tokenService.decodedAccessToken(
-                    accessToken,
-                    request,
-                );
-            const isRole = user.roles?.some((role): boolean => {
-                return requiredRoles.includes(role.role);
-            });
-            if (!isRole) {
+            const user: IDecodedAccessToken = await this.tokenService.decodedAccessToken(
+                accessToken,
+                request,
+            );
+            
+            if (!user.roles?.length) {
                 throw new ForbiddenException({
                     statusCode: HttpStatus.FORBIDDEN,
-                    message: 'У вас недостаточно прав доступа',
+                    message: RoleGuard.FORBIDDEN_MESSAGE,
                 });
             }
-            return isRole;
+
+            const requiredSet = this.getRoleSet(requiredRoles);
+            return user.roles.some((role) => requiredSet.has(role.role));
         } catch (error) {
-
             if (error instanceof UnauthorizedException || error instanceof ForbiddenException) {
-                throw error; // Пробрасываем уже сформированные ошибки
+                throw error;
             }
-
-            const errorMessage =
-                error instanceof Error ? error.message : 'Неизвестная ошибка';
+            
+            const message = error instanceof Error ? error.message : 'Неизвестная ошибка';
             throw new ForbiddenException({
                 statusCode: HttpStatus.FORBIDDEN, 
-                message: `Ошибка авторизации: ${errorMessage}`,
+                message: `Ошибка авторизации: ${message}`,
             });
         }
+    }
+
+    private getRoleSet(roles: string[]): Set<string> {
+        const key = roles.sort().join(',');
+        if (!this.roleSetsCache.has(key)) {
+            this.roleSetsCache.set(key, new Set(roles));
+        }
+        return this.roleSetsCache.get(key)!;
     }
 }

@@ -19,91 +19,107 @@ import { CreateUserAddressDto, UpdateUserAddressDto } from '@app/infrastructure/
 import { AuthGuard, RoleGuard } from '@app/infrastructure/common/guards';
 import { Roles } from '@app/infrastructure/common/decorators';
 
+// Типизированный интерфейс для Request
+interface AuthenticatedRequest extends Request {
+    user: { id: number };
+}
+
 @ApiTags('Адреса пользователя')
 @ApiBearerAuth('JWT-auth')
 @Controller('user/addresses')
 @UseGuards(AuthGuard, RoleGuard)
 export class UserAddressController {
+    // Статические константы для переиспользования
+    private static readonly USER_ROLES = ['USER', 'ADMIN'] as const;
+    private static readonly SUCCESS_DESCRIPTION = 'Успех';
+    private static readonly CREATED_DESCRIPTION = 'Создано';
+    private static readonly UPDATED_DESCRIPTION = 'Обновлено';
+    private static readonly DELETED_DESCRIPTION = 'Удалено';
+
     constructor(private readonly userAddressService: UserAddressService) {}
 
+    // Метод для извлечения userId с валидацией
+    private extractUserId(req: AuthenticatedRequest): number {
+        return req.user.id;
+    }
+
+    // Метод для создания ответа
+    private createResponse<T>(data: T): { data: T } {
+        return { data };
+    }
+
     @ApiOperation({ summary: 'Список адресов', description: 'Возвращает адреса текущего пользователя' })
-    @ApiOkResponse({ description: 'Успех' })
-    @Roles('USER', 'ADMIN')
+    @ApiOkResponse({ description: UserAddressController.SUCCESS_DESCRIPTION })
+    @Roles(...UserAddressController.USER_ROLES)
     @Get()
     @HttpCode(HttpStatus.OK)
-    async getAddresses(@Req() req: Request & { user: { id: number } }) {
-        const userId = req.user.id;
-        const data = await this.userAddressService.getAddresses(userId);
-        return { data };
+    async getAddresses(@Req() req: AuthenticatedRequest) {
+        const data = await this.userAddressService.getAddresses(this.extractUserId(req));
+        return this.createResponse(data);
     }
 
     @ApiOperation({ summary: 'Получить адрес', description: 'Возвращает адрес по id' })
-    @ApiOkResponse({ description: 'Успех' })
-    @Roles('USER', 'ADMIN')
+    @ApiOkResponse({ description: UserAddressController.SUCCESS_DESCRIPTION })
+    @Roles(...UserAddressController.USER_ROLES)
     @Get(':id')
     @HttpCode(HttpStatus.OK)
     async getAddress(
-        @Req() req: Request & { user: { id: number } },
+        @Req() req: AuthenticatedRequest,
         @Param('id', ParseIntPipe) id: number,
     ) {
-        const userId = req.user.id;
-        const data = await this.userAddressService.getAddress(userId, id);
-        return { data };
+        const data = await this.userAddressService.getAddress(this.extractUserId(req), id);
+        return this.createResponse(data);
     }
 
     @ApiOperation({ summary: 'Создать адрес', description: 'Создаёт новый адрес' })
-    @ApiOkResponse({ description: 'Создано' })
-    @Roles('USER', 'ADMIN')
+    @ApiOkResponse({ description: UserAddressController.CREATED_DESCRIPTION })
+    @Roles(...UserAddressController.USER_ROLES)
     @Post()
     @HttpCode(HttpStatus.CREATED)
     async createAddress(
-        @Req() req: Request & { user: { id: number } },
+        @Req() req: AuthenticatedRequest,
         @Body() dto: CreateUserAddressDto,
     ) {
-        const userId = req.user.id;
-        const data = await this.userAddressService.createAddress(userId, dto);
-        return { data };
+        const data = await this.userAddressService.createAddress(this.extractUserId(req), dto);
+        return this.createResponse(data);
     }
 
     @ApiOperation({ summary: 'Обновить адрес', description: 'Обновляет адрес по id' })
-    @ApiOkResponse({ description: 'Обновлено' })
-    @Roles('USER', 'ADMIN')
+    @ApiOkResponse({ description: UserAddressController.UPDATED_DESCRIPTION })
+    @Roles(...UserAddressController.USER_ROLES)
     @Put(':id')
     @HttpCode(HttpStatus.OK)
     async updateAddress(
-        @Req() req: Request & { user: { id: number } },
+        @Req() req: AuthenticatedRequest,
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: UpdateUserAddressDto,
     ) {
-        const userId = req.user.id;
-        const data = await this.userAddressService.updateAddress(userId, id, dto);
-        return { data };
+        const data = await this.userAddressService.updateAddress(this.extractUserId(req), id, dto);
+        return this.createResponse(data);
     }
 
     @ApiOperation({ summary: 'Удалить адрес', description: 'Удаляет адрес по id' })
-    @ApiOkResponse({ description: 'Удалено' })
-    @Roles('USER', 'ADMIN')
+    @ApiOkResponse({ description: UserAddressController.DELETED_DESCRIPTION })
+    @Roles(...UserAddressController.USER_ROLES)
     @Delete(':id')
     @HttpCode(HttpStatus.OK)
     async removeAddress(
-        @Req() req: Request & { user: { id: number } },
+        @Req() req: AuthenticatedRequest,
         @Param('id', ParseIntPipe) id: number,
     ) {
-        const userId = req.user.id;
-        return this.userAddressService.removeAddress(userId, id);
+        return this.userAddressService.removeAddress(this.extractUserId(req), id);
     }
 
     @ApiOperation({ summary: 'Сделать основным', description: 'Устанавливает адрес основным' })
-    @ApiOkResponse({ description: 'Обновлено' })
-    @Roles('USER', 'ADMIN')
+    @ApiOkResponse({ description: UserAddressController.UPDATED_DESCRIPTION })
+    @Roles(...UserAddressController.USER_ROLES)
     @Patch(':id/set-default')
     @HttpCode(HttpStatus.OK)
     async setDefaultAddress(
-        @Req() req: Request & { user: { id: number } },
+        @Req() req: AuthenticatedRequest,
         @Param('id', ParseIntPipe) id: number,
     ) {
-        const userId = req.user.id;
-        const data = await this.userAddressService.setDefaultAddress(userId, id);
-        return { data };
+        const data = await this.userAddressService.setDefaultAddress(this.extractUserId(req), id);
+        return this.createResponse(data);
     }
 }

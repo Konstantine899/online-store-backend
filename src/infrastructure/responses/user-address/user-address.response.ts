@@ -1,42 +1,107 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class UserAddressResponse {
-    @ApiProperty({ example: 1, description: 'Идентификатор адреса' })
+// Интерфейсы для типизации
+export interface IUserAddressResponse {
+    readonly id: number;
+    readonly user_id: number;
+    readonly title: string;
+    readonly street: string;
+    readonly house: string;
+    readonly apartment?: string;
+    readonly city: string;
+    readonly postal_code?: string;
+    readonly country: string;
+    readonly is_default: boolean;
+}
+
+export interface IRemoveUserAddressResponse {
+    readonly message: string;
+}
+
+export class UserAddressResponse implements IUserAddressResponse {
+    private static readonly API_EXAMPLES = {
+        ID: 1,
+        USER_ID: 3,
+        TITLE: 'Дом',
+        STREET: 'ул. Пушкина',
+        HOUSE: '10',
+        APARTMENT: '12',
+        CITY: 'Москва',
+        POSTAL_CODE: '101000',
+        COUNTRY: 'Россия',
+        IS_DEFAULT: true,
+    } as const;
+    @ApiProperty({ 
+        example: UserAddressResponse.API_EXAMPLES.ID, 
+        description: 'Идентификатор адреса' 
+    })
     declare readonly id: number;
 
-    @ApiProperty({ example: 3, description: 'Идентификатор пользователя' })
+    @ApiProperty({ 
+        example: UserAddressResponse.API_EXAMPLES.USER_ID, 
+        description: 'Идентификатор пользователя' 
+    })
     declare readonly user_id: number;
 
-    @ApiProperty({ example: 'Дом', description: 'Название адреса' })
+    @ApiProperty({ 
+        example: UserAddressResponse.API_EXAMPLES.TITLE, 
+        description: 'Название адреса' 
+    })
     declare readonly title: string;
 
-    @ApiProperty({ example: 'ул. Пушкина', description: 'Улица' })
+    @ApiProperty({ 
+        example: UserAddressResponse.API_EXAMPLES.STREET, 
+        description: 'Улица' 
+    })
     declare readonly street: string;
 
-    @ApiProperty({ example: '10', description: 'Дом' })
+    @ApiProperty({ 
+        example: UserAddressResponse.API_EXAMPLES.HOUSE, 
+        description: 'Дом' 
+    })
     declare readonly house: string;
 
-    @ApiProperty({ example: '12', description: 'Квартира', required: false })
+    @ApiProperty({ 
+        example: UserAddressResponse.API_EXAMPLES.APARTMENT, 
+        description: 'Квартира', 
+        required: false 
+    })
     declare readonly apartment?: string;
 
-    @ApiProperty({ example: 'Москва', description: 'Город' })
+    @ApiProperty({ 
+        example: UserAddressResponse.API_EXAMPLES.CITY, 
+        description: 'Город' 
+    })
     declare readonly city: string;
 
-    @ApiProperty({ example: '101000', description: 'Почтовый индекс', required: false })
+    @ApiProperty({ 
+        example: UserAddressResponse.API_EXAMPLES.POSTAL_CODE, 
+        description: 'Почтовый индекс', 
+        required: false 
+    })
     declare readonly postal_code?: string;
 
-    @ApiProperty({ example: 'Россия', description: 'Страна' })
+    @ApiProperty({ 
+        example: UserAddressResponse.API_EXAMPLES.COUNTRY, 
+        description: 'Страна' 
+    })
     declare readonly country: string;
 
-    @ApiProperty({ example: true, description: 'Основной адрес' })
+    @ApiProperty({ 
+        example: UserAddressResponse.API_EXAMPLES.IS_DEFAULT, 
+        description: 'Основной адрес' 
+    })
     declare readonly is_default: boolean;
 }
 
-export class CreateUserAddressResponse extends UserAddressResponse {}
-export class UpdateUserAddressResponse extends UserAddressResponse {}
-export class GetUserAddressResponse extends UserAddressResponse {}
+// Type aliases вместо пустых классов
+export type CreateUserAddressResponse = UserAddressResponse;
+export type UpdateUserAddressResponse = UserAddressResponse;
+export type GetUserAddressResponse = UserAddressResponse;
 
-export class RemoveUserAddressResponse {
-    @ApiProperty({ example: 'Адрес успешно удалён' })
+export class RemoveUserAddressResponse implements IRemoveUserAddressResponse {
+    private static readonly SUCCESS_MESSAGE = 'Адрес успешно удалён';
+    
+    @ApiProperty({ example: RemoveUserAddressResponse.SUCCESS_MESSAGE })
     declare readonly message: string;
 }

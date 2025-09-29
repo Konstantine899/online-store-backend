@@ -16,19 +16,19 @@ export class UserAddressService {
         userId: number,
         dto: CreateUserAddressDto,
     ): Promise<CreateUserAddressResponse> {
-        // Первый адрес или явный основной — снимем флаг с остальных
-        if (dto.is_default) {
-            await this.userAddressRepository.setDefault(userId, -1); // снимем флаги, id=-1 ничего не включит
-        }
-        const created = await this.userAddressRepository.create(userId, dto);
-        if (dto.is_default === true) {
-            const updated = await this.userAddressRepository.setDefault(
-                userId,
-                created.id,
-            );
-            return updated as CreateUserAddressResponse;
-        }
-        return created;
+        return this.userAddressRepository.withTransaction(async (trx) => {
+            const created = await this.userAddressRepository.create(userId, dto, trx);
+            if (dto.is_default === true) {
+                await this.userAddressRepository.clearDefault(userId, trx);
+                const refreshed = await this.userAddressRepository.markDefault(
+                    userId,
+                    created.id,
+                    trx,
+                );
+                return refreshed as CreateUserAddressResponse;
+            }
+            return created;
+        });
     }
 
     public async getAddresses(userId: number): Promise<GetUserAddressResponse[]> {
@@ -48,18 +48,22 @@ export class UserAddressService {
         id: number,
         dto: UpdateUserAddressDto,
     ): Promise<UpdateUserAddressResponse> {
-        const updated = await this.userAddressRepository.update(userId, id, dto);
-        if (!updated) {
-            throw new NotFoundException('Адрес не найден');
-        }
-        if (dto.is_default === true) {
-            const refreshed = await this.userAddressRepository.setDefault(
-                userId,
-                id,
-            );
-            return refreshed as UpdateUserAddressResponse;
-        }
-        return updated;
+        return this.userAddressRepository.withTransaction(async (trx) => {
+            const updated = await this.userAddressRepository.update(userId, id, dto, trx);
+            if (!updated) {
+                throw new NotFoundException('Адрес не найден');
+            }
+            if (dto.is_default === true) {
+                await this.userAddressRepository.clearDefault(userId, trx);
+                const refreshed = await this.userAddressRepository.markDefault(
+                    userId,
+                    id,
+                    trx,
+                );
+                return refreshed as UpdateUserAddressResponse;
+            }
+            return updated;
+        });
     }
 
     public async removeAddress(userId: number, id: number): Promise<RemoveUserAddressResponse> {
@@ -74,10 +78,12 @@ export class UserAddressService {
         userId: number,
         id: number,
     ): Promise<UpdateUserAddressResponse> {
-        const updated = await this.userAddressRepository.setDefault(userId, id);
-        if (!updated) {
-            throw new NotFoundException('Адрес не найден');
-        }
-        return updated;
+        return this.userAddressRepository.withTransaction(async (trx) => {
+            const updated = await this.userAddressRepository.setDefault(userId, id, trx);
+            if (!updated) {
+                throw new NotFoundException('Адрес не найден');
+            }
+            return updated;
+        });
     }
 }

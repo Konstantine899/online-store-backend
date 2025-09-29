@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
+import { Transaction } from 'sequelize';
+
+// Внутренние импорты
 import { UserAddressService } from './user-address.service';
 import { UserAddressRepository } from '@app/infrastructure/repositories';
 import {
@@ -12,155 +15,228 @@ import {
     UpdateUserAddressResponse,
 } from '@app/infrastructure/responses';
 
-describe('UserAddressService', () => {
-    let service: UserAddressService;
-    let repo: jest.Mocked<UserAddressRepository>;
+// Типы для тестов
+type MockedUserAddressRepository = jest.Mocked<UserAddressRepository>;
 
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                UserAddressService,
-                {
-                    provide: UserAddressRepository,
-                    useValue: {
-                        create: jest.fn(),
-                        findAll: jest.fn(),
-                        findOne: jest.fn(),
-                        update: jest.fn(),
-                        setDefault: jest.fn(),
-                        remove: jest.fn(),
-                    },
-                },
-            ],
-        }).compile();
-
-        service = module.get(UserAddressService);
-        repo = module.get(UserAddressRepository) as jest.Mocked<UserAddressRepository>;
-    });
-
-    it('createAddress: creates non-default address', async () => {
-        const dto: CreateUserAddressDto = {
+// Статические константы для тестовых данных
+const TEST_DATA = {
+    USER_ID: 3,
+    ADDRESS_ID: 1,
+    DEFAULT_ADDRESS_ID: 2,
+    DTO: {
+        NON_DEFAULT: {
             title: 'Дом',
             street: 'ул. Пушкина',
             house: '10',
             city: 'Москва',
-        } as CreateUserAddressDto;
-        const created: CreateUserAddressResponse = {
-            id: 1,
-            user_id: 3,
-            title: dto.title,
-            street: dto.street,
-            house: dto.house,
-            city: dto.city,
-            is_default: false,
-        } as unknown as CreateUserAddressResponse;
-        repo.create.mockResolvedValue(created);
-
-        const res = await service.createAddress(3, dto);
-        expect(repo.create).toHaveBeenCalledWith(3, dto);
-        expect(res).toEqual(created);
-        expect(repo.setDefault).not.toHaveBeenCalled();
-    });
-
-    it('createAddress: creates default address and returns refreshed entity', async () => {
-        const dto: CreateUserAddressDto = {
+        } as CreateUserAddressDto,
+        DEFAULT: {
             title: 'Работа',
             street: 'Тверская',
             house: '1',
             city: 'Москва',
             is_default: true,
-        } as CreateUserAddressDto;
+        } as CreateUserAddressDto,
+    },
+    RESPONSES: {
+        CREATED: {
+            id: 1,
+            user_id: 3,
+            title: 'Дом',
+            street: 'ул. Пушкина',
+            house: '10',
+            city: 'Москва',
+            is_default: false,
+        } as CreateUserAddressResponse,
+    },
+} as const;
 
-        const created: CreateUserAddressResponse = {
-            id: 2,
-            user_id: 3,
-            title: dto.title,
-            street: dto.street,
-            house: dto.house,
-            city: dto.city,
-            is_default: true,
-        } as unknown as CreateUserAddressResponse;
-        const refreshed: UpdateUserAddressResponse = {
-            id: 2,
-            user_id: 3,
-            title: dto.title,
-            street: dto.street,
-            house: dto.house,
-            city: dto.city,
-            is_default: true,
-        } as unknown as UpdateUserAddressResponse;
+describe('UserAddressService', () => {
+    let service: UserAddressService;
+    let repo: MockedUserAddressRepository;
+    let cachedModule: TestingModule;
+
+    // Вспомогательные функции для создания тестовых объектов
+    const createMockResponse = <T>(overrides: Partial<T> = {}): T => ({
+        ...TEST_DATA.RESPONSES.CREATED,
+        ...overrides,
+    } as T);
+
+    const createMockDto = (overrides: Partial<CreateUserAddressDto> = {}): CreateUserAddressDto => ({
+        ...TEST_DATA.DTO.NON_DEFAULT,
+        ...overrides,
+    });
+
+    beforeEach(async () => {
+        // Кэшированный модуль для переиспользования
+        if (!cachedModule) {
+            cachedModule = await Test.createTestingModule({
+                providers: [
+                    UserAddressService,
+                    {
+                        provide: UserAddressRepository,
+                        useValue: {
+                            create: jest.fn(),
+                            findAll: jest.fn(),
+                            findOne: jest.fn(),
+                            update: jest.fn(),
+                            setDefault: jest.fn(),
+                            remove: jest.fn(),
+                            withTransaction: jest.fn(),
+                            clearDefault: jest.fn(),
+                            markDefault: jest.fn(),
+                        },
+                    },
+                ],
+            }).compile();
+        }
+        
+        service = cachedModule.get(UserAddressService);
+        repo = cachedModule.get(UserAddressRepository) as MockedUserAddressRepository;
+        
+        // Сброс всех моков
+        jest.clearAllMocks();
+        
+        // Настройка мока withTransaction для выполнения переданной функции
+        repo.withTransaction.mockImplementation(async (fn) => {
+            return fn({} as Transaction); // Передаем пустой объект как транзакцию
+        });
+    });
+
+    it('createAddress: creates non-default address', async () => {
+        const dto = createMockDto();
+        const created = createMockResponse<CreateUserAddressResponse>();
+        
         repo.create.mockResolvedValue(created);
-        repo.setDefault.mockResolvedValue(refreshed);
 
-        const res = await service.createAddress(3, dto);
-        expect(repo.setDefault).toHaveBeenCalledWith(3, 2);
+        const res = await service.createAddress(TEST_DATA.USER_ID, dto);
+        
+        expect(repo.create).toHaveBeenCalledWith(TEST_DATA.USER_ID, dto, {});
+        expect(res).toEqual(created);
+        expect(repo.setDefault).not.toHaveBeenCalled();
+    });
+
+    it('createAddress: creates default address and returns refreshed entity', async () => {
+        const dto = createMockDto(TEST_DATA.DTO.DEFAULT);
+        const created = createMockResponse<CreateUserAddressResponse>({
+            id: TEST_DATA.DEFAULT_ADDRESS_ID,
+            title: dto.title,
+            street: dto.street,
+            house: dto.house,
+            city: dto.city,
+            is_default: true,
+        });
+        const refreshed = createMockResponse<UpdateUserAddressResponse>({
+            id: TEST_DATA.DEFAULT_ADDRESS_ID,
+            title: dto.title,
+            street: dto.street,
+            house: dto.house,
+            city: dto.city,
+            is_default: true,
+        });
+        
+        repo.create.mockResolvedValue(created);
+        repo.clearDefault.mockResolvedValue(undefined);
+        repo.markDefault.mockResolvedValue(refreshed);
+
+        const res = await service.createAddress(TEST_DATA.USER_ID, dto);
+        
+        expect(repo.clearDefault).toHaveBeenCalledWith(TEST_DATA.USER_ID, {});
+        expect(repo.markDefault).toHaveBeenCalledWith(TEST_DATA.USER_ID, TEST_DATA.DEFAULT_ADDRESS_ID, {});
         expect(res).toEqual(refreshed);
     });
 
     it('getAddresses: returns list', async () => {
-        repo.findAll.mockResolvedValue([{ id: 1 } as unknown as GetUserAddressResponse]);
-        const res = await service.getAddresses(3);
-        expect(repo.findAll).toHaveBeenCalledWith(3);
-        expect(res).toEqual([{ id: 1 }]);
+        const addresses = [createMockResponse<GetUserAddressResponse>({ id: 1 })];
+        repo.findAll.mockResolvedValue(addresses);
+        
+        const res = await service.getAddresses(TEST_DATA.USER_ID);
+        
+        expect(repo.findAll).toHaveBeenCalledWith(TEST_DATA.USER_ID);
+        expect(res).toEqual(addresses);
     });
 
-    it('getAddress: throws NotFound if missing', async () => {
+    it('getAddress: should return entity when found', async () => {
+        const entity = createMockResponse<GetUserAddressResponse>({ id: 5 });
+        repo.findOne.mockResolvedValue(entity);
+        
+        const res = await service.getAddress(TEST_DATA.USER_ID, 5);
+        
+        expect(repo.findOne).toHaveBeenCalledWith(TEST_DATA.USER_ID, 5);
+        expect(res).toBe(entity);
+    });
+
+    it('getAddress: should throw NotFoundException when not found', async () => {
         repo.findOne.mockResolvedValue(null);
-        await expect(service.getAddress(3, 10)).rejects.toThrow(NotFoundException);
+        
+        await expect(service.getAddress(TEST_DATA.USER_ID, 10))
+            .rejects.toThrow(NotFoundException);
     });
 
-    it('getAddress: returns entity', async () => {
-        const ent = { id: 5 } as unknown as GetUserAddressResponse;
-        repo.findOne.mockResolvedValue(ent);
-        const res = await service.getAddress(3, 5);
-        expect(res).toBe(ent);
-    });
-
-    it('updateAddress: updates and returns', async () => {
+    it('updateAddress: should update and return entity', async () => {
         const dto: UpdateUserAddressDto = { street: 'Новая' };
-        const updated = { id: 7, street: 'Новая' } as unknown as UpdateUserAddressResponse;
+        const updated = createMockResponse<UpdateUserAddressResponse>({ id: 7, street: 'Новая' });
         repo.update.mockResolvedValue(updated);
-        const res = await service.updateAddress(3, 7, dto);
-        expect(repo.update).toHaveBeenCalledWith(3, 7, dto);
+        
+        const res = await service.updateAddress(TEST_DATA.USER_ID, 7, dto);
+        
+        expect(repo.update).toHaveBeenCalledWith(TEST_DATA.USER_ID, 7, dto, {});
         expect(res).toBe(updated);
     });
 
-    it('updateAddress: NotFound', async () => {
+    it('updateAddress: should throw NotFoundException when not found', async () => {
         repo.update.mockResolvedValue(null);
-        await expect(service.updateAddress(3, 7, {} as UpdateUserAddressDto)).rejects.toThrow(NotFoundException);
+        
+        await expect(service.updateAddress(TEST_DATA.USER_ID, 7, {} as UpdateUserAddressDto))
+            .rejects.toThrow(NotFoundException);
     });
 
-    it('updateAddress: when is_default true -> returns refreshed from setDefault', async () => {
+    it('updateAddress: should return refreshed entity when is_default true', async () => {
         const dto: UpdateUserAddressDto = { is_default: true };
-        repo.update.mockResolvedValue({ id: 8, is_default: false } as unknown as UpdateUserAddressResponse);
-        repo.setDefault.mockResolvedValue({ id: 8, is_default: true } as unknown as UpdateUserAddressResponse);
-        const res = await service.updateAddress(3, 8, dto);
-        expect(repo.setDefault).toHaveBeenCalledWith(3, 8);
+        const updated = createMockResponse<UpdateUserAddressResponse>({ id: 8, is_default: false });
+        const refreshed = createMockResponse<UpdateUserAddressResponse>({ id: 8, is_default: true });
+        
+        repo.update.mockResolvedValue(updated);
+        repo.clearDefault.mockResolvedValue(undefined);
+        repo.markDefault.mockResolvedValue(refreshed);
+        
+        const res = await service.updateAddress(TEST_DATA.USER_ID, 8, dto);
+        
+        expect(repo.clearDefault).toHaveBeenCalledWith(TEST_DATA.USER_ID, {});
+        expect(repo.markDefault).toHaveBeenCalledWith(TEST_DATA.USER_ID, 8, {});
         expect(res.is_default).toBe(true);
     });
 
-    it('removeAddress: ok', async () => {
+    it('removeAddress: should remove address successfully', async () => {
         repo.remove.mockResolvedValue(1);
-        const res = await service.removeAddress(3, 9);
-        expect(repo.remove).toHaveBeenCalledWith(3, 9);
+        
+        const res = await service.removeAddress(TEST_DATA.USER_ID, 9);
+        
+        expect(repo.remove).toHaveBeenCalledWith(TEST_DATA.USER_ID, 9);
         expect(res.message).toBe('Адрес успешно удалён');
     });
 
-    it('removeAddress: NotFound', async () => {
+    it('removeAddress: should throw NotFoundException when not found', async () => {
         repo.remove.mockResolvedValue(0);
-        await expect(service.removeAddress(3, 9)).rejects.toThrow(NotFoundException);
+        
+        await expect(service.removeAddress(TEST_DATA.USER_ID, 9))
+            .rejects.toThrow(NotFoundException);
     });
 
-    it('setDefaultAddress: ok', async () => {
-        const refreshed = { id: 10, is_default: true } as unknown as UpdateUserAddressResponse;
+    it('setDefaultAddress: should set default address successfully', async () => {
+        const refreshed = createMockResponse<UpdateUserAddressResponse>({ id: 10, is_default: true });
         repo.setDefault.mockResolvedValue(refreshed);
-        const res = await service.setDefaultAddress(3, 10);
-        expect(repo.setDefault).toHaveBeenCalledWith(3, 10);
+        
+        const res = await service.setDefaultAddress(TEST_DATA.USER_ID, 10);
+        
+        expect(repo.setDefault).toHaveBeenCalledWith(TEST_DATA.USER_ID, 10, {});
         expect(res).toBe(refreshed);
     });
 
-    it('setDefaultAddress: NotFound', async () => {
+    it('setDefaultAddress: should throw NotFoundException when not found', async () => {
         repo.setDefault.mockResolvedValue(null);
-        await expect(service.setDefaultAddress(3, 10)).rejects.toThrow(NotFoundException);
+        
+        await expect(service.setDefaultAddress(TEST_DATA.USER_ID, 10))
+            .rejects.toThrow(NotFoundException);
     });
 });
