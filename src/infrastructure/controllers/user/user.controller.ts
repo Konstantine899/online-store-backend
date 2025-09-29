@@ -8,7 +8,10 @@ import {
     ParseIntPipe,
     Post,
     Put,
+    Patch,
     UseGuards,
+    HttpStatus,
+    Req,
 } from '@nestjs/common';
 import { UserService } from '@app/infrastructure/services';
 import {
@@ -26,13 +29,13 @@ import {
     RemoveUserSwaggerDecorator,
     AddRoleUserSwaggerDecorator,
     RemoveRoleUserSwaggerDecorator,
+    UpdateUserPhoneSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
 import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
 
 import {
     CreateUserResponse,
-    GetListUsersResponse,
     GetUserResponse,
     UpdateUserResponse,
     RemoveUserResponse,
@@ -40,6 +43,8 @@ import {
     RemoveUserRoleResponse,
     GetPaginatedUsersResponse,
 } from '@app/infrastructure/responses';
+import { UpdateUserPhoneDto } from '@app/infrastructure/dto';
+import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
 
 import { IUserController } from '@app/domain/controllers';
 
@@ -120,5 +125,29 @@ export class UserController implements IUserController {
         @Body() dto: RemoveRoleDto,
     ): Promise<RemoveUserRoleResponse> {
         return this.userService.removeUserRole(dto);
+    }
+
+    @UpdateUserPhoneSwaggerDecorator()
+    @Patch('profile/phone')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('USER', 'ADMIN', 'MANAGER')
+    @ApiOperation({ summary: 'Обновить номер телефона пользователя', description: 'Обновляет телефон текущего пользователя' })
+    @ApiOkResponse({ description: 'Телефон успешно обновлён' })
+    async updatePhone(
+        @Req() req: Request & { user: { id: number } },
+        @Body(new CustomValidationPipe()) dto: UpdateUserPhoneDto,
+    ) {
+        // Дополнительная страховка на случай, если пайп валидации не сработал
+        const e164 = /^\+?[1-9]\d{0,15}$/;
+        if (!e164.test(dto.phone)) {
+            throw new (require('@nestjs/common').BadRequestException)({
+                status: HttpStatus.BAD_REQUEST,
+                message: ['Неверный формат номера телефона'],
+            });
+        }
+        const userId: number = req.user.id;
+        const user = await this.userService.updatePhone(userId, dto.phone);
+        return { data: { id: user.id, phone: user.phone } };
     }
 }

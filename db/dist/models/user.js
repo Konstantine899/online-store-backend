@@ -35,13 +35,20 @@ function defineUser(sequelize) {
             allowNull: false,
         },
         email: {
-            type: sequelize_1.DataTypes.STRING,
-            allowNull: true,
+            type: sequelize_1.DataTypes.STRING(255),
+            allowNull: false,
             unique: true,
         },
         password: {
-            type: sequelize_1.DataTypes.STRING,
-            allowNull: true,
+            type: sequelize_1.DataTypes.STRING(255),
+            allowNull: false,
+            phone: {
+                type: sequelize_1.DataTypes.STRING(20),
+                allowNull: true,
+                validate: {
+                    is: /^\+?[1-9]\d{0,15}$/,
+                },
+            },
         },
         created_at: {
             type: sequelize_1.DataTypes.DATE,

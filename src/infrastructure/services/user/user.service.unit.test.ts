@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { getModelToken } from '@nestjs/sequelize';
 import {
     BadRequestException,
     ConflictException,
@@ -95,6 +96,7 @@ describe('UserService', () => {
                         updateUser: jest.fn(),
                         removeUser: jest.fn(),
                         findRegisteredUser: jest.fn(),
+                        findListUsersPaginated: jest.fn(),
                     },
                 },
                 {
@@ -102,6 +104,12 @@ describe('UserService', () => {
                     useValue: {
                         getRole: jest.fn(),
                         createRole: jest.fn(),
+                    },
+                },
+                {
+                    provide: getModelToken(UserModel),
+                    useValue: {
+                        findByPk: jest.fn(),
                     },
                 },
             ],

@@ -87,6 +87,16 @@ export class UserModel
      })
     declare password: string;
 
+    @Column({
+        type: DataType.STRING(20),
+        allowNull: true,
+        validate: {
+            // E.164: + и цифры, до 16 символов
+            is: /^\+?[1-9]\d{0,15}$/,
+        },
+    })
+    declare phone?: string;
+
     // Многие ко многим через промежуточную таблицу UserRoleModel
     @BelongsToMany(() => RoleModel, () => UserRoleModel)
     declare roles: RoleModel[];

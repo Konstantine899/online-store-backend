@@ -12,7 +12,7 @@
     "lint:ts": "eslint \"{src,config,db}/**/*.ts\"",
     "lint:ts:fix": "eslint \"{src,config,db}/**/*.ts\" --fix",
     "prettier": "prettier --write \"src/**/*.ts\" \"db/**/*.{js,ts}\"",
-    "test": "jest",
+    "test": "cross-env NODE_ENV=test jest",
     "test:watch": "jest --watch",
     "test:unit": "jest --selectProjects unit",
     "test:integration": "jest --selectProjects integration",
@@ -36,6 +36,16 @@
     "db:lint": "eslint \"db/**/*.ts\"",
     "db:lint:fix": "eslint \"db/**/*.ts\" --fix",
     "db:migration:generate": "npx sequelize-cli migration:generate --name"
+    ,
+    "db:migrate:test": "cross-env NODE_ENV=test npx sequelize-cli db:migrate --config db/config/database.js --migrations-path db/migrations",
+    "db:migrate:undo:test": "cross-env NODE_ENV=test npx sequelize-cli db:migrate:undo --config db/config/database.js --migrations-path db/migrations",
+    "db:migrate:undo:all:test": "cross-env NODE_ENV=test npx sequelize-cli db:migrate:undo:all --config db/config/database.js --migrations-path db/migrations",
+    "db:migrate:status:test": "cross-env NODE_ENV=test npx sequelize-cli db:migrate:status --config db/config/database.js --migrations-path db/migrations",
+    "db:seed:test": "cross-env NODE_ENV=test npx sequelize-cli db:seed:all --config db/config/database.js --seeders-path db/seeders",
+    "db:seed:undo:all:test": "cross-env NODE_ENV=test npx sequelize-cli db:seed:undo:all --config db/config/database.js --seeders-path db/seeders",
+    "db:create:test": "cross-env NODE_ENV=test npx sequelize-cli db:create --config db/config/database.js",
+    "db:drop:test": "cross-env NODE_ENV=test npx sequelize-cli db:drop --config db/config/database.js",
+    "db:reset:test": "npm run db:drop:test && npm run db:create:test && npm run db:migrate:test && npm run db:seed:test"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

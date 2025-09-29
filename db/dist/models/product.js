@@ -10,10 +10,12 @@ class Product extends sequelize_1.Model {
         this.belongsTo(models.brand, {
             as: consts_1.TABLE_NAMES.BRAND,
             foreignKey: 'brand_id',
+            onUpdate: 'RESTRICT',
         });
         this.belongsTo(models.category, {
             as: consts_1.TABLE_NAMES.CATEGORY,
             foreignKey: 'category_id',
+            onUpdate: 'RESTRICT',
         });
         this.hasMany(models.property, {
             as: consts_1.TABLE_NAMES.PRODUCT_PROPERTY,
@@ -47,7 +49,7 @@ function defineProduct(sequelize) {
             unique: true,
         },
         price: {
-            type: sequelize_1.DataTypes.FLOAT,
+            type: sequelize_1.DataTypes.DECIMAL(10, 2),
             allowNull: false,
         },
         rating: {
@@ -58,6 +60,25 @@ function defineProduct(sequelize) {
         image: {
             type: sequelize_1.DataTypes.STRING,
             allowNull: false,
+        },
+        slug: {
+            type: sequelize_1.DataTypes.STRING(255),
+            allowNull: false,
+            unique: true,
+        },
+        description: {
+            type: sequelize_1.DataTypes.TEXT,
+            allowNull: true,
+        },
+        is_active: {
+            type: sequelize_1.DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        },
+        stock: {
+            type: sequelize_1.DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
         },
         category_id: {
             type: sequelize_1.DataTypes.INTEGER,

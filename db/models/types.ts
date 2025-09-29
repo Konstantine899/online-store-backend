@@ -5,6 +5,7 @@ export interface UserAttributes {
     id: number;
     email: string;
     password: string;
+    phone?: string;       // ← новое поле
     created_at: Date;
     updated_at: Date;
 }

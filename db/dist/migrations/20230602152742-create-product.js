@@ -15,7 +15,7 @@ const migration = {
                 allowNull: false,
             },
             price: {
-                type: Sequelize.FLOAT,
+                type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
             },
             rating: {
@@ -42,6 +42,8 @@ const migration = {
                 key: 'id',
             },
             allowNull: false,
+            onDelete: 'RESTRICT',
+            onUpdate: 'RESTRICT',
         });
         await queryInterface.addColumn('product', 'brand_id', {
             type: Sequelize.INTEGER,
@@ -50,11 +52,85 @@ const migration = {
                 key: 'id',
             },
             allowNull: false,
+            onDelete: 'RESTRICT',
+            onUpdate: 'RESTRICT',
         });
+        await queryInterface.addColumn('product', 'slug', {
+            type: Sequelize.STRING(255),
+            allowNull: false,
+            unique: true,
+        });
+        await queryInterface.addColumn('product', 'description', {
+            type: Sequelize.TEXT,
+            allowNull: true,
+        });
+        await queryInterface.addColumn('product', 'is_active', {
+            type: Sequelize.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        });
+        await queryInterface.addColumn('product', 'stock', {
+            type: Sequelize.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        });
+        await Promise.all([
+            queryInterface.addIndex('product', ['category_id'], {
+                name: 'idx_product_category_id',
+            }),
+            queryInterface.addIndex('product', ['brand_id'], {
+                name: 'idx_product_brand_id',
+            }),
+            queryInterface.addIndex('product', ['category_id', 'brand_id'], {
+                name: 'idx_product_category_brand',
+            }),
+            queryInterface.addIndex('product', ['slug'], {
+                name: 'idx_product_slug_unique',
+                unique: true,
+            }),
+            queryInterface.addIndex('product', ['is_active'], {
+                name: 'idx_product_is_active',
+            }),
+            queryInterface.addIndex('product', ['stock'], {
+                name: 'idx_product_stock',
+            }),
+            queryInterface.addIndex('product', ['price'], {
+                name: 'idx_product_price',
+            }),
+            queryInterface.addIndex('product', ['rating'], {
+                name: 'idx_product_rating',
+            }),
+            queryInterface.addIndex('product', ['is_active', 'category_id'], {
+                name: 'idx_product_active_category',
+            }),
+            queryInterface.addIndex('product', ['is_active', 'brand_id'], {
+                name: 'idx_product_active_brand',
+            }),
+            queryInterface.addIndex('product', ['price', 'rating'], {
+                name: 'idx_product_price_rating',
+            }),
+        ]);
     },
     async down(queryInterface) {
+        await Promise.all([
+            queryInterface.removeIndex('product', 'idx_product_category_brand'),
+            queryInterface.removeIndex('product', 'idx_product_brand_id'),
+            queryInterface.removeIndex('product', 'idx_product_category_id'),
+            queryInterface.removeIndex('product', 'idx_product_slug_unique'),
+            queryInterface.removeIndex('product', 'idx_product_is_active'),
+            queryInterface.removeIndex('product', 'idx_product_stock'),
+            queryInterface.removeIndex('product', 'idx_product_price'),
+            queryInterface.removeIndex('product', 'idx_product_rating'),
+            queryInterface.removeIndex('product', 'idx_product_active_category'),
+            queryInterface.removeIndex('product', 'idx_product_active_brand'),
+            queryInterface.removeIndex('product', 'idx_product_price_rating'),
+        ]);
         await queryInterface.removeColumn('product', 'brand_id');
         await queryInterface.removeColumn('product', 'category_id');
+        await queryInterface.removeColumn('product', 'slug');
+        await queryInterface.removeColumn('product', 'description');
+        await queryInterface.removeColumn('product', 'is_active');
+        await queryInterface.removeColumn('product', 'stock');
         await queryInterface.dropTable('product');
     },
 };

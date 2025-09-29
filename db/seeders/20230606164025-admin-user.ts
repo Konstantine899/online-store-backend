@@ -1,4 +1,4 @@
-import { QueryInterface } from 'sequelize';
+import { QueryInterface, QueryTypes } from 'sequelize';
 import * as bcrypt from 'bcrypt';
 
 interface Seeder {
@@ -8,36 +8,80 @@ interface Seeder {
 
 const seeder: Seeder = {
     async up(queryInterface: QueryInterface): Promise<void> {
+        const passwordHash = await bcrypt.hash('password', 10);
+
+
         await queryInterface.bulkInsert('user', [
             {
                 email: 'kostay375298918971@gmail.com',
-                password: await bcrypt.hash('123456', 10),
+                password: passwordHash,
+                phone: '+79991234567',
+                created_at: new Date(),
+                updated_at: new Date(),
+            },
+            {
+                email: 'admin@example.com',
+                password: passwordHash,
+                phone: '+15550000001',
+                created_at: new Date(),
+                updated_at: new Date(),
+            },
+            {
+                email: 'user@example.com',
+                password: passwordHash,
+                phone: '+15550000002',
                 created_at: new Date(),
                 updated_at: new Date(),
             },
         ]);
-
-        await queryInterface.sequelize.query(
-            'SELECT `roleId`, `userId` FROM `user-role` AS `UserRoleModel` WHERE `UserRoleModel`.`userId` = 1',
+        // Получаем id ролей
+        interface RoleRow { id: number; role: string }
+        const roles = await queryInterface.sequelize.query<RoleRow>(
+            "SELECT id, role FROM role WHERE role IN ('ADMIN','USER');",
+            { type: QueryTypes.SELECT },
         );
+        const adminRoleId = roles.find((r: RoleRow) => r.role === 'ADMIN')?.id;
+        const userRoleId = roles.find((r: RoleRow) => r.role === 'USER')?.id;
 
-        await queryInterface.sequelize.query(
-            'INSERT INTO `user-role` (`roleId`,`userId`) VALUES (1,1)',
+        // Получаем id пользователей
+        interface UserRow { id: number; email: string }
+        const users = await queryInterface.sequelize.query<UserRow>(
+            "SELECT id, email FROM user WHERE email IN ('admin@example.com','user@example.com');",
+            { type: QueryTypes.SELECT },
         );
+        const adminUserId = users.find((u: UserRow) => u.email === 'admin@example.com')?.id;
+        const userUserId = users.find((u: UserRow) => u.email === 'user@example.com')?.id;
 
-        await queryInterface.sequelize.query(
-            'SELECT `roleId`, `userId` FROM `user-role` AS `UserRoleModel` WHERE `UserRoleModel`.`userId` = 2',
-        );
+        // Присваиваем роли через user_role
+        const now = new Date();
+        const rowsToInsert: Array<{ role_id: number; user_id: number; created_at: Date; updated_at: Date }> = [];
 
-        await queryInterface.sequelize.query(
-            'INSERT INTO `user-role` (`roleId`,`userId`) VALUES (2,1)',
-        );
+        if (adminRoleId && adminUserId) {
+            rowsToInsert.push({ role_id: adminRoleId, user_id: adminUserId, created_at: now, updated_at: now });
+        }
+        if (userRoleId && userUserId) {
+            rowsToInsert.push({ role_id: userRoleId, user_id: userUserId, created_at: now, updated_at: now });
+        }
+
+        if (rowsToInsert.length > 0) {
+            await queryInterface.bulkInsert('user_role', rowsToInsert);
+        }
     },
 
     async down(queryInterface: QueryInterface): Promise<void> {
-        await queryInterface.sequelize.query('SET FOREIGN_KEY_CHECKS=0;'); // Отключаю проверку внешнего ключа
-        await queryInterface.bulkDelete('user-role', {}, {});
-        await queryInterface.bulkDelete('user', {}, {});
+        // Находим id пользователей
+        interface DownUserRow { id: number }
+        const users = await queryInterface.sequelize.query<DownUserRow>(
+            "SELECT id FROM user WHERE email IN ('admin@example.com','user@example.com');",
+            { type: QueryTypes.SELECT },
+        );
+        const userIds = users.map((u: DownUserRow) => u.id);
+
+        // Чистим связи и пользователей
+        if (userIds.length > 0) {
+            await queryInterface.bulkDelete('user_role', { user_id: userIds }, {});
+        }
+        await queryInterface.bulkDelete('user', { email: ['admin@example.com', 'user@example.com'] }, {});
     },
 };
 

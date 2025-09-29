@@ -31,17 +31,19 @@ function defineRole(sequelize) {
         created_at: {
             type: sequelize_1.DataTypes.DATE,
             allowNull: false,
+            defaultValue: sequelize_1.DataTypes.NOW,
         },
         updated_at: {
             type: sequelize_1.DataTypes.DATE,
             allowNull: false,
+            defaultValue: sequelize_1.DataTypes.NOW,
         },
     }, {
         sequelize,
         modelName: consts_1.TABLE_NAMES.ROLE,
-        tableName: consts_1.TABLE_NAMES.ROLE,
+        tableName: 'role',
         timestamps: true,
-        underscored: false,
+        underscored: true,
     });
     return Role;
 }

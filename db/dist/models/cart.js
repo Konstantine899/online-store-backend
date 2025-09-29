@@ -9,6 +9,7 @@ class Cart extends sequelize_1.Model {
             through: consts_1.TABLE_NAMES.CART_PRODUCT,
             as: consts_1.TABLE_NAMES.PRODUCT,
             onDelete: 'CASCADE',
+            onUpdate: 'CASCADE',
         });
     }
 }
@@ -23,17 +24,19 @@ function defineCart(sequelize) {
         created_at: {
             type: sequelize_1.DataTypes.DATE,
             allowNull: false,
+            defaultValue: sequelize_1.DataTypes.NOW,
         },
         updated_at: {
             type: sequelize_1.DataTypes.DATE,
             allowNull: false,
+            defaultValue: sequelize_1.DataTypes.NOW,
         },
     }, {
         sequelize,
         modelName: consts_1.TABLE_NAMES.CART,
-        tableName: consts_1.TABLE_NAMES.CART,
+        tableName: 'cart',
         timestamps: true,
-        underscored: false,
+        underscored: true,
     });
     return Cart;
 }

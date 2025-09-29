@@ -76,7 +76,8 @@ db.cartProduct = (0, cart_product_1.default)(sequelize);
 db.userRole = (0, user_role_1.default)(sequelize);
 db.refreshToken = (0, refresh_token_1.default)(sequelize);
 Object.keys(db).forEach((modelName) => {
-    if (db[modelName] && typeof db[modelName] === 'function') {
+    if (db[modelName] &&
+        typeof db[modelName] === 'function') {
         const model = db[modelName];
         if (model.associate) {
             model.associate(db);

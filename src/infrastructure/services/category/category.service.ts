@@ -49,24 +49,24 @@ export class CategoryService implements ICategoryService {
         dto: CreateCategoryDto,
         image: Express.Multer.File,
     ): Promise<UpdateCategoryResponse> {
-        const category = await this.getCategory(id);
-        const updatedNameImage = await this.fileService.updateFile(
-            category.image,
-            image,
-        );
-        return this.categoryRepository.updateCategory(
-            dto,
-            category,
-            updatedNameImage,
-        );
-    }
-
-    public async removeCategory(id: number): Promise<RemoveCategoryResponse> {
-        const category = await this.getCategory(id);
+        const category = await this.categoryRepository.findCategory(id);
         if (!category) {
             this.notFound('Категория товара не найдена');
         }
-        const removedFile = await this.fileService.removeFile(category.image);
+        const prevImage = category.image ?? '';
+        const updatedNameImage = await this.fileService.updateFile(prevImage, image);
+        // Получаем ORM-модель для обновления
+        const categoryModel = await (this as any).categoryRepository['categoryModel'].findByPk(id);
+        return this.categoryRepository.updateCategory(dto, categoryModel, updatedNameImage);
+    }
+
+    public async removeCategory(id: number): Promise<RemoveCategoryResponse> {
+        const category = await this.categoryRepository.findCategory(id);
+        if (!category) {
+            this.notFound('Категория товара не найдена');
+        }
+        const toRemove = category.image ?? '';
+        const removedFile = await this.fileService.removeFile(toRemove);
 
         await this.categoryRepository.removeCategory(category.id);
         if (!removedFile) {

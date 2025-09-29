@@ -8,10 +8,12 @@ class Category extends sequelize_1.Model {
         this.hasMany(models.product, {
             as: consts_1.TABLE_NAMES.PRODUCT,
             onDelete: 'RESTRICT',
+            onUpdate: 'CASCADE',
         });
         this.hasMany(models.brand, {
             as: consts_1.TABLE_NAMES.BRAND,
             onDelete: 'RESTRICT',
+            onUpdate: 'CASCADE',
         });
     }
 }
@@ -32,20 +34,36 @@ function defineCategory(sequelize) {
             type: sequelize_1.DataTypes.STRING,
             allowNull: false,
         },
+        slug: {
+            type: sequelize_1.DataTypes.STRING(255),
+            allowNull: false,
+            unique: true,
+        },
+        description: {
+            type: sequelize_1.DataTypes.TEXT,
+            allowNull: true,
+        },
+        is_active: {
+            type: sequelize_1.DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        },
         created_at: {
             type: sequelize_1.DataTypes.DATE,
             allowNull: false,
+            defaultValue: sequelize_1.DataTypes.NOW,
         },
         updated_at: {
             type: sequelize_1.DataTypes.DATE,
             allowNull: false,
+            defaultValue: sequelize_1.DataTypes.NOW,
         },
     }, {
         sequelize,
         modelName: consts_1.TABLE_NAMES.CATEGORY,
-        tableName: consts_1.TABLE_NAMES.CATEGORY,
+        tableName: 'category',
         timestamps: true,
-        underscored: false,
+        underscored: true,
     });
     return Category;
 }

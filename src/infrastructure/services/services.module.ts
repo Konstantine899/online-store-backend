@@ -15,12 +15,16 @@ import { RoleService } from './role/role.service';
 import { jwtConfig } from '@app/infrastructure/config/jwt';
 import { TokenService } from './token/token.service';
 import { UserService } from './user/user.service';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { UserModel } from '@app/domain/models';
+
+
 
 @Module({
     imports: [
         JwtModule.registerAsync(jwtConfig()),
         RepositoriesModule,
-
+        SequelizeModule.forFeature([UserModel]),
         JwtModule,
     ],
     providers: [

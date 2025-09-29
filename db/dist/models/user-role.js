@@ -18,6 +18,7 @@ function defineUserRole(sequelize) {
         roleId: {
             type: sequelize_1.DataTypes.INTEGER,
             allowNull: false,
+            field: 'role_id',
             references: {
                 model: consts_1.TABLE_NAMES.ROLE,
                 key: 'id',
@@ -26,6 +27,7 @@ function defineUserRole(sequelize) {
         userId: {
             type: sequelize_1.DataTypes.INTEGER,
             allowNull: false,
+            field: 'user_id',
             references: {
                 model: consts_1.TABLE_NAMES.USER,
                 key: 'id',
@@ -34,15 +36,19 @@ function defineUserRole(sequelize) {
         created_at: {
             type: sequelize_1.DataTypes.DATE,
             allowNull: false,
+            field: 'created_at',
+            defaultValue: sequelize_1.DataTypes.NOW,
         },
         updated_at: {
             type: sequelize_1.DataTypes.DATE,
             allowNull: false,
+            field: 'updated_at',
+            defaultValue: sequelize_1.DataTypes.NOW,
         },
     }, {
         sequelize,
         modelName: consts_1.TABLE_NAMES.USER_ROLE,
-        tableName: consts_1.TABLE_NAMES.USER_ROLE,
+        tableName: 'user_role',
         timestamps: true,
         underscored: false,
     });

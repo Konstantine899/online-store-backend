@@ -1,7 +1,6 @@
-import { CategoryModel } from '@app/domain/models';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class UpdateCategoryResponse extends CategoryModel {
+export class UpdateCategoryResponse {
     @ApiProperty({ example: 1, description: 'Идентификатор категории' })
     declare readonly id: number;
 

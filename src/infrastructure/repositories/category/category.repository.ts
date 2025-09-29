@@ -17,22 +17,36 @@ export class CategoryRepository implements ICategoryRepository {
         private categoryModel: typeof CategoryModel,
     ) {}
 
+    /**
+     * Локальный маппер ORM-модели в контракт ответа
+     */
+    private mapCategory(model: CategoryModel): any {
+        const json = model.toJSON() as any;
+        return {
+            id: json.id,
+            name: json.name,
+            image: json.image,
+            createdAt: new Date(json.createdAt).toISOString(),
+            updatedAt: new Date(json.updatedAt).toISOString(),
+        };
+    }
+
     public async createCategory(
         dto: CreateCategoryDto,
         imageName: string,
     ): Promise<CreateCategoryResponse> {
-        const category = new CategoryModel();
-        category.name = dto.name;
-        category.image = imageName;
-        return category.save();
+        const category = await this.categoryModel.create({ name: dto.name, image: imageName });
+        return this.mapCategory(category) as unknown as CreateCategoryResponse;
     }
 
     public async findListAllCategories(): Promise<ListAllCategoriesResponse[]> {
-        return this.categoryModel.findAll();
+        const list = await this.categoryModel.findAll();
+        return list.map((c) => this.mapCategory(c)) as unknown as ListAllCategoriesResponse[];
     }
 
     public async findCategory(id: number): Promise<CategoryResponse> {
-        return this.categoryModel.findByPk(id) as Promise<CategoryResponse>;
+        const found = await this.categoryModel.findByPk(id);
+        return this.mapCategory(found as CategoryModel) as unknown as CategoryResponse;
     }
 
     public async updateCategory(
@@ -40,11 +54,12 @@ export class CategoryRepository implements ICategoryRepository {
         category: CategoryModel,
         updatedNameImage: string,
     ): Promise<UpdateCategoryResponse> {
-        return category.update({
+        const updated = await category.update({
             ...dto,
             name: dto.name,
             image: updatedNameImage,
         });
+        return this.mapCategory(updated) as unknown as UpdateCategoryResponse;
     }
 
     public async removeCategory(id: number): Promise<number> {

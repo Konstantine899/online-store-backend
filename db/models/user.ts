@@ -9,12 +9,12 @@ class User
     declare id: number;
     declare email: string;
     declare password: string;
+    declare phone?: string; 
     declare created_at: Date;
     declare updated_at: Date;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static associate(models: Record<string, any>): void {
-        // eslint-disable-line @typescript-eslint/no-explicit-any
         this.hasMany(models.refreshToken, {
             as: TABLE_NAMES.REFRESH_TOKEN,
             onDelete: 'CASCADE',
@@ -54,6 +54,15 @@ export default function defineUser(sequelize: Sequelize): typeof User {
             password: {
                 type: DataTypes.STRING(255),
                 allowNull: false,
+                phone: {                      // ← добавлено
+                    type: DataTypes.STRING(20),
+                    allowNull: true,
+                    validate: {
+                        // E.164: начало с +, только цифры, до 16 символов включая +
+                        is: /^\+?[1-9]\d{0,15}$/,
+                    },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             created_at: {
                 type: DataTypes.DATE,

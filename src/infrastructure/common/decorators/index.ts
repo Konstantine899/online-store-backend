@@ -56,3 +56,4 @@ export { AdminGetOrderUserSwaggerDecorator } from './swagger/order/admin-get-ord
 export { AdminGetOrderListUsersSwaggerDecorator } from './swagger/order/admin-get-order-list-users-swagger-decorator';
 export { AdminCreateOrderSwaggerDecorator } from './swagger/order/admin-create-order-swagger-decorator';
 export { Roles, ROLES_KEY } from './roles-auth.decorator';
+export { UpdateUserPhoneSwaggerDecorator } from './swagger/user/update-user-phone.swagger';

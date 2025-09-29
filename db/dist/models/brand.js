@@ -8,10 +8,12 @@ class Brand extends sequelize_1.Model {
         this.hasMany(models.product, {
             as: consts_1.TABLE_NAMES.PRODUCT,
             onDelete: 'RESTRICT',
+            onUpdate: 'RESTRICT',
         });
         this.belongsTo(models.category, {
             as: consts_1.TABLE_NAMES.CATEGORY,
             foreignKey: 'category_id',
+            onUpdate: 'RESTRICT',
         });
     }
 }
@@ -35,6 +37,24 @@ function defineBrand(sequelize) {
                 model: consts_1.TABLE_NAMES.CATEGORY,
                 key: 'id',
             },
+        },
+        slug: {
+            type: sequelize_1.DataTypes.STRING(255),
+            allowNull: false,
+            unique: true,
+        },
+        description: {
+            type: sequelize_1.DataTypes.TEXT,
+            allowNull: true,
+        },
+        is_active: {
+            type: sequelize_1.DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        },
+        logo: {
+            type: sequelize_1.DataTypes.STRING(500),
+            allowNull: true,
         },
         created_at: {
             type: sequelize_1.DataTypes.DATE,

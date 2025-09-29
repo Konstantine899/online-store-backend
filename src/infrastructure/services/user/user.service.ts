@@ -1,3 +1,4 @@
+import { InjectModel } from '@nestjs/sequelize';
 import {
     BadRequestException,
     ConflictException,
@@ -15,7 +16,6 @@ import { RoleService } from '../role/role.service';
 import { UserRepository } from '@app/infrastructure/repositories';
 import {
     CreateUserResponse,
-    GetListUsersResponse,
     GetUserResponse,
     UpdateUserResponse,
     RemoveUserResponse,
@@ -31,6 +31,7 @@ export class UserService implements IUserService {
     constructor(
         private readonly userRepository: UserRepository,
         private roleService: RoleService,
+        @InjectModel(UserModel) private readonly userModel: typeof UserModel,
     ) {}
 
     public async createUser(dto: CreateUserDto): Promise<CreateUserResponse> {
@@ -163,7 +164,17 @@ export class UserService implements IUserService {
             message: 'success',
         };
     }
+    async updatePhone(userId: number, phone: string): Promise<UserModel> {
+        const user = await this.userModel.findByPk(userId);
+        if (!user) {
+            throw new NotFoundException('Пользователь не найден');
+        }
+        await user.update({ phone });
+        return user;
+    }
 
+
+//====================Другие методы===========================//
     protected async getRolesUser(user: UserModel): Promise<number | null> {
         const roles = user.roles.map((i) => i.role).join(',');
         const foundRole = await this.roleService.getRole(roles);

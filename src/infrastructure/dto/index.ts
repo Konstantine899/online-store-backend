@@ -15,3 +15,4 @@ export { SortingDto } from './product/sorting-dto';
 export { CreateCategoryDto } from './category/create-category.dto';
 export { CreateProductPropertyDto } from './product-property/create-product-property.dto';
 export { MakePaymentDto } from './payment/make.payment.dto';
+export { UpdateUserPhoneDto } from './user/update-user-phone.dto';
