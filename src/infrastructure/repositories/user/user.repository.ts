@@ -362,6 +362,7 @@ export class UserRepository implements IUserRepository {
             { replacements: [userId, channel, codeHash, expiresAt, new Date(), new Date()] },
         );
         // TODO: отправка по каналу (email/SMS) — интегрировать почту/SMS провайдер
+        // Для интеграции можно вернуть plaintext код через отдельный путь (dev only)
     }
 
     public async confirmVerificationCode(userId: number, channel: 'email' | 'phone', code: string): Promise<boolean> {

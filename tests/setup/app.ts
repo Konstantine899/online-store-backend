@@ -6,6 +6,7 @@ import 'dotenv/config';
 import { UserModel } from '@app/domain/models';
 import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
 import cookieParser from 'cookie-parser';
+import { BruteforceGuard } from '@app/infrastructure/common/guards';
 
 
 export async function setupTestApp(): Promise<INestApplication> {
@@ -18,6 +19,9 @@ export async function setupTestApp(): Promise<INestApplication> {
     // Провайдер модели для корректного DI
     builder.overrideProvider(getModelToken(UserModel)).useValue(UserModel);
 
+    // Подмена BruteforceGuard на заглушку для тестов (не требуем ThrottlerModule)
+    builder.overrideProvider(BruteforceGuard).useValue({ canActivate: () => true });
+
     const moduleRef = await builder.compile();
     const app = moduleRef.createNestApplication();
 
@@ -25,6 +29,28 @@ export async function setupTestApp(): Promise<INestApplication> {
     app.use(cookieParser(process.env.COOKIE_PARSER_SECRET_KEY || 'test-secret'));
 
     // Глобальная валидация DTO
+    app.useGlobalPipes(new CustomValidationPipe());
+
+    await app.init();
+    return app;
+}
+
+export async function setupTestAppWithRateLimit(): Promise<INestApplication> {
+    process.env.NODE_ENV = process.env.NODE_ENV || 'test';
+
+    const builder: TestingModuleBuilder = Test.createTestingModule({
+        imports: [TestAppModule],
+    });
+
+    // Провайдер модели для корректного DI
+    builder.overrideProvider(getModelToken(UserModel)).useValue(UserModel);
+
+    // ВАЖНО: НЕ подменяем BruteforceGuard — хотим реальное ограничение
+
+    const moduleRef = await builder.compile();
+    const app = moduleRef.createNestApplication();
+
+    app.use(cookieParser(process.env.COOKIE_PARSER_SECRET_KEY || 'test-secret'));
     app.useGlobalPipes(new CustomValidationPipe());
 
     await app.init();

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule } from '@nestjs/config';
 import { SequelizeConfigService, databaseConfig } from '@app/infrastructure/config/sequelize';
@@ -11,6 +12,13 @@ import * as Joi from 'joi';
 
 @Module({
     imports: [
+        // Минимальная конфигурация Throttler для тестов, чтобы резолвился BruteforceGuard
+        ThrottlerModule.forRoot([
+            {
+                ttl: 60000,
+                limit: 100,
+            },
+        ]),
         SequelizeModule.forRootAsync({
             imports: [ConfigModule],
             useClass: SequelizeConfigService,
