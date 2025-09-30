@@ -7,7 +7,6 @@ import {
     CreatedAt,
     UpdatedAt,  
 } from 'sequelize-typescript';
-import { Op } from 'sequelize';
 import { ProductModel } from './product.model';
 import { CartProductModel } from './cart-product.model';
 

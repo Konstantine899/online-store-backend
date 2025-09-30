@@ -18,3 +18,4 @@ export { MakePaymentDto } from './payment/make.payment.dto';
 export { UpdateUserPhoneDto } from './user/update-user-phone.dto';
 export { CreateUserAddressDto } from './user-address/create-user-address.dto';
 export { UpdateUserAddressDto } from './user-address/update-user-address.dto';
+export { UpdateUserDto } from './user/update-user.dto';

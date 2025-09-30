@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UserModel } from '@app/domain/models';
-import { CreateUserDto } from '@app/infrastructure/dto';
+import { CreateUserDto, UpdateUserDto } from '@app/infrastructure/dto';
 import { hash } from 'bcrypt';
 import {
     CreateUserResponse,
@@ -37,13 +37,12 @@ export class UserRepository implements IUserRepository {
 
     public async updateUser(
         user: UserModel,
-        dto: CreateUserDto,
+        dto: UpdateUserDto,
     ): Promise<UpdateUserResponse> {
-        await user.update({
-            ...dto,
-            email: dto.email,
-            password: await hash(dto.password, 10),
-        });
+        const updates: Partial<UserModel> = {} as Partial<UserModel>;
+        if (dto.email !== undefined) updates.email = dto.email as unknown as string;
+        if (dto.password !== undefined) updates.password = await hash(dto.password, UserRepository.BCRYPT_ROUNDS);
+        await user.update(updates);
 
         return this.userModel
             .scope('withRoles')

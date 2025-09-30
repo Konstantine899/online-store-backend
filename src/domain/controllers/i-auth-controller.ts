@@ -1,4 +1,4 @@
-import { RegistrationDto, LoginDto, RefreshDto } from '@app/infrastructure/dto';
+import { RegistrationDto, LoginDto } from '@app/infrastructure/dto';
 import {
     RegistrationResponse,
     LoginResponse,

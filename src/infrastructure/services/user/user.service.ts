@@ -11,6 +11,7 @@ import {
     CreateUserDto,
     AddRoleDto,
     RemoveRoleDto,
+    UpdateUserDto,
 } from '@app/infrastructure/dto';
 import { RoleService } from '../role/role.service';
 import { UserRepository } from '@app/infrastructure/repositories';
@@ -45,12 +46,19 @@ export class UserService implements IUserService {
                 `Пользователь с таким email: ${dto.email} уже существует`,
             );
         }
-        const role = await this.determineUserRole(dto.email) as UserModel['roles'][0];
-        const user = await this.userRepository.createUser(dto);
-        await user.$set('roles', [role.id]); // #set перезаписываю поле только в БД
-        user.roles = [role]; // Добавляю roles в сам объект user
-        await user.save();
-        return this.userRepository.findRegisteredUser(user.id);
+        try {
+            const role = await this.determineUserRole(dto.email) as UserModel['roles'][0];
+            const user = await this.userRepository.createUser(dto);
+            await user.$set('roles', [role.id]); // #set перезаписываю поле только в БД
+            user.roles = [role]; // Добавляю roles в сам объект user
+            await user.save();
+            return this.userRepository.findRegisteredUser(user.id);
+        } catch (error: unknown) {
+            if (error instanceof Error && error.name === 'SequelizeUniqueConstraintError') {
+                this.conflictException(`Пользователь с таким email: ${dto.email} уже существует`);
+            }
+            throw error;
+        }
     }
 
     public async findAuthenticatedUser(userId: number): Promise<UserModel> {
@@ -87,22 +95,32 @@ export class UserService implements IUserService {
 
     public async updateUser(
         id: number,
-        dto: CreateUserDto,
+        dto: UpdateUserDto,
     ): Promise<UpdateUserResponse> {
         const foundUser = await this.userRepository.findUser(id);
         if (!foundUser) {
             this.notFound(`Пользователь с id: ${id} не найден в БД`);
         }
-        const foundEmail = await this.findUserByEmail(dto.email);
-        if (foundEmail) {
-            this.badRequest(
-                `Пользователь с таким email: ${dto.email} уже существует`,
-            );
+        if (dto.email) {
+            const foundEmail = await this.findUserByEmail(dto.email);
+            if (foundEmail) {
+                this.conflictException(
+                    `Пользователь с таким email: ${dto.email} уже существует`,
+                );
+            }
         }
-        const updatedUser = await this.userRepository.updateUser(
-            foundUser,
-            dto,
-        );
+        let updatedUser: UpdateUserResponse;
+        try {
+            updatedUser = await this.userRepository.updateUser(
+                foundUser,
+                dto,
+            );
+        } catch (error: unknown) {
+            if (error instanceof Error && error.name === 'SequelizeUniqueConstraintError') {
+                this.conflictException(`Пользователь с таким email: ${dto.email} уже существует`);
+            }
+            throw error;
+        }
         const role = await this.roleService.getRole('USER');
         /* #set Потому что обновляется весь объект. Ищу роль пользователя и при обновлении перезаписываю поле*/
         await updatedUser.$set('roles', [role.id]);
@@ -171,8 +189,13 @@ export class UserService implements IUserService {
                 attributes: ['id', 'email', 'phone'] 
             }) as Promise<UserModel>;
         } catch (error: unknown) {
-            if (error instanceof Error && error.name === 'SequelizeValidationError') {
-                throw new BadRequestException(['Неверный формат номера телефона']);
+            if (error instanceof Error) {
+                if (error.name === 'SequelizeValidationError') {
+                    throw new BadRequestException(['Неверный формат номера телефона']);
+                }
+                if (error.name === 'SequelizeUniqueConstraintError') {
+                    this.conflictException('Такой номер телефона уже используется');
+                }
             }
             throw error;
         }

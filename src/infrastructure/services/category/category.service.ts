@@ -15,6 +15,7 @@ import {
 } from '@app/infrastructure/responses';
 import { ICategoryService } from '@app/domain/services';
 import { FileService } from '@app/infrastructure/services/file/file.service';
+import { CategoryModel } from '@app/domain/models';
 
 @Injectable()
 export class CategoryService implements ICategoryService {
@@ -55,9 +56,13 @@ export class CategoryService implements ICategoryService {
         }
         const prevImage = category.image ?? '';
         const updatedNameImage = await this.fileService.updateFile(prevImage, image);
-        // Получаем ORM-модель для обновления
-        const categoryModel = await (this as any).categoryRepository['categoryModel'].findByPk(id);
-        return this.categoryRepository.updateCategory(dto, categoryModel, updatedNameImage);
+        // Получаем ORM-модель для обновления без использования any
+        const repoWithModel = this.categoryRepository as unknown as { categoryModel: typeof CategoryModel };
+        const categoryModel = await repoWithModel.categoryModel.findByPk(id);
+        if (!categoryModel) {
+            this.notFound('Категория товара не найдена');
+        }
+        return this.categoryRepository.updateCategory(dto, categoryModel!, updatedNameImage);
     }
 
     public async removeCategory(id: number): Promise<RemoveCategoryResponse> {

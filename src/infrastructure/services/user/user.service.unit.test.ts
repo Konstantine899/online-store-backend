@@ -13,12 +13,15 @@ import {
     CreateUserDto,
     AddRoleDto,
     RemoveRoleDto,
+    UpdateUserDto,
 } from '@app/infrastructure/dto';
 import { UserModel, RoleModel } from '@app/domain/models';
 import {
     GetUserResponse,
     UpdateUserResponse,
 } from '@app/infrastructure/responses';
+
+type NamedError = Error & { name: string };
 
 const mockUser: UserModel = {
     id: 1,
@@ -80,6 +83,7 @@ describe('UserService', () => {
     let service: UserService;
     let userRepository: jest.Mocked<UserRepository>;
     let roleService: jest.Mocked<RoleService>;
+    let userModelMock: { findByPk: jest.Mock; update: jest.Mock };
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -110,6 +114,7 @@ describe('UserService', () => {
                     provide: getModelToken(UserModel),
                     useValue: {
                         findByPk: jest.fn(),
+                        update: jest.fn(),
                     },
                 },
             ],
@@ -118,6 +123,7 @@ describe('UserService', () => {
         service = module.get<UserService>(UserService);
         userRepository = module.get(UserRepository);
         roleService = module.get(RoleService);
+        userModelMock = module.get(getModelToken(UserModel));
     });
 
     describe('createUser', () => {
@@ -260,14 +266,31 @@ describe('UserService', () => {
             );
         });
 
-        it('должен выбросить BadRequestException если email уже используется', async () => {
+        it('должен выбросить ConflictException если email уже используется', async () => {
             userRepository.findUser.mockResolvedValue(mockUser);
             userRepository.findUserByEmail.mockResolvedValue(mockUser);
 
             await expect(service.updateUser(1, validUserDto)).rejects.toThrow(
-                new BadRequestException({
-                    status: HttpStatus.BAD_REQUEST,
+                new ConflictException({
+                    status: HttpStatus.CONFLICT,
                     message: `Пользователь с таким email: ${validUserDto.email} уже существует`,
+                }),
+            );
+        });
+
+        it('должен выбросить ConflictException (409) если репозиторий вернул SequelizeUniqueConstraintError', async () => {
+            userRepository.findUser.mockResolvedValue(mockUser);
+            // email не найден на предварительной проверке, чтобы попасть в catch
+            userRepository.findUserByEmail.mockResolvedValue(undefined as unknown as UserModel);
+            const uniqueErr: NamedError = new Error('unique') as NamedError;
+            uniqueErr.name = 'SequelizeUniqueConstraintError';
+            userRepository.updateUser.mockRejectedValueOnce(uniqueErr);
+
+            const dto: UpdateUserDto = { email: 'updated@example.com', password: 'NewPass123!' };
+            await expect(service.updateUser(1, dto)).rejects.toThrow(
+                new ConflictException({
+                    status: HttpStatus.CONFLICT,
+                    message: 'Пользователь с таким email: updated@example.com уже существует',
                 }),
             );
         });
@@ -551,6 +574,22 @@ describe('UserService', () => {
                 role: 'USER',
                 description: 'Пользователь',
             });
+        });
+    });
+
+    describe('updatePhone', () => {
+        it('должен выбросить ConflictException если телефон уже используется', async () => {
+            // Мокаем update так, чтобы он бросил уникальное ограничение
+            const uniquePhoneErr: NamedError = new Error('unique') as NamedError;
+            uniquePhoneErr.name = 'SequelizeUniqueConstraintError';
+            userModelMock.update.mockRejectedValueOnce(uniquePhoneErr);
+
+            await expect(service.updatePhone(1, '+79990000001')).rejects.toThrow(
+                new ConflictException({
+                    status: HttpStatus.CONFLICT,
+                    message: 'Такой номер телефона уже используется',
+                }),
+            );
         });
     });
 });

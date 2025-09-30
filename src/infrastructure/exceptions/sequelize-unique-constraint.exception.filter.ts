@@ -1,4 +1,4 @@
-import { UniqueConstraintError } from 'sequelize';
+import { UniqueConstraintError, ValidationErrorItem } from 'sequelize';
 import {
     ArgumentsHost,
     Catch,
@@ -16,16 +16,22 @@ export class SequelizeUniqueConstraintExceptionFilter
         const response = context.getResponse<Response>();
         const request = context.getRequest<Request>();
         const { url, path } = request;
-        const { name, message, fields } = exception;
+
+        // Формируем человеко-читаемые русские сообщения по затронутым полям
+        const messages: string[] = (exception.errors || []).map((e: ValidationErrorItem) => {
+            const field = e.path ?? 'поле';
+            return `Значение поля "${field}" уже используется`;
+        });
+
         const errorResponse = {
-            url: url,
-            path: path,
-            type: message,
-            name: name,
-            fields: fields,
+            statusCode: HttpStatus.CONFLICT,
+            url,
+            path,
+            name: exception.name,
+            message: messages.length ? messages : 'Нарушение уникальности',
             timestamp: new Date().toISOString(),
         };
 
-        response.status(HttpStatus.BAD_REQUEST).json(errorResponse);
+        response.status(HttpStatus.CONFLICT).json(errorResponse);
     }
 }

@@ -5,7 +5,6 @@ import {
 } from '@app/infrastructure/dto';
 import {
     CreateUserResponse,
-    GetListUsersResponse,
     GetUserResponse,
     UpdateUserResponse,
     RemoveUserResponse,

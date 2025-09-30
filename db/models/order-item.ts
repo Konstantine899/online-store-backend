@@ -1,4 +1,4 @@
-import { Model, DataTypes, Sequelize } from 'sequelize';
+import { Model, DataTypes, Sequelize, ModelStatic, ModelAttributes, Optional } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
 import { OrderItemModel, OrderItemCreationAttributes } from './types';
 
@@ -14,8 +14,7 @@ class OrderItem
     declare created_at: Date;
     declare updated_at: Date;
 
-    static associate(models: Record<string, any>): void {
-        // eslint-disable-line @typescript-eslint/no-explicit-any
+    static associate(models: { order: ModelStatic<Model<Record<string, unknown>, Record<string, unknown>>> }): void {
         this.belongsTo(models.order, {
             as: TABLE_NAMES.ORDER,
             foreignKey: 'order_id',
@@ -26,50 +25,52 @@ class OrderItem
 export default function defineOrderItem(
     sequelize: Sequelize,
 ): typeof OrderItem {
+    const attributes = {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+            allowNull: false,
+        },
+        name: {
+            type: DataTypes.STRING,
+            allowNull: false,
+        },
+        price: {
+            type: DataTypes.FLOAT,
+            allowNull: false,
+        },
+        quantity: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+        order_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: TABLE_NAMES.ORDER,
+                key: 'id',
+            },
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+        },
+    };
+
     OrderItem.init(
-        {
-            id: {
-                type: DataTypes.INTEGER,
-                primaryKey: true,
-                autoIncrement: true,
-                allowNull: false,
-            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-            name: {
-                type: DataTypes.STRING,
-                allowNull: false,
-            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-            price: {
-                type: DataTypes.FLOAT,
-                allowNull: false,
-            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-            quantity: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-            order_id: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-                references: {
-                    model: TABLE_NAMES.ORDER,
-                    key: 'id',
-                } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-            created_at: {
-                type: DataTypes.DATE,
-                allowNull: false,
-            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-            updated_at: {
-                type: DataTypes.DATE,
-                allowNull: false,
-            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-        } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+        attributes as unknown as ModelAttributes<OrderItem, Optional<OrderItemModel, never>>,
         {
             sequelize,
             modelName: TABLE_NAMES.ORDER_ITEM,
             tableName: TABLE_NAMES.ORDER_ITEM,
             timestamps: true,
             underscored: true,
-        } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+        },
     );
 
     return OrderItem;

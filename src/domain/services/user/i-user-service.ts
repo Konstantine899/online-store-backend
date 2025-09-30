@@ -2,12 +2,12 @@ import {
     CreateUserDto,
     AddRoleDto,
     RemoveRoleDto,
+    UpdateUserDto,
 } from '@app/infrastructure/dto';
 import {
     CreateUserResponse,
     GetUserResponse,
     CheckResponse,
-    GetListUsersResponse,
     UpdateUserResponse,
     RemoveUserResponse,
     AddRoleResponse,
@@ -29,7 +29,7 @@ export interface IUserService {
 
     getListUsers(page?: number, limit?: number): Promise<GetPaginatedUsersResponse>;
 
-    updateUser(id: number, dto: CreateUserDto): Promise<UpdateUserResponse>;
+    updateUser(id: number, dto: UpdateUserDto): Promise<UpdateUserResponse>;
 
     removeUser(id: number): Promise<RemoveUserResponse>;
 
