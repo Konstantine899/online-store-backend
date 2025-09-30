@@ -172,7 +172,7 @@ export class UserService implements IUserService {
             }) as Promise<UserModel>;
         } catch (error: unknown) {
             if (error instanceof Error && error.name === 'SequelizeValidationError') {
-                throw new BadRequestException('Неверный формат номера телефона');
+                throw new BadRequestException(['Неверный формат номера телефона']);
             }
             throw error;
         }

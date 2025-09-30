@@ -13,11 +13,19 @@ import {
     Req,
     UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserAddressService } from '@app/infrastructure/services';
 import { CreateUserAddressDto, UpdateUserAddressDto } from '@app/infrastructure/dto';
 import { AuthGuard, RoleGuard } from '@app/infrastructure/common/guards';
 import { Roles } from '@app/infrastructure/common/decorators';
+import { 
+    GetUserAddressesSwaggerDecorator,
+    GetUserAddressSwaggerDecorator,
+    CreateUserAddressSwaggerDecorator,
+    UpdateUserAddressSwaggerDecorator,
+    RemoveUserAddressSwaggerDecorator,
+    SetDefaultUserAddressSwaggerDecorator,
+} from '@app/infrastructure/common/decorators/swagger/user-address';
 
 // Типизированный интерфейс для Request
 interface AuthenticatedRequest extends Request {
@@ -48,8 +56,7 @@ export class UserAddressController {
         return { data };
     }
 
-    @ApiOperation({ summary: 'Список адресов', description: 'Возвращает адреса текущего пользователя' })
-    @ApiOkResponse({ description: UserAddressController.SUCCESS_DESCRIPTION })
+    @GetUserAddressesSwaggerDecorator()
     @Roles(...UserAddressController.USER_ROLES)
     @Get()
     @HttpCode(HttpStatus.OK)
@@ -58,8 +65,7 @@ export class UserAddressController {
         return this.createResponse(data);
     }
 
-    @ApiOperation({ summary: 'Получить адрес', description: 'Возвращает адрес по id' })
-    @ApiOkResponse({ description: UserAddressController.SUCCESS_DESCRIPTION })
+    @GetUserAddressSwaggerDecorator()
     @Roles(...UserAddressController.USER_ROLES)
     @Get(':id')
     @HttpCode(HttpStatus.OK)
@@ -71,8 +77,7 @@ export class UserAddressController {
         return this.createResponse(data);
     }
 
-    @ApiOperation({ summary: 'Создать адрес', description: 'Создаёт новый адрес' })
-    @ApiOkResponse({ description: UserAddressController.CREATED_DESCRIPTION })
+    @CreateUserAddressSwaggerDecorator()
     @Roles(...UserAddressController.USER_ROLES)
     @Post()
     @HttpCode(HttpStatus.CREATED)
@@ -84,8 +89,7 @@ export class UserAddressController {
         return this.createResponse(data);
     }
 
-    @ApiOperation({ summary: 'Обновить адрес', description: 'Обновляет адрес по id' })
-    @ApiOkResponse({ description: UserAddressController.UPDATED_DESCRIPTION })
+    @UpdateUserAddressSwaggerDecorator()
     @Roles(...UserAddressController.USER_ROLES)
     @Put(':id')
     @HttpCode(HttpStatus.OK)
@@ -98,8 +102,7 @@ export class UserAddressController {
         return this.createResponse(data);
     }
 
-    @ApiOperation({ summary: 'Удалить адрес', description: 'Удаляет адрес по id' })
-    @ApiOkResponse({ description: UserAddressController.DELETED_DESCRIPTION })
+    @RemoveUserAddressSwaggerDecorator()
     @Roles(...UserAddressController.USER_ROLES)
     @Delete(':id')
     @HttpCode(HttpStatus.OK)
@@ -110,8 +113,7 @@ export class UserAddressController {
         return this.userAddressService.removeAddress(this.extractUserId(req), id);
     }
 
-    @ApiOperation({ summary: 'Сделать основным', description: 'Устанавливает адрес основным' })
-    @ApiOkResponse({ description: UserAddressController.UPDATED_DESCRIPTION })
+    @SetDefaultUserAddressSwaggerDecorator()
     @Roles(...UserAddressController.USER_ROLES)
     @Patch(':id/set-default')
     @HttpCode(HttpStatus.OK)

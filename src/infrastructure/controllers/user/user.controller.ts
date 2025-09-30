@@ -176,10 +176,10 @@ export class UserController implements IUserController {
     async updatePhone(
         @Req() req: AuthenticatedRequest,
         @Body(new CustomValidationPipe()) dto: UpdateUserPhoneDto,
-    ): Promise<UpdateUserPhoneResponse> {
+    ): Promise<{ data: UpdateUserPhoneResponse }> {
         const userId = this.extractUserId(req);
         const user = await this.userService.updatePhone(userId, dto.phone);
-        return { id: user.id, phone: user.phone! };
+        return this.createResponse({ id: user.id, phone: user.phone! });
     }
 
     @Roles(...UserController.USER_ROLES)
