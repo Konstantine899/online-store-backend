@@ -90,3 +90,42 @@ describe('Users: PUT /user/update/:id email unique', () => {
             .expect(409);
     });
 });
+
+describe('Users: Guards (401/403)', () => {
+    let app: INestApplication;
+
+    beforeAll(async () => {
+        app = await setupTestApp();
+    });
+
+    it('401: admin endpoint without token', async () => {
+        await request(app.getHttpServer())
+            .get('/user/get-list-users')
+            .expect(401);
+    });
+
+    it('403: admin endpoint under USER role', async () => {
+        const userToken = await authLoginAs(app, 'user');
+        await request(app.getHttpServer())
+            .get('/user/get-list-users')
+            .set('Authorization', `Bearer ${userToken}`)
+            .expect(403);
+    });
+
+    it('403: GET /user/:id under USER role', async () => {
+        const userToken = await authLoginAs(app, 'user');
+        await request(app.getHttpServer())
+            .get('/user/1')
+            .set('Authorization', `Bearer ${userToken}`)
+            .expect(403);
+    });
+
+    it('403: POST /user/create under USER role', async () => {
+        const userToken = await authLoginAs(app, 'user');
+        await request(app.getHttpServer())
+            .post('/user/create')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({ email: 'x@y.z', password: 'Strong123!' })
+            .expect(403);
+    });
+});
