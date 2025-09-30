@@ -56,6 +56,7 @@ import { UpdateUserPreferencesSwaggerDecorator } from '@app/infrastructure/commo
 import { VerifyUserEmailSwaggerDecorator, VerifyUserPhoneSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/verify-user.swagger';
 import { UpdateUserPhoneResponse } from '@app/infrastructure/responses';
 import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
+import { ConfirmVerificationDto } from '@app/infrastructure/dto/user/confirm-verification.dto';
 
 import { IUserController } from '@app/domain/controllers';
 
@@ -251,6 +252,53 @@ export class UserController implements IUserController {
     async verifyPhone(@Param('id', ParseIntPipe) id: number) {
         const user = await this.userService.verifyPhoneFlag(id);
         return this.createResponse(user);
+    }
+
+    // Self-service verification (USER)
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Post('verify/email/request')
+    @HttpCode(HttpStatus.OK)
+    async requestEmailCode(@Req() req: AuthenticatedRequest) {
+        const userId = this.extractUserId(req);
+        await this.userService.requestVerificationCode(userId, 'email');
+        return { status: HttpStatus.OK, message: 'success' };
+    }
+
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Post('verify/email/confirm')
+    @HttpCode(HttpStatus.OK)
+    async confirmEmailCode(
+        @Req() req: AuthenticatedRequest,
+        @Body(new CustomValidationPipe()) dto: ConfirmVerificationDto,
+    ) {
+        const userId = this.extractUserId(req);
+        await this.userService.confirmVerificationCode(userId, 'email', dto.code);
+        return { status: HttpStatus.OK, message: 'success' };
+    }
+
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Post('verify/phone/request')
+    @HttpCode(HttpStatus.OK)
+    async requestPhoneCode(@Req() req: AuthenticatedRequest) {
+        const userId = this.extractUserId(req);
+        await this.userService.requestVerificationCode(userId, 'phone');
+        return { status: HttpStatus.OK, message: 'success' };
+    }
+
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Post('verify/phone/confirm')
+    @HttpCode(HttpStatus.OK)
+    async confirmPhoneCode(
+        @Req() req: AuthenticatedRequest,
+        @Body(new CustomValidationPipe()) dto: ConfirmVerificationDto,
+    ) {
+        const userId = this.extractUserId(req);
+        await this.userService.confirmVerificationCode(userId, 'phone', dto.code);
+        return { status: HttpStatus.OK, message: 'success' };
     }
 
     // ADMIN actions: block/unblock, suspend/unsuspend, delete/restore, premium upgrade/downgrade, employee on/off

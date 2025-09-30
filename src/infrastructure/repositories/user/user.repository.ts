@@ -14,6 +14,7 @@ import { IUserRepository } from '@app/domain/repositories';
 import { MetaData } from '@app/infrastructure/paginate'; 
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
+import { randomBytes, createHash } from 'crypto';
 
 @Injectable()
 export class UserRepository implements IUserRepository {
@@ -343,5 +344,57 @@ export class UserRepository implements IUserRepository {
         if (!user) return null;
         await user.update({ isAffiliate: false });
         return user;
+    }
+
+    // ===== Verification codes =====
+    private hashCode(code: string): string {
+        return createHash('sha256').update(code).digest('hex');
+    }
+
+    public async requestVerificationCode(userId: number, channel: 'email' | 'phone'): Promise<void> {
+        const sequelize = this.userModel.sequelize;
+        if (!sequelize) return;
+        const code = randomBytes(3).toString('hex'); // 6 hex chars
+        const codeHash = this.hashCode(code);
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10m
+        await sequelize.query(
+            'INSERT INTO `user_verification_code` (`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES (?,?,?,?,0,?,?)',
+            { replacements: [userId, channel, codeHash, expiresAt, new Date(), new Date()] },
+        );
+        // TODO: отправка по каналу (email/SMS) — интегрировать почту/SMS провайдер
+    }
+
+    public async confirmVerificationCode(userId: number, channel: 'email' | 'phone', code: string): Promise<boolean> {
+        const sequelize = this.userModel.sequelize;
+        if (!sequelize) return false;
+        const [[row]] = await sequelize.query(
+            'SELECT `id`,`code_hash`,`expires_at`,`attempts` FROM `user_verification_code` WHERE `user_id` = ? AND `channel` = ? ORDER BY `created_at` DESC LIMIT 1',
+            { replacements: [userId, channel] },
+        );
+        // rows can be RowDataPacket[]
+        if (!row) return false;
+        const { id, code_hash: storedHash, expires_at: expiresAt, attempts } = row as { id: number; code_hash: string; expires_at: string | Date; attempts: number };
+        const now = new Date();
+        if (new Date(expiresAt) < now || attempts >= 5) {
+            return false;
+        }
+        const ok = this.hashCode(code) === storedHash;
+        await sequelize.query(
+            'UPDATE `user_verification_code` SET `attempts` = `attempts` + 1, `updated_at` = ? WHERE `id` = ? LIMIT 1',
+            { replacements: [now, id] },
+        );
+        if (!ok) return false;
+        if (channel === 'email') {
+            await sequelize.query(
+                'UPDATE `user` SET `is_email_verified` = 1, `email_verified_at` = ?, `updated_at` = ? WHERE `id` = ? LIMIT 1',
+                { replacements: [now, now, userId] },
+            );
+        } else {
+            await sequelize.query(
+                'UPDATE `user` SET `is_phone_verified` = 1, `phone_verified_at` = ?, `updated_at` = ? WHERE `id` = ? LIMIT 1',
+                { replacements: [now, now, userId] },
+            );
+        }
+        return true;
     }
 }

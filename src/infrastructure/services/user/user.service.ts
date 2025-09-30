@@ -352,6 +352,18 @@ export class UserService implements IUserService {
         return user as UserModel;
     }
 
+    // ===== Self-service verification =====
+    public async requestVerificationCode(userId: number, channel: 'email' | 'phone'): Promise<void> {
+        await this.userRepository.requestVerificationCode(userId, channel);
+    }
+
+    public async confirmVerificationCode(userId: number, channel: 'email' | 'phone', code: string): Promise<void> {
+        const ok = await this.userRepository.confirmVerificationCode(userId, channel, code);
+        if (!ok) {
+            this.badRequest('Неверный или просроченный код подтверждения');
+        }
+    }
+
 //====================Другие методы===========================//
     protected async getRolesUser(user: UserModel): Promise<number | null> {
         const roles = user.roles.map((i) => i.role).join(',');

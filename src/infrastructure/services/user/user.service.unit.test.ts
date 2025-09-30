@@ -129,6 +129,8 @@ describe('UserService', () => {
                         unsetWholesale: jest.fn(),
                         setAffiliate: jest.fn(),
                         unsetAffiliate: jest.fn(),
+                        requestVerificationCode: jest.fn(),
+                        confirmVerificationCode: jest.fn(),
                     },
                 },
                 {
@@ -740,6 +742,27 @@ describe('UserService', () => {
             await expect(service.changePassword(1, 'wrong-old', 'NewPass123!')).rejects.toThrow(
                 new BadRequestException({ status: HttpStatus.BAD_REQUEST, message: 'Текущий пароль указан неверно' }),
             );
+        });
+    });
+
+    describe('self-service verification', () => {
+        it('requestVerificationCode: вызывает репозиторий с корректными аргументами', async () => {
+            userRepository.requestVerificationCode.mockResolvedValue(undefined);
+            await expect(service.requestVerificationCode(1, 'email')).resolves.toBeUndefined();
+            expect(userRepository.requestVerificationCode).toHaveBeenCalledWith(1, 'email');
+        });
+
+        it('confirmVerificationCode: успех при true', async () => {
+            userRepository.confirmVerificationCode.mockResolvedValue(true);
+            await expect(service.confirmVerificationCode(1, 'phone', '123456')).resolves.toBeUndefined();
+            expect(userRepository.confirmVerificationCode).toHaveBeenCalledWith(1, 'phone', '123456');
+        });
+
+        it('confirmVerificationCode: 400 при неверном/просроченном коде', async () => {
+            userRepository.confirmVerificationCode.mockResolvedValue(false);
+            await expect(service.confirmVerificationCode(1, 'email', 'bad'))
+                .rejects
+                .toThrow(new BadRequestException({ status: HttpStatus.BAD_REQUEST, message: 'Неверный или просроченный код подтверждения' }));
         });
     });
 });

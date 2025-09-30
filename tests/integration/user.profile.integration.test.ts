@@ -71,6 +71,53 @@ describe('User profile & admin endpoints (401 without token)', () => {
             .set('Authorization', `Bearer ${token}`)
             .expect(403);
     });
+
+    // Self-service verification (email/phone)
+    it('POST /user/verify/email/request -> 401 без токена', async () => {
+        await request(app.getHttpServer())
+            .post('/user/verify/email/request')
+            .expect(401);
+    });
+
+    it('POST /user/verify/email/request -> 200 с токеном USER', async () => {
+        const token = await authLoginAs(app, 'user');
+        await request(app.getHttpServer())
+            .post('/user/verify/email/request')
+            .set('Authorization', `Bearer ${token}`)
+            .expect(200);
+    });
+
+    it('POST /user/verify/email/confirm -> 400 при неверном коде', async () => {
+        const token = await authLoginAs(app, 'user');
+        await request(app.getHttpServer())
+            .post('/user/verify/email/confirm')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ code: 'wrong' })
+            .expect(400);
+    });
+
+    it('POST /user/verify/phone/request -> 401 без токена', async () => {
+        await request(app.getHttpServer())
+            .post('/user/verify/phone/request')
+            .expect(401);
+    });
+
+    it('POST /user/verify/phone/request -> 200 с токеном USER', async () => {
+        const token = await authLoginAs(app, 'user');
+        await request(app.getHttpServer())
+            .post('/user/verify/phone/request')
+            .set('Authorization', `Bearer ${token}`)
+            .expect(200);
+    });
+
+    it('POST /user/verify/phone/confirm -> 400 при неверном коде', async () => {
+        const token = await authLoginAs(app, 'user');
+        await request(app.getHttpServer())
+            .post('/user/verify/phone/confirm')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ code: 'wrong' })
+            .expect(400);
+    });
 });
 
 
