@@ -234,6 +234,24 @@ export type RefreshTokenCreationAttributes = Optional<
     'id' | 'created_at' | 'updated_at'
 >;
 
+// Login History types
+export interface LoginHistoryAttributes {
+    id: number;
+    user_id: number;
+    ip_address: string | null;
+    user_agent: string | null;
+    success: boolean;
+    failure_reason: string | null;
+    login_at: Date;
+    created_at: Date;
+    updated_at: Date;
+}
+
+export type LoginHistoryCreationAttributes = Optional<
+    LoginHistoryAttributes,
+    'id' | 'created_at' | 'updated_at'
+>;
+
 // Model interfaces
 export interface UserModel
     extends Model<UserAttributes, UserCreationAttributes>,
@@ -274,3 +292,6 @@ export interface UserRoleModel
 export interface RefreshTokenModel
     extends Model<RefreshTokenAttributes, RefreshTokenCreationAttributes>,
         RefreshTokenAttributes {}
+export interface LoginHistoryModel
+    extends Model<LoginHistoryAttributes, LoginHistoryCreationAttributes>,
+        LoginHistoryAttributes {}

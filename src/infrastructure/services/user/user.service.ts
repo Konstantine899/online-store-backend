@@ -29,6 +29,7 @@ import { IUserService } from '@app/domain/services';
 import { compare, hash } from 'bcrypt';
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
+import { LoginHistoryService } from '../login-history/login-history.service';
 
 @Injectable()
 export class UserService implements IUserService {
@@ -39,6 +40,7 @@ export class UserService implements IUserService {
         private readonly userRepository: UserRepository,
         private roleService: RoleService,
         @InjectModel(UserModel) private readonly userModel: typeof UserModel,
+        private readonly loginHistoryService: LoginHistoryService,
     ) {}
 
     public async createUser(dto: CreateUserDto): Promise<CreateUserResponse> {
@@ -445,5 +447,34 @@ export class UserService implements IUserService {
         );
         // rows can be RowDataPacket[] in mysql2
         return Array.isArray(rows) && rows.length > 0;
+    }
+
+    /**
+     * Обновляет время последнего входа пользователя и логирует успешный вход
+     */
+    async updateLastLoginAt(userId: number, ipAddress?: string, userAgent?: string): Promise<void> {
+        try {
+            // Обновляем last_login_at в таблице user
+            await this.userRepository.updateLastLoginAt(userId);
+            
+            // Логируем успешный вход
+            await this.loginHistoryService.logSuccessfulLogin(userId, ipAddress, userAgent);
+        } catch (error) {
+            // Не бросаем ошибку, чтобы не сломать процесс входа
+            // Просто логируем проблему
+            console.error(`Failed to update last login for user ${userId}:`, error);
+        }
+    }
+
+    /**
+     * Логирует неудачную попытку входа
+     */
+    async logFailedLogin(userId: number, failureReason: string, ipAddress?: string, userAgent?: string): Promise<void> {
+        try {
+            await this.loginHistoryService.logFailedLogin(userId, failureReason, ipAddress, userAgent);
+        } catch (error) {
+            // Не бросаем ошибку, чтобы не сломать процесс аутентификации
+            console.error(`Failed to log failed login for user ${userId}:`, error);
+        }
     }
 }

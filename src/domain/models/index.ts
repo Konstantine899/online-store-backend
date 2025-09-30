@@ -12,3 +12,4 @@ export { OrderModel } from './order.model';
 export { BrandModel } from './brand.model';
 export { CategoryModel } from './category-model';
 export { UserAddressModel } from './user-address';
+export { LoginHistoryModel, ILoginHistoryCreationAttributes } from './login-history.model';

@@ -68,7 +68,7 @@ export class AuthController  {
     @Post('/login')
     public async login(@Body() dto: LoginDto, @Req() req: Request,
     @Res({ passthrough: true }) res: Response,): Promise<LoginResponse> {
-        const result = await this.authService.login(dto);
+        const result = await this.authService.login(dto, req);
         // ставим refresh в HttpOnly cookie
         const cookieName = getRefreshCookieName();
         res.cookie(cookieName, result.refreshToken, buildRefreshCookieOptions(req));
