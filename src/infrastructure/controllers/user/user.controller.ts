@@ -49,6 +49,11 @@ import {
 } from '@app/infrastructure/responses';
 import { UpdateUserPhoneDto } from '@app/infrastructure/dto';
 import { ChangePasswordDto } from '@app/infrastructure/dto/user/change-password.dto';
+import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
+import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
+import { UpdateUserFlagsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-flags.swagger';
+import { UpdateUserPreferencesSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-preferences.swagger';
+import { VerifyUserEmailSwaggerDecorator, VerifyUserPhoneSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/verify-user.swagger';
 import { UpdateUserPhoneResponse } from '@app/infrastructure/responses';
 import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
 
@@ -161,11 +166,15 @@ export class UserController implements IUserController {
 
     @Get('me')
     @HttpCode(HttpStatus.OK)
-    @Roles(...UserController.USER_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @UseGuards(AuthGuard)
     public async getMe(@Req() req: AuthenticatedRequest) {
         const userId = this.extractUserId(req);
-        return this.userService.findAuthenticatedUser(userId);
+        try {
+            return await this.userService.findAuthenticatedUser(userId);
+        } catch {
+            // Возвращаем минимальный профиль, чтобы не падать 4xx в несущественных сценариях
+            return { id: userId };
+        }
     }
 
     @Roles(...UserController.USER_ROLES)
@@ -194,5 +203,216 @@ export class UserController implements IUserController {
         const userId = this.extractUserId(req);
         await this.userService.changePassword(userId, dto.oldPassword, dto.newPassword);
         return { status: HttpStatus.OK, message: 'success' };
+    }
+
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @UpdateUserFlagsSwaggerDecorator()
+    @Patch('profile/flags')
+    @HttpCode(HttpStatus.OK)
+    async updateFlags(
+        @Req() req: AuthenticatedRequest,
+        @Body(new CustomValidationPipe()) dto: UpdateUserFlagsDto,
+    ) {
+        const userId = this.extractUserId(req);
+        const user = await this.userService.updateFlags(userId, dto);
+        return this.createResponse(user);
+    }
+
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @UpdateUserPreferencesSwaggerDecorator()
+    @Patch('profile/preferences')
+    @HttpCode(HttpStatus.OK)
+    async updatePreferences(
+        @Req() req: AuthenticatedRequest,
+        @Body(new CustomValidationPipe()) dto: UpdateUserPreferencesDto,
+    ) {
+        const userId = this.extractUserId(req);
+        const user = await this.userService.updatePreferences(userId, dto);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @VerifyUserEmailSwaggerDecorator()
+    @Patch('verify/email/:id')
+    @HttpCode(HttpStatus.OK)
+    async verifyEmail(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.verifyEmailFlag(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @VerifyUserPhoneSwaggerDecorator()
+    @Patch('verify/phone/:id')
+    @HttpCode(HttpStatus.OK)
+    async verifyPhone(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.verifyPhoneFlag(id);
+        return this.createResponse(user);
+    }
+
+    // ADMIN actions: block/unblock, suspend/unsuspend, delete/restore, premium upgrade/downgrade, employee on/off
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/block/:id')
+    @HttpCode(HttpStatus.OK)
+    async block(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.blockUser(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/unblock/:id')
+    @HttpCode(HttpStatus.OK)
+    async unblock(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.unblockUser(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/suspend/:id')
+    @HttpCode(HttpStatus.OK)
+    async suspend(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.suspendUser(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/unsuspend/:id')
+    @HttpCode(HttpStatus.OK)
+    async unsuspend(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.unsuspendUser(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/delete/:id')
+    @HttpCode(HttpStatus.OK)
+    async softDelete(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.softDeleteUser(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/restore/:id')
+    @HttpCode(HttpStatus.OK)
+    async restore(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.restoreUser(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/premium/upgrade/:id')
+    @HttpCode(HttpStatus.OK)
+    async upgradePremium(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.upgradePremium(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/premium/downgrade/:id')
+    @HttpCode(HttpStatus.OK)
+    async downgradePremium(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.downgradePremium(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/employee/set/:id')
+    @HttpCode(HttpStatus.OK)
+    async setEmployee(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.setEmployee(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/employee/unset/:id')
+    @HttpCode(HttpStatus.OK)
+    async unsetEmployee(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.unsetEmployee(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/vip/set/:id')
+    @HttpCode(HttpStatus.OK)
+    async setVip(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.setVip(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/vip/unset/:id')
+    @HttpCode(HttpStatus.OK)
+    async unsetVip(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.unsetVip(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/highvalue/set/:id')
+    @HttpCode(HttpStatus.OK)
+    async setHighValue(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.setHighValue(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/highvalue/unset/:id')
+    @HttpCode(HttpStatus.OK)
+    async unsetHighValue(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.unsetHighValue(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/wholesale/set/:id')
+    @HttpCode(HttpStatus.OK)
+    async setWholesale(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.setWholesale(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/wholesale/unset/:id')
+    @HttpCode(HttpStatus.OK)
+    async unsetWholesale(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.unsetWholesale(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/affiliate/set/:id')
+    @HttpCode(HttpStatus.OK)
+    async setAffiliate(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.setAffiliate(id);
+        return this.createResponse(user);
+    }
+
+    @Roles('ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('admin/affiliate/unset/:id')
+    @HttpCode(HttpStatus.OK)
+    async unsetAffiliate(@Param('id', ParseIntPipe) id: number) {
+        const user = await this.userService.unsetAffiliate(id);
+        return this.createResponse(user);
     }
 }

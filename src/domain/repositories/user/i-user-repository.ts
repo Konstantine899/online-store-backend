@@ -6,6 +6,8 @@ import {
     CreateUserResponse,
     GetPaginatedUsersResponse,
 } from '@app/infrastructure/responses';
+import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
+import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
 
 export interface IUserRepository {
     createUser(dto: CreateUserDto): Promise<UserModel>;
@@ -33,4 +35,9 @@ export interface IUserRepository {
     removeUser(id: number): Promise<number>;
 
     updatePhone(userId: number, phone: string): Promise<UserModel>;
+
+    updateFlags(userId: number, dto: UpdateUserFlagsDto): Promise<UserModel | null>;
+    updatePreferences(userId: number, dto: UpdateUserPreferencesDto): Promise<UserModel | null>;
+    verifyEmail(userId: number): Promise<UserModel | null>;
+    verifyPhone(userId: number): Promise<UserModel | null>;
 }

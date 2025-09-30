@@ -295,11 +295,20 @@ describe('AuthService', () => {
     });
 
     describe('updateAccessToken', () => {
+        let consoleSpy: jest.SpyInstance;
         const mockRotateResult = {
             accessToken: 'new.access.token',
             refreshToken: 'new.refresh.token',
             user: mockUser
         };
+
+        beforeEach(() => {
+            consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+        });
+
+        afterEach(() => {
+            consoleSpy.mockRestore();
+        });
 
         it('должен успешно обновить access токен', async () => {
             // Arrange

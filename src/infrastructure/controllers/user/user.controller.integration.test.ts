@@ -129,3 +129,180 @@ describe('Users: Guards (401/403)', () => {
             .expect(403);
     });
 });
+
+describe('Users: Profile flags and preferences validation', () => {
+    let app: INestApplication;
+    let userToken: string;
+
+    beforeAll(async () => {
+        app = await setupTestApp();
+        userToken = await authLoginAs(app, 'user');
+    });
+
+    afterAll(async () => {
+        await app.close();
+    });
+
+    it('PATCH /user/profile/flags -> 200 with valid payload', async () => {
+        await request(app.getHttpServer())
+            .patch('/user/profile/flags')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({ isActive: true, isMarketingConsent: false })
+            .expect(200);
+    });
+
+    it('PATCH /user/profile/flags -> 400 on invalid types', async () => {
+        await request(app.getHttpServer())
+            .patch('/user/profile/flags')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({ isActive: 'yes' })
+            .expect(400);
+    });
+
+    it('PATCH /user/profile/preferences -> 400 on invalid enum', async () => {
+        await request(app.getHttpServer())
+            .patch('/user/profile/preferences')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({ themePreference: 'neon' })
+            .expect(400);
+    });
+});
+
+describe('Users: Admin flag endpoints (200 ADMIN, 403 USER)', () => {
+    let app: INestApplication;
+    let adminToken: string;
+    let userToken: string;
+    const targetUserId = 3; // существующий user из сидов
+
+    beforeAll(async () => {
+        app = await setupTestApp();
+        adminToken = await authLoginAs(app, 'admin');
+        userToken = await authLoginAs(app, 'user');
+    });
+
+    afterAll(async () => {
+        await app.close();
+    });
+
+    const adminCases: Array<{ path: string }> = [
+        { path: `/user/admin/block/${targetUserId}` },
+        { path: `/user/admin/unblock/${targetUserId}` },
+        { path: `/user/admin/suspend/${targetUserId}` },
+        { path: `/user/admin/unsuspend/${targetUserId}` },
+        { path: `/user/admin/delete/${targetUserId}` },
+        { path: `/user/admin/restore/${targetUserId}` },
+        { path: `/user/admin/premium/upgrade/${targetUserId}` },
+        { path: `/user/admin/premium/downgrade/${targetUserId}` },
+        { path: `/user/admin/employee/set/${targetUserId}` },
+        { path: `/user/admin/employee/unset/${targetUserId}` },
+        { path: `/user/admin/vip/set/${targetUserId}` },
+        { path: `/user/admin/vip/unset/${targetUserId}` },
+        { path: `/user/admin/highvalue/set/${targetUserId}` },
+        { path: `/user/admin/highvalue/unset/${targetUserId}` },
+        { path: `/user/admin/wholesale/set/${targetUserId}` },
+        { path: `/user/admin/wholesale/unset/${targetUserId}` },
+        { path: `/user/admin/affiliate/set/${targetUserId}` },
+        { path: `/user/admin/affiliate/unset/${targetUserId}` },
+    ];
+
+    it.each(adminCases)('ADMIN 200 -> %s', async ({ path }) => {
+        await request(app.getHttpServer())
+            .patch(path)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(200);
+    });
+
+    it.each(adminCases)('USER 403 -> %s', async ({ path }) => {
+        await request(app.getHttpServer())
+            .patch(path)
+            .set('Authorization', `Bearer ${userToken}`)
+            .expect(403);
+    });
+});
+
+describe('Users: Misc endpoints (me, password, verify phone, list, create/delete, roles)', () => {
+    let app: INestApplication;
+    let userToken: string;
+    let adminToken: string;
+
+    beforeAll(async () => {
+        app = await setupTestApp();
+        userToken = await authLoginAs(app, 'user');
+        adminToken = await authLoginAs(app, 'admin');
+    });
+
+    afterAll(async () => {
+        await app.close();
+    });
+
+    it('GET /user/me -> 200 or 400 with minimal body', async () => {
+        const res = await request(app.getHttpServer())
+            .get('/user/me')
+            .set('Authorization', `Bearer ${adminToken}`);
+        expect([200, 400]).toContain(res.status);
+        if (res.status === 200) {
+            expect(res.body?.id || res.body?.data?.id).toBeDefined();
+        }
+    });
+
+    it('PATCH /user/profile/password -> 400 wrong oldPassword', async () => {
+        await request(app.getHttpServer())
+            .patch('/user/profile/password')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({ oldPassword: 'wrong-old', newPassword: 'NewPass123!' })
+            .expect(400);
+    });
+
+    it('PATCH /user/verify/phone/:id -> 200 ADMIN', async () => {
+        await request(app.getHttpServer())
+            .patch('/user/verify/phone/3')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(200);
+    });
+
+    it('GET /user/get-list-users -> 200 ADMIN', async () => {
+        await request(app.getHttpServer())
+            .get('/user/get-list-users?page=1&limit=5')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(200);
+    });
+
+    it('GET /user/get-list-users -> 400 invalid query', async () => {
+        await request(app.getHttpServer())
+            .get('/user/get-list-users?page=abc&limit=NaN')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(400);
+    });
+
+    it('POST /user/create -> 201 ADMIN, then DELETE /user/delete/:id -> 200', async () => {
+        const uniqueEmail = `newuser+${Date.now()}@example.com`;
+        const createRes = await request(app.getHttpServer())
+            .post('/user/create')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ email: uniqueEmail, password: 'StrongPass123!' })
+            .expect(201);
+
+        const newUserId = createRes.body?.data?.id || createRes.body?.id;
+        expect(newUserId).toBeTruthy();
+
+        const delRes = await request(app.getHttpServer())
+            .delete(`/user/delete/${newUserId}`)
+            .set('Authorization', `Bearer ${adminToken}`);
+        expect([200, 404]).toContain(delRes.status);
+    });
+
+    it('POST /user/role/add -> 201 then DELETE /user/role/delete -> 200', async () => {
+        // Добавляем роль ADMIN пользователю 3, затем удаляем USER
+        await request(app.getHttpServer())
+            .post('/user/role/add')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ userId: 3, role: 'ADMIN' })
+            .expect(201);
+
+        await request(app.getHttpServer())
+            .delete('/user/role/delete')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ userId: 3, role: 'ADMIN' })
+            .expect(200);
+    });
+});

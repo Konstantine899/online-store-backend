@@ -19,10 +19,7 @@ describe('UserService', () => {
             findUserByEmail: jest.fn(),
         } as unknown as jest.Mocked<UserRepository>;
 
-        userModelMock = {
-            update: jest.fn(),
-            findByPk: jest.fn(),
-        } as unknown as typeof UserModel;
+        userModelMock = {} as unknown as typeof UserModel;
 
         // RoleService в этих тестах не используется
         const roleServiceDummy: any = {};
@@ -36,19 +33,14 @@ describe('UserService', () => {
 
     describe('updatePhone', () => {
         it('updates phone and returns user with id and phone', async () => {
-            userModelMock.update = jest.fn().mockResolvedValue([1]);
-            userModelMock.findByPk = jest.fn().mockResolvedValue({ id: 10, phone: '+79990001122' });
-
+            (userRepository as any).updatePhone = jest.fn().mockResolvedValue({ id: 10, phone: '+79990001122' });
             const result = await service.updatePhone(10, '+79990001122');
-            expect(userModelMock.update).toHaveBeenCalledWith(
-                { phone: '+79990001122' },
-                { where: { id: 10 }, fields: ['phone'] },
-            );
+            expect((userRepository as any).updatePhone).toHaveBeenCalledWith(10, '+79990001122');
             expect(result).toEqual({ id: 10, phone: '+79990001122' });
         });
 
         it('throws NotFoundException when user not updated', async () => {
-            userModelMock.update = jest.fn().mockResolvedValue([0]);
+            (userRepository as any).updatePhone = jest.fn().mockResolvedValue(null);
             await expect(service.updatePhone(1, '+7999'))
                 .rejects
                 .toBeInstanceOf(NotFoundException);
@@ -57,7 +49,7 @@ describe('UserService', () => {
         it('maps SequelizeValidationError to BadRequestException', async () => {
             const err = new Error('validation');
             (err as any).name = 'SequelizeValidationError';
-            userModelMock.update = jest.fn().mockRejectedValue(err);
+            (userRepository as any).updatePhone = jest.fn().mockRejectedValue(err);
             await expect(service.updatePhone(1, 'bad'))
                 .rejects
                 .toBeInstanceOf(BadRequestException);

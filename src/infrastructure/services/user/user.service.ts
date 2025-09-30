@@ -27,6 +27,8 @@ import {
 } from '@app/infrastructure/responses';
 import { IUserService } from '@app/domain/services';
 import { compare, hash } from 'bcrypt';
+import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
+import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
 
 @Injectable()
 export class UserService implements IUserService {
@@ -49,9 +51,8 @@ export class UserService implements IUserService {
         try {
             const role = await this.determineUserRole(dto.email) as UserModel['roles'][0];
             const user = await this.userRepository.createUser(dto);
-            await user.$set('roles', [role.id]); // #set перезаписываю поле только в БД
-            user.roles = [role]; // Добавляю roles в сам объект user
-            await user.save();
+            await this.linkUserRole(user.id, role.id);
+            user.roles = [role];
             return this.userRepository.findRegisteredUser(user.id);
         } catch (error: unknown) {
             if (error instanceof Error && error.name === 'SequelizeUniqueConstraintError') {
@@ -151,12 +152,11 @@ export class UserService implements IUserService {
         if (!foundRole) {
             this.notFound('Роль не найдена в БД');
         }
-        const addedRole = await user.$add('role', foundRole.id);
-        if (!addedRole) {
-            this.conflictException(
-                `Данному пользователю уже присвоена роль ${foundRole.role}`,
-            );
+        const alreadyHas = await this.isUserRoleExists(user.id, foundRole.id);
+        if (alreadyHas) {
+            this.conflictException(`Данному пользователю уже присвоена роль ${foundRole.role}`);
         }
+        await this.linkUserRole(user.id, foundRole.id);
         return this.userRepository.findUser(user.id);
     }
 
@@ -167,8 +167,11 @@ export class UserService implements IUserService {
         if (!user) {
             this.notFound('Пользователь не найден в БД');
         }
-        const roleId = await this.getRolesUser(user);
-        await user.$remove('role', roleId!);
+        const role = await this.roleService.getRole(dto.role);
+        if (!role) {
+            this.notFound('Роль не найдена в БД');
+        }
+        await this.unlinkUserRole(user.id, role.id);
         return {
             status: HttpStatus.OK,
             message: 'success',
@@ -208,6 +211,146 @@ export class UserService implements IUserService {
         await userWithPassword.update({ password: hashed });
     }
 
+    public async updateFlags(userId: number, dto: UpdateUserFlagsDto): Promise<UserModel> {
+        const user = await this.userRepository.updateFlags(userId, dto);
+        if (!user) {
+            this.notFound('Пользователь не найден в БД');
+        }
+        return user as UserModel;
+    }
+
+    public async updatePreferences(userId: number, dto: UpdateUserPreferencesDto): Promise<UserModel> {
+        const user = await this.userRepository.updatePreferences(userId, dto);
+        if (!user) {
+            this.notFound('Пользователь не найден в БД');
+        }
+        return user as UserModel;
+    }
+
+    public async verifyEmailFlag(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.verifyEmail(userId);
+        if (!user) {
+            this.notFound('Пользователь не найден в БД');
+        }
+        return user as UserModel;
+    }
+
+    public async verifyPhoneFlag(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.verifyPhone(userId);
+        if (!user) {
+            this.notFound('Пользователь не найден в БД');
+        }
+        return user as UserModel;
+    }
+
+    // Admin actions
+    public async blockUser(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.blockUser(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async unblockUser(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.unblockUser(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async suspendUser(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.suspendUser(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async unsuspendUser(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.unsuspendUser(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async softDeleteUser(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.softDeleteUser(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async restoreUser(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.restoreUser(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async upgradePremium(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.upgradePremium(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async downgradePremium(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.downgradePremium(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async setEmployee(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.setEmployee(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async unsetEmployee(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.unsetEmployee(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async setVip(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.setVip(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async unsetVip(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.unsetVip(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async setHighValue(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.setHighValue(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async unsetHighValue(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.unsetHighValue(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async setWholesale(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.setWholesale(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async unsetWholesale(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.unsetWholesale(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async setAffiliate(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.setAffiliate(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
+
+    public async unsetAffiliate(userId: number): Promise<UserModel> {
+        const user = await this.userRepository.unsetAffiliate(userId);
+        if (!user) this.notFound('Пользователь не найден в БД');
+        return user as UserModel;
+    }
 
 //====================Другие методы===========================//
     protected async getRolesUser(user: UserModel): Promise<number | null> {
@@ -260,5 +403,35 @@ export class UserService implements IUserService {
             });
         }
         return role;
+    }
+
+    private async linkUserRole(userId: number, roleId: number): Promise<void> {
+        const sequelize = this.userModel.sequelize;
+        if (!sequelize) return;
+        const now = new Date();
+        await sequelize.query(
+            'INSERT INTO `user_role` (`user_id`,`role_id`,`created_at`,`updated_at`) VALUES (?,?,?,?)',
+            { replacements: [userId, roleId, now, now] },
+        );
+    }
+
+    private async unlinkUserRole(userId: number, roleId: number): Promise<void> {
+        const sequelize = this.userModel.sequelize;
+        if (!sequelize) return;
+        await sequelize.query(
+            'DELETE FROM `user_role` WHERE `user_id` = ? AND `role_id` = ? LIMIT 1',
+            { replacements: [userId, roleId] },
+        );
+    }
+
+    private async isUserRoleExists(userId: number, roleId: number): Promise<boolean> {
+        const sequelize = this.userModel.sequelize;
+        if (!sequelize) return false;
+        const [rows] = await sequelize.query(
+            'SELECT 1 FROM `user_role` WHERE `user_id` = ? AND `role_id` = ? LIMIT 1',
+            { replacements: [userId, roleId] },
+        );
+        // rows can be RowDataPacket[] in mysql2
+        return Array.isArray(rows) && rows.length > 0;
     }
 }

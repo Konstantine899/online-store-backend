@@ -16,12 +16,53 @@ import { OrderModel } from './order.model';
 interface IUserCreationAttributes {
     email: string;
     password: string;
+    phone?: string;
+    // preferences (optional at creation)
+    preferredLanguage?: string;
+    timezone?: string;
+    themePreference?: string;
+    defaultLanguage?: string;
 }
 
 interface IUserModel {
     id: number;
     email: string;
     password: string;
+    phone?: string;
+    // flags
+    isActive?: boolean;
+    isNewsletterSubscribed?: boolean;
+    isMarketingConsent?: boolean;
+    isCookieConsent?: boolean;
+    isProfileCompleted?: boolean;
+    isVipCustomer?: boolean;
+    isBetaTester?: boolean;
+    isBlocked?: boolean;
+    isVerified?: boolean;
+    isPremium?: boolean;
+    isEmailVerified?: boolean;
+    isPhoneVerified?: boolean;
+    isTermsAccepted?: boolean;
+    isPrivacyAccepted?: boolean;
+    isAgeVerified?: boolean;
+    isTwoFactorEnabled?: boolean;
+    isDeleted?: boolean;
+    isSuspended?: boolean;
+    isAffiliate?: boolean;
+    isEmployee?: boolean;
+    isHighValue?: boolean;
+    isWholesale?: boolean;
+    // preferences
+    preferredLanguage?: string;
+    timezone?: string;
+    notificationPreferences?: unknown | null;
+    themePreference?: string;
+    defaultLanguage?: string;
+    translations?: unknown | null;
+    // timestamps meta
+    emailVerifiedAt?: Date | null;
+    phoneVerifiedAt?: Date | null;
+    lastLoginAt?: Date | null;
     roles: RoleModel[];
     refresh_tokens: RefreshTokenModel[];
     products: ProductModel[];
@@ -36,7 +77,6 @@ interface IUserModel {
             exclude: ['updatedAt', 'createdAt', 'password'] // Исключаем пароль по умолчанию
         },
     },
-    // ДОБАВЛЕНО: Scopes для разных сценариев использования
     scopes: {
         // Scope для аутентификации - только необходимые поля
         forAuth: {
@@ -56,6 +96,12 @@ interface IUserModel {
                 attributes: ['id', 'role'],
                 through: { attributes: [] }
             }]
+        },
+        active: {
+            where: { isActive: true, isBlocked: false },
+        },
+        verified: {
+            where: { isVerified: true },
         },
     }
 })
@@ -98,6 +144,102 @@ export class UserModel
         },
     })
     declare phone?: string;
+
+    // Флаги
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: true })
+    declare isActive?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isNewsletterSubscribed?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isMarketingConsent?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isCookieConsent?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isProfileCompleted?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isVipCustomer?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isBetaTester?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isBlocked?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isVerified?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isPremium?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isEmailVerified?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isPhoneVerified?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isTermsAccepted?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isPrivacyAccepted?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isAgeVerified?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isTwoFactorEnabled?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isDeleted?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isSuspended?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isAffiliate?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isEmployee?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isHighValue?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isWholesale?: boolean;
+
+    // Предпочтения
+    @Column({ type: DataType.STRING(10), allowNull: false, defaultValue: 'ru' })
+    declare preferredLanguage?: string;
+
+    @Column({ type: DataType.STRING(50), allowNull: false, defaultValue: 'Europe/Moscow' })
+    declare timezone?: string;
+
+    @Column({ type: DataType.JSONB, allowNull: true })
+    declare notificationPreferences?: unknown | null;
+
+    @Column({ type: DataType.STRING(20), allowNull: false, defaultValue: 'light' })
+    declare themePreference?: string;
+
+    @Column({ type: DataType.STRING(10), allowNull: false, defaultValue: 'ru' })
+    declare defaultLanguage?: string;
+
+    @Column({ type: DataType.JSONB, allowNull: true })
+    declare translations?: unknown | null;
+
+    // Метадаты
+    @Column({ type: DataType.DATE, allowNull: true })
+    declare emailVerifiedAt?: Date | null;
+
+    @Column({ type: DataType.DATE, allowNull: true })
+    declare phoneVerifiedAt?: Date | null;
+
+    @Column({ type: DataType.DATE, allowNull: true })
+    declare lastLoginAt?: Date | null;
 
     // Многие ко многим через промежуточную таблицу UserRoleModel
     @BelongsToMany(() => RoleModel, () => UserRoleModel, 'user_id', 'role_id')
