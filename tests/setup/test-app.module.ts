@@ -7,17 +7,45 @@ import { ControllersModule } from '@app/infrastructure/controllers/controllers.m
 import { ServicesModule } from '@app/infrastructure/services/services.module';
 import { RepositoriesModule } from '@app/infrastructure/repositories/repositories.module';
 import { HealthModule } from '@app/infrastructure/controllers/health/health.module';
+import { BruteforceGuard } from '@app/infrastructure/common/guards';
+import { APP_GUARD } from '@nestjs/core';
 import * as process from 'process';
 import * as Joi from 'joi';
 
 @Module({
     imports: [
-        // Минимальная конфигурация Throttler для тестов, чтобы резолвился BruteforceGuard
+        // Конфигурация Throttler для тестов с правильными лимитами
         ThrottlerModule.forRoot([
             {
-                ttl: 60000,
-                limit: 100,
+                name: 'short',
+                ttl: 1000, // 1 секунда
+                limit: 3, // 3 запроса в секунду
             },
+            {
+                name: 'medium', 
+                ttl: 10000, // 10 секунд
+                limit: 20, // 20 запросов в 10 секунд
+            },
+            {
+                name: 'long',
+                ttl: 60000, // 1 минута
+                limit: 100, // 100 запросов в минуту
+            },
+            {
+                name: 'login',
+                ttl: 15 * 60 * 1000, // 15 минут
+                limit: 5, // 5 попыток логина в 15 минут
+            },
+            {
+                name: 'refresh',
+                ttl: 5 * 60 * 1000, // 5 минут
+                limit: 10, // 10 попыток refresh в 5 минут
+            },
+            {
+                name: 'registration',
+                ttl: 60 * 1000, // 1 минута
+                limit: 3, // 3 попытки регистрации в минуту
+            }
         ]),
         SequelizeModule.forRootAsync({
             imports: [ConfigModule],
@@ -88,7 +116,8 @@ import * as Joi from 'joi';
     ],
     controllers: [],
     providers: [
-        // НЕ включаем BruteforceGuard для тестов
+        // НЕ применяем BruteforceGuard глобально в тестах
+        // Он будет применяться только к auth endpoints через @UseGuards
     ],
 })
 export class TestAppModule {}

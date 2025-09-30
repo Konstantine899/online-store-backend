@@ -21,6 +21,8 @@ import {
     UpdateUserResponse,
 } from '@app/infrastructure/responses';
 import { compare } from 'bcrypt';
+import { LoginHistoryService } from '../login-history/login-history.service';
+
 jest.mock('bcrypt', () => ({
     compare: jest.fn(),
     hash: jest.fn(),
@@ -94,7 +96,7 @@ describe('UserService', () => {
             providers: [
                 UserService,
                 // Mock LoginHistoryService to satisfy DI
-                { provide: require('../login-history/login-history.service').LoginHistoryService, useValue: { 
+                { provide: LoginHistoryService, useValue: { 
                     logSuccessfulLogin: jest.fn(),
                     logFailedLogin: jest.fn(),
                     getUserLoginHistory: jest.fn(),

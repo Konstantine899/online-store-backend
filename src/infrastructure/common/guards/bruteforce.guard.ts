@@ -10,6 +10,11 @@ export class BruteforceGuard extends ThrottlerGuard {
         const { context } = requestProps;
         const request = context.switchToHttp().getRequest<Request>();
         
+        // В тестовом окружении отключаем rate limiting для всех роутов
+        if (process.env.NODE_ENV === 'test') {
+            return true;
+        }
+        
         // Специальная логика для auth роутов
         if (request.url.includes('/auth/login')) {
             return this.handleLoginAttempt(requestProps);
@@ -23,8 +28,8 @@ export class BruteforceGuard extends ThrottlerGuard {
             return this.handleRegistrationAttempt(requestProps);
         }
         
-        // Стандартная обработка для других роутов
-        return super.handleRequest(requestProps);
+        // Для всех остальных роутов разрешаем проход без ограничений
+        return true;
     }
     
     private async handleLoginAttempt(

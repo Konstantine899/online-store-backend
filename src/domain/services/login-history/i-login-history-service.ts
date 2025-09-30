@@ -1,4 +1,4 @@
-import { LoginHistoryModel, ILoginHistoryCreationAttributes } from '@app/domain/models';
+import { LoginHistoryModel } from '@app/domain/models';
 
 export interface ILoginHistoryService {
     logSuccessfulLogin(userId: number, ipAddress?: string, userAgent?: string): Promise<LoginHistoryModel>;
