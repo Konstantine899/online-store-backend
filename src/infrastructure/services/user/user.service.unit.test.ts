@@ -93,6 +93,16 @@ describe('UserService', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 UserService,
+                // Mock LoginHistoryService to satisfy DI
+                { provide: require('../login-history/login-history.service').LoginHistoryService, useValue: { 
+                    logSuccessfulLogin: jest.fn(),
+                    logFailedLogin: jest.fn(),
+                    getUserLoginHistory: jest.fn(),
+                    getRecentLoginsByIp: jest.fn(),
+                    getFailedLoginsByUser: jest.fn(),
+                    getUserLoginStats: jest.fn(),
+                    cleanupOldLoginHistory: jest.fn(),
+                } },
                 {
                     provide: UserRepository,
                     useValue: {

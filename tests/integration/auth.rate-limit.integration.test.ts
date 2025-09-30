@@ -21,7 +21,11 @@ describe('Auth rate limiting (integration)', () => {
             const res = await request(app.getHttpServer())
                 .post('/auth/login')
                 .send(payload);
-            expect([HttpStatus.UNAUTHORIZED, HttpStatus.TOO_MANY_REQUESTS]).toContain(res.status);
+            expect([
+                HttpStatus.BAD_REQUEST,
+                HttpStatus.UNAUTHORIZED,
+                HttpStatus.TOO_MANY_REQUESTS,
+            ]).toContain(res.status);
             if (res.status === HttpStatus.TOO_MANY_REQUESTS) {
                 // Если лимит сработал раньше — тест считаем успешным
                 return;

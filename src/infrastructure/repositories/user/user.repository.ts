@@ -398,4 +398,17 @@ export class UserRepository implements IUserRepository {
         }
         return true;
     }
+
+    async updateLastLoginAt(userId: number): Promise<void> {
+        const sequelize = this.userModel.sequelize;
+        if (!sequelize) {
+            throw new Error('Sequelize instance not available');
+        }
+
+        const now = new Date();
+        await sequelize.query(
+            'UPDATE `user` SET `last_login_at` = ?, `updated_at` = ? WHERE `id` = ? LIMIT 1',
+            { replacements: [now, now, userId] },
+        );
+    }
 }

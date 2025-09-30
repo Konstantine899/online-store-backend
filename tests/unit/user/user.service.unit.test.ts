@@ -2,6 +2,8 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { UserService } from '@app/infrastructure/services/user/user.service';
 import { UserRepository } from '@app/infrastructure/repositories';
 import { UserModel } from '@app/domain/models';
+import { RoleService } from '@app/infrastructure/services/role/role.service';
+import { LoginHistoryService } from '@app/infrastructure/services/login-history/login-history.service';
 
 jest.mock('bcrypt', () => ({
     compare: jest.fn(async (a: string, b: string) => a === b),
@@ -11,36 +13,40 @@ jest.mock('bcrypt', () => ({
 describe('UserService', () => {
     let service: UserService;
     let userRepository: jest.Mocked<UserRepository>;
-    let userModelMock: any;
+    let userModelMock: typeof UserModel;
 
     beforeEach(() => {
         userRepository = {
             findUserByPkId: jest.fn(),
             findUserByEmail: jest.fn(),
+            updatePhone: jest.fn(),
         } as unknown as jest.Mocked<UserRepository>;
 
         userModelMock = {} as unknown as typeof UserModel;
 
         // RoleService в этих тестах не используется
-        const roleServiceDummy: any = {};
+        const roleServiceDummy = {} as unknown as RoleService;
+
+        const loginHistoryServiceDummy = {} as unknown as LoginHistoryService;
 
         service = new UserService(
-            userRepository as any,
+            userRepository,
             roleServiceDummy,
             userModelMock,
+            loginHistoryServiceDummy,
         );
     });
 
     describe('updatePhone', () => {
         it('updates phone and returns user with id and phone', async () => {
-            (userRepository as any).updatePhone = jest.fn().mockResolvedValue({ id: 10, phone: '+79990001122' });
+            (userRepository.updatePhone as jest.Mock).mockResolvedValue({ id: 10, phone: '+79990001122' });
             const result = await service.updatePhone(10, '+79990001122');
-            expect((userRepository as any).updatePhone).toHaveBeenCalledWith(10, '+79990001122');
+            expect(userRepository.updatePhone).toHaveBeenCalledWith(10, '+79990001122');
             expect(result).toEqual({ id: 10, phone: '+79990001122' });
         });
 
         it('throws NotFoundException when user not updated', async () => {
-            (userRepository as any).updatePhone = jest.fn().mockResolvedValue(null);
+            (userRepository.updatePhone as jest.Mock).mockResolvedValue(null);
             await expect(service.updatePhone(1, '+7999'))
                 .rejects
                 .toBeInstanceOf(NotFoundException);
@@ -48,8 +54,8 @@ describe('UserService', () => {
 
         it('maps SequelizeValidationError to BadRequestException', async () => {
             const err = new Error('validation');
-            (err as any).name = 'SequelizeValidationError';
-            (userRepository as any).updatePhone = jest.fn().mockRejectedValue(err);
+            (err as Error).name = 'SequelizeValidationError';
+            (userRepository.updatePhone as jest.Mock).mockRejectedValue(err);
             await expect(service.updatePhone(1, 'bad'))
                 .rejects
                 .toBeInstanceOf(BadRequestException);

@@ -16,6 +16,7 @@ export const TABLE_NAMES = {
     CATEGORY: 'category',
     CART: 'cart',
     REFRESH_TOKEN: 'refresh_token',
+    LOGIN_HISTORY: 'login_history',
 } as const;
 
 /**
@@ -46,6 +47,7 @@ export const {
     CATEGORY,
     CART,
     REFRESH_TOKEN,
+    LOGIN_HISTORY,
 } = TABLE_NAMES;
 
 export const { BRAND_ID, CATEGORY_ID, PRODUCT_ID, USER_ID, ORDER_ID, CART_ID } =

@@ -16,6 +16,7 @@ import { jwtConfig } from '@app/infrastructure/config/jwt';
 import { TokenService } from './token/token.service';
 import { UserService } from './user/user.service';
 import { UserAddressService } from './user-address/user-address.service';
+import { LoginHistoryService } from './login-history/login-history.service';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { UserModel } from '@app/domain/models';
 
@@ -43,6 +44,7 @@ import { UserModel } from '@app/domain/models';
         TokenService,
         UserService,
         UserAddressService,
+        LoginHistoryService,
     ],
     exports: [
         AuthService,
@@ -59,6 +61,7 @@ import { UserModel } from '@app/domain/models';
         TokenService,
         UserService,
         UserAddressService,
+        LoginHistoryService,
     ],
 })
 export class ServicesModule {}

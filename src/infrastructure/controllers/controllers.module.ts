@@ -13,6 +13,7 @@ import { RatingController } from './rating/rating.controller';
 import { RoleController } from './role/role.controller';
 import { UserController } from './user/user.controller';
 import { UserAddressController } from './user-address/user-address.controller';
+import { LoginHistoryController } from './login-history/login-history.controller';
 
 @Module({
     imports: [ServicesModule, ControllersModule, JwtModule],
@@ -29,6 +30,7 @@ import { UserAddressController } from './user-address/user-address.controller';
         RoleController,
         UserAddressController, // Более специфичный маршрут должен быть раньше
         UserController,
+        LoginHistoryController,
     ],
 })
 export class ControllersModule {}

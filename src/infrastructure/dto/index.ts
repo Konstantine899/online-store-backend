@@ -19,3 +19,5 @@ export { UpdateUserPhoneDto } from './user/update-user-phone.dto';
 export { CreateUserAddressDto } from './user-address/create-user-address.dto';
 export { UpdateUserAddressDto } from './user-address/update-user-address.dto';
 export { UpdateUserDto } from './user/update-user.dto';
+export { ChangePasswordDto } from './user/change-password.dto';
+export { GetLoginHistoryDto } from './login-history/get-login-history.dto';

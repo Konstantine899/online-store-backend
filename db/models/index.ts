@@ -17,6 +17,7 @@ import CartProduct from './cart-product';
 import UserRole from './user-role';
 import RefreshToken from './refresh-token';
 import UserAddress from './user-address';
+import LoginHistory from './login-history';
 
 const env = process.env.NODE_ENV || 'development';
 const dbConfig = config[env as keyof typeof config];
@@ -38,6 +39,7 @@ interface Database {
     userRole: ReturnType<typeof UserRole>;
     refreshToken: ReturnType<typeof RefreshToken>;
     userAddress: ReturnType<typeof UserAddress>;
+    loginHistory: ReturnType<typeof LoginHistory>;
 }
 
 const db: Database = {} as Database;
@@ -72,6 +74,7 @@ db.cartProduct = CartProduct(sequelize);
 db.userRole = UserRole(sequelize);
 db.refreshToken = RefreshToken(sequelize);
 db.userAddress = UserAddress(sequelize);
+db.loginHistory = LoginHistory(sequelize);
 
 // Set up associations
 Object.keys(db).forEach((modelName) => {

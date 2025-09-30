@@ -67,6 +67,8 @@ describe('AuthService', () => {
                         createUser: jest.fn(),
                         findUserByEmail: jest.fn(),
                         findAuthenticatedUser: jest.fn(),
+                        updateLastLoginAt: jest.fn(),
+                        logFailedLogin: jest.fn(),
                     },
                 },
                 {

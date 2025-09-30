@@ -45,8 +45,14 @@ export class AuthService implements IAuthService {
         return this.getToken(accessToken, refreshToken);
     }
 
-    public async login(dto: CreateUserDto): Promise<LoginResponse> {
-        const user = await this.validateUser(dto);
+    public async login(dto: CreateUserDto, request?: Request): Promise<LoginResponse> {
+        const user = await this.validateUser(dto, request);
+        
+        // Логируем успешный вход
+        const ipAddress = request?.ip;
+        const userAgent = request?.get('User-Agent');
+        await this.userService.updateLastLoginAt(user.id, ipAddress, userAgent);
+        
         const accessToken = await this.tokenService.generateAccessToken(user);
         const refreshToken = await this.tokenService.generateRefreshToken(
             user,
@@ -89,13 +95,17 @@ export class AuthService implements IAuthService {
     }
     }
 
-    private async validateUser(dto: CreateUserDto): Promise<UserModel> {
+    private async validateUser(dto: CreateUserDto, request?: Request): Promise<UserModel> {
         const user = await this.userService.findUserByEmail(dto.email);
         if (!user) {
+            // Логируем неудачную попытку входа (пользователь не найден)
+            await this.userService.logFailedLogin(0, 'User not found', request?.ip, request?.get('User-Agent'));
             this.unauthorized('Не корректный email');
         }
         const password = await bcrypt.compare(dto.password, user.password); // сравниваю пароли
         if (!password) {
+            // Логируем неудачную попытку входа (неверный пароль)
+            await this.userService.logFailedLogin(user.id, 'Invalid password', request?.ip, request?.get('User-Agent'));
             this.unauthorized('Не корректный пароль');
         }
         return this.userService.findAuthenticatedUser(user.id);
