@@ -176,18 +176,11 @@ export class UserService implements IUserService {
     }
     async updatePhone(userId: number, phone: string): Promise<UserModel> {
         try {
-            const [updated] = await this.userModel.update(
-                { phone },
-                { where: { id: userId }, fields: ['phone'] },
-            );
-            
-            if (!updated) {
+            const user = await this.userRepository.updatePhone(userId, phone);
+            if (!user) {
                 throw new NotFoundException('Пользователь не найден');
             }
-            
-            return this.userModel.findByPk(userId, { 
-                attributes: ['id', 'email', 'phone'] 
-            }) as Promise<UserModel>;
+            return user;
         } catch (error: unknown) {
             if (error instanceof Error) {
                 if (error.name === 'SequelizeValidationError') {

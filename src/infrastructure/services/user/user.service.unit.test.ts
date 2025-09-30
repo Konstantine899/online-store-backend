@@ -98,6 +98,7 @@ describe('UserService', () => {
                         findAuthenticatedUser: jest.fn(),
                         findListUsers: jest.fn(),
                         updateUser: jest.fn(),
+                        updatePhone: jest.fn(),
                         removeUser: jest.fn(),
                         findRegisteredUser: jest.fn(),
                         findListUsersPaginated: jest.fn(),
@@ -582,7 +583,7 @@ describe('UserService', () => {
             // Мокаем update так, чтобы он бросил уникальное ограничение
             const uniquePhoneErr: NamedError = new Error('unique') as NamedError;
             uniquePhoneErr.name = 'SequelizeUniqueConstraintError';
-            userModelMock.update.mockRejectedValueOnce(uniquePhoneErr);
+            (userRepository.updatePhone as jest.Mock).mockRejectedValueOnce(uniquePhoneErr);
 
             await expect(service.updatePhone(1, '+79990000001')).rejects.toThrow(
                 new ConflictException({

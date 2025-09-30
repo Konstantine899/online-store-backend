@@ -31,4 +31,6 @@ export interface IUserRepository {
     ): Promise<GetPaginatedUsersResponse>;
 
     removeUser(id: number): Promise<number>;
+
+    updatePhone(userId: number, phone: string): Promise<UserModel>;
 }

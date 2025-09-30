@@ -155,4 +155,14 @@ export class UserRepository implements IUserRepository {
     public async removeUser(id: number): Promise<number> {
         return this.userModel.destroy({ where: { id } });
     }
+
+    public async updatePhone(userId: number, phone: string): Promise<UserModel> {
+        await this.userModel.update(
+            { phone },
+            { where: { id: userId }, fields: ['phone'] },
+        );
+        return this.userModel.findByPk(userId, {
+            attributes: ['id', 'email', 'phone'],
+        }) as Promise<UserModel>;
+    }
 }
