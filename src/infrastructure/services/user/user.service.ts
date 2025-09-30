@@ -25,6 +25,7 @@ import {
     GetPaginatedUsersResponse,
 } from '@app/infrastructure/responses';
 import { IUserService } from '@app/domain/services';
+import { compare, hash } from 'bcrypt';
 
 @Injectable()
 export class UserService implements IUserService {
@@ -175,6 +176,20 @@ export class UserService implements IUserService {
             }
             throw error;
         }
+    }
+
+    public async changePassword(userId: number, oldPassword: string, newPassword: string): Promise<void> {
+        const user = await this.userRepository.findUserByPkId(userId);
+        if (!user) {
+            this.notFound('Пользователь не найден в БД');
+        }
+        const userWithPassword = await this.userRepository.findUserByEmail(user.email);
+        const isMatch = await compare(oldPassword, userWithPassword.password);
+        if (!isMatch) {
+            this.badRequest('Текущий пароль указан неверно');
+        }
+        const hashed = await hash(newPassword, 10);
+        await userWithPassword.update({ password: hashed });
     }
 
 

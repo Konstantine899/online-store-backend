@@ -17,7 +17,7 @@ import {
 export interface IUserController {
     createUser(dto: CreateUserDto): Promise<CreateUserResponse>;
 
-    getListUsers(): Promise<GetPaginatedUsersResponse>;
+    getListUsers(page?: number, limit?: number): Promise<GetPaginatedUsersResponse>;
 
     getUser(id: number): Promise<GetUserResponse>;
 

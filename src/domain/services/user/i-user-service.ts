@@ -36,4 +36,6 @@ export interface IUserService {
     addRole(dto: AddRoleDto): Promise<AddRoleResponse>;
 
     removeUserRole(dto: RemoveRoleDto): Promise<RemoveUserRoleResponse>;
+
+    updatePhone(userId: number, phone: string): Promise<UserModel>;
 }

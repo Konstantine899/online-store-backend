@@ -12,6 +12,8 @@ import {
     UseGuards,
     HttpStatus,
     Req,
+    Query,
+    DefaultValuePipe,
 } from '@nestjs/common';
 import { UserService } from '@app/infrastructure/services';
 import {
@@ -19,6 +21,7 @@ import {
     AddRoleDto,
     RemoveRoleDto,
 } from '@app/infrastructure/dto';
+import { UpdateUserDto } from '@app/infrastructure/dto/user/update-user.dto';
 
 import {
     Roles,
@@ -31,8 +34,9 @@ import {
     RemoveRoleUserSwaggerDecorator,
     UpdateUserPhoneSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
+import { ChangePasswordSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/change-password.swagger';
 import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
-import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 
 import {
     CreateUserResponse,
@@ -44,6 +48,8 @@ import {
     GetPaginatedUsersResponse,
 } from '@app/infrastructure/responses';
 import { UpdateUserPhoneDto } from '@app/infrastructure/dto';
+import { ChangePasswordDto } from '@app/infrastructure/dto/user/change-password.dto';
+import { UpdateUserPhoneResponse } from '@app/infrastructure/responses';
 import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
 
 import { IUserController } from '@app/domain/controllers';
@@ -92,8 +98,11 @@ export class UserController implements IUserController {
     @Roles('ADMIN')
     @UseGuards(AuthGuard, RoleGuard)
     @Get('/get-list-users')
-    public async getListUsers(): Promise<GetPaginatedUsersResponse> {
-        return this.userService.getListUsers();
+    public async getListUsers(
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        return this.userService.getListUsers(page, limit);
     }
 
     @GetUserSwaggerDecorator()
@@ -114,9 +123,9 @@ export class UserController implements IUserController {
     @Put('/update/:id')
     public async updateUser(
         @Param('id', ParseIntPipe) id: number,
-        @Body() dto: CreateUserDto,
+        @Body() dto: UpdateUserDto,
     ): Promise<UpdateUserResponse> {
-        return this.userService.updateUser(id, dto);
+        return this.userService.updateUser(id, dto as unknown as CreateUserDto);
     }
 
     @RemoveUserSwaggerDecorator()
@@ -150,18 +159,40 @@ export class UserController implements IUserController {
         return this.userService.removeUserRole(dto);
     }
 
-    @ApiOperation({ summary: 'Обновить номер телефона', description: 'Обновляет телефон текущего пользователя' })
-    @ApiOkResponse({ description: UserController.SUCCESS_DESCRIPTION })
+    @Get('me')
+    @HttpCode(HttpStatus.OK)
     @Roles(...UserController.USER_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
+    public async getMe(@Req() req: AuthenticatedRequest) {
+        const userId = this.extractUserId(req);
+        return this.userService.findAuthenticatedUser(userId);
+    }
+
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @UpdateUserPhoneSwaggerDecorator()
     @Patch('profile/phone')
     @HttpCode(HttpStatus.OK)
     async updatePhone(
         @Req() req: AuthenticatedRequest,
         @Body(new CustomValidationPipe()) dto: UpdateUserPhoneDto,
-    ) {
+    ): Promise<UpdateUserPhoneResponse> {
         const userId = this.extractUserId(req);
         const user = await this.userService.updatePhone(userId, dto.phone);
-        return this.createResponse({ id: user.id, phone: user.phone });
+        return { id: user.id, phone: user.phone! };
+    }
+
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @ChangePasswordSwaggerDecorator()
+    @Patch('profile/password')
+    @HttpCode(HttpStatus.OK)
+    async changePassword(
+        @Req() req: AuthenticatedRequest,
+        @Body(new CustomValidationPipe()) dto: ChangePasswordDto,
+    ) {
+        const userId = this.extractUserId(req);
+        await this.userService.changePassword(userId, dto.oldPassword, dto.newPassword);
+        return { status: HttpStatus.OK, message: 'success' };
     }
 }
