@@ -71,8 +71,11 @@ interface AuthenticatedRequest extends Request {
 @Controller('user')
 export class UserController implements IUserController {
     // Статические константы для переиспользования
-    private static readonly USER_ROLES = ['USER', 'ADMIN', 'MANAGER'] as const;
-    private static readonly ADMIN_ROLES = ['ADMIN'] as const;
+    private static readonly USER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST'] as const;
+    private static readonly ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN'] as const;
+    private static readonly MANAGER_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
+    private static readonly STAFF_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
+    private static readonly ALL_ROLES = [...UserController.ADMIN_ROLES, ...UserController.MANAGER_ROLES, ...UserController.USER_ROLES] as const;
     private static readonly SUCCESS_DESCRIPTION = 'Успех';
     private static readonly CREATED_DESCRIPTION = 'Создано';
     private static readonly UPDATED_DESCRIPTION = 'Обновлено';
@@ -92,7 +95,7 @@ export class UserController implements IUserController {
 
     @CreateUserSwaggerDecorator()
     @HttpCode(201)
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Post('/create')
     public async createUser(
@@ -103,7 +106,7 @@ export class UserController implements IUserController {
 
     @GetListUsersSwaggerDecorator()
     @HttpCode(200)
-    @Roles('ADMIN')
+    @Roles(...UserController.STAFF_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Get('/get-list-users')
     public async getListUsers(
@@ -115,7 +118,7 @@ export class UserController implements IUserController {
 
     @GetUserSwaggerDecorator()
     @HttpCode(200)
-    @Roles('ADMIN')
+    @Roles(...UserController.STAFF_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Get('/:id')
     public async getUser(
@@ -126,7 +129,7 @@ export class UserController implements IUserController {
 
     @UpdateUserSwaggerDecorator()
     @HttpCode(200)
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Put('/update/:id')
     public async updateUser(
@@ -138,7 +141,7 @@ export class UserController implements IUserController {
 
     @RemoveUserSwaggerDecorator()
     @HttpCode(200)
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Delete('/delete/:id')
     public async removeUser(
@@ -149,7 +152,7 @@ export class UserController implements IUserController {
 
     @AddRoleUserSwaggerDecorator()
     @HttpCode(201)
-    @Roles('ADMIN')
+    @Roles(...UserController.MANAGER_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Post('/role/add')
     public async addRole(@Body() dto: AddRoleDto): Promise<AddRoleResponse> {
@@ -158,7 +161,7 @@ export class UserController implements IUserController {
 
     @RemoveRoleUserSwaggerDecorator()
     @HttpCode(200)
-    @Roles('ADMIN')
+    @Roles(...UserController.MANAGER_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Delete('/role/delete')
     public async removeRole(
@@ -249,7 +252,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @VerifyUserEmailSwaggerDecorator()
     @Patch('verify/email/:id')
@@ -259,7 +262,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @VerifyUserPhoneSwaggerDecorator()
     @Patch('verify/phone/:id')
@@ -317,7 +320,7 @@ export class UserController implements IUserController {
     }
 
     // ADMIN actions: block/unblock, suspend/unsuspend, delete/restore, premium upgrade/downgrade, employee on/off
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/block/:id')
     @HttpCode(HttpStatus.OK)
@@ -326,7 +329,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/unblock/:id')
     @HttpCode(HttpStatus.OK)
@@ -335,7 +338,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/suspend/:id')
     @HttpCode(HttpStatus.OK)
@@ -344,7 +347,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/unsuspend/:id')
     @HttpCode(HttpStatus.OK)
@@ -353,7 +356,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/delete/:id')
     @HttpCode(HttpStatus.OK)
@@ -362,7 +365,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/restore/:id')
     @HttpCode(HttpStatus.OK)
@@ -371,7 +374,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/premium/upgrade/:id')
     @HttpCode(HttpStatus.OK)
@@ -380,7 +383,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/premium/downgrade/:id')
     @HttpCode(HttpStatus.OK)
@@ -389,7 +392,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/employee/set/:id')
     @HttpCode(HttpStatus.OK)
@@ -398,7 +401,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/employee/unset/:id')
     @HttpCode(HttpStatus.OK)
@@ -407,7 +410,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/vip/set/:id')
     @HttpCode(HttpStatus.OK)
@@ -416,7 +419,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/vip/unset/:id')
     @HttpCode(HttpStatus.OK)
@@ -425,7 +428,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/highvalue/set/:id')
     @HttpCode(HttpStatus.OK)
@@ -434,7 +437,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/highvalue/unset/:id')
     @HttpCode(HttpStatus.OK)
@@ -443,7 +446,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/wholesale/set/:id')
     @HttpCode(HttpStatus.OK)
@@ -452,7 +455,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/wholesale/unset/:id')
     @HttpCode(HttpStatus.OK)
@@ -461,7 +464,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/affiliate/set/:id')
     @HttpCode(HttpStatus.OK)
@@ -470,7 +473,7 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles('ADMIN')
+    @Roles(...UserController.ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Patch('admin/affiliate/unset/:id')
     @HttpCode(HttpStatus.OK)
