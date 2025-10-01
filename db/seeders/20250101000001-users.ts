@@ -8,10 +8,44 @@ interface Seeder {
 
 const seeder: Seeder = {
     async up(queryInterface: QueryInterface): Promise<void> {
+        // Идемпотентность: очищаем таблицы перед вставкой (безопасно для тестовых окружений)
+        await queryInterface.bulkDelete('user_role', {}, {});
+        await queryInterface.bulkDelete('user', {}, {});
+        
         const passwordHash = await bcrypt.hash('Password123!', 10);
+        const defaultFlags = {
+            is_active: true,
+            is_newsletter_subscribed: false,
+            is_marketing_consent: false,
+            is_cookie_consent: false,
+            is_profile_completed: false,
+            is_vip_customer: false,
+            is_beta_tester: false,
+            is_blocked: false,
+            is_verified: false,
+            is_premium: false,
+            is_email_verified: false,
+            is_phone_verified: false,
+            is_terms_accepted: false,
+            is_privacy_accepted: false,
+            is_age_verified: false,
+            is_two_factor_enabled: false,
+            is_deleted: false,
+            is_suspended: false,
+            is_affiliate: false,
+            is_employee: false,
+            is_high_value: false,
+            is_wholesale: false,
+            preferred_language: 'ru',
+            timezone: 'Europe/Moscow',
+            notification_preferences: '{}',
+            theme_preference: 'light',
+            default_language: 'ru',
+            translations: '{}',
+        } as const;
 
         // Создаем пользователей для каждой роли
-        await queryInterface.bulkInsert('user', [
+        const baseUsers = [
             // Системные роли (платформенные)
             {
                 email: 'super.admin@platform.com',
@@ -19,7 +53,6 @@ const seeder: Seeder = {
                 phone: '+79990000001',
                 first_name: 'Super',
                 last_name: 'Admin',
-                is_active: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,
@@ -32,7 +65,6 @@ const seeder: Seeder = {
                 phone: '+79990000002',
                 first_name: 'Platform',
                 last_name: 'Admin',
-                is_active: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,
@@ -47,7 +79,6 @@ const seeder: Seeder = {
                 phone: '+79990000003',
                 first_name: 'Store',
                 last_name: 'Owner',
-                is_active: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,
@@ -60,7 +91,6 @@ const seeder: Seeder = {
                 phone: '+79990000004',
                 first_name: 'Store',
                 last_name: 'Admin',
-                is_active: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,
@@ -73,7 +103,6 @@ const seeder: Seeder = {
                 phone: '+79990000005',
                 first_name: 'Store',
                 last_name: 'Manager',
-                is_active: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,
@@ -86,7 +115,6 @@ const seeder: Seeder = {
                 phone: '+79990000006',
                 first_name: 'Content',
                 last_name: 'Manager',
-                is_active: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,
@@ -99,7 +127,6 @@ const seeder: Seeder = {
                 phone: '+79990000007',
                 first_name: 'Customer',
                 last_name: 'Support',
-                is_active: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,
@@ -114,12 +141,11 @@ const seeder: Seeder = {
                 phone: '+79990000008',
                 first_name: 'VIP',
                 last_name: 'Customer',
-                is_active: true,
+                is_vip_customer: true,
+                is_newsletter_subscribed: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,
-                is_vip_customer: true,
-                is_newsletter_subscribed: true,
                 created_at: new Date(),
                 updated_at: new Date(),
             },
@@ -129,11 +155,10 @@ const seeder: Seeder = {
                 phone: '+79990000009',
                 first_name: 'Wholesale',
                 last_name: 'Buyer',
-                is_active: true,
+                is_wholesale: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,
-                is_wholesale: true,
                 created_at: new Date(),
                 updated_at: new Date(),
             },
@@ -143,7 +168,6 @@ const seeder: Seeder = {
                 phone: '+79990000010',
                 first_name: 'Regular',
                 last_name: 'Customer',
-                is_active: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,
@@ -156,11 +180,10 @@ const seeder: Seeder = {
                 phone: '+79990000011',
                 first_name: 'Affiliate',
                 last_name: 'Partner',
-                is_active: true,
+                is_affiliate: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,
-                is_affiliate: true,
                 created_at: new Date(),
                 updated_at: new Date(),
             },
@@ -170,14 +193,16 @@ const seeder: Seeder = {
                 phone: '+79990000012',
                 first_name: 'Guest',
                 last_name: 'User',
-                is_active: true,
                 is_verified: false,
                 is_email_verified: false,
                 is_phone_verified: false,
                 created_at: new Date(),
                 updated_at: new Date(),
             },
-        ]);
+        ];
+
+        const usersToInsert = baseUsers.map((u) => ({ ...defaultFlags, ...u }));
+        await queryInterface.bulkInsert('user', usersToInsert);
 
         // Получаем все роли
         interface RoleRow { id: number; role: string }
