@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UserModel } from '@app/domain/models';
-import { CreateUserDto, UpdateUserDto } from '@app/infrastructure/dto';
+import {
+    CreateUserDto,
+    UpdateUserDto,
+    UpdateUserProfileDto,
+} from '@app/infrastructure/dto';
 import { hash } from 'bcrypt';
 import {
     CreateUserResponse,
@@ -23,18 +27,28 @@ export class UserRepository implements IUserRepository {
     
     constructor(@InjectModel(UserModel) private userModel: typeof UserModel) {}
 
-    private pickAllowedFromCreate(dto: CreateUserDto): { email: string; password: string } {
-        const { email, password } = dto;
-        return { email, password };
+    private pickAllowedFromCreate(dto: CreateUserDto): {
+        email: string;
+        password: string;
+        firstName?: string;
+        lastName?: string;
+    } {
+        const { email, password, firstName, lastName } = dto;
+        return { email, password, firstName, lastName };
     }
 
     public async createUser(dto: CreateUserDto): Promise<UserModel> {
         const allowedFields = this.pickAllowedFromCreate(dto);
-        const hashedPassword = await hash(allowedFields.password!, UserRepository.BCRYPT_ROUNDS);
-        
+        const hashedPassword = await hash(
+            allowedFields.password!,
+            UserRepository.BCRYPT_ROUNDS,
+        );
+
         return this.userModel.create({
             email: allowedFields.email,
             password: hashedPassword,
+            firstName: allowedFields.firstName,
+            lastName: allowedFields.lastName,
         });
     }
 
@@ -43,8 +57,33 @@ export class UserRepository implements IUserRepository {
         dto: UpdateUserDto,
     ): Promise<UpdateUserResponse> {
         const updates: Partial<UserModel> = {} as Partial<UserModel>;
-        if (dto.email !== undefined) updates.email = dto.email as unknown as string;
-        if (dto.password !== undefined) updates.password = await hash(dto.password, UserRepository.BCRYPT_ROUNDS);
+        if (dto.email !== undefined)
+            updates.email = dto.email as unknown as string;
+        if (dto.password !== undefined)
+            updates.password = await hash(
+                dto.password,
+                UserRepository.BCRYPT_ROUNDS,
+            );
+        if (dto.firstName !== undefined)
+            updates.firstName = dto.firstName as unknown as string;
+        if (dto.lastName !== undefined)
+            updates.lastName = dto.lastName as unknown as string;
+        await user.update(updates);
+
+        return this.userModel
+            .scope('withRoles')
+            .findByPk(user.id) as Promise<UpdateUserResponse>;
+    }
+
+    public async updateUserProfile(
+        user: UserModel,
+        dto: UpdateUserProfileDto,
+    ): Promise<UpdateUserResponse> {
+        const updates: Partial<UserModel> = {} as Partial<UserModel>;
+        if (dto.firstName !== undefined)
+            updates.firstName = dto.firstName as unknown as string;
+        if (dto.lastName !== undefined)
+            updates.lastName = dto.lastName as unknown as string;
         await user.update(updates);
 
         return this.userModel

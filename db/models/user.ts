@@ -9,7 +9,9 @@ class User
     declare id: number;
     declare email: string;
     declare password: string;
-    declare phone?: string; 
+    declare phone?: string;
+    declare first_name?: string;
+    declare last_name?: string; 
     // Flags
     declare is_active: boolean;
     declare is_newsletter_subscribed: boolean;
@@ -96,6 +98,14 @@ export default function defineUser(sequelize: Sequelize): typeof User {
                     // E.164: начало с +, только цифры, до 16 символов включая +
                     is: /^\+?[1-9]\d{0,15}$/,
                 },
+            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+            first_name: {
+                type: DataTypes.STRING(100),
+                allowNull: true,
+            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+            last_name: {
+                type: DataTypes.STRING(100),
+                allowNull: true,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             created_at: {
                 type: DataTypes.DATE,

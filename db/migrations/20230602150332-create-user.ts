@@ -29,6 +29,14 @@ const migration: Migration = {
                 type: Sequelize.STRING(255),
                 allowNull: false,
             },
+            first_name: {
+                type: Sequelize.STRING(100),
+                allowNull: true,
+            },
+            last_name: {
+                type: Sequelize.STRING(100),
+                allowNull: true,
+            },
             created_at: {
                 allowNull: false,
                 type: Sequelize.DATE,

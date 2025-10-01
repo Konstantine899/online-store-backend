@@ -20,6 +20,7 @@ import {
     CreateUserDto,
     AddRoleDto,
     RemoveRoleDto,
+    UpdateUserProfileDto,
 } from '@app/infrastructure/dto';
 import { UpdateUserDto } from '@app/infrastructure/dto/user/update-user.dto';
 
@@ -54,6 +55,7 @@ import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-us
 import { UpdateUserFlagsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-flags.swagger';
 import { UpdateUserPreferencesSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-preferences.swagger';
 import { VerifyUserEmailSwaggerDecorator, VerifyUserPhoneSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/verify-user.swagger';
+import { UpdateUserProfileSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-profile.swagger';
 import { UpdateUserPhoneResponse } from '@app/infrastructure/responses';
 import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
 import { ConfirmVerificationDto } from '@app/infrastructure/dto/user/confirm-verification.dto';
@@ -190,6 +192,19 @@ export class UserController implements IUserController {
         const userId = this.extractUserId(req);
         const user = await this.userService.updatePhone(userId, dto.phone);
         return this.createResponse({ id: user.id, phone: user.phone! });
+    }
+
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @UpdateUserProfileSwaggerDecorator()
+    @Patch('profile')
+    @HttpCode(HttpStatus.OK)
+    async updateProfile(
+        @Req() req: AuthenticatedRequest,
+        @Body(new CustomValidationPipe()) dto: UpdateUserProfileDto,
+    ): Promise<UpdateUserResponse> {
+        const userId = this.extractUserId(req);
+        return this.userService.updateProfile(userId, dto);
     }
 
     @Roles(...UserController.USER_ROLES)

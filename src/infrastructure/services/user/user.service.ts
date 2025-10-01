@@ -12,6 +12,7 @@ import {
     AddRoleDto,
     RemoveRoleDto,
     UpdateUserDto,
+    UpdateUserProfileDto,
 } from '@app/infrastructure/dto';
 import { RoleService } from '../role/role.service';
 import { UserRepository } from '@app/infrastructure/repositories';
@@ -194,6 +195,25 @@ export class UserService implements IUserService {
                 if (error.name === 'SequelizeUniqueConstraintError') {
                     this.conflictException('Такой номер телефона уже используется');
                 }
+            }
+            throw error;
+        }
+    }
+
+    async updateProfile(
+        userId: number,
+        dto: UpdateUserProfileDto,
+    ): Promise<UpdateUserResponse> {
+        const user = await this.userRepository.findUser(userId);
+        if (!user) {
+            throw new NotFoundException('Пользователь не найден');
+        }
+
+        try {
+            return await this.userRepository.updateUserProfile(user, dto);
+        } catch (error: unknown) {
+            if (error instanceof Error && error.name === 'SequelizeValidationError') {
+                throw new BadRequestException(['Некорректные данные профиля']);
             }
             throw error;
         }

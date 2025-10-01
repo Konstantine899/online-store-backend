@@ -17,6 +17,8 @@ interface IUserCreationAttributes {
     email: string;
     password: string;
     phone?: string;
+    firstName?: string;
+    lastName?: string;
     // preferences (optional at creation)
     preferredLanguage?: string;
     timezone?: string;
@@ -29,6 +31,8 @@ interface IUserModel {
     email: string;
     password: string;
     phone?: string;
+    firstName?: string;
+    lastName?: string;
     // flags
     isActive?: boolean;
     isNewsletterSubscribed?: boolean;
@@ -144,6 +148,18 @@ export class UserModel
         },
     })
     declare phone?: string;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true,
+    })
+    declare firstName?: string;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true,
+    })
+    declare lastName?: string;
 
     // Флаги
     @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: true })
@@ -262,4 +278,26 @@ export class UserModel
 
     @HasMany(() => OrderModel, { onDelete: 'SET NULL' })
    declare orders: OrderModel[];
+
+    // Геттеры и методы
+    get fullName(): string {
+        if (this.firstName && this.lastName) {
+            return `${this.firstName} ${this.lastName}`;
+        }
+        if (this.firstName) {
+            return this.firstName;
+        }
+        if (this.lastName) {
+            return this.lastName;
+        }
+        return '';
+    }
+
+    get displayName(): string {
+        return this.fullName || this.email;
+    }
+
+    isCompleteProfile(): boolean {
+        return !!(this.firstName && this.lastName && this.phone);
+    }
 }

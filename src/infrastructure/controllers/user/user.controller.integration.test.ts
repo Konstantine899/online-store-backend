@@ -130,6 +130,105 @@ describe('Users: Guards (401/403)', () => {
     });
 });
 
+describe('Users: Profile name fields (firstName, lastName)', () => {
+    let app: INestApplication;
+    let adminToken: string;
+    let userToken: string;
+
+    beforeAll(async () => {
+        app = await setupTestApp();
+        adminToken = await authLoginAs(app, 'admin');
+        userToken = await authLoginAs(app, 'user');
+    });
+
+    afterAll(async () => {
+        await app.close();
+    });
+
+    it('PUT /user/update/:id: админ обновляет firstName и lastName пользователя', async () => {
+        const userId = 3;
+        const payload = {
+            firstName: 'Петр',
+            lastName: 'Петров',
+        };
+
+        const response = await request(app.getHttpServer())
+            .put(`/user/update/${userId}`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send(payload)
+            .expect(200);
+
+        // Контроллер возвращает данные напрямую, без обёртки { data: ... }
+        expect(response.body).toHaveProperty('email');
+        expect(response.body).toHaveProperty('firstName');
+        expect(response.body).toHaveProperty('lastName');
+        
+        expect(response.body.firstName).toBe(payload.firstName);
+        expect(response.body.lastName).toBe(payload.lastName);
+    });
+
+    it('PATCH /user/profile: пользователь обновляет свой профиль', async () => {
+        const payload = {
+            firstName: 'Владимир',
+            lastName: 'Владимиров',
+        };
+
+        const response = await request(app.getHttpServer())
+            .patch('/user/profile')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send(payload)
+            .expect(200);
+
+        expect(response.body).toHaveProperty('firstName');
+        expect(response.body).toHaveProperty('lastName');
+        expect(response.body.firstName).toBe(payload.firstName);
+        expect(response.body.lastName).toBe(payload.lastName);
+    });
+
+    it('PATCH /user/profile: обновление только firstName', async () => {
+        const payload = {
+            firstName: 'Алексей',
+        };
+
+        const response = await request(app.getHttpServer())
+            .patch('/user/profile')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send(payload)
+            .expect(200);
+
+        expect(response.body.firstName).toBe(payload.firstName);
+        // lastName остался прежним
+        expect(response.body.lastName).toBe('Владимиров');
+    });
+
+    it('PATCH /user/profile: обновление только lastName', async () => {
+        const payload = {
+            lastName: 'Сидоров',
+        };
+
+        const response = await request(app.getHttpServer())
+            .patch('/user/profile')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send(payload)
+            .expect(200);
+
+        expect(response.body.lastName).toBe(payload.lastName);
+        // firstName остался прежним
+        expect(response.body.firstName).toBe('Алексей');
+    });
+
+    it('PATCH /user/profile: 401 без авторизации', async () => {
+        const payload = {
+            firstName: 'Тест',
+        };
+
+        await request(app.getHttpServer())
+            .patch('/user/profile')
+            .send(payload)
+            .expect(401);
+    });
+});
+
 describe('Users: Profile flags and preferences validation', () => {
     let app: INestApplication;
     let userToken: string;
