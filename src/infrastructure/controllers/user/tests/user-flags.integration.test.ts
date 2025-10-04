@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
-import { setupTestApp } from '../../../../tests/setup/app';
-import { authLoginAs } from '../../../../tests/setup/auth';
+import { setupTestApp } from '../../../../../tests/setup/app';
+import { authLoginAs } from '../../../../../tests/setup/auth';
 
 describe('User Flags Integration Tests', () => {
     let app: INestApplication;

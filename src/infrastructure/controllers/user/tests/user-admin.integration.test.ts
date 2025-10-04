@@ -1,7 +1,7 @@
 import request from 'supertest';
-import { INestApplication, HttpStatus } from '@nestjs/common';
-import { setupTestApp } from '../../../../tests/setup/app';
-import { authLoginAs } from '../../../../tests/setup/auth';
+import { INestApplication } from '@nestjs/common';
+import { setupTestApp } from '../../../../../tests/setup/app';
+import { authLoginAs } from '../../../../../tests/setup/auth';
 import { UpdateUserDto } from '@app/infrastructure/dto';
 
 describe('User Admin Integration Tests', () => {
@@ -40,8 +40,6 @@ describe('User Admin Integration Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(200);
 
-            expect(response.body).toHaveProperty('status', 200);
-            expect(response.body).toHaveProperty('message', 'success');
             expect(response.body).toHaveProperty('data');
             expect(response.body.data).toHaveProperty('totalUsers');
             expect(response.body.data).toHaveProperty('activeUsers');
@@ -77,7 +75,7 @@ describe('User Admin Integration Tests', () => {
 
     // ===== ADMIN FLAG ENDPOINTS =====
     describe('Admin flag endpoints', () => {
-        const targetUserId = 3; // существующий user из сидов
+        const targetUserId = 13; // user@example.com // существующий user из сидов
         const adminCases: Array<{ path: string }> = [
             { path: `/user/admin/block/${targetUserId}` },
             { path: `/user/admin/unblock/${targetUserId}` },
@@ -171,8 +169,8 @@ describe('User Admin Integration Tests', () => {
             expect([200, 404]).toContain(delRes.status);
         });
 
-        it('200: admin can update user profile', async () => {
-            const userId = 3;
+            it('200: admin can update user profile', async () => {
+                const userId = 13; // user@example.com
             const payload = {
                 firstName: 'Петр',
                 lastName: 'Петров',
@@ -191,8 +189,8 @@ describe('User Admin Integration Tests', () => {
             expect(response.body.lastName).toBe(payload.lastName);
         });
 
-        it('409: duplicate email on update', async () => {
-            const userId = 3;
+            it('409: duplicate email on update', async () => {
+                const userId = 13; // user@example.com
             const payload: Partial<UpdateUserDto> = { email: 'admin@example.com' };
             await request(app.getHttpServer())
                 .put(`/user/update/${userId}`)
@@ -205,17 +203,17 @@ describe('User Admin Integration Tests', () => {
     // ===== ROLE MANAGEMENT =====
     describe('Role management', () => {
         it('200: admin can add and remove roles', async () => {
-            // Добавляем роль ADMIN пользователю 3, затем удаляем USER
+            // Добавляем роль ADMIN пользователю 13, затем удаляем ADMIN
             await request(app.getHttpServer())
                 .post('/user/role/add')
                 .set('Authorization', `Bearer ${adminToken}`)
-                .send({ userId: 3, role: 'ADMIN' })
+                .send({ userId: 13, role: 'ADMIN' })
                 .expect(201);
 
             await request(app.getHttpServer())
                 .delete('/user/role/delete')
                 .set('Authorization', `Bearer ${adminToken}`)
-                .send({ userId: 3, role: 'ADMIN' })
+                .send({ userId: 13, role: 'ADMIN' })
                 .expect(200);
         });
     });

@@ -199,6 +199,32 @@ const seeder: Seeder = {
                 created_at: new Date(),
                 updated_at: new Date(),
             },
+            
+            // Тестовые пользователи для integration тестов
+            {
+                email: 'user@example.com',
+                password: passwordHash,
+                phone: '+79990000013',
+                first_name: 'Test',
+                last_name: 'User',
+                is_verified: true,
+                is_email_verified: true,
+                is_phone_verified: true,
+                created_at: new Date(),
+                updated_at: new Date(),
+            },
+            {
+                email: 'admin@example.com',
+                password: passwordHash,
+                phone: '+79990000014',
+                first_name: 'Test',
+                last_name: 'Admin',
+                is_verified: true,
+                is_email_verified: true,
+                is_phone_verified: true,
+                created_at: new Date(),
+                updated_at: new Date(),
+            },
         ];
 
         const usersToInsert = baseUsers.map((u) => ({ ...defaultFlags, ...u }));
@@ -214,7 +240,7 @@ const seeder: Seeder = {
         // Получаем созданных пользователей
         interface UserRow { id: number; email: string }
         const users = await queryInterface.sequelize.query<UserRow>(
-            "SELECT id, email FROM user WHERE email IN ('super.admin@platform.com', 'platform.admin@platform.com', 'tenant.owner@store.com', 'tenant.admin@store.com', 'manager@store.com', 'content.manager@store.com', 'support@store.com', 'vip.customer@example.com', 'wholesale@example.com', 'customer@example.com', 'affiliate@example.com', 'guest@example.com');",
+            "SELECT id, email FROM user WHERE email IN ('super.admin@platform.com', 'platform.admin@platform.com', 'tenant.owner@store.com', 'tenant.admin@store.com', 'manager@store.com', 'content.manager@store.com', 'support@store.com', 'vip.customer@example.com', 'wholesale@example.com', 'customer@example.com', 'affiliate@example.com', 'guest@example.com', 'user@example.com', 'admin@example.com');",
             { type: QueryTypes.SELECT },
         );
 
@@ -232,6 +258,8 @@ const seeder: Seeder = {
             'customer@example.com': 'CUSTOMER',
             'affiliate@example.com': 'AFFILIATE',
             'guest@example.com': 'GUEST',
+            'user@example.com': 'CUSTOMER',
+            'admin@example.com': 'TENANT_ADMIN',
         };
 
         // Присваиваем роли через user_role

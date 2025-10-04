@@ -35,7 +35,7 @@ import { LoginHistoryService } from '../login-history/login-history.service';
 @Injectable()
 export class UserService implements IUserService {
     private static readonly ADMIN_EMAILS = ['kostay375298918971@gmail.com'] as const;
-    private static readonly DEFAULT_ROLE = 'USER' as const;
+    private static readonly DEFAULT_ROLE = 'CUSTOMER' as const;
     
     constructor(
         private readonly userRepository: UserRepository,
@@ -125,9 +125,11 @@ export class UserService implements IUserService {
             }
             throw error;
         }
-        const role = await this.roleService.getRole('USER');
-        /* #set Потому что обновляется весь объект. Ищу роль пользователя и при обновлении перезаписываю поле*/
-        await updatedUser.$set('roles', [role.id]);
+        // Удаляем все существующие роли пользователя
+        await this.unlinkAllUserRoles(updatedUser.id);
+        // Добавляем роль CUSTOMER
+        const role = await this.roleService.getRole('CUSTOMER');
+        await this.linkUserRole(updatedUser.id, role.id);
         updatedUser.roles = [role];
         return updatedUser;
     }
@@ -433,7 +435,7 @@ export class UserService implements IUserService {
         if (!role) {
             role = await this.roleService.createRole({
                 role: UserService.DEFAULT_ROLE,
-                description: 'Пользователь',
+                description: 'Покупатель',
             });
         }
         return role;
@@ -455,6 +457,15 @@ export class UserService implements IUserService {
         await sequelize.query(
             'DELETE FROM `user_role` WHERE `user_id` = ? AND `role_id` = ? LIMIT 1',
             { replacements: [userId, roleId] },
+        );
+    }
+
+    private async unlinkAllUserRoles(userId: number): Promise<void> {
+        const sequelize = this.userModel.sequelize;
+        if (!sequelize) return;
+        await sequelize.query(
+            'DELETE FROM `user_role` WHERE `user_id` = ?',
+            { replacements: [userId] },
         );
     }
 

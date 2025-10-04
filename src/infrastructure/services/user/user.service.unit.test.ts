@@ -193,7 +193,7 @@ describe('UserService', () => {
             expect(userRepository.findUserByEmail).toHaveBeenCalledWith(
                 validUserDto.email,
             );
-            expect(roleService.getRole).toHaveBeenCalledWith('USER');
+            expect(roleService.getRole).toHaveBeenCalledWith('CUSTOMER');
             expect(userRepository.createUser).toHaveBeenCalledWith(
                 validUserDto,
             );
@@ -604,8 +604,8 @@ describe('UserService', () => {
 
             expect(result).toBe(mockUser);
             expect(roleService.createRole).toHaveBeenCalledWith({
-                role: 'USER',
-                description: 'Пользователь',
+                role: 'CUSTOMER',
+                description: 'Покупатель',
             });
         });
     });

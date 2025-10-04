@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
-import { setupTestApp } from '../../../../tests/setup/app';
-import { authLoginAs } from '../../../../tests/setup/auth';
+import { setupTestApp } from '../../../../../tests/setup/app';
+import { authLoginAs } from '../../../../../tests/setup/auth';
 
 describe('User Verification Integration Tests', () => {
     let app: INestApplication;
@@ -71,17 +71,17 @@ describe('User Verification Integration Tests', () => {
                 .expect(400);
         });
 
-        it('200: admin can verify user email/phone', async () => {
-            await request(app.getHttpServer())
-                .patch('/user/verify/email/3')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(200);
+            it('200: admin can verify user email/phone', async () => {
+                await request(app.getHttpServer())
+                    .patch('/user/verify/email/13')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .expect(200);
 
-            await request(app.getHttpServer())
-                .patch('/user/verify/phone/3')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(200);
-        });
+                await request(app.getHttpServer())
+                    .patch('/user/verify/phone/13')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .expect(200);
+            });
 
         it('404: admin cannot verify non-existent user', async () => {
             await request(app.getHttpServer())

@@ -1,7 +1,7 @@
 import request from 'supertest';
-import { INestApplication, HttpStatus } from '@nestjs/common';
-import { setupTestApp } from '../../../../tests/setup/app';
-import { authLoginAs } from '../../../../tests/setup/auth';
+import { INestApplication } from '@nestjs/common';
+import { setupTestApp } from '../../../../../tests/setup/app';
+import { authLoginAs } from '../../../../../tests/setup/auth';
 
 describe('User Profile Integration Tests', () => {
     let app: INestApplication;
@@ -31,16 +31,16 @@ describe('User Profile Integration Tests', () => {
 
     // ===== PHONE ENDPOINTS =====
     describe('PATCH /user/profile/phone', () => {
-        it('200: updates phone with valid number', async () => {
-            await request(app.getHttpServer())
-                .patch('/user/profile/phone')
-                .set('Authorization', `Bearer ${userToken}`)
-                .send({ phone: '+79990000001' })
-                .expect(200)
-                .expect(({ body }) => {
-                    expect(body?.data?.phone).toBe('+79990000001');
-                });
-        });
+            it('200: updates phone with valid number', async () => {
+                await request(app.getHttpServer())
+                    .patch('/user/profile/phone')
+                    .set('Authorization', `Bearer ${userToken}`)
+                    .send({ phone: '+79990000999' })
+                    .expect(200)
+                    .expect(({ body }) => {
+                        expect(body?.data?.phone).toBe('+79990000999');
+                    });
+            });
 
         it('400: rejects invalid phone format', async () => {
             await request(app.getHttpServer())
@@ -62,21 +62,21 @@ describe('User Profile Integration Tests', () => {
                 .expect(401);
         });
         
-        it('409: rejects duplicate phone for another user', async () => {
-            const tokenUser = await authLoginAs(app, 'user');
-            await request(app.getHttpServer())
-                .patch('/user/profile/phone')
-                .set('Authorization', `Bearer ${tokenUser}`)
-                .send({ phone: '+79990000002' })
-                .expect(200);
+            it('409: rejects duplicate phone for another user', async () => {
+                const tokenUser = await authLoginAs(app, 'user');
+                await request(app.getHttpServer())
+                    .patch('/user/profile/phone')
+                    .set('Authorization', `Bearer ${tokenUser}`)
+                    .send({ phone: '+79990000998' })
+                    .expect(200);
 
-            const tokenAdmin = await authLoginAs(app, 'admin');
-            await request(app.getHttpServer())
-                .patch('/user/profile/phone')
-                .set('Authorization', `Bearer ${tokenAdmin}`)
-                .send({ phone: '+79990000002' })
-                .expect(409);
-        });
+                const tokenAdmin = await authLoginAs(app, 'admin');
+                await request(app.getHttpServer())
+                    .patch('/user/profile/phone')
+                    .set('Authorization', `Bearer ${tokenAdmin}`)
+                    .send({ phone: '+79990000998' })
+                    .expect(409);
+            });
     });
 
     // ===== PROFILE ENDPOINTS =====
@@ -140,14 +140,12 @@ describe('User Profile Integration Tests', () => {
 
     // ===== MISC ENDPOINTS =====
     describe('Misc endpoints', () => {
-        it('200/400: GET /user/me with minimal body', async () => {
+        it('200: GET /user/me with minimal body', async () => {
             const res = await request(app.getHttpServer())
                 .get('/user/me')
-                .set('Authorization', `Bearer ${userToken}`);
-            expect([200, 400]).toContain(res.status);
-            if (res.status === 200) {
-                expect(res.body?.id || res.body?.data?.id).toBeDefined();
-            }
+                .set('Authorization', `Bearer ${userToken}`)
+                .expect(200);
+            expect(res.body?.id).toBeDefined();
         });
     });
 });

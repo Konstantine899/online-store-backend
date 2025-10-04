@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {  NotFoundException } from '@nestjs/common';
 import { UserService } from '@app/infrastructure/services/user/user.service';
 import { UserRepository } from '@app/infrastructure/repositories/user/user.repository';
 import { RoleService } from '@app/infrastructure/services/role/role.service';

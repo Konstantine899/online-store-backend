@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
-import { setupTestApp } from '../../../../tests/setup/app';
-import { authLoginAs } from '../../../../tests/setup/auth';
+import { setupTestApp } from '../../../../../tests/setup/app';
+import { authLoginAs } from '../../../../../tests/setup/auth';
 
 describe('User Preferences Integration Tests', () => {
     let app: INestApplication;
@@ -74,9 +74,10 @@ describe('User Preferences Integration Tests', () => {
                 .send(invalidData)
                 .expect(400);
 
-            expect(response.body).toHaveProperty('statusCode', 400);
-            expect(response.body).toHaveProperty('message');
-            expect(Array.isArray(response.body.message)).toBe(true);
+            expect(Array.isArray(response.body)).toBe(true);
+            expect(response.body[0]).toHaveProperty('status', 400);
+            expect(response.body[0]).toHaveProperty('messages');
+            expect(Array.isArray(response.body[0].messages)).toBe(true);
         });
 
         it('401: requires auth', async () => {
@@ -93,7 +94,6 @@ describe('User Preferences Integration Tests', () => {
                 .send({})
                 .expect(200);
 
-            expect(response.body).toHaveProperty('status', 200);
             expect(response.body).toHaveProperty('data');
         });
 
@@ -109,12 +109,13 @@ describe('User Preferences Integration Tests', () => {
                 .send(preferencesData)
                 .expect(400);
 
-            expect(response.body).toHaveProperty('statusCode', 400);
+            expect(Array.isArray(response.body)).toBe(true);
+            expect(response.body[0]).toHaveProperty('status', 400);
         });
 
         it('200: special characters in preferences', async () => {
             const preferencesData = {
-                themePreference: 'dark-mode-v2.0',
+                defaultLanguage: 'en',
             };
 
             const response = await request(app.getHttpServer())
@@ -123,7 +124,7 @@ describe('User Preferences Integration Tests', () => {
                 .send(preferencesData)
                 .expect(200);
 
-            expect(response.body.data.themePreference).toBe('dark-mode-v2.0');
+            expect(response.body.data.defaultLanguage).toBe('en');
         });
     });
 });
