@@ -68,37 +68,11 @@ interface AuthenticatedRequest extends Request {
     user: { id: number };
 }
 
-// Типы для кэширования
-interface CacheEntry<T> {
-    data: T;
-    timestamp: number;
-}
-
-// Типы для ролей (для будущего использования)
-// type UserRole = typeof USER_ROLES[number];
-// type AdminRole = typeof ADMIN_ROLES[number];
-// type ManagerRole = typeof MANAGER_ROLES[number];
-// type StaffRole = typeof STAFF_ROLES[number];
-
-// Оптимизированные константы ролей с кэшированием
+// Оптимизированные константы ролей
 const USER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST'] as const;
 const ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN'] as const;
 const MANAGER_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
 const STAFF_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
-
-// Кэшированные множества ролей для быстрой проверки (для будущего использования)
-// const USER_ROLES_SET = new Set(USER_ROLES);
-// const ADMIN_ROLES_SET = new Set(ADMIN_ROLES);
-// const MANAGER_ROLES_SET = new Set(MANAGER_ROLES);
-// const STAFF_ROLES_SET = new Set(STAFF_ROLES);
-
-// Оптимизированные константы ответов (для будущего использования)
-// const RESPONSE_MESSAGES = {
-//     SUCCESS: 'Успех',
-//     CREATED: 'Создано',
-//     UPDATED: 'Обновлено',
-//     DELETED: 'Удалено',
-// } as const;
 
 // Глобальный экземпляр валидатора для оптимизации производительности
 const validationPipe = new CustomValidationPipe();
@@ -112,11 +86,6 @@ const ManagerGuards = () => UseGuards(AuthGuard, RoleGuard);
 @ApiTags('Пользователи')
 @Controller('user')
 export class UserController implements IUserController {
-    // Кэш для часто запрашиваемых данных
-    private readonly userCache = new Map<number, CacheEntry<GetUserResponse>>();
-    private readonly statsCache = new Map<string, CacheEntry<unknown>>();
-    private readonly CACHE_TTL = 5 * 60 * 1000; // 5 минут
-
     constructor(private readonly userService: UserService) {}
 
     // Метод для извлечения userId с валидацией
@@ -127,38 +96,6 @@ export class UserController implements IUserController {
     // Метод для создания ответа
     private createResponse<T>(data: T): { data: T } {
         return { data };
-    }
-
-    // Методы кэширования
-    private getCachedUser(userId: number): GetUserResponse | null {
-        const cached = this.userCache.get(userId);
-        if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-            return cached.data;
-        }
-        this.userCache.delete(userId);
-        return null;
-    }
-
-    private setCachedUser(userId: number, data: GetUserResponse): void {
-        this.userCache.set(userId, { data, timestamp: Date.now() });
-    }
-
-    private getCachedStats<T>(key: string): T | null {
-        const cached = this.statsCache.get(key);
-        if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-            return cached.data as T;
-        }
-        this.statsCache.delete(key);
-        return null;
-    }
-
-    private setCachedStats<T>(key: string, data: T): void {
-        this.statsCache.set(key, { data, timestamp: Date.now() });
-    }
-
-    private invalidateUserCache(userId: number): void {
-        this.userCache.delete(userId);
-        this.statsCache.clear(); // Очищаем статистику при изменении пользователя
     }
 
     @CreateUserSwaggerDecorator()
@@ -192,19 +129,7 @@ export class UserController implements IUserController {
     public async getUser(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<GetUserResponse> {
-        // Проверяем кэш
-        const cached = this.getCachedUser(id);
-        if (cached) {
-            return cached;
-        }
-
-        // Получаем данные из сервиса
-        const result = await this.userService.getUser(id);
-        
-        // Кэшируем результат
-        this.setCachedUser(id, result);
-        
-        return result;
+        return this.userService.getUser(id);
     }
 
     @UpdateUserSwaggerDecorator()
@@ -216,12 +141,7 @@ export class UserController implements IUserController {
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: UpdateUserDto,
     ): Promise<UpdateUserResponse> {
-        const result = await this.userService.updateUser(id, dto as unknown as CreateUserDto);
-        
-        // Инвалидируем кэш при обновлении
-        this.invalidateUserCache(id);
-        
-        return result;
+        return this.userService.updateUser(id, dto);
     }
 
     @RemoveUserSwaggerDecorator()
@@ -232,12 +152,7 @@ export class UserController implements IUserController {
     public async removeUser(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<RemoveUserResponse> {
-        const result = await this.userService.removeUser(id);
-        
-        // Инвалидируем кэш при удалении
-        this.invalidateUserCache(id);
-        
-        return result;
+        return this.userService.removeUser(id);
     }
 
     @AddRoleUserSwaggerDecorator()
@@ -580,20 +495,7 @@ export class UserController implements IUserController {
     @Get('admin/stats')
     @HttpCode(HttpStatus.OK)
     async getUserStats() {
-        const cacheKey = 'user_stats';
-        
-        // Проверяем кэш
-        const cached = this.getCachedStats(cacheKey);
-        if (cached) {
-            return this.createResponse(cached);
-        }
-
-        // Получаем данные из сервиса
         const stats = await this.userService.getUserStats();
-        
-        // Кэшируем результат
-        this.setCachedStats(cacheKey, stats);
-        
         return this.createResponse(stats);
     }
 }

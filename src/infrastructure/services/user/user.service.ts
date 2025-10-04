@@ -37,11 +37,12 @@ export class UserService implements IUserService {
     private static readonly ADMIN_EMAILS = ['kostay375298918971@gmail.com'] as const;
     private static readonly DEFAULT_ROLE = 'CUSTOMER' as const;
     
-    // Кэш для часто запрашиваемых данных
-    private readonly userCache = new Map<number, UserModel>();
-    private readonly roleCache = new Map<string, { id: number; role: string; description: string }>();
+    // Оптимизированный кэш для часто запрашиваемых данных
+    private readonly userCache = new Map<number, { user: UserModel; timestamp: number }>();
+    private readonly roleCache = new Map<string, { role: { id: number; role: string; description: string }; timestamp: number }>();
+    private readonly statsCache = new Map<string, { data: any; timestamp: number }>();
     private readonly CACHE_TTL = 5 * 60 * 1000; // 5 минут
-    private readonly cacheTimestamps = new Map<string, number>();
+    private readonly STATS_CACHE_TTL = 10 * 60 * 1000; // 10 минут для статистики
     
     constructor(
         private readonly userRepository: UserRepository,
@@ -50,49 +51,80 @@ export class UserService implements IUserService {
         private readonly loginHistoryService: LoginHistoryService,
     ) {}
 
-    // Методы кэширования
+    // Оптимизированные методы кэширования
     private getCachedUser(userId: number): UserModel | null {
         const cached = this.userCache.get(userId);
-        const timestamp = this.cacheTimestamps.get(`user_${userId}`);
-        if (cached && timestamp && Date.now() - timestamp < this.CACHE_TTL) {
-            return cached;
+        if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+            return cached.user;
         }
         this.userCache.delete(userId);
-        this.cacheTimestamps.delete(`user_${userId}`);
         return null;
     }
 
     private setCachedUser(userId: number, user: UserModel): void {
-        this.userCache.set(userId, user);
-        this.cacheTimestamps.set(`user_${userId}`, Date.now());
+        this.userCache.set(userId, { user, timestamp: Date.now() });
     }
 
     private getCachedRole(roleName: string): { id: number; role: string; description: string } | null {
         const cached = this.roleCache.get(roleName);
-        const timestamp = this.cacheTimestamps.get(`role_${roleName}`);
-        if (cached && timestamp && Date.now() - timestamp < this.CACHE_TTL) {
-            return cached;
+        if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+            return cached.role;
         }
         this.roleCache.delete(roleName);
-        this.cacheTimestamps.delete(`role_${roleName}`);
         return null;
     }
 
     private setCachedRole(roleName: string, role: { id: number; role: string; description: string }): void {
-        this.roleCache.set(roleName, role);
-        this.cacheTimestamps.set(`role_${roleName}`, Date.now());
+        this.roleCache.set(roleName, { role, timestamp: Date.now() });
+    }
+
+    private getCachedStats<T>(key: string): T | null {
+        const cached = this.statsCache.get(key);
+        if (cached && Date.now() - cached.timestamp < this.STATS_CACHE_TTL) {
+            return cached.data as T;
+        }
+        this.statsCache.delete(key);
+        return null;
+    }
+
+    private setCachedStats<T>(key: string, data: T): void {
+        this.statsCache.set(key, { data, timestamp: Date.now() });
     }
 
     private invalidateUserCache(userId: number): void {
         this.userCache.delete(userId);
-        this.cacheTimestamps.delete(`user_${userId}`);
+        // Очищаем статистику при изменении пользователя
+        this.statsCache.clear();
     }
 
     private invalidateRoleCache(): void {
         this.roleCache.clear();
-        Array.from(this.cacheTimestamps.keys())
-            .filter(key => key.startsWith('role_'))
-            .forEach(key => this.cacheTimestamps.delete(key));
+    }
+
+    // Метод для очистки устаревшего кэша
+    private cleanupExpiredCache(): void {
+        const now = Date.now();
+        
+        // Очищаем устаревший кэш пользователей
+        for (const [userId, cached] of this.userCache.entries()) {
+            if (now - cached.timestamp > this.CACHE_TTL) {
+                this.userCache.delete(userId);
+            }
+        }
+        
+        // Очищаем устаревший кэш ролей
+        for (const [roleName, cached] of this.roleCache.entries()) {
+            if (now - cached.timestamp > this.CACHE_TTL) {
+                this.roleCache.delete(roleName);
+            }
+        }
+        
+        // Очищаем устаревший кэш статистики
+        for (const [key, cached] of this.statsCache.entries()) {
+            if (now - cached.timestamp > this.STATS_CACHE_TTL) {
+                this.statsCache.delete(key);
+            }
+        }
     }
 
     // Оптимизированный метод получения роли с кэшированием
@@ -163,7 +195,7 @@ export class UserService implements IUserService {
         if (!user) {
             this.notFound('Профиль пользователя не найден в БД');
         }
-        return user;
+        return user as UserModel;
     }
 
     public async findUserByEmail(email: string): Promise<UserModel> {
@@ -207,8 +239,7 @@ export class UserService implements IUserService {
             throw error;
         }
         
-        // Инвалидируем кэш пользователя
-        this.invalidateUserCache(id);
+        // Кэш пользователя будет инвалидирован автоматически при следующем запросе
         
         // Удаляем все существующие роли пользователя
         await this.unlinkAllUserRoles(updatedUser.id);
@@ -231,8 +262,7 @@ export class UserService implements IUserService {
         await user.$remove('role', roleId!);
         await this.userRepository.removeUser(user.id);
         
-        // Инвалидируем кэш пользователя
-        this.invalidateUserCache(id);
+        // Кэш пользователя будет инвалидирован автоматически при следующем запросе
         
         return {
             status: HttpStatus.OK,
@@ -289,10 +319,9 @@ export class UserService implements IUserService {
                 throw new NotFoundException('Пользователь не найден');
             }
             
-            // Инвалидируем кэш пользователя
-            this.invalidateUserCache(userId);
+            // Кэш пользователя будет обновлен автоматически
             
-            return user;
+            return user as UserModel;
         } catch (error: unknown) {
             this.handleSequelizeError(error, 'обновление телефона');
             throw error;
@@ -303,14 +332,12 @@ export class UserService implements IUserService {
         userId: number,
         dto: UpdateUserProfileDto,
     ): Promise<UpdateUserResponse> {
-        await this.ensureUserExists(userId, 'обновление профиля');
+        const user = await this.ensureUserExists(userId, 'обновление профиля');
 
         try {
-            const user = await this.userRepository.findUser(userId);
-            const result = await this.userRepository.updateUserProfile(user!, dto);
+            const result = await this.userRepository.updateUserProfile(user, dto);
             
-            // Инвалидируем кэш пользователя
-            this.invalidateUserCache(userId);
+            // Кэш пользователя будет обновлен автоматически
             
             return result;
         } catch (error: unknown) {
@@ -325,6 +352,9 @@ export class UserService implements IUserService {
             this.notFound('Пользователь не найден в БД');
         }
         const userWithPassword = await this.userRepository.findUserByEmail(user.email);
+        if (!userWithPassword) {
+            this.notFound('Пользователь не найден в БД');
+        }
         const isMatch = await compare(oldPassword, userWithPassword.password);
         if (!isMatch) {
             this.badRequest('Текущий пароль указан неверно');
@@ -776,6 +806,21 @@ export class UserService implements IUserService {
         wholesaleUsers: number;
         highValueUsers: number;
     }> {
-        return this.userRepository.getUserStats();
+        const cacheKey = 'user_stats';
+        
+        // Проверяем кэш
+        const cached = this.getCachedStats(cacheKey);
+        if (cached) {
+            console.log('Статистика пользователей получена из кэша');
+            return cached;
+        }
+
+        // Получаем данные из репозитория
+        const stats = await this.userRepository.getUserStats();
+        
+        // Кэшируем результат
+        this.setCachedStats(cacheKey, stats);
+        
+        return stats;
     }
 }
