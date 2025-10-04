@@ -40,7 +40,7 @@ export class UserService implements IUserService {
     // Оптимизированный кэш для часто запрашиваемых данных
     private readonly userCache = new Map<number, { user: UserModel; timestamp: number }>();
     private readonly roleCache = new Map<string, { role: { id: number; role: string; description: string }; timestamp: number }>();
-    private readonly statsCache = new Map<string, { data: any; timestamp: number }>();
+    private readonly statsCache = new Map<string, { data: unknown; timestamp: number }>();
     private readonly CACHE_TTL = 5 * 60 * 1000; // 5 минут
     private readonly STATS_CACHE_TTL = 10 * 60 * 1000; // 10 минут для статистики
     
@@ -809,7 +809,19 @@ export class UserService implements IUserService {
         const cacheKey = 'user_stats';
         
         // Проверяем кэш
-        const cached = this.getCachedStats(cacheKey);
+        const cached = this.getCachedStats<{
+            totalUsers: number;
+            activeUsers: number;
+            blockedUsers: number;
+            vipUsers: number;
+            newsletterSubscribers: number;
+            premiumUsers: number;
+            employees: number;
+            affiliates: number;
+            wholesaleUsers: number;
+            highValueUsers: number;
+        }>(cacheKey);
+        
         if (cached) {
             console.log('Статистика пользователей получена из кэша');
             return cached;

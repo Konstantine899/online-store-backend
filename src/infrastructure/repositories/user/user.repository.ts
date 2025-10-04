@@ -54,7 +54,10 @@ export class UserRepository implements IUserRepository {
                 stack: error.stack
             };
 
-            console.error(`Database error in ${context}:`, errorInfo);
+            // Логируем только критические ошибки
+            if (error.name === 'SequelizeConnectionError' || error.name === 'SequelizeTimeoutError') {
+                console.error(`Critical database error in ${context}:`, errorInfo);
+            }
 
             if (error.name === 'SequelizeValidationError') {
                 throw new BadRequestException(`Некорректные данные: ${context}`);
@@ -716,16 +719,16 @@ export class UserRepository implements IUserRepository {
             }>)[0];
 
             return {
-                totalUsers: stats.totalUsers || 0,
-                activeUsers: stats.activeUsers || 0,
-                blockedUsers: stats.blockedUsers || 0,
-                vipUsers: stats.vipUsers || 0,
-                newsletterSubscribers: stats.newsletterSubscribers || 0,
-                premiumUsers: stats.premiumUsers || 0,
-                employees: stats.employees || 0,
-                affiliates: stats.affiliates || 0,
-                wholesaleUsers: stats.wholesaleUsers || 0,
-                highValueUsers: stats.highValueUsers || 0,
+                totalUsers: Number(stats.totalUsers) || 0,
+                activeUsers: Number(stats.activeUsers) || 0,
+                blockedUsers: Number(stats.blockedUsers) || 0,
+                vipUsers: Number(stats.vipUsers) || 0,
+                newsletterSubscribers: Number(stats.newsletterSubscribers) || 0,
+                premiumUsers: Number(stats.premiumUsers) || 0,
+                employees: Number(stats.employees) || 0,
+                affiliates: Number(stats.affiliates) || 0,
+                wholesaleUsers: Number(stats.wholesaleUsers) || 0,
+                highValueUsers: Number(stats.highValueUsers) || 0,
             };
         } catch (error: unknown) {
             console.error('Ошибка при получении статистики пользователей:', error);
