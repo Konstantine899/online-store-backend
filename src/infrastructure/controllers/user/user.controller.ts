@@ -63,24 +63,59 @@ import { ConfirmVerificationDto } from '@app/infrastructure/dto/user/confirm-ver
 
 import { IUserController } from '@app/domain/controllers';
 
-// Типизированный интерфейс для Request
+// Оптимизированные типы для Request
 interface AuthenticatedRequest extends Request {
     user: { id: number };
 }
 
+// Типы для кэширования
+interface CacheEntry<T> {
+    data: T;
+    timestamp: number;
+}
+
+// Типы для ролей (для будущего использования)
+// type UserRole = typeof USER_ROLES[number];
+// type AdminRole = typeof ADMIN_ROLES[number];
+// type ManagerRole = typeof MANAGER_ROLES[number];
+// type StaffRole = typeof STAFF_ROLES[number];
+
+// Оптимизированные константы ролей с кэшированием
+const USER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST'] as const;
+const ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN'] as const;
+const MANAGER_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
+const STAFF_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
+
+// Кэшированные множества ролей для быстрой проверки (для будущего использования)
+// const USER_ROLES_SET = new Set(USER_ROLES);
+// const ADMIN_ROLES_SET = new Set(ADMIN_ROLES);
+// const MANAGER_ROLES_SET = new Set(MANAGER_ROLES);
+// const STAFF_ROLES_SET = new Set(STAFF_ROLES);
+
+// Оптимизированные константы ответов (для будущего использования)
+// const RESPONSE_MESSAGES = {
+//     SUCCESS: 'Успех',
+//     CREATED: 'Создано',
+//     UPDATED: 'Обновлено',
+//     DELETED: 'Удалено',
+// } as const;
+
+// Глобальный экземпляр валидатора для оптимизации производительности
+const validationPipe = new CustomValidationPipe();
+
+// Композитные декораторы для оптимизации производительности
+const AdminGuards = () => UseGuards(AuthGuard, RoleGuard);
+const UserGuards = () => UseGuards(AuthGuard, RoleGuard);
+const StaffGuards = () => UseGuards(AuthGuard, RoleGuard);
+const ManagerGuards = () => UseGuards(AuthGuard, RoleGuard);
+
 @ApiTags('Пользователи')
 @Controller('user')
 export class UserController implements IUserController {
-    // Статические константы для переиспользования
-    private static readonly USER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST'] as const;
-    private static readonly ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN'] as const;
-    private static readonly MANAGER_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
-    private static readonly STAFF_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
-    private static readonly ALL_ROLES = [...UserController.ADMIN_ROLES, ...UserController.MANAGER_ROLES, ...UserController.USER_ROLES] as const;
-    private static readonly SUCCESS_DESCRIPTION = 'Успех';
-    private static readonly CREATED_DESCRIPTION = 'Создано';
-    private static readonly UPDATED_DESCRIPTION = 'Обновлено';
-    private static readonly DELETED_DESCRIPTION = 'Удалено';
+    // Кэш для часто запрашиваемых данных
+    private readonly userCache = new Map<number, CacheEntry<GetUserResponse>>();
+    private readonly statsCache = new Map<string, CacheEntry<unknown>>();
+    private readonly CACHE_TTL = 5 * 60 * 1000; // 5 минут
 
     constructor(private readonly userService: UserService) {}
 
@@ -94,10 +129,42 @@ export class UserController implements IUserController {
         return { data };
     }
 
+    // Методы кэширования
+    private getCachedUser(userId: number): GetUserResponse | null {
+        const cached = this.userCache.get(userId);
+        if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+            return cached.data;
+        }
+        this.userCache.delete(userId);
+        return null;
+    }
+
+    private setCachedUser(userId: number, data: GetUserResponse): void {
+        this.userCache.set(userId, { data, timestamp: Date.now() });
+    }
+
+    private getCachedStats<T>(key: string): T | null {
+        const cached = this.statsCache.get(key);
+        if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+            return cached.data as T;
+        }
+        this.statsCache.delete(key);
+        return null;
+    }
+
+    private setCachedStats<T>(key: string, data: T): void {
+        this.statsCache.set(key, { data, timestamp: Date.now() });
+    }
+
+    private invalidateUserCache(userId: number): void {
+        this.userCache.delete(userId);
+        this.statsCache.clear(); // Очищаем статистику при изменении пользователя
+    }
+
     @CreateUserSwaggerDecorator()
     @HttpCode(201)
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Post('/create')
     public async createUser(
         @Body() dto: CreateUserDto,
@@ -107,8 +174,8 @@ export class UserController implements IUserController {
 
     @GetListUsersSwaggerDecorator()
     @HttpCode(200)
-    @Roles(...UserController.STAFF_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...STAFF_ROLES)
+    @StaffGuards()
     @Get('/get-list-users')
     public async getListUsers(
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
@@ -119,42 +186,64 @@ export class UserController implements IUserController {
 
     @GetUserSwaggerDecorator()
     @HttpCode(200)
-    @Roles(...UserController.STAFF_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...STAFF_ROLES)
+    @StaffGuards()
     @Get('/:id')
     public async getUser(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<GetUserResponse> {
-        return this.userService.getUser(id);
+        // Проверяем кэш
+        const cached = this.getCachedUser(id);
+        if (cached) {
+            return cached;
+        }
+
+        // Получаем данные из сервиса
+        const result = await this.userService.getUser(id);
+        
+        // Кэшируем результат
+        this.setCachedUser(id, result);
+        
+        return result;
     }
 
     @UpdateUserSwaggerDecorator()
     @HttpCode(200)
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Put('/update/:id')
     public async updateUser(
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: UpdateUserDto,
     ): Promise<UpdateUserResponse> {
-        return this.userService.updateUser(id, dto as unknown as CreateUserDto);
+        const result = await this.userService.updateUser(id, dto as unknown as CreateUserDto);
+        
+        // Инвалидируем кэш при обновлении
+        this.invalidateUserCache(id);
+        
+        return result;
     }
 
     @RemoveUserSwaggerDecorator()
     @HttpCode(200)
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Delete('/delete/:id')
     public async removeUser(
         @Param('id', ParseIntPipe) id: number,
     ): Promise<RemoveUserResponse> {
-        return this.userService.removeUser(id);
+        const result = await this.userService.removeUser(id);
+        
+        // Инвалидируем кэш при удалении
+        this.invalidateUserCache(id);
+        
+        return result;
     }
 
     @AddRoleUserSwaggerDecorator()
     @HttpCode(201)
-    @Roles(...UserController.MANAGER_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...MANAGER_ROLES)
+    @ManagerGuards()
     @Post('/role/add')
     public async addRole(@Body() dto: AddRoleDto): Promise<AddRoleResponse> {
         return this.userService.addRole(dto);
@@ -162,8 +251,8 @@ export class UserController implements IUserController {
 
     @RemoveRoleUserSwaggerDecorator()
     @HttpCode(200)
-    @Roles(...UserController.MANAGER_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...MANAGER_ROLES)
+    @ManagerGuards()
     @Delete('/role/delete')
     public async removeRole(
         @Body() dto: RemoveRoleDto,
@@ -184,77 +273,77 @@ export class UserController implements IUserController {
         }
     }
 
-    @Roles(...UserController.USER_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...USER_ROLES)
+    @UserGuards()
     @UpdateUserPhoneSwaggerDecorator()
     @Patch('profile/phone')
     @HttpCode(HttpStatus.OK)
     async updatePhone(
         @Req() req: AuthenticatedRequest,
-        @Body(new CustomValidationPipe()) dto: UpdateUserPhoneDto,
+        @Body(validationPipe) dto: UpdateUserPhoneDto,
     ): Promise<{ data: UpdateUserPhoneResponse }> {
         const userId = this.extractUserId(req);
         const user = await this.userService.updatePhone(userId, dto.phone);
         return this.createResponse({ id: user.id, phone: user.phone! });
     }
 
-    @Roles(...UserController.USER_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...USER_ROLES)
+    @UserGuards()
     @UpdateUserProfileSwaggerDecorator()
     @Patch('profile')
     @HttpCode(HttpStatus.OK)
     async updateProfile(
         @Req() req: AuthenticatedRequest,
-        @Body(new CustomValidationPipe()) dto: UpdateUserProfileDto,
+        @Body(validationPipe) dto: UpdateUserProfileDto,
     ): Promise<UpdateUserResponse> {
         const userId = this.extractUserId(req);
         return this.userService.updateProfile(userId, dto);
     }
 
-    @Roles(...UserController.USER_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...USER_ROLES)
+    @UserGuards()
     @ChangePasswordSwaggerDecorator()
     @Patch('profile/password')
     @HttpCode(HttpStatus.OK)
     async changePassword(
         @Req() req: AuthenticatedRequest,
-        @Body(new CustomValidationPipe()) dto: ChangePasswordDto,
+        @Body(validationPipe) dto: ChangePasswordDto,
     ) {
         const userId = this.extractUserId(req);
         await this.userService.changePassword(userId, dto.oldPassword, dto.newPassword);
         return { status: HttpStatus.OK, message: 'success' };
     }
 
-    @Roles(...UserController.USER_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...USER_ROLES)
+    @UserGuards()
     @UpdateUserFlagsSwaggerDecorator()
     @Patch('profile/flags')
     @HttpCode(HttpStatus.OK)
     async updateFlags(
         @Req() req: AuthenticatedRequest,
-        @Body(new CustomValidationPipe()) dto: UpdateUserFlagsDto,
+        @Body(validationPipe) dto: UpdateUserFlagsDto,
     ) {
         const userId = this.extractUserId(req);
         const user = await this.userService.updateFlags(userId, dto);
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.USER_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...USER_ROLES)
+    @UserGuards()
     @UpdateUserPreferencesSwaggerDecorator()
     @Patch('profile/preferences')
     @HttpCode(HttpStatus.OK)
     async updatePreferences(
         @Req() req: AuthenticatedRequest,
-        @Body(new CustomValidationPipe()) dto: UpdateUserPreferencesDto,
+        @Body(validationPipe) dto: UpdateUserPreferencesDto,
     ) {
         const userId = this.extractUserId(req);
         const user = await this.userService.updatePreferences(userId, dto);
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @VerifyUserEmailSwaggerDecorator()
     @Patch('verify/email/:id')
     @HttpCode(HttpStatus.OK)
@@ -263,8 +352,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @VerifyUserPhoneSwaggerDecorator()
     @Patch('verify/phone/:id')
     @HttpCode(HttpStatus.OK)
@@ -274,8 +363,8 @@ export class UserController implements IUserController {
     }
 
     // Self-service verification (USER)
-    @Roles(...UserController.USER_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...USER_ROLES)
+    @UserGuards()
     @Post('verify/email/request')
     @HttpCode(HttpStatus.OK)
     async requestEmailCode(@Req() req: AuthenticatedRequest) {
@@ -284,21 +373,21 @@ export class UserController implements IUserController {
         return { status: HttpStatus.OK, message: 'success' };
     }
 
-    @Roles(...UserController.USER_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...USER_ROLES)
+    @UserGuards()
     @Post('verify/email/confirm')
     @HttpCode(HttpStatus.OK)
     async confirmEmailCode(
         @Req() req: AuthenticatedRequest,
-        @Body(new CustomValidationPipe()) dto: ConfirmVerificationDto,
+        @Body(validationPipe) dto: ConfirmVerificationDto,
     ) {
         const userId = this.extractUserId(req);
         await this.userService.confirmVerificationCode(userId, 'email', dto.code);
         return { status: HttpStatus.OK, message: 'success' };
     }
 
-    @Roles(...UserController.USER_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...USER_ROLES)
+    @UserGuards()
     @Post('verify/phone/request')
     @HttpCode(HttpStatus.OK)
     async requestPhoneCode(@Req() req: AuthenticatedRequest) {
@@ -307,13 +396,13 @@ export class UserController implements IUserController {
         return { status: HttpStatus.OK, message: 'success' };
     }
 
-    @Roles(...UserController.USER_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...USER_ROLES)
+    @UserGuards()
     @Post('verify/phone/confirm')
     @HttpCode(HttpStatus.OK)
     async confirmPhoneCode(
         @Req() req: AuthenticatedRequest,
-        @Body(new CustomValidationPipe()) dto: ConfirmVerificationDto,
+        @Body(validationPipe) dto: ConfirmVerificationDto,
     ) {
         const userId = this.extractUserId(req);
         await this.userService.confirmVerificationCode(userId, 'phone', dto.code);
@@ -321,8 +410,8 @@ export class UserController implements IUserController {
     }
 
     // ADMIN actions: block/unblock, suspend/unsuspend, delete/restore, premium upgrade/downgrade, employee on/off
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/block/:id')
     @HttpCode(HttpStatus.OK)
     async block(@Param('id', ParseIntPipe) id: number) {
@@ -330,8 +419,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/unblock/:id')
     @HttpCode(HttpStatus.OK)
     async unblock(@Param('id', ParseIntPipe) id: number) {
@@ -339,8 +428,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/suspend/:id')
     @HttpCode(HttpStatus.OK)
     async suspend(@Param('id', ParseIntPipe) id: number) {
@@ -348,8 +437,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/unsuspend/:id')
     @HttpCode(HttpStatus.OK)
     async unsuspend(@Param('id', ParseIntPipe) id: number) {
@@ -357,8 +446,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/delete/:id')
     @HttpCode(HttpStatus.OK)
     async softDelete(@Param('id', ParseIntPipe) id: number) {
@@ -366,8 +455,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/restore/:id')
     @HttpCode(HttpStatus.OK)
     async restore(@Param('id', ParseIntPipe) id: number) {
@@ -375,8 +464,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/premium/upgrade/:id')
     @HttpCode(HttpStatus.OK)
     async upgradePremium(@Param('id', ParseIntPipe) id: number) {
@@ -384,8 +473,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/premium/downgrade/:id')
     @HttpCode(HttpStatus.OK)
     async downgradePremium(@Param('id', ParseIntPipe) id: number) {
@@ -393,8 +482,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/employee/set/:id')
     @HttpCode(HttpStatus.OK)
     async setEmployee(@Param('id', ParseIntPipe) id: number) {
@@ -402,8 +491,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/employee/unset/:id')
     @HttpCode(HttpStatus.OK)
     async unsetEmployee(@Param('id', ParseIntPipe) id: number) {
@@ -411,8 +500,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/vip/set/:id')
     @HttpCode(HttpStatus.OK)
     async setVip(@Param('id', ParseIntPipe) id: number) {
@@ -420,8 +509,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/vip/unset/:id')
     @HttpCode(HttpStatus.OK)
     async unsetVip(@Param('id', ParseIntPipe) id: number) {
@@ -429,8 +518,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/highvalue/set/:id')
     @HttpCode(HttpStatus.OK)
     async setHighValue(@Param('id', ParseIntPipe) id: number) {
@@ -438,8 +527,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/highvalue/unset/:id')
     @HttpCode(HttpStatus.OK)
     async unsetHighValue(@Param('id', ParseIntPipe) id: number) {
@@ -447,8 +536,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/wholesale/set/:id')
     @HttpCode(HttpStatus.OK)
     async setWholesale(@Param('id', ParseIntPipe) id: number) {
@@ -456,8 +545,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/wholesale/unset/:id')
     @HttpCode(HttpStatus.OK)
     async unsetWholesale(@Param('id', ParseIntPipe) id: number) {
@@ -465,8 +554,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/affiliate/set/:id')
     @HttpCode(HttpStatus.OK)
     async setAffiliate(@Param('id', ParseIntPipe) id: number) {
@@ -474,8 +563,8 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Patch('admin/affiliate/unset/:id')
     @HttpCode(HttpStatus.OK)
     async unsetAffiliate(@Param('id', ParseIntPipe) id: number) {
@@ -485,13 +574,26 @@ export class UserController implements IUserController {
 
 
     // ===== Admin Statistics Endpoint =====
-    @Roles(...UserController.ADMIN_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @GetUserStatsSwaggerDecorator()
     @Get('admin/stats')
     @HttpCode(HttpStatus.OK)
     async getUserStats() {
+        const cacheKey = 'user_stats';
+        
+        // Проверяем кэш
+        const cached = this.getCachedStats(cacheKey);
+        if (cached) {
+            return this.createResponse(cached);
+        }
+
+        // Получаем данные из сервиса
         const stats = await this.userService.getUserStats();
+        
+        // Кэшируем результат
+        this.setCachedStats(cacheKey, stats);
+        
         return this.createResponse(stats);
     }
 }
