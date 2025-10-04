@@ -7,6 +7,8 @@ interface Seeder {
 
 const seeder: Seeder = {
     async up(queryInterface: QueryInterface): Promise<void> {
+        // Идемпотентность: очищаем таблицу ролей перед вставкой (безопасно для тестовых окружений)
+        await queryInterface.bulkDelete('role', {}, {});
         await queryInterface.bulkInsert('role', [
             // Системные роли (платформенные)
             {
