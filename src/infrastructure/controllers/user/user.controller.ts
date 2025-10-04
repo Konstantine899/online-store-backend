@@ -52,10 +52,21 @@ import { UpdateUserPhoneDto } from '@app/infrastructure/dto';
 import { ChangePasswordDto } from '@app/infrastructure/dto/user/change-password.dto';
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
+import { CreateUserAddressDto } from '@app/infrastructure/dto/user-address/create-user-address.dto';
+import { UpdateUserAddressDto } from '@app/infrastructure/dto/user-address/update-user-address.dto';
 import { UpdateUserFlagsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-flags.swagger';
 import { UpdateUserPreferencesSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-preferences.swagger';
 import { VerifyUserEmailSwaggerDecorator, VerifyUserPhoneSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/verify-user.swagger';
 import { UpdateUserProfileSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-profile.swagger';
+import {
+    CreateUserAddressSwaggerDecorator,
+    GetUserAddressesSwaggerDecorator,
+    GetUserAddressSwaggerDecorator,
+    UpdateUserAddressSwaggerDecorator,
+    DeleteUserAddressSwaggerDecorator,
+    SetDefaultAddressSwaggerDecorator,
+} from '@app/infrastructure/common/decorators/swagger/user/user-address.swagger';
+import { GetUserStatsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/user-stats.swagger';
 import { UpdateUserPhoneResponse } from '@app/infrastructure/responses';
 import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
 import { ConfirmVerificationDto } from '@app/infrastructure/dto/user/confirm-verification.dto';
@@ -480,5 +491,99 @@ export class UserController implements IUserController {
     async unsetAffiliate(@Param('id', ParseIntPipe) id: number) {
         const user = await this.userService.unsetAffiliate(id);
         return this.createResponse(user);
+    }
+
+    // ===== User Address Endpoints =====
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @CreateUserAddressSwaggerDecorator()
+    @Post('addresses')
+    @HttpCode(HttpStatus.CREATED)
+    async createAddress(
+        @Req() req: AuthenticatedRequest,
+        @Body(new CustomValidationPipe()) dto: CreateUserAddressDto,
+    ) {
+        const userId = this.extractUserId(req);
+        const address = await this.userService.createUserAddress(userId, dto);
+        return this.createResponse(address);
+    }
+
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @GetUserAddressesSwaggerDecorator()
+    @Get('addresses')
+    @HttpCode(HttpStatus.OK)
+    async getAddresses(@Req() req: AuthenticatedRequest) {
+        const userId = this.extractUserId(req);
+        const addresses = await this.userService.getUserAddresses(userId);
+        return this.createResponse(addresses);
+    }
+
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @GetUserAddressSwaggerDecorator()
+    @Get('addresses/:id')
+    @HttpCode(HttpStatus.OK)
+    async getAddress(
+        @Req() req: AuthenticatedRequest,
+        @Param('id', ParseIntPipe) id: number,
+    ) {
+        const userId = this.extractUserId(req);
+        const address = await this.userService.getUserAddress(userId, id);
+        return this.createResponse(address);
+    }
+
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @UpdateUserAddressSwaggerDecorator()
+    @Put('addresses/:id')
+    @HttpCode(HttpStatus.OK)
+    async updateAddress(
+        @Req() req: AuthenticatedRequest,
+        @Param('id', ParseIntPipe) id: number,
+        @Body(new CustomValidationPipe()) dto: UpdateUserAddressDto,
+    ) {
+        const userId = this.extractUserId(req);
+        const address = await this.userService.updateUserAddress(userId, id, dto);
+        return this.createResponse(address);
+    }
+
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @DeleteUserAddressSwaggerDecorator()
+    @Delete('addresses/:id')
+    @HttpCode(HttpStatus.OK)
+    async deleteAddress(
+        @Req() req: AuthenticatedRequest,
+        @Param('id', ParseIntPipe) id: number,
+    ) {
+        const userId = this.extractUserId(req);
+        await this.userService.deleteUserAddress(userId, id);
+        return { status: HttpStatus.OK, message: 'success' };
+    }
+
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @SetDefaultAddressSwaggerDecorator()
+    @Patch('addresses/:id/set-default')
+    @HttpCode(HttpStatus.OK)
+    async setDefaultAddress(
+        @Req() req: AuthenticatedRequest,
+        @Param('id', ParseIntPipe) id: number,
+    ) {
+        const userId = this.extractUserId(req);
+        const address = await this.userService.setDefaultAddress(userId, id);
+        return this.createResponse(address);
+    }
+
+    // ===== Admin Statistics Endpoint =====
+    @Roles(...UserController.ADMIN_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @GetUserStatsSwaggerDecorator()
+    @Get('admin/stats')
+    @HttpCode(HttpStatus.OK)
+    async getUserStats() {
+        const stats = await this.userService.getUserStats();
+        return this.createResponse(stats);
     }
 }
