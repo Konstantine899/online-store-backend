@@ -10,6 +10,8 @@ import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-fla
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
 import { CreateUserAddressDto } from '@app/infrastructure/dto/user-address/create-user-address.dto';
 import { UpdateUserAddressDto } from '@app/infrastructure/dto/user-address/update-user-address.dto';
+import { UpdateUserConsentsDto } from '@app/infrastructure/dto/user/update-user-consents.dto';
+import { BulkConsentUpdate } from '@app/infrastructure/dto/user/bulk-update-consents.dto';
 import { UserAddressModel } from '@app/domain/models';
 
 export interface IUserRepository {
@@ -64,5 +66,16 @@ export interface IUserRepository {
         affiliates: number;
         wholesaleUsers: number;
         highValueUsers: number;
+    }>;
+
+    // ===== User Consents Methods =====
+    updateUserConsents(userId: number, dto: UpdateUserConsentsDto): Promise<UserModel | null>;
+    bulkUpdateConsents(updates: BulkConsentUpdate[]): Promise<{ success: number; failed: number }>;
+    getConsentStats(): Promise<{
+        newsletterSubscribers: number;
+        marketingConsent: number;
+        cookieConsent: number;
+        termsAccepted: number;
+        privacyAccepted: number;
     }>;
 }

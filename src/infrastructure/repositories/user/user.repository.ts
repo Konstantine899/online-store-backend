@@ -20,6 +20,8 @@ import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-fla
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
 import { CreateUserAddressDto } from '@app/infrastructure/dto/user-address/create-user-address.dto';
 import { UpdateUserAddressDto } from '@app/infrastructure/dto/user-address/update-user-address.dto';
+import { UpdateUserConsentsDto } from '@app/infrastructure/dto/user/update-user-consents.dto';
+import { BulkConsentUpdate } from '@app/infrastructure/dto/user/bulk-update-consents.dto';
 import { UserAddressModel } from '@app/domain/models';
 import { Op } from 'sequelize';
 import { randomBytes, createHash } from 'crypto';
@@ -593,6 +595,119 @@ export class UserRepository implements IUserRepository {
             affiliates: (affiliates as { count: number }[])[0]?.count || 0,
             wholesaleUsers: (wholesaleUsers as { count: number }[])[0]?.count || 0,
             highValueUsers: (highValueUsers as { count: number }[])[0]?.count || 0,
+        };
+    }
+
+    // ===== User Consents Methods =====
+    public async updateUserConsents(userId: number, dto: UpdateUserConsentsDto): Promise<UserModel | null> {
+        const user = await this.userModel.findByPk(userId);
+        if (!user) return null;
+
+        // Фильтруем только определенные поля согласий
+        const consentData: Partial<UserModel> = {};
+        if (dto.is_newsletter_subscribed !== undefined) {
+            consentData.isNewsletterSubscribed = dto.is_newsletter_subscribed;
+        }
+        if (dto.is_marketing_consent !== undefined) {
+            consentData.isMarketingConsent = dto.is_marketing_consent;
+        }
+        if (dto.is_cookie_consent !== undefined) {
+            consentData.isCookieConsent = dto.is_cookie_consent;
+        }
+        if (dto.is_terms_accepted !== undefined) {
+            consentData.isTermsAccepted = dto.is_terms_accepted;
+        }
+        if (dto.is_privacy_accepted !== undefined) {
+            consentData.isPrivacyAccepted = dto.is_privacy_accepted;
+        }
+
+        await user.update(consentData);
+        return user.reload();
+    }
+
+    public async bulkUpdateConsents(updates: BulkConsentUpdate[]): Promise<{ success: number; failed: number }> {
+        const sequelize = this.userModel.sequelize;
+        if (!sequelize) {
+            throw new Error('Sequelize instance not available');
+        }
+
+        let success = 0;
+        let failed = 0;
+
+        for (const update of updates) {
+            try {
+                const { userId, ...consentDto } = update;
+                
+                // Проверяем существование пользователя
+                const user = await this.userModel.findByPk(userId);
+                if (!user) {
+                    failed++;
+                    continue;
+                }
+
+                // Фильтруем только определенные поля согласий
+                const consentData: Partial<UserModel> = {};
+                if (consentDto.is_newsletter_subscribed !== undefined) {
+                    consentData.isNewsletterSubscribed = consentDto.is_newsletter_subscribed;
+                }
+                if (consentDto.is_marketing_consent !== undefined) {
+                    consentData.isMarketingConsent = consentDto.is_marketing_consent;
+                }
+                if (consentDto.is_cookie_consent !== undefined) {
+                    consentData.isCookieConsent = consentDto.is_cookie_consent;
+                }
+                if (consentDto.is_terms_accepted !== undefined) {
+                    consentData.isTermsAccepted = consentDto.is_terms_accepted;
+                }
+                if (consentDto.is_privacy_accepted !== undefined) {
+                    consentData.isPrivacyAccepted = consentDto.is_privacy_accepted;
+                }
+
+                await user.update(consentData);
+                success++;
+            } catch (error) {
+                failed++;
+                console.error(`Failed to update consents for user ${update.userId}:`, error);
+            }
+        }
+
+        return { success, failed };
+    }
+
+    public async getConsentStats(): Promise<{
+        newsletterSubscribers: number;
+        marketingConsent: number;
+        cookieConsent: number;
+        termsAccepted: number;
+        privacyAccepted: number;
+    }> {
+        const sequelize = this.userModel.sequelize;
+        if (!sequelize) {
+            throw new Error('Sequelize instance not available');
+        }
+
+        const [newsletterSubscribers] = await sequelize.query(
+            'SELECT COUNT(*) as count FROM `user` WHERE `is_newsletter_subscribed` = 1 AND `is_deleted` = 0'
+        );
+        const [marketingConsent] = await sequelize.query(
+            'SELECT COUNT(*) as count FROM `user` WHERE `is_marketing_consent` = 1 AND `is_deleted` = 0'
+        );
+        const [cookieConsent] = await sequelize.query(
+            'SELECT COUNT(*) as count FROM `user` WHERE `is_cookie_consent` = 1 AND `is_deleted` = 0'
+        );
+        const [termsAccepted] = await sequelize.query(
+            'SELECT COUNT(*) as count FROM `user` WHERE `is_terms_accepted` = 1 AND `is_deleted` = 0'
+        );
+        const [privacyAccepted] = await sequelize.query(
+            'SELECT COUNT(*) as count FROM `user` WHERE `is_privacy_accepted` = 1 AND `is_deleted` = 0'
+        );
+
+        return {
+            newsletterSubscribers: (newsletterSubscribers as { count: number }[])[0]?.count || 0,
+            marketingConsent: (marketingConsent as { count: number }[])[0]?.count || 0,
+            cookieConsent: (cookieConsent as { count: number }[])[0]?.count || 0,
+            termsAccepted: (termsAccepted as { count: number }[])[0]?.count || 0,
+            privacyAccepted: (privacyAccepted as { count: number }[])[0]?.count || 0,
         };
     }
 }

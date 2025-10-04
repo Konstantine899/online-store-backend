@@ -17,6 +17,8 @@ import {
 import { UserModel, UserAddressModel } from '@app/domain/models';
 import { CreateUserAddressDto } from '@app/infrastructure/dto/user-address/create-user-address.dto';
 import { UpdateUserAddressDto } from '@app/infrastructure/dto/user-address/update-user-address.dto';
+import { UpdateUserConsentsDto } from '@app/infrastructure/dto/user/update-user-consents.dto';
+import { BulkUpdateConsentsDto } from '@app/infrastructure/dto/user/bulk-update-consents.dto';
 
 export interface IUserService {
     createUser(dto: CreateUserDto): Promise<CreateUserResponse>;
@@ -61,5 +63,16 @@ export interface IUserService {
         affiliates: number;
         wholesaleUsers: number;
         highValueUsers: number;
+    }>;
+
+    // ===== User Consents Methods =====
+    updateUserConsents(userId: number, dto: UpdateUserConsentsDto): Promise<UserModel>;
+    bulkUpdateConsents(dto: BulkUpdateConsentsDto): Promise<{ success: number; failed: number }>;
+    getConsentStats(): Promise<{
+        newsletterSubscribers: number;
+        marketingConsent: number;
+        cookieConsent: number;
+        termsAccepted: number;
+        privacyAccepted: number;
     }>;
 }

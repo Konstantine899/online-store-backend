@@ -23,6 +23,8 @@ import {
     UpdateUserProfileDto,
 } from '@app/infrastructure/dto';
 import { UpdateUserDto } from '@app/infrastructure/dto/user/update-user.dto';
+import { UpdateUserConsentsDto } from '@app/infrastructure/dto/user/update-user-consents.dto';
+import { BulkUpdateConsentsDto } from '@app/infrastructure/dto/user/bulk-update-consents.dto';
 
 import {
     Roles,
@@ -36,6 +38,7 @@ import {
     UpdateUserPhoneSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
 import { ChangePasswordSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/change-password.swagger';
+import { UpdateUserConsentsSwaggerDecorator, BulkUpdateConsentsSwaggerDecorator, GetConsentStatsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/user-consents.swagger';
 import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -584,6 +587,43 @@ export class UserController implements IUserController {
     @HttpCode(HttpStatus.OK)
     async getUserStats() {
         const stats = await this.userService.getUserStats();
+        return this.createResponse(stats);
+    }
+
+    // ===== User Consents Endpoints =====
+    @Roles(...UserController.USER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @UpdateUserConsentsSwaggerDecorator()
+    @Patch('profile/consents')
+    @HttpCode(HttpStatus.OK)
+    async updateConsents(
+        @Req() req: AuthenticatedRequest,
+        @Body(new CustomValidationPipe()) dto: UpdateUserConsentsDto,
+    ) {
+        const userId = this.extractUserId(req);
+        const user = await this.userService.updateUserConsents(userId, dto);
+        return this.createResponse(user);
+    }
+
+    @Roles(...UserController.MANAGER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @BulkUpdateConsentsSwaggerDecorator()
+    @Patch('admin/consents/bulk')
+    @HttpCode(HttpStatus.OK)
+    async bulkUpdateConsents(
+        @Body(new CustomValidationPipe()) dto: BulkUpdateConsentsDto,
+    ) {
+        const result = await this.userService.bulkUpdateConsents(dto);
+        return this.createResponse(result);
+    }
+
+    @Roles(...UserController.MANAGER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @GetConsentStatsSwaggerDecorator()
+    @Get('admin/consents/stats')
+    @HttpCode(HttpStatus.OK)
+    async getConsentStats() {
+        const stats = await this.userService.getConsentStats();
         return this.createResponse(stats);
     }
 }

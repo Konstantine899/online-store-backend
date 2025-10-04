@@ -32,6 +32,8 @@ import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-fla
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
 import { CreateUserAddressDto } from '@app/infrastructure/dto/user-address/create-user-address.dto';
 import { UpdateUserAddressDto } from '@app/infrastructure/dto/user-address/update-user-address.dto';
+import { UpdateUserConsentsDto } from '@app/infrastructure/dto/user/update-user-consents.dto';
+import { BulkUpdateConsentsDto } from '@app/infrastructure/dto/user/bulk-update-consents.dto';
 import { UserAddressModel } from '@app/domain/models';
 import { LoginHistoryService } from '../login-history/login-history.service';
 
@@ -555,5 +557,28 @@ export class UserService implements IUserService {
         highValueUsers: number;
     }> {
         return this.userRepository.getUserStats();
+    }
+
+    // ===== User Consents Methods =====
+    public async updateUserConsents(userId: number, dto: UpdateUserConsentsDto): Promise<UserModel> {
+        const user = await this.userRepository.updateUserConsents(userId, dto);
+        if (!user) {
+            throw new NotFoundException('Пользователь не найден');
+        }
+        return user as UserModel;
+    }
+
+    public async bulkUpdateConsents(dto: BulkUpdateConsentsDto): Promise<{ success: number; failed: number }> {
+        return this.userRepository.bulkUpdateConsents(dto.updates);
+    }
+
+    public async getConsentStats(): Promise<{
+        newsletterSubscribers: number;
+        marketingConsent: number;
+        cookieConsent: number;
+        termsAccepted: number;
+        privacyAccepted: number;
+    }> {
+        return this.userRepository.getConsentStats();
     }
 }
