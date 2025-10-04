@@ -37,12 +37,82 @@ export class UserService implements IUserService {
     private static readonly ADMIN_EMAILS = ['kostay375298918971@gmail.com'] as const;
     private static readonly DEFAULT_ROLE = 'CUSTOMER' as const;
     
+    // Кэш для часто запрашиваемых данных
+    private readonly userCache = new Map<number, UserModel>();
+    private readonly roleCache = new Map<string, { id: number; role: string; description: string }>();
+    private readonly CACHE_TTL = 5 * 60 * 1000; // 5 минут
+    private readonly cacheTimestamps = new Map<string, number>();
+    
     constructor(
         private readonly userRepository: UserRepository,
         private roleService: RoleService,
         @InjectModel(UserModel) private readonly userModel: typeof UserModel,
         private readonly loginHistoryService: LoginHistoryService,
     ) {}
+
+    // Методы кэширования
+    private getCachedUser(userId: number): UserModel | null {
+        const cached = this.userCache.get(userId);
+        const timestamp = this.cacheTimestamps.get(`user_${userId}`);
+        if (cached && timestamp && Date.now() - timestamp < this.CACHE_TTL) {
+            return cached;
+        }
+        this.userCache.delete(userId);
+        this.cacheTimestamps.delete(`user_${userId}`);
+        return null;
+    }
+
+    private setCachedUser(userId: number, user: UserModel): void {
+        this.userCache.set(userId, user);
+        this.cacheTimestamps.set(`user_${userId}`, Date.now());
+    }
+
+    private getCachedRole(roleName: string): { id: number; role: string; description: string } | null {
+        const cached = this.roleCache.get(roleName);
+        const timestamp = this.cacheTimestamps.get(`role_${roleName}`);
+        if (cached && timestamp && Date.now() - timestamp < this.CACHE_TTL) {
+            return cached;
+        }
+        this.roleCache.delete(roleName);
+        this.cacheTimestamps.delete(`role_${roleName}`);
+        return null;
+    }
+
+    private setCachedRole(roleName: string, role: { id: number; role: string; description: string }): void {
+        this.roleCache.set(roleName, role);
+        this.cacheTimestamps.set(`role_${roleName}`, Date.now());
+    }
+
+    private invalidateUserCache(userId: number): void {
+        this.userCache.delete(userId);
+        this.cacheTimestamps.delete(`user_${userId}`);
+    }
+
+    private invalidateRoleCache(): void {
+        this.roleCache.clear();
+        Array.from(this.cacheTimestamps.keys())
+            .filter(key => key.startsWith('role_'))
+            .forEach(key => this.cacheTimestamps.delete(key));
+    }
+
+    // Оптимизированный метод получения роли с кэшированием
+    private async getRoleWithCache(roleName: string): Promise<{ id: number; role: string; description: string } | null> {
+        // Проверяем кэш
+        const cached = this.getCachedRole(roleName);
+        if (cached) {
+            return cached;
+        }
+
+        // Получаем роль из сервиса
+        const role = await this.roleService.getRole(roleName);
+        
+        // Кэшируем результат
+        if (role) {
+            this.setCachedRole(roleName, role);
+        }
+        
+        return role;
+    }
 
     public async createUser(dto: CreateUserDto): Promise<CreateUserResponse> {
         const findEmail = await this.userRepository.findUserByEmail(dto.email);
@@ -52,10 +122,10 @@ export class UserService implements IUserService {
             );
         }
         try {
-            const role = await this.determineUserRole(dto.email) as UserModel['roles'][0];
+            const role = await this.determineUserRole(dto.email);
             const user = await this.userRepository.createUser(dto);
             await this.linkUserRole(user.id, role.id);
-            user.roles = [role];
+            user.roles = [role as UserModel['roles'][0]];
             return this.userRepository.findRegisteredUser(user.id);
         } catch (error: unknown) {
             if (error instanceof Error && error.name === 'SequelizeUniqueConstraintError') {
@@ -70,10 +140,21 @@ export class UserService implements IUserService {
     }
 
     public async getUser(id: number): Promise<GetUserResponse> {
+        // Проверяем кэш
+        const cached = this.getCachedUser(id);
+        if (cached) {
+            return cached as GetUserResponse;
+        }
+
+        // Получаем данные из репозитория
         const foundUser = await this.userRepository.findUser(id);
         if (!foundUser) {
             this.notFound('Пользователь не найден В БД');
         }
+
+        // Кэшируем результат
+        this.setCachedUser(id, foundUser as UserModel);
+        
         return foundUser;
     }
 
@@ -125,12 +206,19 @@ export class UserService implements IUserService {
             }
             throw error;
         }
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(id);
+        
         // Удаляем все существующие роли пользователя
         await this.unlinkAllUserRoles(updatedUser.id);
         // Добавляем роль CUSTOMER
-        const role = await this.roleService.getRole('CUSTOMER');
-        await this.linkUserRole(updatedUser.id, role.id);
-        updatedUser.roles = [role];
+        const role = await this.getRoleWithCache('CUSTOMER');
+        if (!role) {
+            this.notFound('Роль CUSTOMER не найдена');
+        }
+        await this.linkUserRole(updatedUser.id, role!.id);
+        updatedUser.roles = [role as UserModel['roles'][0]];
         return updatedUser;
     }
 
@@ -142,6 +230,10 @@ export class UserService implements IUserService {
         const roleId = await this.getRolesUser(user);
         await user.$remove('role', roleId!);
         await this.userRepository.removeUser(user.id);
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(id);
+        
         return {
             status: HttpStatus.OK,
             message: 'success',
@@ -153,15 +245,19 @@ export class UserService implements IUserService {
         if (!user) {
             this.notFound('Пользователь не найден в БД');
         }
-        const foundRole = await this.roleService.getRole(dto.role);
+        const foundRole = await this.getRoleWithCache(dto.role);
         if (!foundRole) {
             this.notFound('Роль не найдена в БД');
         }
-        const alreadyHas = await this.isUserRoleExists(user.id, foundRole.id);
+        const alreadyHas = await this.isUserRoleExists(user.id, foundRole!.id);
         if (alreadyHas) {
-            this.conflictException(`Данному пользователю уже присвоена роль ${foundRole.role}`);
+            this.conflictException(`Данному пользователю уже присвоена роль ${foundRole!.role}`);
         }
-        await this.linkUserRole(user.id, foundRole.id);
+        await this.linkUserRole(user.id, foundRole!.id);
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(dto.userId);
+        
         return this.userRepository.findUser(user.id);
     }
 
@@ -172,11 +268,15 @@ export class UserService implements IUserService {
         if (!user) {
             this.notFound('Пользователь не найден в БД');
         }
-        const role = await this.roleService.getRole(dto.role);
+        const role = await this.getRoleWithCache(dto.role);
         if (!role) {
             this.notFound('Роль не найдена в БД');
         }
-        await this.unlinkUserRole(user.id, role.id);
+        await this.unlinkUserRole(user.id, role!.id);
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(dto.userId);
+        
         return {
             status: HttpStatus.OK,
             message: 'success',
@@ -188,16 +288,13 @@ export class UserService implements IUserService {
             if (!user) {
                 throw new NotFoundException('Пользователь не найден');
             }
+            
+            // Инвалидируем кэш пользователя
+            this.invalidateUserCache(userId);
+            
             return user;
         } catch (error: unknown) {
-            if (error instanceof Error) {
-                if (error.name === 'SequelizeValidationError') {
-                    throw new BadRequestException(['Неверный формат номера телефона']);
-                }
-                if (error.name === 'SequelizeUniqueConstraintError') {
-                    this.conflictException('Такой номер телефона уже используется');
-                }
-            }
+            this.handleSequelizeError(error, 'обновление телефона');
             throw error;
         }
     }
@@ -206,17 +303,18 @@ export class UserService implements IUserService {
         userId: number,
         dto: UpdateUserProfileDto,
     ): Promise<UpdateUserResponse> {
-        const user = await this.userRepository.findUser(userId);
-        if (!user) {
-            throw new NotFoundException('Пользователь не найден');
-        }
+        await this.ensureUserExists(userId, 'обновление профиля');
 
         try {
-            return await this.userRepository.updateUserProfile(user, dto);
+            const user = await this.userRepository.findUser(userId);
+            const result = await this.userRepository.updateUserProfile(user!, dto);
+            
+            // Инвалидируем кэш пользователя
+            this.invalidateUserCache(userId);
+            
+            return result;
         } catch (error: unknown) {
-            if (error instanceof Error && error.name === 'SequelizeValidationError') {
-                throw new BadRequestException(['Некорректные данные профиля']);
-            }
+            this.handleSequelizeError(error, 'обновление профиля');
             throw error;
         }
     }
@@ -233,21 +331,36 @@ export class UserService implements IUserService {
         }
         const hashed = await hash(newPassword, 10);
         await userWithPassword.update({ password: hashed });
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
     }
 
     public async updateFlags(userId: number, dto: UpdateUserFlagsDto): Promise<UserModel> {
+        await this.ensureUserExists(userId, 'обновление флагов');
+        
         const user = await this.userRepository.updateFlags(userId, dto);
         if (!user) {
             this.notFound('Пользователь не найден в БД');
         }
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async updatePreferences(userId: number, dto: UpdateUserPreferencesDto): Promise<UserModel> {
+        await this.ensureUserExists(userId, 'обновление настроек');
+        
         const user = await this.userRepository.updatePreferences(userId, dto);
         if (!user) {
             this.notFound('Пользователь не найден в БД');
         }
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
@@ -256,6 +369,10 @@ export class UserService implements IUserService {
         if (!user) {
             this.notFound('Пользователь не найден в БД');
         }
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
@@ -264,6 +381,10 @@ export class UserService implements IUserService {
         if (!user) {
             this.notFound('Пользователь не найден в БД');
         }
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
@@ -271,108 +392,180 @@ export class UserService implements IUserService {
     public async blockUser(userId: number): Promise<UserModel> {
         const user = await this.userRepository.blockUser(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async unblockUser(userId: number): Promise<UserModel> {
         const user = await this.userRepository.unblockUser(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async suspendUser(userId: number): Promise<UserModel> {
         const user = await this.userRepository.suspendUser(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async unsuspendUser(userId: number): Promise<UserModel> {
         const user = await this.userRepository.unsuspendUser(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async softDeleteUser(userId: number): Promise<UserModel> {
         const user = await this.userRepository.softDeleteUser(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async restoreUser(userId: number): Promise<UserModel> {
         const user = await this.userRepository.restoreUser(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async upgradePremium(userId: number): Promise<UserModel> {
         const user = await this.userRepository.upgradePremium(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async downgradePremium(userId: number): Promise<UserModel> {
         const user = await this.userRepository.downgradePremium(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async setEmployee(userId: number): Promise<UserModel> {
         const user = await this.userRepository.setEmployee(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async unsetEmployee(userId: number): Promise<UserModel> {
         const user = await this.userRepository.unsetEmployee(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async setVip(userId: number): Promise<UserModel> {
         const user = await this.userRepository.setVip(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async unsetVip(userId: number): Promise<UserModel> {
         const user = await this.userRepository.unsetVip(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async setHighValue(userId: number): Promise<UserModel> {
         const user = await this.userRepository.setHighValue(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async unsetHighValue(userId: number): Promise<UserModel> {
         const user = await this.userRepository.unsetHighValue(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async setWholesale(userId: number): Promise<UserModel> {
         const user = await this.userRepository.setWholesale(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async unsetWholesale(userId: number): Promise<UserModel> {
         const user = await this.userRepository.unsetWholesale(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async setAffiliate(userId: number): Promise<UserModel> {
         const user = await this.userRepository.setAffiliate(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
     public async unsetAffiliate(userId: number): Promise<UserModel> {
         const user = await this.userRepository.unsetAffiliate(userId);
         if (!user) this.notFound('Пользователь не найден в БД');
+        
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(userId);
+        
         return user as UserModel;
     }
 
@@ -419,59 +612,119 @@ export class UserService implements IUserService {
         });
     }
 
-    private async determineUserRole(email: string): Promise<unknown> {
+    // Оптимизированные методы обработки ошибок
+    private handleSequelizeError(error: unknown, context: string): void {
+        if (error instanceof Error) {
+            if (error.name === 'SequelizeValidationError') {
+                this.badRequest(`Некорректные данные: ${context}`);
+            } else if (error.name === 'SequelizeUniqueConstraintError') {
+                this.conflictException(`Конфликт данных: ${context}`);
+            } else if (error.name === 'SequelizeForeignKeyConstraintError') {
+                this.badRequest(`Нарушение связей: ${context}`);
+            }
+        }
+        throw error;
+    }
+
+    // Оптимизированный метод для проверки существования пользователя
+    private async ensureUserExists(userId: number, context: string = 'операция'): Promise<UserModel> {
+        const user = await this.userRepository.findUser(userId);
+        if (!user) {
+            this.notFound(`Пользователь не найден для ${context}`);
+        }
+        return user as UserModel;
+    }
+
+    private async determineUserRole(email: string): Promise<{ id: number; role: string; description: string }> {
         if (UserService.ADMIN_EMAILS.includes(email as typeof UserService.ADMIN_EMAILS[number])) {
-            let role = await this.roleService.getRole('ADMIN');
+            let role = await this.getRoleWithCache('ADMIN');
             if (!role) {
                 role = await this.roleService.createRole({
                     role: 'ADMIN',
                     description: 'Администратор',
                 });
+                this.setCachedRole('ADMIN', role);
             }
             return role;
         }
         
-        let role = await this.roleService.getRole(UserService.DEFAULT_ROLE);
+        let role = await this.getRoleWithCache(UserService.DEFAULT_ROLE);
         if (!role) {
             role = await this.roleService.createRole({
                 role: UserService.DEFAULT_ROLE,
                 description: 'Покупатель',
             });
+            this.setCachedRole(UserService.DEFAULT_ROLE, role);
         }
         return role;
     }
 
+    // Оптимизированные методы работы с ролями через транзакции
     private async linkUserRole(userId: number, roleId: number): Promise<void> {
         const sequelize = this.userModel.sequelize;
         if (!sequelize) return;
-        const now = new Date();
-        await sequelize.query(
-            'INSERT INTO `user_role` (`user_id`,`role_id`,`created_at`,`updated_at`) VALUES (?,?,?,?)',
-            { replacements: [userId, roleId, now, now] },
-        );
+        
+        const transaction = await sequelize.transaction();
+        try {
+            const now = new Date();
+            await sequelize.query(
+                'INSERT INTO `user_role` (`user_id`,`role_id`,`created_at`,`updated_at`) VALUES (?,?,?,?)',
+                { 
+                    replacements: [userId, roleId, now, now],
+                    transaction 
+                },
+            );
+            await transaction.commit();
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
     }
 
     private async unlinkUserRole(userId: number, roleId: number): Promise<void> {
         const sequelize = this.userModel.sequelize;
         if (!sequelize) return;
-        await sequelize.query(
-            'DELETE FROM `user_role` WHERE `user_id` = ? AND `role_id` = ? LIMIT 1',
-            { replacements: [userId, roleId] },
-        );
+        
+        const transaction = await sequelize.transaction();
+        try {
+            await sequelize.query(
+                'DELETE FROM `user_role` WHERE `user_id` = ? AND `role_id` = ? LIMIT 1',
+                { 
+                    replacements: [userId, roleId],
+                    transaction 
+                },
+            );
+            await transaction.commit();
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
     }
 
     private async unlinkAllUserRoles(userId: number): Promise<void> {
         const sequelize = this.userModel.sequelize;
         if (!sequelize) return;
-        await sequelize.query(
-            'DELETE FROM `user_role` WHERE `user_id` = ?',
-            { replacements: [userId] },
-        );
+        
+        const transaction = await sequelize.transaction();
+        try {
+            await sequelize.query(
+                'DELETE FROM `user_role` WHERE `user_id` = ?',
+                { 
+                    replacements: [userId],
+                    transaction 
+                },
+            );
+            await transaction.commit();
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
     }
 
     private async isUserRoleExists(userId: number, roleId: number): Promise<boolean> {
         const sequelize = this.userModel.sequelize;
         if (!sequelize) return false;
+        
         const [rows] = await sequelize.query(
             'SELECT 1 FROM `user_role` WHERE `user_id` = ? AND `role_id` = ? LIMIT 1',
             { replacements: [userId, roleId] },

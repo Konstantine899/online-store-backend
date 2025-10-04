@@ -45,7 +45,12 @@
     "db:seed:undo:all:test": "cross-env NODE_ENV=test npx sequelize-cli db:seed:undo:all --config db/config/database.js --seeders-path db/seeders",
     "db:create:test": "cross-env NODE_ENV=test npx sequelize-cli db:create --config db/config/database.js",
     "db:drop:test": "cross-env NODE_ENV=test npx sequelize-cli db:drop --config db/config/database.js",
-    "db:reset:test": "npm run db:drop:test && npm run db:create:test && npm run db:migrate:test && npm run db:seed:test"
+    "db:reset:test": "npm run db:drop:test && npm run db:create:test && npm run db:migrate:test && npm run db:seed:test",
+    "cleanup:ports": "node -e \"if(process.platform==='win32'){require('child_process').exec('powershell -ExecutionPolicy Bypass -File scripts/cleanup-ports.ps1')}else{require('child_process').exec('bash scripts/cleanup-ports.sh')}\"",
+    "cleanup:ports:force": "node -e \"if(process.platform==='win32'){require('child_process').exec('powershell -ExecutionPolicy Bypass -File scripts/cleanup-ports.ps1 -Force')}else{require('child_process').exec('bash scripts/cleanup-ports.sh --force')}\"",
+    "cleanup:ports:all": "node -e \"if(process.platform==='win32'){require('child_process').exec('powershell -ExecutionPolicy Bypass -File scripts/cleanup-ports.ps1 -AllNodeProcesses')}else{require('child_process').exec('bash scripts/cleanup-ports.sh --all-node')}\"",
+    "cleanup:ports:all:force": "node -e \"if(process.platform==='win32'){require('child_process').exec('powershell -ExecutionPolicy Bypass -File scripts/cleanup-ports.ps1 -AllNodeProcesses -Force')}else{require('child_process').exec('bash scripts/cleanup-ports.sh --all-node --force')}\"",
+    "start:clean": "npm run cleanup:ports:force && npm run start:dev"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

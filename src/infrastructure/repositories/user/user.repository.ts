@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UserModel } from '@app/domain/models';
 import {
@@ -20,14 +20,203 @@ import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-fla
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
 import { randomBytes, createHash } from 'crypto';
 
+// Типы для кэширования
+type UserStats = {
+    totalUsers: number;
+    activeUsers: number;
+    blockedUsers: number;
+    vipUsers: number;
+    newsletterSubscribers: number;
+    premiumUsers: number;
+    employees: number;
+    affiliates: number;
+    wholesaleUsers: number;
+    highValueUsers: number;
+};
+
 @Injectable()
 export class UserRepository implements IUserRepository {
     private static readonly BCRYPT_ROUNDS = 10;
     private static readonly USER_FIELDS = ['email', 'password', 'phone'] as const;
     
+    // Кэш для часто запрашиваемых данных
+    private readonly userCache = new Map<number, UserModel>();
+    private readonly statsCache = new Map<string, UserStats>();
+    private readonly CACHE_TTL = 5 * 60 * 1000; // 5 минут
+    private readonly cacheTimestamps = new Map<string, number>();
+    
     constructor(
         @InjectModel(UserModel) private userModel: typeof UserModel,
     ) {}
+
+    // Методы кэширования
+    private getCachedUser(userId: number): UserModel | null {
+        const cached = this.userCache.get(userId);
+        const timestamp = this.cacheTimestamps.get(`user_${userId}`);
+        if (cached && timestamp && Date.now() - timestamp < this.CACHE_TTL) {
+            return cached;
+        }
+        this.userCache.delete(userId);
+        this.cacheTimestamps.delete(`user_${userId}`);
+        return null;
+    }
+
+    private setCachedUser(userId: number, user: UserModel): void {
+        this.userCache.set(userId, user);
+        this.cacheTimestamps.set(`user_${userId}`, Date.now());
+    }
+
+    private getCachedStats(key: string): UserStats | null {
+        const cached = this.statsCache.get(key);
+        const timestamp = this.cacheTimestamps.get(`stats_${key}`);
+        if (cached && timestamp && Date.now() - timestamp < this.CACHE_TTL) {
+            return cached;
+        }
+        this.statsCache.delete(key);
+        this.cacheTimestamps.delete(`stats_${key}`);
+        return null;
+    }
+
+    private setCachedStats(key: string, data: UserStats): void {
+        this.statsCache.set(key, data);
+        this.cacheTimestamps.set(`stats_${key}`, Date.now());
+    }
+
+    private invalidateUserCache(userId: number): void {
+        this.userCache.delete(userId);
+        this.cacheTimestamps.delete(`user_${userId}`);
+        // Очищаем кэш статистики при изменении пользователя
+        this.statsCache.clear();
+        Array.from(this.cacheTimestamps.keys())
+            .filter(key => key.startsWith('stats_'))
+            .forEach(key => this.cacheTimestamps.delete(key));
+    }
+
+    // Централизованные методы обработки ошибок
+    private handleSequelizeError(error: unknown, context: string): void {
+        if (error instanceof Error) {
+            if (error.name === 'SequelizeValidationError') {
+                throw new BadRequestException(`Некорректные данные: ${context}`);
+            } else if (error.name === 'SequelizeUniqueConstraintError') {
+                throw new ConflictException(`Конфликт данных: ${context}`);
+            } else if (error.name === 'SequelizeForeignKeyConstraintError') {
+                throw new BadRequestException(`Нарушение связей: ${context}`);
+            } else if (error.name === 'SequelizeConnectionError') {
+                throw new BadRequestException(`Ошибка подключения к БД: ${context}`);
+            }
+        }
+        throw error;
+    }
+
+    private ensureUserExists(user: UserModel | null, context: string = 'операция'): UserModel {
+        if (!user) {
+            throw new NotFoundException(`Пользователь не найден для ${context}`);
+        }
+        return user;
+    }
+
+    // Батчевые операции для массовых обновлений
+    public async batchUpdateFlags(userIds: number[], updates: Partial<UpdateUserFlagsDto>): Promise<number> {
+        const sequelize = this.userModel.sequelize;
+        if (!sequelize) {
+            throw new Error('Sequelize instance not available');
+        }
+
+        const transaction = await sequelize.transaction();
+        try {
+            const updateFields: string[] = [];
+            const updateValues: (string | number | boolean | Date | null)[] = [];
+
+            // Строим динамический запрос
+            Object.entries(updates).forEach(([key, value]) => {
+                if (value !== undefined) {
+                    updateFields.push(`\`${key}\` = ?`);
+                    // Для сложных объектов используем JSON.stringify
+                    const serializedValue = typeof value === 'object' && value !== null 
+                        ? JSON.stringify(value) 
+                        : value;
+                    updateValues.push(serializedValue as string | number | boolean | Date | null);
+                }
+            });
+
+            if (updateFields.length === 0) {
+                await transaction.rollback();
+                return 0;
+            }
+
+            updateValues.push(...userIds);
+            const query = `
+                UPDATE \`user\` 
+                SET ${updateFields.join(', ')}, \`updated_at\` = ?
+                WHERE \`id\` IN (${userIds.map(() => '?').join(',')})
+            `;
+
+            const [affectedRows] = await sequelize.query(query, {
+                replacements: [new Date(), ...updateValues],
+                transaction
+            });
+
+            // Инвалидируем кэш для всех затронутых пользователей
+            userIds.forEach(userId => this.invalidateUserCache(userId));
+
+            await transaction.commit();
+            return Array.isArray(affectedRows) ? affectedRows.length : 0;
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
+    }
+
+    public async batchUpdatePreferences(userIds: number[], updates: Partial<UpdateUserPreferencesDto>): Promise<number> {
+        const sequelize = this.userModel.sequelize;
+        if (!sequelize) {
+            throw new Error('Sequelize instance not available');
+        }
+
+        const transaction = await sequelize.transaction();
+        try {
+            const updateFields: string[] = [];
+            const updateValues: (string | number | boolean | Date | null)[] = [];
+
+            // Строим динамический запрос
+            Object.entries(updates).forEach(([key, value]) => {
+                if (value !== undefined) {
+                    updateFields.push(`\`${key}\` = ?`);
+                    // Для сложных объектов используем JSON.stringify
+                    const serializedValue = typeof value === 'object' && value !== null 
+                        ? JSON.stringify(value) 
+                        : value;
+                    updateValues.push(serializedValue as string | number | boolean | Date | null);
+                }
+            });
+
+            if (updateFields.length === 0) {
+                await transaction.rollback();
+                return 0;
+            }
+
+            updateValues.push(...userIds);
+            const query = `
+                UPDATE \`user\` 
+                SET ${updateFields.join(', ')}, \`updated_at\` = ?
+                WHERE \`id\` IN (${userIds.map(() => '?').join(',')})
+            `;
+
+            const [affectedRows] = await sequelize.query(query, {
+                replacements: [new Date(), ...updateValues],
+                transaction
+            });
+
+            // Инвалидируем кэш для всех затронутых пользователей
+            userIds.forEach(userId => this.invalidateUserCache(userId));
+
+            await transaction.commit();
+            return Array.isArray(affectedRows) ? affectedRows.length : 0;
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
+    }
 
     private pickAllowedFromCreate(dto: CreateUserDto): {
         email: string;
@@ -40,41 +229,59 @@ export class UserRepository implements IUserRepository {
     }
 
     public async createUser(dto: CreateUserDto): Promise<UserModel> {
-        const allowedFields = this.pickAllowedFromCreate(dto);
-        const hashedPassword = await hash(
-            allowedFields.password!,
-            UserRepository.BCRYPT_ROUNDS,
-        );
+        try {
+            const allowedFields = this.pickAllowedFromCreate(dto);
+            const hashedPassword = await hash(
+                allowedFields.password!,
+                UserRepository.BCRYPT_ROUNDS,
+            );
 
-        return this.userModel.create({
-            email: allowedFields.email,
-            password: hashedPassword,
-            firstName: allowedFields.firstName,
-            lastName: allowedFields.lastName,
-        });
+            const user = await this.userModel.create({
+                email: allowedFields.email,
+                password: hashedPassword,
+                firstName: allowedFields.firstName,
+                lastName: allowedFields.lastName,
+            });
+            
+            // Кэшируем нового пользователя
+            this.setCachedUser(user.id, user);
+            
+            return user;
+        } catch (error: unknown) {
+            this.handleSequelizeError(error, 'создание пользователя');
+            throw error;
+        }
     }
 
     public async updateUser(
         user: UserModel,
         dto: UpdateUserDto,
     ): Promise<UpdateUserResponse> {
-        const updates: Partial<UserModel> = {} as Partial<UserModel>;
-        if (dto.email !== undefined)
-            updates.email = dto.email as unknown as string;
-        if (dto.password !== undefined)
-            updates.password = await hash(
-                dto.password,
-                UserRepository.BCRYPT_ROUNDS,
-            );
-        if (dto.firstName !== undefined)
-            updates.firstName = dto.firstName as unknown as string;
-        if (dto.lastName !== undefined)
-            updates.lastName = dto.lastName as unknown as string;
-        await user.update(updates);
+        try {
+            const updates: Partial<UserModel> = {} as Partial<UserModel>;
+            if (dto.email !== undefined)
+                updates.email = dto.email as unknown as string;
+            if (dto.password !== undefined)
+                updates.password = await hash(
+                    dto.password,
+                    UserRepository.BCRYPT_ROUNDS,
+                );
+            if (dto.firstName !== undefined)
+                updates.firstName = dto.firstName as unknown as string;
+            if (dto.lastName !== undefined)
+                updates.lastName = dto.lastName as unknown as string;
+            await user.update(updates);
 
-        return this.userModel
-            .scope('withRoles')
-            .findByPk(user.id) as Promise<UpdateUserResponse>;
+            // Инвалидируем кэш пользователя
+            this.invalidateUserCache(user.id);
+
+            return this.userModel
+                .scope('withRoles')
+                .findByPk(user.id) as Promise<UpdateUserResponse>;
+        } catch (error: unknown) {
+            this.handleSequelizeError(error, 'обновление пользователя');
+            throw error;
+        }
     }
 
     public async updateUserProfile(
@@ -88,6 +295,9 @@ export class UserRepository implements IUserRepository {
             updates.lastName = dto.lastName as unknown as string;
         await user.update(updates);
 
+        // Инвалидируем кэш пользователя
+        this.invalidateUserCache(user.id);
+
         return this.userModel
             .scope('withRoles')
             .findByPk(user.id) as Promise<UpdateUserResponse>;
@@ -98,11 +308,25 @@ export class UserRepository implements IUserRepository {
         return this.userModel.scope('forAuth').findByPk(userId);
     }
 
-    // Используем scope withRoles
+    // Используем scope withRoles с кэшированием
     public async findUser(id: number): Promise<GetUserResponse> {
-        return this.userModel
+        // Проверяем кэш
+        const cached = this.getCachedUser(id);
+        if (cached) {
+            return cached as GetUserResponse;
+        }
+
+        // Получаем данные из БД
+        const user = await this.userModel
             .scope('withRoles')
-            .findByPk(id) as Promise<GetUserResponse>;
+            .findByPk(id) as GetUserResponse;
+        
+        // Кэшируем результат
+        if (user) {
+            this.setCachedUser(id, user as UserModel);
+        }
+        
+        return user;
     }
 
     // Используется в модуле Rating и Order
@@ -197,7 +421,33 @@ export class UserRepository implements IUserRepository {
     }
 
     public async removeUser(id: number): Promise<number> {
-        return this.userModel.destroy({ where: { id } });
+        const sequelize = this.userModel.sequelize;
+        if (!sequelize) {
+            throw new Error('Sequelize instance not available');
+        }
+
+        const transaction = await sequelize.transaction();
+        try {
+            // Удаляем связанные записи в транзакции
+            await sequelize.query(
+                'DELETE FROM `user_role` WHERE `user_id` = ?',
+                { replacements: [id], transaction }
+            );
+            
+            const result = await this.userModel.destroy({ 
+                where: { id },
+                transaction
+            });
+            
+            // Инвалидируем кэш
+            this.invalidateUserCache(id);
+            
+            await transaction.commit();
+            return result;
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
     }
 
     public async updatePhone(userId: number, phone: string): Promise<UserModel> {
@@ -211,53 +461,87 @@ export class UserRepository implements IUserRepository {
     }
 
     public async updateFlags(userId: number, dto: UpdateUserFlagsDto): Promise<UserModel | null> {
-        const user = await this.userModel.findByPk(userId);
-        if (!user) return null;
-        await user.update({
-            isActive: dto.isActive ?? (user.get('isActive') as boolean),
-            isNewsletterSubscribed: dto.isNewsletterSubscribed ?? (user.get('isNewsletterSubscribed') as boolean),
-            isMarketingConsent: dto.isMarketingConsent ?? (user.get('isMarketingConsent') as boolean),
-            isCookieConsent: dto.isCookieConsent ?? (user.get('isCookieConsent') as boolean),
-            isProfileCompleted: dto.isProfileCompleted ?? (user.get('isProfileCompleted') as boolean),
-            isVipCustomer: dto.isVipCustomer ?? (user.get('isVipCustomer') as boolean),
-            isBetaTester: dto.isBetaTester ?? (user.get('isBetaTester') as boolean),
-            isBlocked: dto.isBlocked ?? (user.get('isBlocked') as boolean),
-            isVerified: dto.isVerified ?? (user.get('isVerified') as boolean),
-            isPremium: dto.isPremium ?? (user.get('isPremium') as boolean),
-            isEmailVerified: dto.isEmailVerified ?? (user.get('isEmailVerified') as boolean),
-            isPhoneVerified: dto.isPhoneVerified ?? (user.get('isPhoneVerified') as boolean),
-            isTermsAccepted: dto.isTermsAccepted ?? (user.get('isTermsAccepted') as boolean),
-            isPrivacyAccepted: dto.isPrivacyAccepted ?? (user.get('isPrivacyAccepted') as boolean),
-            isAgeVerified: dto.isAgeVerified ?? (user.get('isAgeVerified') as boolean),
-            isTwoFactorEnabled: dto.isTwoFactorEnabled ?? (user.get('isTwoFactorEnabled') as boolean),
+        // Оптимизированное обновление: прямое обновление без предварительного поиска
+        const updates: Partial<UserModel> = {};
+        
+        // Добавляем только измененные поля
+        if (dto.isActive !== undefined) updates.isActive = dto.isActive;
+        if (dto.isNewsletterSubscribed !== undefined) updates.isNewsletterSubscribed = dto.isNewsletterSubscribed;
+        if (dto.isMarketingConsent !== undefined) updates.isMarketingConsent = dto.isMarketingConsent;
+        if (dto.isCookieConsent !== undefined) updates.isCookieConsent = dto.isCookieConsent;
+        if (dto.isProfileCompleted !== undefined) updates.isProfileCompleted = dto.isProfileCompleted;
+        if (dto.isVipCustomer !== undefined) updates.isVipCustomer = dto.isVipCustomer;
+        if (dto.isBetaTester !== undefined) updates.isBetaTester = dto.isBetaTester;
+        if (dto.isBlocked !== undefined) updates.isBlocked = dto.isBlocked;
+        if (dto.isVerified !== undefined) updates.isVerified = dto.isVerified;
+        if (dto.isPremium !== undefined) updates.isPremium = dto.isPremium;
+        if (dto.isEmailVerified !== undefined) updates.isEmailVerified = dto.isEmailVerified;
+        if (dto.isPhoneVerified !== undefined) updates.isPhoneVerified = dto.isPhoneVerified;
+        if (dto.isTermsAccepted !== undefined) updates.isTermsAccepted = dto.isTermsAccepted;
+        if (dto.isPrivacyAccepted !== undefined) updates.isPrivacyAccepted = dto.isPrivacyAccepted;
+        if (dto.isAgeVerified !== undefined) updates.isAgeVerified = dto.isAgeVerified;
+        if (dto.isTwoFactorEnabled !== undefined) updates.isTwoFactorEnabled = dto.isTwoFactorEnabled;
+
+        if (Object.keys(updates).length === 0) {
+            // Если нет изменений, возвращаем пользователя
+            return this.userModel.findByPk(userId);
+        }
+
+        // Прямое обновление с возвратом обновленной записи
+        const [affectedRows] = await this.userModel.update(updates, {
+            where: { id: userId },
+            returning: true,
         });
-        return user;
+
+        if (affectedRows > 0) {
+            // Инвалидируем кэш пользователя
+            this.invalidateUserCache(userId);
+            return this.userModel.findByPk(userId);
+        }
+        
+        return null;
     }
 
     public async updatePreferences(userId: number, dto: UpdateUserPreferencesDto): Promise<UserModel | null> {
-        const user = await this.userModel.findByPk(userId);
-        if (!user) return null;
-        await user.update({
-            themePreference: dto.themePreference ?? (user.get('themePreference') as string),
-            defaultLanguage: dto.defaultLanguage ?? (user.get('defaultLanguage') as string),
-            notificationPreferences: dto.notificationPreferences ?? (user.get('notificationPreferences') as unknown),
-            translations: dto.translations ?? (user.get('translations') as unknown),
+        // Оптимизированное обновление: прямое обновление без предварительного поиска
+        const updates: Partial<UserModel> = {};
+        
+        // Добавляем только измененные поля
+        if (dto.themePreference !== undefined) updates.themePreference = dto.themePreference;
+        if (dto.defaultLanguage !== undefined) updates.defaultLanguage = dto.defaultLanguage;
+        if (dto.notificationPreferences !== undefined) updates.notificationPreferences = dto.notificationPreferences;
+        if (dto.translations !== undefined) updates.translations = dto.translations;
+
+        if (Object.keys(updates).length === 0) {
+            // Если нет изменений, возвращаем пользователя
+            return this.userModel.findByPk(userId);
+        }
+
+        // Прямое обновление с возвратом обновленной записи
+        const [affectedRows] = await this.userModel.update(updates, {
+            where: { id: userId },
+            returning: true,
         });
-        return user;
+
+        return affectedRows > 0 ? this.userModel.findByPk(userId) : null;
     }
 
     public async verifyEmail(userId: number): Promise<UserModel | null> {
-        const user = await this.userModel.findByPk(userId);
-        if (!user) return null;
-        await user.update({ isEmailVerified: true, emailVerifiedAt: new Date() });
-        return user;
+        // Оптимизированное обновление: прямое обновление без предварительного поиска
+        const [affectedRows] = await this.userModel.update(
+            { isEmailVerified: true, emailVerifiedAt: new Date() },
+            { where: { id: userId }, returning: true }
+        );
+        return affectedRows > 0 ? this.userModel.findByPk(userId) : null;
     }
 
     public async verifyPhone(userId: number): Promise<UserModel | null> {
-        const user = await this.userModel.findByPk(userId);
-        if (!user) return null;
-        await user.update({ isPhoneVerified: true, phoneVerifiedAt: new Date() });
-        return user;
+        // Оптимизированное обновление: прямое обновление без предварительного поиска
+        const [affectedRows] = await this.userModel.update(
+            { isPhoneVerified: true, phoneVerifiedAt: new Date() },
+            { where: { id: userId }, returning: true }
+        );
+        return affectedRows > 0 ? this.userModel.findByPk(userId) : null;
     }
 
     // Admin actions
@@ -455,65 +739,64 @@ export class UserRepository implements IUserRepository {
 
 
     // ===== User Statistics Methods =====
-    public async getUserStats(): Promise<{
-        totalUsers: number;
-        activeUsers: number;
-        blockedUsers: number;
-        vipUsers: number;
-        newsletterSubscribers: number;
-        premiumUsers: number;
-        employees: number;
-        affiliates: number;
-        wholesaleUsers: number;
-        highValueUsers: number;
-    }> {
+    public async getUserStats(): Promise<UserStats> {
+        // Проверяем кэш статистики
+        const cached = this.getCachedStats('user_stats');
+        if (cached) {
+            return cached;
+        }
+
         const sequelize = this.userModel.sequelize;
         if (!sequelize) {
             throw new Error('Sequelize instance not available');
         }
 
-        const [totalUsers] = await sequelize.query(
-            'SELECT COUNT(*) as count FROM `user` WHERE `is_deleted` = 0'
-        );
-        const [activeUsers] = await sequelize.query(
-            'SELECT COUNT(*) as count FROM `user` WHERE `is_active` = 1 AND `is_blocked` = 0 AND `is_deleted` = 0'
-        );
-        const [blockedUsers] = await sequelize.query(
-            'SELECT COUNT(*) as count FROM `user` WHERE `is_blocked` = 1 AND `is_deleted` = 0'
-        );
-        const [vipUsers] = await sequelize.query(
-            'SELECT COUNT(*) as count FROM `user` WHERE `is_vip_customer` = 1 AND `is_deleted` = 0'
-        );
-        const [newsletterSubscribers] = await sequelize.query(
-            'SELECT COUNT(*) as count FROM `user` WHERE `is_newsletter_subscribed` = 1 AND `is_deleted` = 0'
-        );
-        const [premiumUsers] = await sequelize.query(
-            'SELECT COUNT(*) as count FROM `user` WHERE `is_premium` = 1 AND `is_deleted` = 0'
-        );
-        const [employees] = await sequelize.query(
-            'SELECT COUNT(*) as count FROM `user` WHERE `is_employee` = 1 AND `is_deleted` = 0'
-        );
-        const [affiliates] = await sequelize.query(
-            'SELECT COUNT(*) as count FROM `user` WHERE `is_affiliate` = 1 AND `is_deleted` = 0'
-        );
-        const [wholesaleUsers] = await sequelize.query(
-            'SELECT COUNT(*) as count FROM `user` WHERE `is_wholesale` = 1 AND `is_deleted` = 0'
-        );
-        const [highValueUsers] = await sequelize.query(
-            'SELECT COUNT(*) as count FROM `user` WHERE `is_high_value` = 1 AND `is_deleted` = 0'
-        );
+        // Оптимизированный запрос: один запрос вместо 10 отдельных
+        const [results] = await sequelize.query(`
+            SELECT 
+                COUNT(*) as totalUsers,
+                SUM(CASE WHEN is_active = 1 AND is_blocked = 0 AND is_deleted = 0 THEN 1 ELSE 0 END) as activeUsers,
+                SUM(CASE WHEN is_blocked = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as blockedUsers,
+                SUM(CASE WHEN is_vip_customer = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as vipUsers,
+                SUM(CASE WHEN is_newsletter_subscribed = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as newsletterSubscribers,
+                SUM(CASE WHEN is_premium = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as premiumUsers,
+                SUM(CASE WHEN is_employee = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as employees,
+                SUM(CASE WHEN is_affiliate = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as affiliates,
+                SUM(CASE WHEN is_wholesale = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as wholesaleUsers,
+                SUM(CASE WHEN is_high_value = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as highValueUsers
+            FROM user
+            WHERE is_deleted = 0
+        `);
 
-        return {
-            totalUsers: (totalUsers as { count: number }[])[0]?.count || 0,
-            activeUsers: (activeUsers as { count: number }[])[0]?.count || 0,
-            blockedUsers: (blockedUsers as { count: number }[])[0]?.count || 0,
-            vipUsers: (vipUsers as { count: number }[])[0]?.count || 0,
-            newsletterSubscribers: (newsletterSubscribers as { count: number }[])[0]?.count || 0,
-            premiumUsers: (premiumUsers as { count: number }[])[0]?.count || 0,
-            employees: (employees as { count: number }[])[0]?.count || 0,
-            affiliates: (affiliates as { count: number }[])[0]?.count || 0,
-            wholesaleUsers: (wholesaleUsers as { count: number }[])[0]?.count || 0,
-            highValueUsers: (highValueUsers as { count: number }[])[0]?.count || 0,
+        const stats = (results as Array<{
+            totalUsers: number;
+            activeUsers: number;
+            blockedUsers: number;
+            vipUsers: number;
+            newsletterSubscribers: number;
+            premiumUsers: number;
+            employees: number;
+            affiliates: number;
+            wholesaleUsers: number;
+            highValueUsers: number;
+        }>)[0];
+
+        const result = {
+            totalUsers: stats.totalUsers || 0,
+            activeUsers: stats.activeUsers || 0,
+            blockedUsers: stats.blockedUsers || 0,
+            vipUsers: stats.vipUsers || 0,
+            newsletterSubscribers: stats.newsletterSubscribers || 0,
+            premiumUsers: stats.premiumUsers || 0,
+            employees: stats.employees || 0,
+            affiliates: stats.affiliates || 0,
+            wholesaleUsers: stats.wholesaleUsers || 0,
+            highValueUsers: stats.highValueUsers || 0,
         };
+
+        // Кэшируем результат
+        this.setCachedStats('user_stats', result);
+        
+        return result;
     }
 }
