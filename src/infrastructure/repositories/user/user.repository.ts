@@ -18,10 +18,6 @@ import { IUserRepository } from '@app/domain/repositories';
 import { MetaData } from '@app/infrastructure/paginate'; 
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
-import { CreateUserAddressDto } from '@app/infrastructure/dto/user-address/create-user-address.dto';
-import { UpdateUserAddressDto } from '@app/infrastructure/dto/user-address/update-user-address.dto';
-import { UserAddressModel } from '@app/domain/models';
-import { Op } from 'sequelize';
 import { randomBytes, createHash } from 'crypto';
 
 @Injectable()
@@ -31,7 +27,6 @@ export class UserRepository implements IUserRepository {
     
     constructor(
         @InjectModel(UserModel) private userModel: typeof UserModel,
-        @InjectModel(UserAddressModel) private userAddressModel: typeof UserAddressModel,
     ) {}
 
     private pickAllowedFromCreate(dto: CreateUserDto): {
@@ -458,80 +453,6 @@ export class UserRepository implements IUserRepository {
         );
     }
 
-    // ===== User Address Methods =====
-    public async createUserAddress(userId: number, dto: CreateUserAddressDto): Promise<UserAddressModel> {
-        // Если это первый адрес или указан как default, делаем его основным
-        if (dto.is_default) {
-            await this.userAddressModel.update(
-                { is_default: false },
-                { where: { user_id: userId } }
-            );
-        }
-
-        return this.userAddressModel.create({
-            user_id: userId,
-            title: dto.title,
-            street: dto.street,
-            house: dto.house,
-            apartment: dto.apartment,
-            city: dto.city,
-            postal_code: dto.postal_code,
-            country: dto.country || 'Россия',
-            is_default: dto.is_default || false,
-        });
-    }
-
-    public async getUserAddresses(userId: number): Promise<UserAddressModel[]> {
-        return this.userAddressModel.findAll({
-            where: { user_id: userId },
-            order: [['is_default', 'DESC'], ['created_at', 'ASC']],
-        });
-    }
-
-    public async getUserAddress(userId: number, addressId: number): Promise<UserAddressModel | null> {
-        return this.userAddressModel.findOne({
-            where: { id: addressId, user_id: userId },
-        });
-    }
-
-    public async updateUserAddress(userId: number, addressId: number, dto: UpdateUserAddressDto): Promise<UserAddressModel | null> {
-        const address = await this.getUserAddress(userId, addressId);
-        if (!address) return null;
-
-        // Если устанавливаем как default, снимаем флаг с других адресов
-        if (dto.is_default) {
-            await this.userAddressModel.update(
-                { is_default: false },
-                { where: { user_id: userId, id: { [Op.ne]: addressId } } }
-            );
-        }
-
-        await address.update(dto);
-        return address.reload();
-    }
-
-    public async deleteUserAddress(userId: number, addressId: number): Promise<boolean> {
-        const address = await this.getUserAddress(userId, addressId);
-        if (!address) return false;
-
-        await address.destroy();
-        return true;
-    }
-
-    public async setDefaultAddress(userId: number, addressId: number): Promise<UserAddressModel | null> {
-        const address = await this.getUserAddress(userId, addressId);
-        if (!address) return null;
-
-        // Снимаем флаг default с других адресов
-        await this.userAddressModel.update(
-            { is_default: false },
-            { where: { user_id: userId } }
-        );
-
-        // Устанавливаем флаг default для выбранного адреса
-        await address.update({ is_default: true });
-        return address.reload();
-    }
 
     // ===== User Statistics Methods =====
     public async getUserStats(): Promise<{

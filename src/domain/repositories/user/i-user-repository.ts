@@ -8,9 +8,6 @@ import {
 } from '@app/infrastructure/responses';
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
-import { CreateUserAddressDto } from '@app/infrastructure/dto/user-address/create-user-address.dto';
-import { UpdateUserAddressDto } from '@app/infrastructure/dto/user-address/update-user-address.dto';
-import { UserAddressModel } from '@app/domain/models';
 
 export interface IUserRepository {
     createUser(dto: CreateUserDto): Promise<UserModel>;
@@ -44,13 +41,6 @@ export interface IUserRepository {
     verifyEmail(userId: number): Promise<UserModel | null>;
     verifyPhone(userId: number): Promise<UserModel | null>;
 
-    // User Address Methods
-    createUserAddress(userId: number, dto: CreateUserAddressDto): Promise<UserAddressModel>;
-    getUserAddresses(userId: number): Promise<UserAddressModel[]>;
-    getUserAddress(userId: number, addressId: number): Promise<UserAddressModel | null>;
-    updateUserAddress(userId: number, addressId: number, dto: UpdateUserAddressDto): Promise<UserAddressModel | null>;
-    deleteUserAddress(userId: number, addressId: number): Promise<boolean>;
-    setDefaultAddress(userId: number, addressId: number): Promise<UserAddressModel | null>;
 
     // User Statistics Methods
     getUserStats(): Promise<{

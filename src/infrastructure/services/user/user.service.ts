@@ -30,9 +30,6 @@ import { IUserService } from '@app/domain/services';
 import { compare, hash } from 'bcrypt';
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
-import { CreateUserAddressDto } from '@app/infrastructure/dto/user-address/create-user-address.dto';
-import { UpdateUserAddressDto } from '@app/infrastructure/dto/user-address/update-user-address.dto';
-import { UserAddressModel } from '@app/domain/models';
 import { LoginHistoryService } from '../login-history/login-history.service';
 
 @Injectable()
@@ -501,45 +498,6 @@ export class UserService implements IUserService {
         }
     }
 
-    // ===== User Address Methods =====
-    public async createUserAddress(userId: number, dto: CreateUserAddressDto): Promise<UserAddressModel> {
-        return this.userRepository.createUserAddress(userId, dto);
-    }
-
-    public async getUserAddresses(userId: number): Promise<UserAddressModel[]> {
-        return this.userRepository.getUserAddresses(userId);
-    }
-
-    public async getUserAddress(userId: number, addressId: number): Promise<UserAddressModel> {
-        const address = await this.userRepository.getUserAddress(userId, addressId);
-        if (!address) {
-            this.notFound('Адрес не найден');
-        }
-        return address as UserAddressModel;
-    }
-
-    public async updateUserAddress(userId: number, addressId: number, dto: UpdateUserAddressDto): Promise<UserAddressModel> {
-        const address = await this.userRepository.updateUserAddress(userId, addressId, dto);
-        if (!address) {
-            this.notFound('Адрес не найден');
-        }
-        return address as UserAddressModel;
-    }
-
-    public async deleteUserAddress(userId: number, addressId: number): Promise<void> {
-        const deleted = await this.userRepository.deleteUserAddress(userId, addressId);
-        if (!deleted) {
-            this.notFound('Адрес не найден');
-        }
-    }
-
-    public async setDefaultAddress(userId: number, addressId: number): Promise<UserAddressModel> {
-        const address = await this.userRepository.setDefaultAddress(userId, addressId);
-        if (!address) {
-            this.notFound('Адрес не найден');
-        }
-        return address as UserAddressModel;
-    }
 
     // ===== User Statistics Methods =====
     public async getUserStats(): Promise<{

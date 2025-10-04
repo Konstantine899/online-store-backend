@@ -14,9 +14,7 @@ import {
     RemoveUserRoleResponse,
     GetPaginatedUsersResponse,
 } from '@app/infrastructure/responses';
-import { UserModel, UserAddressModel } from '@app/domain/models';
-import { CreateUserAddressDto } from '@app/infrastructure/dto/user-address/create-user-address.dto';
-import { UpdateUserAddressDto } from '@app/infrastructure/dto/user-address/update-user-address.dto';
+import { UserModel } from '@app/domain/models';
 
 export interface IUserService {
     createUser(dto: CreateUserDto): Promise<CreateUserResponse>;
@@ -41,13 +39,6 @@ export interface IUserService {
 
     updatePhone(userId: number, phone: string): Promise<UserModel>;
 
-    // User Address Methods
-    createUserAddress(userId: number, dto: CreateUserAddressDto): Promise<UserAddressModel>;
-    getUserAddresses(userId: number): Promise<UserAddressModel[]>;
-    getUserAddress(userId: number, addressId: number): Promise<UserAddressModel>;
-    updateUserAddress(userId: number, addressId: number, dto: UpdateUserAddressDto): Promise<UserAddressModel>;
-    deleteUserAddress(userId: number, addressId: number): Promise<void>;
-    setDefaultAddress(userId: number, addressId: number): Promise<UserAddressModel>;
 
     // User Statistics Methods
     getUserStats(): Promise<{
