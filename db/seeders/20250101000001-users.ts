@@ -233,7 +233,7 @@ const seeder: Seeder = {
         // Получаем все роли
         interface RoleRow { id: number; role: string }
         const roles = await queryInterface.sequelize.query<RoleRow>(
-            "SELECT id, role FROM role WHERE role IN ('SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE', 'VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST');",
+            "SELECT id, role FROM role WHERE role IN ('SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE', 'VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST', 'USER', 'ADMIN');",
             { type: QueryTypes.SELECT },
         );
 
@@ -258,8 +258,8 @@ const seeder: Seeder = {
             'customer@example.com': 'CUSTOMER',
             'affiliate@example.com': 'AFFILIATE',
             'guest@example.com': 'GUEST',
-            'user@example.com': 'CUSTOMER',
-            'admin@example.com': 'TENANT_ADMIN',
+            'user@example.com': 'USER',
+            'admin@example.com': 'ADMIN',
         };
 
         // Присваиваем роли через user_role

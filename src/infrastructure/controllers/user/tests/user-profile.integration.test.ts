@@ -33,7 +33,7 @@ describe('User Profile Integration Tests', () => {
     describe('PATCH /user/profile/phone', () => {
             it('200: updates phone with valid number', async () => {
                 await request(app.getHttpServer())
-                    .patch('/user/profile/phone')
+                    .patch('/online-store/user/profile/phone')
                     .set('Authorization', `Bearer ${userToken}`)
                     .send({ phone: '+79990000999' })
                     .expect(200)
@@ -44,20 +44,18 @@ describe('User Profile Integration Tests', () => {
 
         it('400: rejects invalid phone format', async () => {
             await request(app.getHttpServer())
-                .patch('/user/profile/phone')
+                .patch('/online-store/user/profile/phone')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({ phone: '8(999)123-45-67' })
                 .expect(400)
                 .expect(({ body }) => {
-                    expect(body.message).toEqual(
-                        expect.arrayContaining(['Неверный формат номера телефона']),
-                    );
+                    expect(body.message).toBe('Некорректные данные: обновление телефона');
                 });
         });
 
         it('401: requires auth', async () => {
             await request(app.getHttpServer())
-                .patch('/user/profile/phone')
+                .patch('/online-store/user/profile/phone')
                 .send({ phone: '+79991234567' })
                 .expect(401);
         });
@@ -65,14 +63,14 @@ describe('User Profile Integration Tests', () => {
             it('409: rejects duplicate phone for another user', async () => {
                 const tokenUser = await authLoginAs(app, 'user');
                 await request(app.getHttpServer())
-                    .patch('/user/profile/phone')
+                    .patch('/online-store/user/profile/phone')
                     .set('Authorization', `Bearer ${tokenUser}`)
                     .send({ phone: '+79990000998' })
                     .expect(200);
 
                 const tokenAdmin = await authLoginAs(app, 'admin');
                 await request(app.getHttpServer())
-                    .patch('/user/profile/phone')
+                    .patch('/online-store/user/profile/phone')
                     .set('Authorization', `Bearer ${tokenAdmin}`)
                     .send({ phone: '+79990000998' })
                     .expect(409);
@@ -88,7 +86,7 @@ describe('User Profile Integration Tests', () => {
             };
 
             const response = await request(app.getHttpServer())
-                .patch('/user/profile')
+                .patch('/online-store/user/profile')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(payload)
                 .expect(200);
@@ -105,7 +103,7 @@ describe('User Profile Integration Tests', () => {
             };
 
             const response = await request(app.getHttpServer())
-                .patch('/user/profile')
+                .patch('/online-store/user/profile')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(payload)
                 .expect(200);
@@ -121,7 +119,7 @@ describe('User Profile Integration Tests', () => {
             };
 
             await request(app.getHttpServer())
-                .patch('/user/profile')
+                .patch('/online-store/user/profile')
                 .send(payload)
                 .expect(401);
         });
@@ -131,7 +129,7 @@ describe('User Profile Integration Tests', () => {
     describe('Password management', () => {
         it('400: wrong old password', async () => {
             await request(app.getHttpServer())
-                .patch('/user/profile/password')
+                .patch('/online-store/user/profile/password')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({ oldPassword: 'wrong-old', newPassword: 'NewPass123!' })
                 .expect(400);
@@ -142,7 +140,7 @@ describe('User Profile Integration Tests', () => {
     describe('Misc endpoints', () => {
         it('200: GET /user/me with minimal body', async () => {
             const res = await request(app.getHttpServer())
-                .get('/user/me')
+                .get('/online-store/user/me')
                 .set('Authorization', `Bearer ${userToken}`)
                 .expect(200);
             expect(res.body?.id).toBeDefined();

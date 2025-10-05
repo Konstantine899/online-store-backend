@@ -34,7 +34,7 @@ interface AuthenticatedRequest extends Request {
 
 @ApiTags('Адреса пользователя')
 @ApiBearerAuth('JWT-auth')
-@Controller('user/addresses')
+@Controller('user-addresses')
 @UseGuards(AuthGuard, RoleGuard)
 export class UserAddressController {
     // Статические константы для переиспользования

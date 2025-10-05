@@ -31,6 +31,9 @@ export async function setupTestApp(): Promise<INestApplication> {
     // Глобальная валидация DTO
     app.useGlobalPipes(new CustomValidationPipe());
 
+    // Установка глобального префикса для тестов
+    app.setGlobalPrefix('online-store');
+
     await app.init();
     return app;
 }
@@ -52,6 +55,9 @@ export async function setupTestAppWithRateLimit(): Promise<INestApplication> {
 
     app.use(cookieParser(process.env.COOKIE_PARSER_SECRET_KEY || 'test-secret'));
     app.useGlobalPipes(new CustomValidationPipe());
+
+    // Установка глобального префикса для тестов
+    app.setGlobalPrefix('online-store');
 
     await app.init();
     return app;

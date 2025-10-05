@@ -16,7 +16,7 @@ import { UserAddressController } from './user-address/user-address.controller';
 import { LoginHistoryController } from './login-history/login-history.controller';
 
 @Module({
-    imports: [ServicesModule, ControllersModule, JwtModule],
+    imports: [ServicesModule, JwtModule],
     controllers: [
         AuthController,
         BrandController,
@@ -28,8 +28,8 @@ import { LoginHistoryController } from './login-history/login-history.controller
         PaymentController,
         RatingController,
         RoleController,
-        UserAddressController, // Более специфичный маршрут должен быть раньше
-        UserController,
+        UserController, // Более общий маршрут должен быть раньше
+        UserAddressController, // Более специфичный маршрут должен быть позже
         LoginHistoryController,
     ],
 })

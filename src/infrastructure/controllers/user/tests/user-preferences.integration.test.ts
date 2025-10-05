@@ -38,13 +38,11 @@ describe('User Preferences Integration Tests', () => {
             };
 
             const response = await request(app.getHttpServer())
-                .patch('/user/profile/preferences')
+                .patch('/online-store/user/profile/preferences')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(preferencesData)
                 .expect(200);
 
-            expect(response.body).toHaveProperty('status', 200);
-            expect(response.body).toHaveProperty('message', 'success');
             expect(response.body).toHaveProperty('data');
             expect(response.body.data).toMatchObject(preferencesData);
         });
@@ -55,7 +53,7 @@ describe('User Preferences Integration Tests', () => {
             };
 
             const response = await request(app.getHttpServer())
-                .patch('/user/profile/preferences')
+                .patch('/online-store/user/profile/preferences')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(preferencesData)
                 .expect(200);
@@ -69,7 +67,7 @@ describe('User Preferences Integration Tests', () => {
             };
 
             const response = await request(app.getHttpServer())
-                .patch('/user/profile/preferences')
+                .patch('/online-store/user/profile/preferences')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(invalidData)
                 .expect(400);
@@ -82,14 +80,14 @@ describe('User Preferences Integration Tests', () => {
 
         it('401: requires auth', async () => {
             await request(app.getHttpServer())
-                .patch('/user/profile/preferences')
+                .patch('/online-store/user/profile/preferences')
                 .send({ themePreference: 'dark' })
                 .expect(401);
         });
 
         it('200: accepts empty object', async () => {
             const response = await request(app.getHttpServer())
-                .patch('/user/profile/preferences')
+                .patch('/online-store/user/profile/preferences')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({})
                 .expect(200);
@@ -104,7 +102,7 @@ describe('User Preferences Integration Tests', () => {
             };
 
             const response = await request(app.getHttpServer())
-                .patch('/user/profile/preferences')
+                .patch('/online-store/user/profile/preferences')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(preferencesData)
                 .expect(400);
@@ -119,7 +117,7 @@ describe('User Preferences Integration Tests', () => {
             };
 
             const response = await request(app.getHttpServer())
-                .patch('/user/profile/preferences')
+                .patch('/online-store/user/profile/preferences')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(preferencesData)
                 .expect(200);

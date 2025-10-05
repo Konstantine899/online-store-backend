@@ -32,6 +32,7 @@ describe('UserService - Flags and Preferences', () => {
             updateFlags: jest.fn(),
             updatePreferences: jest.fn(),
             findUserByPkId: jest.fn(),
+            findUser: jest.fn(), // Added
             updatePhone: jest.fn(),
             createUser: jest.fn(),
             findUserByEmail: jest.fn(),
@@ -93,6 +94,7 @@ describe('UserService - Flags and Preferences', () => {
             };
 
             const updatedUser = { ...mockUser, ...flagsDto };
+            userRepository.findUser.mockResolvedValue(mockUser); // Added
             userRepository.updateFlags.mockResolvedValue(updatedUser as UserModel);
 
             const result = await service.updateFlags(1, flagsDto);
@@ -107,6 +109,7 @@ describe('UserService - Flags and Preferences', () => {
             };
 
             const updatedUser = { ...mockUser, isActive: false };
+            userRepository.findUser.mockResolvedValue(mockUser); // Added
             userRepository.updateFlags.mockResolvedValue(updatedUser as UserModel);
 
             const result = await service.updateFlags(1, flagsDto);
@@ -120,7 +123,12 @@ describe('UserService - Flags and Preferences', () => {
                 isActive: false,
             };
 
-            userRepository.updateFlags.mockResolvedValue(null);
+            userRepository.findUser.mockRejectedValue(
+                new NotFoundException({
+                    status: 404,
+                    message: 'Пользователь не найден в БД',
+                })
+            );
 
             await expect(service.updateFlags(999, flagsDto)).rejects.toThrow(
                 new NotFoundException({
@@ -133,6 +141,7 @@ describe('UserService - Flags and Preferences', () => {
         it('должен обработать пустой объект флагов', async () => {
             const flagsDto: UpdateUserFlagsDto = {};
 
+            userRepository.findUser.mockResolvedValue(mockUser); // Added
             userRepository.updateFlags.mockResolvedValue(mockUser as UserModel);
 
             const result = await service.updateFlags(1, flagsDto);
@@ -150,6 +159,7 @@ describe('UserService - Flags and Preferences', () => {
             };
 
             const updatedUser = { ...mockUser, ...preferencesDto };
+            userRepository.findUser.mockResolvedValue(mockUser); // Added
             userRepository.updatePreferences.mockResolvedValue(updatedUser as UserModel);
 
             const result = await service.updatePreferences(1, preferencesDto);
@@ -164,6 +174,7 @@ describe('UserService - Flags and Preferences', () => {
             };
 
             const updatedUser = { ...mockUser, themePreference: 'dark' };
+            userRepository.findUser.mockResolvedValue(mockUser); // Added
             userRepository.updatePreferences.mockResolvedValue(updatedUser as UserModel);
 
             const result = await service.updatePreferences(1, preferencesDto);
@@ -177,7 +188,12 @@ describe('UserService - Flags and Preferences', () => {
                 themePreference: 'dark',
             };
 
-            userRepository.updatePreferences.mockResolvedValue(null);
+            userRepository.findUser.mockRejectedValue(
+                new NotFoundException({
+                    status: 404,
+                    message: 'Пользователь не найден в БД',
+                })
+            );
 
             await expect(service.updatePreferences(999, preferencesDto)).rejects.toThrow(
                 new NotFoundException({
@@ -190,6 +206,7 @@ describe('UserService - Flags and Preferences', () => {
         it('должен обработать пустой объект предпочтений', async () => {
             const preferencesDto: UpdateUserPreferencesDto = {};
 
+            userRepository.findUser.mockResolvedValue(mockUser); // Added
             userRepository.updatePreferences.mockResolvedValue(mockUser as UserModel);
 
             const result = await service.updatePreferences(1, preferencesDto);
@@ -250,6 +267,7 @@ describe('UserService - Flags and Preferences', () => {
                 isActive: false,
             };
 
+            userRepository.findUser.mockResolvedValue(mockUser); // Added
             userRepository.updateFlags.mockRejectedValue(new Error('Database error'));
 
             await expect(service.updateFlags(1, flagsDto)).rejects.toThrow('Database error');
@@ -260,6 +278,7 @@ describe('UserService - Flags and Preferences', () => {
                 themePreference: 'dark',
             };
 
+            userRepository.findUser.mockResolvedValue(mockUser); // Added
             userRepository.updatePreferences.mockRejectedValue(new Error('Database error'));
 
             await expect(service.updatePreferences(1, preferencesDto)).rejects.toThrow('Database error');
@@ -294,6 +313,7 @@ describe('UserService - Flags and Preferences', () => {
             };
 
             const updatedUser = { ...mockUser, ...allFlagsDto };
+            userRepository.findUser.mockResolvedValue(mockUser); // Added
             userRepository.updateFlags.mockResolvedValue(updatedUser as UserModel);
 
             const result = await service.updateFlags(1, allFlagsDto);
@@ -310,6 +330,7 @@ describe('UserService - Flags and Preferences', () => {
             };
 
             const updatedUser = { ...mockUser, ...allPreferencesDto };
+            userRepository.findUser.mockResolvedValue(mockUser); // Added
             userRepository.updatePreferences.mockResolvedValue(updatedUser as UserModel);
 
             const result = await service.updatePreferences(1, allPreferencesDto);

@@ -35,37 +35,37 @@ describe('User Verification Integration Tests', () => {
     describe('Verification endpoints', () => {
         it('401: requires auth for verification requests', async () => {
             await request(app.getHttpServer())
-                .post('/user/verify/email/request')
+                .post('/online-store/user/verify/email/request')
                 .expect(401);
 
             await request(app.getHttpServer())
-                .post('/user/verify/phone/request')
+                .post('/online-store/user/verify/phone/request')
                 .expect(401);
         });
 
         it('200: email verification request with auth', async () => {
             await request(app.getHttpServer())
-                .post('/user/verify/email/request')
+                .post('/online-store/user/verify/email/request')
                 .set('Authorization', `Bearer ${userToken}`)
                 .expect(200);
         });
 
         it('200: phone verification request with auth', async () => {
             await request(app.getHttpServer())
-                .post('/user/verify/phone/request')
+                .post('/online-store/user/verify/phone/request')
                 .set('Authorization', `Bearer ${userToken}`)
                 .expect(200);
         });
 
         it('400: invalid verification codes', async () => {
             await request(app.getHttpServer())
-                .post('/user/verify/email/confirm')
+                .post('/online-store/user/verify/email/confirm')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({ code: 'wrong' })
                 .expect(400);
 
             await request(app.getHttpServer())
-                .post('/user/verify/phone/confirm')
+                .post('/online-store/user/verify/phone/confirm')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({ code: 'wrong' })
                 .expect(400);
@@ -73,19 +73,19 @@ describe('User Verification Integration Tests', () => {
 
             it('200: admin can verify user email/phone', async () => {
                 await request(app.getHttpServer())
-                    .patch('/user/verify/email/13')
+                    .patch('/online-store/user/verify/email/13')
                     .set('Authorization', `Bearer ${adminToken}`)
                     .expect(200);
 
                 await request(app.getHttpServer())
-                    .patch('/user/verify/phone/13')
+                    .patch('/online-store/user/verify/phone/13')
                     .set('Authorization', `Bearer ${adminToken}`)
                     .expect(200);
             });
 
         it('404: admin cannot verify non-existent user', async () => {
             await request(app.getHttpServer())
-                .patch('/user/verify/email/99999')
+                .patch('/online-store/user/verify/email/99999')
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(404);
         });

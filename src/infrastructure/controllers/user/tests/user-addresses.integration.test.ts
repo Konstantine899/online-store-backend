@@ -33,11 +33,11 @@ describe('User Addresses Integration Tests', () => {
     describe('User Addresses CRUD', () => {
             it('401: requires auth for all address endpoints', async () => {
                 await request(app.getHttpServer())
-                    .get('/user-address')
+                    .get('/online-store/user-addresses')
                     .expect(HttpStatus.UNAUTHORIZED);
 
                 await request(app.getHttpServer())
-                    .post('/user-address')
+                    .post('/online-store/user-addresses')
                     .send({ title: 'X', street: 'Y', house: '1', city: 'Z', country: 'RU' })
                     .expect(HttpStatus.UNAUTHORIZED);
             });
@@ -47,7 +47,7 @@ describe('User Addresses Integration Tests', () => {
 
             // Create
             const createRes = await http
-                .post('/user-address')
+                .post('/online-store/user-addresses')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({
                     title: 'Дом',
@@ -65,18 +65,18 @@ describe('User Addresses Integration Tests', () => {
             const id = created.id;
 
             // Get list
-            const listRes = await http.get('/user-address').set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.OK);
+            const listRes = await http.get('/online-store/user-addresses').set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.OK);
             const list = listRes.body.data || listRes.body;
             expect(Array.isArray(list)).toBe(true);
 
             // Get one
-            const oneRes = await http.get(`/user-address/${id}`).set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.OK);
+            const oneRes = await http.get(`/online-store/user-addresses/${id}`).set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.OK);
             const one = oneRes.body.data || oneRes.body;
             expect(one.id).toBe(id);
 
             // Update
             const updateRes = await http
-                .put(`/user-address/${id}`)
+                .put(`/online-store/user-addresses/${id}`)
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({ title: 'Квартира', is_default: true })
                 .expect(HttpStatus.OK);
@@ -86,7 +86,7 @@ describe('User Addresses Integration Tests', () => {
 
             // Set default again
             const setDefaultRes = await http
-                .patch(`/user-address/${id}/set-default`)
+                .patch(`/online-store/user-addresses/${id}/set-default`)
                 .set('Authorization', `Bearer ${userToken}`)
                 .expect(HttpStatus.OK);
             const setDefault = setDefaultRes.body.data || setDefaultRes.body;
@@ -94,20 +94,20 @@ describe('User Addresses Integration Tests', () => {
             expect(setDefault.is_default).toBe(true);
 
             // Remove
-            await http.delete(`/user-address/${id}`).set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.OK);
+            await http.delete(`/online-store/user-addresses/${id}`).set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.OK);
         });
 
         it('400: validation errors on create', async () => {
             const http = request(app.getHttpServer());
 
             await http
-                .post('/user-address')
+                .post('/online-store/user-addresses')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({})
                 .expect(HttpStatus.BAD_REQUEST);
 
             await http
-                .post('/user-address')
+                .post('/online-store/user-addresses')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({ title: '', street: '', house: '', city: '', country: '' })
                 .expect(HttpStatus.BAD_REQUEST);
@@ -117,20 +117,20 @@ describe('User Addresses Integration Tests', () => {
             const http = request(app.getHttpServer());
             const nonexistentId = 999999;
 
-            await http.get(`/user-address/${nonexistentId}`).set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.NOT_FOUND);
+            await http.get(`/online-store/user-addresses/${nonexistentId}`).set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.NOT_FOUND);
             await http
-                .put(`/user-address/${nonexistentId}`)
+                .put(`/online-store/user-addresses/${nonexistentId}`)
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({ title: 'X' })
                 .expect(HttpStatus.NOT_FOUND);
-            await http.delete(`/user-address/${nonexistentId}`).set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.NOT_FOUND);
+            await http.delete(`/online-store/user-addresses/${nonexistentId}`).set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.NOT_FOUND);
         });
 
         it('400: invalid id parameter', async () => {
             const http = request(app.getHttpServer());
-            await http.get('/user-address/not-a-number').set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.BAD_REQUEST);
-            await http.put('/user-address/not-a-number').set('Authorization', `Bearer ${userToken}`).send({ title: 'X' }).expect(HttpStatus.BAD_REQUEST);
-            await http.delete('/user-address/not-a-number').set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.BAD_REQUEST);
+            await http.get('/online-store/user-addresses/not-a-number').set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.BAD_REQUEST);
+            await http.put('/online-store/user-addresses/not-a-number').set('Authorization', `Bearer ${userToken}`).send({ title: 'X' }).expect(HttpStatus.BAD_REQUEST);
+            await http.delete('/online-store/user-addresses/not-a-number').set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.BAD_REQUEST);
         });
 
         it('200: setting new default unsets previous default', async () => {
@@ -138,7 +138,7 @@ describe('User Addresses Integration Tests', () => {
 
             // Create first default
             const a1 = await http
-                .post('/user-address')
+                .post('/online-store/user-addresses')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({ title: 'A1', street: 'S', house: '1', city: 'C', country: 'RU', is_default: true })
                 .expect(HttpStatus.CREATED);
@@ -146,22 +146,22 @@ describe('User Addresses Integration Tests', () => {
 
             // Create second default -> should unset first
             const a2 = await http
-                .post('/user-address')
+                .post('/online-store/user-addresses')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({ title: 'A2', street: 'S', house: '2', city: 'C', country: 'RU', is_default: true })
                 .expect(HttpStatus.CREATED);
             const id2 = (a2.body.data || a2.body).id;
 
             // List should return default first
-            const listRes = await http.get('/user-address').set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.OK);
+            const listRes = await http.get('/online-store/user-addresses').set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.OK);
             const list = listRes.body.data || listRes.body;
             expect(list[0].id).toBe(id2);
             expect(list.find((x: { id: number; is_default: boolean }) => x.id === id2).is_default).toBe(true);
             expect(list.find((x: { id: number; is_default: boolean }) => x.id === id1).is_default).toBe(false);
 
             // Cleanup
-            await http.delete(`/user-address/${id1}`).set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.OK);
-            await http.delete(`/user-address/${id2}`).set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.OK);
+            await http.delete(`/online-store/user-addresses/${id1}`).set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.OK);
+            await http.delete(`/online-store/user-addresses/${id2}`).set('Authorization', `Bearer ${userToken}`).expect(HttpStatus.OK);
         });
     });
 });

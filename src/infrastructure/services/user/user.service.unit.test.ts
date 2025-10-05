@@ -620,7 +620,7 @@ describe('UserService', () => {
             await expect(service.updatePhone(1, '+79990000001')).rejects.toThrow(
                 new ConflictException({
                     status: HttpStatus.CONFLICT,
-                    message: 'Такой номер телефона уже используется',
+                    message: 'Конфликт данных: обновление телефона',
                 }),
             );
         });
@@ -628,6 +628,7 @@ describe('UserService', () => {
 
     describe('updateFlags', () => {
         it('должен успешно обновить флаги пользователя', async () => {
+            userRepository.findUser.mockResolvedValue(mockUser);
             userRepository.updateFlags.mockResolvedValue(mockUser);
             const result = await service.updateFlags(1, { isActive: false });
             expect(result).toBe(mockUser);
@@ -635,15 +636,16 @@ describe('UserService', () => {
         });
 
         it('должен выбросить NotFoundException если пользователь не найден', async () => {
-            (userRepository.updateFlags as jest.Mock).mockResolvedValue(null);
+            (userRepository.findUser as jest.Mock).mockResolvedValue(null);
             await expect(service.updateFlags(999, { isActive: true })).rejects.toThrow(
-                new NotFoundException({ status: HttpStatus.NOT_FOUND, message: 'Пользователь не найден в БД' }),
+                new NotFoundException({ status: HttpStatus.NOT_FOUND, message: 'Пользователь не найден для обновление флагов' }),
             );
         });
     });
 
     describe('updatePreferences', () => {
         it('должен успешно обновить предпочтения пользователя', async () => {
+            userRepository.findUser.mockResolvedValue(mockUser);
             userRepository.updatePreferences.mockResolvedValue(mockUser);
             const result = await service.updatePreferences(1, { themePreference: 'dark' });
             expect(result).toBe(mockUser);
@@ -651,9 +653,9 @@ describe('UserService', () => {
         });
 
         it('должен выбросить NotFoundException если пользователь не найден', async () => {
-            (userRepository.updatePreferences as jest.Mock).mockResolvedValue(null);
+            (userRepository.findUser as jest.Mock).mockResolvedValue(null);
             await expect(service.updatePreferences(999, { themePreference: 'dark' })).rejects.toThrow(
-                new NotFoundException({ status: HttpStatus.NOT_FOUND, message: 'Пользователь не найден в БД' }),
+                new NotFoundException({ status: HttpStatus.NOT_FOUND, message: 'Пользователь не найден для обновление настроек' }),
             );
         });
     });

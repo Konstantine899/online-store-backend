@@ -459,7 +459,6 @@ export class UserRepository implements IUserRepository {
             // Прямое обновление с возвратом обновленной записи
             const [affectedRows] = await this.userModel.update(updates, {
                 where: { id: userId },
-                returning: true,
             });
 
             return affectedRows > 0 ? this.userModel.findByPk(userId) : null;
@@ -488,7 +487,6 @@ export class UserRepository implements IUserRepository {
             // Прямое обновление с возвратом обновленной записи
             const [affectedRows] = await this.userModel.update(updates, {
                 where: { id: userId },
-                returning: true,
             });
 
             return affectedRows > 0 ? this.userModel.findByPk(userId) : null;

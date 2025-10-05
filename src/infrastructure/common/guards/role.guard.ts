@@ -26,16 +26,19 @@ export class RoleGuard implements CanActivate {
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         try {
+            const request = context.switchToHttp().getRequest();
+            const method = request.method;
+            const url = request.url;
+            
             const requiredRoles = this.reflector.getAllAndOverride<string[]>(
                 ROLES_KEY,
                 [context.getHandler(), context.getClass()],
             );
             // если роли не найдены, то endpoint доступен для всех пользователей
             if (!requiredRoles) {
+                console.log(`RoleGuard: No roles required for ${method} ${url}`);
                 return true;
             }
-
-            const request = context.switchToHttp().getRequest();
             const authorizationHeader = request.headers.authorization as
                 | string
                 | undefined;

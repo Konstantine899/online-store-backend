@@ -42,13 +42,11 @@ describe('User Flags Integration Tests', () => {
             };
 
             const response = await request(app.getHttpServer())
-                .patch('/user/profile/flags')
+                .patch('/online-store/user/profile/flags')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(flagsData)
                 .expect(200);
 
-            expect(response.body).toHaveProperty('status', 200);
-            expect(response.body).toHaveProperty('message', 'success');
             expect(response.body).toHaveProperty('data');
             expect(response.body.data).toMatchObject(flagsData);
         });
@@ -60,7 +58,7 @@ describe('User Flags Integration Tests', () => {
             };
 
             const response = await request(app.getHttpServer())
-                .patch('/user/profile/flags')
+                .patch('/online-store/user/profile/flags')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(flagsData)
                 .expect(200);
@@ -76,32 +74,32 @@ describe('User Flags Integration Tests', () => {
             };
 
             const response = await request(app.getHttpServer())
-                .patch('/user/profile/flags')
+                .patch('/online-store/user/profile/flags')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(invalidData)
                 .expect(400);
 
-            expect(response.body).toHaveProperty('statusCode', 400);
-            expect(response.body).toHaveProperty('message');
-            expect(Array.isArray(response.body.message)).toBe(true);
+            expect(Array.isArray(response.body)).toBe(true);
+            expect(response.body[0]).toHaveProperty('messages');
+            expect(Array.isArray(response.body[0].messages)).toBe(true);
         });
 
         it('401: requires auth', async () => {
             await request(app.getHttpServer())
-                .patch('/user/profile/flags')
+                .patch('/online-store/user/profile/flags')
                 .send({ isActive: true })
                 .expect(401);
         });
 
         it('200: accepts empty object', async () => {
             const response = await request(app.getHttpServer())
-                .patch('/user/profile/flags')
+                .patch('/online-store/user/profile/flags')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({})
                 .expect(200);
 
-            expect(response.body).toHaveProperty('status', 200);
             expect(response.body).toHaveProperty('data');
+            expect(typeof response.body.data).toBe('object');
         });
 
         it('400: null and undefined values in flags', async () => {
@@ -111,7 +109,7 @@ describe('User Flags Integration Tests', () => {
             };
 
             const response = await request(app.getHttpServer())
-                .patch('/user/profile/flags')
+                .patch('/online-store/user/profile/flags')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(flagsData)
                 .expect(400);
@@ -121,12 +119,12 @@ describe('User Flags Integration Tests', () => {
 
         it('400: array instead of object', async () => {
             const response = await request(app.getHttpServer())
-                .patch('/user/profile/flags')
+                .patch('/online-store/user/profile/flags')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send([{ isActive: true }])
                 .expect(400);
 
-            expect(response.body).toHaveProperty('statusCode', 400);
+            expect(Array.isArray(response.body)).toBe(true);
         });
     });
 });

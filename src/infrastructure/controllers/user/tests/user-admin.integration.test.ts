@@ -36,7 +36,7 @@ describe('User Admin Integration Tests', () => {
     describe('GET /user/admin/stats', () => {
         it('200: returns user statistics for admin', async () => {
             const response = await request(app.getHttpServer())
-                .get('/user/admin/stats')
+                .get('/online-store/user/admin/stats')
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(200);
 
@@ -61,14 +61,14 @@ describe('User Admin Integration Tests', () => {
 
         it('403: regular user cannot access admin stats', async () => {
             await request(app.getHttpServer())
-                .get('/user/admin/stats')
+                .get('/online-store/user/admin/stats')
                 .set('Authorization', `Bearer ${userToken}`)
                 .expect(403);
         });
 
         it('401: requires auth', async () => {
             await request(app.getHttpServer())
-                .get('/user/admin/stats')
+                .get('/online-store/user/admin/stats')
                 .expect(401);
         });
     });
@@ -77,24 +77,24 @@ describe('User Admin Integration Tests', () => {
     describe('Admin flag endpoints', () => {
         const targetUserId = 13; // user@example.com // существующий user из сидов
         const adminCases: Array<{ path: string }> = [
-            { path: `/user/admin/block/${targetUserId}` },
-            { path: `/user/admin/unblock/${targetUserId}` },
-            { path: `/user/admin/suspend/${targetUserId}` },
-            { path: `/user/admin/unsuspend/${targetUserId}` },
-            { path: `/user/admin/delete/${targetUserId}` },
-            { path: `/user/admin/restore/${targetUserId}` },
-            { path: `/user/admin/premium/upgrade/${targetUserId}` },
-            { path: `/user/admin/premium/downgrade/${targetUserId}` },
-            { path: `/user/admin/employee/set/${targetUserId}` },
-            { path: `/user/admin/employee/unset/${targetUserId}` },
-            { path: `/user/admin/vip/set/${targetUserId}` },
-            { path: `/user/admin/vip/unset/${targetUserId}` },
-            { path: `/user/admin/highvalue/set/${targetUserId}` },
-            { path: `/user/admin/highvalue/unset/${targetUserId}` },
-            { path: `/user/admin/wholesale/set/${targetUserId}` },
-            { path: `/user/admin/wholesale/unset/${targetUserId}` },
-            { path: `/user/admin/affiliate/set/${targetUserId}` },
-            { path: `/user/admin/affiliate/unset/${targetUserId}` },
+            { path: `/online-store/user/admin/block/${targetUserId}` },
+            { path: `/online-store/user/admin/unblock/${targetUserId}` },
+            { path: `/online-store/user/admin/suspend/${targetUserId}` },
+            { path: `/online-store/user/admin/unsuspend/${targetUserId}` },
+            { path: `/online-store/user/admin/delete/${targetUserId}` },
+            { path: `/online-store/user/admin/restore/${targetUserId}` },
+            { path: `/online-store/user/admin/premium/upgrade/${targetUserId}` },
+            { path: `/online-store/user/admin/premium/downgrade/${targetUserId}` },
+            { path: `/online-store/user/admin/employee/set/${targetUserId}` },
+            { path: `/online-store/user/admin/employee/unset/${targetUserId}` },
+            { path: `/online-store/user/admin/vip/set/${targetUserId}` },
+            { path: `/online-store/user/admin/vip/unset/${targetUserId}` },
+            { path: `/online-store/user/admin/highvalue/set/${targetUserId}` },
+            { path: `/online-store/user/admin/highvalue/unset/${targetUserId}` },
+            { path: `/online-store/user/admin/wholesale/set/${targetUserId}` },
+            { path: `/online-store/user/admin/wholesale/unset/${targetUserId}` },
+            { path: `/online-store/user/admin/affiliate/set/${targetUserId}` },
+            { path: `/online-store/user/admin/affiliate/unset/${targetUserId}` },
         ];
 
         it.each(adminCases)('ADMIN 200 -> %s', async ({ path }) => {
@@ -116,23 +116,23 @@ describe('User Admin Integration Tests', () => {
     describe('Admin user management', () => {
         it('401: admin endpoints require auth', async () => {
             await request(app.getHttpServer())
-                .get('/user/get-list-users')
+                .get('/online-store/user/get-list-users')
                 .expect(401);
         });
 
         it('403: regular user cannot access admin endpoints', async () => {
             await request(app.getHttpServer())
-                .get('/user/get-list-users')
+                .get('/online-store/user/get-list-users')
                 .set('Authorization', `Bearer ${userToken}`)
                 .expect(403);
 
             await request(app.getHttpServer())
-                .get('/user/1')
+                .get('/online-store/user/1')
                 .set('Authorization', `Bearer ${userToken}`)
                 .expect(403);
 
             await request(app.getHttpServer())
-                .post('/user/create')
+                .post('/online-store/user/create')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({ email: 'x@y.z', password: 'Strong123!' })
                 .expect(403);
@@ -140,14 +140,14 @@ describe('User Admin Integration Tests', () => {
 
         it('200: admin can list users', async () => {
             await request(app.getHttpServer())
-                .get('/user/get-list-users?page=1&limit=5')
+                .get('/online-store/user/get-list-users?page=1&limit=5')
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(200);
         });
 
         it('400: invalid query parameters', async () => {
             await request(app.getHttpServer())
-                .get('/user/get-list-users?page=abc&limit=NaN')
+                .get('/online-store/user/get-list-users?page=abc&limit=NaN')
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(400);
         });
@@ -155,7 +155,7 @@ describe('User Admin Integration Tests', () => {
         it('200: admin can create and delete users', async () => {
             const uniqueEmail = `newuser+${Date.now()}@example.com`;
             const createRes = await request(app.getHttpServer())
-                .post('/user/create')
+                .post('/online-store/user/create')
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({ email: uniqueEmail, password: 'StrongPass123!' })
                 .expect(201);
@@ -177,7 +177,7 @@ describe('User Admin Integration Tests', () => {
             };
 
             const response = await request(app.getHttpServer())
-                .put(`/user/update/${userId}`)
+                .put(`/online-store/user/update/${userId}`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send(payload)
                 .expect(200);
@@ -193,7 +193,7 @@ describe('User Admin Integration Tests', () => {
                 const userId = 13; // user@example.com
             const payload: Partial<UpdateUserDto> = { email: 'admin@example.com' };
             await request(app.getHttpServer())
-                .put(`/user/update/${userId}`)
+                .put(`/online-store/user/update/${userId}`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send(payload)
                 .expect(409);
@@ -205,13 +205,13 @@ describe('User Admin Integration Tests', () => {
         it('200: admin can add and remove roles', async () => {
             // Добавляем роль ADMIN пользователю 13, затем удаляем ADMIN
             await request(app.getHttpServer())
-                .post('/user/role/add')
+                .post('/online-store/user/role/add')
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({ userId: 13, role: 'ADMIN' })
                 .expect(201);
 
             await request(app.getHttpServer())
-                .delete('/user/role/delete')
+                .delete('/online-store/user/role/delete')
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({ userId: 13, role: 'ADMIN' })
                 .expect(200);

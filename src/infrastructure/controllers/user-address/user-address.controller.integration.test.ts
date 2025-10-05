@@ -52,7 +52,7 @@ const TEST_DATA = {
         },
     },
     ENDPOINTS: {
-        ADDRESSES: '/user/addresses',
+        ADDRESSES: '/online-store/user-addresses',
     },
 } as const;
 

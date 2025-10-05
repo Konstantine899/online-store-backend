@@ -220,11 +220,11 @@ export class UserController implements IUserController {
         return { status: HttpStatus.OK, message: 'success' };
     }
 
-    @UpdateUserFlagsSwaggerDecorator()
-    @HttpCode(HttpStatus.OK)
     @Roles(...USER_ROLES)
     @UserGuards()
+    @UpdateUserFlagsSwaggerDecorator()
     @Patch('profile/flags')
+    @HttpCode(HttpStatus.OK)
     async updateFlags(
         @Req() req: AuthenticatedRequest,
         @Body(validationPipe) dto: UpdateUserFlagsDto,
@@ -233,14 +233,14 @@ export class UserController implements IUserController {
         const userId = this.extractUserId(req);
         const user = await this.userService.updateFlags(userId, dto);
         console.log('updateFlags returning:', user);
-        return this.createResponse(user);
+        return this.createResponse(user.toJSON());
     }
 
-    @UpdateUserPreferencesSwaggerDecorator()
-    @HttpCode(HttpStatus.OK)
     @Roles(...USER_ROLES)
     @UserGuards()
+    @UpdateUserPreferencesSwaggerDecorator()
     @Patch('profile/preferences')
+    @HttpCode(HttpStatus.OK)
     async updatePreferences(
         @Req() req: AuthenticatedRequest,
         @Body(validationPipe) dto: UpdateUserPreferencesDto,
@@ -249,7 +249,7 @@ export class UserController implements IUserController {
         const userId = this.extractUserId(req);
         const user = await this.userService.updatePreferences(userId, dto);
         console.log('updatePreferences returning:', user);
-        return this.createResponse(user);
+        return this.createResponse(user.toJSON());
     }
 
     @Roles(...ADMIN_ROLES)
