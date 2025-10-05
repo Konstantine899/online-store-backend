@@ -69,8 +69,8 @@ interface AuthenticatedRequest extends Request {
 }
 
 // Оптимизированные константы ролей
-const USER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST'] as const;
-const ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN'] as const;
+const USER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST', 'USER', 'ADMIN'] as const;
+const ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN', 'ADMIN'] as const;
 const MANAGER_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
 const STAFF_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
 
@@ -121,16 +121,6 @@ export class UserController implements IUserController {
         return this.userService.getListUsers(page, limit);
     }
 
-    @GetUserSwaggerDecorator()
-    @HttpCode(200)
-    @Roles(...STAFF_ROLES)
-    @StaffGuards()
-    @Get('/:id')
-    public async getUser(
-        @Param('id', ParseIntPipe) id: number,
-    ): Promise<GetUserResponse> {
-        return this.userService.getUser(id);
-    }
 
     @UpdateUserSwaggerDecorator()
     @HttpCode(200)
@@ -177,7 +167,8 @@ export class UserController implements IUserController {
 
     @Get('me')
     @HttpCode(HttpStatus.OK)
-    @UseGuards(AuthGuard)
+    @Roles(...USER_ROLES)
+    @UserGuards()
     public async getMe(@Req() req: AuthenticatedRequest) {
         const userId = this.extractUserId(req);
         try {
@@ -229,31 +220,35 @@ export class UserController implements IUserController {
         return { status: HttpStatus.OK, message: 'success' };
     }
 
+    @UpdateUserFlagsSwaggerDecorator()
+    @HttpCode(HttpStatus.OK)
     @Roles(...USER_ROLES)
     @UserGuards()
-    @UpdateUserFlagsSwaggerDecorator()
     @Patch('profile/flags')
-    @HttpCode(HttpStatus.OK)
     async updateFlags(
         @Req() req: AuthenticatedRequest,
         @Body(validationPipe) dto: UpdateUserFlagsDto,
     ) {
+        console.log('updateFlags method called');
         const userId = this.extractUserId(req);
         const user = await this.userService.updateFlags(userId, dto);
+        console.log('updateFlags returning:', user);
         return this.createResponse(user);
     }
 
+    @UpdateUserPreferencesSwaggerDecorator()
+    @HttpCode(HttpStatus.OK)
     @Roles(...USER_ROLES)
     @UserGuards()
-    @UpdateUserPreferencesSwaggerDecorator()
     @Patch('profile/preferences')
-    @HttpCode(HttpStatus.OK)
     async updatePreferences(
         @Req() req: AuthenticatedRequest,
         @Body(validationPipe) dto: UpdateUserPreferencesDto,
     ) {
+        console.log('updatePreferences method called');
         const userId = this.extractUserId(req);
         const user = await this.userService.updatePreferences(userId, dto);
+        console.log('updatePreferences returning:', user);
         return this.createResponse(user);
     }
 
@@ -497,5 +492,17 @@ export class UserController implements IUserController {
     async getUserStats() {
         const stats = await this.userService.getUserStats();
         return this.createResponse(stats);
+    }
+
+    // ===== Get User by ID (moved to end to avoid route conflicts) =====
+    @GetUserSwaggerDecorator()
+    @HttpCode(200)
+    @Roles(...STAFF_ROLES)
+    @StaffGuards()
+    @Get('/:id')
+    public async getUser(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<GetUserResponse> {
+        return this.userService.getUser(id);
     }
 }
