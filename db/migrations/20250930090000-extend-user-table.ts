@@ -79,7 +79,7 @@ export async function down(queryInterface: QueryInterface): Promise<void> {
                 await queryInterface.removeIndex('user', name);
             } catch (e) {
                 if (process.env.NODE_ENV !== 'production') {
-                    // eslint-disable-next-line no-console
+                     
                     console.warn(`[migrate] skip removeIndex ${name}:`, (e as Error).message);
                 }
             }
@@ -98,7 +98,7 @@ export async function down(queryInterface: QueryInterface): Promise<void> {
                 await queryInterface.removeColumn('user', col);
             } catch (e) {
                 if (process.env.NODE_ENV !== 'production') {
-                    // eslint-disable-next-line no-console
+                     
                     console.warn(`[migrate] skip removeColumn ${col}:`, (e as Error).message);
                 }
             }

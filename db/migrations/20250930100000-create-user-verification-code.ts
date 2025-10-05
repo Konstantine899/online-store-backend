@@ -59,7 +59,7 @@ export async function down(queryInterface: QueryInterface): Promise<void> {
         await queryInterface.removeIndex('user_verification_code', 'idx_uvc_user_channel');
     } catch (e) {
         if (process.env.NODE_ENV !== 'production') {
-            // eslint-disable-next-line no-console
+             
             console.warn('[migrate] skip removeIndex idx_uvc_user_channel:', (e as Error).message);
         }
     }
@@ -67,7 +67,7 @@ export async function down(queryInterface: QueryInterface): Promise<void> {
         await queryInterface.removeIndex('user_verification_code', 'idx_uvc_expires_at');
     } catch (e) {
         if (process.env.NODE_ENV !== 'production') {
-            // eslint-disable-next-line no-console
+             
             console.warn('[migrate] skip removeIndex idx_uvc_expires_at:', (e as Error).message);
         }
     }

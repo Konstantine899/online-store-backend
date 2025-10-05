@@ -20,7 +20,7 @@ class Order
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static associate(models: Record<string, any>): void {
-        // eslint-disable-line @typescript-eslint/no-explicit-any
+         
         this.belongsTo(models.user, {
             as: TABLE_NAMES.USER,
             foreignKey: 'user_id',

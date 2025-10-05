@@ -12,7 +12,7 @@ class Cart
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static associate(models: Record<string, any>): void {
-        // eslint-disable-line @typescript-eslint/no-explicit-any
+         
         this.belongsToMany(models.product, {
             through: TABLE_NAMES.CART_PRODUCT,
             as: TABLE_NAMES.PRODUCT,
