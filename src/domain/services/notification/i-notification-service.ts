@@ -70,7 +70,11 @@ export interface INotificationService {
     sendBulkNotifications(notifications: CreateNotificationDto[]): Promise<NotificationModel[]>;
 
     // Работа с шаблонами
-    getTemplates(filters?: { type?: NotificationType; isActive?: boolean }): Promise<NotificationTemplateModel[]>;
+    createTemplate(createDto: Partial<NotificationTemplateModel>): Promise<NotificationTemplateModel>;
+    getTemplateById(id: number): Promise<NotificationTemplateModel | null>;
     getTemplateByName(name: string): Promise<NotificationTemplateModel | null>;
+    getTemplates(filters?: { type?: NotificationType; isActive?: boolean }): Promise<NotificationTemplateModel[]>;
+    updateTemplate(id: number, updateDto: Partial<NotificationTemplateModel>): Promise<NotificationTemplateModel>;
+    deleteTemplate(id: number): Promise<void>;
     createTemplateFromNotification(notificationId: number): Promise<NotificationTemplateModel>;
 }

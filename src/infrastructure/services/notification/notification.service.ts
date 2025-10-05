@@ -320,10 +320,58 @@ export class NotificationService implements INotificationService {
         });
     }
 
+    async createTemplate(createDto: Partial<NotificationTemplateModel>): Promise<NotificationTemplateModel> {
+        if (!createDto.name || !createDto.type || !createDto.title || !createDto.message) {
+            throw new BadRequestException('Необходимо указать name, type, title и message для создания шаблона');
+        }
+        
+        const template = await NotificationTemplateModel.create({
+            name: createDto.name,
+            type: createDto.type,
+            title: createDto.title,
+            message: createDto.message,
+            isActive: createDto.isActive ?? true,
+        });
+        this.logger.log(`Template created: ${template.id}`);
+        return template;
+    }
+
+    async getTemplateById(id: number): Promise<NotificationTemplateModel | null> {
+        return NotificationTemplateModel.findByPk(id);
+    }
+
     async getTemplateByName(name: string): Promise<NotificationTemplateModel | null> {
         return NotificationTemplateModel.findOne({
             where: { name, isActive: true },
         });
+    }
+
+    async updateTemplate(id: number, updateDto: Partial<NotificationTemplateModel>): Promise<NotificationTemplateModel> {
+        const [affectedCount] = await NotificationTemplateModel.update(updateDto, {
+            where: { id },
+        });
+
+        if (affectedCount === 0) {
+            throw new NotFoundException(`Шаблон с ID ${id} не найден.`);
+        }
+
+        const updatedTemplate = await this.getTemplateById(id);
+        if (!updatedTemplate) {
+            throw new NotFoundException(`Шаблон с ID ${id} не найден после обновления.`);
+        }
+        this.logger.log(`Template updated: ${id}`);
+        return updatedTemplate;
+    }
+
+    async deleteTemplate(id: number): Promise<void> {
+        const deletedCount = await NotificationTemplateModel.destroy({
+            where: { id },
+        });
+
+        if (deletedCount === 0) {
+            throw new NotFoundException(`Шаблон с ID ${id} не найден.`);
+        }
+        this.logger.log(`Template deleted: ${id}`);
     }
 
     async createTemplateFromNotification(notificationId: number): Promise<NotificationTemplateModel> {

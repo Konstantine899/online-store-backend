@@ -24,6 +24,9 @@ import {
     PLATFORM_ROLES,
     TENANT_ADMIN_ROLES,
 } from './notification-roles.constants';
+import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
+import { NotificationType, NotificationStatus } from '@app/domain/models';
+import { NotificationFilters } from '@app/domain/services';
 
 interface AuthenticatedRequest extends Request {
     user: { id: number };
@@ -45,8 +48,7 @@ interface AuthenticatedRequest extends Request {
 @ApiBearerAuth('JWT-auth')
 export class NotificationController {
     constructor(
-        // TODO: Добавить NotificationService после создания
-        // private readonly notificationService: NotificationService,
+        private readonly notificationService: NotificationService,
     ) {}
 
     /**
@@ -102,19 +104,31 @@ export class NotificationController {
         @Req() req: AuthenticatedRequest,
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
-        @Query('status') _status?: string, // eslint-disable-line @typescript-eslint/no-unused-vars
-        @Query('type') _type?: string, // eslint-disable-line @typescript-eslint/no-unused-vars
+        @Query('status') status?: string,
+        @Query('type') type?: string,
     ): Promise<{ data: unknown[]; meta: { totalCount: number; currentPage: number; lastPage: number; limit: number } }> {
-        // TODO: Реализовать после создания NotificationService
-        // return this.notificationService.getUserNotifications(req.user.id, page, limit, status, type);
-        
+        const filters: NotificationFilters = {
+            userId: req.user.id,
+            page,
+            limit,
+        };
+
+        if (status) {
+            filters.status = status as NotificationStatus;
+        }
+
+        if (type) {
+            filters.type = type as NotificationType;
+        }
+
+        const result = await this.notificationService.getNotifications(filters);
         return {
-            data: [],
+            data: result.data,
             meta: {
-                totalCount: 0,
-                currentPage: page,
-                lastPage: 1,
-                limit,
+                totalCount: result.meta.totalCount as number,
+                currentPage: result.meta.currentPage as number,
+                lastPage: result.meta.lastPage as number,
+                limit: result.meta.limit as number,
             }
         };
     }
@@ -140,11 +154,9 @@ export class NotificationController {
             }
         }
     })
-    async getUnreadCount(@Req() _req: AuthenticatedRequest): Promise<{ count: number }> { // eslint-disable-line @typescript-eslint/no-unused-vars
-        // TODO: Реализовать после создания NotificationService
-        // return this.notificationService.getUnreadCount(req.user.id);
-        
-        return { count: 0 };
+    async getUnreadCount(@Req() req: AuthenticatedRequest): Promise<{ count: number }> {
+        const count = await this.notificationService.getUnreadCount(req.user.id);
+        return { count };
     }
 
     /**
@@ -171,12 +183,10 @@ export class NotificationController {
     })
     @ApiResponse({ status: 404, description: 'Уведомление не найдено' })
     async markAsRead(
-        @Param('id', ParseIntPipe) _notificationId: number, // eslint-disable-line @typescript-eslint/no-unused-vars
-        @Req() _req: AuthenticatedRequest, // eslint-disable-line @typescript-eslint/no-unused-vars
+        @Param('id', ParseIntPipe) notificationId: number,
+        @Req() req: AuthenticatedRequest,
     ): Promise<{ message: string }> {
-        // TODO: Реализовать после создания NotificationService
-        // await this.notificationService.markAsRead(notificationId, req.user.id);
-        
+        await this.notificationService.markAsRead(notificationId, req.user.id);
         return { message: 'Уведомление отмечено как прочитанное' };
     }
 
@@ -214,7 +224,7 @@ export class NotificationController {
         orderUpdates: boolean;
         marketing: boolean;
     }> {
-        // TODO: Реализовать после создания NotificationService
+        // TODO: Реализовать после создания NotificationSettingsService
         // return this.notificationService.getUserSettings(req.user.id);
         
         return {
@@ -269,7 +279,7 @@ export class NotificationController {
         orderUpdates: boolean;
         marketing: boolean;
     }> {
-        // TODO: Реализовать после создания NotificationService
+        // TODO: Реализовать после создания NotificationSettingsService
         // return this.notificationService.updateUserSettings(req.user.id, updateSettingsDto);
         
         return {
@@ -330,17 +340,24 @@ export class NotificationController {
     async getTemplates(
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
-        @Query('type') _type?: string, // eslint-disable-line @typescript-eslint/no-unused-vars
+        @Query('type') type?: string,
     ): Promise<{ data: unknown[]; meta: { totalCount: number; currentPage: number; lastPage: number; limit: number } }> {
-        // TODO: Реализовать после создания NotificationService
-        // return this.notificationService.getTemplates(page, limit, type);
-        
+        const templates = await this.notificationService.getTemplates({
+            type: type as NotificationType,
+            isActive: true,
+        });
+
+        // Простая пагинация для шаблонов
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        const paginatedTemplates = templates.slice(startIndex, endIndex);
+
         return {
-            data: [],
+            data: paginatedTemplates,
             meta: {
-                totalCount: 0,
+                totalCount: templates.length,
                 currentPage: page,
-                lastPage: 1,
+                lastPage: Math.ceil(templates.length / limit),
                 limit,
             }
         };
@@ -388,16 +405,21 @@ export class NotificationController {
         message: string;
         isActive: boolean;
     }> {
-        // TODO: Реализовать после создания NotificationService
-        // return this.notificationService.createTemplate(createTemplateDto, req.user.id);
-        
-        return {
-            id: 1,
+        const template = await this.notificationService.createTemplate({
             name: createTemplateDto.name,
-            type: createTemplateDto.type,
+            type: createTemplateDto.type as NotificationType,
             title: createTemplateDto.title,
             message: createTemplateDto.message,
             isActive: true,
+        });
+
+        return {
+            id: template.id,
+            name: template.name,
+            type: template.type,
+            title: template.title,
+            message: template.message,
+            isActive: template.isActive,
         };
     }
 
@@ -446,16 +468,22 @@ export class NotificationController {
         message: string;
         isActive: boolean;
     }> {
-        // TODO: Реализовать после создания NotificationService
-        // return this.notificationService.updateTemplate(templateId, updateTemplateDto, req.user.id);
-        
+        const updateData: Record<string, unknown> = {};
+        if (updateTemplateDto.name) updateData.name = updateTemplateDto.name;
+        if (updateTemplateDto.type) updateData.type = updateTemplateDto.type as NotificationType;
+        if (updateTemplateDto.title) updateData.title = updateTemplateDto.title;
+        if (updateTemplateDto.message) updateData.message = updateTemplateDto.message;
+        if (updateTemplateDto.isActive !== undefined) updateData.isActive = updateTemplateDto.isActive;
+
+        const template = await this.notificationService.updateTemplate(templateId, updateData);
+
         return {
-            id: templateId,
-            name: updateTemplateDto.name ?? 'template',
-            type: updateTemplateDto.type ?? 'email',
-            title: updateTemplateDto.title ?? 'Template',
-            message: updateTemplateDto.message ?? 'Template message',
-            isActive: updateTemplateDto.isActive ?? true,
+            id: template.id,
+            name: template.name,
+            type: template.type,
+            title: template.title,
+            message: template.message,
+            isActive: template.isActive,
         };
     }
 
@@ -474,11 +502,10 @@ export class NotificationController {
     @ApiResponse({ status: 204, description: 'Шаблон уведомления удален' })
     @ApiResponse({ status: 404, description: 'Шаблон не найден' })
     async deleteTemplate(
-        @Param('id', ParseIntPipe) _templateId: number, // eslint-disable-line @typescript-eslint/no-unused-vars
+        @Param('id', ParseIntPipe) templateId: number,
         @Req() _req: AuthenticatedRequest, // eslint-disable-line @typescript-eslint/no-unused-vars
     ): Promise<void> {
-        // TODO: Реализовать после создания NotificationService
-        // await this.notificationService.deleteTemplate(templateId, req.user.id);
+        await this.notificationService.deleteTemplate(templateId);
     }
 
     /**
@@ -525,9 +552,9 @@ export class NotificationController {
         }
     })
     async getStatistics(
-        @Req() _req: AuthenticatedRequest, // eslint-disable-line @typescript-eslint/no-unused-vars
-        @Query('period') _period?: string, // eslint-disable-line @typescript-eslint/no-unused-vars
-        @Query('type') _type?: string, // eslint-disable-line @typescript-eslint/no-unused-vars
+        @Req() req: AuthenticatedRequest,
+        @Query('period') period?: string,
+        @Query('type') type?: string,
     ): Promise<{
         totalSent: number;
         totalDelivered: number;
@@ -545,25 +572,10 @@ export class NotificationController {
             failed: number;
         };
     }> {
-        // TODO: Реализовать после создания NotificationService
-        // return this.notificationService.getStatistics(period, type, req.user.id);
-        
-        return {
-            totalSent: 0,
-            totalDelivered: 0,
-            totalRead: 0,
-            deliveryRate: 0,
-            readRate: 0,
-            byType: {
-                email: 0,
-                push: 0,
-            },
-            byStatus: {
-                sent: 0,
-                delivered: 0,
-                read: 0,
-                failed: 0,
-            }
-        };
+        return this.notificationService.getStatistics(
+            req.user.id,
+            period,
+            type as NotificationType
+        );
     }
 }

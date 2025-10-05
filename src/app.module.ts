@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BruteforceGuard } from './infrastructure/common/guards';
 import { APP_GUARD } from '@nestjs/core';
 
@@ -111,6 +112,17 @@ import { HealthModule } from './infrastructure/controllers/health/health.module'
                 limit: 3, // 3 попытки регистрации в минуту
             }
         ]),
+
+        EventEmitterModule.forRoot({
+            // Настройки для event emitter
+            wildcard: false,
+            delimiter: '.',
+            newListener: false,
+            removeListener: false,
+            maxListeners: 10,
+            verboseMemoryLeak: false,
+            ignoreErrors: false,
+        }),
 
         ControllersModule,
         ServicesModule,

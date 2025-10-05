@@ -21,6 +21,7 @@ import { NotificationService } from './notification/notification.service';
 import { EmailProviderService } from './notification/email-provider.service';
 import { SmsProviderService } from './notification/sms-provider.service';
 import { TemplateRendererService } from './notification/template-renderer.service';
+import { NotificationEventHandler } from '@app/infrastructure/common/events/notification.event-handler';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { UserModel, NotificationModel, NotificationTemplateModel } from '@app/domain/models';
 
@@ -50,6 +51,7 @@ import { UserModel, NotificationModel, NotificationTemplateModel } from '@app/do
         UserAddressService,
         LoginHistoryService,
         NotificationService,
+        NotificationEventHandler,
         {
             provide: 'IEmailProvider',
             useClass: EmailProviderService,
