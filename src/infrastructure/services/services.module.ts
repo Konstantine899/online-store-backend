@@ -17,8 +17,12 @@ import { TokenService } from './token/token.service';
 import { UserService } from './user/user.service';
 import { UserAddressService } from './user-address/user-address.service';
 import { LoginHistoryService } from './login-history/login-history.service';
+import { NotificationService } from './notification/notification.service';
+import { EmailProviderService } from './notification/email-provider.service';
+import { SmsProviderService } from './notification/sms-provider.service';
+import { TemplateRendererService } from './notification/template-renderer.service';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { UserModel } from '@app/domain/models';
+import { UserModel, NotificationModel, NotificationTemplateModel } from '@app/domain/models';
 
 
 
@@ -26,7 +30,7 @@ import { UserModel } from '@app/domain/models';
     imports: [
         JwtModule.registerAsync(jwtConfig()),
         RepositoriesModule,
-        SequelizeModule.forFeature([UserModel]),
+        SequelizeModule.forFeature([UserModel, NotificationModel, NotificationTemplateModel]),
         JwtModule,
     ],
     providers: [
@@ -45,6 +49,19 @@ import { UserModel } from '@app/domain/models';
         UserService,
         UserAddressService,
         LoginHistoryService,
+        NotificationService,
+        {
+            provide: 'IEmailProvider',
+            useClass: EmailProviderService,
+        },
+        {
+            provide: 'ISmsProvider',
+            useClass: SmsProviderService,
+        },
+        {
+            provide: 'ITemplateRenderer',
+            useClass: TemplateRendererService,
+        },
     ],
     exports: [
         AuthService,
@@ -62,6 +79,7 @@ import { UserModel } from '@app/domain/models';
         UserService,
         UserAddressService,
         LoginHistoryService,
+        NotificationService,
     ],
 })
 export class ServicesModule {}

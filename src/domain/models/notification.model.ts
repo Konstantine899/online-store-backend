@@ -22,10 +22,10 @@ interface INotificationModel {
     templateName: string;
     title: string;
     message: string;
-    data?: any;
+    data?: Record<string, unknown>;
     status: NotificationStatus;
     sentAt?: Date;
-    readAt?: Date;
+    readAt?: Date | null;
     failedReason?: string;
     isRead: boolean;
     isArchived: boolean;
@@ -39,7 +39,7 @@ interface INotificationCreationAttributes {
     templateName: string;
     title: string;
     message: string;
-    data?: any;
+    data?: Record<string, unknown>;
     status?: NotificationStatus;
     isRead?: boolean;
     isArchived?: boolean;
@@ -158,7 +158,7 @@ export class NotificationModel
         type: DataType.JSON,
         allowNull: true,
     })
-    declare data: any;
+    declare data: Record<string, unknown>;
 
     @Column({
         type: DataType.ENUM(...Object.values(NotificationStatus)),
@@ -179,7 +179,7 @@ export class NotificationModel
         allowNull: true,
         field: 'read_at',
     })
-    declare readAt: Date;
+    declare readAt: Date | null;
 
     @Column({
         type: DataType.TEXT,

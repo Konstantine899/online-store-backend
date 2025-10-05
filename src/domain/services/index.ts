@@ -15,3 +15,13 @@ export {
     IRefreshTokenPayload,
     ITokenService,
 } from './token/i-token-service';
+export { 
+    INotificationService,
+    CreateNotificationDto,
+    UpdateNotificationDto,
+    NotificationFilters,
+    NotificationStatistics
+} from './notification/i-notification-service';
+export { IEmailProvider, EmailMessage, EmailSendResult, EmailAttachment } from './notification/i-email-provider';
+export { ISmsProvider, SmsMessage, SmsSendResult, SmsDeliveryReport } from './notification/i-sms-provider';
+export { ITemplateRenderer, TemplateVariables, RenderResult } from './notification/i-template-renderer';
