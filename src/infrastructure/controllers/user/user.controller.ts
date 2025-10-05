@@ -249,7 +249,7 @@ export class UserController implements IUserController {
         const userId = this.extractUserId(req);
         const user = await this.userService.updatePreferences(userId, dto);
         console.log('updatePreferences returning:', user);
-        return this.createResponse(user.toJSON());
+        return this.createResponse(user.get({ plain: true }));
     }
 
     @Roles(...ADMIN_ROLES)

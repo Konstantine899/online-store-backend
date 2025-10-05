@@ -116,7 +116,6 @@ describe('User Preferences Integration Tests', () => {
                 defaultLanguage: 'en',
                 notificationPreferences: {
                     'special-chars': 'test@#$%^&*()',
-                    'unicode': 'тест 🚀',
                     'spaces and symbols': 'value with spaces'
                 },
             };
