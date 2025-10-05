@@ -17,12 +17,17 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth, ApiParam }
 import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
 import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
 import { Roles } from '@app/infrastructure/common/decorators/roles-auth.decorator';
-import { CurrentUser } from '@app/infrastructure/common/decorators/current-user.decorator';
+import { Req } from '@nestjs/common';
+import { Request } from 'express';
 import {
     NOTIFICATION_ACCESS_LEVELS,
     PLATFORM_ROLES,
     TENANT_ADMIN_ROLES,
 } from './notification-roles.constants';
+
+interface AuthenticatedRequest extends Request {
+    user: { id: number };
+}
 
 /**
  * Контроллер уведомлений с полной системой ролей и тенантской изоляцией
@@ -94,14 +99,14 @@ export class NotificationController {
     @ApiResponse({ status: 401, description: 'Не авторизован' })
     @ApiResponse({ status: 403, description: 'Недостаточно прав доступа' })
     async getUserNotifications(
-        @CurrentUser() user: { id: number },
+        @Req() req: AuthenticatedRequest,
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
         @Query('status') _status?: string, // eslint-disable-line @typescript-eslint/no-unused-vars
         @Query('type') _type?: string, // eslint-disable-line @typescript-eslint/no-unused-vars
     ): Promise<{ data: unknown[]; meta: { totalCount: number; currentPage: number; lastPage: number; limit: number } }> {
         // TODO: Реализовать после создания NotificationService
-        // return this.notificationService.getUserNotifications(user.id, page, limit, status, type);
+        // return this.notificationService.getUserNotifications(req.user.id, page, limit, status, type);
         
         return {
             data: [],
@@ -135,9 +140,9 @@ export class NotificationController {
             }
         }
     })
-    async getUnreadCount(@CurrentUser() _user: { id: number }): Promise<{ count: number }> { // eslint-disable-line @typescript-eslint/no-unused-vars
+    async getUnreadCount(@Req() _req: AuthenticatedRequest): Promise<{ count: number }> { // eslint-disable-line @typescript-eslint/no-unused-vars
         // TODO: Реализовать после создания NotificationService
-        // return this.notificationService.getUnreadCount(user.id);
+        // return this.notificationService.getUnreadCount(req.user.id);
         
         return { count: 0 };
     }
@@ -167,10 +172,10 @@ export class NotificationController {
     @ApiResponse({ status: 404, description: 'Уведомление не найдено' })
     async markAsRead(
         @Param('id', ParseIntPipe) _notificationId: number, // eslint-disable-line @typescript-eslint/no-unused-vars
-        @CurrentUser() _user: { id: number }, // eslint-disable-line @typescript-eslint/no-unused-vars
+        @Req() _req: AuthenticatedRequest, // eslint-disable-line @typescript-eslint/no-unused-vars
     ): Promise<{ message: string }> {
         // TODO: Реализовать после создания NotificationService
-        // await this.notificationService.markAsRead(notificationId, user.id);
+        // await this.notificationService.markAsRead(notificationId, req.user.id);
         
         return { message: 'Уведомление отмечено как прочитанное' };
     }
@@ -201,7 +206,7 @@ export class NotificationController {
             }
         }
     })
-    async getUserSettings(@CurrentUser() user: { id: number }): Promise<{
+    async getUserSettings(@Req() req: AuthenticatedRequest): Promise<{
         id: number;
         userId: number;
         emailEnabled: boolean;
@@ -210,11 +215,11 @@ export class NotificationController {
         marketing: boolean;
     }> {
         // TODO: Реализовать после создания NotificationService
-        // return this.notificationService.getUserSettings(user.id);
+        // return this.notificationService.getUserSettings(req.user.id);
         
         return {
             id: 1,
-            userId: user.id,
+            userId: req.user.id,
             emailEnabled: true,
             pushEnabled: true,
             orderUpdates: true,
@@ -255,7 +260,7 @@ export class NotificationController {
             orderUpdates?: boolean;
             marketing?: boolean;
         },
-        @CurrentUser() user: { id: number },
+        @Req() req: AuthenticatedRequest,
     ): Promise<{
         id: number;
         userId: number;
@@ -265,11 +270,11 @@ export class NotificationController {
         marketing: boolean;
     }> {
         // TODO: Реализовать после создания NotificationService
-        // return this.notificationService.updateUserSettings(user.id, updateSettingsDto);
+        // return this.notificationService.updateUserSettings(req.user.id, updateSettingsDto);
         
         return {
             id: 1,
-            userId: user.id,
+            userId: req.user.id,
             emailEnabled: updateSettingsDto.emailEnabled ?? true,
             pushEnabled: updateSettingsDto.pushEnabled ?? true,
             orderUpdates: updateSettingsDto.orderUpdates ?? true,
@@ -374,7 +379,7 @@ export class NotificationController {
             title: string;
             message: string;
         },
-        @CurrentUser() _user: { id: number }, // eslint-disable-line @typescript-eslint/no-unused-vars
+        @Req() _req: AuthenticatedRequest, // eslint-disable-line @typescript-eslint/no-unused-vars
     ): Promise<{
         id: number;
         name: string;
@@ -384,7 +389,7 @@ export class NotificationController {
         isActive: boolean;
     }> {
         // TODO: Реализовать после создания NotificationService
-        // return this.notificationService.createTemplate(createTemplateDto, user.id);
+        // return this.notificationService.createTemplate(createTemplateDto, req.user.id);
         
         return {
             id: 1,
@@ -432,7 +437,7 @@ export class NotificationController {
             message?: string;
             isActive?: boolean;
         },
-        @CurrentUser() _user: { id: number }, // eslint-disable-line @typescript-eslint/no-unused-vars
+        @Req() _req: AuthenticatedRequest, // eslint-disable-line @typescript-eslint/no-unused-vars
     ): Promise<{
         id: number;
         name: string;
@@ -442,14 +447,14 @@ export class NotificationController {
         isActive: boolean;
     }> {
         // TODO: Реализовать после создания NotificationService
-        // return this.notificationService.updateTemplate(templateId, updateTemplateDto, user.id);
+        // return this.notificationService.updateTemplate(templateId, updateTemplateDto, req.user.id);
         
         return {
             id: templateId,
-            name: updateTemplateDto.name,
-            type: updateTemplateDto.type,
-            title: updateTemplateDto.title,
-            message: updateTemplateDto.message,
+            name: updateTemplateDto.name ?? 'template',
+            type: updateTemplateDto.type ?? 'email',
+            title: updateTemplateDto.title ?? 'Template',
+            message: updateTemplateDto.message ?? 'Template message',
             isActive: updateTemplateDto.isActive ?? true,
         };
     }
@@ -470,10 +475,10 @@ export class NotificationController {
     @ApiResponse({ status: 404, description: 'Шаблон не найден' })
     async deleteTemplate(
         @Param('id', ParseIntPipe) _templateId: number, // eslint-disable-line @typescript-eslint/no-unused-vars
-        @CurrentUser() _user: { id: number }, // eslint-disable-line @typescript-eslint/no-unused-vars
+        @Req() _req: AuthenticatedRequest, // eslint-disable-line @typescript-eslint/no-unused-vars
     ): Promise<void> {
         // TODO: Реализовать после создания NotificationService
-        // await this.notificationService.deleteTemplate(templateId, user.id);
+        // await this.notificationService.deleteTemplate(templateId, req.user.id);
     }
 
     /**
@@ -520,9 +525,9 @@ export class NotificationController {
         }
     })
     async getStatistics(
+        @Req() _req: AuthenticatedRequest, // eslint-disable-line @typescript-eslint/no-unused-vars
         @Query('period') _period?: string, // eslint-disable-line @typescript-eslint/no-unused-vars
         @Query('type') _type?: string, // eslint-disable-line @typescript-eslint/no-unused-vars
-        @CurrentUser() _user: { id: number }, // eslint-disable-line @typescript-eslint/no-unused-vars
     ): Promise<{
         totalSent: number;
         totalDelivered: number;
@@ -541,7 +546,7 @@ export class NotificationController {
         };
     }> {
         // TODO: Реализовать после создания NotificationService
-        // return this.notificationService.getStatistics(period, type, user.id);
+        // return this.notificationService.getStatistics(period, type, req.user.id);
         
         return {
             totalSent: 0,
