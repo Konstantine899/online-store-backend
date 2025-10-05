@@ -39,11 +39,15 @@ jest.mock('@app/domain/models', () => ({
         destroy: jest.fn(),
         count: jest.fn(),
         findAll: jest.fn(),
+        findByPk: jest.fn(),
     },
     NotificationTemplateModel: {
         findOne: jest.fn(),
         findAll: jest.fn(),
         create: jest.fn(),
+        findByPk: jest.fn(),
+        update: jest.fn(),
+        destroy: jest.fn(),
     },
     NotificationType: {
         EMAIL: 'email',
@@ -488,6 +492,324 @@ describe('NotificationService', () => {
             });
 
             expect(result).toEqual(mockTemplate);
+        });
+    });
+
+    describe('markAsUnread', () => {
+        it('should mark notification as unread', async () => {
+            const mockNotification = {
+                id: 1,
+                userId: 1,
+                isRead: false,
+                status: NotificationStatus.SENT,
+            } as NotificationModel;
+
+            (NotificationModel.update as jest.Mock).mockResolvedValue([1]);
+            (NotificationModel.findOne as jest.Mock).mockResolvedValue(mockNotification);
+
+            const result = await service.markAsUnread(1, 1);
+
+            expect(NotificationModel.update).toHaveBeenCalledWith({
+                isRead: false,
+                readAt: null,
+            }, {
+                where: { id: 1, userId: 1 },
+            });
+
+            expect(result).toEqual(mockNotification);
+        });
+    });
+
+    describe('archiveNotification', () => {
+        it('should archive notification', async () => {
+            const mockNotification = {
+                id: 1,
+                userId: 1,
+                isArchived: true,
+            } as NotificationModel;
+
+            (NotificationModel.update as jest.Mock).mockResolvedValue([1]);
+            (NotificationModel.findOne as jest.Mock).mockResolvedValue(mockNotification);
+
+            const result = await service.archiveNotification(1, 1);
+
+            expect(NotificationModel.update).toHaveBeenCalledWith({
+                isArchived: true,
+            }, {
+                where: { id: 1, userId: 1 },
+            });
+
+            expect(result).toEqual(mockNotification);
+        });
+    });
+
+    describe('unarchiveNotification', () => {
+        it('should unarchive notification', async () => {
+            const mockNotification = {
+                id: 1,
+                userId: 1,
+                isArchived: false,
+            } as NotificationModel;
+
+            (NotificationModel.update as jest.Mock).mockResolvedValue([1]);
+            (NotificationModel.findOne as jest.Mock).mockResolvedValue(mockNotification);
+
+            const result = await service.unarchiveNotification(1, 1);
+
+            expect(NotificationModel.update).toHaveBeenCalledWith({
+                isArchived: false,
+            }, {
+                where: { id: 1, userId: 1 },
+            });
+
+            expect(result).toEqual(mockNotification);
+        });
+    });
+
+    describe('sendBulkNotifications', () => {
+        it('should send multiple notifications successfully', async () => {
+            const notifications = [
+                {
+                    userId: 1,
+                    type: NotificationType.EMAIL,
+                    templateName: 'test_template',
+                    title: 'Test 1',
+                    message: 'Message 1',
+                },
+                {
+                    userId: 2,
+                    type: NotificationType.PUSH,
+                    templateName: 'test_template',
+                    title: 'Test 2',
+                    message: 'Message 2',
+                },
+            ];
+
+            const mockNotifications = [
+                { id: 1, ...notifications[0], status: NotificationStatus.SENT },
+                { id: 2, ...notifications[1], status: NotificationStatus.SENT },
+            ] as NotificationModel[];
+
+            (NotificationModel.create as jest.Mock)
+                .mockResolvedValueOnce(mockNotifications[0])
+                .mockResolvedValueOnce(mockNotifications[1]);
+            (NotificationModel.update as jest.Mock).mockResolvedValue([1]);
+
+            const results = await service.sendBulkNotifications(notifications);
+
+            expect(results).toHaveLength(2);
+            expect(NotificationModel.create).toHaveBeenCalledTimes(2);
+            expect(NotificationModel.update).toHaveBeenCalledTimes(2);
+        });
+
+        it('should handle partial failures in bulk notifications', async () => {
+            const notifications = [
+                {
+                    userId: 1,
+                    type: NotificationType.EMAIL,
+                    templateName: 'test_template',
+                    title: 'Test 1',
+                    message: 'Message 1',
+                },
+                {
+                    userId: 2,
+                    type: NotificationType.EMAIL,
+                    templateName: 'test_template',
+                    title: 'Test 2',
+                    message: 'Message 2',
+                },
+            ];
+
+            const mockNotification = { id: 1, ...notifications[0], status: NotificationStatus.SENT } as NotificationModel;
+
+            (NotificationModel.create as jest.Mock)
+                .mockResolvedValueOnce(mockNotification)
+                .mockRejectedValueOnce(new Error('Database error'));
+            (NotificationModel.update as jest.Mock).mockResolvedValue([1]);
+
+            const results = await service.sendBulkNotifications(notifications);
+
+            expect(results).toHaveLength(1);
+            expect(results[0]).toEqual(mockNotification);
+        });
+    });
+
+    describe('createTemplate', () => {
+        it('should create template successfully', async () => {
+            const createDto = {
+                name: 'test_template',
+                type: NotificationType.EMAIL,
+                title: 'Test Template',
+                message: 'Test message with {{variable}}',
+                isActive: true,
+            };
+
+            const mockTemplate = {
+                id: 1,
+                ...createDto,
+            } as NotificationTemplateModel;
+
+            (NotificationTemplateModel.create as jest.Mock).mockResolvedValue(mockTemplate);
+
+            const result = await service.createTemplate(createDto);
+
+            expect(NotificationTemplateModel.create).toHaveBeenCalledWith(createDto);
+            expect(result).toEqual(mockTemplate);
+        });
+
+        it('should throw BadRequestException when required fields are missing', async () => {
+            const createDto = {
+                name: 'test_template',
+                // Missing type, title, message
+            };
+
+            await expect(service.createTemplate(createDto)).rejects.toThrow(BadRequestException);
+        });
+    });
+
+    describe('getTemplateById', () => {
+        it('should return template by id', async () => {
+            const mockTemplate = {
+                id: 1,
+                name: 'test_template',
+                type: NotificationType.EMAIL,
+            } as NotificationTemplateModel;
+
+            (NotificationTemplateModel.findByPk as jest.Mock).mockResolvedValue(mockTemplate);
+
+            const result = await service.getTemplateById(1);
+
+            expect(NotificationTemplateModel.findByPk).toHaveBeenCalledWith(1);
+            expect(result).toEqual(mockTemplate);
+        });
+
+        it('should return null when template not found', async () => {
+            (NotificationTemplateModel.findByPk as jest.Mock).mockResolvedValue(null);
+
+            const result = await service.getTemplateById(999);
+
+            expect(result).toBeNull();
+        });
+    });
+
+    describe('updateTemplate', () => {
+        it('should update template successfully', async () => {
+            const updateDto = {
+                title: 'Updated Title',
+                message: 'Updated message',
+            };
+
+            const mockUpdatedTemplate = {
+                id: 1,
+                name: 'test_template',
+                type: NotificationType.EMAIL,
+                ...updateDto,
+            } as NotificationTemplateModel;
+
+            (NotificationTemplateModel.update as jest.Mock).mockResolvedValue([1]);
+            (NotificationTemplateModel.findByPk as jest.Mock).mockResolvedValue(mockUpdatedTemplate);
+
+            const result = await service.updateTemplate(1, updateDto);
+
+            expect(NotificationTemplateModel.update).toHaveBeenCalledWith(updateDto, {
+                where: { id: 1 },
+            });
+            expect(result).toEqual(mockUpdatedTemplate);
+        });
+
+        it('should throw NotFoundException when template not found', async () => {
+            const updateDto = { title: 'Updated Title' };
+
+            (NotificationTemplateModel.update as jest.Mock).mockResolvedValue([0]);
+
+            await expect(service.updateTemplate(999, updateDto)).rejects.toThrow(NotFoundException);
+        });
+    });
+
+    describe('deleteTemplate', () => {
+        it('should delete template successfully', async () => {
+            (NotificationTemplateModel.destroy as jest.Mock).mockResolvedValue(1);
+
+            await service.deleteTemplate(1);
+
+            expect(NotificationTemplateModel.destroy).toHaveBeenCalledWith({
+                where: { id: 1 },
+            });
+        });
+
+        it('should throw NotFoundException when template not found', async () => {
+            (NotificationTemplateModel.destroy as jest.Mock).mockResolvedValue(0);
+
+            await expect(service.deleteTemplate(999)).rejects.toThrow(NotFoundException);
+        });
+    });
+
+    describe('createTemplateFromNotification', () => {
+        it('should create template from notification successfully', async () => {
+            const mockNotification = {
+                id: 1,
+                title: 'Test Title',
+                message: 'Test message',
+                type: NotificationType.EMAIL,
+            } as NotificationModel;
+
+            const mockTemplate = {
+                id: 1,
+                name: 'notification_1_template',
+                type: NotificationType.EMAIL,
+                title: 'Test Title',
+                message: 'Test message',
+            } as NotificationTemplateModel;
+
+            // Mock the private method call
+            const serviceInstance = service as unknown as { createTemplateFromNotification: (id: number) => Promise<NotificationTemplateModel> };
+            jest.spyOn(serviceInstance, 'createTemplateFromNotification').mockImplementation(async (id: number) => {
+                const notification = await NotificationModel.findByPk(id);
+                if (!notification) {
+                    throw new NotFoundException(`Уведомление с ID ${id} не найдено.`);
+                }
+                
+                const template = await NotificationTemplateModel.create({
+                    name: `notification_${id}_template`,
+                    type: notification.type,
+                    title: notification.title,
+                    message: notification.message,
+                    isActive: true,
+                });
+                
+                return template;
+            });
+
+            (NotificationModel.findByPk as jest.Mock).mockResolvedValue(mockNotification);
+            (NotificationTemplateModel.create as jest.Mock).mockResolvedValue(mockTemplate);
+
+            const result = await service.createTemplateFromNotification(1);
+
+            expect(NotificationModel.findByPk).toHaveBeenCalledWith(1);
+            expect(NotificationTemplateModel.create).toHaveBeenCalledWith({
+                name: 'notification_1_template',
+                type: NotificationType.EMAIL,
+                title: 'Test Title',
+                message: 'Test message',
+                isActive: true,
+            });
+            expect(result).toEqual(mockTemplate);
+        });
+
+        it('should throw NotFoundException when notification not found', async () => {
+            // Mock the private method call to throw NotFoundException
+            const serviceInstance = service as unknown as { createTemplateFromNotification: (id: number) => Promise<NotificationTemplateModel> };
+            jest.spyOn(serviceInstance, 'createTemplateFromNotification').mockImplementation(async (id: number) => {
+                const notification = await NotificationModel.findByPk(id);
+                if (!notification) {
+                    throw new NotFoundException(`Уведомление с ID ${id} не найдено.`);
+                }
+                return {} as NotificationTemplateModel;
+            });
+
+            (NotificationModel.findByPk as jest.Mock).mockResolvedValue(null);
+
+            await expect(service.createTemplateFromNotification(999)).rejects.toThrow(NotFoundException);
         });
     });
 
