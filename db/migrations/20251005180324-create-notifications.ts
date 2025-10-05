@@ -120,6 +120,9 @@ const migration: Migration = {
     },
 
     async down(queryInterface: QueryInterface): Promise<void> {
+        // Удаление foreign key constraint
+        await queryInterface.removeConstraint('notifications', 'notifications_user_id_fkey');
+        
         // Удаление индексов
         await queryInterface.removeIndex('notifications', 'idx_notifications_user_id');
         await queryInterface.removeIndex('notifications', 'idx_notifications_type');
@@ -135,4 +138,4 @@ const migration: Migration = {
     },
 };
 
-export = migration;
+export default migration;

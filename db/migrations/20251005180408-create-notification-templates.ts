@@ -90,4 +90,4 @@ const migration: Migration = {
     },
 };
 
-export = migration;
+export default migration;
