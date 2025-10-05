@@ -185,6 +185,12 @@ npm test -- --testPathPattern="user-preferences"
 
 # Последовательное выполнение для стабильности
 npm test -- --runInBand
+
+# Coverage отчеты
+npm run test:cov                    # все тесты с покрытием
+npm run test:cov:open               # открыть HTML отчет в браузере
+npm run test:cov:unit               # только unit тесты с покрытием
+npm run test:cov:integration        # только integration тесты с покрытием
 ```
 
 ---
