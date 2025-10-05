@@ -67,6 +67,27 @@ module.exports = {
   // Verbose режим для детального вывода
   verbose: true,
   
+  // HTML репортеры для результатов тестов
+  reporters: [
+    'default',
+    ['jest-html-reporters', {
+      publicPath: './test-reports',
+      filename: 'test-report.html',
+      expand: true,
+      hideIcon: false,
+      pageTitle: 'Online Store Backend - Test Results',
+      logoImgPath: undefined,
+      darkTheme: false,
+      includeFailureMsg: true,
+      includeSuiteFailure: true,
+      includeConsoleLog: true,
+      includeStackTrace: true,
+      includeObsoleteSnapshots: true,
+      reportTitle: 'Test Results Report',
+      sort: 'status'
+    }]
+  ],
+  
   // Настройки для CI/CD
   detectOpenHandles: true,
   forceExit: true,

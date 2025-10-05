@@ -112,6 +112,9 @@ describe('User Preferences Integration Tests', () => {
         });
 
         it('200: special characters in preferences', async () => {
+            // Получаем свежий токен для этого теста
+            const freshToken = await authLoginAs(app, 'user');
+            
             const preferencesData = {
                 defaultLanguage: 'en',
                 notificationPreferences: {
@@ -122,7 +125,7 @@ describe('User Preferences Integration Tests', () => {
 
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/preferences')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${freshToken}`)
                 .send(preferencesData)
                 .expect(200);
 

@@ -139,24 +139,33 @@ describe('User Admin Integration Tests', () => {
         });
 
         it('200: admin can list users', async () => {
+            // Получаем свежий admin токен для этого теста
+            const freshAdminToken = await authLoginAs(app, 'admin');
+            
             await request(app.getHttpServer())
                 .get('/online-store/user/get-list-users?page=1&limit=5')
-                .set('Authorization', `Bearer ${adminToken}`)
+                .set('Authorization', `Bearer ${freshAdminToken}`)
                 .expect(200);
         });
 
         it('400: invalid query parameters', async () => {
+            // Получаем свежий admin токен для этого теста
+            const freshAdminToken = await authLoginAs(app, 'admin');
+            
             await request(app.getHttpServer())
                 .get('/online-store/user/get-list-users?page=abc&limit=NaN')
-                .set('Authorization', `Bearer ${adminToken}`)
+                .set('Authorization', `Bearer ${freshAdminToken}`)
                 .expect(400);
         });
 
         it('200: admin can create and delete users', async () => {
+            // Получаем свежий admin токен для этого теста
+            const freshAdminToken = await authLoginAs(app, 'admin');
+            
             const uniqueEmail = `newuser+${Date.now()}@example.com`;
             const createRes = await request(app.getHttpServer())
                 .post('/online-store/user/create')
-                .set('Authorization', `Bearer ${adminToken}`)
+                .set('Authorization', `Bearer ${freshAdminToken}`)
                 .send({ email: uniqueEmail, password: 'StrongPass123!' })
                 .expect(201);
 
@@ -164,12 +173,15 @@ describe('User Admin Integration Tests', () => {
             expect(newUserId).toBeTruthy();
 
             const delRes = await request(app.getHttpServer())
-                .delete(`/user/delete/${newUserId}`)
-                .set('Authorization', `Bearer ${adminToken}`);
+                .delete(`/online-store/user/delete/${newUserId}`)
+                .set('Authorization', `Bearer ${freshAdminToken}`);
             expect([200, 404]).toContain(delRes.status);
         });
 
             it('200: admin can update user profile', async () => {
+                // Получаем свежий admin токен для этого теста
+                const freshAdminToken = await authLoginAs(app, 'admin');
+                
                 const userId = 13; // user@example.com
             const payload = {
                 firstName: 'Петр',
@@ -178,7 +190,7 @@ describe('User Admin Integration Tests', () => {
 
             const response = await request(app.getHttpServer())
                 .put(`/online-store/user/update/${userId}`)
-                .set('Authorization', `Bearer ${adminToken}`)
+                .set('Authorization', `Bearer ${freshAdminToken}`)
                 .send(payload)
                 .expect(200);
 
@@ -203,16 +215,19 @@ describe('User Admin Integration Tests', () => {
     // ===== ROLE MANAGEMENT =====
     describe('Role management', () => {
         it('200: admin can add and remove roles', async () => {
+            // Получаем свежий admin токен для этого теста
+            const freshAdminToken = await authLoginAs(app, 'admin');
+            
             // Добавляем роль ADMIN пользователю 13, затем удаляем ADMIN
             await request(app.getHttpServer())
                 .post('/online-store/user/role/add')
-                .set('Authorization', `Bearer ${adminToken}`)
+                .set('Authorization', `Bearer ${freshAdminToken}`)
                 .send({ userId: 13, role: 'ADMIN' })
                 .expect(201);
 
             await request(app.getHttpServer())
                 .delete('/online-store/user/role/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
+                .set('Authorization', `Bearer ${freshAdminToken}`)
                 .send({ userId: 13, role: 'ADMIN' })
                 .expect(200);
         });

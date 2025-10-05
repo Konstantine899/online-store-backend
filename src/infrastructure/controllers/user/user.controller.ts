@@ -71,8 +71,8 @@ interface AuthenticatedRequest extends Request {
 // Оптимизированные константы ролей
 const USER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST', 'USER', 'ADMIN'] as const;
 const ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN', 'ADMIN'] as const;
-const MANAGER_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
-const STAFF_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
+const MANAGER_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE', 'ADMIN'] as const;
+const STAFF_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE', 'ADMIN'] as const;
 
 // Глобальный экземпляр валидатора для оптимизации производительности
 const validationPipe = new CustomValidationPipe();

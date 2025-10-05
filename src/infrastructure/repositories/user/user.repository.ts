@@ -500,7 +500,7 @@ export class UserRepository implements IUserRepository {
         // Оптимизированное обновление: прямое обновление без предварительного поиска
         const [affectedRows] = await this.userModel.update(
             { isEmailVerified: true, emailVerifiedAt: new Date() },
-            { where: { id: userId }, returning: true }
+            { where: { id: userId } }
         );
         return affectedRows > 0 ? this.userModel.findByPk(userId) : null;
     }
@@ -509,7 +509,7 @@ export class UserRepository implements IUserRepository {
         // Оптимизированное обновление: прямое обновление без предварительного поиска
         const [affectedRows] = await this.userModel.update(
             { isPhoneVerified: true, phoneVerifiedAt: new Date() },
-            { where: { id: userId }, returning: true }
+            { where: { id: userId } }
         );
         return affectedRows > 0 ? this.userModel.findByPk(userId) : null;
     }
