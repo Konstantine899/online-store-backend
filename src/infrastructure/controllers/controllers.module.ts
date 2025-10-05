@@ -14,6 +14,7 @@ import { RoleController } from './role/role.controller';
 import { UserController } from './user/user.controller';
 import { UserAddressController } from './user-address/user-address.controller';
 import { LoginHistoryController } from './login-history/login-history.controller';
+import { NotificationController } from './notification/notification.controller';
 
 @Module({
     imports: [ServicesModule, JwtModule],
@@ -31,6 +32,7 @@ import { LoginHistoryController } from './login-history/login-history.controller
         UserController, // Более общий маршрут должен быть раньше
         UserAddressController, // Более специфичный маршрут должен быть позже
         LoginHistoryController,
+        NotificationController,
     ],
 })
 export class ControllersModule {}
