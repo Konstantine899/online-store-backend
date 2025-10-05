@@ -114,6 +114,11 @@ describe('User Preferences Integration Tests', () => {
         it('200: special characters in preferences', async () => {
             const preferencesData = {
                 defaultLanguage: 'en',
+                notificationPreferences: {
+                    'special-chars': 'test@#$%^&*()',
+                    'unicode': 'тест 🚀',
+                    'spaces and symbols': 'value with spaces'
+                },
             };
 
             const response = await request(app.getHttpServer())
@@ -123,6 +128,7 @@ describe('User Preferences Integration Tests', () => {
                 .expect(200);
 
             expect(response.body.data.defaultLanguage).toBe('en');
+            expect(response.body.data.notificationPreferences).toEqual(preferencesData.notificationPreferences);
         });
     });
 });
