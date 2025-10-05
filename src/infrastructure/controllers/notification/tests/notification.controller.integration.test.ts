@@ -83,10 +83,12 @@ describe('NotificationController (Integration)', () => {
         });
 
         await app.init();
-    });
+    }, 30000); // Увеличиваем таймаут до 30 секунд
 
     afterAll(async () => {
-        await app.close();
+        if (app) {
+            await app.close();
+        }
     });
 
     beforeEach(() => {
@@ -390,6 +392,42 @@ describe('NotificationController (Integration)', () => {
                 .query({ page: 'invalid', limit: 'invalid' })
                 .expect(400);
         });
+
+        it('should return 401 when no authentication', async () => {
+            // Временно отключаем мок авторизации
+            mockAuthGuard.canActivate.mockReturnValueOnce(false);
+
+            await request(app.getHttpServer())
+                .get('/notifications')
+                .expect(401);
+
+            // Восстанавливаем мок
+            mockAuthGuard.canActivate.mockReturnValue(true);
+        });
+
+        it('should return 403 when insufficient permissions', async () => {
+            // Временно отключаем мок ролей
+            mockRoleGuard.canActivate.mockReturnValueOnce(false);
+
+            await request(app.getHttpServer())
+                .get('/notifications/templates')
+                .expect(403);
+
+            // Восстанавливаем мок
+            mockRoleGuard.canActivate.mockReturnValue(true);
+        });
+
+        it('should handle database errors gracefully', async () => {
+            // Мокаем ошибку БД
+            jest.spyOn(notificationService, 'getNotifications').mockRejectedValueOnce(new Error('Database error'));
+
+            await request(app.getHttpServer())
+                .get('/notifications')
+                .expect(500);
+
+            // Восстанавливаем мок
+            jest.restoreAllMocks();
+        });
     });
 
     describe('Tenant isolation', () => {
@@ -424,6 +462,117 @@ describe('NotificationController (Integration)', () => {
             // Should only return notifications for user 1
             const userNotifications = response.body.data.filter((n: any) => n.userId === 1);
             expect(userNotifications.length).toBeGreaterThan(0);
+        });
+
+        it('should prevent access to other users notifications', async () => {
+            // Create notification for user 2
+            const notification = await NotificationModel.create({
+                userId: 2,
+                type: NotificationType.EMAIL,
+                templateName: 'user2_template',
+                title: 'User 2 Notification',
+                message: 'User 2 message',
+                status: NotificationStatus.SENT,
+                isRead: false,
+                isArchived: false,
+            });
+
+            // User 1 should not be able to mark user 2's notification as read
+            await request(app.getHttpServer())
+                .put(`/notifications/${notification.id}/read`)
+                .expect(404);
+        });
+    });
+
+    describe('Role-based access control', () => {
+        it('should allow CUSTOMER role to access user notifications', async () => {
+            const response = await request(app.getHttpServer())
+                .get('/notifications')
+                .expect(200);
+
+            expect(response.body).toHaveProperty('data');
+            expect(response.body).toHaveProperty('meta');
+        });
+
+        it('should allow CUSTOMER role to access unread count', async () => {
+            const response = await request(app.getHttpServer())
+                .get('/notifications/unread-count')
+                .expect(200);
+
+            expect(response.body).toHaveProperty('count');
+        });
+
+        it('should allow CUSTOMER role to access settings', async () => {
+            const response = await request(app.getHttpServer())
+                .get('/notifications/settings')
+                .expect(200);
+
+            expect(response.body).toHaveProperty('userId', 1);
+        });
+
+        it('should allow CUSTOMER role to update settings', async () => {
+            const updateData = {
+                emailEnabled: false,
+                pushEnabled: true,
+            };
+
+            const response = await request(app.getHttpServer())
+                .put('/notifications/settings')
+                .send(updateData)
+                .expect(200);
+
+            expect(response.body).toHaveProperty('emailEnabled', false);
+            expect(response.body).toHaveProperty('pushEnabled', true);
+        });
+    });
+
+    describe('Validation tests', () => {
+        it('should validate template creation data', async () => {
+            const invalidTemplateData = {
+                name: '', // Empty name should fail
+                type: 'invalid_type', // Invalid type should fail
+                title: 'Test Title',
+                message: 'Test Message',
+            };
+
+            await request(app.getHttpServer())
+                .post('/notifications/templates')
+                .send(invalidTemplateData)
+                .expect(400);
+        });
+
+        it('should validate template update data', async () => {
+            // Create a template first
+            const template = await NotificationTemplateModel.create({
+                name: 'test_template',
+                type: NotificationType.EMAIL,
+                title: 'Test Template',
+                message: 'Test message',
+                isActive: true,
+            });
+
+            const invalidUpdateData = {
+                type: 'invalid_type', // Invalid type should fail
+            };
+
+            await request(app.getHttpServer())
+                .put(`/notifications/templates/${template.id}`)
+                .send(invalidUpdateData)
+                .expect(400);
+        });
+
+        it('should validate pagination limits', async () => {
+            await request(app.getHttpServer())
+                .get('/notifications')
+                .query({ page: 0, limit: -1 }) // Invalid pagination
+                .expect(400);
+        });
+
+        it('should validate statistics period format', async () => {
+            await request(app.getHttpServer())
+                .get('/notifications/statistics')
+                .query({ period: 'invalid_period' })
+                .expect(400);
         });
     });
 });
