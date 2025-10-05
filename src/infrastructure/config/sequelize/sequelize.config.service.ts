@@ -19,6 +19,8 @@ import {
     OrderModel,
     OrderItemModel,
     UserAddressModel,
+    NotificationModel,
+    NotificationTemplateModel,
 } from '@app/domain/models';
 import { dbToken } from '@app/infrastructure/config/sequelize/db-token';
 
@@ -53,6 +55,8 @@ export class SequelizeConfigService implements SequelizeOptionsFactory {
                 OrderModel,
                 OrderItemModel,
                 UserAddressModel,
+                NotificationModel,
+                NotificationTemplateModel,
             ],
             autoLoadModels: true,
             synchronize: false, // отключаю автосинхронизацию

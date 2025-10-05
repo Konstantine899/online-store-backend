@@ -13,3 +13,5 @@ export { BrandModel } from './brand.model';
 export { CategoryModel } from './category-model';
 export { UserAddressModel } from './user-address';
 export { LoginHistoryModel, ILoginHistoryCreationAttributes } from './login-history.model';
+export { NotificationModel, NotificationType, NotificationStatus } from './notification.model';
+export { NotificationTemplateModel } from './notification-template.model';
