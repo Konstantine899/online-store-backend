@@ -125,6 +125,7 @@
     "prettier": "^3.6.2",
     "sequelize-cli": "^6.6.2",
     "source-map-support": "^0.5.21",
+    "sqlite3": "^5.1.7",
     "supertest": "^7.1.4",
     "ts-jest": "29.4.4",
     "ts-loader": "^9.5.4",
