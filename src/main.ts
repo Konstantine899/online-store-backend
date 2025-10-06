@@ -15,6 +15,7 @@ import * as path from 'path';
 import helmet from 'helmet';
 import pinoHttp from 'pino-http';
 import { CorrelationIdMiddleware } from '@app/infrastructure/common/middleware/correlation-id.middleware';
+import { getConfig } from '@app/infrastructure/config';
 import { IncomingMessage } from 'http';
 import { randomUUID } from 'crypto';
 
@@ -24,7 +25,8 @@ type ReqWithCorrelation = IncomingMessage & {
 };
 
 async function bootstrap(): Promise<void> {
-    const PORT = process.env.PORT || 5000;
+    const cfg = getConfig();
+    const PORT = cfg.PORT || 5000;
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
     // Скрываю технологический заголовок Express
     app.getHttpAdapter().getInstance().disable('x-powered-by');
@@ -46,10 +48,7 @@ async function bootstrap(): Promise<void> {
     );
     app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
-    const corsOrigins = (process.env.ALLOWED_ORIGINS || '')
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
+    const corsOrigins = cfg.ALLOWED_ORIGINS;
 
     app.enableCors({
         origin: (origin, cb) => {
@@ -64,7 +63,7 @@ async function bootstrap(): Promise<void> {
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     });
 
-    app.use(cookieParser(process.env.COOKIE_PARSER_SECRET_KEY || 'change-me'));
+    app.use(cookieParser(cfg.COOKIE_PARSER_SECRET_KEY || 'change-me'));
 
     const correlation = new CorrelationIdMiddleware();
     app.use(correlation.use.bind(correlation));
@@ -76,7 +75,7 @@ async function bootstrap(): Promise<void> {
                 (req.headers['x-request-id'] as string | undefined) ??
                 randomUUID(),
             transport:
-                process.env.NODE_ENV === 'development'
+                cfg.NODE_ENV === 'development'
                     ? { target: 'pino-pretty' }
                     : undefined,
             // добавляем correlationId в каждую запись лога
