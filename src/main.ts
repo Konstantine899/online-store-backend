@@ -18,6 +18,7 @@ import { CorrelationIdMiddleware } from '@app/infrastructure/common/middleware/c
 import { getConfig } from '@app/infrastructure/config';
 import { IncomingMessage } from 'http';
 import { randomUUID } from 'crypto';
+import { Request, Response, NextFunction } from 'express';
 
 type ReqWithCorrelation = IncomingMessage & {
     correlationId?: string;
@@ -66,6 +67,49 @@ async function bootstrap(): Promise<void> {
                     : false,
             }),
         );
+    }
+
+    // Глобальный rate limiter (простое in-memory окно 1s и 60s по IP)
+    if (cfg.RATE_LIMIT_ENABLED) {
+        const perIpCounters = new Map<string, { s: number; sTs: number; m: number; mTs: number }>();
+        const nowMs = () => Date.now();
+        const sec = 1000;
+        const min = 60 * 1000;
+        app.use((req: Request, res: Response, next: NextFunction) => {
+            const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown';
+            const ts = nowMs();
+            let ctr = perIpCounters.get(ip);
+            if (!ctr) {
+                ctr = { s: 0, sTs: ts, m: 0, mTs: ts };
+                perIpCounters.set(ip, ctr);
+            }
+            if (ts - ctr.sTs >= sec) {
+                ctr.s = 0;
+                ctr.sTs = ts;
+            }
+            if (ts - ctr.mTs >= min) {
+                ctr.m = 0;
+                ctr.mTs = ts;
+            }
+            ctr.s += 1;
+            ctr.m += 1;
+            if (ctr.s > cfg.RATE_LIMIT_GLOBAL_RPS || ctr.m > cfg.RATE_LIMIT_GLOBAL_RPM) {
+                if ((req as ReqWithCorrelation).correlationId) {
+                    console.warn(
+                        JSON.stringify({ level: 'warn', msg: 'Rate limit exceeded', correlationId: (req as ReqWithCorrelation).correlationId }),
+                    );
+                }
+                res.status(429).json({
+                    statusCode: 429,
+                    url: req.url,
+                    path: req.url,
+                    name: 'TooManyRequests',
+                    message: 'Слишком много запросов. Попробуйте позже',
+                });
+                return;
+            }
+            next();
+        });
     }
 
     // Используем Set для O(1) проверки origin и минимизации аллокаций

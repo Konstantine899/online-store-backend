@@ -16,6 +16,15 @@ export type ValidatedEnv = {
     SECURITY_HELMET_ENABLED: boolean;
     SECURITY_CORS_ENABLED: boolean;
     SECURITY_CSP_ENABLED: boolean;
+    RATE_LIMIT_ENABLED: boolean;
+    RATE_LIMIT_GLOBAL_RPS: number;
+    RATE_LIMIT_GLOBAL_RPM: number;
+    RATE_LIMIT_LOGIN_ATTEMPTS: number;
+    RATE_LIMIT_LOGIN_WINDOW: string; // e.g. "15m"
+    RATE_LIMIT_REFRESH_ATTEMPTS: number;
+    RATE_LIMIT_REFRESH_WINDOW: string; // e.g. "5m"
+    RATE_LIMIT_REG_ATTEMPTS: number;
+    RATE_LIMIT_REG_WINDOW: string; // e.g. "1m"
 };
 
 function asNumber(value: string | undefined, name: string, opts?: { min?: number; max?: number }): number {
@@ -64,6 +73,46 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
     const SECURITY_CORS_ENABLED = asBoolean(raw.SECURITY_CORS_ENABLED, 'true');
     const SECURITY_CSP_ENABLED = asBoolean(raw.SECURITY_CSP_ENABLED, 'true');
 
+    // Rate limiting
+    const RATE_LIMIT_ENABLED = asBoolean(raw.RATE_LIMIT_ENABLED, 'true');
+    const RATE_LIMIT_GLOBAL_RPS = asNumber(
+        raw.RATE_LIMIT_GLOBAL_RPS || '3',
+        'RATE_LIMIT_GLOBAL_RPS',
+        { min: 1 },
+    );
+    const RATE_LIMIT_GLOBAL_RPM = asNumber(
+        raw.RATE_LIMIT_GLOBAL_RPM || '100',
+        'RATE_LIMIT_GLOBAL_RPM',
+        { min: 1 },
+    );
+    const RATE_LIMIT_LOGIN_ATTEMPTS = asNumber(
+        raw.RATE_LIMIT_LOGIN_ATTEMPTS || '5',
+        'RATE_LIMIT_LOGIN_ATTEMPTS',
+        { min: 1 },
+    );
+    const RATE_LIMIT_LOGIN_WINDOW = requiredString(
+        raw.RATE_LIMIT_LOGIN_WINDOW || '15m',
+        'RATE_LIMIT_LOGIN_WINDOW',
+    );
+    const RATE_LIMIT_REFRESH_ATTEMPTS = asNumber(
+        raw.RATE_LIMIT_REFRESH_ATTEMPTS || '10',
+        'RATE_LIMIT_REFRESH_ATTEMPTS',
+        { min: 1 },
+    );
+    const RATE_LIMIT_REFRESH_WINDOW = requiredString(
+        raw.RATE_LIMIT_REFRESH_WINDOW || '5m',
+        'RATE_LIMIT_REFRESH_WINDOW',
+    );
+    const RATE_LIMIT_REG_ATTEMPTS = asNumber(
+        raw.RATE_LIMIT_REG_ATTEMPTS || '3',
+        'RATE_LIMIT_REG_ATTEMPTS',
+        { min: 1 },
+    );
+    const RATE_LIMIT_REG_WINDOW = requiredString(
+        raw.RATE_LIMIT_REG_WINDOW || '1m',
+        'RATE_LIMIT_REG_WINDOW',
+    );
+
     return {
         NODE_ENV: NODE_ENV_RAW as ValidatedEnv['NODE_ENV'],
         PORT,
@@ -77,6 +126,15 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         SECURITY_HELMET_ENABLED,
         SECURITY_CORS_ENABLED,
         SECURITY_CSP_ENABLED,
+        RATE_LIMIT_ENABLED,
+        RATE_LIMIT_GLOBAL_RPS,
+        RATE_LIMIT_GLOBAL_RPM,
+        RATE_LIMIT_LOGIN_ATTEMPTS,
+        RATE_LIMIT_LOGIN_WINDOW,
+        RATE_LIMIT_REFRESH_ATTEMPTS,
+        RATE_LIMIT_REFRESH_WINDOW,
+        RATE_LIMIT_REG_ATTEMPTS,
+        RATE_LIMIT_REG_WINDOW,
     };
 }
 
