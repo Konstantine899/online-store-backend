@@ -8,10 +8,30 @@ interface RequestWithBruteforceFlag extends Request {
     __bruteforceProcessed?: boolean;
 }
 
+// Кэшированные конфигурации для избежания повторных вызовов getConfig()
+interface CachedConfig {
+    loginWindowMs: number;
+    loginLimit: number;
+    refreshWindowMs: number;
+    refreshLimit: number;
+    regWindowMs: number;
+    regLimit: number;
+}
+
+// Предкомпилированные regex для валидации IP
+const IPV4_REGEX = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+const IPV6_REGEX = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+const IPV4_MASK_REGEX = /^(\d+\.\d+\.\d+)\.\d+$/;
+
 @Injectable()
 export class BruteforceGuard extends ThrottlerGuard {
     private readonly logger = new Logger(BruteforceGuard.name);
     private static counters = new Map<string, { count: number; resetAt: number }>();
+    
+    // Кэшированная конфигурация для избежания повторных вызовов getConfig()
+    private static cachedConfig: CachedConfig | null = null;
+    private static configCacheTime = 0;
+    private static readonly CONFIG_CACHE_TTL = 30000; // 30 секунд
 
     public static resetCounters(): void {
         BruteforceGuard.counters.clear();
@@ -34,48 +54,48 @@ export class BruteforceGuard extends ThrottlerGuard {
         }
         request.__bruteforceProcessed = true;
 
-        // Специальная логика для auth роутов
+        // Специальная логика для auth роутов с кэшированной конфигурацией
+        const config = this.getCachedConfig();
+        
         if (request.url.includes('/auth/login')) {
-            return this.handleLoginAttempt(requestProps);
+            return this.checkAndIncrement('login', config.loginWindowMs, config.loginLimit, requestProps);
         }
 
         if (request.url.includes('/auth/refresh')) {
-            return this.handleRefreshAttempt(requestProps);
+            return this.checkAndIncrement('refresh', config.refreshWindowMs, config.refreshLimit, requestProps);
         }
 
         if (request.url.includes('/auth/registration')) {
-            return this.handleRegistrationAttempt(requestProps);
+            return this.checkAndIncrement('registration', config.regWindowMs, config.regLimit, requestProps);
         }
 
         // Для всех остальных роутов разрешаем проход без ограничений
         return true;
     }
 
-    private async handleLoginAttempt(
-        requestProps: ThrottlerRequest,
-    ): Promise<boolean> {
-        const cfg = getConfig();
-        const ttlMs = parseWindowToMs(cfg.RATE_LIMIT_LOGIN_WINDOW, 15 * 60 * 1000);
-        const limit = cfg.RATE_LIMIT_LOGIN_ATTEMPTS;
-        return this.checkAndIncrement('login', ttlMs, limit, requestProps);
-    }
-
-    private async handleRefreshAttempt(
-        requestProps: ThrottlerRequest,
-    ): Promise<boolean> {
-        const cfg = getConfig();
-        const ttlMs = parseWindowToMs(cfg.RATE_LIMIT_REFRESH_WINDOW, 5 * 60 * 1000);
-        const limit = cfg.RATE_LIMIT_REFRESH_ATTEMPTS;
-        return this.checkAndIncrement('refresh', ttlMs, limit, requestProps);
-    }
-
-    private async handleRegistrationAttempt(
-        requestProps: ThrottlerRequest,
-    ): Promise<boolean> {
-        const cfg = getConfig();
-        const ttlMs = parseWindowToMs(cfg.RATE_LIMIT_REG_WINDOW, 60 * 1000);
-        const limit = cfg.RATE_LIMIT_REG_ATTEMPTS;
-        return this.checkAndIncrement('registration', ttlMs, limit, requestProps);
+    /**
+     * Получение кэшированной конфигурации для избежания повторных вызовов getConfig()
+     */
+    private getCachedConfig(): CachedConfig {
+        const now = Date.now();
+        
+        // Проверяем, нужно ли обновить кэш
+        if (!BruteforceGuard.cachedConfig || (now - BruteforceGuard.configCacheTime) > BruteforceGuard.CONFIG_CACHE_TTL) {
+            const cfg = getConfig();
+            
+            BruteforceGuard.cachedConfig = {
+                loginWindowMs: parseWindowToMs(cfg.RATE_LIMIT_LOGIN_WINDOW, 15 * 60 * 1000),
+                loginLimit: cfg.RATE_LIMIT_LOGIN_ATTEMPTS,
+                refreshWindowMs: parseWindowToMs(cfg.RATE_LIMIT_REFRESH_WINDOW, 5 * 60 * 1000),
+                refreshLimit: cfg.RATE_LIMIT_REFRESH_ATTEMPTS,
+                regWindowMs: parseWindowToMs(cfg.RATE_LIMIT_REG_WINDOW, 60 * 1000),
+                regLimit: cfg.RATE_LIMIT_REG_ATTEMPTS,
+            };
+            
+            BruteforceGuard.configCacheTime = now;
+        }
+        
+        return BruteforceGuard.cachedConfig;
     }
 
     private checkAndIncrement(
@@ -114,28 +134,28 @@ export class BruteforceGuard extends ThrottlerGuard {
     }
 
     /**
-     * Безопасное извлечение IP адреса клиента
+     * Безопасное извлечение IP адреса клиента (оптимизированное)
      */
     private extractClientIP(request: RequestWithBruteforceFlag): string {
         // Проверяем заголовки в порядке приоритета
         const forwardedFor = request.headers['x-forwarded-for'] as string;
-        const realIP = request.headers['x-real-ip'] as string;
-        const clientIP = request.headers['x-client-ip'] as string;
         
-        // Если есть x-forwarded-for, берём первый IP (клиент)
+        // Если есть x-forwarded-for, берём первый IP (клиент) - самый частый случай
         if (forwardedFor) {
-            const ips = forwardedFor.split(',').map(ip => ip.trim());
-            const clientIP = ips[0];
+            const firstComma = forwardedFor.indexOf(',');
+            const clientIP = firstComma > 0 ? forwardedFor.substring(0, firstComma).trim() : forwardedFor.trim();
             if (this.isValidIP(clientIP)) {
                 return clientIP;
             }
         }
         
-        // Проверяем другие заголовки
+        // Проверяем другие заголовки (менее частые случаи)
+        const realIP = request.headers['x-real-ip'] as string;
         if (realIP && this.isValidIP(realIP)) {
             return realIP;
         }
         
+        const clientIP = request.headers['x-client-ip'] as string;
         if (clientIP && this.isValidIP(clientIP)) {
             return clientIP;
         }
@@ -151,31 +171,27 @@ export class BruteforceGuard extends ThrottlerGuard {
     }
 
     /**
-     * Валидация IP адреса
+     * Валидация IP адреса (оптимизированная)
      */
     private isValidIP(ip: string): boolean {
         if (!ip || typeof ip !== 'string') {
             return false;
         }
         
-        // Простая валидация IPv4 и IPv6
-        const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-        const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
-        
-        return ipv4Regex.test(ip) || ipv6Regex.test(ip);
+        // Используем предкомпилированные regex для лучшей производительности
+        return IPV4_REGEX.test(ip) || IPV6_REGEX.test(ip);
     }
 
     /**
-     * Маскирование IP для логирования (безопасность)
+     * Маскирование IP для логирования (оптимизированное)
      */
     private maskIP(ip: string): string {
         if (ip === 'unknown') {
             return ip;
         }
         
-        // Маскируем последний октет для IPv4
-        const ipv4Regex = /^(\d+\.\d+\.\d+)\.\d+$/;
-        const match = ip.match(ipv4Regex);
+        // Маскируем последний октет для IPv4 (используем предкомпилированный regex)
+        const match = ip.match(IPV4_MASK_REGEX);
         if (match) {
             return `${match[1]}.xxx`;
         }
