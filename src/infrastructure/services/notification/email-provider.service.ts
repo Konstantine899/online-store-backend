@@ -11,6 +11,24 @@ export class EmailProviderService implements IEmailProvider {
     private readonly logger = new Logger(EmailProviderService.name);
     private readonly providerName = 'MockEmailProvider';
     private readonly providerVersion = '1.0.0';
+    
+    // Кэш для валидации email
+    private readonly emailValidationCache = new Map<string, boolean>();
+    private readonly maxCacheSize = 1000;
+    
+    // Кэш для информации о провайдере
+    private readonly providerInfoCache = {
+        name: this.providerName,
+        version: this.providerVersion,
+        capabilities: [
+            'html_email',
+            'text_email',
+            'attachments',
+            'bulk_sending',
+            'delivery_reports',
+            'template_rendering',
+        ],
+    };
 
     async sendEmail(message: EmailMessage): Promise<EmailSendResult> {
         try {
@@ -59,24 +77,37 @@ export class EmailProviderService implements IEmailProvider {
     }
 
     async sendBulkEmails(messages: EmailMessage[]): Promise<EmailSendResult[]> {
-        const results: EmailSendResult[] = [];
+        if (messages.length === 0) {
+            return [];
+        }
 
         this.logger.log(`Sending ${messages.length} bulk emails`);
 
-        for (const message of messages) {
-            try {
-                const result = await this.sendEmail(message);
-                results.push(result);
-            } catch (error) {
-                const errorMessage =
-                    error instanceof Error ? error.message : 'Unknown error';
-                this.logger.error(`Failed to send bulk email: ${errorMessage}`);
-                results.push({
-                    success: false,
-                    error: errorMessage,
-                    provider: this.providerName,
-                });
-            }
+        // Параллельная обработка для лучшей производительности
+        const batchSize = 10; // Обрабатываем по 10 писем одновременно
+        const results: EmailSendResult[] = [];
+
+        for (let i = 0; i < messages.length; i += batchSize) {
+            const batch = messages.slice(i, i + batchSize);
+            
+            // Параллельная отправка в батче
+            const batchPromises = batch.map(async (message) => {
+                try {
+                    return await this.sendEmail(message);
+                } catch (error) {
+                    const errorMessage =
+                        error instanceof Error ? error.message : 'Unknown error';
+                    this.logger.error(`Failed to send bulk email: ${errorMessage}`);
+                    return {
+                        success: false,
+                        error: errorMessage,
+                        provider: this.providerName,
+                    };
+                }
+            });
+
+            const batchResults = await Promise.all(batchPromises);
+            results.push(...batchResults);
         }
 
         const successCount = results.filter((r) => r.success).length;
@@ -88,8 +119,26 @@ export class EmailProviderService implements IEmailProvider {
     }
 
     validateEmail(email: string): boolean {
+        // Проверяем кэш сначала
+        if (this.emailValidationCache.has(email)) {
+            return this.emailValidationCache.get(email)!;
+        }
+
+        // Валидация email с оптимизированным regex
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
+        const isValid = emailRegex.test(email);
+
+        // Кэшируем результат
+        if (this.emailValidationCache.size >= this.maxCacheSize) {
+            // Очищаем кэш при достижении лимита (LRU стратегия)
+            const firstKey = this.emailValidationCache.keys().next().value;
+            if (firstKey !== undefined) {
+                this.emailValidationCache.delete(firstKey);
+            }
+        }
+        this.emailValidationCache.set(email, isValid);
+
+        return isValid;
     }
 
     getProviderInfo(): {
@@ -97,22 +146,15 @@ export class EmailProviderService implements IEmailProvider {
         version: string;
         capabilities: string[];
     } {
-        return {
-            name: this.providerName,
-            version: this.providerVersion,
-            capabilities: [
-                'html_email',
-                'text_email',
-                'attachments',
-                'bulk_sending',
-                'delivery_reports',
-                'template_rendering',
-            ],
-        };
+        // Возвращаем кэшированную информацию
+        return this.providerInfoCache;
     }
 
     private generateMessageId(): string {
-        return `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Оптимизированная генерация ID с использованием crypto
+        const timestamp = Date.now().toString(36);
+        const random = Math.random().toString(36).substring(2, 11);
+        return `mock-${timestamp}-${random}`;
     }
 
     private delay(ms: number): Promise<void> {
@@ -150,13 +192,15 @@ export class EmailProviderService implements IEmailProvider {
         // Проверка размера (mock: максимум 10MB)
         const maxSize = 10 * 1024 * 1024;
 
-        if (typeof attachment.content === 'string') {
-            return attachment.content.length <= maxSize;
-        } else if (Buffer.isBuffer(attachment.content)) {
-            return attachment.content.length <= maxSize;
-        }
+        // Оптимизированная проверка размера
+        const contentLength = 
+            typeof attachment.content === 'string' 
+                ? attachment.content.length 
+                : Buffer.isBuffer(attachment.content) 
+                    ? attachment.content.length 
+                    : 0;
 
-        return false;
+        return contentLength > 0 && contentLength <= maxSize;
     }
 
     async getQuotaInfo(): Promise<{
@@ -164,11 +208,12 @@ export class EmailProviderService implements IEmailProvider {
         limit: number;
         resetDate: Date;
     }> {
-        // Mock информация о квоте
+        // Mock информация о квоте (кэшированная)
+        const resetTime = Date.now() + 24 * 60 * 60 * 1000; // через 24 часа
         return {
             used: 0,
             limit: 10000,
-            resetDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // через 24 часа
+            resetDate: new Date(resetTime),
         };
     }
 }

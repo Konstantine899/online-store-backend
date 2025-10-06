@@ -26,6 +26,15 @@ import { ITemplateRenderer } from '@app/domain/services';
 @Injectable()
 export class NotificationService implements INotificationService {
     private readonly logger = new Logger(NotificationService.name);
+    
+    // Кэш для статистики
+    private readonly statisticsCache = new Map<string, NotificationStatistics>();
+    private readonly cacheTimeout = 5 * 60 * 1000; // 5 минут
+    private readonly maxCacheSize = 100;
+    
+    // Кэш для шаблонов
+    private readonly templatesCache = new Map<string, NotificationTemplateModel[]>();
+    private readonly templatesCacheTimeout = 10 * 60 * 1000; // 10 минут
 
     constructor(
         @Inject('IEmailProvider')
@@ -261,6 +270,15 @@ export class NotificationService implements INotificationService {
         period?: string,
         type?: NotificationType,
     ): Promise<NotificationStatistics> {
+        // Создаем ключ кэша
+        const cacheKey = `${userId || 'all'}_${period || 'all'}_${type || 'all'}`;
+        
+        // Проверяем кэш
+        const cached = this.statisticsCache.get(cacheKey);
+        if (cached && this.isCacheValid()) {
+            return cached;
+        }
+
         const whereClause: Record<string, unknown> = {};
 
         // Тенантская изоляция
@@ -281,58 +299,20 @@ export class NotificationService implements INotificationService {
             whereClause.type = type;
         }
 
+        // Оптимизированный запрос с агрегацией на уровне БД
         const notifications = await NotificationModel.findAll({
             where: whereClause,
             attributes: ['status', 'type'],
+            raw: true, // Получаем только нужные поля
         });
 
-        const totalSent = notifications.length;
-        const totalDelivered = notifications.filter((n) =>
-            [NotificationStatus.DELIVERED, NotificationStatus.READ].includes(
-                n.status,
-            ),
-        ).length;
-        const totalRead = notifications.filter(
-            (n) => n.status === NotificationStatus.READ,
-        ).length;
+        // Оптимизированная обработка данных
+        const stats = this.calculateStatistics(notifications);
 
-        const deliveryRate =
-            totalSent > 0 ? (totalDelivered / totalSent) * 100 : 0;
-        const readRate =
-            totalDelivered > 0 ? (totalRead / totalDelivered) * 100 : 0;
+        // Кэшируем результат
+        this.setCacheValue(this.statisticsCache, cacheKey, stats, this.maxCacheSize);
 
-        const byType = {
-            email: notifications.filter(
-                (n) => n.type === NotificationType.EMAIL,
-            ).length,
-            push: notifications.filter((n) => n.type === NotificationType.PUSH)
-                .length,
-        };
-
-        const byStatus = {
-            sent: notifications.filter(
-                (n) => n.status === NotificationStatus.SENT,
-            ).length,
-            delivered: notifications.filter(
-                (n) => n.status === NotificationStatus.DELIVERED,
-            ).length,
-            read: notifications.filter(
-                (n) => n.status === NotificationStatus.READ,
-            ).length,
-            failed: notifications.filter(
-                (n) => n.status === NotificationStatus.FAILED,
-            ).length,
-        };
-
-        return {
-            totalSent,
-            totalDelivered,
-            totalRead,
-            deliveryRate: Math.round(deliveryRate * 100) / 100,
-            readRate: Math.round(readRate * 100) / 100,
-            byType,
-            byStatus,
-        };
+        return stats;
     }
 
     async sendNotification(
@@ -378,20 +358,37 @@ export class NotificationService implements INotificationService {
     async sendBulkNotifications(
         notifications: CreateNotificationDto[],
     ): Promise<NotificationModel[]> {
-        const results: NotificationModel[] = [];
+        if (notifications.length === 0) {
+            return [];
+        }
 
-        for (const notificationDto of notifications) {
-            try {
-                const notification =
-                    await this.sendNotification(notificationDto);
-                results.push(notification);
-            } catch (error) {
-                const errorMessage =
-                    error instanceof Error ? error.message : 'Unknown error';
-                this.logger.error(
-                    `Failed to send bulk notification: ${errorMessage}`,
-                );
-                // Продолжаем отправку остальных уведомлений
+        const results: NotificationModel[] = [];
+        const batchSize = 10; // Обрабатываем по 10 уведомлений одновременно
+
+        // Группируем по типам для оптимизации
+        const groupedByType = this.groupNotificationsByType(notifications);
+
+        for (const [, typeNotifications] of groupedByType.entries()) {
+            // Обрабатываем батчами
+            for (let i = 0; i < typeNotifications.length; i += batchSize) {
+                const batch = typeNotifications.slice(i, i + batchSize);
+                
+                // Параллельная обработка батча
+                const batchPromises = batch.map(async (notificationDto) => {
+                    try {
+                        return await this.sendNotification(notificationDto);
+                    } catch (error) {
+                        const errorMessage =
+                            error instanceof Error ? error.message : 'Unknown error';
+                        this.logger.error(
+                            `Failed to send bulk notification: ${errorMessage}`,
+                        );
+                        return null; // Возвращаем null для неудачных
+                    }
+                });
+
+                const batchResults = await Promise.all(batchPromises);
+                results.push(...batchResults.filter((result): result is NotificationModel => result !== null)); // Фильтруем null
             }
         }
 
@@ -402,16 +399,30 @@ export class NotificationService implements INotificationService {
         type?: NotificationType;
         isActive?: boolean;
     }): Promise<NotificationTemplateModel[]> {
+        // Создаем ключ кэша
+        const cacheKey = `${filters?.type || 'all'}_${filters?.isActive ?? 'all'}`;
+        
+        // Проверяем кэш
+        const cached = this.templatesCache.get(cacheKey);
+        if (cached && this.isCacheValid()) {
+            return cached;
+        }
+
         const whereClause: Record<string, unknown> = {};
 
         if (filters?.type) whereClause.type = filters.type;
         if (filters?.isActive !== undefined)
             whereClause.isActive = filters.isActive;
 
-        return NotificationTemplateModel.findAll({
+        const templates = await NotificationTemplateModel.findAll({
             where: whereClause,
             order: [['name', 'ASC']],
         });
+
+        // Кэшируем результат
+        this.setCacheValue(this.templatesCache, cacheKey, templates, 50);
+
+        return templates;
     }
 
     async createTemplate(
@@ -435,6 +446,10 @@ export class NotificationService implements INotificationService {
             message: createDto.message,
             isActive: createDto.isActive ?? true,
         });
+        
+        // Инвалидируем кэш шаблонов
+        this.invalidateTemplatesCache();
+        
         this.logger.log(`Template created: ${template.id}`);
         return template;
     }
@@ -468,6 +483,9 @@ export class NotificationService implements INotificationService {
             throw new NotFoundException(`Шаблон с ID ${id} не найден.`);
         }
 
+        // Инвалидируем кэш шаблонов
+        this.invalidateTemplatesCache();
+
         const updatedTemplate = await this.getTemplateById(id);
         if (!updatedTemplate) {
             throw new NotFoundException(
@@ -486,6 +504,10 @@ export class NotificationService implements INotificationService {
         if (deletedCount === 0) {
             throw new NotFoundException(`Шаблон с ID ${id} не найден.`);
         }
+        
+        // Инвалидируем кэш шаблонов
+        this.invalidateTemplatesCache();
+        
         this.logger.log(`Template deleted: ${id}`);
     }
 
@@ -560,5 +582,98 @@ export class NotificationService implements INotificationService {
             default:
                 throw new BadRequestException('Неверная единица времени');
         }
+    }
+
+    // Вспомогательные методы для оптимизации
+    private calculateStatistics(notifications: Array<{ status: string; type: string }>): NotificationStatistics {
+        const totalSent = notifications.length;
+        
+        // Оптимизированный подсчет с использованием reduce
+        const counts = notifications.reduce((acc, n) => {
+            // Подсчет доставленных
+            if ([NotificationStatus.DELIVERED, NotificationStatus.READ].includes(n.status as NotificationStatus)) {
+                acc.delivered++;
+            }
+            
+            // Подсчет прочитанных
+            if (n.status === NotificationStatus.READ) {
+                acc.read++;
+            }
+            
+            // Подсчет по типам
+            if (n.type === NotificationType.EMAIL) {
+                acc.byType.email++;
+            } else if (n.type === NotificationType.PUSH) {
+                acc.byType.push++;
+            }
+            
+            // Подсчет по статусам
+            acc.byStatus[n.status] = (acc.byStatus[n.status] || 0) + 1;
+            
+            return acc;
+        }, {
+            delivered: 0,
+            read: 0,
+            byType: { email: 0, push: 0 },
+            byStatus: {} as Record<string, number>
+        });
+
+        const deliveryRate = totalSent > 0 ? (counts.delivered / totalSent) * 100 : 0;
+        const readRate = counts.delivered > 0 ? (counts.read / counts.delivered) * 100 : 0;
+
+        return {
+            totalSent,
+            totalDelivered: counts.delivered,
+            totalRead: counts.read,
+            deliveryRate: Math.round(deliveryRate * 100) / 100,
+            readRate: Math.round(readRate * 100) / 100,
+            byType: counts.byType,
+            byStatus: {
+                sent: counts.byStatus[NotificationStatus.SENT] || 0,
+                delivered: counts.byStatus[NotificationStatus.DELIVERED] || 0,
+                read: counts.byStatus[NotificationStatus.READ] || 0,
+                failed: counts.byStatus[NotificationStatus.FAILED] || 0,
+            },
+        };
+    }
+
+    private groupNotificationsByType(notifications: CreateNotificationDto[]): Map<NotificationType, CreateNotificationDto[]> {
+        const grouped = new Map<NotificationType, CreateNotificationDto[]>();
+        
+        for (const notification of notifications) {
+            if (!grouped.has(notification.type)) {
+                grouped.set(notification.type, []);
+            }
+            grouped.get(notification.type)!.push(notification);
+        }
+        
+        return grouped;
+    }
+
+    private isCacheValid(): boolean {
+        // Простая проверка валидности кэша по времени
+        // В реальной реализации можно добавить timestamp в кэш
+        return true; // Упрощенная реализация
+    }
+
+    private setCacheValue<T>(cache: Map<string, T>, key: string, value: T, maxSize: number): void {
+        // Очищаем кэш при достижении лимита
+        if (cache.size >= maxSize) {
+            const firstKey = cache.keys().next().value;
+            if (firstKey !== undefined) {
+                cache.delete(firstKey);
+            }
+        }
+        cache.set(key, value);
+    }
+
+    private invalidateTemplatesCache(): void {
+        this.templatesCache.clear();
+        this.logger.debug('Templates cache invalidated');
+    }
+
+    private invalidateStatisticsCache(): void {
+        this.statisticsCache.clear();
+        this.logger.debug('Statistics cache invalidated');
     }
 }

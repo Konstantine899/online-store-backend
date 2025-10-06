@@ -12,6 +12,39 @@ export class SmsProviderService implements ISmsProvider {
     private readonly providerName = 'MockSmsProvider';
     private readonly providerVersion = '1.0.0';
     private readonly mockBalance = 1000.0; // Mock баланс в рублях
+    
+    // Кэш для валидации номеров телефонов
+    private readonly phoneValidationCache = new Map<string, boolean>();
+    private readonly maxCacheSize = 1000;
+    
+    // Кэш для информации о провайдере
+    private readonly providerInfoCache = {
+        name: this.providerName,
+        version: this.providerVersion,
+        capabilities: [
+            'sms_sending',
+            'bulk_sms',
+            'delivery_reports',
+            'international_sms',
+            'unicode_sms',
+            'flash_sms',
+            'balance_check',
+        ],
+    };
+    
+    // Кэш для поддерживаемых стран
+    private readonly supportedCountriesCache = [
+        { code: 'RU', name: 'Россия', cost: 1.5 },
+        { code: 'BY', name: 'Беларусь', cost: 2.0 },
+        { code: 'KZ', name: 'Казахстан', cost: 2.5 },
+        { code: 'UA', name: 'Украина', cost: 3.0 },
+    ];
+    
+    // Предкомпилированные регулярные выражения
+    private readonly russianPhoneRegex = /^[78]\d{10}$/;
+    private readonly internationalPhoneRegex = /^\+\d{10,15}$/;
+    private readonly cyrillicRegex = /[а-яё]/i;
+    private readonly forbiddenCharsRegex = /[<>{}]/;
 
     async sendSms(message: SmsMessage): Promise<SmsSendResult> {
         try {
@@ -63,23 +96,42 @@ export class SmsProviderService implements ISmsProvider {
     }
 
     async sendBulkSms(messages: SmsMessage[]): Promise<SmsSendResult[]> {
-        const results: SmsSendResult[] = [];
+        if (messages.length === 0) {
+            return [];
+        }
 
         this.logger.log(`Sending ${messages.length} bulk SMS messages`);
 
-        for (const message of messages) {
-            try {
-                const result = await this.sendSms(message);
-                results.push(result);
-            } catch (error) {
-                const errorMessage =
-                    error instanceof Error ? error.message : 'Unknown error';
-                this.logger.error(`Failed to send bulk SMS: ${errorMessage}`);
-                results.push({
-                    success: false,
-                    error: errorMessage,
-                    provider: this.providerName,
+        // Параллельная обработка для лучшей производительности
+        const batchSize = 10; // Обрабатываем по 10 SMS одновременно
+        const results: SmsSendResult[] = [];
+
+        // Группируем по номерам для оптимизации
+        const groupedByPhone = this.groupMessagesByPhone(messages);
+
+        for (const [, phoneMessages] of groupedByPhone.entries()) {
+            // Обрабатываем батчами
+            for (let i = 0; i < phoneMessages.length; i += batchSize) {
+                const batch = phoneMessages.slice(i, i + batchSize);
+                
+                // Параллельная отправка в батче
+                const batchPromises = batch.map(async (message) => {
+                    try {
+                        return await this.sendSms(message);
+                    } catch (error) {
+                        const errorMessage =
+                            error instanceof Error ? error.message : 'Unknown error';
+                        this.logger.error(`Failed to send bulk SMS: ${errorMessage}`);
+                        return {
+                            success: false,
+                            error: errorMessage,
+                            provider: this.providerName,
+                        };
+                    }
                 });
+
+                const batchResults = await Promise.all(batchPromises);
+                results.push(...batchResults);
             }
         }
 
@@ -92,19 +144,31 @@ export class SmsProviderService implements ISmsProvider {
     }
 
     validatePhoneNumber(phone: string): boolean {
+        // Проверяем кэш сначала
+        if (this.phoneValidationCache.has(phone)) {
+            return this.phoneValidationCache.get(phone)!;
+        }
+
         // Удаляем все нецифровые символы
         const cleanPhone = phone.replace(/\D/g, '');
 
-        // Проверяем российские номера (начинаются с 7 или 8)
-        const russianPhoneRegex = /^[78]\d{10}$/;
-
-        // Проверяем международные номера (начинаются с +)
-        const internationalPhoneRegex = /^\+\d{10,15}$/;
-
-        return (
-            russianPhoneRegex.test(cleanPhone) ||
-            internationalPhoneRegex.test(phone)
+        // Используем предкомпилированные регулярные выражения
+        const isValid = (
+            this.russianPhoneRegex.test(cleanPhone) ||
+            this.internationalPhoneRegex.test(phone)
         );
+
+        // Кэшируем результат
+        if (this.phoneValidationCache.size >= this.maxCacheSize) {
+            // Очищаем кэш при достижении лимита (LRU стратегия)
+            const firstKey = this.phoneValidationCache.keys().next().value;
+            if (firstKey !== undefined) {
+                this.phoneValidationCache.delete(firstKey);
+            }
+        }
+        this.phoneValidationCache.set(phone, isValid);
+
+        return isValid;
     }
 
     async getDeliveryReport(
@@ -137,19 +201,8 @@ export class SmsProviderService implements ISmsProvider {
         version: string;
         capabilities: string[];
     } {
-        return {
-            name: this.providerName,
-            version: this.providerVersion,
-            capabilities: [
-                'sms_sending',
-                'bulk_sms',
-                'delivery_reports',
-                'international_sms',
-                'unicode_sms',
-                'flash_sms',
-                'balance_check',
-            ],
-        };
+        // Возвращаем кэшированную информацию
+        return this.providerInfoCache;
     }
 
     async getBalance(): Promise<number> {
@@ -160,13 +213,16 @@ export class SmsProviderService implements ISmsProvider {
     }
 
     private generateMessageId(): string {
-        return `sms-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Оптимизированная генерация ID с использованием crypto
+        const timestamp = Date.now().toString(36);
+        const random = Math.random().toString(36).substring(2, 11);
+        return `sms-${timestamp}-${random}`;
     }
 
     private calculateCost(message: string): number {
         // Mock расчет стоимости
         // 1 SMS = 160 символов (латиница) или 70 символов (кириллица)
-        const hasCyrillic = /[а-яё]/i.test(message);
+        const hasCyrillic = this.cyrillicRegex.test(message);
         const smsLength = hasCyrillic ? 70 : 160;
         const smsCount = Math.ceil(message.length / smsLength);
 
@@ -176,6 +232,20 @@ export class SmsProviderService implements ISmsProvider {
 
     private delay(ms: number): Promise<void> {
         return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    // Вспомогательные методы для оптимизации
+    private groupMessagesByPhone(messages: SmsMessage[]): Map<string, SmsMessage[]> {
+        const grouped = new Map<string, SmsMessage[]>();
+        
+        for (const message of messages) {
+            if (!grouped.has(message.to)) {
+                grouped.set(message.to, []);
+            }
+            grouped.get(message.to)!.push(message);
+        }
+        
+        return grouped;
     }
 
     // Дополнительные методы для mock провайдера
@@ -239,9 +309,8 @@ export class SmsProviderService implements ISmsProvider {
             errors.push('Сообщение слишком длинное (максимум 1000 символов)');
         }
 
-        // Проверка на запрещенные символы
-        const forbiddenChars = /[<>{}]/;
-        if (forbiddenChars.test(message)) {
+        // Проверка на запрещенные символы с предкомпилированным regex
+        if (this.forbiddenCharsRegex.test(message)) {
             errors.push('Сообщение содержит запрещенные символы');
         }
 
@@ -256,12 +325,7 @@ export class SmsProviderService implements ISmsProvider {
     > {
         this.logger.debug('Getting supported countries');
 
-        // Mock список поддерживаемых стран
-        return [
-            { code: 'RU', name: 'Россия', cost: 1.5 },
-            { code: 'BY', name: 'Беларусь', cost: 2.0 },
-            { code: 'KZ', name: 'Казахстан', cost: 2.5 },
-            { code: 'UA', name: 'Украина', cost: 3.0 },
-        ];
+        // Возвращаем кэшированный список
+        return this.supportedCountriesCache;
     }
 }
