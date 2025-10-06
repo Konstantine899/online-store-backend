@@ -1,4 +1,12 @@
-import { Model, DataType, Column, Table } from 'sequelize-typescript';
+import {
+    Model,
+    DataType,
+    Column,
+    Table,
+    AfterCreate,
+    AfterUpdate,
+    AfterDestroy,
+} from 'sequelize-typescript';
 import { Op } from 'sequelize';
 import { NotificationType } from './notification.model';
 
@@ -74,6 +82,11 @@ interface INotificationTemplateCreationAttributes {
         },
         { fields: ['type'], name: 'idx_notification_templates_type' },
         { fields: ['is_active'], name: 'idx_notification_templates_is_active' },
+        // Композитный индекс для ускорения частых выборок по типу/активности/имени
+        {
+            fields: ['type', 'is_active', 'name'],
+            name: 'idx_notification_templates_type_active_name',
+        },
     ],
 })
 export class NotificationTemplateModel
@@ -83,6 +96,46 @@ export class NotificationTemplateModel
     >
     implements INotificationTemplateModel
 {
+    // --- КЭШИРОВАНИЕ (LRU + TTL) ---
+    private static readonly CACHE_TTL_MS = 60_000; // 60 секунд
+    private static readonly CACHE_MAX_ENTRIES = 200;
+    private static readonly cache = new Map<string, { value: unknown; ts: number }>();
+
+    private static getCache<T>(key: string): T | undefined {
+        const entry = this.cache.get(key);
+        if (!entry) {
+            return undefined;
+        }
+        const now = Date.now();
+        if (now - entry.ts > this.CACHE_TTL_MS) {
+            this.cache.delete(key);
+            return undefined;
+        }
+        return entry.value as T;
+    }
+
+    private static setCache<T>(key: string, value: T): void {
+        if (this.cache.size >= this.CACHE_MAX_ENTRIES) {
+            const firstKey = this.cache.keys().next().value as string | undefined;
+            if (firstKey !== undefined) {
+                this.cache.delete(firstKey);
+            }
+        }
+        this.cache.set(key, { value, ts: Date.now() });
+    }
+
+    private static invalidateCache(pattern?: string): void {
+        if (!pattern) {
+            this.cache.clear();
+            return;
+        }
+        for (const key of this.cache.keys()) {
+            if (key.includes(pattern)) {
+                this.cache.delete(key);
+            }
+        }
+    }
+
     @Column({
         type: DataType.INTEGER,
         primaryKey: true,
@@ -185,19 +238,33 @@ export class NotificationTemplateModel
 
     // Статические методы для работы с шаблонами
     static async getActiveTemplates(): Promise<NotificationTemplateModel[]> {
-        return this.findAll({
+        const cacheKey = 'active:list';
+        const cached = this.getCache<NotificationTemplateModel[]>(cacheKey);
+        if (cached) {
+            return cached;
+        }
+        const result = await this.findAll({
             where: { isActive: true },
             order: [['name', 'ASC']],
         });
+        this.setCache(cacheKey, result);
+        return result;
     }
 
     static async getTemplatesByType(
         type: NotificationType,
     ): Promise<NotificationTemplateModel[]> {
-        return this.findAll({
+        const cacheKey = `type:${type}:active:list`;
+        const cached = this.getCache<NotificationTemplateModel[]>(cacheKey);
+        if (cached) {
+            return cached;
+        }
+        const result = await this.findAll({
             where: { type, isActive: true },
             order: [['name', 'ASC']],
         });
+        this.setCache(cacheKey, result);
+        return result;
     }
 
     static async getEmailTemplates(): Promise<NotificationTemplateModel[]> {
@@ -211,16 +278,43 @@ export class NotificationTemplateModel
     static async findByName(
         name: string,
     ): Promise<NotificationTemplateModel | null> {
-        return this.findOne({
-            where: { name },
-        });
+        const cacheKey = `byName:${name}`;
+        const cached = this.getCache<NotificationTemplateModel | null>(cacheKey);
+        if (cached !== undefined) {
+            return cached;
+        }
+        const result = await this.findOne({ where: { name } });
+        this.setCache(cacheKey, result);
+        return result;
     }
 
     static async findActiveByName(
         name: string,
     ): Promise<NotificationTemplateModel | null> {
-        return this.findOne({
-            where: { name, isActive: true },
-        });
+        const cacheKey = `byName:${name}:active`;
+        const cached = this.getCache<NotificationTemplateModel | null>(cacheKey);
+        if (cached !== undefined) {
+            return cached;
+        }
+        const result = await this.findOne({ where: { name, isActive: true } });
+        this.setCache(cacheKey, result);
+        return result;
+    }
+
+    // --- ИНВАЛИДАЦИЯ КЭША ЧЕРЕЗ ХУКИ ---
+    @AfterCreate
+    static onAfterCreateHook(): void {
+        // Инвалидируем все списки и точечные ключи по имени/типу
+        this.invalidateCache();
+    }
+
+    @AfterUpdate
+    static onAfterUpdateHook(): void {
+        this.invalidateCache();
+    }
+
+    @AfterDestroy
+    static onAfterDestroyHook(): void {
+        this.invalidateCache();
     }
 }
