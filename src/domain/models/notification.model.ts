@@ -8,19 +8,9 @@ import {
 } from 'sequelize-typescript';
 import { Op } from 'sequelize';
 import { UserModel } from './user.model';
+import { NotificationTemplateModel } from './notification-template.model';
+import { NotificationStatus, NotificationType } from './notification.types';
 
-export enum NotificationType {
-    EMAIL = 'email',
-    PUSH = 'push',
-}
-
-export enum NotificationStatus {
-    PENDING = 'pending',
-    SENT = 'sent',
-    DELIVERED = 'delivered',
-    READ = 'read',
-    FAILED = 'failed',
-}
 
 interface INotificationModel {
     id: number;
@@ -226,6 +216,12 @@ export class NotificationModel
 
     @BelongsTo(() => UserModel)
     declare user: UserModel;
+
+    @BelongsTo(() => NotificationTemplateModel, {
+        foreignKey: 'templateName',
+        targetKey: 'name',
+    })
+    declare template?: NotificationTemplateModel;
 
     // Getters для флагов
     get isReadNotification(): boolean {

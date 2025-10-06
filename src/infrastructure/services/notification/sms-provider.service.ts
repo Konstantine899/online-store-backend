@@ -43,6 +43,7 @@ export class SmsProviderService implements ISmsProvider {
     // Предкомпилированные регулярные выражения
     private readonly russianPhoneRegex = /^[78]\d{10}$/;
     private readonly internationalPhoneRegex = /^\+\d{10,15}$/;
+    private readonly anyLettersOrSymbolsRegex = /[^\d+]/; // для жёсткой проверки на посторонние символы
     private readonly cyrillicRegex = /[а-яё]/i;
     private readonly forbiddenCharsRegex = /[<>{}]/;
 
@@ -149,14 +150,48 @@ export class SmsProviderService implements ISmsProvider {
             return this.phoneValidationCache.get(phone)!;
         }
 
-        // Удаляем все нецифровые символы
+        // Проверяем базовые условия
+        if (!phone || typeof phone !== 'string' || phone.trim().length === 0) {
+            this.phoneValidationCache.set(phone, false);
+            return false;
+        }
+
+        // Явно отклоняем строки с буквами и множественными '+'
+        if (/[A-Za-zА-Яа-яЁё]/.test(phone)) {
+            this.phoneValidationCache.set(phone, false);
+            return false;
+        }
+        if ((phone.match(/\+/g) || []).length > 1) {
+            this.phoneValidationCache.set(phone, false);
+            return false;
+        }
+
+        // Удаляем все нецифровые символы для российских номеров
         const cleanPhone = phone.replace(/\D/g, '');
 
-        // Используем предкомпилированные регулярные выражения
-        const isValid = (
-            this.russianPhoneRegex.test(cleanPhone) ||
-            this.internationalPhoneRegex.test(phone)
-        );
+        // Быстрый отсев: если не международный формат (без '+') и не российский по длине 11 — считаем невалидным
+        if (!phone.startsWith('+')) {
+            if (!(cleanPhone.length === 11 && (cleanPhone.startsWith('7') || cleanPhone.startsWith('8')))) {
+                this.phoneValidationCache.set(phone, false);
+                return false;
+            }
+        }
+
+        // Более строгая валидация российских номеров (11 цифр, начинается с 7 или 8)
+        const isValidRussian = cleanPhone.length === 11 && 
+            (cleanPhone.startsWith('7') || cleanPhone.startsWith('8')) &&
+            this.russianPhoneRegex.test(cleanPhone);
+
+        // Более строгая валидация международных номеров
+        // Условия:
+        // - начинается строго с одного '+'
+        // - только цифры далее (никаких пробелов, дефисов, скобок, букв)
+        // - 10-15 цифр после знака '+'
+        const hasSinglePlus = phone.startsWith('+') && phone.indexOf('+') === 0 && phone.lastIndexOf('+') === 0;
+        const onlyPlusAndDigits = /^\+\d+$/.test(phone);
+        const isValidInternational = hasSinglePlus && onlyPlusAndDigits && this.internationalPhoneRegex.test(phone);
+
+        const isValid = isValidRussian || isValidInternational;
 
         // Кэшируем результат
         if (this.phoneValidationCache.size >= this.maxCacheSize) {

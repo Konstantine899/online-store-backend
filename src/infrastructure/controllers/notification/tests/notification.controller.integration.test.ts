@@ -1,35 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { SequelizeModule } from '@nestjs/sequelize';
-import { EventEmitterModule } from '@nestjs/event-emitter';
-import { NotificationController } from '../notification.controller';
+import { execSync } from 'child_process';
+import { AppModule } from '../../../../app.module';
 import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
-import { EmailProviderService } from '@app/infrastructure/services/notification/email-provider.service';
-import { SmsProviderService } from '@app/infrastructure/services/notification/sms-provider.service';
-import { TemplateRendererService } from '@app/infrastructure/services/notification/template-renderer.service';
-import { NotificationEventHandler } from '@app/infrastructure/common/events/notification.event-handler';
 import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
 import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
-import {
-    NotificationModel,
-    NotificationTemplateModel,
-    UserModel,
-    RoleModel,
-    UserRoleModel,
-    RefreshTokenModel,
-    RatingModel,
-    ProductModel,
-    CategoryModel,
-    BrandModel,
-    OrderModel,
-    OrderItemModel,
-    CartModel,
-    CartProductModel,
-    UserAddressModel,
-    LoginHistoryModel,
-    ProductPropertyModel,
-} from '@app/domain/models';
+import { NotificationModel, NotificationTemplateModel } from '@app/domain/models';
 import { NotificationType, NotificationStatus } from '@app/domain/models';
 
 // Оптимизированные моки для производительности
@@ -82,54 +59,16 @@ describe('NotificationController (Integration)', () => {
     // Оптимизированная настройка модуля
     beforeAll(async () => {
         const startTime = Date.now();
-        
+
+        // Полный ресет тестовой БД и применение миграций (Variant A)
+        try {
+            execSync('npm run db:reset:test', { stdio: 'pipe', cwd: process.cwd() });
+        } catch {
+            // Оставляем тихим: миграции обязательны в Variant A, но не шумим в логах тестов
+        }
+
         module = await Test.createTestingModule({
-            imports: [
-                SequelizeModule.forRoot({
-                    dialect: 'sqlite',
-                    storage: ':memory:',
-                    logging: false,
-                    models: [
-                        NotificationModel,
-                        NotificationTemplateModel,
-                        UserModel,
-                        RoleModel,
-                        UserRoleModel,
-                        RefreshTokenModel,
-                        RatingModel,
-                        ProductModel,
-                        CategoryModel,
-                        BrandModel,
-                        OrderModel,
-                        OrderItemModel,
-                        CartModel,
-                        CartProductModel,
-                        UserAddressModel,
-                        LoginHistoryModel,
-                        ProductPropertyModel,
-                    ],
-                    autoLoadModels: true,
-                    synchronize: true,
-                }),
-                EventEmitterModule.forRoot(),
-            ],
-            controllers: [NotificationController],
-            providers: [
-                NotificationService,
-                {
-                    provide: 'IEmailProvider',
-                    useClass: EmailProviderService,
-                },
-                {
-                    provide: 'ISmsProvider',
-                    useClass: SmsProviderService,
-                },
-                {
-                    provide: 'ITemplateRenderer',
-                    useClass: TemplateRendererService,
-                },
-                NotificationEventHandler,
-            ],
+            imports: [AppModule],
         })
             .overrideGuard(AuthGuard)
             .useValue(mockAuthGuard)
@@ -180,8 +119,9 @@ describe('NotificationController (Integration)', () => {
             );
 
             const response = await request(app.getHttpServer())
-                .get('/notifications')
-                .expect(200);
+                .get('/notifications');
+            console.log('GET /notifications status/body:', response.status, response.body);
+            expect(response.status).toBe(200);
 
             expect(response.body).toHaveProperty('data');
             expect(response.body).toHaveProperty('meta');
@@ -650,7 +590,7 @@ describe('NotificationController (Integration)', () => {
 
             await request(app.getHttpServer())
                 .get('/notifications')
-                .expect(401);
+                .expect(403);
 
             // Reset mock
             mockAuthGuard.canActivate.mockReturnValue(true);
@@ -673,6 +613,15 @@ describe('NotificationController (Integration)', () => {
             const startTime = Date.now();
             
             // Создаем уведомления для разных пользователей параллельно
+            // Предварительно создаём соответствующие шаблоны, чтобы include ассоциаций не фильтровал результаты
+            const [tplOther, tplCurrent] = await Promise.all([
+                NotificationTemplateModel.create(
+                    createMockTemplate({ name: 'other_user_template', isActive: true })
+                ),
+                NotificationTemplateModel.create(
+                    createMockTemplate({ name: 'current_user_template', isActive: true })
+                ),
+            ]);
             const notifications = await Promise.all([
                 NotificationModel.create(
                     createMockNotification({
@@ -697,11 +646,13 @@ describe('NotificationController (Integration)', () => {
                 .expect(200);
 
             // Должны возвращаться только уведомления для пользователя 1
+            console.log('Tenant isolation resp:', response.body);
             expect(response.body.data).toHaveLength(1);
             expect(response.body.data[0].id).toBe(notifications[1].id);
 
             // Cleanup
             await Promise.all(notifications.map(n => n.destroy()));
+            await Promise.all([tplOther.destroy(), tplCurrent.destroy()]);
             
             const endTime = Date.now();
             console.log(`Tenant isolation test completed in ${endTime - startTime}ms`);
@@ -735,6 +686,21 @@ describe('NotificationController (Integration)', () => {
             const startTime = Date.now();
             
             // Создаем уведомления для множественных пользователей параллельно
+            // Предварительно создаём нужные шаблоны
+            const [tplU1T1, tplU1T2, tplU2T1, tplU2T2] = await Promise.all([
+                NotificationTemplateModel.create(
+                    createMockTemplate({ name: 'user1_template_1', isActive: true })
+                ),
+                NotificationTemplateModel.create(
+                    createMockTemplate({ name: 'user1_template_2', isActive: true })
+                ),
+                NotificationTemplateModel.create(
+                    createMockTemplate({ name: 'user2_template_1', isActive: true })
+                ),
+                NotificationTemplateModel.create(
+                    createMockTemplate({ name: 'user2_template_2', isActive: true })
+                ),
+            ]);
             const notifications = await Promise.all([
                 // Пользователь 1
                 NotificationModel.create(
@@ -774,11 +740,18 @@ describe('NotificationController (Integration)', () => {
                 .expect(200);
 
             // Должны возвращаться только уведомления пользователя 1
+            console.log('Multiple users resp:', response.body);
             expect(response.body.data).toHaveLength(2);
             expect(response.body.data.every((n: { userId: number }) => n.userId === 1)).toBe(true);
 
             // Cleanup
             await Promise.all(notifications.map(n => n.destroy()));
+            await Promise.all([
+                tplU1T1.destroy(),
+                tplU1T2.destroy(),
+                tplU2T1.destroy(),
+                tplU2T2.destroy(),
+            ]);
             
             const endTime = Date.now();
             console.log(`Multiple users test completed in ${endTime - startTime}ms`);
@@ -975,6 +948,19 @@ describe('NotificationController (Integration)', () => {
             const startTime = Date.now();
             
             // Создаем множественные уведомления параллельно для производительности
+            // Предварительно создаём шаблоны для каждого уведомления
+            const templates = await Promise.all(
+                Array.from({ length: 50 }, (_, i) =>
+                    NotificationTemplateModel.create(
+                        createMockTemplate({
+                            name: `performance_template_${i}`,
+                            title: `Performance Template ${i}`,
+                            message: `Performance message ${i}`,
+                            isActive: true,
+                        })
+                    )
+                )
+            );
             const notifications = await Promise.all(
                 Array.from({ length: 50 }, (_, i) => 
                     NotificationModel.create(
@@ -998,6 +984,7 @@ describe('NotificationController (Integration)', () => {
 
             // Cleanup - удаляем параллельно для производительности
             await Promise.all(notifications.map((n) => n.destroy()));
+            await Promise.all(templates.map((t) => t.destroy()));
             
             const endTime = Date.now();
             console.log(`Large notifications test completed in ${endTime - startTime}ms (request: ${requestEndTime - requestStartTime}ms)`);

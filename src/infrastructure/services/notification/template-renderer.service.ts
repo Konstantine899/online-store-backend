@@ -98,22 +98,20 @@ export class TemplateRendererService implements ITemplateRenderer {
         errors: string[];
         variables: string[];
     } {
-        // Проверяем кэш валидации
-        const cacheKey = this.getTemplateHash(template);
-        const cached = this.templateValidationCache.get(cacheKey);
-        if (cached) {
-            return cached;
-        }
-
         const errors: string[] = [];
         const variables: string[] = [];
 
         try {
             if (!template || typeof template !== 'string') {
                 errors.push('Шаблон должен быть непустой строкой');
-                const result = { valid: false, errors, variables };
-                this.setCacheValue(this.templateValidationCache, cacheKey, result, this.maxCacheSize);
-                return result;
+                return { valid: false, errors, variables };
+            }
+
+            // Проверяем кэш валидации только после проверки на null
+            const cacheKey = this.getTemplateHash(template);
+            const cached = this.templateValidationCache.get(cacheKey);
+            if (cached) {
+                return cached;
             }
 
             // Извлекаем переменные (с кэшированием)
@@ -138,9 +136,7 @@ export class TemplateRendererService implements ITemplateRenderer {
             const errorMessage =
                 error instanceof Error ? error.message : 'Unknown error';
             errors.push(`Ошибка валидации: ${errorMessage}`);
-            const result = { valid: false, errors, variables };
-            this.setCacheValue(this.templateValidationCache, cacheKey, result, this.maxCacheSize);
-            return result;
+            return { valid: false, errors, variables };
         }
     }
 
@@ -270,6 +266,11 @@ export class TemplateRendererService implements ITemplateRenderer {
     }
 
     private getTemplateHash(template: string): string {
+        // Проверяем на null/undefined
+        if (!template || typeof template !== 'string') {
+            return 'null-template';
+        }
+        
         // Простой хэш для кэширования (в реальной реализации можно использовать crypto)
         let hash = 0;
         for (let i = 0; i < template.length; i++) {

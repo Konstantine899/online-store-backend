@@ -8,7 +8,9 @@ import {
     AfterDestroy,
 } from 'sequelize-typescript';
 import { Op } from 'sequelize';
-import { NotificationType } from './notification.model';
+import { NotificationModel } from './notification.model';
+import { NotificationType } from './notification.types';
+import { HasMany } from 'sequelize-typescript';
 
 interface INotificationTemplateModel {
     id: number;
@@ -204,6 +206,12 @@ export class NotificationTemplateModel
         field: 'updated_at',
     })
     declare updatedAt: Date;
+
+    @HasMany(() => NotificationModel, {
+        foreignKey: 'templateName',
+        sourceKey: 'name',
+    })
+    declare notifications?: NotificationModel[];
 
     // Методы для работы с переменными
     getVariablesList(): string[] {

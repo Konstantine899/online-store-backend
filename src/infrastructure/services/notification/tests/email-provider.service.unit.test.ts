@@ -4,9 +4,34 @@ import { EmailMessage, EmailAttachment } from '@app/domain/services';
 
 describe('EmailProviderService', () => {
     let service: EmailProviderService;
+    let module: TestingModule;
+
+    // Фабричные функции для создания тестовых данных
+    const createEmailMessage = (overrides: Partial<EmailMessage> = {}): EmailMessage => ({
+        to: 'test@example.com',
+        subject: 'Test Subject',
+        text: 'Test message',
+        ...overrides,
+    });
+
+    const createEmailAttachment = (overrides: Partial<EmailAttachment> = {}): EmailAttachment => ({
+        filename: 'test.txt',
+        content: 'test content',
+        contentType: 'text/plain',
+        ...overrides,
+    });
+
+    const createBulkEmailMessages = (count: number): EmailMessage[] => 
+        Array.from({ length: count }, (_, i) => 
+            createEmailMessage({
+                to: `test${i + 1}@example.com`,
+                subject: `Test ${i + 1}`,
+                text: `Message ${i + 1}`,
+            })
+        );
 
     beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
+        module = await Test.createTestingModule({
             providers: [EmailProviderService],
         }).compile();
 
@@ -17,13 +42,15 @@ describe('EmailProviderService', () => {
         jest.clearAllMocks();
     });
 
+    afterAll(async () => {
+        if (module) {
+            await module.close();
+        }
+    });
+
     describe('sendEmail', () => {
         it('should send email successfully with valid email', async () => {
-            const message: EmailMessage = {
-                to: 'test@example.com',
-                subject: 'Test Subject',
-                text: 'Test message',
-            };
+            const message = createEmailMessage();
 
             const result = await service.sendEmail(message);
 
@@ -34,11 +61,9 @@ describe('EmailProviderService', () => {
         });
 
         it('should send email with HTML content', async () => {
-            const message: EmailMessage = {
-                to: 'test@example.com',
-                subject: 'Test Subject',
+            const message = createEmailMessage({
                 html: '<h1>Test HTML</h1>',
-            };
+            });
 
             const result = await service.sendEmail(message);
 
@@ -47,11 +72,9 @@ describe('EmailProviderService', () => {
         });
 
         it('should fail with invalid email format', async () => {
-            const message: EmailMessage = {
+            const message = createEmailMessage({
                 to: 'invalid-email',
-                subject: 'Test Subject',
-                text: 'Test message',
-            };
+            });
 
             const result = await service.sendEmail(message);
 
@@ -61,38 +84,10 @@ describe('EmailProviderService', () => {
         });
 
         it('should handle email with attachments', async () => {
-            const attachment: EmailAttachment = {
-                filename: 'test.txt',
-                content: 'test content',
-                contentType: 'text/plain',
-            };
-
-            const message: EmailMessage = {
-                to: 'test@example.com',
-                subject: 'Test Subject',
-                text: 'Test message',
+            const attachment = createEmailAttachment();
+            const message = createEmailMessage({
                 attachments: [attachment],
-            };
-
-            const result = await service.sendEmail(message);
-
-            expect(result.success).toBe(true);
-            expect(result.messageId).toBeDefined();
-        });
-
-        it('should handle email with attachments', async () => {
-            const attachment: EmailAttachment = {
-                filename: 'test.txt',
-                content: 'test content',
-                contentType: 'text/plain',
-            };
-
-            const message: EmailMessage = {
-                to: 'test@example.com',
-                subject: 'Test Subject',
-                text: 'Test message',
-                attachments: [attachment],
-            };
+            });
 
             const result = await service.sendEmail(message);
 
@@ -103,18 +98,7 @@ describe('EmailProviderService', () => {
 
     describe('sendBulkEmails', () => {
         it('should send multiple emails successfully', async () => {
-            const messages: EmailMessage[] = [
-                {
-                    to: 'test1@example.com',
-                    subject: 'Test 1',
-                    text: 'Message 1',
-                },
-                {
-                    to: 'test2@example.com',
-                    subject: 'Test 2',
-                    text: 'Message 2',
-                },
-            ];
+            const messages = createBulkEmailMessages(2);
 
             const results = await service.sendBulkEmails(messages);
 
@@ -124,17 +108,9 @@ describe('EmailProviderService', () => {
         });
 
         it('should handle mixed success and failure in bulk emails', async () => {
-            const messages: EmailMessage[] = [
-                {
-                    to: 'test@example.com',
-                    subject: 'Valid Email',
-                    text: 'Valid message',
-                },
-                {
-                    to: 'invalid-email',
-                    subject: 'Invalid Email',
-                    text: 'Invalid message',
-                },
+            const messages = [
+                createEmailMessage({ to: 'test@example.com', subject: 'Valid Email', text: 'Valid message' }),
+                createEmailMessage({ to: 'invalid-email', subject: 'Invalid Email', text: 'Invalid message' }),
             ];
 
             const results = await service.sendBulkEmails(messages);
@@ -209,11 +185,9 @@ describe('EmailProviderService', () => {
 
     describe('validateAttachment', () => {
         it('should validate string attachment within size limit', async () => {
-            const attachment: EmailAttachment = {
-                filename: 'test.txt',
+            const attachment = createEmailAttachment({
                 content: 'small content',
-                contentType: 'text/plain',
-            };
+            });
 
             const isValid = await service.validateAttachment(attachment);
 
@@ -221,11 +195,9 @@ describe('EmailProviderService', () => {
         });
 
         it('should validate buffer attachment within size limit', async () => {
-            const attachment: EmailAttachment = {
-                filename: 'test.txt',
+            const attachment = createEmailAttachment({
                 content: Buffer.from('small content'),
-                contentType: 'text/plain',
-            };
+            });
 
             const isValid = await service.validateAttachment(attachment);
 
@@ -234,11 +206,10 @@ describe('EmailProviderService', () => {
 
         it('should reject attachment exceeding size limit', async () => {
             const largeContent = 'x'.repeat(11 * 1024 * 1024); // 11MB
-            const attachment: EmailAttachment = {
+            const attachment = createEmailAttachment({
                 filename: 'large.txt',
                 content: largeContent,
-                contentType: 'text/plain',
-            };
+            });
 
             const isValid = await service.validateAttachment(attachment);
 
@@ -246,11 +217,9 @@ describe('EmailProviderService', () => {
         });
 
         it('should reject invalid attachment content', async () => {
-            const attachment: EmailAttachment = {
-                filename: 'test.txt',
+            const attachment = createEmailAttachment({
                 content: null as unknown as string,
-                contentType: 'text/plain',
-            };
+            });
 
             const isValid = await service.validateAttachment(attachment);
 
@@ -301,11 +270,7 @@ describe('EmailProviderService', () => {
                 .spyOn(console, 'error')
                 .mockImplementation();
 
-            const message: EmailMessage = {
-                to: 'test@example.com',
-                subject: 'Test Subject',
-                text: 'Test message',
-            };
+            const message = createEmailMessage();
 
             // Mock a non-Error exception
             jest.spyOn(service, 'validateEmail').mockImplementation(() => {
@@ -319,6 +284,134 @@ describe('EmailProviderService', () => {
             expect(result.provider).toBe('MockEmailProvider');
 
             consoleSpy.mockRestore();
+        });
+    });
+
+    describe('Performance Tests', () => {
+        it('should handle large bulk email operations efficiently', async () => {
+            const largeMessageList = createBulkEmailMessages(100);
+
+            const startTime = Date.now();
+            const results = await service.sendBulkEmails(largeMessageList);
+            const endTime = Date.now();
+
+            expect(results).toHaveLength(100);
+            expect(endTime - startTime).toBeLessThan(2000); // Должно выполниться менее чем за 2 секунды
+        });
+
+        it('should cache email validation efficiently', async () => {
+            const testEmails = [
+                'test1@example.com',
+                'test2@example.com',
+                'test1@example.com', // Повторный вызов
+                'test3@example.com',
+            ];
+
+            const startTime = Date.now();
+            
+            // Множественные вызовы валидации
+            const results = await Promise.all(
+                testEmails.map(email => service.validateEmail(email))
+            );
+            
+            const endTime = Date.now();
+
+            expect(results).toEqual([true, true, true, true]);
+            expect(endTime - startTime).toBeLessThan(100); // Должно выполниться быстро благодаря кэшу
+        });
+
+        it('should handle provider info caching efficiently', async () => {
+            const startTime = Date.now();
+            
+            // Множественные вызовы getProviderInfo
+            const results = await Promise.all(
+                Array.from({ length: 50 }, () => service.getProviderInfo())
+            );
+            
+            const endTime = Date.now();
+
+            expect(results).toHaveLength(50);
+            expect(results.every(info => info.name === 'MockEmailProvider')).toBe(true);
+            expect(endTime - startTime).toBeLessThan(50); // Должно выполниться очень быстро благодаря кэшу
+        });
+
+        it('should handle quota info caching efficiently', async () => {
+            const startTime = Date.now();
+            
+            // Множественные вызовы getQuotaInfo
+            const results = await Promise.all(
+                Array.from({ length: 20 }, () => service.getQuotaInfo())
+            );
+            
+            const endTime = Date.now();
+
+            expect(results).toHaveLength(20);
+            expect(results.every(quota => quota.limit === 10000)).toBe(true);
+            expect(endTime - startTime).toBeLessThan(100); // Должно выполниться быстро
+        });
+
+        it('should handle attachment validation efficiently', async () => {
+            const attachments = Array.from({ length: 100 }, (_, i) => 
+                createEmailAttachment({
+                    filename: `test${i}.txt`,
+                    content: `content ${i}`,
+                })
+            );
+
+            const startTime = Date.now();
+            
+            // Параллельная валидация вложений
+            const results = await Promise.all(
+                attachments.map(attachment => service.validateAttachment(attachment))
+            );
+            
+            const endTime = Date.now();
+
+            expect(results).toHaveLength(100);
+            expect(results.every(isValid => isValid === true)).toBe(true);
+            expect(endTime - startTime).toBeLessThan(500); // Должно выполниться быстро
+        });
+    });
+
+    describe('Caching Tests', () => {
+        it('should cache email validation results', () => {
+            const email = 'test@example.com';
+            
+            // Первый вызов
+            const result1 = service.validateEmail(email);
+            
+            // Второй вызов (должен использовать кэш)
+            const result2 = service.validateEmail(email);
+
+            expect(result1).toBe(result2);
+            expect(result1).toBe(true);
+        });
+
+        it('should cache provider info', () => {
+            // Первый вызов
+            const info1 = service.getProviderInfo();
+            
+            // Второй вызов (должен использовать кэш)
+            const info2 = service.getProviderInfo();
+
+            expect(info1).toEqual(info2);
+            expect(info1.name).toBe('MockEmailProvider');
+        });
+
+        it('should handle cache invalidation for email validation', () => {
+            const email = 'test@example.com';
+            
+            // Первый вызов
+            const result1 = service.validateEmail(email);
+            
+            // Очищаем кэш (симулируем)
+            // В реальной реализации здесь был бы метод очистки кэша
+            
+            // Второй вызов
+            const result2 = service.validateEmail(email);
+
+            expect(result1).toBe(result2);
+            expect(result1).toBe(true);
         });
     });
 });

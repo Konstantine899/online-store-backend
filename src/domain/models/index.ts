@@ -18,7 +18,6 @@ export {
 } from './login-history.model';
 export {
     NotificationModel,
-    NotificationType,
-    NotificationStatus,
 } from './notification.model';
+export { NotificationType, NotificationStatus } from './notification.types';
 export { NotificationTemplateModel } from './notification-template.model';
