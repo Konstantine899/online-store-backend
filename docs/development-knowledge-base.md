@@ -6,11 +6,13 @@
 - [404 ошибки в тестах](#проблема-404-ошибки-в-интеграционных-тестах)
 - [Sequelize returning не работает](#проблема-sequelize-returning-true-не-работает)
 - [Unicode символы в тестах](#best-practices-для-интеграционных-тестов)
+- [Rate limiting в тестах](#проблема-rate-limiting-в-интеграционных-тестах)
 
 ### ✅ Best Practices
 - [Sequelize сериализация](#правильная-сериализация-sequelize-моделей)
 - [Порядок декораторов](#правильный-порядок-декораторов-в-nestjs)
 - [Тестирование](#best-practices-для-интеграционных-тестов)
+- [Rate limiting и безопасность](#rate-limiting-и-bruteforceguard)
 
 ### 🔧 Полезные команды
 - [Тестирование](#полезные-команды)
@@ -88,6 +90,56 @@ async updatePreferences() {
 **Решение:**
 - Убрать `returning: true` и использовать `findByPk()` после `update()`
 
+### Проблема: Rate limiting в интеграционных тестах
+
+**Симптомы:**
+- Тесты падают с `Unexpected 429 on first attempt`
+- BruteforceGuard вызывается несколько раз для одного запроса
+- Глобальный rate limiter блокирует тесты
+
+**Причины:**
+1. BruteforceGuard наследуется от ThrottlerGuard и может вызываться несколько раз
+2. Глобальный rate limiter применяется до инициализации приложения
+3. Переменные окружения устанавливаются после создания приложения
+
+**Решения:**
+1. **Защита от повторных вызовов:**
+```typescript
+// В BruteforceGuard
+if ((request as any).__bruteforceProcessed) {
+    return true;
+}
+(request as any).__bruteforceProcessed = true;
+```
+
+2. **Установка переменных ДО создания приложения:**
+```typescript
+beforeAll(async () => {
+    // Устанавливаем переменные ДО создания приложения
+    process.env.RATE_LIMIT_ENABLED = 'true';
+    process.env.RATE_LIMIT_LOGIN_ATTEMPTS = '2';
+    // ... другие переменные
+    
+    app = await setupTestAppWithRateLimit();
+});
+```
+
+3. **Сброс счётчиков между тестами:**
+```typescript
+beforeEach(async () => {
+    BruteforceGuard.resetCounters();
+});
+```
+
+4. **Использование setupTestAppWithRateLimit вместо setupTestApp:**
+```typescript
+// ✅ Правильно - не мокирует BruteforceGuard
+app = await setupTestAppWithRateLimit();
+
+// ❌ Проблематично - мокирует BruteforceGuard
+app = await setupTestApp();
+```
+
 ## 🧪 Тестирование
 
 ### ✅ Best practices для интеграционных тестов
@@ -123,6 +175,103 @@ notificationPreferences: {
 - Используйте глобальные фильтры для Sequelize ошибок
 - Сообщения об ошибках на русском языке
 - Логирование с correlation ID
+
+## 🛡️ Rate Limiting и BruteforceGuard
+
+### ✅ Правильная реализация BruteforceGuard
+
+**Структура guard:**
+```typescript
+@Injectable()
+export class BruteforceGuard extends ThrottlerGuard {
+    private static counters = new Map<string, { count: number; resetAt: number }>();
+    
+    // Защита от повторных вызовов
+    protected async handleRequest(requestProps: ThrottlerRequest): Promise<boolean> {
+        const request = requestProps.context.switchToHttp().getRequest<Request>();
+        
+        if ((request as any).__bruteforceProcessed) {
+            return true;
+        }
+        (request as any).__bruteforceProcessed = true;
+        
+        // Логика для разных endpoints
+        if (request.url.includes('/auth/login')) {
+            return this.handleLoginAttempt(requestProps);
+        }
+        // ... другие endpoints
+    }
+}
+```
+
+**Профили rate limiting:**
+- **Login**: 5 попыток за 15 минут
+- **Refresh**: 10 попыток за 5 минут  
+- **Registration**: 3 попытки за минуту
+
+**Логирование без PII:**
+```typescript
+this.logger.warn(`${profile} rate limit exceeded`, {
+    route: request.url,
+    method: request.method,
+    correlationId: request.headers['x-request-id'],
+    // НЕ логируем IP, email, пароли
+});
+```
+
+### ✅ Глобальный rate limiter
+
+**Реализация в main.ts:**
+```typescript
+if (cfg.RATE_LIMIT_ENABLED) {
+    const perIpCounters = new Map<string, { s: number; sTs: number; m: number; mTs: number }>();
+    
+    app.use((req: Request, res: Response, next: NextFunction) => {
+        const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown';
+        // Логика счётчиков 3 rps / 100 rpm
+    });
+}
+```
+
+**Настройки по умолчанию:**
+- 3 запроса в секунду
+- 100 запросов в минуту
+- Отключается через `RATE_LIMIT_ENABLED=false`
+
+### ✅ Тестирование rate limiting
+
+**Правильная настройка тестов:**
+```typescript
+beforeAll(async () => {
+    // Устанавливаем переменные ДО создания приложения
+    process.env.NODE_ENV = 'test';
+    process.env.RATE_LIMIT_ENABLED = 'true';
+    process.env.RATE_LIMIT_LOGIN_ATTEMPTS = '2';
+    
+    app = await setupTestAppWithRateLimit(); // НЕ setupTestApp!
+});
+
+beforeEach(async () => {
+    BruteforceGuard.resetCounters(); // Сброс между тестами
+});
+```
+
+**Проверка сценариев:**
+```typescript
+it('should return 429 after exceeding attempts', async () => {
+    // Первая попытка - должна пройти (400/401)
+    const res1 = await request(server).post('/auth/login').send(data);
+    expect(res1.status).not.toBe(429);
+    
+    // Вторая попытка - должна пройти (400/401)
+    const res2 = await request(server).post('/auth/login').send(data);
+    expect(res2.status).not.toBe(429);
+    
+    // Третья попытка - должна быть заблокирована (429)
+    const res3 = await request(server).post('/auth/login').send(data);
+    expect(res3.status).toBe(429);
+});
+```
 
 ## 📝 Полезные команды
 
@@ -173,6 +322,7 @@ npm run type-check
 3. **При ошибках декораторов** → [Порядок декораторов](#правильный-порядок-декораторов-в-nestjs)
 4. **При проблемах с тестами** → [Тестирование](#best-practices-для-интеграционных-тестов)
 5. **При работе с unicode** → [Unicode символы](#best-practices-для-интеграционных-тестов)
+6. **При проблемах с rate limiting** → [Rate limiting](#проблема-rate-limiting-в-интеграционных-тестах)
 
 ### Быстрые команды для проверки:
 
