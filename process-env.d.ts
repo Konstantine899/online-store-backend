@@ -12,6 +12,9 @@ declare global {
             JWT_ACCESS_TTL: string;
             JWT_REFRESH_TTL: string;
             SQL_LOGGING: string;
+            SECURITY_HELMET_ENABLED?: string;
+            SECURITY_CORS_ENABLED?: string;
+            SECURITY_CSP_ENABLED?: string;
             DIALECT?: string;
             MYSQL_HOST?: string;
             MYSQL_USER?: string;

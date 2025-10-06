@@ -13,6 +13,9 @@ export type ValidatedEnv = {
     JWT_ACCESS_TTL: string; // e.g. "900s"
     JWT_REFRESH_TTL: string; // e.g. "30d"
     SQL_LOGGING: boolean;
+    SECURITY_HELMET_ENABLED: boolean;
+    SECURITY_CORS_ENABLED: boolean;
+    SECURITY_CSP_ENABLED: boolean;
 };
 
 function asNumber(value: string | undefined, name: string, opts?: { min?: number; max?: number }): number {
@@ -57,6 +60,9 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
     const JWT_REFRESH_TTL = requiredString(raw.JWT_REFRESH_TTL || '30d', 'JWT_REFRESH_TTL');
 
     const SQL_LOGGING = asBoolean(raw.SQL_LOGGING, 'false');
+    const SECURITY_HELMET_ENABLED = asBoolean(raw.SECURITY_HELMET_ENABLED, 'true');
+    const SECURITY_CORS_ENABLED = asBoolean(raw.SECURITY_CORS_ENABLED, 'true');
+    const SECURITY_CSP_ENABLED = asBoolean(raw.SECURITY_CSP_ENABLED, 'true');
 
     return {
         NODE_ENV: NODE_ENV_RAW as ValidatedEnv['NODE_ENV'],
@@ -68,6 +74,9 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         JWT_ACCESS_TTL,
         JWT_REFRESH_TTL,
         SQL_LOGGING,
+        SECURITY_HELMET_ENABLED,
+        SECURITY_CORS_ENABLED,
+        SECURITY_CSP_ENABLED,
     };
 }
 

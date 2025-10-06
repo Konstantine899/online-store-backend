@@ -46,22 +46,45 @@ async function bootstrap(): Promise<void> {
             new CustomNotFoundExceptionFilter(),
         ],
     );
-    app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+    if (cfg.SECURITY_HELMET_ENABLED) {
+        const cspDirectives = {
+            defaultSrc: ["'self'"],
+            baseUri: ["'self'"],
+            frameAncestors: ["'self'"],
+            imgSrc: ["'self'", 'data:', 'blob:'],
+            objectSrc: ["'none'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            connectSrc: ["'self'", ...cfg.ALLOWED_ORIGINS],
+        } as const;
 
-    const corsOrigins = cfg.ALLOWED_ORIGINS;
+        app.use(
+            helmet({
+                crossOriginResourcePolicy: { policy: 'cross-origin' },
+                contentSecurityPolicy: cfg.SECURITY_CSP_ENABLED
+                    ? { directives: cspDirectives }
+                    : false,
+            }),
+        );
+    }
 
-    app.enableCors({
-        origin: (origin, cb) => {
-            if (!origin || corsOrigins.includes(origin)) {
-                return cb(null, true);
-            }
-            return cb(new Error('Not allowed by CORS'), false);
-        },
-        credentials: true,
-        allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'], // Настраивает заголовок CORS Access-Control-Allow-Headers.
-        exposedHeaders: ['Content-Range', 'X-Content-Range', 'x-request-id'], // Настраивает заголовок CORS Access-Control-Expose-Headers
-        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    });
+    // Используем Set для O(1) проверки origin и минимизации аллокаций
+    const corsOriginSet = new Set(cfg.ALLOWED_ORIGINS);
+
+    if (cfg.SECURITY_CORS_ENABLED) {
+        app.enableCors({
+            origin: (origin, cb) => {
+                if (!origin || corsOriginSet.has(origin)) {
+                    return cb(null, true);
+                }
+                return cb(new Error('Not allowed by CORS'), false);
+            },
+            credentials: true,
+            allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
+            exposedHeaders: ['Content-Range', 'X-Content-Range', 'x-request-id'],
+            methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+        });
+    }
 
     app.use(cookieParser(cfg.COOKIE_PARSER_SECRET_KEY || 'change-me'));
 

@@ -7,6 +7,7 @@ import { UserModel } from '@app/domain/models';
 import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
 import cookieParser from 'cookie-parser';
 import { BruteforceGuard } from '@app/infrastructure/common/guards';
+import helmet from 'helmet';
 
 
 export async function setupTestApp(): Promise<INestApplication> {
@@ -27,6 +28,9 @@ export async function setupTestApp(): Promise<INestApplication> {
 
     // Настройка cookieParser для тестов
     app.use(cookieParser(process.env.COOKIE_PARSER_SECRET_KEY || 'test-secret'));
+
+    // Включаем базовый Helmet для тестов (минимальный набор заголовков)
+    app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
     // Глобальная валидация DTO
     app.useGlobalPipes(new CustomValidationPipe());
