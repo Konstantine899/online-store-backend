@@ -58,11 +58,7 @@ export class AuthController {
         const result = await this.authService.registration(dto);
 
         const cookieName = getRefreshCookieName();
-        res.cookie(
-            cookieName,
-            result.refreshToken,
-            buildRefreshCookieOptions(req),
-        );
+        res.cookie(cookieName, result.refreshToken, buildRefreshCookieOptions());
 
         return {
             type: result.type,
@@ -81,11 +77,7 @@ export class AuthController {
         const result = await this.authService.login(dto, req);
         // ставим refresh в HttpOnly cookie
         const cookieName = getRefreshCookieName();
-        res.cookie(
-            cookieName,
-            result.refreshToken,
-            buildRefreshCookieOptions(req),
-        );
+        res.cookie(cookieName, result.refreshToken, buildRefreshCookieOptions());
 
         // Возвращаем только поля, определённые в LoginResponse, без refreshToken в теле
         return { type: result.type, accessToken: result.accessToken };
@@ -115,11 +107,7 @@ export class AuthController {
                 await this.authService.updateAccessToken(refreshFromCookie);
             // Если получили новый refresh токен - обновляем cookie
             if (result.refreshToken) {
-                res.cookie(
-                    cookieName,
-                    result.refreshToken,
-                    buildRefreshCookieOptions(req),
-                );
+                res.cookie(cookieName, result.refreshToken, buildRefreshCookieOptions());
             }
             // Возвращаем только access токен в теле ответа
             return {
@@ -129,7 +117,7 @@ export class AuthController {
         } catch (error) {
             if (error instanceof NotFoundException) {
                 // Reuse detection - очищаем cookie
-                const opts = buildRefreshCookieOptions(req);
+                const opts = buildRefreshCookieOptions();
                 res.clearCookie(cookieName, {
                     ...opts,
                     maxAge: undefined,
@@ -185,7 +173,7 @@ export class AuthController {
         await this.authService.logout({ refreshToken: refreshFromCookie }, req);
 
         // 2) Очистить cookie у клиента
-        const opts = buildRefreshCookieOptions(req);
+        const opts = buildRefreshCookieOptions();
         res.clearCookie(cookieName, {
             ...opts,
             maxAge: undefined,

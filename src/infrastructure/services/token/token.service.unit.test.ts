@@ -69,6 +69,15 @@ describe('TokenService', () => {
     let refreshTokenRepository: jest.Mocked<RefreshTokenRepository>;
     let userRepository: jest.Mocked<UserRepository>;
 
+    beforeAll(() => {
+        process.env.NODE_ENV = 'test';
+        process.env.COOKIE_PARSER_SECRET_KEY = 'test-secret-please-change';
+        process.env.JWT_ACCESS_SECRET = 'access-secret-please-change-32chars-minimum';
+        process.env.JWT_REFRESH_SECRET = 'refresh-secret-please-change-32chars-minimum';
+        process.env.JWT_ACCESS_TTL = '900s';
+        process.env.JWT_REFRESH_TTL = '30d';
+    });
+
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -149,10 +158,11 @@ describe('TokenService', () => {
             ).toHaveBeenCalledWith(mockUser, 3600);
             expect(jwtService.signAsync).toHaveBeenCalledWith(
                 {},
-                {
+                expect.objectContaining({
                     subject: String(mockUser.id),
                     jwtid: String(mockRefreshToken.id),
-                },
+                    secret: expect.any(String),
+                }),
             );
         });
 
@@ -189,6 +199,7 @@ describe('TokenService', () => {
             expect(result).toEqual(mockRefreshTokenPayload);
             expect(jwtService.verifyAsync).toHaveBeenCalledWith(
                 mockRefreshTokenString,
+                expect.objectContaining({ secret: expect.any(String) }),
             );
         });
 

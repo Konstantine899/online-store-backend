@@ -20,6 +20,40 @@ import {
 import { IDecodedAccessToken } from '@app/domain/jwt';
 import { JwtSettings } from '@app/infrastructure/config/jwt';
 import { Request } from 'express';
+import { getConfig } from '@app/infrastructure/config';
+
+// Ленивая инициализация конфигурации/секретов — чтобы не требовать env при импорте
+let CACHED_ACCESS_SECRET: string | undefined;
+function getAccessSecret(): string {
+    if (!CACHED_ACCESS_SECRET) {
+        CACHED_ACCESS_SECRET = JwtSettings().jwtSecretKey;
+    }
+    return CACHED_ACCESS_SECRET;
+}
+
+let CACHED_REFRESH_TTL_SECONDS: number | undefined;
+function getRefreshTtlSeconds(): number {
+    if (CACHED_REFRESH_TTL_SECONDS === undefined) {
+        const cfg = getConfig();
+        const value = cfg.JWT_REFRESH_TTL;
+        const match = /^([0-9]+)\s*([smhd])$/.exec(value);
+        if (!match) {
+            CACHED_REFRESH_TTL_SECONDS = 60 * 60 * 24 * 30; // fallback 30d
+        } else {
+            const amount = Number(match[1]);
+            const unit = match[2];
+            CACHED_REFRESH_TTL_SECONDS =
+                unit === 's'
+                    ? amount
+                    : unit === 'm'
+                    ? amount * 60
+                    : unit === 'h'
+                    ? amount * 60 * 60
+                    : amount * 60 * 60 * 24;
+        }
+    }
+    return CACHED_REFRESH_TTL_SECONDS;
+}
 
 @Injectable()
 export class TokenService implements ITokenService {
@@ -53,7 +87,15 @@ export class TokenService implements ITokenService {
             subject: String(user.id),
             jwtid: String(refresh_token.id),
         };
-        return this.jwtService.signAsync({}, options);
+        // Refresh подписываем отдельным секретом
+        const { JWT_REFRESH_SECRET } = getConfig();
+        return this.jwtService.signAsync(
+            {},
+            {
+                ...options,
+                secret: JWT_REFRESH_SECRET,
+            },
+        );
     }
 
     //Метод получения пользователя из payload refresh token
@@ -87,7 +129,7 @@ export class TokenService implements ITokenService {
         request: Request,
     ): Promise<IDecodedAccessToken> {
         return (request.user = await this.jwtService.verifyAsync(token, {
-            secret: JwtSettings().jwtSecretKey,
+            secret: getAccessSecret(),
         }));
     }
 
@@ -96,7 +138,11 @@ export class TokenService implements ITokenService {
         refreshToken: string,
     ): Promise<IRefreshTokenPayload> {
         try {
-            return await this.jwtService.verifyAsync(refreshToken);
+            // Верифицируем тем же секретом, что использовали для подписи refresh
+            const { JWT_REFRESH_SECRET } = getConfig();
+            return await this.jwtService.verifyAsync(refreshToken, {
+                secret: JWT_REFRESH_SECRET,
+            });
         } catch (error) {
             if (error instanceof TokenExpiredError) {
                 throw new UnprocessableEntityException(
@@ -217,8 +263,8 @@ export class TokenService implements ITokenService {
         if (!user) {
             throw new NotFoundException('User not found');
         }
-        // Создаём новый refresh токен
-        const ttlSeconds = 60 * 60 * 24 * 30; // 30 дней (можно вынести в конфиг)
+        // Создаём новый refresh токен с TTL из env (лениво кэшированный)
+        const ttlSeconds = getRefreshTtlSeconds();
         const newRefreshTokenRecord =
             await this.refreshTokenRepository.createRefreshToken(
                 user,
@@ -229,9 +275,10 @@ export class TokenService implements ITokenService {
             subject: String(user.id),
             jwtid: String(newRefreshTokenRecord.id),
         };
+        const { JWT_REFRESH_SECRET } = getConfig();
         const newRefreshToken = await this.jwtService.signAsync(
             {},
-            newRefreshTokenOptions,
+            { ...newRefreshTokenOptions, secret: JWT_REFRESH_SECRET },
         );
 
         // Генерируем новый access токен
