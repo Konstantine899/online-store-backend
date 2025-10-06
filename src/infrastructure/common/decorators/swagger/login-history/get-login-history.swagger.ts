@@ -1,12 +1,18 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiResponse,
+    ApiQuery,
+} from '@nestjs/swagger';
 import { GetLoginHistoryResponse } from '@app/infrastructure/responses';
 
 export function GetLoginHistorySwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({
             summary: 'Получить историю входов пользователя',
-            description: 'Возвращает историю входов текущего аутентифицированного пользователя с пагинацией',
+            description:
+                'Возвращает историю входов текущего аутентифицированного пользователя с пагинацией',
         }),
         ApiBearerAuth('JWT-auth'),
         ApiQuery({
@@ -39,7 +45,8 @@ export function GetUserLoginStatsSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({
             summary: 'Получить статистику входов пользователя',
-            description: 'Возвращает статистику входов текущего аутентифицированного пользователя',
+            description:
+                'Возвращает статистику входов текущего аутентифицированного пользователя',
         }),
         ApiBearerAuth('JWT-auth'),
         ApiResponse({
@@ -51,7 +58,12 @@ export function GetUserLoginStatsSwaggerDecorator(): MethodDecorator {
                     totalLogins: { type: 'number', example: 150 },
                     successfulLogins: { type: 'number', example: 145 },
                     failedLogins: { type: 'number', example: 5 },
-                    lastLoginAt: { type: 'string', format: 'date-time', nullable: true, example: '2024-01-15T10:30:00Z' },
+                    lastLoginAt: {
+                        type: 'string',
+                        format: 'date-time',
+                        nullable: true,
+                        example: '2024-01-15T10:30:00Z',
+                    },
                 },
             },
         }),

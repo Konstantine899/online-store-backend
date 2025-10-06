@@ -77,29 +77,33 @@ interface IUserModel {
     tableName: 'user',
     underscored: true,
     defaultScope: {
-        attributes: { 
-            exclude: ['updatedAt', 'createdAt', 'password'] // Исключаем пароль по умолчанию
+        attributes: {
+            exclude: ['updatedAt', 'createdAt', 'password'], // Исключаем пароль по умолчанию
         },
     },
     scopes: {
         // Scope для аутентификации - только необходимые поля
         forAuth: {
             attributes: ['id', 'email'],
-            include: [{
-                model: RoleModel,
-                as: 'roles',
-                attributes: ['id', 'role'],
-                through: { attributes: [] } // Исключаем промежуточную таблицу
-            }]
+            include: [
+                {
+                    model: RoleModel,
+                    as: 'roles',
+                    attributes: ['id', 'role'],
+                    through: { attributes: [] }, // Исключаем промежуточную таблицу
+                },
+            ],
         },
         // Scope для загрузки пользователя с ролями
         withRoles: {
-            include: [{
-                model: RoleModel,
-                as: 'roles',
-                attributes: ['id', 'role'],
-                through: { attributes: [] }
-            }]
+            include: [
+                {
+                    model: RoleModel,
+                    as: 'roles',
+                    attributes: ['id', 'role'],
+                    through: { attributes: [] },
+                },
+            ],
         },
         active: {
             where: { isActive: true, isBlocked: false },
@@ -107,7 +111,7 @@ interface IUserModel {
         verified: {
             where: { isVerified: true },
         },
-    }
+    },
 })
 export class UserModel
     extends Model<UserModel, IUserCreationAttributes>
@@ -125,18 +129,19 @@ export class UserModel
         unique: true,
         allowNull: false,
         validate: {
-            isEmail: true, 
-            len: [5, 255] 
-        }
+            isEmail: true,
+            len: [5, 255],
+        },
     })
-   declare email: string;
+    declare email: string;
 
-    @Column({ type: DataType.STRING(255), 
+    @Column({
+        type: DataType.STRING(255),
         allowNull: false,
         validate: {
-            len: [6, 255] 
-        }
-     })
+            len: [6, 255],
+        },
+    })
     declare password: string;
 
     @Column({
@@ -232,13 +237,21 @@ export class UserModel
     @Column({ type: DataType.STRING(10), allowNull: false, defaultValue: 'ru' })
     declare preferredLanguage?: string;
 
-    @Column({ type: DataType.STRING(50), allowNull: false, defaultValue: 'Europe/Moscow' })
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: false,
+        defaultValue: 'Europe/Moscow',
+    })
     declare timezone?: string;
 
     @Column({ type: DataType.JSONB, allowNull: true })
     declare notificationPreferences?: unknown | null;
 
-    @Column({ type: DataType.STRING(20), allowNull: false, defaultValue: 'light' })
+    @Column({
+        type: DataType.STRING(20),
+        allowNull: false,
+        defaultValue: 'light',
+    })
     declare themePreference?: string;
 
     @Column({ type: DataType.STRING(10), allowNull: false, defaultValue: 'ru' })
@@ -267,17 +280,17 @@ export class UserModel
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
     })
-   declare refresh_tokens: RefreshTokenModel[];
+    declare refresh_tokens: RefreshTokenModel[];
 
     @BelongsToMany(() => ProductModel, {
         through: () => RatingModel,
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
     })
-   declare products: ProductModel[];
+    declare products: ProductModel[];
 
     @HasMany(() => OrderModel, { onDelete: 'SET NULL' })
-   declare orders: OrderModel[];
+    declare orders: OrderModel[];
 
     // Геттеры и методы
     get fullName(): string {

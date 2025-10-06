@@ -19,7 +19,8 @@ describe('TemplateRendererService', () => {
 
     describe('renderTemplate', () => {
         it('should render template with variables successfully', async () => {
-            const template = 'Hello {{name}}, your order {{orderNumber}} is ready!';
+            const template =
+                'Hello {{name}}, your order {{orderNumber}} is ready!';
             const variables: TemplateVariables = {
                 name: 'John',
                 orderNumber: '12345',
@@ -28,7 +29,9 @@ describe('TemplateRendererService', () => {
             const result = await service.renderTemplate(template, variables);
 
             expect(result.success).toBe(true);
-            expect(result.content).toBe('Hello John, your order 12345 is ready!');
+            expect(result.content).toBe(
+                'Hello John, your order 12345 is ready!',
+            );
             expect(result.variables).toEqual(['name', 'orderNumber']);
         });
 
@@ -60,7 +63,8 @@ describe('TemplateRendererService', () => {
         });
 
         it('should render template with different data types', async () => {
-            const template = 'Number: {{count}}, Boolean: {{active}}, Object: {{data}}';
+            const template =
+                'Number: {{count}}, Boolean: {{active}}, Object: {{data}}';
             const variables: TemplateVariables = {
                 count: 42,
                 active: true,
@@ -70,7 +74,9 @@ describe('TemplateRendererService', () => {
             const result = await service.renderTemplate(template, variables);
 
             expect(result.success).toBe(true);
-            expect(result.content).toBe('Number: 42, Boolean: true, Object: {"key":"value"}');
+            expect(result.content).toBe(
+                'Number: 42, Boolean: true, Object: {"key":"value"}',
+            );
         });
 
         it('should handle null and undefined values', async () => {
@@ -97,14 +103,18 @@ describe('TemplateRendererService', () => {
         it('should fail with null template', async () => {
             const variables: TemplateVariables = { name: 'John' };
 
-            const result = await service.renderTemplate(null as unknown as string, variables);
+            const result = await service.renderTemplate(
+                null as unknown as string,
+                variables,
+            );
 
             expect(result.success).toBe(false);
             expect(result.error).toBe('Шаблон должен быть непустой строкой');
         });
 
         it('should fail with missing variables', async () => {
-            const template = 'Hello {{name}}, your order {{orderNumber}} is ready!';
+            const template =
+                'Hello {{name}}, your order {{orderNumber}} is ready!';
             const variables: TemplateVariables = {
                 name: 'John',
                 // orderNumber is missing
@@ -119,7 +129,8 @@ describe('TemplateRendererService', () => {
         });
 
         it('should fail with multiple missing variables', async () => {
-            const template = 'Hello {{name}}, your order {{orderNumber}} from {{store}} is ready!';
+            const template =
+                'Hello {{name}}, your order {{orderNumber}} from {{store}} is ready!';
             const variables: TemplateVariables = {
                 // All variables are missing
             };
@@ -127,8 +138,14 @@ describe('TemplateRendererService', () => {
             const result = await service.renderTemplate(template, variables);
 
             expect(result.success).toBe(false);
-            expect(result.error).toBe('Отсутствуют переменные: name, orderNumber, store');
-            expect(result.missingVariables).toEqual(['name', 'orderNumber', 'store']);
+            expect(result.error).toBe(
+                'Отсутствуют переменные: name, orderNumber, store',
+            );
+            expect(result.missingVariables).toEqual([
+                'name',
+                'orderNumber',
+                'store',
+            ]);
         });
 
         it('should handle template with no variables', async () => {
@@ -138,7 +155,9 @@ describe('TemplateRendererService', () => {
             const result = await service.renderTemplate(template, variables);
 
             expect(result.success).toBe(true);
-            expect(result.content).toBe('This is a static template with no variables.');
+            expect(result.content).toBe(
+                'This is a static template with no variables.',
+            );
             expect(result.variables).toEqual([]);
         });
 
@@ -159,7 +178,8 @@ describe('TemplateRendererService', () => {
 
     describe('validateTemplate', () => {
         it('should validate correct template', () => {
-            const template = 'Hello {{name}}, your order {{orderNumber}} is ready!';
+            const template =
+                'Hello {{name}}, your order {{orderNumber}} is ready!';
             const result = service.validateTemplate(template);
 
             expect(result.valid).toBe(true);
@@ -180,14 +200,18 @@ describe('TemplateRendererService', () => {
             const result = service.validateTemplate('');
 
             expect(result.valid).toBe(false);
-            expect(result.errors).toContain('Шаблон должен быть непустой строкой');
+            expect(result.errors).toContain(
+                'Шаблон должен быть непустой строкой',
+            );
         });
 
         it('should reject null template', () => {
             const result = service.validateTemplate(null as unknown as string);
 
             expect(result.valid).toBe(false);
-            expect(result.errors).toContain('Шаблон должен быть непустой строкой');
+            expect(result.errors).toContain(
+                'Шаблон должен быть непустой строкой',
+            );
         });
 
         it('should reject template with unbalanced braces', () => {
@@ -195,7 +219,9 @@ describe('TemplateRendererService', () => {
             const result = service.validateTemplate(template);
 
             expect(result.valid).toBe(false);
-            expect(result.errors).toContain('Несбалансированные фигурные скобки в шаблоне');
+            expect(result.errors).toContain(
+                'Несбалансированные фигурные скобки в шаблоне',
+            );
         });
 
         it('should reject template with empty variables', () => {
@@ -203,7 +229,9 @@ describe('TemplateRendererService', () => {
             const result = service.validateTemplate(template);
 
             expect(result.valid).toBe(false);
-            expect(result.errors).toContain('Найдены пустые переменные в шаблоне');
+            expect(result.errors).toContain(
+                'Найдены пустые переменные в шаблоне',
+            );
         });
 
         it('should handle multiple validation errors', () => {
@@ -212,14 +240,19 @@ describe('TemplateRendererService', () => {
 
             expect(result.valid).toBe(false);
             expect(result.errors).toHaveLength(2);
-            expect(result.errors).toContain('Найдены пустые переменные в шаблоне');
-            expect(result.errors).toContain('Несбалансированные фигурные скобки в шаблоне');
+            expect(result.errors).toContain(
+                'Найдены пустые переменные в шаблоне',
+            );
+            expect(result.errors).toContain(
+                'Несбалансированные фигурные скобки в шаблоне',
+            );
         });
     });
 
     describe('extractVariables', () => {
         it('should extract variables from template', () => {
-            const template = 'Hello {{name}}, your order {{orderNumber}} is ready!';
+            const template =
+                'Hello {{name}}, your order {{orderNumber}} is ready!';
             const variables = service.extractVariables(template);
 
             expect(variables).toEqual(['name', 'orderNumber']);
@@ -246,13 +279,16 @@ describe('TemplateRendererService', () => {
         });
 
         it('should return empty array for null template', () => {
-            const variables = service.extractVariables(null as unknown as string);
+            const variables = service.extractVariables(
+                null as unknown as string,
+            );
 
             expect(variables).toEqual([]);
         });
 
         it('should handle variables with spaces', () => {
-            const template = 'Hello {{ name }}, your order {{ orderNumber }} is ready!';
+            const template =
+                'Hello {{ name }}, your order {{ orderNumber }} is ready!';
             const variables = service.extractVariables(template);
 
             expect(variables).toEqual(['name', 'orderNumber']);
@@ -261,21 +297,24 @@ describe('TemplateRendererService', () => {
 
     describe('sanitizeTemplate', () => {
         it('should sanitize template by removing dangerous HTML tags', () => {
-            const template = 'Hello {{name}}! <script>alert("xss")</script> Your order is ready.';
+            const template =
+                'Hello {{name}}! <script>alert("xss")</script> Your order is ready.';
             const sanitized = service.sanitizeTemplate(template);
 
             expect(sanitized).toBe('Hello {{name}}! Your order is ready.');
         });
 
         it('should remove iframe tags', () => {
-            const template = 'Hello {{name}}! <iframe src="malicious.com"></iframe> Your order is ready.';
+            const template =
+                'Hello {{name}}! <iframe src="malicious.com"></iframe> Your order is ready.';
             const sanitized = service.sanitizeTemplate(template);
 
             expect(sanitized).toBe('Hello {{name}}! Your order is ready.');
         });
 
         it('should remove object and embed tags', () => {
-            const template = 'Hello {{name}}! <object data="malicious.swf"></object> <embed src="malicious.swf"> Your order is ready.';
+            const template =
+                'Hello {{name}}! <object data="malicious.swf"></object> <embed src="malicious.swf"> Your order is ready.';
             const sanitized = service.sanitizeTemplate(template);
 
             expect(sanitized).toBe('Hello {{name}}! Your order is ready.');
@@ -295,16 +334,21 @@ describe('TemplateRendererService', () => {
         });
 
         it('should return empty string for null template', () => {
-            const sanitized = service.sanitizeTemplate(null as unknown as string);
+            const sanitized = service.sanitizeTemplate(
+                null as unknown as string,
+            );
 
             expect(sanitized).toBe('');
         });
 
         it('should preserve template variables during sanitization', () => {
-            const template = 'Hello {{name}}, your order {{orderNumber}} is ready!';
+            const template =
+                'Hello {{name}}, your order {{orderNumber}} is ready!';
             const sanitized = service.sanitizeTemplate(template);
 
-            expect(sanitized).toBe('Hello {{name}}, your order {{orderNumber}} is ready!');
+            expect(sanitized).toBe(
+                'Hello {{name}}, your order {{orderNumber}} is ready!',
+            );
         });
     });
 
@@ -318,7 +362,9 @@ describe('TemplateRendererService', () => {
 
     describe('Error handling', () => {
         it('should handle errors gracefully in renderTemplate', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleSpy = jest
+                .spyOn(console, 'error')
+                .mockImplementation();
 
             const template = 'Hello {{name}}!';
             const variables: TemplateVariables = { name: 'John' };
@@ -337,7 +383,9 @@ describe('TemplateRendererService', () => {
         });
 
         it('should handle non-Error exceptions in renderTemplate', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleSpy = jest
+                .spyOn(console, 'error')
+                .mockImplementation();
 
             const template = 'Hello {{name}}!';
             const variables: TemplateVariables = { name: 'John' };
@@ -356,7 +404,9 @@ describe('TemplateRendererService', () => {
         });
 
         it('should handle errors in validateTemplate', () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleSpy = jest
+                .spyOn(console, 'error')
+                .mockImplementation();
 
             const template = 'Hello {{name}}!';
 
@@ -368,7 +418,9 @@ describe('TemplateRendererService', () => {
             const result = service.validateTemplate(template);
 
             expect(result.valid).toBe(false);
-            expect(result.errors).toContain('Ошибка валидации: Extraction error');
+            expect(result.errors).toContain(
+                'Ошибка валидации: Extraction error',
+            );
 
             consoleSpy.mockRestore();
         });
@@ -402,16 +454,19 @@ describe('TemplateRendererService', () => {
         });
 
         it('should handle variables with special characters', async () => {
-            const template = 'Hello {{user-name}}, your order {{order_number}} is ready!';
+            const template =
+                'Hello {{user-name}}, your order {{order_number}} is ready!';
             const variables: TemplateVariables = {
                 'user-name': 'John Doe',
-                'order_number': '12345',
+                order_number: '12345',
             };
 
             const result = await service.renderTemplate(template, variables);
 
             expect(result.success).toBe(true);
-            expect(result.content).toBe('Hello John Doe, your order 12345 is ready!');
+            expect(result.content).toBe(
+                'Hello John Doe, your order 12345 is ready!',
+            );
         });
     });
 });

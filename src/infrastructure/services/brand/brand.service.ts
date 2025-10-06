@@ -27,7 +27,8 @@ export class BrandService implements IBrandService {
     public async getListAllBrandsByCategory(
         categoryId: number,
     ): Promise<ListAllBrandsByCategoryResponse[]> {
-        const brands = await this.brandRepository.findListAllBrandsByCategory(categoryId);
+        const brands =
+            await this.brandRepository.findListAllBrandsByCategory(categoryId);
         return brands;
     }
 

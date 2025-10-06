@@ -5,7 +5,9 @@ import { authLoginAs } from '../../../../../tests/setup/auth';
 
 describe('User Verification Integration Tests', () => {
     let app: INestApplication;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let userToken: string;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let adminToken: string;
 
     beforeAll(async () => {
@@ -21,7 +23,7 @@ describe('User Verification Integration Tests', () => {
 
         app = await setupTestApp();
         await app.init();
-        
+
         // Получаем токены для тестирования
         userToken = await authLoginAs(app, 'user');
         adminToken = await authLoginAs(app, 'admin');
@@ -46,7 +48,7 @@ describe('User Verification Integration Tests', () => {
         it('200: email verification request with auth', async () => {
             // Получаем свежий токен для этого теста
             const freshToken = await authLoginAs(app, 'user');
-            
+
             await request(app.getHttpServer())
                 .post('/online-store/user/verify/email/request')
                 .set('Authorization', `Bearer ${freshToken}`)
@@ -56,7 +58,7 @@ describe('User Verification Integration Tests', () => {
         it('200: phone verification request with auth', async () => {
             // Получаем свежий токен для этого теста
             const freshToken = await authLoginAs(app, 'user');
-            
+
             await request(app.getHttpServer())
                 .post('/online-store/user/verify/phone/request')
                 .set('Authorization', `Bearer ${freshToken}`)
@@ -66,7 +68,7 @@ describe('User Verification Integration Tests', () => {
         it('400: invalid verification codes', async () => {
             // Получаем свежий токен для этого теста
             const freshToken = await authLoginAs(app, 'user');
-            
+
             await request(app.getHttpServer())
                 .post('/online-store/user/verify/email/confirm')
                 .set('Authorization', `Bearer ${freshToken}`)
@@ -80,25 +82,25 @@ describe('User Verification Integration Tests', () => {
                 .expect(400);
         });
 
-            it('200: admin can verify user email/phone', async () => {
-                // Получаем свежий admin токен для этого теста
-                const freshAdminToken = await authLoginAs(app, 'admin');
-                
-                await request(app.getHttpServer())
-                    .patch('/online-store/user/verify/email/13')
-                    .set('Authorization', `Bearer ${freshAdminToken}`)
-                    .expect(200);
+        it('200: admin can verify user email/phone', async () => {
+            // Получаем свежий admin токен для этого теста
+            const freshAdminToken = await authLoginAs(app, 'admin');
 
-                await request(app.getHttpServer())
-                    .patch('/online-store/user/verify/phone/13')
-                    .set('Authorization', `Bearer ${freshAdminToken}`)
-                    .expect(200);
-            });
+            await request(app.getHttpServer())
+                .patch('/online-store/user/verify/email/13')
+                .set('Authorization', `Bearer ${freshAdminToken}`)
+                .expect(200);
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/verify/phone/13')
+                .set('Authorization', `Bearer ${freshAdminToken}`)
+                .expect(200);
+        });
 
         it('404: admin cannot verify non-existent user', async () => {
             // Получаем свежий admin токен для этого теста
             const freshAdminToken = await authLoginAs(app, 'admin');
-            
+
             await request(app.getHttpServer())
                 .patch('/online-store/user/verify/email/99999')
                 .set('Authorization', `Bearer ${freshAdminToken}`)

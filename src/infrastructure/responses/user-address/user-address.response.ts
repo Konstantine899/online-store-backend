@@ -31,65 +31,65 @@ export class UserAddressResponse implements IUserAddressResponse {
         COUNTRY: 'Россия',
         IS_DEFAULT: true,
     } as const;
-    @ApiProperty({ 
-        example: UserAddressResponse.API_EXAMPLES.ID, 
-        description: 'Идентификатор адреса' 
+    @ApiProperty({
+        example: UserAddressResponse.API_EXAMPLES.ID,
+        description: 'Идентификатор адреса',
     })
     declare readonly id: number;
 
-    @ApiProperty({ 
-        example: UserAddressResponse.API_EXAMPLES.USER_ID, 
-        description: 'Идентификатор пользователя' 
+    @ApiProperty({
+        example: UserAddressResponse.API_EXAMPLES.USER_ID,
+        description: 'Идентификатор пользователя',
     })
     declare readonly user_id: number;
 
-    @ApiProperty({ 
-        example: UserAddressResponse.API_EXAMPLES.TITLE, 
-        description: 'Название адреса' 
+    @ApiProperty({
+        example: UserAddressResponse.API_EXAMPLES.TITLE,
+        description: 'Название адреса',
     })
     declare readonly title: string;
 
-    @ApiProperty({ 
-        example: UserAddressResponse.API_EXAMPLES.STREET, 
-        description: 'Улица' 
+    @ApiProperty({
+        example: UserAddressResponse.API_EXAMPLES.STREET,
+        description: 'Улица',
     })
     declare readonly street: string;
 
-    @ApiProperty({ 
-        example: UserAddressResponse.API_EXAMPLES.HOUSE, 
-        description: 'Дом' 
+    @ApiProperty({
+        example: UserAddressResponse.API_EXAMPLES.HOUSE,
+        description: 'Дом',
     })
     declare readonly house: string;
 
-    @ApiProperty({ 
-        example: UserAddressResponse.API_EXAMPLES.APARTMENT, 
-        description: 'Квартира', 
-        required: false 
+    @ApiProperty({
+        example: UserAddressResponse.API_EXAMPLES.APARTMENT,
+        description: 'Квартира',
+        required: false,
     })
     declare readonly apartment?: string;
 
-    @ApiProperty({ 
-        example: UserAddressResponse.API_EXAMPLES.CITY, 
-        description: 'Город' 
+    @ApiProperty({
+        example: UserAddressResponse.API_EXAMPLES.CITY,
+        description: 'Город',
     })
     declare readonly city: string;
 
-    @ApiProperty({ 
-        example: UserAddressResponse.API_EXAMPLES.POSTAL_CODE, 
-        description: 'Почтовый индекс', 
-        required: false 
+    @ApiProperty({
+        example: UserAddressResponse.API_EXAMPLES.POSTAL_CODE,
+        description: 'Почтовый индекс',
+        required: false,
     })
     declare readonly postal_code?: string;
 
-    @ApiProperty({ 
-        example: UserAddressResponse.API_EXAMPLES.COUNTRY, 
-        description: 'Страна' 
+    @ApiProperty({
+        example: UserAddressResponse.API_EXAMPLES.COUNTRY,
+        description: 'Страна',
     })
     declare readonly country: string;
 
-    @ApiProperty({ 
-        example: UserAddressResponse.API_EXAMPLES.IS_DEFAULT, 
-        description: 'Основной адрес' 
+    @ApiProperty({
+        example: UserAddressResponse.API_EXAMPLES.IS_DEFAULT,
+        description: 'Основной адрес',
     })
     declare readonly is_default: boolean;
 }
@@ -101,7 +101,7 @@ export type GetUserAddressResponse = UserAddressResponse;
 
 export class RemoveUserAddressResponse implements IRemoveUserAddressResponse {
     private static readonly SUCCESS_MESSAGE = 'Адрес успешно удалён';
-    
+
     @ApiProperty({ example: RemoveUserAddressResponse.SUCCESS_MESSAGE })
     declare readonly message: string;
 }

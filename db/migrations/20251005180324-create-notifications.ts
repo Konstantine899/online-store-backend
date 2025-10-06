@@ -24,9 +24,9 @@ const migration: Migration = {
             user_id: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
-                references: { 
-                    model: 'user', 
-                    key: 'id' 
+                references: {
+                    model: 'user',
+                    key: 'id',
                 },
                 onDelete: 'CASCADE',
                 onUpdate: 'CASCADE',
@@ -52,7 +52,13 @@ const migration: Migration = {
                 allowNull: true,
             },
             status: {
-                type: Sequelize.ENUM('pending', 'sent', 'delivered', 'read', 'failed'),
+                type: Sequelize.ENUM(
+                    'pending',
+                    'sent',
+                    'delivered',
+                    'read',
+                    'failed',
+                ),
                 allowNull: false,
                 defaultValue: 'pending',
             },
@@ -87,52 +93,79 @@ const migration: Migration = {
 
         // Создание индексов для производительности
         await queryInterface.addIndex('notifications', ['user_id'], {
-            name: 'idx_notifications_user_id'
+            name: 'idx_notifications_user_id',
         });
-        
+
         await queryInterface.addIndex('notifications', ['type'], {
-            name: 'idx_notifications_type'
+            name: 'idx_notifications_type',
         });
-        
+
         await queryInterface.addIndex('notifications', ['status'], {
-            name: 'idx_notifications_status'
+            name: 'idx_notifications_status',
         });
-        
+
         await queryInterface.addIndex('notifications', ['template_name'], {
-            name: 'idx_notifications_template_name'
+            name: 'idx_notifications_template_name',
         });
-        
+
         await queryInterface.addIndex('notifications', ['is_read'], {
-            name: 'idx_notifications_is_read'
+            name: 'idx_notifications_is_read',
         });
-        
+
         await queryInterface.addIndex('notifications', ['is_archived'], {
-            name: 'idx_notifications_is_archived'
+            name: 'idx_notifications_is_archived',
         });
-        
+
         await queryInterface.addIndex('notifications', ['created_at'], {
-            name: 'idx_notifications_created_at'
+            name: 'idx_notifications_created_at',
         });
-        
+
         await queryInterface.addIndex('notifications', ['user_id', 'status'], {
-            name: 'idx_notifications_user_status'
+            name: 'idx_notifications_user_status',
         });
     },
 
     async down(queryInterface: QueryInterface): Promise<void> {
         // Удаление foreign key constraint
-        await queryInterface.removeConstraint('notifications', 'notifications_user_id_fkey');
-        
+        await queryInterface.removeConstraint(
+            'notifications',
+            'notifications_user_id_fkey',
+        );
+
         // Удаление индексов
-        await queryInterface.removeIndex('notifications', 'idx_notifications_user_id');
-        await queryInterface.removeIndex('notifications', 'idx_notifications_type');
-        await queryInterface.removeIndex('notifications', 'idx_notifications_status');
-        await queryInterface.removeIndex('notifications', 'idx_notifications_template_name');
-        await queryInterface.removeIndex('notifications', 'idx_notifications_is_read');
-        await queryInterface.removeIndex('notifications', 'idx_notifications_is_archived');
-        await queryInterface.removeIndex('notifications', 'idx_notifications_created_at');
-        await queryInterface.removeIndex('notifications', 'idx_notifications_user_status');
-        
+        await queryInterface.removeIndex(
+            'notifications',
+            'idx_notifications_user_id',
+        );
+        await queryInterface.removeIndex(
+            'notifications',
+            'idx_notifications_type',
+        );
+        await queryInterface.removeIndex(
+            'notifications',
+            'idx_notifications_status',
+        );
+        await queryInterface.removeIndex(
+            'notifications',
+            'idx_notifications_template_name',
+        );
+        await queryInterface.removeIndex(
+            'notifications',
+            'idx_notifications_is_read',
+        );
+        await queryInterface.removeIndex(
+            'notifications',
+            'idx_notifications_is_archived',
+        );
+        await queryInterface.removeIndex(
+            'notifications',
+            'idx_notifications_created_at',
+        );
+        await queryInterface.removeIndex(
+            'notifications',
+            'idx_notifications_user_status',
+        );
+
         // Удаление таблицы
         await queryInterface.dropTable('notifications');
     },

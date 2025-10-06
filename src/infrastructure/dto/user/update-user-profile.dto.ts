@@ -1,10 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import {
-    IsOptional,
-    IsString,
-    MaxLength,
-    MinLength,
-} from 'class-validator';
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { IsSanitizedString } from '@app/infrastructure/common/validators/sanitize-string.validator';
 
 export class UpdateUserProfileDto {
@@ -32,4 +27,3 @@ export class UpdateUserProfileDto {
     @IsSanitizedString({ message: 'Фамилия содержит недопустимые символы' })
     declare readonly lastName?: string;
 }
-

@@ -36,11 +36,16 @@ export interface IUserRepository {
 
     updatePhone(userId: number, phone: string): Promise<UserModel>;
 
-    updateFlags(userId: number, dto: UpdateUserFlagsDto): Promise<UserModel | null>;
-    updatePreferences(userId: number, dto: UpdateUserPreferencesDto): Promise<UserModel | null>;
+    updateFlags(
+        userId: number,
+        dto: UpdateUserFlagsDto,
+    ): Promise<UserModel | null>;
+    updatePreferences(
+        userId: number,
+        dto: UpdateUserPreferencesDto,
+    ): Promise<UserModel | null>;
     verifyEmail(userId: number): Promise<UserModel | null>;
     verifyPhone(userId: number): Promise<UserModel | null>;
-
 
     // User Statistics Methods
     getUserStats(): Promise<{

@@ -70,8 +70,14 @@ const migration: Migration = {
     },
 
     async down(queryInterface: QueryInterface): Promise<void> {
-        await queryInterface.removeIndex('category', 'idx_category_name_unique');
-        await queryInterface.removeIndex('category', 'idx_category_slug_unique');
+        await queryInterface.removeIndex(
+            'category',
+            'idx_category_name_unique',
+        );
+        await queryInterface.removeIndex(
+            'category',
+            'idx_category_slug_unique',
+        );
         await queryInterface.removeIndex('category', 'idx_category_is_active');
         await queryInterface.dropTable('category');
     },

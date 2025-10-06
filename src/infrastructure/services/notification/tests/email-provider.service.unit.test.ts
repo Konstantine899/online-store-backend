@@ -272,7 +272,9 @@ describe('EmailProviderService', () => {
     describe('Error handling', () => {
         it('should handle errors gracefully in sendEmail', async () => {
             // Mock console.error to avoid noise in tests
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleSpy = jest
+                .spyOn(console, 'error')
+                .mockImplementation();
 
             const message: EmailMessage = {
                 to: 'test@example.com',
@@ -295,7 +297,9 @@ describe('EmailProviderService', () => {
         });
 
         it('should handle non-Error exceptions in sendEmail', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleSpy = jest
+                .spyOn(console, 'error')
+                .mockImplementation();
 
             const message: EmailMessage = {
                 to: 'test@example.com',

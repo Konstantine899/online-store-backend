@@ -1,12 +1,23 @@
-import { Injectable, NotFoundException, BadRequestException, Logger, Inject } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+    Logger,
+    Inject,
+} from '@nestjs/common';
 import { Op } from 'sequelize';
-import { NotificationModel, NotificationTemplateModel, NotificationType, NotificationStatus } from '@app/domain/models';
-import { 
-    INotificationService, 
-    CreateNotificationDto, 
-    UpdateNotificationDto, 
-    NotificationFilters, 
-    NotificationStatistics 
+import {
+    NotificationModel,
+    NotificationTemplateModel,
+    NotificationType,
+    NotificationStatus,
+} from '@app/domain/models';
+import {
+    INotificationService,
+    CreateNotificationDto,
+    UpdateNotificationDto,
+    NotificationFilters,
+    NotificationStatistics,
 } from '@app/domain/services';
 import { IEmailProvider } from '@app/domain/services';
 import { ISmsProvider } from '@app/domain/services';
@@ -17,12 +28,16 @@ export class NotificationService implements INotificationService {
     private readonly logger = new Logger(NotificationService.name);
 
     constructor(
-        @Inject('IEmailProvider') private readonly emailProvider: IEmailProvider,
+        @Inject('IEmailProvider')
+        private readonly emailProvider: IEmailProvider,
         @Inject('ISmsProvider') private readonly smsProvider: ISmsProvider,
-        @Inject('ITemplateRenderer') private readonly templateRenderer: ITemplateRenderer,
+        @Inject('ITemplateRenderer')
+        private readonly templateRenderer: ITemplateRenderer,
     ) {}
 
-    async createNotification(createDto: CreateNotificationDto): Promise<NotificationModel> {
+    async createNotification(
+        createDto: CreateNotificationDto,
+    ): Promise<NotificationModel> {
         try {
             const notification = await NotificationModel.create({
                 userId: createDto.userId,
@@ -36,19 +51,28 @@ export class NotificationService implements INotificationService {
                 isArchived: false,
             });
 
-            this.logger.log(`Notification created: ${notification.id} for user ${createDto.userId}`);
+            this.logger.log(
+                `Notification created: ${notification.id} for user ${createDto.userId}`,
+            );
             return notification;
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to create notification: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to create notification: ${errorMessage}`,
+                errorStack,
+            );
             throw new BadRequestException('Не удалось создать уведомление');
         }
     }
 
-    async getNotificationById(id: number, userId?: number): Promise<NotificationModel | null> {
+    async getNotificationById(
+        id: number,
+        userId?: number,
+    ): Promise<NotificationModel | null> {
         const whereClause: Record<string, unknown> = { id };
-        
+
         // Тенантская изоляция: пользователи видят только свои уведомления
         if (userId) {
             whereClause.userId = userId;
@@ -56,15 +80,19 @@ export class NotificationService implements INotificationService {
 
         return NotificationModel.findOne({
             where: whereClause,
-            include: [{
-                model: NotificationTemplateModel,
-                as: 'template',
-                required: false,
-            }],
+            include: [
+                {
+                    model: NotificationTemplateModel,
+                    as: 'template',
+                    required: false,
+                },
+            ],
         });
     }
 
-    async getNotifications(filters: NotificationFilters): Promise<{ data: NotificationModel[]; meta: Record<string, unknown> }> {
+    async getNotifications(
+        filters: NotificationFilters,
+    ): Promise<{ data: NotificationModel[]; meta: Record<string, unknown> }> {
         const {
             userId,
             type,
@@ -87,7 +115,8 @@ export class NotificationService implements INotificationService {
         if (status) whereClause.status = status;
         if (templateName) whereClause.templateName = templateName;
         if (typeof isRead === 'boolean') whereClause.isRead = isRead;
-        if (typeof isArchived === 'boolean') whereClause.isArchived = isArchived;
+        if (typeof isArchived === 'boolean')
+            whereClause.isArchived = isArchived;
 
         const offset = (page - 1) * limit;
 
@@ -96,11 +125,13 @@ export class NotificationService implements INotificationService {
             order: [['createdAt', 'DESC']],
             limit,
             offset,
-            include: [{
-                model: NotificationTemplateModel,
-                as: 'template',
-                required: false,
-            }],
+            include: [
+                {
+                    model: NotificationTemplateModel,
+                    as: 'template',
+                    required: false,
+                },
+            ],
         });
 
         const totalPages = Math.ceil(count / limit);
@@ -118,9 +149,13 @@ export class NotificationService implements INotificationService {
         };
     }
 
-    async updateNotification(id: number, updateDto: UpdateNotificationDto, userId?: number): Promise<NotificationModel> {
+    async updateNotification(
+        id: number,
+        updateDto: UpdateNotificationDto,
+        userId?: number,
+    ): Promise<NotificationModel> {
         const whereClause: Record<string, unknown> = { id };
-        
+
         // Тенантская изоляция
         if (userId) {
             whereClause.userId = userId;
@@ -145,7 +180,7 @@ export class NotificationService implements INotificationService {
 
     async deleteNotification(id: number, userId?: number): Promise<void> {
         const whereClause: Record<string, unknown> = { id };
-        
+
         // Тенантская изоляция
         if (userId) {
             whereClause.userId = userId;
@@ -163,30 +198,52 @@ export class NotificationService implements INotificationService {
     }
 
     async markAsRead(id: number, userId: number): Promise<NotificationModel> {
-        return this.updateNotification(id, {
-            isRead: true,
-            readAt: new Date(),
-            status: NotificationStatus.READ,
-        }, userId);
+        return this.updateNotification(
+            id,
+            {
+                isRead: true,
+                readAt: new Date(),
+                status: NotificationStatus.READ,
+            },
+            userId,
+        );
     }
 
     async markAsUnread(id: number, userId: number): Promise<NotificationModel> {
-        return this.updateNotification(id, {
-            isRead: false,
-            readAt: null,
-        }, userId);
+        return this.updateNotification(
+            id,
+            {
+                isRead: false,
+                readAt: null,
+            },
+            userId,
+        );
     }
 
-    async archiveNotification(id: number, userId: number): Promise<NotificationModel> {
-        return this.updateNotification(id, {
-            isArchived: true,
-        }, userId);
+    async archiveNotification(
+        id: number,
+        userId: number,
+    ): Promise<NotificationModel> {
+        return this.updateNotification(
+            id,
+            {
+                isArchived: true,
+            },
+            userId,
+        );
     }
 
-    async unarchiveNotification(id: number, userId: number): Promise<NotificationModel> {
-        return this.updateNotification(id, {
-            isArchived: false,
-        }, userId);
+    async unarchiveNotification(
+        id: number,
+        userId: number,
+    ): Promise<NotificationModel> {
+        return this.updateNotification(
+            id,
+            {
+                isArchived: false,
+            },
+            userId,
+        );
     }
 
     async getUnreadCount(userId: number): Promise<number> {
@@ -199,9 +256,13 @@ export class NotificationService implements INotificationService {
         });
     }
 
-    async getStatistics(userId?: number, period?: string, type?: NotificationType): Promise<NotificationStatistics> {
+    async getStatistics(
+        userId?: number,
+        period?: string,
+        type?: NotificationType,
+    ): Promise<NotificationStatistics> {
         const whereClause: Record<string, unknown> = {};
-        
+
         // Тенантская изоляция
         if (userId) {
             whereClause.userId = userId;
@@ -226,24 +287,41 @@ export class NotificationService implements INotificationService {
         });
 
         const totalSent = notifications.length;
-        const totalDelivered = notifications.filter(n => 
-            [NotificationStatus.DELIVERED, NotificationStatus.READ].includes(n.status)
+        const totalDelivered = notifications.filter((n) =>
+            [NotificationStatus.DELIVERED, NotificationStatus.READ].includes(
+                n.status,
+            ),
         ).length;
-        const totalRead = notifications.filter(n => n.status === NotificationStatus.READ).length;
+        const totalRead = notifications.filter(
+            (n) => n.status === NotificationStatus.READ,
+        ).length;
 
-        const deliveryRate = totalSent > 0 ? (totalDelivered / totalSent) * 100 : 0;
-        const readRate = totalDelivered > 0 ? (totalRead / totalDelivered) * 100 : 0;
+        const deliveryRate =
+            totalSent > 0 ? (totalDelivered / totalSent) * 100 : 0;
+        const readRate =
+            totalDelivered > 0 ? (totalRead / totalDelivered) * 100 : 0;
 
         const byType = {
-            email: notifications.filter(n => n.type === NotificationType.EMAIL).length,
-            push: notifications.filter(n => n.type === NotificationType.PUSH).length,
+            email: notifications.filter(
+                (n) => n.type === NotificationType.EMAIL,
+            ).length,
+            push: notifications.filter((n) => n.type === NotificationType.PUSH)
+                .length,
         };
 
         const byStatus = {
-            sent: notifications.filter(n => n.status === NotificationStatus.SENT).length,
-            delivered: notifications.filter(n => n.status === NotificationStatus.DELIVERED).length,
-            read: notifications.filter(n => n.status === NotificationStatus.READ).length,
-            failed: notifications.filter(n => n.status === NotificationStatus.FAILED).length,
+            sent: notifications.filter(
+                (n) => n.status === NotificationStatus.SENT,
+            ).length,
+            delivered: notifications.filter(
+                (n) => n.status === NotificationStatus.DELIVERED,
+            ).length,
+            read: notifications.filter(
+                (n) => n.status === NotificationStatus.READ,
+            ).length,
+            failed: notifications.filter(
+                (n) => n.status === NotificationStatus.FAILED,
+            ).length,
         };
 
         return {
@@ -257,7 +335,9 @@ export class NotificationService implements INotificationService {
         };
     }
 
-    async sendNotification(createDto: CreateNotificationDto): Promise<NotificationModel> {
+    async sendNotification(
+        createDto: CreateNotificationDto,
+    ): Promise<NotificationModel> {
         // Создаем уведомление
         const notification = await this.createNotification(createDto);
 
@@ -279,28 +359,38 @@ export class NotificationService implements INotificationService {
             return notification;
         } catch (error) {
             // Обновляем статус на неудачное
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
             await this.updateNotification(notification.id, {
                 status: NotificationStatus.FAILED,
                 failedReason: errorMessage,
             });
 
-            this.logger.error(`Failed to send notification: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to send notification: ${errorMessage}`,
+                errorStack,
+            );
             throw error;
         }
     }
 
-    async sendBulkNotifications(notifications: CreateNotificationDto[]): Promise<NotificationModel[]> {
+    async sendBulkNotifications(
+        notifications: CreateNotificationDto[],
+    ): Promise<NotificationModel[]> {
         const results: NotificationModel[] = [];
 
         for (const notificationDto of notifications) {
             try {
-                const notification = await this.sendNotification(notificationDto);
+                const notification =
+                    await this.sendNotification(notificationDto);
                 results.push(notification);
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-                this.logger.error(`Failed to send bulk notification: ${errorMessage}`);
+                const errorMessage =
+                    error instanceof Error ? error.message : 'Unknown error';
+                this.logger.error(
+                    `Failed to send bulk notification: ${errorMessage}`,
+                );
                 // Продолжаем отправку остальных уведомлений
             }
         }
@@ -308,11 +398,15 @@ export class NotificationService implements INotificationService {
         return results;
     }
 
-    async getTemplates(filters?: { type?: NotificationType; isActive?: boolean }): Promise<NotificationTemplateModel[]> {
+    async getTemplates(filters?: {
+        type?: NotificationType;
+        isActive?: boolean;
+    }): Promise<NotificationTemplateModel[]> {
         const whereClause: Record<string, unknown> = {};
 
         if (filters?.type) whereClause.type = filters.type;
-        if (filters?.isActive !== undefined) whereClause.isActive = filters.isActive;
+        if (filters?.isActive !== undefined)
+            whereClause.isActive = filters.isActive;
 
         return NotificationTemplateModel.findAll({
             where: whereClause,
@@ -320,11 +414,20 @@ export class NotificationService implements INotificationService {
         });
     }
 
-    async createTemplate(createDto: Partial<NotificationTemplateModel>): Promise<NotificationTemplateModel> {
-        if (!createDto.name || !createDto.type || !createDto.title || !createDto.message) {
-            throw new BadRequestException('Необходимо указать name, type, title и message для создания шаблона');
+    async createTemplate(
+        createDto: Partial<NotificationTemplateModel>,
+    ): Promise<NotificationTemplateModel> {
+        if (
+            !createDto.name ||
+            !createDto.type ||
+            !createDto.title ||
+            !createDto.message
+        ) {
+            throw new BadRequestException(
+                'Необходимо указать name, type, title и message для создания шаблона',
+            );
         }
-        
+
         const template = await NotificationTemplateModel.create({
             name: createDto.name,
             type: createDto.type,
@@ -336,20 +439,30 @@ export class NotificationService implements INotificationService {
         return template;
     }
 
-    async getTemplateById(id: number): Promise<NotificationTemplateModel | null> {
+    async getTemplateById(
+        id: number,
+    ): Promise<NotificationTemplateModel | null> {
         return NotificationTemplateModel.findByPk(id);
     }
 
-    async getTemplateByName(name: string): Promise<NotificationTemplateModel | null> {
+    async getTemplateByName(
+        name: string,
+    ): Promise<NotificationTemplateModel | null> {
         return NotificationTemplateModel.findOne({
             where: { name, isActive: true },
         });
     }
 
-    async updateTemplate(id: number, updateDto: Partial<NotificationTemplateModel>): Promise<NotificationTemplateModel> {
-        const [affectedCount] = await NotificationTemplateModel.update(updateDto, {
-            where: { id },
-        });
+    async updateTemplate(
+        id: number,
+        updateDto: Partial<NotificationTemplateModel>,
+    ): Promise<NotificationTemplateModel> {
+        const [affectedCount] = await NotificationTemplateModel.update(
+            updateDto,
+            {
+                where: { id },
+            },
+        );
 
         if (affectedCount === 0) {
             throw new NotFoundException(`Шаблон с ID ${id} не найден.`);
@@ -357,7 +470,9 @@ export class NotificationService implements INotificationService {
 
         const updatedTemplate = await this.getTemplateById(id);
         if (!updatedTemplate) {
-            throw new NotFoundException(`Шаблон с ID ${id} не найден после обновления.`);
+            throw new NotFoundException(
+                `Шаблон с ID ${id} не найден после обновления.`,
+            );
         }
         this.logger.log(`Template updated: ${id}`);
         return updatedTemplate;
@@ -374,7 +489,9 @@ export class NotificationService implements INotificationService {
         this.logger.log(`Template deleted: ${id}`);
     }
 
-    async createTemplateFromNotification(notificationId: number): Promise<NotificationTemplateModel> {
+    async createTemplateFromNotification(
+        notificationId: number,
+    ): Promise<NotificationTemplateModel> {
         const notification = await this.getNotificationById(notificationId);
         if (!notification) {
             throw new NotFoundException('Уведомление не найдено');
@@ -393,10 +510,14 @@ export class NotificationService implements INotificationService {
         return template;
     }
 
-    private async sendEmailNotification(notification: NotificationModel): Promise<void> {
+    private async sendEmailNotification(
+        notification: NotificationModel,
+    ): Promise<void> {
         // Mock реализация для разработки
-        this.logger.log(`Mock email sent to user ${notification.userId}: ${notification.title}`);
-        
+        this.logger.log(
+            `Mock email sent to user ${notification.userId}: ${notification.title}`,
+        );
+
         // В реальной реализации здесь будет:
         // const result = await this.emailProvider.sendEmail({
         //     to: user.email,
@@ -405,28 +526,39 @@ export class NotificationService implements INotificationService {
         // });
     }
 
-    private async sendPushNotification(notification: NotificationModel): Promise<void> {
+    private async sendPushNotification(
+        notification: NotificationModel,
+    ): Promise<void> {
         // Mock реализация для разработки
-        this.logger.log(`Mock push notification sent to user ${notification.userId}: ${notification.title}`);
-        
+        this.logger.log(
+            `Mock push notification sent to user ${notification.userId}: ${notification.title}`,
+        );
+
         // В реальной реализации здесь будет интеграция с push-сервисом
     }
 
     private parsePeriod(period: string): number {
         const match = period.match(/^(\d+)([dhms])$/);
         if (!match) {
-            throw new BadRequestException('Неверный формат периода. Используйте: 7d, 24h, 30m, 60s');
+            throw new BadRequestException(
+                'Неверный формат периода. Используйте: 7d, 24h, 30m, 60s',
+            );
         }
 
         const value = parseInt(match[1]);
         const unit = match[2];
 
         switch (unit) {
-            case 'd': return value * 24 * 60 * 60;
-            case 'h': return value * 60 * 60;
-            case 'm': return value * 60;
-            case 's': return value;
-            default: throw new BadRequestException('Неверная единица времени');
+            case 'd':
+                return value * 24 * 60 * 60;
+            case 'h':
+                return value * 60 * 60;
+            case 'm':
+                return value * 60;
+            case 's':
+                return value;
+            default:
+                throw new BadRequestException('Неверная единица времени');
         }
     }
 }

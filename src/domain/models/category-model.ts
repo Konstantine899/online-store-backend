@@ -1,7 +1,13 @@
-import { Column, DataType, HasMany, Model, Table, CreatedAt,
-    UpdatedAt, } from 'sequelize-typescript';
+import {
+    Column,
+    DataType,
+    HasMany,
+    Model,
+    Table,
+    CreatedAt,
+    UpdatedAt,
+} from 'sequelize-typescript';
 import { ProductModel } from './product.model';
-
 
 interface ICategoryModel {
     id: number;
@@ -23,7 +29,6 @@ interface ICategoryCreationAttributes {
     isActive?: boolean;
 }
 
-
 @Table({
     tableName: 'category',
     underscored: true,
@@ -37,10 +42,12 @@ interface ICategoryCreationAttributes {
             where: { isActive: true },
         },
         withProducts: {
-            include: [{
-                model: ProductModel,
-                attributes: ['id', 'name', 'price', 'image'],
-            }],
+            include: [
+                {
+                    model: ProductModel,
+                    attributes: ['id', 'name', 'price', 'image'],
+                },
+            ],
         },
     },
     indexes: [
@@ -60,7 +67,9 @@ interface ICategoryCreationAttributes {
         },
     ],
 })
-export class CategoryModel extends Model<ICategoryModel, ICategoryCreationAttributes> implements ICategoryModel
+export class CategoryModel
+    extends Model<ICategoryModel, ICategoryCreationAttributes>
+    implements ICategoryModel
 {
     @Column({
         type: DataType.INTEGER,
@@ -105,7 +114,10 @@ export class CategoryModel extends Model<ICategoryModel, ICategoryCreationAttrib
             is: /^[a-z0-9\-_]+$/i,
         },
         set(value: string) {
-            this.setDataValue('slug', value?.trim()?.toLowerCase()?.replace(/\s+/g, '-'));
+            this.setDataValue(
+                'slug',
+                value?.trim()?.toLowerCase()?.replace(/\s+/g, '-'),
+            );
         },
     })
     slug!: string;
@@ -126,9 +138,9 @@ export class CategoryModel extends Model<ICategoryModel, ICategoryCreationAttrib
     })
     isActive!: boolean;
 
-    @HasMany(() => ProductModel, { 
+    @HasMany(() => ProductModel, {
         foreignKey: 'category_id',
-        onDelete: 'RESTRICT', 
+        onDelete: 'RESTRICT',
         onUpdate: 'CASCADE',
         hooks: true,
         as: 'products',
@@ -150,7 +162,6 @@ export class CategoryModel extends Model<ICategoryModel, ICategoryCreationAttrib
         field: 'updated_at',
     })
     declare updatedAt: Date;
-    
 
     static async findBySlug(slug: string): Promise<CategoryModel | null> {
         return this.findOne({ where: { slug, isActive: true } });

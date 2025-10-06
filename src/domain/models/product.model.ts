@@ -66,16 +66,20 @@ interface IProduct {
             where: { stock: { [Op.gt]: 0 } },
         },
         withCategory: {
-            include: [{
-                model: CategoryModel,
-                attributes: ['id', 'name', 'slug'],
-            }],
+            include: [
+                {
+                    model: CategoryModel,
+                    attributes: ['id', 'name', 'slug'],
+                },
+            ],
         },
         withBrand: {
-            include: [{
-                model: BrandModel,
-                attributes: ['id', 'name', 'slug'],
-            }],
+            include: [
+                {
+                    model: BrandModel,
+                    attributes: ['id', 'name', 'slug'],
+                },
+            ],
         },
     },
     indexes: [
@@ -174,7 +178,10 @@ export class ProductModel
             is: /^[a-z0-9\-_]+$/i,
         },
         set(value: string) {
-            this.setDataValue('slug', value?.trim()?.toLowerCase()?.replace(/\s+/g, '-'));
+            this.setDataValue(
+                'slug',
+                value?.trim()?.toLowerCase()?.replace(/\s+/g, '-'),
+            );
         },
     })
     slug!: string;
@@ -212,8 +219,8 @@ export class ProductModel
     })
     category_id!: number;
 
-    @BelongsTo(() => CategoryModel, { 
-        foreignKey: 'category_id', 
+    @BelongsTo(() => CategoryModel, {
+        foreignKey: 'category_id',
         onUpdate: 'RESTRICT',
         hooks: true,
         as: 'category',
@@ -227,15 +234,15 @@ export class ProductModel
     })
     brand_id!: number;
 
-    @BelongsTo(() => BrandModel, { 
-        foreignKey: 'brand_id', 
+    @BelongsTo(() => BrandModel, {
+        foreignKey: 'brand_id',
         onUpdate: 'RESTRICT',
         hooks: true,
         as: 'brand',
     })
     brand!: BrandModel;
 
-    @HasMany(() => ProductPropertyModel, { 
+    @HasMany(() => ProductPropertyModel, {
         foreignKey: 'product_id',
         onDelete: 'CASCADE',
         hooks: true,
@@ -287,14 +294,14 @@ export class ProductModel
     }
 
     static async findByCategory(categoryId: number): Promise<ProductModel[]> {
-        return this.scope(['active', 'withCategory']).findAll({ 
-            where: { category_id: categoryId } 
+        return this.scope(['active', 'withCategory']).findAll({
+            where: { category_id: categoryId },
         });
     }
 
     static async findByBrand(brandId: number): Promise<ProductModel[]> {
-        return this.scope(['active', 'withBrand']).findAll({ 
-            where: { brand_id: brandId } 
+        return this.scope(['active', 'withBrand']).findAll({
+            where: { brand_id: brandId },
         });
     }
 }

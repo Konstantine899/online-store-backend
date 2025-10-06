@@ -25,8 +25,8 @@ interface IOrderModel {
     items: OrderItemModel[];
     user_id: number;
     user: UserModel;
-    createdAt: Date; 
-    updatedAt: Date; 
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 interface IOrderCreationAttributes {
@@ -66,17 +66,21 @@ interface IOrderCreationAttributes {
         }),
         // Scope для заказов с элементами
         withItems: {
-            include: [{
-                model: OrderItemModel,
-                attributes: ['id', 'name', 'price', 'quantity'],
-            }],
+            include: [
+                {
+                    model: OrderItemModel,
+                    attributes: ['id', 'name', 'price', 'quantity'],
+                },
+            ],
         },
         // Scope для заказов с пользователем
         withUser: {
-            include: [{
-                model: UserModel,
-                attributes: ['id', 'email', 'name'],
-            }],
+            include: [
+                {
+                    model: UserModel,
+                    attributes: ['id', 'email', 'name'],
+                },
+            ],
         },
         // Scope для аналитики по сумме
         byAmountRange: (min: number, max: number) => ({
@@ -88,7 +92,10 @@ interface IOrderCreationAttributes {
         }),
     },
 })
-export class OrderModel extends Model<OrderModel, IOrderCreationAttributes> implements IOrderModel {
+export class OrderModel
+    extends Model<OrderModel, IOrderCreationAttributes>
+    implements IOrderModel
+{
     @Column({
         type: DataType.INTEGER,
         unique: true,
@@ -134,18 +141,18 @@ export class OrderModel extends Model<OrderModel, IOrderCreationAttributes> impl
     })
     status!: number;
 
-    @Column({ type: DataType.STRING(2200), allowNull: true, })
+    @Column({ type: DataType.STRING(2200), allowNull: true })
     comment!: string;
 
-    @HasMany(() => OrderItemModel, { onDelete: 'CASCADE',onUpdate: 'CASCADE', })
+    @HasMany(() => OrderItemModel, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
     items!: OrderItemModel[];
 
     @ForeignKey(() => UserModel)
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
-        onUpdate: 'CASCADE', 
-        onDelete: 'CASCADE', 
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
     })
     user_id!: number;
 

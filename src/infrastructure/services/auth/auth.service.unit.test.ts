@@ -49,7 +49,7 @@ const mockRequest = {
     headers: { authorization: 'Bearer mock.token' },
     signedCookies: {},
     cookies: {},
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any;
 
 describe('AuthService', () => {
@@ -170,7 +170,10 @@ describe('AuthService', () => {
     describe('login', () => {
         beforeEach(() => {
             // Настройка bcrypt.compare для успешного сравнения паролей
-            jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(true));        });
+            jest.spyOn(bcrypt, 'compare').mockImplementation(() =>
+                Promise.resolve(true),
+            );
+        });
 
         afterEach(() => {
             jest.restoreAllMocks();
@@ -204,7 +207,9 @@ describe('AuthService', () => {
 
         it('должен выбросить UnauthorizedException для несуществующего email', async () => {
             // Arrange
-            userService.findUserByEmail.mockResolvedValue(null as unknown as UserModel);
+            userService.findUserByEmail.mockResolvedValue(
+                null as unknown as UserModel,
+            );
 
             // Act & Assert
             await expect(service.login(validUserDto)).rejects.toThrow(
@@ -221,7 +226,9 @@ describe('AuthService', () => {
         it('должен выбросить UnauthorizedException для неверного пароля', async () => {
             // Arrange
             userService.findUserByEmail.mockResolvedValue(mockUser);
-            jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(false));
+            jest.spyOn(bcrypt, 'compare').mockImplementation(() =>
+                Promise.resolve(false),
+            );
             // Act & Assert
             await expect(service.login(validUserDto)).rejects.toThrow(
                 new UnauthorizedException({
@@ -245,7 +252,11 @@ describe('AuthService', () => {
 
     describe('logout', () => {
         const refreshDto = { refreshToken: mockRefreshToken };
-        const mockPayload = { jti: 123, sub: mockUser.id, email: 'test@example.com'  };
+        const mockPayload = {
+            jti: 123,
+            sub: mockUser.id,
+            email: 'test@example.com',
+        };
 
         it('должен успешно выполнить logout', async () => {
             // Arrange
@@ -301,7 +312,7 @@ describe('AuthService', () => {
         const mockRotateResult = {
             accessToken: 'new.access.token',
             refreshToken: 'new.refresh.token',
-            user: mockUser
+            user: mockUser,
         };
 
         beforeEach(() => {
@@ -377,7 +388,9 @@ describe('AuthService', () => {
         });
 
         it('должен обработать null значения в зависимостях', async () => {
-            userService.findUserByEmail.mockResolvedValue(null as unknown as UserModel);
+            userService.findUserByEmail.mockResolvedValue(
+                null as unknown as UserModel,
+            );
 
             await expect(service.login(validUserDto)).rejects.toThrow(
                 UnauthorizedException,
@@ -407,7 +420,9 @@ describe('AuthService', () => {
             // Arrange
             userService.findUserByEmail.mockResolvedValue(mockUser);
             userService.findAuthenticatedUser.mockResolvedValue(mockUser);
-            jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(true));
+            jest.spyOn(bcrypt, 'compare').mockImplementation(() =>
+                Promise.resolve(true),
+            );
             tokenService.generateAccessToken.mockResolvedValue(mockAccessToken);
             tokenService.generateRefreshToken.mockResolvedValue(
                 mockRefreshToken,

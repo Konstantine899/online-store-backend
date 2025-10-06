@@ -17,7 +17,6 @@ export type UserCreationAttributes = Optional<
     'id' | 'created_at' | 'updated_at'
 >;
 
-
 export interface UserAddressAttributes {
     id: number;
     user_id: number;
@@ -35,7 +34,13 @@ export interface UserAddressAttributes {
 
 export type UserAddressCreationAttributes = Optional<
     UserAddressAttributes,
-    'id' | 'apartment' | 'postal_code' | 'country' | 'is_default' | 'created_at' | 'updated_at'
+    | 'id'
+    | 'apartment'
+    | 'postal_code'
+    | 'country'
+    | 'is_default'
+    | 'created_at'
+    | 'updated_at'
 >;
 
 // В конец блока с интерфейсами моделей:

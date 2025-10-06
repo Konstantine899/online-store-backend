@@ -23,15 +23,21 @@ import { SmsProviderService } from './notification/sms-provider.service';
 import { TemplateRendererService } from './notification/template-renderer.service';
 import { NotificationEventHandler } from '@app/infrastructure/common/events/notification.event-handler';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { UserModel, NotificationModel, NotificationTemplateModel } from '@app/domain/models';
-
-
+import {
+    UserModel,
+    NotificationModel,
+    NotificationTemplateModel,
+} from '@app/domain/models';
 
 @Module({
     imports: [
         JwtModule.registerAsync(jwtConfig()),
         RepositoriesModule,
-        SequelizeModule.forFeature([UserModel, NotificationModel, NotificationTemplateModel]),
+        SequelizeModule.forFeature([
+            UserModel,
+            NotificationModel,
+            NotificationTemplateModel,
+        ]),
         JwtModule,
     ],
     providers: [

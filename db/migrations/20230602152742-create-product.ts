@@ -144,7 +144,10 @@ const migration: Migration = {
             queryInterface.removeIndex('product', 'idx_product_stock'),
             queryInterface.removeIndex('product', 'idx_product_price'),
             queryInterface.removeIndex('product', 'idx_product_rating'),
-            queryInterface.removeIndex('product', 'idx_product_active_category'),
+            queryInterface.removeIndex(
+                'product',
+                'idx_product_active_category',
+            ),
             queryInterface.removeIndex('product', 'idx_product_active_brand'),
             queryInterface.removeIndex('product', 'idx_product_price_rating'),
         ]);

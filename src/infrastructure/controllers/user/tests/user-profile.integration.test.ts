@@ -20,7 +20,7 @@ describe('User Profile Integration Tests', () => {
 
         app = await setupTestApp();
         await app.init();
-        
+
         // Получаем токены для тестирования
         userToken = await authLoginAs(app, 'user');
     });
@@ -31,16 +31,16 @@ describe('User Profile Integration Tests', () => {
 
     // ===== PHONE ENDPOINTS =====
     describe('PATCH /user/profile/phone', () => {
-            it('200: updates phone with valid number', async () => {
-                await request(app.getHttpServer())
-                    .patch('/online-store/user/profile/phone')
-                    .set('Authorization', `Bearer ${userToken}`)
-                    .send({ phone: '+79990000999' })
-                    .expect(200)
-                    .expect(({ body }) => {
-                        expect(body?.data?.phone).toBe('+79990000999');
-                    });
-            });
+        it('200: updates phone with valid number', async () => {
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/phone')
+                .set('Authorization', `Bearer ${userToken}`)
+                .send({ phone: '+79990000999' })
+                .expect(200)
+                .expect(({ body }) => {
+                    expect(body?.data?.phone).toBe('+79990000999');
+                });
+        });
 
         it('400: rejects invalid phone format', async () => {
             await request(app.getHttpServer())
@@ -49,7 +49,9 @@ describe('User Profile Integration Tests', () => {
                 .send({ phone: '8(999)123-45-67' })
                 .expect(400)
                 .expect(({ body }) => {
-                    expect(body.message).toBe('Некорректные данные: обновление телефона');
+                    expect(body.message).toBe(
+                        'Некорректные данные: обновление телефона',
+                    );
                 });
         });
 
@@ -59,22 +61,22 @@ describe('User Profile Integration Tests', () => {
                 .send({ phone: '+79991234567' })
                 .expect(401);
         });
-        
-            it('409: rejects duplicate phone for another user', async () => {
-                const tokenUser = await authLoginAs(app, 'user');
-                await request(app.getHttpServer())
-                    .patch('/online-store/user/profile/phone')
-                    .set('Authorization', `Bearer ${tokenUser}`)
-                    .send({ phone: '+79990000998' })
-                    .expect(200);
 
-                const tokenAdmin = await authLoginAs(app, 'admin');
-                await request(app.getHttpServer())
-                    .patch('/online-store/user/profile/phone')
-                    .set('Authorization', `Bearer ${tokenAdmin}`)
-                    .send({ phone: '+79990000998' })
-                    .expect(409);
-            });
+        it('409: rejects duplicate phone for another user', async () => {
+            const tokenUser = await authLoginAs(app, 'user');
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/phone')
+                .set('Authorization', `Bearer ${tokenUser}`)
+                .send({ phone: '+79990000998' })
+                .expect(200);
+
+            const tokenAdmin = await authLoginAs(app, 'admin');
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/phone')
+                .set('Authorization', `Bearer ${tokenAdmin}`)
+                .send({ phone: '+79990000998' })
+                .expect(409);
+        });
     });
 
     // ===== PROFILE ENDPOINTS =====

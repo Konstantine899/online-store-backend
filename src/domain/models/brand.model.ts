@@ -62,9 +62,7 @@ interface IBrandModel {
                 },
             ],
             attributes: {
-                include: [
-                    ['COUNT(products.id)', 'productsCount'],
-                ],
+                include: [['COUNT(products.id)', 'productsCount']],
             },
             group: ['BrandModel.id'],
         },
@@ -134,7 +132,10 @@ export class BrandModel
             is: /^[a-z0-9\-_]+$/i,
         },
         set(value: string) {
-            this.setDataValue('slug', value?.trim()?.toLowerCase()?.replace(/\s+/g, '-'));
+            this.setDataValue(
+                'slug',
+                value?.trim()?.toLowerCase()?.replace(/\s+/g, '-'),
+            );
         },
     })
     slug!: string;
@@ -165,9 +166,9 @@ export class BrandModel
     })
     logo?: string;
 
-    @HasMany(() => ProductModel, { 
+    @HasMany(() => ProductModel, {
         foreignKey: 'brand_id',
-        onDelete: 'RESTRICT', 
+        onDelete: 'RESTRICT',
         onUpdate: 'RESTRICT',
         hooks: true,
         as: 'products',
@@ -181,8 +182,8 @@ export class BrandModel
     })
     category_id!: number;
 
-    @BelongsTo(() => CategoryModel, { 
-        foreignKey: 'category_id', 
+    @BelongsTo(() => CategoryModel, {
+        foreignKey: 'category_id',
         onUpdate: 'RESTRICT',
         hooks: true,
         as: 'category',
@@ -204,8 +205,8 @@ export class BrandModel
     }
 
     static async findByCategory(categoryId: number): Promise<BrandModel[]> {
-        return this.scope(['active', 'withCategory']).findAll({ 
-            where: { category_id: categoryId } 
+        return this.scope(['active', 'withCategory']).findAll({
+            where: { category_id: categoryId },
         });
     }
 

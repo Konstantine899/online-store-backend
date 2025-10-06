@@ -1,4 +1,9 @@
-import { NotificationModel, NotificationTemplateModel, NotificationType, NotificationStatus } from '@app/domain/models';
+import {
+    NotificationModel,
+    NotificationTemplateModel,
+    NotificationType,
+    NotificationStatus,
+} from '@app/domain/models';
 
 export interface CreateNotificationDto {
     userId: number;
@@ -49,32 +54,64 @@ export interface NotificationStatistics {
 
 export interface INotificationService {
     // CRUD операции
-    createNotification(createDto: CreateNotificationDto): Promise<NotificationModel>;
-    getNotificationById(id: number, userId?: number): Promise<NotificationModel | null>;
-    getNotifications(filters: NotificationFilters): Promise<{ data: NotificationModel[]; meta: Record<string, unknown> }>;
-    updateNotification(id: number, updateDto: UpdateNotificationDto, userId?: number): Promise<NotificationModel>;
+    createNotification(
+        createDto: CreateNotificationDto,
+    ): Promise<NotificationModel>;
+    getNotificationById(
+        id: number,
+        userId?: number,
+    ): Promise<NotificationModel | null>;
+    getNotifications(
+        filters: NotificationFilters,
+    ): Promise<{ data: NotificationModel[]; meta: Record<string, unknown> }>;
+    updateNotification(
+        id: number,
+        updateDto: UpdateNotificationDto,
+        userId?: number,
+    ): Promise<NotificationModel>;
     deleteNotification(id: number, userId?: number): Promise<void>;
 
     // Управление уведомлениями
     markAsRead(id: number, userId: number): Promise<NotificationModel>;
     markAsUnread(id: number, userId: number): Promise<NotificationModel>;
     archiveNotification(id: number, userId: number): Promise<NotificationModel>;
-    unarchiveNotification(id: number, userId: number): Promise<NotificationModel>;
+    unarchiveNotification(
+        id: number,
+        userId: number,
+    ): Promise<NotificationModel>;
 
     // Статистика
     getUnreadCount(userId: number): Promise<number>;
-    getStatistics(userId?: number, period?: string, type?: NotificationType): Promise<NotificationStatistics>;
+    getStatistics(
+        userId?: number,
+        period?: string,
+        type?: NotificationType,
+    ): Promise<NotificationStatistics>;
 
     // Отправка уведомлений
-    sendNotification(createDto: CreateNotificationDto): Promise<NotificationModel>;
-    sendBulkNotifications(notifications: CreateNotificationDto[]): Promise<NotificationModel[]>;
+    sendNotification(
+        createDto: CreateNotificationDto,
+    ): Promise<NotificationModel>;
+    sendBulkNotifications(
+        notifications: CreateNotificationDto[],
+    ): Promise<NotificationModel[]>;
 
     // Работа с шаблонами
-    createTemplate(createDto: Partial<NotificationTemplateModel>): Promise<NotificationTemplateModel>;
+    createTemplate(
+        createDto: Partial<NotificationTemplateModel>,
+    ): Promise<NotificationTemplateModel>;
     getTemplateById(id: number): Promise<NotificationTemplateModel | null>;
     getTemplateByName(name: string): Promise<NotificationTemplateModel | null>;
-    getTemplates(filters?: { type?: NotificationType; isActive?: boolean }): Promise<NotificationTemplateModel[]>;
-    updateTemplate(id: number, updateDto: Partial<NotificationTemplateModel>): Promise<NotificationTemplateModel>;
+    getTemplates(filters?: {
+        type?: NotificationType;
+        isActive?: boolean;
+    }): Promise<NotificationTemplateModel[]>;
+    updateTemplate(
+        id: number,
+        updateDto: Partial<NotificationTemplateModel>,
+    ): Promise<NotificationTemplateModel>;
     deleteTemplate(id: number): Promise<void>;
-    createTemplateFromNotification(notificationId: number): Promise<NotificationTemplateModel>;
+    createTemplateFromNotification(
+        notificationId: number,
+    ): Promise<NotificationTemplateModel>;
 }

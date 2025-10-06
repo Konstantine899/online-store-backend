@@ -11,16 +11,43 @@ import { UserService } from '../user/user.service';
 import {
     AdminGetOrderUserResponse,
     UserGetOrderResponse,
-
 } from '@app/infrastructure/responses';
-import { OrderModel, CartModel, UserModel, OrderItemModel } from '@app/domain/models';
+import {
+    OrderModel,
+    CartModel,
+    UserModel,
+    OrderItemModel,
+} from '@app/domain/models';
 
 // Упрощенные mock объекты
-const mockOrder = { id: 1, name: 'Test User', email: 'test@example.com', phone: '375298918971', address: 'Test Address', amount: 1000, status: 0, comment: 'Test comment', user_id: 1, items: [] } as unknown as OrderModel;
-const mockCart = { id: 1, products: [{ id: 1, name: 'Test Product', price: 500 }] } as unknown as CartModel;
+const mockOrder = {
+    id: 1,
+    name: 'Test User',
+    email: 'test@example.com',
+    phone: '375298918971',
+    address: 'Test Address',
+    amount: 1000,
+    status: 0,
+    comment: 'Test comment',
+    user_id: 1,
+    items: [],
+} as unknown as OrderModel;
+const mockCart = {
+    id: 1,
+    products: [{ id: 1, name: 'Test Product', price: 500 }],
+} as unknown as CartModel;
 const mockEmptyCart = { id: 1, products: [] } as unknown as CartModel;
-const mockUser = { id: 1, email: 'test@example.com', name: 'Test User' } as unknown as UserModel;
-const mockOrderItem = { id: 1, productId: 1, quantity: 2, price: 500 } as unknown as OrderItemModel;
+const mockUser = {
+    id: 1,
+    email: 'test@example.com',
+    name: 'Test User',
+} as unknown as UserModel;
+const mockOrderItem = {
+    id: 1,
+    productId: 1,
+    quantity: 2,
+    price: 500,
+} as unknown as OrderItemModel;
 
 const mockOrderDto: OrderDto = {
     userId: 1,
@@ -40,11 +67,19 @@ describe('OrderService', () => {
     let userRepository: jest.Mocked<UserRepository>;
 
     // Упрощенные helper функции
-    const setupOrder = (orders = [mockOrder]) => orderRepository.adminFindOrderListUser.mockResolvedValue(orders);
-    const setupUser = (user = mockUser) => userRepository.findUserByPkId.mockResolvedValue(user);
-    const setupCart = (cart = mockCart) => cartRepository.findCart.mockResolvedValue(cart);
-    const expectNotFound = async (operation: () => Promise<unknown>, message: string) => {
-        await expect(operation()).rejects.toThrow(new NotFoundException({ status: HttpStatus.NOT_FOUND, message }));
+    const setupOrder = (orders = [mockOrder]) =>
+        orderRepository.adminFindOrderListUser.mockResolvedValue(orders);
+    const setupUser = (user = mockUser) =>
+        userRepository.findUserByPkId.mockResolvedValue(user);
+    const setupCart = (cart = mockCart) =>
+        cartRepository.findCart.mockResolvedValue(cart);
+    const expectNotFound = async (
+        operation: () => Promise<unknown>,
+        message: string,
+    ) => {
+        await expect(operation()).rejects.toThrow(
+            new NotFoundException({ status: HttpStatus.NOT_FOUND, message }),
+        );
     };
 
     beforeEach(async () => {
@@ -105,7 +140,10 @@ describe('OrderService', () => {
 
         it('должен выбросить NotFoundException если список заказов пуст', async () => {
             orderRepository.adminFindOrderListUser.mockResolvedValue([]);
-            await expectNotFound(() => service.adminGetStoreOrderList(), 'Список заказов магазина пуст');
+            await expectNotFound(
+                () => service.adminGetStoreOrderList(),
+                'Список заказов магазина пуст',
+            );
         });
     });
 
@@ -116,18 +154,28 @@ describe('OrderService', () => {
             const result = await service.adminGetOrderListUser(1);
             expect(result).toEqual([mockOrder]);
             expect(userRepository.findUserByPkId).toHaveBeenCalledWith(1);
-            expect(orderRepository.adminFindOrderListUser).toHaveBeenCalledWith(1);
+            expect(orderRepository.adminFindOrderListUser).toHaveBeenCalledWith(
+                1,
+            );
         });
 
         it('должен выбросить NotFoundException если пользователь не найден', async () => {
-            userRepository.findUserByPkId.mockResolvedValue(null as unknown as UserModel);
-            await expectNotFound(() => service.adminGetOrderListUser(999), 'Пользователь не найден в БД');
+            userRepository.findUserByPkId.mockResolvedValue(
+                null as unknown as UserModel,
+            );
+            await expectNotFound(
+                () => service.adminGetOrderListUser(999),
+                'Пользователь не найден в БД',
+            );
         });
 
         it('должен выбросить NotFoundException если список заказов пользователя пуст', async () => {
             setupUser();
             orderRepository.adminFindOrderListUser.mockResolvedValue([]);
-            await expectNotFound(() => service.adminGetOrderListUser(1), 'Список заказов пользователя email: test@example.com пуст');
+            await expectNotFound(
+                () => service.adminGetOrderListUser(1),
+                'Список заказов пользователя email: test@example.com пуст',
+            );
         });
     });
 
@@ -140,21 +188,32 @@ describe('OrderService', () => {
         });
 
         it('должен выбросить NotFoundException если заказ не найден', async () => {
-            orderRepository.adminFindOrderUser.mockResolvedValue(null as unknown as AdminGetOrderUserResponse);
-            await expectNotFound(() => service.adminGetOrderUser(999), 'Заказ не найден');
+            orderRepository.adminFindOrderUser.mockResolvedValue(
+                null as unknown as AdminGetOrderUserResponse,
+            );
+            await expectNotFound(
+                () => service.adminGetOrderUser(999),
+                'Заказ не найден',
+            );
         });
     });
 
     describe('adminCreateOrder', () => {
         it('должен создать новый заказ если у пользователя нет заказов', async () => {
-            orderRepository.findUserAndHisOrders.mockResolvedValue(null as unknown as OrderModel);
+            orderRepository.findUserAndHisOrders.mockResolvedValue(
+                null as unknown as OrderModel,
+            );
             orderRepository.adminCreateOrder.mockResolvedValue(mockOrder);
 
             const result = await service.adminCreateOrder(mockOrderDto);
 
             expect(result).toEqual(mockOrder);
-            expect(orderRepository.findUserAndHisOrders).toHaveBeenCalledWith(1);
-            expect(orderRepository.adminCreateOrder).toHaveBeenCalledWith(mockOrderDto);
+            expect(orderRepository.findUserAndHisOrders).toHaveBeenCalledWith(
+                1,
+            );
+            expect(orderRepository.adminCreateOrder).toHaveBeenCalledWith(
+                mockOrderDto,
+            );
         });
 
         it('должен вернуть существующий заказ если у пользователя уже есть заказы', async () => {
@@ -163,16 +222,18 @@ describe('OrderService', () => {
             const result = await service.adminCreateOrder(mockOrderDto);
 
             expect(result).toEqual(mockOrder);
-            expect(orderRepository.findUserAndHisOrders).toHaveBeenCalledWith(1);
+            expect(orderRepository.findUserAndHisOrders).toHaveBeenCalledWith(
+                1,
+            );
             expect(orderRepository.adminCreateOrder).not.toHaveBeenCalled();
         });
 
         it('должен выбросить ошибку если userId не указан', async () => {
             const dtoWithoutUserId = { ...mockOrderDto, userId: undefined };
 
-            await expect(service.adminCreateOrder(dtoWithoutUserId)).rejects.toThrow(
-                'userId обязательно для создания заказа'
-            );
+            await expect(
+                service.adminCreateOrder(dtoWithoutUserId),
+            ).rejects.toThrow('userId обязательно для создания заказа');
         });
     });
 
@@ -192,11 +253,13 @@ describe('OrderService', () => {
         });
 
         it('должен выбросить NotFoundException если заказ не найден', async () => {
-            orderRepository.findOrder.mockResolvedValue(null as unknown as OrderModel);
+            orderRepository.findOrder.mockResolvedValue(
+                null as unknown as OrderModel,
+            );
 
             await expectNotFound(
                 () => service.adminRemoveOrder(999),
-                'Заказ не найден'
+                'Заказ не найден',
             );
         });
     });
@@ -211,7 +274,10 @@ describe('OrderService', () => {
 
         it('должен выбросить NotFoundException если заказы не найдены', async () => {
             orderRepository.userFindOrderList.mockResolvedValue([]);
-            await expectNotFound(() => service.userGetOrderList(1), 'Заказы не найдены');
+            await expectNotFound(
+                () => service.userGetOrderList(1),
+                'Заказы не найдены',
+            );
         });
     });
 
@@ -224,8 +290,13 @@ describe('OrderService', () => {
         });
 
         it('должен выбросить NotFoundException если заказ не найден', async () => {
-            orderRepository.userFindOrder.mockResolvedValue(null as unknown as UserGetOrderResponse);
-            await expectNotFound(() => service.userGetOrder(999, 1), 'Заказ не найден');
+            orderRepository.userFindOrder.mockResolvedValue(
+                null as unknown as UserGetOrderResponse,
+            );
+            await expectNotFound(
+                () => service.userGetOrder(999, 1),
+                'Заказ не найден',
+            );
         });
     });
 
@@ -241,7 +312,10 @@ describe('OrderService', () => {
             expect(result).toEqual(mockOrder);
             expect(userService.getUser).toHaveBeenCalledWith(1);
             expect(cartRepository.findCart).toHaveBeenCalledWith(1);
-            expect(orderRepository.createOrder).toHaveBeenCalledWith(mockOrderDto, 1);
+            expect(orderRepository.createOrder).toHaveBeenCalledWith(
+                mockOrderDto,
+                1,
+            );
             expect(cartRepository.clearCart).toHaveBeenCalledWith(1);
         });
     });
@@ -258,13 +332,18 @@ describe('OrderService', () => {
             expect(result).toEqual(mockOrder);
             expect(userService.getUser).toHaveBeenCalledWith(1);
             expect(cartRepository.findCart).toHaveBeenCalledWith(1);
-            expect(orderRepository.createOrder).toHaveBeenCalledWith(mockOrderDto, 1);
+            expect(orderRepository.createOrder).toHaveBeenCalledWith(
+                mockOrderDto,
+                1,
+            );
             expect(cartRepository.clearCart).toHaveBeenCalledWith(1);
         });
 
         it('должен выбросить ошибку если userId или cartId не указаны', async () => {
-            await expect(service.guestCreateOrder(mockOrderDto, undefined, undefined)).rejects.toThrow(
-                'userId и cartId обязательны для создания заказа'
+            await expect(
+                service.guestCreateOrder(mockOrderDto, undefined, undefined),
+            ).rejects.toThrow(
+                'userId и cartId обязательны для создания заказа',
             );
         });
     });
@@ -277,23 +356,32 @@ describe('OrderService', () => {
             cartRepository.clearCart.mockResolvedValue(mockCart);
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const result = await (service as any).createOrder(mockOrderDto, 1, 1);
+            const result = await (service as any).createOrder(
+                mockOrderDto,
+                1,
+                1,
+            );
 
             expect(result).toEqual(mockOrder);
             expect(userService.getUser).toHaveBeenCalledWith(1);
             expect(cartRepository.findCart).toHaveBeenCalledWith(1);
-            expect(orderRepository.createOrder).toHaveBeenCalledWith(mockOrderDto, 1);
+            expect(orderRepository.createOrder).toHaveBeenCalledWith(
+                mockOrderDto,
+                1,
+            );
             expect(cartRepository.clearCart).toHaveBeenCalledWith(1);
         });
 
         it('должен выбросить NotFoundException если корзина не найдена', async () => {
             userService.getUser.mockResolvedValue(mockUser);
-            cartRepository.findCart.mockResolvedValue(null as unknown as CartModel);
+            cartRepository.findCart.mockResolvedValue(
+                null as unknown as CartModel,
+            );
 
             await expectNotFound(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 () => (service as any).createOrder(mockOrderDto, 1, 999),
-                'Корзины с id:999 не найдена БД'
+                'Корзины с id:999 не найдена БД',
             );
         });
 
@@ -304,7 +392,7 @@ describe('OrderService', () => {
             await expectNotFound(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 () => (service as any).createOrder(mockOrderDto, 1, 1),
-                'Ваша корзина пуста'
+                'Ваша корзина пуста',
             );
         });
 
@@ -314,7 +402,11 @@ describe('OrderService', () => {
             cartRepository.clearCart.mockResolvedValue(mockCart);
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const result = await (service as any).createOrder(mockOrderDto, 0, 1);
+            const result = await (service as any).createOrder(
+                mockOrderDto,
+                0,
+                1,
+            );
 
             expect(result).toEqual(mockOrder);
             expect(userService.getUser).not.toHaveBeenCalled();
@@ -330,7 +422,7 @@ describe('OrderService', () => {
                 new NotFoundException({
                     status: HttpStatus.NOT_FOUND,
                     message: 'Test message',
-                })
+                }),
             );
         });
     });
@@ -340,7 +432,10 @@ describe('OrderService', () => {
             const zeroAmountOrder = { ...mockOrderDto };
             userService.getUser.mockResolvedValue(mockUser);
             setupCart();
-            orderRepository.createOrder.mockResolvedValue({ ...mockOrder, amount: 0 } as unknown as OrderModel);
+            orderRepository.createOrder.mockResolvedValue({
+                ...mockOrder,
+                amount: 0,
+            } as unknown as OrderModel);
             cartRepository.clearCart.mockResolvedValue(mockCart);
 
             const result = await service.userCreateOrder(zeroAmountOrder, 1, 1);
@@ -352,10 +447,17 @@ describe('OrderService', () => {
             const orderWithoutComment = { ...mockOrderDto, comment: '' };
             userService.getUser.mockResolvedValue(mockUser);
             setupCart();
-            orderRepository.createOrder.mockResolvedValue({ ...mockOrder, comment: '' } as unknown as OrderModel);
+            orderRepository.createOrder.mockResolvedValue({
+                ...mockOrder,
+                comment: '',
+            } as unknown as OrderModel);
             cartRepository.clearCart.mockResolvedValue(mockCart);
 
-            const result = await service.userCreateOrder(orderWithoutComment, 1, 1);
+            const result = await service.userCreateOrder(
+                orderWithoutComment,
+                1,
+                1,
+            );
 
             expect(result.comment).toBe('');
         });
@@ -366,14 +468,18 @@ describe('OrderService', () => {
             const dbError = new Error('Database connection failed');
             orderRepository.adminFindOrderListUser.mockRejectedValue(dbError);
 
-            await expect(service.adminGetStoreOrderList()).rejects.toThrow(dbError);
+            await expect(service.adminGetStoreOrderList()).rejects.toThrow(
+                dbError,
+            );
         });
 
         it('должен корректно обрабатывать ошибки при работе с корзиной', async () => {
             const cartError = new Error('Cart service unavailable');
             cartRepository.findCart.mockRejectedValue(cartError);
 
-            await expect(service.userCreateOrder(mockOrderDto, 1, 1)).rejects.toThrow(cartError);
+            await expect(
+                service.userCreateOrder(mockOrderDto, 1, 1),
+            ).rejects.toThrow(cartError);
         });
     });
 });

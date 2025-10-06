@@ -1,6 +1,9 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
-import { LoginHistoryAttributes, LoginHistoryCreationAttributes } from './types';
+import {
+    LoginHistoryAttributes,
+    LoginHistoryCreationAttributes,
+} from './types';
 import defineUser from './user';
 
 // Precise types for associated user model
@@ -35,7 +38,9 @@ class LoginHistory
     }
 }
 
-export default function defineLoginHistory(sequelize: Sequelize): typeof LoginHistory {
+export default function defineLoginHistory(
+    sequelize: Sequelize,
+): typeof LoginHistory {
     LoginHistory.init(
         {
             id: {

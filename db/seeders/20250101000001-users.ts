@@ -11,7 +11,7 @@ const seeder: Seeder = {
         // Идемпотентность: очищаем таблицы перед вставкой (безопасно для тестовых окружений)
         await queryInterface.bulkDelete('user_role', {}, {});
         await queryInterface.bulkDelete('user', {}, {});
-        
+
         const passwordHash = await bcrypt.hash('Password123!', 10);
         const defaultFlags = {
             is_active: true,
@@ -71,7 +71,7 @@ const seeder: Seeder = {
                 created_at: new Date(),
                 updated_at: new Date(),
             },
-            
+
             // Тенантские роли (управление магазином)
             {
                 email: 'tenant.owner@store.com',
@@ -133,7 +133,7 @@ const seeder: Seeder = {
                 created_at: new Date(),
                 updated_at: new Date(),
             },
-            
+
             // Клиентские роли
             {
                 email: 'vip.customer@example.com',
@@ -199,7 +199,7 @@ const seeder: Seeder = {
                 created_at: new Date(),
                 updated_at: new Date(),
             },
-            
+
             // Тестовые пользователи для integration тестов
             {
                 email: 'user@example.com',
@@ -231,14 +231,20 @@ const seeder: Seeder = {
         await queryInterface.bulkInsert('user', usersToInsert);
 
         // Получаем все роли
-        interface RoleRow { id: number; role: string }
+        interface RoleRow {
+            id: number;
+            role: string;
+        }
         const roles = await queryInterface.sequelize.query<RoleRow>(
             "SELECT id, role FROM role WHERE role IN ('SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE', 'VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST', 'USER', 'ADMIN');",
             { type: QueryTypes.SELECT },
         );
 
         // Получаем созданных пользователей
-        interface UserRow { id: number; email: string }
+        interface UserRow {
+            id: number;
+            email: string;
+        }
         const users = await queryInterface.sequelize.query<UserRow>(
             "SELECT id, email FROM user WHERE email IN ('super.admin@platform.com', 'platform.admin@platform.com', 'tenant.owner@store.com', 'tenant.admin@store.com', 'manager@store.com', 'content.manager@store.com', 'support@store.com', 'vip.customer@example.com', 'wholesale@example.com', 'customer@example.com', 'affiliate@example.com', 'guest@example.com', 'user@example.com', 'admin@example.com');",
             { type: QueryTypes.SELECT },
@@ -264,7 +270,12 @@ const seeder: Seeder = {
 
         // Присваиваем роли через user_role
         const now = new Date();
-        const rowsToInsert: Array<{ role_id: number; user_id: number; created_at: Date; updated_at: Date }> = [];
+        const rowsToInsert: Array<{
+            role_id: number;
+            user_id: number;
+            created_at: Date;
+            updated_at: Date;
+        }> = [];
 
         for (const user of users) {
             const roleName = emailToRoleMap[user.email];
@@ -288,7 +299,9 @@ const seeder: Seeder = {
 
     async down(queryInterface: QueryInterface): Promise<void> {
         // Находим id пользователей
-        interface DownUserRow { id: number }
+        interface DownUserRow {
+            id: number;
+        }
         const users = await queryInterface.sequelize.query<DownUserRow>(
             "SELECT id FROM user WHERE email IN ('super.admin@platform.com', 'platform.admin@platform.com', 'tenant.owner@store.com', 'tenant.admin@store.com', 'manager@store.com', 'content.manager@store.com', 'support@store.com', 'vip.customer@example.com', 'wholesale@example.com', 'customer@example.com', 'affiliate@example.com', 'guest@example.com');",
             { type: QueryTypes.SELECT },
@@ -297,16 +310,32 @@ const seeder: Seeder = {
 
         // Чистим связи и пользователей
         if (userIds.length > 0) {
-            await queryInterface.bulkDelete('user_role', { user_id: userIds }, {});
+            await queryInterface.bulkDelete(
+                'user_role',
+                { user_id: userIds },
+                {},
+            );
         }
-        await queryInterface.bulkDelete('user', { 
-            email: [
-                'super.admin@platform.com', 'platform.admin@platform.com', 'tenant.owner@store.com', 
-                'tenant.admin@store.com', 'manager@store.com', 'content.manager@store.com', 
-                'support@store.com', 'vip.customer@example.com', 'wholesale@example.com', 
-                'customer@example.com', 'affiliate@example.com', 'guest@example.com'
-            ] 
-        }, {});
+        await queryInterface.bulkDelete(
+            'user',
+            {
+                email: [
+                    'super.admin@platform.com',
+                    'platform.admin@platform.com',
+                    'tenant.owner@store.com',
+                    'tenant.admin@store.com',
+                    'manager@store.com',
+                    'content.manager@store.com',
+                    'support@store.com',
+                    'vip.customer@example.com',
+                    'wholesale@example.com',
+                    'customer@example.com',
+                    'affiliate@example.com',
+                    'guest@example.com',
+                ],
+            },
+            {},
+        );
     },
 };
 

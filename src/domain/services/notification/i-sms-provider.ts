@@ -28,6 +28,10 @@ export interface ISmsProvider {
     sendBulkSms(messages: SmsMessage[]): Promise<SmsSendResult[]>;
     validatePhoneNumber(phone: string): boolean;
     getDeliveryReport(messageId: string): Promise<SmsDeliveryReport | null>;
-    getProviderInfo(): { name: string; version: string; capabilities: string[] };
+    getProviderInfo(): {
+        name: string;
+        version: string;
+        capabilities: string[];
+    };
     getBalance(): Promise<number>;
 }

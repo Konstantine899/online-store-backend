@@ -1,4 +1,11 @@
-import { Model, DataTypes, Sequelize, ModelStatic, ModelAttributes, Optional } from 'sequelize';
+import {
+    Model,
+    DataTypes,
+    Sequelize,
+    ModelStatic,
+    ModelAttributes,
+    Optional,
+} from 'sequelize';
 import { TABLE_NAMES } from '../consts';
 import { RefreshTokenModel, RefreshTokenCreationAttributes } from './types';
 
@@ -13,7 +20,11 @@ class RefreshToken
     declare created_at: Date;
     declare updated_at: Date;
 
-    static associate(models: { user: ModelStatic<Model<Record<string, unknown>, Record<string, unknown>>> }): void {
+    static associate(models: {
+        user: ModelStatic<
+            Model<Record<string, unknown>, Record<string, unknown>>
+        >;
+    }): void {
         this.belongsTo(models.user, {
             as: TABLE_NAMES.USER,
             foreignKey: 'user_id',
@@ -59,14 +70,18 @@ export default function defineRefreshToken(
     };
 
     RefreshToken.init(
-        attributes as unknown as ModelAttributes<RefreshToken, Optional<RefreshTokenModel, never>>,
+        attributes as unknown as ModelAttributes<
+            RefreshToken,
+            Optional<RefreshTokenModel, never>
+        >,
         {
-        sequelize,
-        modelName: TABLE_NAMES.REFRESH_TOKEN,
-        tableName: TABLE_NAMES.REFRESH_TOKEN,
-        timestamps: true,
-        underscored: false,
-    });
+            sequelize,
+            modelName: TABLE_NAMES.REFRESH_TOKEN,
+            tableName: TABLE_NAMES.REFRESH_TOKEN,
+            timestamps: true,
+            underscored: false,
+        },
+    );
 
     return RefreshToken;
 }

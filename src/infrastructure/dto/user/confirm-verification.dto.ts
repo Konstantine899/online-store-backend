@@ -6,8 +6,8 @@ export class ConfirmVerificationDto {
     @IsNotEmpty({ message: 'Код обязателен' })
     @IsString({ message: 'Код должен быть строкой' })
     @Length(4, 8, { message: 'Длина кода должна быть от 4 до 8 символов' })
-    @Matches(/^[0-9A-Za-z]+$/, { message: 'Код должен содержать только буквы и цифры' })
+    @Matches(/^[0-9A-Za-z]+$/, {
+        message: 'Код должен содержать только буквы и цифры',
+    })
     declare readonly code: string;
 }
-
-

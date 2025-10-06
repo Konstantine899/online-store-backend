@@ -19,7 +19,7 @@ export class AuthGuard implements CanActivate {
             const { authorization }: IHeaders = request.headers;
             if (!authorization || authorization.trim() === '') {
                 throw new UnauthorizedException({
-                    statusCode: HttpStatus.UNAUTHORIZED, 
+                    statusCode: HttpStatus.UNAUTHORIZED,
                     message: 'Пользователь не авторизован',
                 });
             }

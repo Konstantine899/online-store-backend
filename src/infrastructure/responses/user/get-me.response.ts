@@ -13,7 +13,11 @@ export class GetMeResponse {
     })
     declare email: string;
 
-    @ApiProperty({ example: '+79991234567', description: 'Номер телефона пользователя', nullable: true })
+    @ApiProperty({
+        example: '+79991234567',
+        description: 'Номер телефона пользователя',
+        nullable: true,
+    })
     declare phone?: string;
 
     @ApiProperty({ type: () => [RoleModel] })

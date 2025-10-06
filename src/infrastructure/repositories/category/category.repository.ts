@@ -32,7 +32,10 @@ export class CategoryRepository implements ICategoryRepository {
         dto: CreateCategoryDto,
         imageName: string,
     ): Promise<CreateCategoryResponse> {
-        const category = await this.categoryModel.create({ name: dto.name, image: imageName });
+        const category = await this.categoryModel.create({
+            name: dto.name,
+            image: imageName,
+        });
         return this.mapCategory(category);
     }
 
@@ -43,7 +46,9 @@ export class CategoryRepository implements ICategoryRepository {
 
     public async findCategory(id: number): Promise<CategoryResponse> {
         const found = await this.categoryModel.findByPk(id);
-        return (found ? this.mapCategory(found) : null) as unknown as CategoryResponse;
+        return (found
+            ? this.mapCategory(found)
+            : null) as unknown as CategoryResponse;
     }
 
     public async updateCategory(

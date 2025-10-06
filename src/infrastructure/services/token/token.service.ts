@@ -172,65 +172,77 @@ export class TokenService implements ITokenService {
         return this.refreshTokenRepository.removeRefreshToken(refreshTokenId);
     }
 
-    public async rotateRefreshToken(encodedRefreshToken: string): Promise<{ accessToken: string; refreshToken: string; user: UserModel }> {
+    public async rotateRefreshToken(
+        encodedRefreshToken: string,
+    ): Promise<{ accessToken: string; refreshToken: string; user: UserModel }> {
         const payload = await this.decodeRefreshToken(encodedRefreshToken);
         const userId = Number(payload.sub);
         const tokenId = Number(payload.jti);
 
-        if(!userId || !tokenId){
-            throw new UnprocessableEntityException('Invalid refresh token payload');
+        if (!userId || !tokenId) {
+            throw new UnprocessableEntityException(
+                'Invalid refresh token payload',
+            );
         }
 
         // Ищем токен в БД
-        const storedToken =  await this.refreshTokenRepository.findRefreshTokenById(tokenId);
+        const storedToken =
+            await this.refreshTokenRepository.findRefreshTokenById(tokenId);
 
-        if(!storedToken){
+        if (!storedToken) {
             // Удаляем ВСЕ refresh токены пользователя для безопасности
-            await this.refreshTokenRepository.removeListRefreshTokens(userId).catch(() => {
-                // Игнорируем ошибки при удалении
-            });
-            throw new NotFoundException('Refresh token not found or already used (possible theft detected)');
-    }
-    // Проверяем, что токен принадлежит правильному пользователю
-    if (storedToken.user_id !== userId) {
-        throw new UnprocessableEntityException('Token user mismatch');
-    }
-    //  Проверяем срок действия (если есть поле expires)
-    if (storedToken.expires && storedToken.expires <= new Date()) {
+            await this.refreshTokenRepository
+                .removeListRefreshTokens(userId)
+                .catch(() => {
+                    // Игнорируем ошибки при удалении
+                });
+            throw new NotFoundException(
+                'Refresh token not found or already used (possible theft detected)',
+            );
+        }
+        // Проверяем, что токен принадлежит правильному пользователю
+        if (storedToken.user_id !== userId) {
+            throw new UnprocessableEntityException('Token user mismatch');
+        }
+        //  Проверяем срок действия (если есть поле expires)
+        if (storedToken.expires && storedToken.expires <= new Date()) {
+            await this.refreshTokenRepository.removeRefreshToken(tokenId);
+            throw new UnprocessableEntityException('Refresh token expired');
+        }
+        //  Удаляем старый токен (одноразовость)
         await this.refreshTokenRepository.removeRefreshToken(tokenId);
-        throw new UnprocessableEntityException('Refresh token expired');
+
+        // Загружаем пользователя
+        const user = await this.userRepository.findUserByPkId(userId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+        // Создаём новый refresh токен
+        const ttlSeconds = 60 * 60 * 24 * 30; // 30 дней (можно вынести в конфиг)
+        const newRefreshTokenRecord =
+            await this.refreshTokenRepository.createRefreshToken(
+                user,
+                ttlSeconds,
+            );
+        // Подписываем новый refresh токен
+        const newRefreshTokenOptions: SignOptions = {
+            subject: String(user.id),
+            jwtid: String(newRefreshTokenRecord.id),
+        };
+        const newRefreshToken = await this.jwtService.signAsync(
+            {},
+            newRefreshTokenOptions,
+        );
+
+        // Генерируем новый access токен
+        const accessToken = await this.generateAccessToken(user);
+
+        return {
+            accessToken,
+            refreshToken: newRefreshToken,
+            user,
+        };
     }
-    //  Удаляем старый токен (одноразовость)
-    await this.refreshTokenRepository.removeRefreshToken(tokenId);
-
-    // Загружаем пользователя
-    const user = await this.userRepository.findUserByPkId(userId);
-    if (!user) {
-        throw new NotFoundException('User not found');
-    }
-    // Создаём новый refresh токен
-    const ttlSeconds = 60 * 60 * 24 * 30; // 30 дней (можно вынести в конфиг)
-    const newRefreshTokenRecord = await this.refreshTokenRepository.createRefreshToken(
-        user,
-        ttlSeconds
-    );
-    // Подписываем новый refresh токен
-    const newRefreshTokenOptions: SignOptions = {
-        subject: String(user.id),
-        jwtid: String(newRefreshTokenRecord.id),
-    };
-    const newRefreshToken = await this.jwtService.signAsync({}, newRefreshTokenOptions);
-
-    // Генерируем новый access токен
-    const accessToken = await this.generateAccessToken(user);
-
-    return {
-        accessToken,
-        refreshToken: newRefreshToken,
-        user,
-    };
-
-}
 
     private notFound(message: string): void {
         throw new NotFoundException({

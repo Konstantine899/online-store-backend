@@ -18,7 +18,10 @@ type UserVerificationCodeCreationAttributes = Optional<
 >;
 
 class UserVerificationCode
-    extends Model<UserVerificationCodeAttributes, UserVerificationCodeCreationAttributes>
+    extends Model<
+        UserVerificationCodeAttributes,
+        UserVerificationCodeCreationAttributes
+    >
     implements UserVerificationCodeAttributes
 {
     declare id: number;
@@ -41,7 +44,9 @@ class UserVerificationCode
     }
 }
 
-export default function defineUserVerificationCode(sequelize: Sequelize): typeof UserVerificationCode {
+export default function defineUserVerificationCode(
+    sequelize: Sequelize,
+): typeof UserVerificationCode {
     UserVerificationCode.init(
         {
             id: {
@@ -93,5 +98,3 @@ export default function defineUserVerificationCode(sequelize: Sequelize): typeof
 
     return UserVerificationCode;
 }
-
-

@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ISmsProvider, SmsMessage, SmsSendResult, SmsDeliveryReport } from '@app/domain/services';
+import {
+    ISmsProvider,
+    SmsMessage,
+    SmsSendResult,
+    SmsDeliveryReport,
+} from '@app/domain/services';
 
 @Injectable()
 export class SmsProviderService implements ISmsProvider {
@@ -22,8 +27,10 @@ export class SmsProviderService implements ISmsProvider {
             // Mock отправка SMS
             const messageId = this.generateMessageId();
             const cost = this.calculateCost(message.message);
-            
-            this.logger.log(`Mock SMS sent to ${message.to}: ${message.message.substring(0, 50)}...`);
+
+            this.logger.log(
+                `Mock SMS sent to ${message.to}: ${message.message.substring(0, 50)}...`,
+            );
             this.logger.debug(`SMS cost: ${cost} rubles`);
 
             // Имитация задержки отправки
@@ -31,7 +38,7 @@ export class SmsProviderService implements ISmsProvider {
 
             // В реальной реализации здесь будет интеграция с:
             // - Twilio, SMS.ru, SMSC.ru, AWS SNS и т.д.
-            
+
             return {
                 success: true,
                 messageId,
@@ -40,9 +47,13 @@ export class SmsProviderService implements ISmsProvider {
                 deliveryStatus: 'pending',
             };
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to send SMS: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to send SMS: ${errorMessage}`,
+                errorStack,
+            );
             return {
                 success: false,
                 error: errorMessage,
@@ -61,7 +72,8 @@ export class SmsProviderService implements ISmsProvider {
                 const result = await this.sendSms(message);
                 results.push(result);
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                const errorMessage =
+                    error instanceof Error ? error.message : 'Unknown error';
                 this.logger.error(`Failed to send bulk SMS: ${errorMessage}`);
                 results.push({
                     success: false,
@@ -71,8 +83,10 @@ export class SmsProviderService implements ISmsProvider {
             }
         }
 
-        const successCount = results.filter(r => r.success).length;
-        this.logger.log(`Bulk SMS completed: ${successCount}/${messages.length} sent successfully`);
+        const successCount = results.filter((r) => r.success).length;
+        this.logger.log(
+            `Bulk SMS completed: ${successCount}/${messages.length} sent successfully`,
+        );
 
         return results;
     }
@@ -80,19 +94,26 @@ export class SmsProviderService implements ISmsProvider {
     validatePhoneNumber(phone: string): boolean {
         // Удаляем все нецифровые символы
         const cleanPhone = phone.replace(/\D/g, '');
-        
+
         // Проверяем российские номера (начинаются с 7 или 8)
         const russianPhoneRegex = /^[78]\d{10}$/;
-        
+
         // Проверяем международные номера (начинаются с +)
         const internationalPhoneRegex = /^\+\d{10,15}$/;
-        
-        return russianPhoneRegex.test(cleanPhone) || internationalPhoneRegex.test(phone);
+
+        return (
+            russianPhoneRegex.test(cleanPhone) ||
+            internationalPhoneRegex.test(phone)
+        );
     }
 
-    async getDeliveryReport(messageId: string): Promise<SmsDeliveryReport | null> {
+    async getDeliveryReport(
+        messageId: string,
+    ): Promise<SmsDeliveryReport | null> {
         try {
-            this.logger.debug(`Getting delivery report for message: ${messageId}`);
+            this.logger.debug(
+                `Getting delivery report for message: ${messageId}`,
+            );
 
             // Mock отчет о доставке
             const report: SmsDeliveryReport = {
@@ -104,13 +125,18 @@ export class SmsProviderService implements ISmsProvider {
 
             return report;
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             this.logger.error(`Failed to get delivery report: ${errorMessage}`);
             return null;
         }
     }
 
-    getProviderInfo(): { name: string; version: string; capabilities: string[] } {
+    getProviderInfo(): {
+        name: string;
+        version: string;
+        capabilities: string[];
+    } {
         return {
             name: this.providerName,
             version: this.providerVersion,
@@ -128,7 +154,7 @@ export class SmsProviderService implements ISmsProvider {
 
     async getBalance(): Promise<number> {
         this.logger.debug('Getting SMS provider balance');
-        
+
         // Mock баланс
         return this.mockBalance;
     }
@@ -143,40 +169,45 @@ export class SmsProviderService implements ISmsProvider {
         const hasCyrillic = /[а-яё]/i.test(message);
         const smsLength = hasCyrillic ? 70 : 160;
         const smsCount = Math.ceil(message.length / smsLength);
-        
+
         // Стоимость: 1.5 рубля за SMS
         return smsCount * 1.5;
     }
 
     private delay(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
     // Дополнительные методы для mock провайдера
-    async getSmsHistory(phone?: string, limit: number = 100): Promise<SmsSendResult[]> {
-        this.logger.debug(`Getting SMS history for phone: ${phone || 'all'}, limit: ${limit}`);
-        
+    async getSmsHistory(
+        phone?: string,
+        limit: number = 100,
+    ): Promise<SmsSendResult[]> {
+        this.logger.debug(
+            `Getting SMS history for phone: ${phone || 'all'}, limit: ${limit}`,
+        );
+
         // Mock история SMS
         return [];
     }
 
     async getBlacklist(): Promise<string[]> {
         this.logger.debug('Getting SMS blacklist');
-        
+
         // Mock черный список номеров
         return [];
     }
 
     async addToBlacklist(phone: string): Promise<boolean> {
         this.logger.log(`Adding phone to blacklist: ${phone}`);
-        
+
         // Mock добавление в черный список
         return true;
     }
 
     async removeFromBlacklist(phone: string): Promise<boolean> {
         this.logger.log(`Removing phone from blacklist: ${phone}`);
-        
+
         // Mock удаление из черного списка
         return true;
     }
@@ -188,7 +219,7 @@ export class SmsProviderService implements ISmsProvider {
         cost: number;
     }> {
         this.logger.debug(`Getting SMS statistics for period: ${period}`);
-        
+
         // Mock статистика
         return {
             sent: 150,
@@ -198,29 +229,33 @@ export class SmsProviderService implements ISmsProvider {
         };
     }
 
-    async validateMessage(message: string): Promise<{ valid: boolean; errors: string[] }> {
+    async validateMessage(
+        message: string,
+    ): Promise<{ valid: boolean; errors: string[] }> {
         const errors: string[] = [];
-        
+
         // Проверка длины
         if (message.length > 1000) {
             errors.push('Сообщение слишком длинное (максимум 1000 символов)');
         }
-        
+
         // Проверка на запрещенные символы
         const forbiddenChars = /[<>{}]/;
         if (forbiddenChars.test(message)) {
             errors.push('Сообщение содержит запрещенные символы');
         }
-        
+
         return {
             valid: errors.length === 0,
             errors,
         };
     }
 
-    async getSupportedCountries(): Promise<{ code: string; name: string; cost: number }[]> {
+    async getSupportedCountries(): Promise<
+        { code: string; name: string; cost: number }[]
+    > {
         this.logger.debug('Getting supported countries');
-        
+
         // Mock список поддерживаемых стран
         return [
             { code: 'RU', name: 'Россия', cost: 1.5 },

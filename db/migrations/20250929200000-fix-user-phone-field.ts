@@ -3,7 +3,7 @@ import { QueryInterface, DataTypes } from 'sequelize';
 export const up = async (queryInterface: QueryInterface): Promise<void> => {
     // Проверяем, существует ли поле phone в таблице user
     const tableDescription = await queryInterface.describeTable('user');
-    
+
     if (!tableDescription.phone) {
         // Добавляем поле phone если его нет
         await queryInterface.addColumn('user', 'phone', {

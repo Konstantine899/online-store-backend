@@ -44,8 +44,8 @@ const migration: Migration = {
                 model: 'cart',
                 key: 'id',
             },
-            onUpdate: 'CASCADE', 
-            onDelete: 'CASCADE', 
+            onUpdate: 'CASCADE',
+            onDelete: 'CASCADE',
         });
 
         await queryInterface.addColumn('cart-product', 'product_id', {
@@ -55,8 +55,8 @@ const migration: Migration = {
                 model: 'product',
                 key: 'id',
             },
-            onUpdate: 'CASCADE', 
-            onDelete: 'CASCADE', 
+            onUpdate: 'CASCADE',
+            onDelete: 'CASCADE',
         });
 
         // Добавляем индексы для производительности
@@ -78,29 +78,58 @@ const migration: Migration = {
         });
 
         // Составные индексы
-        await queryInterface.addIndex('cart-product', ['cart_id', 'product_id'], {
-            name: 'idx_cart_product_unique',
-            unique: true,
-        });
+        await queryInterface.addIndex(
+            'cart-product',
+            ['cart_id', 'product_id'],
+            {
+                name: 'idx_cart_product_unique',
+                unique: true,
+            },
+        );
 
         await queryInterface.addIndex('cart-product', ['cart_id', 'quantity'], {
             name: 'idx_cart_product_cart_quantity',
         });
 
-        await queryInterface.addIndex('cart-product', ['product_id', 'quantity'], {
-            name: 'idx_cart_product_product_quantity',
-        });
+        await queryInterface.addIndex(
+            'cart-product',
+            ['product_id', 'quantity'],
+            {
+                name: 'idx_cart_product_product_quantity',
+            },
+        );
     },
 
     async down(queryInterface: QueryInterface): Promise<void> {
         // Удаляем индексы
-        await queryInterface.removeIndex('cart-product', 'idx_cart_product_cart_id');
-        await queryInterface.removeIndex('cart-product', 'idx_cart_product_product_id');
-        await queryInterface.removeIndex('cart-product', 'idx_cart_product_quantity');
-        await queryInterface.removeIndex('cart-product', 'idx_cart_product_created_at');
-        await queryInterface.removeIndex('cart-product', 'idx_cart_product_unique');
-        await queryInterface.removeIndex('cart-product', 'idx_cart_product_cart_quantity');
-        await queryInterface.removeIndex('cart-product', 'idx_cart_product_product_quantity');
+        await queryInterface.removeIndex(
+            'cart-product',
+            'idx_cart_product_cart_id',
+        );
+        await queryInterface.removeIndex(
+            'cart-product',
+            'idx_cart_product_product_id',
+        );
+        await queryInterface.removeIndex(
+            'cart-product',
+            'idx_cart_product_quantity',
+        );
+        await queryInterface.removeIndex(
+            'cart-product',
+            'idx_cart_product_created_at',
+        );
+        await queryInterface.removeIndex(
+            'cart-product',
+            'idx_cart_product_unique',
+        );
+        await queryInterface.removeIndex(
+            'cart-product',
+            'idx_cart_product_cart_quantity',
+        );
+        await queryInterface.removeIndex(
+            'cart-product',
+            'idx_cart_product_product_quantity',
+        );
 
         await queryInterface.removeColumn('cart-product', 'cart_id');
         await queryInterface.removeColumn('cart-product', 'product_id');

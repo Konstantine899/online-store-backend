@@ -1,13 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { LoginHistoryModel, ILoginHistoryCreationAttributes } from '@app/domain/models';
+import {
+    LoginHistoryModel,
+    ILoginHistoryCreationAttributes,
+} from '@app/domain/models';
 import { Op } from 'sequelize';
 
 export interface ILoginHistoryRepository {
-    createLoginRecord(data: ILoginHistoryCreationAttributes): Promise<LoginHistoryModel>;
-    findUserLoginHistory(userId: number, limit?: number, offset?: number): Promise<LoginHistoryModel[]>;
-    findRecentLoginsByIp(ipAddress: string, hours?: number): Promise<LoginHistoryModel[]>;
-    findFailedLoginsByUser(userId: number, hours?: number): Promise<LoginHistoryModel[]>;
+    createLoginRecord(
+        data: ILoginHistoryCreationAttributes,
+    ): Promise<LoginHistoryModel>;
+    findUserLoginHistory(
+        userId: number,
+        limit?: number,
+        offset?: number,
+    ): Promise<LoginHistoryModel[]>;
+    findRecentLoginsByIp(
+        ipAddress: string,
+        hours?: number,
+    ): Promise<LoginHistoryModel[]>;
+    findFailedLoginsByUser(
+        userId: number,
+        hours?: number,
+    ): Promise<LoginHistoryModel[]>;
     countUserLogins(userId: number, success?: boolean): Promise<number>;
     deleteOldLoginHistory(daysToKeep?: number): Promise<number>;
 }
@@ -19,7 +34,9 @@ export class LoginHistoryRepository implements ILoginHistoryRepository {
         private readonly loginHistoryModel: typeof LoginHistoryModel,
     ) {}
 
-    async createLoginRecord(data: ILoginHistoryCreationAttributes): Promise<LoginHistoryModel> {
+    async createLoginRecord(
+        data: ILoginHistoryCreationAttributes,
+    ): Promise<LoginHistoryModel> {
         const loginRecord = await this.loginHistoryModel.create({
             userId: data.userId,
             ipAddress: data.ipAddress || null,
@@ -32,7 +49,11 @@ export class LoginHistoryRepository implements ILoginHistoryRepository {
         return loginRecord;
     }
 
-    async findUserLoginHistory(userId: number, limit = 10, offset = 0): Promise<LoginHistoryModel[]> {
+    async findUserLoginHistory(
+        userId: number,
+        limit = 10,
+        offset = 0,
+    ): Promise<LoginHistoryModel[]> {
         return this.loginHistoryModel.findAll({
             where: { userId },
             order: [['loginAt', 'DESC']],
@@ -41,7 +62,10 @@ export class LoginHistoryRepository implements ILoginHistoryRepository {
         });
     }
 
-    async findRecentLoginsByIp(ipAddress: string, hours = 24): Promise<LoginHistoryModel[]> {
+    async findRecentLoginsByIp(
+        ipAddress: string,
+        hours = 24,
+    ): Promise<LoginHistoryModel[]> {
         const since = new Date();
         since.setHours(since.getHours() - hours);
 
@@ -56,7 +80,10 @@ export class LoginHistoryRepository implements ILoginHistoryRepository {
         });
     }
 
-    async findFailedLoginsByUser(userId: number, hours = 24): Promise<LoginHistoryModel[]> {
+    async findFailedLoginsByUser(
+        userId: number,
+        hours = 24,
+    ): Promise<LoginHistoryModel[]> {
         const since = new Date();
         since.setHours(since.getHours() - hours);
 

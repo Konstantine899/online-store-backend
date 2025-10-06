@@ -48,7 +48,6 @@ import { ProductInfo } from '@app/infrastructure/paginate';
 import { GetListProductByCategoryIdV2SwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/product/get-list-product-by-category-id-v2-swagger-decorator';
 import { GetAllByBrandIdAndCategoryIdV2SwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/product/get-all-by-brand-id-and-category-id-v2-swagger-decorator';
 
-
 @ApiTags('Продукт')
 @Controller('product')
 export class ProductController implements IProductController {
@@ -87,7 +86,12 @@ export class ProductController implements IProductController {
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
     ): Promise<GetListProductV2Response> {
-        return this.productService.getListProductV2(searchQuery, sortQuery, page, size);
+        return this.productService.getListProductV2(
+            searchQuery,
+            sortQuery,
+            page,
+            size,
+        );
     }
 
     // ← НОВЫЙ: Endpoint для списка продуктов по бренду в новом формате
@@ -101,7 +105,13 @@ export class ProductController implements IProductController {
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
     ): Promise<PaginatedResponse<ProductInfo>> {
-        return this.productService.getListProductByBrandIdV2(brandId, searchQuery, sortQuery, page, size);
+        return this.productService.getListProductByBrandIdV2(
+            brandId,
+            searchQuery,
+            sortQuery,
+            page,
+            size,
+        );
     }
 
     // ← НОВЫЙ: Endpoint для списка продуктов по категории в новом формате
@@ -115,7 +125,13 @@ export class ProductController implements IProductController {
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
     ): Promise<PaginatedResponse<ProductInfo>> {
-        return this.productService.getListProductByCategoryIdV2(categoryId, searchQuery, sortQuery, page, size);
+        return this.productService.getListProductByCategoryIdV2(
+            categoryId,
+            searchQuery,
+            sortQuery,
+            page,
+            size,
+        );
     }
 
     // ← НОВЫЙ: Endpoint для списка продуктов по бренду и категории в новом формате
@@ -130,7 +146,14 @@ export class ProductController implements IProductController {
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
     ): Promise<PaginatedResponse<ProductInfo>> {
-        return this.productService.getAllByBrandIdAndCategoryIdV2(brandId, categoryId, searchQuery, sortQuery, page, size);
+        return this.productService.getAllByBrandIdAndCategoryIdV2(
+            brandId,
+            categoryId,
+            searchQuery,
+            sortQuery,
+            page,
+            size,
+        );
     }
 
     @UpdateProductSwaggerDecorator()

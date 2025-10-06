@@ -5,13 +5,13 @@ import { MetaData } from '@app/infrastructure/paginate';
 export class GetPaginatedUsersResponse {
     @ApiProperty({
         type: [GetListUsersResponse],
-        description: 'Список пользователей'
+        description: 'Список пользователей',
     })
     declare data: GetListUsersResponse[];
 
     @ApiProperty({
         type: MetaData,
-        description: 'Метаданные пагинации'
+        description: 'Метаданные пагинации',
     })
     declare meta: MetaData;
 }

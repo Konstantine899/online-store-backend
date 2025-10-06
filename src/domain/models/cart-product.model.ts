@@ -17,10 +17,10 @@ interface ICartProductModel {
     quantity: number;
     cart_id: number;
     product_id: number;
-    cart: CartModel; 
-    product: ProductModel; 
-    createdAt: Date; 
-    updatedAt: Date; 
+    cart: CartModel;
+    product: ProductModel;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 interface ICartProductCreationAttributes {
@@ -34,7 +34,7 @@ interface ICartProductCreationAttributes {
     underscored: true,
     timestamps: true,
     defaultScope: {
-        attributes: { exclude: ['updatedAt', 'createdAt'] }, 
+        attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
     // Базовые scopes
     scopes: {
@@ -44,16 +44,19 @@ interface ICartProductCreationAttributes {
         }),
         // Scope для загрузки с продуктом
         withProduct: {
-            include: [{
-                model: ProductModel,
-                attributes: ['id', 'name', 'price', 'image'],
-            }],
+            include: [
+                {
+                    model: ProductModel,
+                    attributes: ['id', 'name', 'price', 'image'],
+                },
+            ],
         },
     },
 })
-export class CartProductModel extends Model<ICartProductModel, ICartProductCreationAttributes>
-
-{
+export class CartProductModel extends Model<
+    ICartProductModel,
+    ICartProductCreationAttributes
+> {
     @PrimaryKey
     @Column({
         type: DataType.INTEGER,
@@ -62,7 +65,7 @@ export class CartProductModel extends Model<ICartProductModel, ICartProductCreat
         autoIncrement: true,
     })
     declare id: number;
-    
+
     @Column({
         type: DataType.INTEGER,
         allowNull: false,

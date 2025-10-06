@@ -5,8 +5,14 @@ import { UserAddressResponse } from '@app/infrastructure/responses/user-address/
 export const GetUserAddressesSwaggerDecorator = () =>
     applyDecorators(
         ApiBearerAuth('JWT-auth'),
-        ApiOperation({ summary: 'Список адресов', description: 'Возвращает адреса текущего пользователя' }),
-        ApiResponse({ status: HttpStatus.OK, description: 'Успех', type: UserAddressResponse, isArray: true }),
+        ApiOperation({
+            summary: 'Список адресов',
+            description: 'Возвращает адреса текущего пользователя',
+        }),
+        ApiResponse({
+            status: HttpStatus.OK,
+            description: 'Успех',
+            type: UserAddressResponse,
+            isArray: true,
+        }),
     );
-
-

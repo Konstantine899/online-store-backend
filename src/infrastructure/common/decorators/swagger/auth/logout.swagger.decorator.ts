@@ -1,5 +1,11 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
-import {ApiBearerAuth, ApiCookieAuth, ApiOperation, ApiResponse, ApiUnprocessableEntityResponse } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiCookieAuth,
+    ApiOperation,
+    ApiResponse,
+    ApiUnprocessableEntityResponse,
+} from '@nestjs/swagger';
 import { ApiBadRequestResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
 import { LogoutResponse } from '@app/infrastructure/responses';
 

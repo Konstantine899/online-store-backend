@@ -5,7 +5,7 @@ import {
     Model,
     Table,
     CreatedAt,
-    UpdatedAt,  
+    UpdatedAt,
 } from 'sequelize-typescript';
 import { ProductModel } from './product.model';
 import { CartProductModel } from './cart-product.model';
@@ -13,15 +13,14 @@ import { CartProductModel } from './cart-product.model';
 interface ICartModel {
     id: number;
     products: ProductModel[];
-    createdAt: Date; 
-    updatedAt: Date; 
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface ICartCreationAttributes {
     // Пустой интерфейс - корзина создается без дополнительных полей
 }
-
 
 @Table({
     tableName: 'cart',
@@ -33,15 +32,20 @@ interface ICartCreationAttributes {
     scopes: {
         // Scope для загрузки корзины с продуктами
         withProducts: {
-            include: [{
-                model: ProductModel,
-                through: { attributes: ['quantity'] },
-                attributes: ['id', 'name', 'price', 'image'],
-            }],
+            include: [
+                {
+                    model: ProductModel,
+                    through: { attributes: ['quantity'] },
+                    attributes: ['id', 'name', 'price', 'image'],
+                },
+            ],
         },
     },
 })
-export class CartModel extends Model<CartModel, ICartCreationAttributes> implements ICartModel {
+export class CartModel
+    extends Model<CartModel, ICartCreationAttributes>
+    implements ICartModel
+{
     @Column({
         type: DataType.INTEGER,
         unique: true,

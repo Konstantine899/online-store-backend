@@ -1,16 +1,12 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
-import {
-    ApiOperation,
-    ApiResponse,
-    ApiQuery,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { GetListProductV2Response } from '@app/infrastructure/responses/product/get-list-product-v2.response';
 
 export function GetListProductV2SwaggerDecorator(): MethodDecorator {
     return applyDecorators(
-        ApiOperation({ 
+        ApiOperation({
             summary: 'Получение списка продуктов (новый формат пагинации)',
-            description: 'Возвращает список продуктов в формате { data, meta }'
+            description: 'Возвращает список продуктов в формате { data, meta }',
         }),
         ApiQuery({
             name: 'page',

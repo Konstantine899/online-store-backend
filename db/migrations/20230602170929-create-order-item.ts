@@ -79,11 +79,23 @@ const migration: Migration = {
 
     async down(queryInterface: QueryInterface): Promise<void> {
         // Удаляем все индексы
-        await queryInterface.removeIndex('order_item', 'idx_order_item_order_id');
+        await queryInterface.removeIndex(
+            'order_item',
+            'idx_order_item_order_id',
+        );
         await queryInterface.removeIndex('order_item', 'idx_order_item_price');
-        await queryInterface.removeIndex('order_item', 'idx_order_item_quantity');
-        await queryInterface.removeIndex('order_item', 'idx_order_item_order_price');
-        await queryInterface.removeIndex('order_item', 'idx_order_item_price_quantity');
+        await queryInterface.removeIndex(
+            'order_item',
+            'idx_order_item_quantity',
+        );
+        await queryInterface.removeIndex(
+            'order_item',
+            'idx_order_item_order_price',
+        );
+        await queryInterface.removeIndex(
+            'order_item',
+            'idx_order_item_price_quantity',
+        );
 
         await queryInterface.removeColumn('order_item', 'order_id');
         await queryInterface.dropTable('order_item');

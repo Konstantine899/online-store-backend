@@ -9,22 +9,30 @@ export class UpdateUserFlagsDto {
 
     @ApiPropertyOptional({ description: 'Подписка на рассылку' })
     @IsOptional()
-    @IsBoolean({ message: 'Поле isNewsletterSubscribed должно быть булевым значением' })
+    @IsBoolean({
+        message: 'Поле isNewsletterSubscribed должно быть булевым значением',
+    })
     declare readonly isNewsletterSubscribed?: boolean;
 
     @ApiPropertyOptional({ description: 'Согласие на маркетинг' })
     @IsOptional()
-    @IsBoolean({ message: 'Поле isMarketingConsent должно быть булевым значением' })
+    @IsBoolean({
+        message: 'Поле isMarketingConsent должно быть булевым значением',
+    })
     declare readonly isMarketingConsent?: boolean;
 
     @ApiPropertyOptional({ description: 'Согласие на cookies' })
     @IsOptional()
-    @IsBoolean({ message: 'Поле isCookieConsent должно быть булевым значением' })
+    @IsBoolean({
+        message: 'Поле isCookieConsent должно быть булевым значением',
+    })
     declare readonly isCookieConsent?: boolean;
 
     @ApiPropertyOptional({ description: 'Завершён ли профиль' })
     @IsOptional()
-    @IsBoolean({ message: 'Поле isProfileCompleted должно быть булевым значением' })
+    @IsBoolean({
+        message: 'Поле isProfileCompleted должно быть булевым значением',
+    })
     declare readonly isProfileCompleted?: boolean;
 
     @ApiPropertyOptional({ description: 'VIP клиент' })
@@ -54,22 +62,30 @@ export class UpdateUserFlagsDto {
 
     @ApiPropertyOptional({ description: 'Email верифицирован' })
     @IsOptional()
-    @IsBoolean({ message: 'Поле isEmailVerified должно быть булевым значением' })
+    @IsBoolean({
+        message: 'Поле isEmailVerified должно быть булевым значением',
+    })
     declare readonly isEmailVerified?: boolean;
 
     @ApiPropertyOptional({ description: 'Телефон верифицирован' })
     @IsOptional()
-    @IsBoolean({ message: 'Поле isPhoneVerified должно быть булевым значением' })
+    @IsBoolean({
+        message: 'Поле isPhoneVerified должно быть булевым значением',
+    })
     declare readonly isPhoneVerified?: boolean;
 
     @ApiPropertyOptional({ description: 'Согласие с условиями' })
     @IsOptional()
-    @IsBoolean({ message: 'Поле isTermsAccepted должно быть булевым значением' })
+    @IsBoolean({
+        message: 'Поле isTermsAccepted должно быть булевым значением',
+    })
     declare readonly isTermsAccepted?: boolean;
 
     @ApiPropertyOptional({ description: 'Согласие с политикой' })
     @IsOptional()
-    @IsBoolean({ message: 'Поле isPrivacyAccepted должно быть булевым значением' })
+    @IsBoolean({
+        message: 'Поле isPrivacyAccepted должно быть булевым значением',
+    })
     declare readonly isPrivacyAccepted?: boolean;
 
     @ApiPropertyOptional({ description: 'Возраст подтверждён' })
@@ -79,8 +95,8 @@ export class UpdateUserFlagsDto {
 
     @ApiPropertyOptional({ description: '2FA включена' })
     @IsOptional()
-    @IsBoolean({ message: 'Поле isTwoFactorEnabled должно быть булевым значением' })
+    @IsBoolean({
+        message: 'Поле isTwoFactorEnabled должно быть булевым значением',
+    })
     declare readonly isTwoFactorEnabled?: boolean;
 }
-
-

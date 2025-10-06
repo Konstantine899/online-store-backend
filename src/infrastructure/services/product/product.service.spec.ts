@@ -23,10 +23,8 @@ import {
     UpdateProductResponse,
     RemoveProductResponse,
 } from '@app/infrastructure/responses';
-import {  BrandModel, CategoryModel } from '@app/domain/models';
-import {  ProductInfo } from '@app/infrastructure/paginate';
-
-
+import { BrandModel, CategoryModel } from '@app/domain/models';
+import { ProductInfo } from '@app/infrastructure/paginate';
 
 const mockBrand: BrandModel = {
     id: 1,
@@ -51,7 +49,7 @@ const mockFile: Express.Multer.File = {
     destination: '',
     filename: '',
     path: '',
-}  as unknown as Express.Multer.File;
+} as unknown as Express.Multer.File;
 
 const mockCreateProductDto: CreateProductDto = {
     name: 'Test Product',
@@ -69,7 +67,6 @@ const mockSortingDto: SortingDto = {
     sort: SortingEnum.DESC,
 };
 
-
 const mockProductInfo: ProductInfo = {
     id: 1,
     name: 'Test Product',
@@ -77,7 +74,7 @@ const mockProductInfo: ProductInfo = {
     image: 'test-image.jpg',
     brand: mockBrand,
     category: mockCategory,
-}as unknown as ProductInfo;
+} as unknown as ProductInfo;
 
 const mockCreateProductResponse: CreateProductResponse = {
     id: 1,
@@ -116,8 +113,6 @@ const mockRemoveProductResponse: RemoveProductResponse = {
     status: HttpStatus.OK,
     message: 'success',
 };
-
-
 
 describe('ProductService', () => {
     let service: ProductService;
@@ -181,20 +176,30 @@ describe('ProductService', () => {
         it('должен успешно создать товар с изображением', async () => {
             const imageName = 'generated-image-name.jpg';
             fileService.createFile.mockResolvedValue(imageName);
-            productRepository.create.mockResolvedValue(mockCreateProductResponse);
+            productRepository.create.mockResolvedValue(
+                mockCreateProductResponse,
+            );
 
-            const result = await service.productCreate(mockCreateProductDto, mockFile);
+            const result = await service.productCreate(
+                mockCreateProductDto,
+                mockFile,
+            );
 
             expect(result).toBe(mockCreateProductResponse);
             expect(fileService.createFile).toHaveBeenCalledWith(mockFile);
-            expect(productRepository.create).toHaveBeenCalledWith(mockCreateProductDto, imageName);
+            expect(productRepository.create).toHaveBeenCalledWith(
+                mockCreateProductDto,
+                imageName,
+            );
         });
 
         it('должен пробросить ошибку если FileService.createFile выбрасывает исключение', async () => {
             const error = new Error('File creation failed');
             fileService.createFile.mockRejectedValue(error);
 
-            await expect(service.productCreate(mockCreateProductDto, mockFile)).rejects.toThrow(error);
+            await expect(
+                service.productCreate(mockCreateProductDto, mockFile),
+            ).rejects.toThrow(error);
         });
 
         it('должен пробросить ошибку если ProductRepository.create выбрасывает исключение', async () => {
@@ -203,29 +208,36 @@ describe('ProductService', () => {
             const error = new Error('Database error');
             productRepository.create.mockRejectedValue(error);
 
-            await expect(service.productCreate(mockCreateProductDto, mockFile)).rejects.toThrow(error);
+            await expect(
+                service.productCreate(mockCreateProductDto, mockFile),
+            ).rejects.toThrow(error);
         });
     });
 
     describe('getProduct', () => {
         it('должен успешно получить товар по ID', async () => {
-            productRepository.findProductProperty.mockResolvedValue(mockGetProductResponse);
+            productRepository.findProductProperty.mockResolvedValue(
+                mockGetProductResponse,
+            );
 
             const result = await service.getProduct(1);
 
             expect(result).toBe(mockGetProductResponse);
-            expect(productRepository.findProductProperty).toHaveBeenCalledWith(1);
+            expect(productRepository.findProductProperty).toHaveBeenCalledWith(
+                1,
+            );
         });
 
         it('должен выбросить NotFoundException если товар не найден', async () => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (productRepository.findProductProperty as jest.MockedFunction<any>).mockResolvedValue(null);
+            (
+                productRepository.findProductProperty as jest.Mock
+            ).mockResolvedValue(null);
 
             await expect(service.getProduct(999)).rejects.toThrow(
                 new NotFoundException({
                     status: HttpStatus.NOT_FOUND,
                     message: 'Продукт не найден',
-                })
+                }),
             );
         });
 
@@ -245,7 +257,12 @@ describe('ProductService', () => {
             };
             productRepository.findListProduct.mockResolvedValue(mockProducts);
 
-            const result = await service.getListProductV2(mockSearchDto, mockSortingDto, 1, 5);
+            const result = await service.getListProductV2(
+                mockSearchDto,
+                mockSortingDto,
+                1,
+                5,
+            );
 
             expect(result).toEqual({
                 data: mockProducts.rows,
@@ -259,22 +276,27 @@ describe('ProductService', () => {
                 mockSearchDto.search,
                 mockSortingDto.sort,
                 5,
-                0
+                0,
             );
         });
 
         it('должен использовать значения по умолчанию для сортировки', async () => {
             const mockProducts = { rows: [], count: 0 };
             productRepository.findListProduct.mockResolvedValue(mockProducts);
-            const emptySortingDto = {}  as SortingDto;
+            const emptySortingDto = {} as SortingDto;
 
-            await service.getListProductV2(mockSearchDto, emptySortingDto, 1, 5);
+            await service.getListProductV2(
+                mockSearchDto,
+                emptySortingDto,
+                1,
+                5,
+            );
 
             expect(productRepository.findListProduct).toHaveBeenCalledWith(
                 mockSearchDto.search,
                 SortingEnum.DESC,
                 5,
-                0
+                0,
             );
         });
 
@@ -288,7 +310,7 @@ describe('ProductService', () => {
                 mockSearchDto.search,
                 mockSortingDto.sort,
                 5,
-                0 // offset должен быть 0 для page=0
+                0, // offset должен быть 0 для page=0
             );
         });
     });
@@ -299,22 +321,34 @@ describe('ProductService', () => {
                 rows: [mockProductInfo],
                 count: 1,
             };
-            productRepository.findListProductByBrandId.mockResolvedValue(mockProducts);
+            productRepository.findListProductByBrandId.mockResolvedValue(
+                mockProducts,
+            );
 
-            const result = await service.getListProductByBrandIdV2(1, mockSearchDto, mockSortingDto, 1, 5);
+            const result = await service.getListProductByBrandIdV2(
+                1,
+                mockSearchDto,
+                mockSortingDto,
+                1,
+                5,
+            );
 
             expect(result.data).toBe(mockProducts.rows);
-            expect(result.meta).toEqual(expect.objectContaining({
-                totalCount: 1,
-                currentPage: 1,
-                limit: 5,
-            }));
-            expect(productRepository.findListProductByBrandId).toHaveBeenCalledWith(
+            expect(result.meta).toEqual(
+                expect.objectContaining({
+                    totalCount: 1,
+                    currentPage: 1,
+                    limit: 5,
+                }),
+            );
+            expect(
+                productRepository.findListProductByBrandId,
+            ).toHaveBeenCalledWith(
                 1,
                 mockSearchDto.search,
                 mockSortingDto.sort,
                 5,
-                0
+                0,
             );
         });
 
@@ -322,7 +356,15 @@ describe('ProductService', () => {
             const error = new Error('Database error');
             productRepository.findListProductByBrandId.mockRejectedValue(error);
 
-            await expect(service.getListProductByBrandIdV2(1, mockSearchDto, mockSortingDto, 1, 5)).rejects.toThrow(error);
+            await expect(
+                service.getListProductByBrandIdV2(
+                    1,
+                    mockSearchDto,
+                    mockSortingDto,
+                    1,
+                    5,
+                ),
+            ).rejects.toThrow(error);
         });
     });
 
@@ -332,22 +374,34 @@ describe('ProductService', () => {
                 rows: [mockProductInfo],
                 count: 1,
             };
-            productRepository.findListProductByCategoryId.mockResolvedValue(mockProducts);
+            productRepository.findListProductByCategoryId.mockResolvedValue(
+                mockProducts,
+            );
 
-            const result = await service.getListProductByCategoryIdV2(1, mockSearchDto, mockSortingDto, 1, 5);
+            const result = await service.getListProductByCategoryIdV2(
+                1,
+                mockSearchDto,
+                mockSortingDto,
+                1,
+                5,
+            );
 
             expect(result.data).toBe(mockProducts.rows);
-            expect(result.meta).toEqual(expect.objectContaining({
-                totalCount: 1,
-                currentPage: 1,
-                limit: 5,
-            }));
-            expect(productRepository.findListProductByCategoryId).toHaveBeenCalledWith(
+            expect(result.meta).toEqual(
+                expect.objectContaining({
+                    totalCount: 1,
+                    currentPage: 1,
+                    limit: 5,
+                }),
+            );
+            expect(
+                productRepository.findListProductByCategoryId,
+            ).toHaveBeenCalledWith(
                 1,
                 mockSearchDto.search,
                 mockSortingDto.sort,
                 5,
-                0
+                0,
             );
         });
     });
@@ -358,73 +412,105 @@ describe('ProductService', () => {
                 rows: [mockProductInfo],
                 count: 1,
             };
-            productRepository.findAllByBrandIdAndCategoryId.mockResolvedValue(mockProducts);
+            productRepository.findAllByBrandIdAndCategoryId.mockResolvedValue(
+                mockProducts,
+            );
 
-            const result = await service.getAllByBrandIdAndCategoryIdV2(1, 1, mockSearchDto, mockSortingDto, 1, 5);
+            const result = await service.getAllByBrandIdAndCategoryIdV2(
+                1,
+                1,
+                mockSearchDto,
+                mockSortingDto,
+                1,
+                5,
+            );
 
             expect(result.data).toBe(mockProducts.rows);
-            expect(result.meta).toEqual(expect.objectContaining({
-                totalCount: 1,
-                currentPage: 1,
-                limit: 5,
-            }));
-            expect(productRepository.findAllByBrandIdAndCategoryId).toHaveBeenCalledWith(
+            expect(result.meta).toEqual(
+                expect.objectContaining({
+                    totalCount: 1,
+                    currentPage: 1,
+                    limit: 5,
+                }),
+            );
+            expect(
+                productRepository.findAllByBrandIdAndCategoryId,
+            ).toHaveBeenCalledWith(
                 1,
                 1,
                 mockSearchDto.search,
                 mockSortingDto.sort,
                 5,
-                0
+                0,
             );
         });
     });
 
     describe('removeProduct', () => {
         it('должен успешно удалить товар', async () => {
-            productRepository.findProductProperty.mockResolvedValue(mockGetProductResponse);
+            productRepository.findProductProperty.mockResolvedValue(
+                mockGetProductResponse,
+            );
             fileService.removeFile.mockResolvedValue(true);
             ratingService.removeAllRatingsByProductId.mockResolvedValue(1);
-            productPropertyRepository.removeProductPropertiesListByProductId.mockResolvedValue(1);
+            productPropertyRepository.removeProductPropertiesListByProductId.mockResolvedValue(
+                1,
+            );
             productRepository.removedProduct.mockResolvedValue(1);
 
             const result = await service.removeProduct(1);
 
             expect(result).toEqual(mockRemoveProductResponse);
-            expect(productRepository.findProductProperty).toHaveBeenCalledWith(1);
-            expect(fileService.removeFile).toHaveBeenCalledWith(mockGetProductResponse.image);
-            expect(ratingService.removeAllRatingsByProductId).toHaveBeenCalledWith(1);
-            expect(productPropertyRepository.removeProductPropertiesListByProductId).toHaveBeenCalledWith(1);
+            expect(productRepository.findProductProperty).toHaveBeenCalledWith(
+                1,
+            );
+            expect(fileService.removeFile).toHaveBeenCalledWith(
+                mockGetProductResponse.image,
+            );
+            expect(
+                ratingService.removeAllRatingsByProductId,
+            ).toHaveBeenCalledWith(1);
+            expect(
+                productPropertyRepository.removeProductPropertiesListByProductId,
+            ).toHaveBeenCalledWith(1);
             expect(productRepository.removedProduct).toHaveBeenCalledWith(1);
         });
 
         it('должен выбросить NotFoundException если товар не найден', async () => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (productRepository.findProductProperty as jest.MockedFunction<any>).mockResolvedValue(null);
+            (
+                productRepository.findProductProperty as jest.Mock
+            ).mockResolvedValue(null);
 
             await expect(service.removeProduct(999)).rejects.toThrow(
                 new NotFoundException({
                     status: HttpStatus.NOT_FOUND,
                     message: 'Продукт не найден в БД',
-                })
+                }),
             );
         });
 
         it('должен выбросить ConflictException если удаление файла не удалось', async () => {
-            productRepository.findProductProperty.mockResolvedValue(mockGetProductResponse);
+            productRepository.findProductProperty.mockResolvedValue(
+                mockGetProductResponse,
+            );
             fileService.removeFile.mockResolvedValue(false);
 
             await expect(service.removeProduct(1)).rejects.toThrow(
                 new ConflictException({
                     status: HttpStatus.CONFLICT,
                     message: 'Произошел конфликт во время удаления файла',
-                })
+                }),
             );
         });
 
         it('должен выбросить ConflictException если удаление характеристик не удалось', async () => {
-            productRepository.findProductProperty.mockResolvedValue(mockGetProductResponse);
+            productRepository.findProductProperty.mockResolvedValue(
+                mockGetProductResponse,
+            );
             fileService.removeFile.mockResolvedValue(true);
-            productPropertyRepository.removeProductPropertiesListByProductId.mockResolvedValue(0);
+            productPropertyRepository.removeProductPropertiesListByProductId.mockResolvedValue(
+                0,
+            );
             ratingService.removeAllRatingsByProductId.mockResolvedValue(1);
             productRepository.removedProduct.mockResolvedValue(1);
 
@@ -437,9 +523,13 @@ describe('ProductService', () => {
         });
 
         it('должен выбросить ConflictException если удаление рейтинга не удалось', async () => {
-            productRepository.findProductProperty.mockResolvedValue(mockGetProductResponse);
+            productRepository.findProductProperty.mockResolvedValue(
+                mockGetProductResponse,
+            );
             fileService.removeFile.mockResolvedValue(true);
-            productPropertyRepository.removeProductPropertiesListByProductId.mockResolvedValue(1);
+            productPropertyRepository.removeProductPropertiesListByProductId.mockResolvedValue(
+                1,
+            );
             ratingService.removeAllRatingsByProductId.mockResolvedValue(0);
             productRepository.removedProduct.mockResolvedValue(1);
 
@@ -452,17 +542,21 @@ describe('ProductService', () => {
         });
 
         it('должен выбросить ConflictException если удаление товара не удалось', async () => {
-            productRepository.findProductProperty.mockResolvedValue(mockGetProductResponse);
+            productRepository.findProductProperty.mockResolvedValue(
+                mockGetProductResponse,
+            );
             fileService.removeFile.mockResolvedValue(true);
             ratingService.removeAllRatingsByProductId.mockResolvedValue(1);
-            productPropertyRepository.removeProductPropertiesListByProductId.mockResolvedValue(1);
+            productPropertyRepository.removeProductPropertiesListByProductId.mockResolvedValue(
+                1,
+            );
             productRepository.removedProduct.mockResolvedValue(0);
 
             await expect(service.removeProduct(1)).rejects.toThrow(
                 new ConflictException({
                     status: HttpStatus.CONFLICT,
                     message: 'Произошел конфликт во время удаления продукта',
-                })
+                }),
             );
         });
     });
@@ -470,50 +564,74 @@ describe('ProductService', () => {
     describe('updateProduct', () => {
         it('должен успешно обновить товар', async () => {
             const updatedImageName = 'updated-image.jpg';
-            productRepository.findProductProperty.mockResolvedValue(mockGetProductResponse);
+            productRepository.findProductProperty.mockResolvedValue(
+                mockGetProductResponse,
+            );
             fileService.updateFile.mockResolvedValue(updatedImageName);
-            productRepository.updateProduct.mockResolvedValue(mockUpdateProductResponse);
+            productRepository.updateProduct.mockResolvedValue(
+                mockUpdateProductResponse,
+            );
 
-            const result = await service.updateProduct(1, mockCreateProductDto, mockFile);
+            const result = await service.updateProduct(
+                1,
+                mockCreateProductDto,
+                mockFile,
+            );
 
             expect(result).toBe(mockUpdateProductResponse);
-            expect(productRepository.findProductProperty).toHaveBeenCalledWith(1);
-            expect(fileService.updateFile).toHaveBeenCalledWith(mockGetProductResponse.image, mockFile);
+            expect(productRepository.findProductProperty).toHaveBeenCalledWith(
+                1,
+            );
+            expect(fileService.updateFile).toHaveBeenCalledWith(
+                mockGetProductResponse.image,
+                mockFile,
+            );
             expect(productRepository.updateProduct).toHaveBeenCalledWith(
                 mockCreateProductDto,
                 mockGetProductResponse,
-                updatedImageName
+                updatedImageName,
             );
         });
 
         it('должен выбросить NotFoundException если товар не найден', async () => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (productRepository.findProductProperty as jest.MockedFunction<any>).mockResolvedValue(null);
+            (
+                productRepository.findProductProperty as jest.Mock
+            ).mockResolvedValue(null);
 
-            await expect(service.updateProduct(999, mockCreateProductDto, mockFile)).rejects.toThrow(
+            await expect(
+                service.updateProduct(999, mockCreateProductDto, mockFile),
+            ).rejects.toThrow(
                 new NotFoundException({
                     status: HttpStatus.NOT_FOUND,
                     message: 'Продукт не найден в БД',
-                })
+                }),
             );
         });
 
         it('должен пробросить ошибку если FileService.updateFile выбрасывает исключение', async () => {
-            productRepository.findProductProperty.mockResolvedValue(mockGetProductResponse);
+            productRepository.findProductProperty.mockResolvedValue(
+                mockGetProductResponse,
+            );
             const error = new Error('File update failed');
             fileService.updateFile.mockRejectedValue(error);
 
-            await expect(service.updateProduct(1, mockCreateProductDto, mockFile)).rejects.toThrow(error);
+            await expect(
+                service.updateProduct(1, mockCreateProductDto, mockFile),
+            ).rejects.toThrow(error);
         });
 
         it('должен пробросить ошибку если ProductRepository.updateProduct выбрасывает исключение', async () => {
             const updatedImageName = 'updated-image.jpg';
-            productRepository.findProductProperty.mockResolvedValue(mockGetProductResponse);
+            productRepository.findProductProperty.mockResolvedValue(
+                mockGetProductResponse,
+            );
             fileService.updateFile.mockResolvedValue(updatedImageName);
             const error = new Error('Database error');
             productRepository.updateProduct.mockRejectedValue(error);
 
-            await expect(service.updateProduct(1, mockCreateProductDto, mockFile)).rejects.toThrow(error);
+            await expect(
+                service.updateProduct(1, mockCreateProductDto, mockFile),
+            ).rejects.toThrow(error);
         });
     });
 
@@ -596,41 +714,58 @@ describe('ProductService', () => {
             const mockProducts = { rows: [], count: 0 };
             productRepository.findListProduct.mockResolvedValue(mockProducts);
 
-            await service.getListProductV2(emptySearchDto, mockSortingDto, 1, 5);
+            await service.getListProductV2(
+                emptySearchDto,
+                mockSortingDto,
+                1,
+                5,
+            );
 
-             expect(productRepository.findListProduct).toHaveBeenCalledWith(
+            expect(productRepository.findListProduct).toHaveBeenCalledWith(
                 '',
                 mockSortingDto.sort,
                 5,
-                0
+                0,
             );
         });
 
         it('должен обработать null значения в зависимостях', async () => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (productRepository.findProductProperty as jest.MockedFunction<any>).mockResolvedValue(null);
+            (
+                productRepository.findProductProperty as jest.Mock
+            ).mockResolvedValue(null);
 
-            await expect(service.getProduct(999)).rejects.toThrow(NotFoundException);
+            await expect(service.getProduct(999)).rejects.toThrow(
+                NotFoundException,
+            );
         });
 
         it('должен обработать большие значения пагинации', async () => {
             const mockProducts = { rows: [], count: 1000 };
             productRepository.findListProduct.mockResolvedValue(mockProducts);
 
-            const result = await service.getListProductV2(mockSearchDto, mockSortingDto, 100, 50);
+            const result = await service.getListProductV2(
+                mockSearchDto,
+                mockSortingDto,
+                100,
+                50,
+            );
 
-            expect(result.meta).toEqual(expect.objectContaining({
-                totalCount: 1000,
-                currentPage: 100,
-                limit: 50,
-                lastPage: 20,
-                nextPage: 101,
-                previousPage: 99,
-            }));
+            expect(result.meta).toEqual(
+                expect.objectContaining({
+                    totalCount: 1000,
+                    currentPage: 100,
+                    limit: 50,
+                    lastPage: 20,
+                    nextPage: 101,
+                    previousPage: 99,
+                }),
+            );
         });
 
         it('должен обработать ошибки при работе с файлами', async () => {
-            productRepository.findProductProperty.mockResolvedValue(mockGetProductResponse);
+            productRepository.findProductProperty.mockResolvedValue(
+                mockGetProductResponse,
+            );
             const error = new Error('File system error');
             fileService.removeFile.mockRejectedValue(error);
 
@@ -643,20 +778,29 @@ describe('ProductService', () => {
             // Создание товара
             const imageName = 'test-image.jpg';
             fileService.createFile.mockResolvedValue(imageName);
-            productRepository.create.mockResolvedValue(mockCreateProductResponse);
+            productRepository.create.mockResolvedValue(
+                mockCreateProductResponse,
+            );
 
-            const createResult = await service.productCreate(mockCreateProductDto, mockFile);
+            const createResult = await service.productCreate(
+                mockCreateProductDto,
+                mockFile,
+            );
             expect(createResult).toBe(mockCreateProductResponse);
 
             // Получение товара
-            productRepository.findProductProperty.mockResolvedValue(mockGetProductResponse);
+            productRepository.findProductProperty.mockResolvedValue(
+                mockGetProductResponse,
+            );
             const getResult = await service.getProduct(1);
             expect(getResult).toBe(mockGetProductResponse);
 
             // Удаление товара
             fileService.removeFile.mockResolvedValue(true);
             ratingService.removeAllRatingsByProductId.mockResolvedValue(1);
-            productPropertyRepository.removeProductPropertiesListByProductId.mockResolvedValue(1);
+            productPropertyRepository.removeProductPropertiesListByProductId.mockResolvedValue(
+                1,
+            );
             productRepository.removedProduct.mockResolvedValue(1);
 
             const removeResult = await service.removeProduct(1);
@@ -665,28 +809,59 @@ describe('ProductService', () => {
 
         it('должен выполнить поиск с различными фильтрами', async () => {
             const mockProducts = { rows: [mockProductInfo], count: 1 };
-            
+
             // Поиск по всем товарам
             productRepository.findListProduct.mockResolvedValue(mockProducts);
             await service.getListProductV2(mockSearchDto, mockSortingDto, 1, 5);
 
             // Поиск по бренду
-            productRepository.findListProductByBrandId.mockResolvedValue(mockProducts);
-            await service.getListProductByBrandIdV2(1, mockSearchDto, mockSortingDto, 1, 5);
+            productRepository.findListProductByBrandId.mockResolvedValue(
+                mockProducts,
+            );
+            await service.getListProductByBrandIdV2(
+                1,
+                mockSearchDto,
+                mockSortingDto,
+                1,
+                5,
+            );
 
             // Поиск по категории
-            productRepository.findListProductByCategoryId.mockResolvedValue(mockProducts);
-            await service.getListProductByCategoryIdV2(1, mockSearchDto, mockSortingDto, 1, 5);
+            productRepository.findListProductByCategoryId.mockResolvedValue(
+                mockProducts,
+            );
+            await service.getListProductByCategoryIdV2(
+                1,
+                mockSearchDto,
+                mockSortingDto,
+                1,
+                5,
+            );
 
             // Поиск по бренду и категории
-            productRepository.findAllByBrandIdAndCategoryId.mockResolvedValue(mockProducts);
-            await service.getAllByBrandIdAndCategoryIdV2(1, 1, mockSearchDto, mockSortingDto, 1, 5);
+            productRepository.findAllByBrandIdAndCategoryId.mockResolvedValue(
+                mockProducts,
+            );
+            await service.getAllByBrandIdAndCategoryIdV2(
+                1,
+                1,
+                mockSearchDto,
+                mockSortingDto,
+                1,
+                5,
+            );
 
             // Проверяем, что все методы были вызваны
             expect(productRepository.findListProduct).toHaveBeenCalled();
-            expect(productRepository.findListProductByBrandId).toHaveBeenCalled();
-            expect(productRepository.findListProductByCategoryId).toHaveBeenCalled();
-            expect(productRepository.findAllByBrandIdAndCategoryId).toHaveBeenCalled();
+            expect(
+                productRepository.findListProductByBrandId,
+            ).toHaveBeenCalled();
+            expect(
+                productRepository.findListProductByCategoryId,
+            ).toHaveBeenCalled();
+            expect(
+                productRepository.findAllByBrandIdAndCategoryId,
+            ).toHaveBeenCalled();
         });
     });
 
@@ -702,14 +877,20 @@ describe('ProductService', () => {
             const fsError = new Error('Disk full');
             fileService.createFile.mockRejectedValue(fsError);
 
-            await expect(service.productCreate(mockCreateProductDto, mockFile)).rejects.toThrow(fsError);
+            await expect(
+                service.productCreate(mockCreateProductDto, mockFile),
+            ).rejects.toThrow(fsError);
         });
 
         it('должен корректно обрабатывать ошибки рейтингового сервиса', async () => {
-            productRepository.findProductProperty.mockResolvedValue(mockGetProductResponse);
+            productRepository.findProductProperty.mockResolvedValue(
+                mockGetProductResponse,
+            );
             fileService.removeFile.mockResolvedValue(true);
             const ratingError = new Error('Rating service unavailable');
-            ratingService.removeAllRatingsByProductId.mockRejectedValue(ratingError);
+            ratingService.removeAllRatingsByProductId.mockRejectedValue(
+                ratingError,
+            );
 
             await expect(service.removeProduct(1)).rejects.toThrow(ratingError);
         });
@@ -722,15 +903,20 @@ describe('ProductService', () => {
                 id: i + 1,
                 name: `Product ${i + 1}`,
             }));
-            
+
             const mockProducts = {
                 rows: largeProductList.slice(0, 50), // Первые 50
                 count: 1000,
-            }as unknown as { rows: ProductInfo[]; count: number };
-            
+            } as unknown as { rows: ProductInfo[]; count: number };
+
             productRepository.findListProduct.mockResolvedValue(mockProducts);
 
-            const result = await service.getListProductV2(mockSearchDto, mockSortingDto, 1, 50);
+            const result = await service.getListProductV2(
+                mockSearchDto,
+                mockSortingDto,
+                1,
+                50,
+            );
 
             expect(result.data).toHaveLength(50);
             expect(result.meta.totalCount).toBe(1000);
@@ -741,7 +927,12 @@ describe('ProductService', () => {
             const mockProducts = { rows: [], count: 0 };
             productRepository.findListProduct.mockResolvedValue(mockProducts);
 
-            const result = await service.getListProductV2(mockSearchDto, mockSortingDto, 1, 5);
+            const result = await service.getListProductV2(
+                mockSearchDto,
+                mockSortingDto,
+                1,
+                5,
+            );
 
             expect(result.data).toEqual([]);
             expect(result.meta.totalCount).toBe(0);

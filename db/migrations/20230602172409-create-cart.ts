@@ -34,11 +34,11 @@ const migration: Migration = {
         await queryInterface.addIndex('cart', ['created_at'], {
             name: 'idx_cart_created_at',
         });
-    
+
         await queryInterface.addIndex('cart', ['updated_at'], {
             name: 'idx_cart_updated_at',
         });
-    
+
         // Составной индекс для аналитики
         await queryInterface.addIndex('cart', ['created_at', 'updated_at'], {
             name: 'idx_cart_created_updated',
@@ -51,7 +51,6 @@ const migration: Migration = {
         await queryInterface.removeIndex('cart', 'idx_cart_created_updated');
         await queryInterface.dropTable('cart');
     },
-    
 };
 
 export default migration;

@@ -5,8 +5,8 @@ import {
     Model,
     PrimaryKey,
     Table,
-    CreatedAt, 
-    UpdatedAt, 
+    CreatedAt,
+    UpdatedAt,
 } from 'sequelize-typescript';
 import { UserModel } from './user.model';
 import { RoleModel } from './role.model';
@@ -28,7 +28,10 @@ interface IUserRoleCreationAttributes {
     tableName: 'user_role',
     timestamps: true,
 })
-export class UserRoleModel extends Model<IUserRoleModel, IUserRoleCreationAttributes> implements IUserRoleModel {
+export class UserRoleModel
+    extends Model<IUserRoleModel, IUserRoleCreationAttributes>
+    implements IUserRoleModel
+{
     @PrimaryKey
     @Column({
         type: DataType.INTEGER,
@@ -36,7 +39,7 @@ export class UserRoleModel extends Model<IUserRoleModel, IUserRoleCreationAttrib
         allowNull: false,
     })
     declare id: number;
-    
+
     @ForeignKey(() => RoleModel)
     @Column({
         type: DataType.INTEGER,

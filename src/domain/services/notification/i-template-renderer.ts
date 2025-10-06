@@ -11,8 +11,15 @@ export interface RenderResult {
 }
 
 export interface ITemplateRenderer {
-    renderTemplate(template: string, variables: TemplateVariables): Promise<RenderResult>;
-    validateTemplate(template: string): { valid: boolean; errors: string[]; variables: string[] };
+    renderTemplate(
+        template: string,
+        variables: TemplateVariables,
+    ): Promise<RenderResult>;
+    validateTemplate(template: string): {
+        valid: boolean;
+        errors: string[];
+        variables: string[];
+    };
     extractVariables(template: string): string[];
     sanitizeTemplate(template: string): string;
     getSupportedSyntax(): string[];

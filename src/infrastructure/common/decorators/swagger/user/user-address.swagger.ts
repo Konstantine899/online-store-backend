@@ -6,7 +6,8 @@ export function CreateUserAddressSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({
             summary: 'Создать адрес пользователя',
-            description: 'Создает новый адрес для текущего пользователя. Если указан is_default=true, все остальные адреса пользователя становятся неосновными.',
+            description:
+                'Создает новый адрес для текущего пользователя. Если указан is_default=true, все остальные адреса пользователя становятся неосновными.',
         }),
         ApiResponse({
             status: 201,
@@ -49,7 +50,8 @@ export function GetUserAddressesSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({
             summary: 'Получить все адреса пользователя',
-            description: 'Возвращает список всех адресов текущего пользователя, отсортированных по приоритету (основной адрес первым).',
+            description:
+                'Возвращает список всех адресов текущего пользователя, отсортированных по приоритету (основной адрес первым).',
         }),
         ApiResponse({
             status: 200,
@@ -65,11 +67,17 @@ export function GetUserAddressesSwaggerDecorator() {
                                 id: { type: 'number', example: 1 },
                                 user_id: { type: 'number', example: 123 },
                                 title: { type: 'string', example: 'Дом' },
-                                street: { type: 'string', example: 'ул. Пушкина' },
+                                street: {
+                                    type: 'string',
+                                    example: 'ул. Пушкина',
+                                },
                                 house: { type: 'string', example: '10' },
                                 apartment: { type: 'string', example: '12' },
                                 city: { type: 'string', example: 'Москва' },
-                                postal_code: { type: 'string', example: '101000' },
+                                postal_code: {
+                                    type: 'string',
+                                    example: '101000',
+                                },
                                 country: { type: 'string', example: 'Россия' },
                                 is_default: { type: 'boolean', example: true },
                             },
@@ -91,7 +99,8 @@ export function GetUserAddressSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({
             summary: 'Получить адрес пользователя по ID',
-            description: 'Возвращает конкретный адрес пользователя по его идентификатору.',
+            description:
+                'Возвращает конкретный адрес пользователя по его идентификатору.',
         }),
         ApiResponse({
             status: 200,
@@ -134,7 +143,8 @@ export function UpdateUserAddressSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({
             summary: 'Обновить адрес пользователя',
-            description: 'Обновляет существующий адрес пользователя. Если указан is_default=true, все остальные адреса пользователя становятся неосновными.',
+            description:
+                'Обновляет существующий адрес пользователя. Если указан is_default=true, все остальные адреса пользователя становятся неосновными.',
         }),
         ApiResponse({
             status: 200,
@@ -211,7 +221,8 @@ export function SetDefaultAddressSwaggerDecorator() {
     return applyDecorators(
         ApiOperation({
             summary: 'Установить основной адрес',
-            description: 'Устанавливает указанный адрес как основной для пользователя. Все остальные адреса автоматически становятся неосновными.',
+            description:
+                'Устанавливает указанный адрес как основной для пользователя. Все остальные адреса автоматически становятся неосновными.',
         }),
         ApiResponse({
             status: 200,

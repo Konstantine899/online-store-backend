@@ -23,7 +23,7 @@ const seeder: Seeder = {
                 created_at: new Date(),
                 updated_at: new Date(),
             },
-            
+
             // Тенантские роли (управление магазином)
             {
                 role: 'TENANT_OWNER',
@@ -55,7 +55,7 @@ const seeder: Seeder = {
                 created_at: new Date(),
                 updated_at: new Date(),
             },
-            
+
             // Клиентские роли
             {
                 role: 'VIP_CUSTOMER',
@@ -87,7 +87,7 @@ const seeder: Seeder = {
                 created_at: new Date(),
                 updated_at: new Date(),
             },
-            
+
             // Обратная совместимость (legacy роли)
             {
                 role: 'ADMIN',

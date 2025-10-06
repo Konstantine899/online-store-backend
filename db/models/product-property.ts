@@ -1,4 +1,11 @@
-import { Model, DataTypes, Sequelize, ModelStatic, ModelAttributes, Optional } from 'sequelize';
+import {
+    Model,
+    DataTypes,
+    Sequelize,
+    ModelStatic,
+    ModelAttributes,
+    Optional,
+} from 'sequelize';
 import { TABLE_NAMES } from '../consts';
 import {
     ProductPropertyModel,
@@ -16,7 +23,11 @@ class ProductProperty
     declare created_at: Date;
     declare updated_at: Date;
 
-    static associate(models: { product: ModelStatic<Model<Record<string, unknown>, Record<string, unknown>>> }): void {
+    static associate(models: {
+        product: ModelStatic<
+            Model<Record<string, unknown>, Record<string, unknown>>
+        >;
+    }): void {
         this.belongsTo(models.product, {
             as: TABLE_NAMES.PRODUCT,
             foreignKey: 'product_id',
@@ -61,14 +72,18 @@ export default function defineProductProperty(
     };
 
     ProductProperty.init(
-        attributes as unknown as ModelAttributes<ProductProperty, Optional<ProductPropertyModel, never>>,
+        attributes as unknown as ModelAttributes<
+            ProductProperty,
+            Optional<ProductPropertyModel, never>
+        >,
         {
-        sequelize,
-        modelName: TABLE_NAMES.PRODUCT_PROPERTY,
-        tableName: TABLE_NAMES.PRODUCT_PROPERTY,
-        timestamps: true,
-        underscored: true,
-    });
+            sequelize,
+            modelName: TABLE_NAMES.PRODUCT_PROPERTY,
+            tableName: TABLE_NAMES.PRODUCT_PROPERTY,
+            timestamps: true,
+            underscored: true,
+        },
+    );
 
     return ProductProperty;
 }

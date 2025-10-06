@@ -26,5 +26,9 @@ export interface IEmailProvider {
     sendEmail(message: EmailMessage): Promise<EmailSendResult>;
     sendBulkEmails(messages: EmailMessage[]): Promise<EmailSendResult[]>;
     validateEmail(email: string): boolean;
-    getProviderInfo(): { name: string; version: string; capabilities: string[] };
+    getProviderInfo(): {
+        name: string;
+        version: string;
+        capabilities: string[];
+    };
 }

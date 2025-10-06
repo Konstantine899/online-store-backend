@@ -1,4 +1,11 @@
-import { Model, DataTypes, Sequelize, ModelStatic, ModelAttributes, Optional } from 'sequelize';
+import {
+    Model,
+    DataTypes,
+    Sequelize,
+    ModelStatic,
+    ModelAttributes,
+    Optional,
+} from 'sequelize';
 import { TABLE_NAMES } from '../consts';
 import { OrderItemModel, OrderItemCreationAttributes } from './types';
 
@@ -14,7 +21,11 @@ class OrderItem
     declare created_at: Date;
     declare updated_at: Date;
 
-    static associate(models: { order: ModelStatic<Model<Record<string, unknown>, Record<string, unknown>>> }): void {
+    static associate(models: {
+        order: ModelStatic<
+            Model<Record<string, unknown>, Record<string, unknown>>
+        >;
+    }): void {
         this.belongsTo(models.order, {
             as: TABLE_NAMES.ORDER,
             foreignKey: 'order_id',
@@ -63,7 +74,10 @@ export default function defineOrderItem(
     };
 
     OrderItem.init(
-        attributes as unknown as ModelAttributes<OrderItem, Optional<OrderItemModel, never>>,
+        attributes as unknown as ModelAttributes<
+            OrderItem,
+            Optional<OrderItemModel, never>
+        >,
         {
             sequelize,
             modelName: TABLE_NAMES.ORDER_ITEM,

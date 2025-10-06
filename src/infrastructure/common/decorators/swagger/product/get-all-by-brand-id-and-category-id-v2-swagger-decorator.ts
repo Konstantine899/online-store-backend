@@ -1,18 +1,15 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
-import {
-    ApiOperation,
-    ApiResponse,
-    ApiParam,
-    ApiQuery,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { PaginatedResponse } from '@app/infrastructure/responses/paginate/paginated.response';
 import { ProductInfo } from '@app/infrastructure/paginate';
 
 export function GetAllByBrandIdAndCategoryIdV2SwaggerDecorator(): MethodDecorator {
     return applyDecorators(
-        ApiOperation({ 
-            summary: 'Получение списка продуктов по бренду и категории (новый формат пагинации)',
-            description: 'Возвращает список продуктов определенного бренда и категории в формате { data, meta }'
+        ApiOperation({
+            summary:
+                'Получение списка продуктов по бренду и категории (новый формат пагинации)',
+            description:
+                'Возвращает список продуктов определенного бренда и категории в формате { data, meta }',
         }),
         ApiParam({
             name: 'brandId',
@@ -42,7 +39,8 @@ export function GetAllByBrandIdAndCategoryIdV2SwaggerDecorator(): MethodDecorato
         }),
         ApiResponse({
             status: HttpStatus.OK,
-            description: 'Список продуктов бренда и категории с метаданными пагинации',
+            description:
+                'Список продуктов бренда и категории с метаданными пагинации',
             type: PaginatedResponse<ProductInfo>,
         }),
     );

@@ -27,8 +27,8 @@ const migration: Migration = {
                     key: 'id',
                 },
                 allowNull: false,
-                onUpdate: 'CASCADE', 
-                onDelete: 'CASCADE', 
+                onUpdate: 'CASCADE',
+                onDelete: 'CASCADE',
             },
             user_id: {
                 type: Sequelize.INTEGER,
@@ -37,8 +37,8 @@ const migration: Migration = {
                     key: 'id',
                 },
                 allowNull: false,
-                onUpdate: 'CASCADE', 
-                onDelete: 'CASCADE', 
+                onUpdate: 'CASCADE',
+                onDelete: 'CASCADE',
             },
             created_at: {
                 type: Sequelize.DATE,

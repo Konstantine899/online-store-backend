@@ -1,20 +1,32 @@
-import { Controller, Get, Query, UseGuards, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Query,
+    UseGuards,
+    HttpCode,
+    HttpStatus,
+    Req,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthGuard } from '@app/infrastructure/common/guards';
 import { LoginHistoryService } from '@app/infrastructure/services/login-history/login-history.service';
 import { GetLoginHistoryDto } from '@app/infrastructure/dto/login-history/get-login-history.dto';
-import { GetLoginHistoryResponse, UserLoginStatsResponse } from '@app/infrastructure/responses/login-history/login-history.response';
-import { GetLoginHistorySwaggerDecorator, GetUserLoginStatsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/login-history/get-login-history.swagger';
+import {
+    GetLoginHistoryResponse,
+    UserLoginStatsResponse,
+} from '@app/infrastructure/responses/login-history/login-history.response';
+import {
+    GetLoginHistorySwaggerDecorator,
+    GetUserLoginStatsSwaggerDecorator,
+} from '@app/infrastructure/common/decorators/swagger/login-history/get-login-history.swagger';
 import { IDecodedAccessToken } from '@app/domain/jwt';
 
 @ApiTags('История входов')
 @Controller('login-history')
 @UseGuards(AuthGuard)
 export class LoginHistoryController {
-    constructor(
-        private readonly loginHistoryService: LoginHistoryService,
-    ) {}
+    constructor(private readonly loginHistoryService: LoginHistoryService) {}
 
     @GetLoginHistorySwaggerDecorator()
     @HttpCode(HttpStatus.OK)
@@ -25,17 +37,19 @@ export class LoginHistoryController {
     ): Promise<GetLoginHistoryResponse> {
         const user = request.user as IDecodedAccessToken;
         const { limit = 10, offset = 0 } = query;
-        
+
         const loginHistory = await this.loginHistoryService.getUserLoginHistory(
             Number(user.sub),
             limit,
             offset,
         );
 
-        const total = await this.loginHistoryService.getUserLoginStats(Number(user.sub));
+        const total = await this.loginHistoryService.getUserLoginStats(
+            Number(user.sub),
+        );
 
         return {
-            data: loginHistory.map(record => ({
+            data: loginHistory.map((record) => ({
                 id: record.id,
                 ipAddress: record.ipAddress,
                 userAgent: record.userAgent,
@@ -54,8 +68,10 @@ export class LoginHistoryController {
         @Req() request: Request,
     ): Promise<UserLoginStatsResponse> {
         const user = request.user as IDecodedAccessToken;
-        const stats = await this.loginHistoryService.getUserLoginStats(Number(user.sub));
-        
+        const stats = await this.loginHistoryService.getUserLoginStats(
+            Number(user.sub),
+        );
+
         return {
             totalLogins: stats.totalLogins,
             successfulLogins: stats.successfulLogins,

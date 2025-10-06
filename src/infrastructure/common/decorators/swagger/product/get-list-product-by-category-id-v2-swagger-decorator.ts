@@ -1,18 +1,15 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
-import {
-    ApiOperation,
-    ApiResponse,
-    ApiParam,
-    ApiQuery,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { PaginatedResponse } from '@app/infrastructure/responses/paginate/paginated.response';
 import { ProductInfo } from '@app/infrastructure/paginate';
 
 export function GetListProductByCategoryIdV2SwaggerDecorator(): MethodDecorator {
     return applyDecorators(
-        ApiOperation({ 
-            summary: 'Получение списка продуктов по категории (новый формат пагинации)',
-            description: 'Возвращает список продуктов определенной категории в формате { data, meta }'
+        ApiOperation({
+            summary:
+                'Получение списка продуктов по категории (новый формат пагинации)',
+            description:
+                'Возвращает список продуктов определенной категории в формате { data, meta }',
         }),
         ApiParam({
             name: 'categoryId',

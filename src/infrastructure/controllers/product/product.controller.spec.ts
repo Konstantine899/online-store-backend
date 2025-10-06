@@ -3,7 +3,8 @@ process.env.ALLOWED_ORIGINS = 'http://localhost:3000';
 process.env.JWT_SECRET = 'test_access_secret';
 process.env.JWT_REFRESH_SECRET = 'test_refresh_secret';
 process.env.COOKIE_PARSER_SECRET_KEY = 'test_cookie_secret';
-process.env.DATABASE_URL = 'mysql://test_user:TestPass123!@127.0.0.1:3308/online_store_test';
+process.env.DATABASE_URL =
+    'mysql://test_user:TestPass123!@127.0.0.1:3308/online_store_test';
 process.env.NODE_ENV = 'test';
 
 // Переменные для миграций из .test.env
@@ -29,13 +30,16 @@ describe('ProductController Pagination V2', () => {
         // Автоматически запускаем миграции для тестовой БД
         try {
             console.log('🔄 Запуск миграций для тестовой БД...');
-            execSync('npx sequelize-cli db:migrate --env test', { 
+            execSync('npx sequelize-cli db:migrate --env test', {
                 stdio: 'pipe', // Скрываем вывод для чистоты логов
-                cwd: process.cwd()
+                cwd: process.cwd(),
             });
             console.log('✅ Миграции успешно применены');
         } catch (error) {
-            console.warn('⚠️ Миграции не выполнены, используем sync:', error instanceof Error ? error.message : String(error));
+            console.warn(
+                '⚠️ Миграции не выполнены, используем sync:',
+                error instanceof Error ? error.message : String(error),
+            );
         }
 
         const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -47,12 +51,15 @@ describe('ProductController Pagination V2', () => {
 
         // Получаем экземпляр Sequelize для работы с БД
         sequelize = moduleFixture.get<Sequelize>(Sequelize);
-        
+
         // Fallback: если миграции не сработали, синхронизируем модели
         try {
             await sequelize.sync({ force: false });
         } catch (error) {
-            console.warn('⚠️ Sync не выполнен:', error instanceof Error ? error.message : String(error));
+            console.warn(
+                '⚠️ Sync не выполнен:',
+                error instanceof Error ? error.message : String(error),
+            );
         }
     });
 

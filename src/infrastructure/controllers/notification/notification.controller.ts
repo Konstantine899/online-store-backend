@@ -13,7 +13,14 @@ import {
     DefaultValuePipe,
     ParseIntPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import {
+    ApiTags,
+    ApiOperation,
+    ApiResponse,
+    ApiQuery,
+    ApiBearerAuth,
+    ApiParam,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
 import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
 import { Roles } from '@app/infrastructure/common/decorators/roles-auth.decorator';
@@ -34,7 +41,7 @@ interface AuthenticatedRequest extends Request {
 
 /**
  * Контроллер уведомлений с полной системой ролей и тенантской изоляцией
- * 
+ *
  * Роли и доступ:
  * - PLATFORM_ROLES: полный доступ ко всем уведомлениям платформы
  * - TENANT_ADMIN_ROLES: управление уведомлениями тенанта
@@ -47,9 +54,7 @@ interface AuthenticatedRequest extends Request {
 @UseGuards(AuthGuard, RoleGuard)
 @ApiBearerAuth('JWT-auth')
 export class NotificationController {
-    constructor(
-        private readonly notificationService: NotificationService,
-    ) {}
+    constructor(private readonly notificationService: NotificationService) {}
 
     /**
      * Получить уведомления пользователя
@@ -58,16 +63,37 @@ export class NotificationController {
     @Get()
     @HttpCode(HttpStatus.OK)
     @Roles(...NOTIFICATION_ACCESS_LEVELS.NOTIFICATION_VIEW)
-    @ApiOperation({ 
+    @ApiOperation({
         summary: 'Получить уведомления пользователя',
-        description: 'Возвращает список уведомлений с пагинацией. Клиенты видят только свои уведомления, администраторы - все уведомления тенанта.'
+        description:
+            'Возвращает список уведомлений с пагинацией. Клиенты видят только свои уведомления, администраторы - все уведомления тенанта.',
     })
-    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы', example: 1 })
-    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице', example: 20 })
-    @ApiQuery({ name: 'status', required: false, description: 'Фильтр по статусу', example: 'unread' })
-    @ApiQuery({ name: 'type', required: false, description: 'Фильтр по типу', example: 'email' })
-    @ApiResponse({ 
-        status: 200, 
+    @ApiQuery({
+        name: 'page',
+        required: false,
+        description: 'Номер страницы',
+        example: 1,
+    })
+    @ApiQuery({
+        name: 'limit',
+        required: false,
+        description: 'Количество элементов на странице',
+        example: 20,
+    })
+    @ApiQuery({
+        name: 'status',
+        required: false,
+        description: 'Фильтр по статусу',
+        example: 'unread',
+    })
+    @ApiQuery({
+        name: 'type',
+        required: false,
+        description: 'Фильтр по типу',
+        example: 'email',
+    })
+    @ApiResponse({
+        status: 200,
         description: 'Уведомления получены успешно',
         schema: {
             type: 'object',
@@ -79,12 +105,18 @@ export class NotificationController {
                         properties: {
                             id: { type: 'number', example: 1 },
                             type: { type: 'string', example: 'email' },
-                            title: { type: 'string', example: 'Заказ подтвержден' },
-                            message: { type: 'string', example: 'Ваш заказ #12345 подтвержден' },
+                            title: {
+                                type: 'string',
+                                example: 'Заказ подтвержден',
+                            },
+                            message: {
+                                type: 'string',
+                                example: 'Ваш заказ #12345 подтвержден',
+                            },
                             status: { type: 'string', example: 'sent' },
                             createdAt: { type: 'string', format: 'date-time' },
-                        }
-                    }
+                        },
+                    },
                 },
                 meta: {
                     type: 'object',
@@ -93,10 +125,10 @@ export class NotificationController {
                         currentPage: { type: 'number', example: 1 },
                         lastPage: { type: 'number', example: 5 },
                         limit: { type: 'number', example: 20 },
-                    }
-                }
-            }
-        }
+                    },
+                },
+            },
+        },
     })
     @ApiResponse({ status: 401, description: 'Не авторизован' })
     @ApiResponse({ status: 403, description: 'Недостаточно прав доступа' })
@@ -106,7 +138,15 @@ export class NotificationController {
         @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
         @Query('status') status?: string,
         @Query('type') type?: string,
-    ): Promise<{ data: unknown[]; meta: { totalCount: number; currentPage: number; lastPage: number; limit: number } }> {
+    ): Promise<{
+        data: unknown[];
+        meta: {
+            totalCount: number;
+            currentPage: number;
+            lastPage: number;
+            limit: number;
+        };
+    }> {
         const filters: NotificationFilters = {
             userId: req.user.id,
             page,
@@ -129,7 +169,7 @@ export class NotificationController {
                 currentPage: result.meta.currentPage as number,
                 lastPage: result.meta.lastPage as number,
                 limit: result.meta.limit as number,
-            }
+            },
         };
     }
 
@@ -140,22 +180,27 @@ export class NotificationController {
     @Get('unread-count')
     @HttpCode(HttpStatus.OK)
     @Roles(...NOTIFICATION_ACCESS_LEVELS.NOTIFICATION_VIEW)
-    @ApiOperation({ 
+    @ApiOperation({
         summary: 'Получить количество непрочитанных уведомлений',
-        description: 'Возвращает количество непрочитанных уведомлений для пользователя'
+        description:
+            'Возвращает количество непрочитанных уведомлений для пользователя',
     })
-    @ApiResponse({ 
-        status: 200, 
+    @ApiResponse({
+        status: 200,
         description: 'Количество непрочитанных уведомлений',
         schema: {
             type: 'object',
             properties: {
-                count: { type: 'number', example: 5 }
-            }
-        }
+                count: { type: 'number', example: 5 },
+            },
+        },
     })
-    async getUnreadCount(@Req() req: AuthenticatedRequest): Promise<{ count: number }> {
-        const count = await this.notificationService.getUnreadCount(req.user.id);
+    async getUnreadCount(
+        @Req() req: AuthenticatedRequest,
+    ): Promise<{ count: number }> {
+        const count = await this.notificationService.getUnreadCount(
+            req.user.id,
+        );
         return { count };
     }
 
@@ -166,20 +211,24 @@ export class NotificationController {
     @Put(':id/read')
     @HttpCode(HttpStatus.OK)
     @Roles(...NOTIFICATION_ACCESS_LEVELS.NOTIFICATION_VIEW)
-    @ApiOperation({ 
+    @ApiOperation({
         summary: 'Отметить уведомление как прочитанное',
-        description: 'Отмечает уведомление как прочитанное. Клиенты могут отмечать только свои уведомления.'
+        description:
+            'Отмечает уведомление как прочитанное. Клиенты могут отмечать только свои уведомления.',
     })
     @ApiParam({ name: 'id', description: 'ID уведомления', example: 1 })
-    @ApiResponse({ 
-        status: 200, 
+    @ApiResponse({
+        status: 200,
         description: 'Уведомление отмечено как прочитанное',
         schema: {
             type: 'object',
             properties: {
-                message: { type: 'string', example: 'Уведомление отмечено как прочитанное' }
-            }
-        }
+                message: {
+                    type: 'string',
+                    example: 'Уведомление отмечено как прочитанное',
+                },
+            },
+        },
     })
     @ApiResponse({ status: 404, description: 'Уведомление не найдено' })
     async markAsRead(
@@ -197,12 +246,12 @@ export class NotificationController {
     @Get('settings')
     @HttpCode(HttpStatus.OK)
     @Roles(...NOTIFICATION_ACCESS_LEVELS.NOTIFICATION_VIEW)
-    @ApiOperation({ 
+    @ApiOperation({
         summary: 'Получить настройки уведомлений пользователя',
-        description: 'Возвращает настройки уведомлений для пользователя'
+        description: 'Возвращает настройки уведомлений для пользователя',
     })
-    @ApiResponse({ 
-        status: 200, 
+    @ApiResponse({
+        status: 200,
         description: 'Настройки уведомлений получены',
         schema: {
             type: 'object',
@@ -213,8 +262,8 @@ export class NotificationController {
                 pushEnabled: { type: 'boolean', example: true },
                 orderUpdates: { type: 'boolean', example: true },
                 marketing: { type: 'boolean', example: false },
-            }
-        }
+            },
+        },
     })
     async getUserSettings(@Req() req: AuthenticatedRequest): Promise<{
         id: number;
@@ -226,7 +275,7 @@ export class NotificationController {
     }> {
         // TODO: Реализовать после создания NotificationSettingsService
         // return this.notificationService.getUserSettings(req.user.id);
-        
+
         return {
             id: 1,
             userId: req.user.id,
@@ -244,12 +293,12 @@ export class NotificationController {
     @Put('settings')
     @HttpCode(HttpStatus.OK)
     @Roles(...NOTIFICATION_ACCESS_LEVELS.NOTIFICATION_VIEW)
-    @ApiOperation({ 
+    @ApiOperation({
         summary: 'Обновить настройки уведомлений пользователя',
-        description: 'Обновляет настройки уведомлений для пользователя'
+        description: 'Обновляет настройки уведомлений для пользователя',
     })
-    @ApiResponse({ 
-        status: 200, 
+    @ApiResponse({
+        status: 200,
         description: 'Настройки уведомлений обновлены',
         schema: {
             type: 'object',
@@ -260,11 +309,12 @@ export class NotificationController {
                 pushEnabled: { type: 'boolean', example: false },
                 orderUpdates: { type: 'boolean', example: true },
                 marketing: { type: 'boolean', example: true },
-            }
-        }
+            },
+        },
     })
     async updateUserSettings(
-        @Body() updateSettingsDto: {
+        @Body()
+        updateSettingsDto: {
             emailEnabled?: boolean;
             pushEnabled?: boolean;
             orderUpdates?: boolean;
@@ -281,7 +331,7 @@ export class NotificationController {
     }> {
         // TODO: Реализовать после создания NotificationSettingsService
         // return this.notificationService.updateUserSettings(req.user.id, updateSettingsDto);
-        
+
         return {
             id: 1,
             userId: req.user.id,
@@ -299,15 +349,31 @@ export class NotificationController {
     @Get('templates')
     @HttpCode(HttpStatus.OK)
     @Roles(...NOTIFICATION_ACCESS_LEVELS.TEMPLATE_MANAGEMENT)
-    @ApiOperation({ 
+    @ApiOperation({
         summary: 'Получить шаблоны уведомлений',
-        description: 'Возвращает список шаблонов уведомлений. Доступно только менеджерам и администраторам.'
+        description:
+            'Возвращает список шаблонов уведомлений. Доступно только менеджерам и администраторам.',
     })
-    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы', example: 1 })
-    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице', example: 20 })
-    @ApiQuery({ name: 'type', required: false, description: 'Фильтр по типу шаблона', example: 'email' })
-    @ApiResponse({ 
-        status: 200, 
+    @ApiQuery({
+        name: 'page',
+        required: false,
+        description: 'Номер страницы',
+        example: 1,
+    })
+    @ApiQuery({
+        name: 'limit',
+        required: false,
+        description: 'Количество элементов на странице',
+        example: 20,
+    })
+    @ApiQuery({
+        name: 'type',
+        required: false,
+        description: 'Фильтр по типу шаблона',
+        example: 'email',
+    })
+    @ApiResponse({
+        status: 200,
         description: 'Шаблоны уведомлений получены',
         schema: {
             type: 'object',
@@ -318,12 +384,18 @@ export class NotificationController {
                         type: 'object',
                         properties: {
                             id: { type: 'number', example: 1 },
-                            name: { type: 'string', example: 'order_confirmation' },
+                            name: {
+                                type: 'string',
+                                example: 'order_confirmation',
+                            },
                             type: { type: 'string', example: 'email' },
-                            title: { type: 'string', example: 'Заказ подтвержден' },
+                            title: {
+                                type: 'string',
+                                example: 'Заказ подтвержден',
+                            },
                             isActive: { type: 'boolean', example: true },
-                        }
-                    }
+                        },
+                    },
                 },
                 meta: {
                     type: 'object',
@@ -332,16 +404,24 @@ export class NotificationController {
                         currentPage: { type: 'number', example: 1 },
                         lastPage: { type: 'number', example: 1 },
                         limit: { type: 'number', example: 20 },
-                    }
-                }
-            }
-        }
+                    },
+                },
+            },
+        },
     })
     async getTemplates(
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
         @Query('type') type?: string,
-    ): Promise<{ data: unknown[]; meta: { totalCount: number; currentPage: number; lastPage: number; limit: number } }> {
+    ): Promise<{
+        data: unknown[];
+        meta: {
+            totalCount: number;
+            currentPage: number;
+            lastPage: number;
+            limit: number;
+        };
+    }> {
         const templates = await this.notificationService.getTemplates({
             type: type as NotificationType,
             isActive: true,
@@ -359,7 +439,7 @@ export class NotificationController {
                 currentPage: page,
                 lastPage: Math.ceil(templates.length / limit),
                 limit,
-            }
+            },
         };
     }
 
@@ -370,12 +450,13 @@ export class NotificationController {
     @Post('templates')
     @HttpCode(HttpStatus.CREATED)
     @Roles(...NOTIFICATION_ACCESS_LEVELS.TEMPLATE_MANAGEMENT)
-    @ApiOperation({ 
+    @ApiOperation({
         summary: 'Создать шаблон уведомления',
-        description: 'Создает новый шаблон уведомления. Доступно только менеджерам и администраторам.'
+        description:
+            'Создает новый шаблон уведомления. Доступно только менеджерам и администраторам.',
     })
-    @ApiResponse({ 
-        status: 201, 
+    @ApiResponse({
+        status: 201,
         description: 'Шаблон уведомления создан',
         schema: {
             type: 'object',
@@ -384,13 +465,17 @@ export class NotificationController {
                 name: { type: 'string', example: 'order_confirmation' },
                 type: { type: 'string', example: 'email' },
                 title: { type: 'string', example: 'Заказ подтвержден' },
-                message: { type: 'string', example: 'Ваш заказ #{{orderNumber}} подтвержден' },
+                message: {
+                    type: 'string',
+                    example: 'Ваш заказ #{{orderNumber}} подтвержден',
+                },
                 isActive: { type: 'boolean', example: true },
-            }
-        }
+            },
+        },
     })
     async createTemplate(
-        @Body() createTemplateDto: {
+        @Body()
+        createTemplateDto: {
             name: string;
             type: string;
             title: string;
@@ -430,13 +515,14 @@ export class NotificationController {
     @Put('templates/:id')
     @HttpCode(HttpStatus.OK)
     @Roles(...NOTIFICATION_ACCESS_LEVELS.TEMPLATE_MANAGEMENT)
-    @ApiOperation({ 
+    @ApiOperation({
         summary: 'Обновить шаблон уведомления',
-        description: 'Обновляет существующий шаблон уведомления. Доступно только менеджерам и администраторам.'
+        description:
+            'Обновляет существующий шаблон уведомления. Доступно только менеджерам и администраторам.',
     })
     @ApiParam({ name: 'id', description: 'ID шаблона', example: 1 })
-    @ApiResponse({ 
-        status: 200, 
+    @ApiResponse({
+        status: 200,
         description: 'Шаблон уведомления обновлен',
         schema: {
             type: 'object',
@@ -445,14 +531,18 @@ export class NotificationController {
                 name: { type: 'string', example: 'order_confirmation' },
                 type: { type: 'string', example: 'email' },
                 title: { type: 'string', example: 'Заказ подтвержден' },
-                message: { type: 'string', example: 'Ваш заказ #{{orderNumber}} подтвержден' },
+                message: {
+                    type: 'string',
+                    example: 'Ваш заказ #{{orderNumber}} подтвержден',
+                },
                 isActive: { type: 'boolean', example: true },
-            }
-        }
+            },
+        },
     })
     async updateTemplate(
         @Param('id', ParseIntPipe) templateId: number,
-        @Body() updateTemplateDto: {
+        @Body()
+        updateTemplateDto: {
             name?: string;
             type?: string;
             title?: string;
@@ -470,12 +560,18 @@ export class NotificationController {
     }> {
         const updateData: Record<string, unknown> = {};
         if (updateTemplateDto.name) updateData.name = updateTemplateDto.name;
-        if (updateTemplateDto.type) updateData.type = updateTemplateDto.type as NotificationType;
+        if (updateTemplateDto.type)
+            updateData.type = updateTemplateDto.type as NotificationType;
         if (updateTemplateDto.title) updateData.title = updateTemplateDto.title;
-        if (updateTemplateDto.message) updateData.message = updateTemplateDto.message;
-        if (updateTemplateDto.isActive !== undefined) updateData.isActive = updateTemplateDto.isActive;
+        if (updateTemplateDto.message)
+            updateData.message = updateTemplateDto.message;
+        if (updateTemplateDto.isActive !== undefined)
+            updateData.isActive = updateTemplateDto.isActive;
 
-        const template = await this.notificationService.updateTemplate(templateId, updateData);
+        const template = await this.notificationService.updateTemplate(
+            templateId,
+            updateData,
+        );
 
         return {
             id: template.id,
@@ -494,9 +590,10 @@ export class NotificationController {
     @Delete('templates/:id')
     @HttpCode(HttpStatus.NO_CONTENT)
     @Roles(...TENANT_ADMIN_ROLES, ...PLATFORM_ROLES)
-    @ApiOperation({ 
+    @ApiOperation({
         summary: 'Удалить шаблон уведомления',
-        description: 'Удаляет шаблон уведомления. Доступно только администраторам тенанта и платформы.'
+        description:
+            'Удаляет шаблон уведомления. Доступно только администраторам тенанта и платформы.',
     })
     @ApiParam({ name: 'id', description: 'ID шаблона', example: 1 })
     @ApiResponse({ status: 204, description: 'Шаблон уведомления удален' })
@@ -515,14 +612,25 @@ export class NotificationController {
     @Get('statistics')
     @HttpCode(HttpStatus.OK)
     @Roles(...NOTIFICATION_ACCESS_LEVELS.STATISTICS_VIEW)
-    @ApiOperation({ 
+    @ApiOperation({
         summary: 'Получить статистику уведомлений',
-        description: 'Возвращает статистику по уведомлениям. Доступно персоналу, менеджерам и администраторам.'
+        description:
+            'Возвращает статистику по уведомлениям. Доступно персоналу, менеджерам и администраторам.',
     })
-    @ApiQuery({ name: 'period', required: false, description: 'Период статистики', example: '7d' })
-    @ApiQuery({ name: 'type', required: false, description: 'Тип уведомлений', example: 'email' })
-    @ApiResponse({ 
-        status: 200, 
+    @ApiQuery({
+        name: 'period',
+        required: false,
+        description: 'Период статистики',
+        example: '7d',
+    })
+    @ApiQuery({
+        name: 'type',
+        required: false,
+        description: 'Тип уведомлений',
+        example: 'email',
+    })
+    @ApiResponse({
+        status: 200,
         description: 'Статистика уведомлений получена',
         schema: {
             type: 'object',
@@ -537,7 +645,7 @@ export class NotificationController {
                     properties: {
                         email: { type: 'number', example: 800 },
                         push: { type: 'number', example: 200 },
-                    }
+                    },
                 },
                 byStatus: {
                     type: 'object',
@@ -546,10 +654,10 @@ export class NotificationController {
                         delivered: { type: 'number', example: 950 },
                         read: { type: 'number', example: 800 },
                         failed: { type: 'number', example: 50 },
-                    }
-                }
-            }
-        }
+                    },
+                },
+            },
+        },
     })
     async getStatistics(
         @Req() req: AuthenticatedRequest,
@@ -575,7 +683,7 @@ export class NotificationController {
         return this.notificationService.getStatistics(
             req.user.id,
             period,
-            type as NotificationType
+            type as NotificationType,
         );
     }
 }

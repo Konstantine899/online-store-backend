@@ -20,7 +20,7 @@ describe('User Flags Integration Tests', () => {
 
         app = await setupTestApp();
         await app.init();
-        
+
         // Получаем токены для тестирования
         userToken = await authLoginAs(app, 'user');
     });

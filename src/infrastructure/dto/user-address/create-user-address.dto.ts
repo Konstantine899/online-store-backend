@@ -1,9 +1,17 @@
-import { IsString, IsOptional, IsBoolean, Length, IsNotEmpty } from 'class-validator';
+import {
+    IsString,
+    IsOptional,
+    IsBoolean,
+    Length,
+    IsNotEmpty,
+} from 'class-validator';
 
 export class CreateUserAddressDto {
     @IsString({ message: 'Название адреса должно быть строкой' })
     @IsNotEmpty({ message: 'Название адреса обязательно' })
-    @Length(1, 100, { message: 'Название адреса должно быть от 1 до 100 символов' })
+    @Length(1, 100, {
+        message: 'Название адреса должно быть от 1 до 100 символов',
+    })
     declare readonly title: string;
 
     @IsString({ message: 'Улица должна быть строкой' })
@@ -28,7 +36,9 @@ export class CreateUserAddressDto {
 
     @IsOptional()
     @IsString({ message: 'Почтовый индекс должен быть строкой' })
-    @Length(1, 20, { message: 'Почтовый индекс должен быть от 1 до 20 символов' })
+    @Length(1, 20, {
+        message: 'Почтовый индекс должен быть от 1 до 20 символов',
+    })
     declare readonly postal_code?: string;
 
     @IsOptional()
@@ -37,6 +47,8 @@ export class CreateUserAddressDto {
     declare readonly country?: string;
 
     @IsOptional()
-    @IsBoolean({ message: 'Флаг основного адреса должен быть булевым значением' })
+    @IsBoolean({
+        message: 'Флаг основного адреса должен быть булевым значением',
+    })
     declare readonly is_default?: boolean;
 }

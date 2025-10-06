@@ -27,7 +27,10 @@ export interface IUserService {
 
     findUserByEmail(email: string): Promise<UserModel>;
 
-    getListUsers(page?: number, limit?: number): Promise<GetPaginatedUsersResponse>;
+    getListUsers(
+        page?: number,
+        limit?: number,
+    ): Promise<GetPaginatedUsersResponse>;
 
     updateUser(id: number, dto: UpdateUserDto): Promise<UpdateUserResponse>;
 
@@ -38,7 +41,6 @@ export interface IUserService {
     removeUserRole(dto: RemoveRoleDto): Promise<RemoveUserRoleResponse>;
 
     updatePhone(userId: number, phone: string): Promise<UserModel>;
-
 
     // User Statistics Methods
     getUserStats(): Promise<{

@@ -11,7 +11,25 @@ import { TemplateRendererService } from '@app/infrastructure/services/notificati
 import { NotificationEventHandler } from '@app/infrastructure/common/events/notification.event-handler';
 import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
 import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
-import { NotificationModel, NotificationTemplateModel, UserModel, RoleModel, UserRoleModel, RefreshTokenModel, RatingModel, ProductModel, CategoryModel, BrandModel, OrderModel, OrderItemModel, CartModel, CartProductModel, UserAddressModel, LoginHistoryModel, ProductPropertyModel } from '@app/domain/models';
+import {
+    NotificationModel,
+    NotificationTemplateModel,
+    UserModel,
+    RoleModel,
+    UserRoleModel,
+    RefreshTokenModel,
+    RatingModel,
+    ProductModel,
+    CategoryModel,
+    BrandModel,
+    OrderModel,
+    OrderItemModel,
+    CartModel,
+    CartProductModel,
+    UserAddressModel,
+    LoginHistoryModel,
+    ProductPropertyModel,
+} from '@app/domain/models';
 import { NotificationType, NotificationStatus } from '@app/domain/models';
 
 // Mock guards
@@ -44,23 +62,23 @@ describe('NotificationController (Integration)', () => {
                     storage: ':memory:',
                     logging: false,
                     models: [
-                        NotificationModel, 
-                        NotificationTemplateModel, 
-                        UserModel, 
-                        RoleModel, 
-                        UserRoleModel, 
-                        RefreshTokenModel, 
-                        RatingModel, 
-                        ProductModel, 
-                        CategoryModel, 
-                        BrandModel, 
-                        OrderModel, 
-                        OrderItemModel, 
-                        CartModel, 
-                        CartProductModel, 
-                        UserAddressModel, 
-                        LoginHistoryModel, 
-                        ProductPropertyModel
+                        NotificationModel,
+                        NotificationTemplateModel,
+                        UserModel,
+                        RoleModel,
+                        UserRoleModel,
+                        RefreshTokenModel,
+                        RatingModel,
+                        ProductModel,
+                        CategoryModel,
+                        BrandModel,
+                        OrderModel,
+                        OrderItemModel,
+                        CartModel,
+                        CartProductModel,
+                        UserAddressModel,
+                        LoginHistoryModel,
+                        ProductPropertyModel,
                     ],
                     autoLoadModels: true,
                     synchronize: true,
@@ -92,12 +110,13 @@ describe('NotificationController (Integration)', () => {
             .compile();
 
         app = moduleFixture.createNestApplication();
-        notificationService = moduleFixture.get<NotificationService>(NotificationService);
+        notificationService =
+            moduleFixture.get<NotificationService>(NotificationService);
 
         // Mock request.user
-        app.use((req: any, res: any, next: any) => {
-            req.user = mockUser;
-            next();
+        app.use((req: unknown, res: unknown, next: unknown) => {
+            (req as { user: typeof mockUser }).user = mockUser;
+            (next as () => void)();
         });
 
         await app.init();
@@ -270,10 +289,14 @@ describe('NotificationController (Integration)', () => {
                 .expect(200);
 
             expect(response.body).toHaveProperty('message');
-            expect(response.body.message).toBe('Уведомление отмечено как прочитанное');
+            expect(response.body.message).toBe(
+                'Уведомление отмечено как прочитанное',
+            );
 
             // Verify notification was marked as read
-            const updatedNotification = await NotificationModel.findByPk(testNotification.id);
+            const updatedNotification = await NotificationModel.findByPk(
+                testNotification.id,
+            );
             expect(updatedNotification?.isRead).toBe(true);
 
             // Cleanup
@@ -463,7 +486,9 @@ describe('NotificationController (Integration)', () => {
                 .expect(204);
 
             // Verify template was deleted
-            const deletedTemplate = await NotificationTemplateModel.findByPk(testTemplate.id);
+            const deletedTemplate = await NotificationTemplateModel.findByPk(
+                testTemplate.id,
+            );
             expect(deletedTemplate).toBeNull();
         });
 
@@ -690,7 +715,9 @@ describe('NotificationController (Integration)', () => {
     describe('Error handling', () => {
         it('should handle database errors gracefully', async () => {
             // Mock database error
-            jest.spyOn(NotificationModel, 'findAll').mockRejectedValue(new Error('Database connection failed'));
+            jest.spyOn(NotificationModel, 'findAll').mockRejectedValue(
+                new Error('Database connection failed'),
+            );
 
             await request(app.getHttpServer())
                 .get('/notifications')
@@ -702,7 +729,10 @@ describe('NotificationController (Integration)', () => {
 
         it('should handle service errors gracefully', async () => {
             // Mock service error
-            jest.spyOn(notificationService, 'getNotifications').mockRejectedValue(new Error('Service error'));
+            jest.spyOn(
+                notificationService,
+                'getNotifications',
+            ).mockRejectedValue(new Error('Service error'));
 
             await request(app.getHttpServer())
                 .get('/notifications')
@@ -740,7 +770,7 @@ describe('NotificationController (Integration)', () => {
             expect(endTime - startTime).toBeLessThan(1000); // Should complete within 1 second
 
             // Cleanup
-            await Promise.all(notifications.map(n => n.destroy()));
+            await Promise.all(notifications.map((n) => n.destroy()));
         });
     });
 });

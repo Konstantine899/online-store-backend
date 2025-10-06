@@ -50,18 +50,18 @@ const migration: Migration = {
             allowNull: false,
             unique: true,
         });
-        
+
         await queryInterface.addColumn('brand', 'description', {
             type: Sequelize.TEXT,
             allowNull: true,
         });
-        
+
         await queryInterface.addColumn('brand', 'is_active', {
             type: Sequelize.BOOLEAN,
             allowNull: false,
             defaultValue: true,
         });
-        
+
         await queryInterface.addColumn('brand', 'logo', {
             type: Sequelize.STRING(500),
             allowNull: true,

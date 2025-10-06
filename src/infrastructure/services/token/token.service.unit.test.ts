@@ -1,11 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
-import { NotFoundException, UnprocessableEntityException, HttpStatus } from '@nestjs/common';
+import {
+    NotFoundException,
+    UnprocessableEntityException,
+    HttpStatus,
+} from '@nestjs/common';
 import { TokenExpiredError } from 'jsonwebtoken';
 import { TokenService } from './token.service';
-import { RefreshTokenRepository, UserRepository } from '@app/infrastructure/repositories';
+import {
+    RefreshTokenRepository,
+    UserRepository,
+} from '@app/infrastructure/repositories';
 import { RefreshTokenModel, UserModel, RoleModel } from '@app/domain/models';
-import { IRefreshTokenPayload, IAccessTokenPayload } from '@app/domain/services';
+import {
+    IRefreshTokenPayload,
+    IAccessTokenPayload,
+} from '@app/domain/services';
 import { IDecodedAccessToken } from '@app/domain/jwt';
 
 const mockUser: UserModel = {
@@ -50,7 +60,7 @@ const mockAccessToken = 'mock.access.token';
 const mockRefreshTokenString = 'mock.refresh.token';
 const mockRequest = {
     user: null,
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any;
 
 describe('TokenService', () => {
@@ -110,7 +120,7 @@ describe('TokenService', () => {
             expect(result).toBe(mockAccessToken);
             expect(jwtService.signAsync).toHaveBeenCalledWith(
                 mockAccessTokenPayload,
-                { subject: String(mockUser.id) }
+                { subject: String(mockUser.id) },
             );
         });
 
@@ -118,28 +128,31 @@ describe('TokenService', () => {
             const error = new Error('JWT signing failed');
             jwtService.signAsync.mockRejectedValue(error);
 
-            await expect(service.generateAccessToken(mockUser)).rejects.toThrow(error);
+            await expect(service.generateAccessToken(mockUser)).rejects.toThrow(
+                error,
+            );
         });
     });
 
     describe('generateRefreshToken', () => {
         it('должен успешно сгенерировать refresh токен', async () => {
-            refreshTokenRepository.createRefreshToken.mockResolvedValue(mockRefreshToken);
+            refreshTokenRepository.createRefreshToken.mockResolvedValue(
+                mockRefreshToken,
+            );
             jwtService.signAsync.mockResolvedValue(mockRefreshTokenString);
 
             const result = await service.generateRefreshToken(mockUser, 3600);
 
             expect(result).toBe(mockRefreshTokenString);
-            expect(refreshTokenRepository.createRefreshToken).toHaveBeenCalledWith(
-                mockUser,
-                3600
-            );
+            expect(
+                refreshTokenRepository.createRefreshToken,
+            ).toHaveBeenCalledWith(mockUser, 3600);
             expect(jwtService.signAsync).toHaveBeenCalledWith(
                 {},
                 {
                     subject: String(mockUser.id),
                     jwtid: String(mockRefreshToken.id),
-                }
+                },
             );
         });
 
@@ -147,15 +160,21 @@ describe('TokenService', () => {
             const error = new Error('Database error');
             refreshTokenRepository.createRefreshToken.mockRejectedValue(error);
 
-            await expect(service.generateRefreshToken(mockUser, 3600)).rejects.toThrow(error);
+            await expect(
+                service.generateRefreshToken(mockUser, 3600),
+            ).rejects.toThrow(error);
         });
 
         it('должен пробросить ошибку если JwtService.signAsync выбрасывает исключение', async () => {
-            refreshTokenRepository.createRefreshToken.mockResolvedValue(mockRefreshToken);
+            refreshTokenRepository.createRefreshToken.mockResolvedValue(
+                mockRefreshToken,
+            );
             const error = new Error('JWT signing failed');
             jwtService.signAsync.mockRejectedValue(error);
 
-            await expect(service.generateRefreshToken(mockUser, 3600)).rejects.toThrow(error);
+            await expect(
+                service.generateRefreshToken(mockUser, 3600),
+            ).rejects.toThrow(error);
         });
     });
 
@@ -163,18 +182,29 @@ describe('TokenService', () => {
         it('должен успешно декодировать валидный refresh токен', async () => {
             jwtService.verifyAsync.mockResolvedValue(mockRefreshTokenPayload);
 
-            const result = await service.decodeRefreshToken(mockRefreshTokenString);
+            const result = await service.decodeRefreshToken(
+                mockRefreshTokenString,
+            );
 
             expect(result).toEqual(mockRefreshTokenPayload);
-            expect(jwtService.verifyAsync).toHaveBeenCalledWith(mockRefreshTokenString);
+            expect(jwtService.verifyAsync).toHaveBeenCalledWith(
+                mockRefreshTokenString,
+            );
         });
 
         it('должен выбросить UnprocessableEntityException для истекшего токена', async () => {
-            const expiredError = new TokenExpiredError('Token expired', new Date());
+            const expiredError = new TokenExpiredError(
+                'Token expired',
+                new Date(),
+            );
             jwtService.verifyAsync.mockRejectedValue(expiredError);
 
-            await expect(service.decodeRefreshToken(mockRefreshTokenString)).rejects.toThrow(
-                new UnprocessableEntityException('Срок действия refresh token истек')
+            await expect(
+                service.decodeRefreshToken(mockRefreshTokenString),
+            ).rejects.toThrow(
+                new UnprocessableEntityException(
+                    'Срок действия refresh token истек',
+                ),
             );
         });
 
@@ -182,8 +212,12 @@ describe('TokenService', () => {
             const invalidError = new Error('Invalid token');
             jwtService.verifyAsync.mockRejectedValue(invalidError);
 
-            await expect(service.decodeRefreshToken(mockRefreshTokenString)).rejects.toThrow(
-                new UnprocessableEntityException('Не верный формат refresh token')
+            await expect(
+                service.decodeRefreshToken(mockRefreshTokenString),
+            ).rejects.toThrow(
+                new UnprocessableEntityException(
+                    'Не верный формат refresh token',
+                ),
             );
         });
     });
@@ -192,17 +226,30 @@ describe('TokenService', () => {
         it('должен успешно получить пользователя из payload', async () => {
             userRepository.findUser.mockResolvedValue(mockUser);
 
-            const result = await service.getUserFromRefreshTokenPayload(mockRefreshTokenPayload);
+            const result = await service.getUserFromRefreshTokenPayload(
+                mockRefreshTokenPayload,
+            );
 
             expect(result).toBe(mockUser);
-            expect(userRepository.findUser).toHaveBeenCalledWith(mockRefreshTokenPayload.sub);
+            expect(userRepository.findUser).toHaveBeenCalledWith(
+                mockRefreshTokenPayload.sub,
+            );
         });
 
         it('должен выбросить UnprocessableEntityException для отсутствующего subject', async () => {
-            const invalidPayload = { ...mockRefreshTokenPayload, sub: undefined };
+            const invalidPayload = {
+                ...mockRefreshTokenPayload,
+                sub: undefined,
+            };
 
-            await expect(service.getUserFromRefreshTokenPayload(invalidPayload as unknown as IRefreshTokenPayload)).rejects.toThrow(
-                new UnprocessableEntityException('Не верный формат refresh token')
+            await expect(
+                service.getUserFromRefreshTokenPayload(
+                    invalidPayload as unknown as IRefreshTokenPayload,
+                ),
+            ).rejects.toThrow(
+                new UnprocessableEntityException(
+                    'Не верный формат refresh token',
+                ),
             );
         });
 
@@ -210,32 +257,53 @@ describe('TokenService', () => {
             const error = new Error('Database error');
             userRepository.findUser.mockRejectedValue(error);
 
-            await expect(service.getUserFromRefreshTokenPayload(mockRefreshTokenPayload)).rejects.toThrow(error);
+            await expect(
+                service.getUserFromRefreshTokenPayload(mockRefreshTokenPayload),
+            ).rejects.toThrow(error);
         });
     });
 
     describe('getStoredRefreshTokenFromRefreshTokenPayload', () => {
         it('должен успешно получить сохраненный refresh токен', async () => {
-            refreshTokenRepository.findRefreshTokenById.mockResolvedValue(mockRefreshToken);
+            refreshTokenRepository.findRefreshTokenById.mockResolvedValue(
+                mockRefreshToken,
+            );
 
-            const result = await service.getStoredRefreshTokenFromRefreshTokenPayload(mockRefreshTokenPayload);
+            const result =
+                await service.getStoredRefreshTokenFromRefreshTokenPayload(
+                    mockRefreshTokenPayload,
+                );
 
             expect(result).toBe(mockRefreshToken);
-            expect(refreshTokenRepository.findRefreshTokenById).toHaveBeenCalledWith(mockRefreshTokenPayload.jti);
+            expect(
+                refreshTokenRepository.findRefreshTokenById,
+            ).toHaveBeenCalledWith(mockRefreshTokenPayload.jti);
         });
 
         it('должен выбросить UnprocessableEntityException для отсутствующего jti', async () => {
-            const invalidPayload = { ...mockRefreshTokenPayload, jti: undefined };
+            const invalidPayload = {
+                ...mockRefreshTokenPayload,
+                jti: undefined,
+            };
 
-            await expect(service.getStoredRefreshTokenFromRefreshTokenPayload(invalidPayload as unknown as IRefreshTokenPayload)).rejects.toThrow(
-                new UnprocessableEntityException('id refresh token не получен из payload')
+            await expect(
+                service.getStoredRefreshTokenFromRefreshTokenPayload(
+                    invalidPayload as unknown as IRefreshTokenPayload,
+                ),
+            ).rejects.toThrow(
+                new UnprocessableEntityException(
+                    'id refresh token не получен из payload',
+                ),
             );
         });
 
         it('должен вернуть null если токен не найден', async () => {
             refreshTokenRepository.findRefreshTokenById.mockResolvedValue(null);
 
-            const result = await service.getStoredRefreshTokenFromRefreshTokenPayload(mockRefreshTokenPayload);
+            const result =
+                await service.getStoredRefreshTokenFromRefreshTokenPayload(
+                    mockRefreshTokenPayload,
+                );
 
             expect(result).toBeNull();
         });
@@ -245,30 +313,42 @@ describe('TokenService', () => {
         it('должен успешно декодировать access токен', async () => {
             jwtService.verifyAsync.mockResolvedValue(mockDecodedAccessToken);
 
-            const result = await service.decodedAccessToken(mockAccessToken, mockRequest);
+            const result = await service.decodedAccessToken(
+                mockAccessToken,
+                mockRequest,
+            );
 
             expect(result).toEqual(mockDecodedAccessToken);
             expect(mockRequest.user).toBe(mockDecodedAccessToken);
-            expect(jwtService.verifyAsync).toHaveBeenCalledWith(mockAccessToken, {
-                secret: expect.any(String),
-            });
+            expect(jwtService.verifyAsync).toHaveBeenCalledWith(
+                mockAccessToken,
+                {
+                    secret: expect.any(String),
+                },
+            );
         });
 
         it('должен пробросить ошибку если JwtService.verifyAsync выбрасывает исключение', async () => {
             const error = new Error('JWT verification failed');
             jwtService.verifyAsync.mockRejectedValue(error);
 
-            await expect(service.decodedAccessToken(mockAccessToken, mockRequest)).rejects.toThrow(error);
+            await expect(
+                service.decodedAccessToken(mockAccessToken, mockRequest),
+            ).rejects.toThrow(error);
         });
     });
 
     describe('updateRefreshToken', () => {
         it('должен успешно обновить refresh токен', async () => {
             jwtService.verifyAsync.mockResolvedValue(mockRefreshTokenPayload);
-            refreshTokenRepository.findRefreshTokenById.mockResolvedValue(mockRefreshToken);
+            refreshTokenRepository.findRefreshTokenById.mockResolvedValue(
+                mockRefreshToken,
+            );
             userRepository.findUser.mockResolvedValue(mockUser);
 
-            const result = await service.updateRefreshToken(mockRefreshTokenString);
+            const result = await service.updateRefreshToken(
+                mockRefreshTokenString,
+            );
 
             expect(result).toEqual({
                 user: mockUser,
@@ -280,21 +360,31 @@ describe('TokenService', () => {
             jwtService.verifyAsync.mockResolvedValue(mockRefreshTokenPayload);
             refreshTokenRepository.findRefreshTokenById.mockResolvedValue(null);
 
-            await expect(service.updateRefreshToken(mockRefreshTokenString)).rejects.toThrow(
+            await expect(
+                service.updateRefreshToken(mockRefreshTokenString),
+            ).rejects.toThrow(
                 new NotFoundException({
                     status: HttpStatus.NOT_FOUND,
                     message: 'Refresh token не найден в БД',
-                })
+                }),
             );
         });
 
         it('должен выбросить UnprocessableEntityException если пользователь не найден', async () => {
             jwtService.verifyAsync.mockResolvedValue(mockRefreshTokenPayload);
-            refreshTokenRepository.findRefreshTokenById.mockResolvedValue(mockRefreshToken);
-            userRepository.findUser.mockResolvedValue(null as unknown as UserModel);
+            refreshTokenRepository.findRefreshTokenById.mockResolvedValue(
+                mockRefreshToken,
+            );
+            userRepository.findUser.mockResolvedValue(
+                null as unknown as UserModel,
+            );
 
-            await expect(service.updateRefreshToken(mockRefreshTokenString)).rejects.toThrow(
-                new UnprocessableEntityException('Не верный формат refresh token')
+            await expect(
+                service.updateRefreshToken(mockRefreshTokenString),
+            ).rejects.toThrow(
+                new UnprocessableEntityException(
+                    'Не верный формат refresh token',
+                ),
             );
         });
     });
@@ -302,11 +392,15 @@ describe('TokenService', () => {
     describe('createAccessTokenFromRefreshToken', () => {
         it('должен успешно создать access токен из refresh токена', async () => {
             jwtService.verifyAsync.mockResolvedValue(mockRefreshTokenPayload);
-            refreshTokenRepository.findRefreshTokenById.mockResolvedValue(mockRefreshToken);
+            refreshTokenRepository.findRefreshTokenById.mockResolvedValue(
+                mockRefreshToken,
+            );
             userRepository.findUser.mockResolvedValue(mockUser);
             jwtService.signAsync.mockResolvedValue(mockAccessToken);
 
-            const result = await service.createAccessTokenFromRefreshToken(mockRefreshTokenString);
+            const result = await service.createAccessTokenFromRefreshToken(
+                mockRefreshTokenString,
+            );
 
             expect(result).toEqual({
                 accessToken: mockAccessToken,
@@ -318,7 +412,7 @@ describe('TokenService', () => {
     describe('hashRefreshToken', () => {
         it('должен успешно захешировать refresh токен', () => {
             const originalToken = 'original.refresh.token';
-            
+
             const result = service.hashRefreshToken(originalToken);
 
             expect(result).toBeDefined();
@@ -357,37 +451,54 @@ describe('TokenService', () => {
 
     describe('removeRefreshToken', () => {
         it('должен удалить единственный refresh токен', async () => {
-            refreshTokenRepository.findListRefreshTokens.mockResolvedValue([mockRefreshToken]);
+            refreshTokenRepository.findListRefreshTokens.mockResolvedValue([
+                mockRefreshToken,
+            ]);
             refreshTokenRepository.removeRefreshToken.mockResolvedValue(1);
 
             const result = await service.removeRefreshToken(1, 1);
 
             expect(result).toBe(1);
-            expect(refreshTokenRepository.removeRefreshToken).toHaveBeenCalledWith(1);
+            expect(
+                refreshTokenRepository.removeRefreshToken,
+            ).toHaveBeenCalledWith(1);
         });
 
         it('должен удалить все refresh токены если их больше одного', async () => {
-            const multipleTokens = [mockRefreshToken, { ...mockRefreshToken, id: 2 }] as unknown as RefreshTokenModel[];
-            refreshTokenRepository.findListRefreshTokens.mockResolvedValue(multipleTokens);
+            const multipleTokens = [
+                mockRefreshToken,
+                { ...mockRefreshToken, id: 2 },
+            ] as unknown as RefreshTokenModel[];
+            refreshTokenRepository.findListRefreshTokens.mockResolvedValue(
+                multipleTokens,
+            );
             refreshTokenRepository.removeListRefreshTokens.mockResolvedValue(2);
 
             const result = await service.removeRefreshToken(1, 1);
 
             expect(result).toBe(2);
-            expect(refreshTokenRepository.removeListRefreshTokens).toHaveBeenCalledWith(1);
+            expect(
+                refreshTokenRepository.removeListRefreshTokens,
+            ).toHaveBeenCalledWith(1);
         });
     });
 
     describe('rotateRefreshToken', () => {
         it('должен успешно ротировать refresh токен', async () => {
             jwtService.verifyAsync.mockResolvedValue(mockRefreshTokenPayload);
-            refreshTokenRepository.findRefreshTokenById.mockResolvedValue(mockRefreshToken);
+            refreshTokenRepository.findRefreshTokenById.mockResolvedValue(
+                mockRefreshToken,
+            );
             userRepository.findUserByPkId.mockResolvedValue(mockUser);
-            refreshTokenRepository.createRefreshToken.mockResolvedValue(mockRefreshToken);
+            refreshTokenRepository.createRefreshToken.mockResolvedValue(
+                mockRefreshToken,
+            );
             jwtService.signAsync
                 .mockResolvedValueOnce(mockRefreshTokenString)
                 .mockResolvedValueOnce(mockAccessToken);
-            const result = await service.rotateRefreshToken(mockRefreshTokenString);
+            const result = await service.rotateRefreshToken(
+                mockRefreshTokenString,
+            );
 
             expect(result).toEqual({
                 accessToken: mockAccessToken,
@@ -401,28 +512,46 @@ describe('TokenService', () => {
             refreshTokenRepository.findRefreshTokenById.mockResolvedValue(null);
             refreshTokenRepository.removeListRefreshTokens.mockResolvedValue(0);
 
-            await expect(service.rotateRefreshToken(mockRefreshTokenString)).rejects.toThrow(
-                new NotFoundException('Refresh token not found or already used (possible theft detected)')
+            await expect(
+                service.rotateRefreshToken(mockRefreshTokenString),
+            ).rejects.toThrow(
+                new NotFoundException(
+                    'Refresh token not found or already used (possible theft detected)',
+                ),
             );
         });
 
         it('должен выбросить UnprocessableEntityException если пользователь токена не совпадает', async () => {
-            const wrongUserToken = { ...mockRefreshToken, user_id: 999 } as unknown as RefreshTokenModel;
+            const wrongUserToken = {
+                ...mockRefreshToken,
+                user_id: 999,
+            } as unknown as RefreshTokenModel;
             jwtService.verifyAsync.mockResolvedValue(mockRefreshTokenPayload);
-            refreshTokenRepository.findRefreshTokenById.mockResolvedValue(wrongUserToken);
+            refreshTokenRepository.findRefreshTokenById.mockResolvedValue(
+                wrongUserToken,
+            );
 
-            await expect(service.rotateRefreshToken(mockRefreshTokenString)).rejects.toThrow(
-                new UnprocessableEntityException('Token user mismatch')
+            await expect(
+                service.rotateRefreshToken(mockRefreshTokenString),
+            ).rejects.toThrow(
+                new UnprocessableEntityException('Token user mismatch'),
             );
         });
 
         it('должен выбросить UnprocessableEntityException если токен истек', async () => {
-            const expiredToken = { ...mockRefreshToken, expires: new Date(Date.now() - 1000) } as unknown as RefreshTokenModel;
+            const expiredToken = {
+                ...mockRefreshToken,
+                expires: new Date(Date.now() - 1000),
+            } as unknown as RefreshTokenModel;
             jwtService.verifyAsync.mockResolvedValue(mockRefreshTokenPayload);
-            refreshTokenRepository.findRefreshTokenById.mockResolvedValue(expiredToken);
+            refreshTokenRepository.findRefreshTokenById.mockResolvedValue(
+                expiredToken,
+            );
 
-            await expect(service.rotateRefreshToken(mockRefreshTokenString)).rejects.toThrow(
-                new UnprocessableEntityException('Refresh token expired')
+            await expect(
+                service.rotateRefreshToken(mockRefreshTokenString),
+            ).rejects.toThrow(
+                new UnprocessableEntityException('Refresh token expired'),
             );
         });
     });

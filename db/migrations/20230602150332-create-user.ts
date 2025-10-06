@@ -47,8 +47,8 @@ const migration: Migration = {
             },
         });
         await Promise.all([
-             // Индекс для быстрого поиска по email (уникальный уже есть, но явно добавляем)
-             queryInterface.addIndex('user', ['email'], {
+            // Индекс для быстрого поиска по email (уникальный уже есть, но явно добавляем)
+            queryInterface.addIndex('user', ['email'], {
                 name: 'idx_user_email',
             }),
             // Составной индекс для оптимизации запросов с email и id
@@ -58,15 +58,15 @@ const migration: Migration = {
             // Индекс для внешних ключей (хотя id - PK, но может помочь в JOIN'ах)
             queryInterface.addIndex('user', ['id'], {
                 name: 'idx_user_id_performance',
-            })
-        ])
+            }),
+        ]);
     },
 
     async down(queryInterface: QueryInterface): Promise<void> {
         await Promise.all([
             queryInterface.removeIndex('user', 'idx_user_email'),
             queryInterface.removeIndex('user', 'idx_user_email_id'),
-            queryInterface.removeIndex('user', 'idx_user_id_performance')
+            queryInterface.removeIndex('user', 'idx_user_id_performance'),
         ]);
         await queryInterface.dropTable('user');
     },

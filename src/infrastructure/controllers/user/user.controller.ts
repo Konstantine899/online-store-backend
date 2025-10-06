@@ -54,7 +54,10 @@ import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-fla
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
 import { UpdateUserFlagsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-flags.swagger';
 import { UpdateUserPreferencesSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-preferences.swagger';
-import { VerifyUserEmailSwaggerDecorator, VerifyUserPhoneSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/verify-user.swagger';
+import {
+    VerifyUserEmailSwaggerDecorator,
+    VerifyUserPhoneSwaggerDecorator,
+} from '@app/infrastructure/common/decorators/swagger/user/verify-user.swagger';
 import { UpdateUserProfileSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-profile.swagger';
 import { GetUserStatsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/user-stats.swagger';
 import { UpdateUserPhoneResponse } from '@app/infrastructure/responses';
@@ -69,10 +72,38 @@ interface AuthenticatedRequest extends Request {
 }
 
 // Оптимизированные константы ролей
-const USER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST', 'USER', 'ADMIN'] as const;
-const ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN', 'ADMIN'] as const;
-const MANAGER_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE', 'ADMIN'] as const;
-const STAFF_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE', 'ADMIN'] as const;
+const USER_ROLES = [
+    'VIP_CUSTOMER',
+    'WHOLESALE',
+    'CUSTOMER',
+    'AFFILIATE',
+    'GUEST',
+    'USER',
+    'ADMIN',
+] as const;
+const ADMIN_ROLES = [
+    'SUPER_ADMIN',
+    'PLATFORM_ADMIN',
+    'TENANT_OWNER',
+    'TENANT_ADMIN',
+    'ADMIN',
+] as const;
+const MANAGER_ROLES = [
+    'TENANT_OWNER',
+    'TENANT_ADMIN',
+    'MANAGER',
+    'CONTENT_MANAGER',
+    'CUSTOMER_SERVICE',
+    'ADMIN',
+] as const;
+const STAFF_ROLES = [
+    'TENANT_OWNER',
+    'TENANT_ADMIN',
+    'MANAGER',
+    'CONTENT_MANAGER',
+    'CUSTOMER_SERVICE',
+    'ADMIN',
+] as const;
 
 // Глобальный экземпляр валидатора для оптимизации производительности
 const validationPipe = new CustomValidationPipe();
@@ -120,7 +151,6 @@ export class UserController implements IUserController {
     ): Promise<GetPaginatedUsersResponse> {
         return this.userService.getListUsers(page, limit);
     }
-
 
     @UpdateUserSwaggerDecorator()
     @HttpCode(200)
@@ -216,7 +246,11 @@ export class UserController implements IUserController {
         @Body(validationPipe) dto: ChangePasswordDto,
     ) {
         const userId = this.extractUserId(req);
-        await this.userService.changePassword(userId, dto.oldPassword, dto.newPassword);
+        await this.userService.changePassword(
+            userId,
+            dto.oldPassword,
+            dto.newPassword,
+        );
         return { status: HttpStatus.OK, message: 'success' };
     }
 
@@ -292,7 +326,11 @@ export class UserController implements IUserController {
         @Body(validationPipe) dto: ConfirmVerificationDto,
     ) {
         const userId = this.extractUserId(req);
-        await this.userService.confirmVerificationCode(userId, 'email', dto.code);
+        await this.userService.confirmVerificationCode(
+            userId,
+            'email',
+            dto.code,
+        );
         return { status: HttpStatus.OK, message: 'success' };
     }
 
@@ -315,7 +353,11 @@ export class UserController implements IUserController {
         @Body(validationPipe) dto: ConfirmVerificationDto,
     ) {
         const userId = this.extractUserId(req);
-        await this.userService.confirmVerificationCode(userId, 'phone', dto.code);
+        await this.userService.confirmVerificationCode(
+            userId,
+            'phone',
+            dto.code,
+        );
         return { status: HttpStatus.OK, message: 'success' };
     }
 
@@ -481,7 +523,6 @@ export class UserController implements IUserController {
         const user = await this.userService.unsetAffiliate(id);
         return this.createResponse(user);
     }
-
 
     // ===== Admin Statistics Endpoint =====
     @Roles(...ADMIN_ROLES)

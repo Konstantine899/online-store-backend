@@ -12,7 +12,8 @@ export function UpdateAccessTokenSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({
             summary: 'Обновить access токен',
-            description: 'Обновляет access токен используя refresh токен. Refresh токен ротируется (старый удаляется, новый создаётся). При обнаружении повторного использования токена все refresh токены пользователя удаляются.',
+            description:
+                'Обновляет access токен используя refresh токен. Refresh токен ротируется (старый удаляется, новый создаётся). При обнаружении повторного использования токена все refresh токены пользователя удаляются.',
         }),
         ApiCookieAuth('refreshToken'),
         ApiResponse({

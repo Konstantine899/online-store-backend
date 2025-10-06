@@ -17,8 +17,8 @@ interface IRoleModel {
     role: string;
     description: string;
     users: UserModel[];
-    createdAt: Date; 
-    updatedAt: Date; 
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 interface IRoleCreationAttributes {
@@ -40,7 +40,7 @@ interface IRoleCreationAttributes {
         }),
         // Scope для поиска по описанию
         byDescription: (description: string) => ({
-            where: { 
+            where: {
                 description: {
                     [Op.like]: `%${description}%`,
                 },
@@ -48,24 +48,31 @@ interface IRoleCreationAttributes {
         }),
         // Scope для загрузки с пользователями
         withUsers: {
-            include: [{
-                model: UserModel,
-                through: { attributes: [] },
-                attributes: ['id', 'email', 'name'],
-            }],
+            include: [
+                {
+                    model: UserModel,
+                    through: { attributes: [] },
+                    attributes: ['id', 'email', 'name'],
+                },
+            ],
         },
         // Scope для активных ролей (с пользователями)
         active: {
-            include: [{
-                model: UserModel,
-                through: { attributes: [] },
-                attributes: [],
-                required: true,
-            }],
+            include: [
+                {
+                    model: UserModel,
+                    through: { attributes: [] },
+                    attributes: [],
+                    required: true,
+                },
+            ],
         },
     },
 })
-export class RoleModel extends Model<RoleModel, IRoleCreationAttributes> implements IRoleModel {
+export class RoleModel
+    extends Model<RoleModel, IRoleCreationAttributes>
+    implements IRoleModel
+{
     @ApiProperty({
         example: 1,
         description: 'Идентификатор роли',

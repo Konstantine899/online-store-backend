@@ -22,7 +22,6 @@ class Product
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static associate(models: Record<string, any>): void {
-         
         // Remove cart from models to avoid circular reference
         const modelsCopy = { ...models };
         modelsCopy.cart = undefined;

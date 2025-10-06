@@ -44,10 +44,14 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
         },
     });
 
-    await queryInterface.addIndex('user_verification_code', ['user_id', 'channel'], {
-        name: 'idx_uvc_user_channel',
-        unique: false,
-    });
+    await queryInterface.addIndex(
+        'user_verification_code',
+        ['user_id', 'channel'],
+        {
+            name: 'idx_uvc_user_channel',
+            unique: false,
+        },
+    );
     await queryInterface.addIndex('user_verification_code', ['expires_at'], {
         name: 'idx_uvc_expires_at',
         unique: false,
@@ -56,22 +60,30 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
 
 export async function down(queryInterface: QueryInterface): Promise<void> {
     try {
-        await queryInterface.removeIndex('user_verification_code', 'idx_uvc_user_channel');
+        await queryInterface.removeIndex(
+            'user_verification_code',
+            'idx_uvc_user_channel',
+        );
     } catch (e) {
         if (process.env.NODE_ENV !== 'production') {
-             
-            console.warn('[migrate] skip removeIndex idx_uvc_user_channel:', (e as Error).message);
+            console.warn(
+                '[migrate] skip removeIndex idx_uvc_user_channel:',
+                (e as Error).message,
+            );
         }
     }
     try {
-        await queryInterface.removeIndex('user_verification_code', 'idx_uvc_expires_at');
+        await queryInterface.removeIndex(
+            'user_verification_code',
+            'idx_uvc_expires_at',
+        );
     } catch (e) {
         if (process.env.NODE_ENV !== 'production') {
-             
-            console.warn('[migrate] skip removeIndex idx_uvc_expires_at:', (e as Error).message);
+            console.warn(
+                '[migrate] skip removeIndex idx_uvc_expires_at:',
+                (e as Error).message,
+            );
         }
     }
     await queryInterface.dropTable('user_verification_code');
 }
-
-

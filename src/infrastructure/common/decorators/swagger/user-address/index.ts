@@ -4,5 +4,3 @@ export { CreateUserAddressSwaggerDecorator } from './create-address.swagger';
 export { UpdateUserAddressSwaggerDecorator } from './update-address.swagger';
 export { RemoveUserAddressSwaggerDecorator } from './remove-address.swagger';
 export { SetDefaultUserAddressSwaggerDecorator } from './set-default-address.swagger';
-
-

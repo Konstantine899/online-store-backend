@@ -54,5 +54,3 @@ export class UpdateUserDto {
     @IsSanitizedString({ message: 'Фамилия содержит недопустимые символы' })
     declare readonly lastName?: string;
 }
-
-

@@ -11,7 +11,7 @@ class User
     declare password: string;
     declare phone?: string;
     declare first_name?: string;
-    declare last_name?: string; 
+    declare last_name?: string;
     // Flags
     declare is_active: boolean;
     declare is_newsletter_subscribed: boolean;
@@ -116,35 +116,147 @@ export default function defineUser(sequelize: Sequelize): typeof User {
                 allowNull: false,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             // New flags
-            is_active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
-            is_newsletter_subscribed: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_marketing_consent: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_cookie_consent: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_profile_completed: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_vip_customer: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_beta_tester: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_blocked: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_verified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_premium: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_email_verified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_phone_verified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_terms_accepted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_privacy_accepted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_age_verified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_two_factor_enabled: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_deleted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_suspended: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_affiliate: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_employee: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_high_value: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-            is_wholesale: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+            is_active: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: true,
+            },
+            is_newsletter_subscribed: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_marketing_consent: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_cookie_consent: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_profile_completed: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_vip_customer: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_beta_tester: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_blocked: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_verified: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_premium: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_email_verified: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_phone_verified: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_terms_accepted: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_privacy_accepted: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_age_verified: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_two_factor_enabled: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_deleted: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_suspended: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_affiliate: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_employee: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_high_value: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            is_wholesale: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
             // Preferences/meta
-            preferred_language: { type: DataTypes.STRING(10), allowNull: false, defaultValue: 'ru' },
-            timezone: { type: DataTypes.STRING(50), allowNull: false, defaultValue: 'Europe/Moscow' },
-            notification_preferences: { type: DataTypes.JSON, allowNull: true, defaultValue: null },
-            theme_preference: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'light' },
-            default_language: { type: DataTypes.STRING(10), allowNull: false, defaultValue: 'ru' },
-            translations: { type: DataTypes.JSON, allowNull: true, defaultValue: null },
+            preferred_language: {
+                type: DataTypes.STRING(10),
+                allowNull: false,
+                defaultValue: 'ru',
+            },
+            timezone: {
+                type: DataTypes.STRING(50),
+                allowNull: false,
+                defaultValue: 'Europe/Moscow',
+            },
+            notification_preferences: {
+                type: DataTypes.JSON,
+                allowNull: true,
+                defaultValue: null,
+            },
+            theme_preference: {
+                type: DataTypes.STRING(20),
+                allowNull: false,
+                defaultValue: 'light',
+            },
+            default_language: {
+                type: DataTypes.STRING(10),
+                allowNull: false,
+                defaultValue: 'ru',
+            },
+            translations: {
+                type: DataTypes.JSON,
+                allowNull: true,
+                defaultValue: null,
+            },
             // Timestamps
             email_verified_at: { type: DataTypes.DATE, allowNull: true },
             phone_verified_at: { type: DataTypes.DATE, allowNull: true },

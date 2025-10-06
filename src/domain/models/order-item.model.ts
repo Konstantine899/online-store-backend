@@ -59,10 +59,12 @@ interface IOrderItemCreationAttributes {
             where: { quantity },
         }),
         withOrder: {
-            include: [{
-                model: OrderModel,
-                attributes: ['id', 'status', 'user_id', 'amount'],
-            }],
+            include: [
+                {
+                    model: OrderModel,
+                    attributes: ['id', 'status', 'user_id', 'amount'],
+                },
+            ],
         },
     },
 })

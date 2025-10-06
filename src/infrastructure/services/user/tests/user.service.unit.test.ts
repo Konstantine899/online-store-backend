@@ -39,54 +39,79 @@ describe('UserService', () => {
 
     describe('updatePhone', () => {
         it('updates phone and returns user with id and phone', async () => {
-            (userRepository.updatePhone as jest.Mock).mockResolvedValue({ id: 10, phone: '+79990001122' });
+            (userRepository.updatePhone as jest.Mock).mockResolvedValue({
+                id: 10,
+                phone: '+79990001122',
+            });
             const result = await service.updatePhone(10, '+79990001122');
-            expect(userRepository.updatePhone).toHaveBeenCalledWith(10, '+79990001122');
+            expect(userRepository.updatePhone).toHaveBeenCalledWith(
+                10,
+                '+79990001122',
+            );
             expect(result).toEqual({ id: 10, phone: '+79990001122' });
         });
 
         it('throws NotFoundException when user not updated', async () => {
             (userRepository.updatePhone as jest.Mock).mockResolvedValue(null);
-            await expect(service.updatePhone(1, '+7999'))
-                .rejects
-                .toBeInstanceOf(NotFoundException);
+            await expect(
+                service.updatePhone(1, '+7999'),
+            ).rejects.toBeInstanceOf(NotFoundException);
         });
 
         it('maps SequelizeValidationError to BadRequestException', async () => {
             const err = new Error('validation');
             (err as Error).name = 'SequelizeValidationError';
             (userRepository.updatePhone as jest.Mock).mockRejectedValue(err);
-            await expect(service.updatePhone(1, 'bad'))
-                .rejects
-                .toBeInstanceOf(BadRequestException);
+            await expect(service.updatePhone(1, 'bad')).rejects.toBeInstanceOf(
+                BadRequestException,
+            );
         });
     });
 
     describe('changePassword', () => {
         it('throws NotFoundException when user not found', async () => {
-            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue(null);
-            await expect(service.changePassword(1, 'OldPass123!', 'NewPass123!'))
-                .rejects
-                .toBeInstanceOf(NotFoundException);
+            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue(
+                null,
+            );
+            await expect(
+                service.changePassword(1, 'OldPass123!', 'NewPass123!'),
+            ).rejects.toBeInstanceOf(NotFoundException);
         });
 
         it('throws BadRequestException when old password mismatch', async () => {
-            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue({ id: 1, email: 'a@b.c' });
-            (userRepository.findUserByEmail as jest.Mock).mockResolvedValue({ id: 1, email: 'a@b.c', password: 'hashed-other' });
-            await expect(service.changePassword(1, 'OldPass123!', 'NewPass123!'))
-                .rejects
-                .toBeInstanceOf(BadRequestException);
+            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue({
+                id: 1,
+                email: 'a@b.c',
+            });
+            (userRepository.findUserByEmail as jest.Mock).mockResolvedValue({
+                id: 1,
+                email: 'a@b.c',
+                password: 'hashed-other',
+            });
+            await expect(
+                service.changePassword(1, 'OldPass123!', 'NewPass123!'),
+            ).rejects.toBeInstanceOf(BadRequestException);
         });
 
         it('updates password on success', async () => {
-            const userWithPassword = { id: 1, email: 'a@b.c', password: 'OldPass123!', update: jest.fn() };
-            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue({ id: 1, email: 'a@b.c' });
-            (userRepository.findUserByEmail as jest.Mock).mockResolvedValue(userWithPassword);
+            const userWithPassword = {
+                id: 1,
+                email: 'a@b.c',
+                password: 'OldPass123!',
+                update: jest.fn(),
+            };
+            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue({
+                id: 1,
+                email: 'a@b.c',
+            });
+            (userRepository.findUserByEmail as jest.Mock).mockResolvedValue(
+                userWithPassword,
+            );
 
             await service.changePassword(1, 'OldPass123!', 'NewPass123!');
-            expect(userWithPassword.update).toHaveBeenCalledWith({ password: 'hashed:NewPass123!' });
+            expect(userWithPassword.update).toHaveBeenCalledWith({
+                password: 'hashed:NewPass123!',
+            });
         });
     });
 });
-
-

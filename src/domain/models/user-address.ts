@@ -28,9 +28,10 @@ interface IUserAddressCreationAttributes {
         attributes: { exclude: ['createdAt', 'updatedAt'] },
     },
 })
-export class UserAddressModel
-    extends Model<UserAddressModel, IUserAddressCreationAttributes>
-{
+export class UserAddressModel extends Model<
+    UserAddressModel,
+    IUserAddressCreationAttributes
+> {
     @Column({
         type: DataType.INTEGER,
         primaryKey: true,

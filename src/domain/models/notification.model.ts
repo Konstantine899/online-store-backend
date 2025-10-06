@@ -1,10 +1,17 @@
-import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import {
+    Model,
+    DataType,
+    Column,
+    Table,
+    BelongsTo,
+    ForeignKey,
+} from 'sequelize-typescript';
 import { Op } from 'sequelize';
 import { UserModel } from './user.model';
 
 export enum NotificationType {
     EMAIL = 'email',
-    PUSH = 'push'
+    PUSH = 'push',
 }
 
 export enum NotificationStatus {
@@ -12,7 +19,7 @@ export enum NotificationStatus {
     SENT = 'sent',
     DELIVERED = 'delivered',
     READ = 'read',
-    FAILED = 'failed'
+    FAILED = 'failed',
 }
 
 interface INotificationModel {
@@ -93,10 +100,12 @@ interface INotificationCreationAttributes {
         }),
         // Scope для загрузки с пользователем
         withUser: {
-            include: [{
-                model: UserModel,
-                attributes: ['id', 'email', 'firstName', 'lastName'],
-            }],
+            include: [
+                {
+                    model: UserModel,
+                    attributes: ['id', 'email', 'firstName', 'lastName'],
+                },
+            ],
         },
     },
     indexes: [
@@ -107,7 +116,10 @@ interface INotificationCreationAttributes {
         { fields: ['is_read'], name: 'idx_notifications_is_read' },
         { fields: ['is_archived'], name: 'idx_notifications_is_archived' },
         { fields: ['created_at'], name: 'idx_notifications_created_at' },
-        { fields: ['user_id', 'status'], name: 'idx_notifications_user_status' },
+        {
+            fields: ['user_id', 'status'],
+            name: 'idx_notifications_user_status',
+        },
     ],
 })
 export class NotificationModel
@@ -232,17 +244,17 @@ export class NotificationModel
 
     // Методы для управления флагами
     async markAsRead(): Promise<void> {
-        await this.update({ 
-            isRead: true, 
+        await this.update({
+            isRead: true,
             readAt: new Date(),
-            status: NotificationStatus.READ 
+            status: NotificationStatus.READ,
         });
     }
 
     async markAsUnread(): Promise<void> {
-        await this.update({ 
-            isRead: false, 
-            readAt: null 
+        await this.update({
+            isRead: false,
+            readAt: null,
         });
     }
 

@@ -14,7 +14,6 @@ class Role
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static associate(models: Record<string, any>): void {
-         
         this.belongsToMany(models.user, {
             through: TABLE_NAMES.USER_ROLE,
             as: TABLE_NAMES.USER,

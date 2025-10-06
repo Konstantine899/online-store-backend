@@ -59,7 +59,15 @@ export { LogoutResponse } from './auth/logout.response';
 export { RegistrationResponse } from './auth/registration.response';
 export { UpdateAccessTokenResponse } from './auth/update-access-token.response';
 export { GetPaginatedUsersResponse } from './user/get-paginated-users-response';
-export { CreateUserAddressResponse, GetUserAddressResponse, UpdateUserAddressResponse, RemoveUserAddressResponse } from './user-address/user-address.response';
+export {
+    CreateUserAddressResponse,
+    GetUserAddressResponse,
+    UpdateUserAddressResponse,
+    RemoveUserAddressResponse,
+} from './user-address/user-address.response';
 export { UpdateUserPhoneResponse } from './user/update-user-phone.response';
 export { GetMeResponse } from './user/get-me.response';
-export { GetLoginHistoryResponse, UserLoginStatsResponse } from './login-history/login-history.response';
+export {
+    GetLoginHistoryResponse,
+    UserLoginStatsResponse,
+} from './login-history/login-history.response';

@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { ProductInfo, MetaData } from '@app/infrastructure/paginate';
 import { IGetListProductV2Response } from '@app/domain/responses';
 
-
 export class GetListProductV2Response implements IGetListProductV2Response {
     @ApiProperty({
         description: 'Список продуктов',
@@ -16,7 +15,7 @@ export class GetListProductV2Response implements IGetListProductV2Response {
                 image: 'iphone15.jpg',
                 category_id: 1,
                 brand_id: 1,
-            }
+            },
         ],
     })
     declare data: ProductInfo[];

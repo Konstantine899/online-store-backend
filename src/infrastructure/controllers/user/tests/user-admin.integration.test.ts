@@ -22,7 +22,7 @@ describe('User Admin Integration Tests', () => {
 
         app = await setupTestApp();
         await app.init();
-        
+
         // Получаем токены для тестирования
         userToken = await authLoginAs(app, 'user');
         adminToken = await authLoginAs(app, 'admin');
@@ -51,9 +51,9 @@ describe('User Admin Integration Tests', () => {
             expect(response.body.data).toHaveProperty('affiliates');
             expect(response.body.data).toHaveProperty('wholesaleUsers');
             expect(response.body.data).toHaveProperty('highValueUsers');
-            
+
             // Проверяем, что все значения - числа
-            Object.values(response.body.data).forEach(value => {
+            Object.values(response.body.data).forEach((value) => {
                 expect(typeof value).toBe('number');
                 expect(value).toBeGreaterThanOrEqual(0);
             });
@@ -83,18 +83,28 @@ describe('User Admin Integration Tests', () => {
             { path: `/online-store/user/admin/unsuspend/${targetUserId}` },
             { path: `/online-store/user/admin/delete/${targetUserId}` },
             { path: `/online-store/user/admin/restore/${targetUserId}` },
-            { path: `/online-store/user/admin/premium/upgrade/${targetUserId}` },
-            { path: `/online-store/user/admin/premium/downgrade/${targetUserId}` },
+            {
+                path: `/online-store/user/admin/premium/upgrade/${targetUserId}`,
+            },
+            {
+                path: `/online-store/user/admin/premium/downgrade/${targetUserId}`,
+            },
             { path: `/online-store/user/admin/employee/set/${targetUserId}` },
             { path: `/online-store/user/admin/employee/unset/${targetUserId}` },
             { path: `/online-store/user/admin/vip/set/${targetUserId}` },
             { path: `/online-store/user/admin/vip/unset/${targetUserId}` },
             { path: `/online-store/user/admin/highvalue/set/${targetUserId}` },
-            { path: `/online-store/user/admin/highvalue/unset/${targetUserId}` },
+            {
+                path: `/online-store/user/admin/highvalue/unset/${targetUserId}`,
+            },
             { path: `/online-store/user/admin/wholesale/set/${targetUserId}` },
-            { path: `/online-store/user/admin/wholesale/unset/${targetUserId}` },
+            {
+                path: `/online-store/user/admin/wholesale/unset/${targetUserId}`,
+            },
             { path: `/online-store/user/admin/affiliate/set/${targetUserId}` },
-            { path: `/online-store/user/admin/affiliate/unset/${targetUserId}` },
+            {
+                path: `/online-store/user/admin/affiliate/unset/${targetUserId}`,
+            },
         ];
 
         it.each(adminCases)('ADMIN 200 -> %s', async ({ path }) => {
@@ -141,7 +151,7 @@ describe('User Admin Integration Tests', () => {
         it('200: admin can list users', async () => {
             // Получаем свежий admin токен для этого теста
             const freshAdminToken = await authLoginAs(app, 'admin');
-            
+
             await request(app.getHttpServer())
                 .get('/online-store/user/get-list-users?page=1&limit=5')
                 .set('Authorization', `Bearer ${freshAdminToken}`)
@@ -151,7 +161,7 @@ describe('User Admin Integration Tests', () => {
         it('400: invalid query parameters', async () => {
             // Получаем свежий admin токен для этого теста
             const freshAdminToken = await authLoginAs(app, 'admin');
-            
+
             await request(app.getHttpServer())
                 .get('/online-store/user/get-list-users?page=abc&limit=NaN')
                 .set('Authorization', `Bearer ${freshAdminToken}`)
@@ -161,7 +171,7 @@ describe('User Admin Integration Tests', () => {
         it('200: admin can create and delete users', async () => {
             // Получаем свежий admin токен для этого теста
             const freshAdminToken = await authLoginAs(app, 'admin');
-            
+
             const uniqueEmail = `newuser+${Date.now()}@example.com`;
             const createRes = await request(app.getHttpServer())
                 .post('/online-store/user/create')
@@ -178,11 +188,11 @@ describe('User Admin Integration Tests', () => {
             expect([200, 404]).toContain(delRes.status);
         });
 
-            it('200: admin can update user profile', async () => {
-                // Получаем свежий admin токен для этого теста
-                const freshAdminToken = await authLoginAs(app, 'admin');
-                
-                const userId = 13; // user@example.com
+        it('200: admin can update user profile', async () => {
+            // Получаем свежий admin токен для этого теста
+            const freshAdminToken = await authLoginAs(app, 'admin');
+
+            const userId = 13; // user@example.com
             const payload = {
                 firstName: 'Петр',
                 lastName: 'Петров',
@@ -201,9 +211,11 @@ describe('User Admin Integration Tests', () => {
             expect(response.body.lastName).toBe(payload.lastName);
         });
 
-            it('409: duplicate email on update', async () => {
-                const userId = 13; // user@example.com
-            const payload: Partial<UpdateUserDto> = { email: 'admin@example.com' };
+        it('409: duplicate email on update', async () => {
+            const userId = 13; // user@example.com
+            const payload: Partial<UpdateUserDto> = {
+                email: 'admin@example.com',
+            };
             await request(app.getHttpServer())
                 .put(`/online-store/user/update/${userId}`)
                 .set('Authorization', `Bearer ${adminToken}`)
@@ -217,7 +229,7 @@ describe('User Admin Integration Tests', () => {
         it('200: admin can add and remove roles', async () => {
             // Получаем свежий admin токен для этого теста
             const freshAdminToken = await authLoginAs(app, 'admin');
-            
+
             // Добавляем роль ADMIN пользователю 13, затем удаляем ADMIN
             await request(app.getHttpServer())
                 .post('/online-store/user/role/add')

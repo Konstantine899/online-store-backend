@@ -18,10 +18,12 @@ export class SequelizeUniqueConstraintExceptionFilter
         const { url, path } = request;
 
         // Формируем человеко-читаемые русские сообщения по затронутым полям
-        const messages: string[] = (exception.errors || []).map((e: ValidationErrorItem) => {
-            const field = e.path ?? 'поле';
-            return `Значение поля "${field}" уже используется`;
-        });
+        const messages: string[] = (exception.errors || []).map(
+            (e: ValidationErrorItem) => {
+                const field = e.path ?? 'поле';
+                return `Значение поля "${field}" уже используется`;
+            },
+        );
 
         const errorResponse = {
             statusCode: HttpStatus.CONFLICT,

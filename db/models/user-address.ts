@@ -30,7 +30,9 @@ class UserAddress
     }
 }
 
-export default function defineUserAddress(sequelize: Sequelize): typeof UserAddress {
+export default function defineUserAddress(
+    sequelize: Sequelize,
+): typeof UserAddress {
     UserAddress.init(
         {
             id: {

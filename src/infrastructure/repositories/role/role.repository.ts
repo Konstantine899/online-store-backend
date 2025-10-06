@@ -12,10 +12,13 @@ import { IRoleRepository } from '@app/domain/repositories';
 @Injectable()
 export class RoleRepository implements IRoleRepository {
     private static readonly ROLE_FIELDS = ['role', 'description'] as const;
-    
+
     constructor(@InjectModel(RoleModel) private roleModel: typeof RoleModel) {}
 
-    private pickAllowedFields(dto: CreateRoleDto): { role: string; description: string } {
+    private pickAllowedFields(dto: CreateRoleDto): {
+        role: string;
+        description: string;
+    } {
         const { role, description } = dto;
         return { role, description };
     }
@@ -26,7 +29,10 @@ export class RoleRepository implements IRoleRepository {
             const role = await this.roleModel.create(allowedFields);
             return this.findRole(role.role);
         } catch (error: unknown) {
-            if (error instanceof Error && error.name === 'SequelizeUniqueConstraintError') {
+            if (
+                error instanceof Error &&
+                error.name === 'SequelizeUniqueConstraintError'
+            ) {
                 throw new ConflictException('Роль уже существует');
             }
             throw error;

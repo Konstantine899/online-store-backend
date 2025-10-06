@@ -96,15 +96,18 @@ describe('UserService', () => {
             providers: [
                 UserService,
                 // Mock LoginHistoryService to satisfy DI
-                { provide: LoginHistoryService, useValue: { 
-                    logSuccessfulLogin: jest.fn(),
-                    logFailedLogin: jest.fn(),
-                    getUserLoginHistory: jest.fn(),
-                    getRecentLoginsByIp: jest.fn(),
-                    getFailedLoginsByUser: jest.fn(),
-                    getUserLoginStats: jest.fn(),
-                    cleanupOldLoginHistory: jest.fn(),
-                } },
+                {
+                    provide: LoginHistoryService,
+                    useValue: {
+                        logSuccessfulLogin: jest.fn(),
+                        logFailedLogin: jest.fn(),
+                        getUserLoginHistory: jest.fn(),
+                        getRecentLoginsByIp: jest.fn(),
+                        getFailedLoginsByUser: jest.fn(),
+                        getUserLoginStats: jest.fn(),
+                        cleanupOldLoginHistory: jest.fn(),
+                    },
+                },
                 {
                     provide: UserRepository,
                     useValue: {
@@ -199,8 +202,12 @@ describe('UserService', () => {
             );
             // Роли привязываются через linkUserRole (приватный метод) —
             // проверяем ключевые вызовы и итоговый результат
-            expect(userRepository.findUserByEmail).toHaveBeenCalledWith(validUserDto.email);
-            expect(userRepository.findRegisteredUser).toHaveBeenCalledWith(mockUser.id);
+            expect(userRepository.findUserByEmail).toHaveBeenCalledWith(
+                validUserDto.email,
+            );
+            expect(userRepository.findRegisteredUser).toHaveBeenCalledWith(
+                mockUser.id,
+            );
         });
 
         it('должен создать пользователя с ADMIN ролью для специального email', async () => {
@@ -322,16 +329,22 @@ describe('UserService', () => {
         it('должен выбросить ConflictException (409) если репозиторий вернул SequelizeUniqueConstraintError', async () => {
             userRepository.findUser.mockResolvedValue(mockUser);
             // email не найден на предварительной проверке, чтобы попасть в catch
-            userRepository.findUserByEmail.mockResolvedValue(undefined as unknown as UserModel);
+            userRepository.findUserByEmail.mockResolvedValue(
+                undefined as unknown as UserModel,
+            );
             const uniqueErr: NamedError = new Error('unique') as NamedError;
             uniqueErr.name = 'SequelizeUniqueConstraintError';
             userRepository.updateUser.mockRejectedValueOnce(uniqueErr);
 
-            const dto: UpdateUserDto = { email: 'updated@example.com', password: 'NewPass123!' };
+            const dto: UpdateUserDto = {
+                email: 'updated@example.com',
+                password: 'NewPass123!',
+            };
             await expect(service.updateUser(1, dto)).rejects.toThrow(
                 new ConflictException({
                     status: HttpStatus.CONFLICT,
-                    message: 'Пользователь с таким email: updated@example.com уже существует',
+                    message:
+                        'Пользователь с таким email: updated@example.com уже существует',
                 }),
             );
         });
@@ -432,7 +445,9 @@ describe('UserService', () => {
             roleService.getRole.mockResolvedValue(mockAdminRole);
 
             // Роль уже существует — подменяем приватный метод isUserRoleExists
-            (service as unknown as { isUserRoleExists: jest.Mock }).isUserRoleExists = jest.fn().mockResolvedValue(true);
+            (
+                service as unknown as { isUserRoleExists: jest.Mock }
+            ).isUserRoleExists = jest.fn().mockResolvedValue(true);
             // Act & Assert
             await expect(service.addRole(addRoleDto)).rejects.toThrow(
                 new ConflictException({
@@ -550,15 +565,20 @@ describe('UserService', () => {
                     currentPage: 1,
                     nextPage: 0,
                     previousPage: 0,
-                    limit: 5
-                }
+                    limit: 5,
+                },
             };
-            userRepository.findListUsersPaginated.mockResolvedValue(mockResponse);
+            userRepository.findListUsersPaginated.mockResolvedValue(
+                mockResponse,
+            );
 
             const result = await service.getListUsers();
 
             expect(result).toEqual(mockResponse);
-            expect(userRepository.findListUsersPaginated).toHaveBeenCalledWith(1, 5);
+            expect(userRepository.findListUsersPaginated).toHaveBeenCalledWith(
+                1,
+                5,
+            );
         });
 
         it('должен выбросить NotFoundException если список пуст', async () => {
@@ -570,14 +590,16 @@ describe('UserService', () => {
                     currentPage: 1,
                     nextPage: 0,
                     previousPage: 0,
-                    limit: 5
-                }
+                    limit: 5,
+                },
             };
             (
                 userRepository.findListUsersPaginated as jest.Mock
             ).mockResolvedValue(emptyResponse);
 
-            await expect(service.getListUsers()).rejects.toThrow('Список пользователей пуст');
+            await expect(service.getListUsers()).rejects.toThrow(
+                'Список пользователей пуст',
+            );
         });
     });
 
@@ -613,11 +635,17 @@ describe('UserService', () => {
     describe('updatePhone', () => {
         it('должен выбросить ConflictException если телефон уже используется', async () => {
             // Мокаем update так, чтобы он бросил уникальное ограничение
-            const uniquePhoneErr: NamedError = new Error('unique') as NamedError;
+            const uniquePhoneErr: NamedError = new Error(
+                'unique',
+            ) as NamedError;
             uniquePhoneErr.name = 'SequelizeUniqueConstraintError';
-            (userRepository.updatePhone as jest.Mock).mockRejectedValueOnce(uniquePhoneErr);
+            (userRepository.updatePhone as jest.Mock).mockRejectedValueOnce(
+                uniquePhoneErr,
+            );
 
-            await expect(service.updatePhone(1, '+79990000001')).rejects.toThrow(
+            await expect(
+                service.updatePhone(1, '+79990000001'),
+            ).rejects.toThrow(
                 new ConflictException({
                     status: HttpStatus.CONFLICT,
                     message: 'Конфликт данных: обновление телефона',
@@ -632,13 +660,20 @@ describe('UserService', () => {
             userRepository.updateFlags.mockResolvedValue(mockUser);
             const result = await service.updateFlags(1, { isActive: false });
             expect(result).toBe(mockUser);
-            expect(userRepository.updateFlags).toHaveBeenCalledWith(1, { isActive: false });
+            expect(userRepository.updateFlags).toHaveBeenCalledWith(1, {
+                isActive: false,
+            });
         });
 
         it('должен выбросить NotFoundException если пользователь не найден', async () => {
             (userRepository.findUser as jest.Mock).mockResolvedValue(null);
-            await expect(service.updateFlags(999, { isActive: true })).rejects.toThrow(
-                new NotFoundException({ status: HttpStatus.NOT_FOUND, message: 'Пользователь не найден для обновление флагов' }),
+            await expect(
+                service.updateFlags(999, { isActive: true }),
+            ).rejects.toThrow(
+                new NotFoundException({
+                    status: HttpStatus.NOT_FOUND,
+                    message: 'Пользователь не найден для обновление флагов',
+                }),
             );
         });
     });
@@ -647,15 +682,24 @@ describe('UserService', () => {
         it('должен успешно обновить предпочтения пользователя', async () => {
             userRepository.findUser.mockResolvedValue(mockUser);
             userRepository.updatePreferences.mockResolvedValue(mockUser);
-            const result = await service.updatePreferences(1, { themePreference: 'dark' });
+            const result = await service.updatePreferences(1, {
+                themePreference: 'dark',
+            });
             expect(result).toBe(mockUser);
-            expect(userRepository.updatePreferences).toHaveBeenCalledWith(1, { themePreference: 'dark' });
+            expect(userRepository.updatePreferences).toHaveBeenCalledWith(1, {
+                themePreference: 'dark',
+            });
         });
 
         it('должен выбросить NotFoundException если пользователь не найден', async () => {
             (userRepository.findUser as jest.Mock).mockResolvedValue(null);
-            await expect(service.updatePreferences(999, { themePreference: 'dark' })).rejects.toThrow(
-                new NotFoundException({ status: HttpStatus.NOT_FOUND, message: 'Пользователь не найден для обновление настроек' }),
+            await expect(
+                service.updatePreferences(999, { themePreference: 'dark' }),
+            ).rejects.toThrow(
+                new NotFoundException({
+                    status: HttpStatus.NOT_FOUND,
+                    message: 'Пользователь не найден для обновление настроек',
+                }),
             );
         });
     });
@@ -670,7 +714,10 @@ describe('UserService', () => {
         it('verifyEmailFlag: 404', async () => {
             (userRepository.verifyEmail as jest.Mock).mockResolvedValue(null);
             await expect(service.verifyEmailFlag(999)).rejects.toThrow(
-                new NotFoundException({ status: HttpStatus.NOT_FOUND, message: 'Пользователь не найден в БД' }),
+                new NotFoundException({
+                    status: HttpStatus.NOT_FOUND,
+                    message: 'Пользователь не найден в БД',
+                }),
             );
         });
         it('verifyPhoneFlag: успешно', async () => {
@@ -682,7 +729,10 @@ describe('UserService', () => {
         it('verifyPhoneFlag: 404', async () => {
             (userRepository.verifyPhone as jest.Mock).mockResolvedValue(null);
             await expect(service.verifyPhoneFlag(999)).rejects.toThrow(
-                new NotFoundException({ status: HttpStatus.NOT_FOUND, message: 'Пользователь не найден в БД' }),
+                new NotFoundException({
+                    status: HttpStatus.NOT_FOUND,
+                    message: 'Пользователь не найден в БД',
+                }),
             );
         });
     });
@@ -697,7 +747,10 @@ describe('UserService', () => {
         it('blockUser: 404', async () => {
             (userRepository.blockUser as jest.Mock).mockResolvedValue(null);
             await expect(service.blockUser(999)).rejects.toThrow(
-                new NotFoundException({ status: HttpStatus.NOT_FOUND, message: 'Пользователь не найден в БД' }),
+                new NotFoundException({
+                    status: HttpStatus.NOT_FOUND,
+                    message: 'Пользователь не найден в БД',
+                }),
             );
         });
         it('unblockUser: успешно', async () => {
@@ -709,7 +762,10 @@ describe('UserService', () => {
         it('unblockUser: 404', async () => {
             (userRepository.unblockUser as jest.Mock).mockResolvedValue(null);
             await expect(service.unblockUser(999)).rejects.toThrow(
-                new NotFoundException({ status: HttpStatus.NOT_FOUND, message: 'Пользователь не найден в БД' }),
+                new NotFoundException({
+                    status: HttpStatus.NOT_FOUND,
+                    message: 'Пользователь не найден в БД',
+                }),
             );
         });
     });
@@ -724,7 +780,10 @@ describe('UserService', () => {
         it('suspendUser: 404', async () => {
             (userRepository.suspendUser as jest.Mock).mockResolvedValue(null);
             await expect(service.suspendUser(999)).rejects.toThrow(
-                new NotFoundException({ status: HttpStatus.NOT_FOUND, message: 'Пользователь не найден в БД' }),
+                new NotFoundException({
+                    status: HttpStatus.NOT_FOUND,
+                    message: 'Пользователь не найден в БД',
+                }),
             );
         });
         it('unsuspendUser: успешно', async () => {
@@ -736,25 +795,45 @@ describe('UserService', () => {
         it('unsuspendUser: 404', async () => {
             (userRepository.unsuspendUser as jest.Mock).mockResolvedValue(null);
             await expect(service.unsuspendUser(999)).rejects.toThrow(
-                new NotFoundException({ status: HttpStatus.NOT_FOUND, message: 'Пользователь не найден в БД' }),
+                new NotFoundException({
+                    status: HttpStatus.NOT_FOUND,
+                    message: 'Пользователь не найден в БД',
+                }),
             );
         });
     });
 
     describe('changePassword', () => {
         it('404: пользователь не найден', async () => {
-            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue(null);
-            await expect(service.changePassword(999, 'old', 'new')).rejects.toThrow(
-                new NotFoundException({ status: HttpStatus.NOT_FOUND, message: 'Пользователь не найден в БД' }),
+            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue(
+                null,
+            );
+            await expect(
+                service.changePassword(999, 'old', 'new'),
+            ).rejects.toThrow(
+                new NotFoundException({
+                    status: HttpStatus.NOT_FOUND,
+                    message: 'Пользователь не найден в БД',
+                }),
             );
         });
 
         it('400: неверный текущий пароль', async () => {
-            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue(mockUser);
-            userRepository.findUserByEmail.mockResolvedValue({ ...mockUser, password: '$2b$10$hash' } as unknown as UserModel);
+            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue(
+                mockUser,
+            );
+            userRepository.findUserByEmail.mockResolvedValue({
+                ...mockUser,
+                password: '$2b$10$hash',
+            } as unknown as UserModel);
             (compare as unknown as jest.Mock).mockResolvedValue(false);
-            await expect(service.changePassword(1, 'wrong-old', 'NewPass123!')).rejects.toThrow(
-                new BadRequestException({ status: HttpStatus.BAD_REQUEST, message: 'Текущий пароль указан неверно' }),
+            await expect(
+                service.changePassword(1, 'wrong-old', 'NewPass123!'),
+            ).rejects.toThrow(
+                new BadRequestException({
+                    status: HttpStatus.BAD_REQUEST,
+                    message: 'Текущий пароль указан неверно',
+                }),
             );
         });
     });
@@ -762,21 +841,37 @@ describe('UserService', () => {
     describe('self-service verification', () => {
         it('requestVerificationCode: вызывает репозиторий с корректными аргументами', async () => {
             userRepository.requestVerificationCode.mockResolvedValue(undefined);
-            await expect(service.requestVerificationCode(1, 'email')).resolves.toBeUndefined();
-            expect(userRepository.requestVerificationCode).toHaveBeenCalledWith(1, 'email');
+            await expect(
+                service.requestVerificationCode(1, 'email'),
+            ).resolves.toBeUndefined();
+            expect(userRepository.requestVerificationCode).toHaveBeenCalledWith(
+                1,
+                'email',
+            );
         });
 
         it('confirmVerificationCode: успех при true', async () => {
             userRepository.confirmVerificationCode.mockResolvedValue(true);
-            await expect(service.confirmVerificationCode(1, 'phone', '123456')).resolves.toBeUndefined();
-            expect(userRepository.confirmVerificationCode).toHaveBeenCalledWith(1, 'phone', '123456');
+            await expect(
+                service.confirmVerificationCode(1, 'phone', '123456'),
+            ).resolves.toBeUndefined();
+            expect(userRepository.confirmVerificationCode).toHaveBeenCalledWith(
+                1,
+                'phone',
+                '123456',
+            );
         });
 
         it('confirmVerificationCode: 400 при неверном/просроченном коде', async () => {
             userRepository.confirmVerificationCode.mockResolvedValue(false);
-            await expect(service.confirmVerificationCode(1, 'email', 'bad'))
-                .rejects
-                .toThrow(new BadRequestException({ status: HttpStatus.BAD_REQUEST, message: 'Неверный или просроченный код подтверждения' }));
+            await expect(
+                service.confirmVerificationCode(1, 'email', 'bad'),
+            ).rejects.toThrow(
+                new BadRequestException({
+                    status: HttpStatus.BAD_REQUEST,
+                    message: 'Неверный или просроченный код подтверждения',
+                }),
+            );
         });
     });
 });

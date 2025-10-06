@@ -15,15 +15,11 @@ export const up = async (queryInterface: QueryInterface): Promise<void> => {
             { transaction },
         );
 
-        await queryInterface.addIndex(
-            'user',
-            ['phone'],
-            {
-                name: 'idx_user_phone',
-                using: 'BTREE',
-                transaction,
-            },
-        );
+        await queryInterface.addIndex('user', ['phone'], {
+            name: 'idx_user_phone',
+            using: 'BTREE',
+            transaction,
+        });
 
         await transaction.commit();
     } catch (error) {
@@ -35,7 +31,9 @@ export const up = async (queryInterface: QueryInterface): Promise<void> => {
 export const down = async (queryInterface: QueryInterface): Promise<void> => {
     const transaction = await queryInterface.sequelize.transaction();
     try {
-        await queryInterface.removeIndex('user', 'idx_user_phone', { transaction });
+        await queryInterface.removeIndex('user', 'idx_user_phone', {
+            transaction,
+        });
         await queryInterface.removeColumn('user', 'phone', { transaction });
         await transaction.commit();
     } catch (error) {

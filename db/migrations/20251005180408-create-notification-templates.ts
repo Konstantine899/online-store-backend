@@ -67,24 +67,33 @@ const migration: Migration = {
         // Создание индексов для производительности
         await queryInterface.addIndex('notification_templates', ['name'], {
             name: 'idx_notification_templates_name',
-            unique: true
+            unique: true,
         });
-        
+
         await queryInterface.addIndex('notification_templates', ['type'], {
-            name: 'idx_notification_templates_type'
+            name: 'idx_notification_templates_type',
         });
-        
+
         await queryInterface.addIndex('notification_templates', ['is_active'], {
-            name: 'idx_notification_templates_is_active'
+            name: 'idx_notification_templates_is_active',
         });
     },
 
     async down(queryInterface: QueryInterface): Promise<void> {
         // Удаление индексов
-        await queryInterface.removeIndex('notification_templates', 'idx_notification_templates_name');
-        await queryInterface.removeIndex('notification_templates', 'idx_notification_templates_type');
-        await queryInterface.removeIndex('notification_templates', 'idx_notification_templates_is_active');
-        
+        await queryInterface.removeIndex(
+            'notification_templates',
+            'idx_notification_templates_name',
+        );
+        await queryInterface.removeIndex(
+            'notification_templates',
+            'idx_notification_templates_type',
+        );
+        await queryInterface.removeIndex(
+            'notification_templates',
+            'idx_notification_templates_is_active',
+        );
+
         // Удаление таблицы
         await queryInterface.dropTable('notification_templates');
     },

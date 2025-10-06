@@ -20,7 +20,7 @@ describe('User Preferences Integration Tests', () => {
 
         app = await setupTestApp();
         await app.init();
-        
+
         // Получаем токены для тестирования
         userToken = await authLoginAs(app, 'user');
     });
@@ -114,12 +114,12 @@ describe('User Preferences Integration Tests', () => {
         it('200: special characters in preferences', async () => {
             // Получаем свежий токен для этого теста
             const freshToken = await authLoginAs(app, 'user');
-            
+
             const preferencesData = {
                 defaultLanguage: 'en',
                 notificationPreferences: {
                     'special-chars': 'test@#$%^&*()',
-                    'spaces and symbols': 'value with spaces'
+                    'spaces and symbols': 'value with spaces',
                 },
             };
 
@@ -130,7 +130,9 @@ describe('User Preferences Integration Tests', () => {
                 .expect(200);
 
             expect(response.body.data.defaultLanguage).toBe('en');
-            expect(response.body.data.notificationPreferences).toEqual(preferencesData.notificationPreferences);
+            expect(response.body.data.notificationPreferences).toEqual(
+                preferencesData.notificationPreferences,
+            );
         });
     });
 });

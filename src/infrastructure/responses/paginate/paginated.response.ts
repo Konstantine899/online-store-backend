@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { MetaData } from '@app/infrastructure/paginate';
 import { IPaginatedResponse } from '@app/domain/responses';
 
-
 export class PaginatedResponse<T> implements IPaginatedResponse<T> {
     @ApiProperty({
         description: 'Массив данных',

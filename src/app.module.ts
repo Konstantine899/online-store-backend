@@ -87,7 +87,7 @@ import { HealthModule } from './infrastructure/controllers/health/health.module'
                 limit: 3, // 3 запроса в секунду
             },
             {
-                name: 'medium', 
+                name: 'medium',
                 ttl: 10000, // 10 секунд
                 limit: 20, // 20 запросов в 10 секунд
             },
@@ -110,7 +110,7 @@ import { HealthModule } from './infrastructure/controllers/health/health.module'
                 name: 'registration',
                 ttl: 60 * 1000, // 1 минута
                 limit: 3, // 3 попытки регистрации в минуту
-            }
+            },
         ]),
 
         EventEmitterModule.forRoot({

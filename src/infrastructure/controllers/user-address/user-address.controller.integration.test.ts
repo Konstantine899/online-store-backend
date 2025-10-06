@@ -61,7 +61,9 @@ describe('UserAddressController (integration)', () => {
     let accessToken: string;
 
     // Вспомогательные функции для создания тестовых объектов
-    const createTestAddress = async (addressData: TestAddressData): Promise<number> => {
+    const createTestAddress = async (
+        addressData: TestAddressData,
+    ): Promise<number> => {
         const response = await request(app.getHttpServer())
             .post(TEST_DATA.ENDPOINTS.ADDRESSES)
             .set('Authorization', `Bearer ${accessToken}`)
@@ -69,7 +71,6 @@ describe('UserAddressController (integration)', () => {
             .expect(201);
         return response.body?.data?.id;
     };
-
 
     beforeAll(async () => {
         app = await setupTestApp();
@@ -107,7 +108,7 @@ describe('UserAddressController (integration)', () => {
 
         it('should update address', async () => {
             const id = await createTestAddress(TEST_DATA.ADDRESSES.WORK);
-            
+
             await request(app.getHttpServer())
                 .put(`${TEST_DATA.ENDPOINTS.ADDRESSES}/${id}`)
                 .set('Authorization', `Bearer ${accessToken}`)
@@ -120,7 +121,7 @@ describe('UserAddressController (integration)', () => {
 
         it('should set default address', async () => {
             const id = await createTestAddress(TEST_DATA.ADDRESSES.DACHA);
-            
+
             await request(app.getHttpServer())
                 .patch(`${TEST_DATA.ENDPOINTS.ADDRESSES}/${id}/set-default`)
                 .set('Authorization', `Bearer ${accessToken}`)
@@ -132,7 +133,7 @@ describe('UserAddressController (integration)', () => {
 
         it('should remove address', async () => {
             const id = await createTestAddress(TEST_DATA.ADDRESSES.TEMP);
-            
+
             await request(app.getHttpServer())
                 .delete(`${TEST_DATA.ENDPOINTS.ADDRESSES}/${id}`)
                 .set('Authorization', `Bearer ${accessToken}`)

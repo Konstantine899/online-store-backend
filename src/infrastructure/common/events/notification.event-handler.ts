@@ -23,9 +23,7 @@ import {
 export class NotificationEventHandler {
     private readonly logger = new Logger(NotificationEventHandler.name);
 
-    constructor(
-        private readonly notificationService: NotificationService,
-    ) {}
+    constructor(private readonly notificationService: NotificationService) {}
 
     /**
      * Обработчик события создания заказа
@@ -42,11 +40,17 @@ export class NotificationEventHandler {
                 data: event.data,
             });
 
-            this.logger.log(`Order confirmation notification sent for order ${event.orderNumber}`);
+            this.logger.log(
+                `Order confirmation notification sent for order ${event.orderNumber}`,
+            );
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to send order confirmation notification: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to send order confirmation notification: ${errorMessage}`,
+                errorStack,
+            );
         }
     }
 
@@ -54,7 +58,9 @@ export class NotificationEventHandler {
      * Обработчик события изменения статуса заказа
      */
     @OnEvent('order.status.changed')
-    async handleOrderStatusChanged(event: OrderStatusChangedEvent): Promise<void> {
+    async handleOrderStatusChanged(
+        event: OrderStatusChangedEvent,
+    ): Promise<void> {
         try {
             let templateName: string;
             let title: string;
@@ -96,11 +102,17 @@ export class NotificationEventHandler {
                 data: event.data,
             });
 
-            this.logger.log(`Order status notification sent for order ${event.orderNumber}: ${event.newStatus}`);
+            this.logger.log(
+                `Order status notification sent for order ${event.orderNumber}: ${event.newStatus}`,
+            );
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to send order status notification: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to send order status notification: ${errorMessage}`,
+                errorStack,
+            );
         }
     }
 
@@ -119,11 +131,17 @@ export class NotificationEventHandler {
                 data: event.data,
             });
 
-            this.logger.log(`Welcome notification sent for user ${event.userId}`);
+            this.logger.log(
+                `Welcome notification sent for user ${event.userId}`,
+            );
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to send welcome notification: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to send welcome notification: ${errorMessage}`,
+                errorStack,
+            );
         }
     }
 
@@ -142,11 +160,17 @@ export class NotificationEventHandler {
                 data: event.data,
             });
 
-            this.logger.log(`Payment confirmation notification sent for order ${event.orderNumber}`);
+            this.logger.log(
+                `Payment confirmation notification sent for order ${event.orderNumber}`,
+            );
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to send payment confirmation notification: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to send payment confirmation notification: ${errorMessage}`,
+                errorStack,
+            );
         }
     }
 
@@ -165,11 +189,17 @@ export class NotificationEventHandler {
                 data: event.data,
             });
 
-            this.logger.log(`Order shipped notification sent for order ${event.orderNumber}`);
+            this.logger.log(
+                `Order shipped notification sent for order ${event.orderNumber}`,
+            );
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to send order shipped notification: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to send order shipped notification: ${errorMessage}`,
+                errorStack,
+            );
         }
     }
 
@@ -188,11 +218,17 @@ export class NotificationEventHandler {
                 data: event.data,
             });
 
-            this.logger.log(`Order delivered notification sent for order ${event.orderNumber}`);
+            this.logger.log(
+                `Order delivered notification sent for order ${event.orderNumber}`,
+            );
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to send order delivered notification: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to send order delivered notification: ${errorMessage}`,
+                errorStack,
+            );
         }
     }
 
@@ -211,11 +247,17 @@ export class NotificationEventHandler {
                 data: event.data,
             });
 
-            this.logger.log(`Order cancelled notification sent for order ${event.orderNumber}`);
+            this.logger.log(
+                `Order cancelled notification sent for order ${event.orderNumber}`,
+            );
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to send order cancelled notification: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to send order cancelled notification: ${errorMessage}`,
+                errorStack,
+            );
         }
     }
 
@@ -234,11 +276,17 @@ export class NotificationEventHandler {
                 data: event.data,
             });
 
-            this.logger.log(`Password changed notification sent for user ${event.userId}`);
+            this.logger.log(
+                `Password changed notification sent for user ${event.userId}`,
+            );
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to send password changed notification: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to send password changed notification: ${errorMessage}`,
+                errorStack,
+            );
         }
     }
 
@@ -246,7 +294,9 @@ export class NotificationEventHandler {
      * Обработчик события запроса сброса пароля
      */
     @OnEvent('password.reset.requested')
-    async handlePasswordResetRequested(event: PasswordResetRequestedEvent): Promise<void> {
+    async handlePasswordResetRequested(
+        event: PasswordResetRequestedEvent,
+    ): Promise<void> {
         try {
             await this.notificationService.sendNotification({
                 userId: event.userId,
@@ -257,11 +307,17 @@ export class NotificationEventHandler {
                 data: event.data,
             });
 
-            this.logger.log(`Password reset notification sent for user ${event.userId}`);
+            this.logger.log(
+                `Password reset notification sent for user ${event.userId}`,
+            );
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to send password reset notification: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to send password reset notification: ${errorMessage}`,
+                errorStack,
+            );
         }
     }
 
@@ -269,7 +325,9 @@ export class NotificationEventHandler {
      * Обработчик события верификации email
      */
     @OnEvent('email.verification')
-    async handleEmailVerification(event: EmailVerificationEvent): Promise<void> {
+    async handleEmailVerification(
+        event: EmailVerificationEvent,
+    ): Promise<void> {
         try {
             await this.notificationService.sendNotification({
                 userId: event.userId,
@@ -280,11 +338,17 @@ export class NotificationEventHandler {
                 data: event.data,
             });
 
-            this.logger.log(`Email verification notification sent for user ${event.userId}`);
+            this.logger.log(
+                `Email verification notification sent for user ${event.userId}`,
+            );
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to send email verification notification: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to send email verification notification: ${errorMessage}`,
+                errorStack,
+            );
         }
     }
 
@@ -292,7 +356,9 @@ export class NotificationEventHandler {
      * Обработчик события маркетинговой рассылки
      */
     @OnEvent('marketing.campaign')
-    async handleMarketingCampaign(event: MarketingCampaignEvent): Promise<void> {
+    async handleMarketingCampaign(
+        event: MarketingCampaignEvent,
+    ): Promise<void> {
         try {
             await this.notificationService.sendNotification({
                 userId: event.userId,
@@ -303,11 +369,17 @@ export class NotificationEventHandler {
                 data: event.data,
             });
 
-            this.logger.log(`Marketing campaign notification sent for user ${event.userId}, campaign ${event.campaignId}`);
+            this.logger.log(
+                `Marketing campaign notification sent for user ${event.userId}, campaign ${event.campaignId}`,
+            );
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to send marketing campaign notification: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to send marketing campaign notification: ${errorMessage}`,
+                errorStack,
+            );
         }
     }
 }

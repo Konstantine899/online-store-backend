@@ -33,7 +33,8 @@ export class CategoryService implements ICategoryService {
     }
 
     public async getListAllCategories(): Promise<ListAllCategoriesResponse[]> {
-        const categories = await this.categoryRepository.findListAllCategories();
+        const categories =
+            await this.categoryRepository.findListAllCategories();
         return categories; // Всегда возвращаем массив, даже пустой
     }
 
@@ -55,14 +56,23 @@ export class CategoryService implements ICategoryService {
             this.notFound('Категория товара не найдена');
         }
         const prevImage = category.image ?? '';
-        const updatedNameImage = await this.fileService.updateFile(prevImage, image);
+        const updatedNameImage = await this.fileService.updateFile(
+            prevImage,
+            image,
+        );
         // Получаем ORM-модель для обновления без использования any
-        const repoWithModel = this.categoryRepository as unknown as { categoryModel: typeof CategoryModel };
+        const repoWithModel = this.categoryRepository as unknown as {
+            categoryModel: typeof CategoryModel;
+        };
         const categoryModel = await repoWithModel.categoryModel.findByPk(id);
         if (!categoryModel) {
             this.notFound('Категория товара не найдена');
         }
-        return this.categoryRepository.updateCategory(dto, categoryModel!, updatedNameImage);
+        return this.categoryRepository.updateCategory(
+            dto,
+            categoryModel!,
+            updatedNameImage,
+        );
     }
 
     public async removeCategory(id: number): Promise<RemoveCategoryResponse> {

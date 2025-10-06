@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {  NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { UserService } from '@app/infrastructure/services/user/user.service';
 import { UserRepository } from '@app/infrastructure/repositories/user/user.repository';
 import { RoleService } from '@app/infrastructure/services/role/role.service';
@@ -95,11 +95,16 @@ describe('UserService - Flags and Preferences', () => {
 
             const updatedUser = { ...mockUser, ...flagsDto };
             userRepository.findUser.mockResolvedValue(mockUser); // Added
-            userRepository.updateFlags.mockResolvedValue(updatedUser as UserModel);
+            userRepository.updateFlags.mockResolvedValue(
+                updatedUser as UserModel,
+            );
 
             const result = await service.updateFlags(1, flagsDto);
 
-            expect(userRepository.updateFlags).toHaveBeenCalledWith(1, flagsDto);
+            expect(userRepository.updateFlags).toHaveBeenCalledWith(
+                1,
+                flagsDto,
+            );
             expect(result).toEqual(updatedUser);
         });
 
@@ -110,11 +115,16 @@ describe('UserService - Flags and Preferences', () => {
 
             const updatedUser = { ...mockUser, isActive: false };
             userRepository.findUser.mockResolvedValue(mockUser); // Added
-            userRepository.updateFlags.mockResolvedValue(updatedUser as UserModel);
+            userRepository.updateFlags.mockResolvedValue(
+                updatedUser as UserModel,
+            );
 
             const result = await service.updateFlags(1, flagsDto);
 
-            expect(userRepository.updateFlags).toHaveBeenCalledWith(1, flagsDto);
+            expect(userRepository.updateFlags).toHaveBeenCalledWith(
+                1,
+                flagsDto,
+            );
             expect(result.isActive).toBe(false);
         });
 
@@ -127,14 +137,14 @@ describe('UserService - Flags and Preferences', () => {
                 new NotFoundException({
                     status: 404,
                     message: 'Пользователь не найден в БД',
-                })
+                }),
             );
 
             await expect(service.updateFlags(999, flagsDto)).rejects.toThrow(
                 new NotFoundException({
                     status: 404,
                     message: 'Пользователь не найден в БД',
-                })
+                }),
             );
         });
 
@@ -146,7 +156,10 @@ describe('UserService - Flags and Preferences', () => {
 
             const result = await service.updateFlags(1, flagsDto);
 
-            expect(userRepository.updateFlags).toHaveBeenCalledWith(1, flagsDto);
+            expect(userRepository.updateFlags).toHaveBeenCalledWith(
+                1,
+                flagsDto,
+            );
             expect(result).toEqual(mockUser);
         });
     });
@@ -160,11 +173,16 @@ describe('UserService - Flags and Preferences', () => {
 
             const updatedUser = { ...mockUser, ...preferencesDto };
             userRepository.findUser.mockResolvedValue(mockUser); // Added
-            userRepository.updatePreferences.mockResolvedValue(updatedUser as UserModel);
+            userRepository.updatePreferences.mockResolvedValue(
+                updatedUser as UserModel,
+            );
 
             const result = await service.updatePreferences(1, preferencesDto);
 
-            expect(userRepository.updatePreferences).toHaveBeenCalledWith(1, preferencesDto);
+            expect(userRepository.updatePreferences).toHaveBeenCalledWith(
+                1,
+                preferencesDto,
+            );
             expect(result).toEqual(updatedUser);
         });
 
@@ -175,11 +193,16 @@ describe('UserService - Flags and Preferences', () => {
 
             const updatedUser = { ...mockUser, themePreference: 'dark' };
             userRepository.findUser.mockResolvedValue(mockUser); // Added
-            userRepository.updatePreferences.mockResolvedValue(updatedUser as UserModel);
+            userRepository.updatePreferences.mockResolvedValue(
+                updatedUser as UserModel,
+            );
 
             const result = await service.updatePreferences(1, preferencesDto);
 
-            expect(userRepository.updatePreferences).toHaveBeenCalledWith(1, preferencesDto);
+            expect(userRepository.updatePreferences).toHaveBeenCalledWith(
+                1,
+                preferencesDto,
+            );
             expect(result.themePreference).toBe('dark');
         });
 
@@ -192,14 +215,16 @@ describe('UserService - Flags and Preferences', () => {
                 new NotFoundException({
                     status: 404,
                     message: 'Пользователь не найден в БД',
-                })
+                }),
             );
 
-            await expect(service.updatePreferences(999, preferencesDto)).rejects.toThrow(
+            await expect(
+                service.updatePreferences(999, preferencesDto),
+            ).rejects.toThrow(
                 new NotFoundException({
                     status: 404,
                     message: 'Пользователь не найден в БД',
-                })
+                }),
             );
         });
 
@@ -207,11 +232,16 @@ describe('UserService - Flags and Preferences', () => {
             const preferencesDto: UpdateUserPreferencesDto = {};
 
             userRepository.findUser.mockResolvedValue(mockUser); // Added
-            userRepository.updatePreferences.mockResolvedValue(mockUser as UserModel);
+            userRepository.updatePreferences.mockResolvedValue(
+                mockUser as UserModel,
+            );
 
             const result = await service.updatePreferences(1, preferencesDto);
 
-            expect(userRepository.updatePreferences).toHaveBeenCalledWith(1, preferencesDto);
+            expect(userRepository.updatePreferences).toHaveBeenCalledWith(
+                1,
+                preferencesDto,
+            );
             expect(result).toEqual(mockUser);
         });
     });
@@ -268,9 +298,13 @@ describe('UserService - Flags and Preferences', () => {
             };
 
             userRepository.findUser.mockResolvedValue(mockUser); // Added
-            userRepository.updateFlags.mockRejectedValue(new Error('Database error'));
+            userRepository.updateFlags.mockRejectedValue(
+                new Error('Database error'),
+            );
 
-            await expect(service.updateFlags(1, flagsDto)).rejects.toThrow('Database error');
+            await expect(service.updateFlags(1, flagsDto)).rejects.toThrow(
+                'Database error',
+            );
         });
 
         it('должен обработать ошибку репозитория при обновлении предпочтений', async () => {
@@ -279,15 +313,23 @@ describe('UserService - Flags and Preferences', () => {
             };
 
             userRepository.findUser.mockResolvedValue(mockUser); // Added
-            userRepository.updatePreferences.mockRejectedValue(new Error('Database error'));
+            userRepository.updatePreferences.mockRejectedValue(
+                new Error('Database error'),
+            );
 
-            await expect(service.updatePreferences(1, preferencesDto)).rejects.toThrow('Database error');
+            await expect(
+                service.updatePreferences(1, preferencesDto),
+            ).rejects.toThrow('Database error');
         });
 
         it('должен обработать ошибку репозитория при получении статистики', async () => {
-            userRepository.getUserStats.mockRejectedValue(new Error('Database error'));
+            userRepository.getUserStats.mockRejectedValue(
+                new Error('Database error'),
+            );
 
-            await expect(service.getUserStats()).rejects.toThrow('Database error');
+            await expect(service.getUserStats()).rejects.toThrow(
+                'Database error',
+            );
         });
     });
 
@@ -314,7 +356,9 @@ describe('UserService - Flags and Preferences', () => {
 
             const updatedUser = { ...mockUser, ...allFlagsDto };
             userRepository.findUser.mockResolvedValue(mockUser); // Added
-            userRepository.updateFlags.mockResolvedValue(updatedUser as UserModel);
+            userRepository.updateFlags.mockResolvedValue(
+                updatedUser as UserModel,
+            );
 
             const result = await service.updateFlags(1, allFlagsDto);
 
@@ -331,9 +375,14 @@ describe('UserService - Flags and Preferences', () => {
 
             const updatedUser = { ...mockUser, ...allPreferencesDto };
             userRepository.findUser.mockResolvedValue(mockUser); // Added
-            userRepository.updatePreferences.mockResolvedValue(updatedUser as UserModel);
+            userRepository.updatePreferences.mockResolvedValue(
+                updatedUser as UserModel,
+            );
 
-            const result = await service.updatePreferences(1, allPreferencesDto);
+            const result = await service.updatePreferences(
+                1,
+                allPreferencesDto,
+            );
 
             expect(result).toEqual(updatedUser);
         });

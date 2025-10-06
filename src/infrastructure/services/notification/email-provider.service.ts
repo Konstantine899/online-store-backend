@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IEmailProvider, EmailMessage, EmailSendResult, EmailAttachment } from '@app/domain/services';
+import {
+    IEmailProvider,
+    EmailMessage,
+    EmailSendResult,
+    EmailAttachment,
+} from '@app/domain/services';
 
 @Injectable()
 export class EmailProviderService implements IEmailProvider {
@@ -20,8 +25,10 @@ export class EmailProviderService implements IEmailProvider {
 
             // Mock отправка email
             const messageId = this.generateMessageId();
-            
-            this.logger.log(`Mock email sent to ${message.to}: ${message.subject}`);
+
+            this.logger.log(
+                `Mock email sent to ${message.to}: ${message.subject}`,
+            );
             this.logger.debug(`Email content: ${message.html || message.text}`);
 
             // Имитация задержки отправки
@@ -29,16 +36,20 @@ export class EmailProviderService implements IEmailProvider {
 
             // В реальной реализации здесь будет интеграция с:
             // - SendGrid, Mailgun, AWS SES, Nodemailer и т.д.
-            
+
             return {
                 success: true,
                 messageId,
                 provider: this.providerName,
             };
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to send email: ${errorMessage}`, errorStack);
+            this.logger.error(
+                `Failed to send email: ${errorMessage}`,
+                errorStack,
+            );
             return {
                 success: false,
                 error: errorMessage,
@@ -57,7 +68,8 @@ export class EmailProviderService implements IEmailProvider {
                 const result = await this.sendEmail(message);
                 results.push(result);
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                const errorMessage =
+                    error instanceof Error ? error.message : 'Unknown error';
                 this.logger.error(`Failed to send bulk email: ${errorMessage}`);
                 results.push({
                     success: false,
@@ -67,8 +79,10 @@ export class EmailProviderService implements IEmailProvider {
             }
         }
 
-        const successCount = results.filter(r => r.success).length;
-        this.logger.log(`Bulk email completed: ${successCount}/${messages.length} sent successfully`);
+        const successCount = results.filter((r) => r.success).length;
+        this.logger.log(
+            `Bulk email completed: ${successCount}/${messages.length} sent successfully`,
+        );
 
         return results;
     }
@@ -78,7 +92,11 @@ export class EmailProviderService implements IEmailProvider {
         return emailRegex.test(email);
     }
 
-    getProviderInfo(): { name: string; version: string; capabilities: string[] } {
+    getProviderInfo(): {
+        name: string;
+        version: string;
+        capabilities: string[];
+    } {
         return {
             name: this.providerName,
             version: this.providerVersion,
@@ -98,13 +116,15 @@ export class EmailProviderService implements IEmailProvider {
     }
 
     private delay(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
     // Дополнительные методы для mock провайдера
-    async getDeliveryStatus(messageId: string): Promise<{ status: string; timestamp: Date }> {
+    async getDeliveryStatus(
+        messageId: string,
+    ): Promise<{ status: string; timestamp: Date }> {
         this.logger.debug(`Getting delivery status for message: ${messageId}`);
-        
+
         // Mock статус доставки
         return {
             status: 'delivered',
@@ -114,14 +134,14 @@ export class EmailProviderService implements IEmailProvider {
 
     async getBounceList(): Promise<string[]> {
         this.logger.debug('Getting bounce list');
-        
+
         // Mock список отказов
         return [];
     }
 
     async getComplaintList(): Promise<string[]> {
         this.logger.debug('Getting complaint list');
-        
+
         // Mock список жалоб
         return [];
     }
@@ -129,17 +149,21 @@ export class EmailProviderService implements IEmailProvider {
     async validateAttachment(attachment: EmailAttachment): Promise<boolean> {
         // Проверка размера (mock: максимум 10MB)
         const maxSize = 10 * 1024 * 1024;
-        
+
         if (typeof attachment.content === 'string') {
             return attachment.content.length <= maxSize;
         } else if (Buffer.isBuffer(attachment.content)) {
             return attachment.content.length <= maxSize;
         }
-        
+
         return false;
     }
 
-    async getQuotaInfo(): Promise<{ used: number; limit: number; resetDate: Date }> {
+    async getQuotaInfo(): Promise<{
+        used: number;
+        limit: number;
+        resetDate: Date;
+    }> {
         // Mock информация о квоте
         return {
             used: 0,

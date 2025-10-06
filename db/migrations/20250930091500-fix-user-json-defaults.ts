@@ -31,5 +31,3 @@ export async function down(queryInterface: QueryInterface): Promise<void> {
         // defaultValue: {} // avoid reintroducing unsupported default
     });
 }
-
-

@@ -67,13 +67,20 @@ interface INotificationTemplateCreationAttributes {
         }),
     },
     indexes: [
-        { fields: ['name'], name: 'idx_notification_templates_name', unique: true },
+        {
+            fields: ['name'],
+            name: 'idx_notification_templates_name',
+            unique: true,
+        },
         { fields: ['type'], name: 'idx_notification_templates_type' },
         { fields: ['is_active'], name: 'idx_notification_templates_is_active' },
     ],
 })
 export class NotificationTemplateModel
-    extends Model<NotificationTemplateModel, INotificationTemplateCreationAttributes>
+    extends Model<
+        NotificationTemplateModel,
+        INotificationTemplateCreationAttributes
+    >
     implements INotificationTemplateModel
 {
     @Column({
@@ -164,7 +171,7 @@ export class NotificationTemplateModel
 
     removeVariable(variableName: string): void {
         const variables = this.getVariablesList();
-        this.variables = variables.filter(v => v !== variableName);
+        this.variables = variables.filter((v) => v !== variableName);
     }
 
     // Методы для работы с шаблоном
@@ -184,7 +191,9 @@ export class NotificationTemplateModel
         });
     }
 
-    static async getTemplatesByType(type: NotificationType): Promise<NotificationTemplateModel[]> {
+    static async getTemplatesByType(
+        type: NotificationType,
+    ): Promise<NotificationTemplateModel[]> {
         return this.findAll({
             where: { type, isActive: true },
             order: [['name', 'ASC']],
@@ -199,13 +208,17 @@ export class NotificationTemplateModel
         return this.getTemplatesByType(NotificationType.PUSH);
     }
 
-    static async findByName(name: string): Promise<NotificationTemplateModel | null> {
+    static async findByName(
+        name: string,
+    ): Promise<NotificationTemplateModel | null> {
         return this.findOne({
             where: { name },
         });
     }
 
-    static async findActiveByName(name: string): Promise<NotificationTemplateModel | null> {
+    static async findActiveByName(
+        name: string,
+    ): Promise<NotificationTemplateModel | null> {
         return this.findOne({
             where: { name, isActive: true },
         });

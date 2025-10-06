@@ -12,7 +12,6 @@ class Cart
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static associate(models: Record<string, any>): void {
-         
         this.belongsToMany(models.product, {
             through: TABLE_NAMES.CART_PRODUCT,
             as: TABLE_NAMES.PRODUCT,
@@ -45,7 +44,7 @@ export default function defineCart(sequelize: Sequelize): typeof Cart {
         {
             sequelize,
             modelName: TABLE_NAMES.CART,
-            tableName: 'cart', 
+            tableName: 'cart',
             timestamps: true,
             underscored: true,
         } as any, // eslint-disable-line @typescript-eslint/no-explicit-any

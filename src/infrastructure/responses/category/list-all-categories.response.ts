@@ -5,6 +5,10 @@ export class ListAllCategoriesResponse {
     declare readonly id: number;
     @ApiProperty({ example: 'Смартфоны', description: 'Имя категории' })
     declare readonly name: string;
-    @ApiProperty({ example: 'image.png', required: false, description: 'Имя файла изображения' })
+    @ApiProperty({
+        example: 'image.png',
+        required: false,
+        description: 'Имя файла изображения',
+    })
     declare readonly image?: string;
 }

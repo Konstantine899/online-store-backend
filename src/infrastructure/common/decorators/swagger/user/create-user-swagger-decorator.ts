@@ -25,18 +25,18 @@ export function CreateUserSwaggerDecorator(): MethodDecorator {
         }),
         ApiResponse({
             status: HttpStatus.CONFLICT,
-            description: 'Пользователь уже существует', 
+            description: 'Пользователь уже существует',
         }),
         ApiResponse({
             status: HttpStatus.UNAUTHORIZED,
-            description: 'Требуется аутентификация', 
+            description: 'Требуется аутентификация',
         }),
         ApiResponse({
             status: HttpStatus.FORBIDDEN,
-            description: 'Нет прав', 
+            description: 'Нет прав',
         }),
         ApiBadRequestResponse({
-            description: 'Ошибка валидации', 
+            description: 'Ошибка валидации',
         }),
         ApiNotFoundResponse({
             description: 'Not Found',

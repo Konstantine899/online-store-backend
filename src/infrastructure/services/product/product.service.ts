@@ -61,20 +61,21 @@ export class ProductService implements IProductService {
         const { search } = searchQuery;
         const { sort = SortingEnum.DESC } = sortQuery;
         const { limit, offset } = this.getPaginate(page, size);
-        
+
         const products = await this.productRepository.findListProduct(
             search,
             sort,
             limit,
             offset,
         );
-        
+
         const metaData = this.getMetadata(products.count, page, limit);
-        
+
         return {
             data: products.rows,
             meta: metaData,
-        } as GetListProductV2Response;    }
+        } as GetListProductV2Response;
+    }
 
     public async getListProductByBrandIdV2(
         brandId: number,
@@ -86,7 +87,7 @@ export class ProductService implements IProductService {
         const { limit, offset } = this.getPaginate(page, size);
         const { search } = searchQuery;
         const { sort = SortingEnum.DESC } = sortQuery;
-        
+
         const products = await this.productRepository.findListProductByBrandId(
             brandId,
             search,
@@ -94,9 +95,9 @@ export class ProductService implements IProductService {
             limit,
             offset,
         );
-        
+
         const metaData = this.getMetadata(products.count, page, limit);
-        
+
         return new PaginatedResponse(products.rows, metaData);
     }
 
@@ -110,17 +111,18 @@ export class ProductService implements IProductService {
         const { limit, offset } = this.getPaginate(page, size);
         const { search } = searchQuery;
         const { sort = SortingEnum.DESC } = sortQuery;
-        
-        const products = await this.productRepository.findListProductByCategoryId(
-            categoryId,
-            search,
-            sort,
-            limit,
-            offset,
-        );
-        
+
+        const products =
+            await this.productRepository.findListProductByCategoryId(
+                categoryId,
+                search,
+                sort,
+                limit,
+                offset,
+            );
+
         const metaData = this.getMetadata(products.count, page, limit);
-        
+
         return new PaginatedResponse(products.rows, metaData);
     }
 
@@ -135,18 +137,19 @@ export class ProductService implements IProductService {
         const { limit, offset } = this.getPaginate(page, size);
         const { search } = searchQuery;
         const { sort = SortingEnum.DESC } = sortQuery;
-        
-        const products = await this.productRepository.findAllByBrandIdAndCategoryId(
-            brandId,
-            categoryId,
-            search,
-            sort,
-            limit,
-            offset,
-        );
-        
+
+        const products =
+            await this.productRepository.findAllByBrandIdAndCategoryId(
+                brandId,
+                categoryId,
+                search,
+                sort,
+                limit,
+                offset,
+            );
+
         const metaData = this.getMetadata(products.count, page, limit);
-        
+
         return new PaginatedResponse(products.rows, metaData);
     }
 

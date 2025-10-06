@@ -148,7 +148,9 @@ describe('SmsProviderService', () => {
             expect(service.validatePhoneNumber('+79991234567')).toBe(true);
             expect(service.validatePhoneNumber('79991234567')).toBe(true);
             expect(service.validatePhoneNumber('89991234567')).toBe(true);
-            expect(service.validatePhoneNumber('+7 (999) 123-45-67')).toBe(true);
+            expect(service.validatePhoneNumber('+7 (999) 123-45-67')).toBe(
+                true,
+            );
         });
 
         it('should validate correct international phone numbers', () => {
@@ -178,12 +180,16 @@ describe('SmsProviderService', () => {
         });
 
         it('should handle errors in getDeliveryReport', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleSpy = jest
+                .spyOn(console, 'error')
+                .mockImplementation();
 
             // Create a new service instance with mocked method
             const mockService = {
                 ...service,
-                getDeliveryReport: jest.fn().mockRejectedValue(new Error('Database error'))
+                getDeliveryReport: jest
+                    .fn()
+                    .mockRejectedValue(new Error('Database error')),
             };
 
             const report = await mockService.getDeliveryReport('test-id');
@@ -286,24 +292,35 @@ describe('SmsProviderService', () => {
             const result = await service.validateMessage(longMessage);
 
             expect(result.valid).toBe(false);
-            expect(result.errors).toContain('Сообщение слишком длинное (максимум 1000 символов)');
+            expect(result.errors).toContain(
+                'Сообщение слишком длинное (максимум 1000 символов)',
+            );
         });
 
         it('should reject message with forbidden characters', async () => {
-            const result = await service.validateMessage('Message with <script>alert("xss")</script>');
+            const result = await service.validateMessage(
+                'Message with <script>alert("xss")</script>',
+            );
 
             expect(result.valid).toBe(false);
-            expect(result.errors).toContain('Сообщение содержит запрещенные символы');
+            expect(result.errors).toContain(
+                'Сообщение содержит запрещенные символы',
+            );
         });
 
         it('should reject message with multiple errors', async () => {
-            const badMessage = '<script>alert("xss")</script>' + 'A'.repeat(1000);
+            const badMessage =
+                '<script>alert("xss")</script>' + 'A'.repeat(1000);
             const result = await service.validateMessage(badMessage);
 
             expect(result.valid).toBe(false);
             expect(result.errors).toHaveLength(2);
-            expect(result.errors).toContain('Сообщение содержит запрещенные символы');
-            expect(result.errors).toContain('Сообщение слишком длинное (максимум 1000 символов)');
+            expect(result.errors).toContain(
+                'Сообщение содержит запрещенные символы',
+            );
+            expect(result.errors).toContain(
+                'Сообщение слишком длинное (максимум 1000 символов)',
+            );
         });
     });
 
@@ -327,7 +344,9 @@ describe('SmsProviderService', () => {
 
     describe('Error handling', () => {
         it('should handle errors gracefully in sendSms', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleSpy = jest
+                .spyOn(console, 'error')
+                .mockImplementation();
 
             const message: SmsMessage = {
                 to: '+79991234567',
@@ -335,9 +354,11 @@ describe('SmsProviderService', () => {
             };
 
             // Mock an error
-            jest.spyOn(service, 'validatePhoneNumber').mockImplementation(() => {
-                throw new Error('Validation error');
-            });
+            jest.spyOn(service, 'validatePhoneNumber').mockImplementation(
+                () => {
+                    throw new Error('Validation error');
+                },
+            );
 
             const result = await service.sendSms(message);
 
@@ -349,7 +370,9 @@ describe('SmsProviderService', () => {
         });
 
         it('should handle non-Error exceptions in sendSms', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleSpy = jest
+                .spyOn(console, 'error')
+                .mockImplementation();
 
             const message: SmsMessage = {
                 to: '+79991234567',
@@ -357,9 +380,11 @@ describe('SmsProviderService', () => {
             };
 
             // Mock a non-Error exception
-            jest.spyOn(service, 'validatePhoneNumber').mockImplementation(() => {
-                throw 'String error';
-            });
+            jest.spyOn(service, 'validatePhoneNumber').mockImplementation(
+                () => {
+                    throw 'String error';
+                },
+            );
 
             const result = await service.sendSms(message);
 
