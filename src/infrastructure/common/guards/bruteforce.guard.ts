@@ -3,6 +3,11 @@ import { ThrottlerGuard, ThrottlerRequest, ThrottlerException } from '@nestjs/th
 import { Request } from 'express';
 import { getConfig } from '@app/infrastructure/config';
 
+// Расширяем тип Request для добавления нашего флага
+interface RequestWithBruteforceFlag extends Request {
+    __bruteforceProcessed?: boolean;
+}
+
 @Injectable()
 export class BruteforceGuard extends ThrottlerGuard {
     private readonly logger = new Logger(BruteforceGuard.name);
@@ -16,7 +21,7 @@ export class BruteforceGuard extends ThrottlerGuard {
         requestProps: ThrottlerRequest,
     ): Promise<boolean> {
         const { context } = requestProps;
-        const request = context.switchToHttp().getRequest<Request>();
+        const request = context.switchToHttp().getRequest<RequestWithBruteforceFlag>();
 
         // В тестовом окружении проверяем флаг для включения rate limiting
         if (process.env.NODE_ENV === 'test' && process.env.RATE_LIMIT_ENABLED !== 'true') {
@@ -24,10 +29,10 @@ export class BruteforceGuard extends ThrottlerGuard {
         }
 
         // Защита от повторных вызовов для одного запроса
-        if ((request as any).__bruteforceProcessed) {
+        if (request.__bruteforceProcessed) {
             return true;
         }
-        (request as any).__bruteforceProcessed = true;
+        request.__bruteforceProcessed = true;
 
         // Специальная логика для auth роутов
         if (request.url.includes('/auth/login')) {
@@ -79,25 +84,111 @@ export class BruteforceGuard extends ThrottlerGuard {
         limit: number,
         requestProps: ThrottlerRequest,
     ): boolean {
-        const request = requestProps.context.switchToHttp().getRequest<Request>();
-        const ip = (request.headers['x-forwarded-for'] as string) || request.ip || 'unknown';
+        const request = requestProps.context.switchToHttp().getRequest<RequestWithBruteforceFlag>();
+        
+        // Безопасное извлечение IP с валидацией
+        const ip = this.extractClientIP(request);
         const key = `${profile}:${ip}`;
         const now = Date.now();
+        
+        // Атомарная операция для избежания race condition
         let node = BruteforceGuard.counters.get(key);
         if (!node || now >= node.resetAt) {
             node = { count: 0, resetAt: now + windowMs };
             BruteforceGuard.counters.set(key, node);
         }
+        
+        // Проверяем лимит ДО инкремента для корректной логики
         if (node.count >= limit) {
             this.logger.warn(`${profile} rate limit exceeded`, {
                 route: request.url,
                 method: request.method,
                 correlationId: request.headers['x-request-id'],
+                ip: this.maskIP(ip), // Маскируем IP в логах
             });
             throw new ThrottlerException('Слишком много запросов. Попробуйте позже.');
         }
+        
         node.count += 1;
         return true;
+    }
+
+    /**
+     * Безопасное извлечение IP адреса клиента
+     */
+    private extractClientIP(request: RequestWithBruteforceFlag): string {
+        // Проверяем заголовки в порядке приоритета
+        const forwardedFor = request.headers['x-forwarded-for'] as string;
+        const realIP = request.headers['x-real-ip'] as string;
+        const clientIP = request.headers['x-client-ip'] as string;
+        
+        // Если есть x-forwarded-for, берём первый IP (клиент)
+        if (forwardedFor) {
+            const ips = forwardedFor.split(',').map(ip => ip.trim());
+            const clientIP = ips[0];
+            if (this.isValidIP(clientIP)) {
+                return clientIP;
+            }
+        }
+        
+        // Проверяем другие заголовки
+        if (realIP && this.isValidIP(realIP)) {
+            return realIP;
+        }
+        
+        if (clientIP && this.isValidIP(clientIP)) {
+            return clientIP;
+        }
+        
+        // Fallback на socket.remoteAddress
+        const socketIP = request.socket?.remoteAddress;
+        if (socketIP && this.isValidIP(socketIP)) {
+            return socketIP;
+        }
+        
+        // Последний fallback
+        return 'unknown';
+    }
+
+    /**
+     * Валидация IP адреса
+     */
+    private isValidIP(ip: string): boolean {
+        if (!ip || typeof ip !== 'string') {
+            return false;
+        }
+        
+        // Простая валидация IPv4 и IPv6
+        const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+        
+        return ipv4Regex.test(ip) || ipv6Regex.test(ip);
+    }
+
+    /**
+     * Маскирование IP для логирования (безопасность)
+     */
+    private maskIP(ip: string): string {
+        if (ip === 'unknown') {
+            return ip;
+        }
+        
+        // Маскируем последний октет для IPv4
+        const ipv4Regex = /^(\d+\.\d+\.\d+)\.\d+$/;
+        const match = ip.match(ipv4Regex);
+        if (match) {
+            return `${match[1]}.xxx`;
+        }
+        
+        // Для IPv6 маскируем последние группы
+        if (ip.includes(':')) {
+            const parts = ip.split(':');
+            if (parts.length >= 4) {
+                return parts.slice(0, -2).join(':') + ':xxxx:xxxx';
+            }
+        }
+        
+        return 'masked';
     }
 }
 
