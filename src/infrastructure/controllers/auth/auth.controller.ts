@@ -11,6 +11,7 @@ import {
     UseGuards,
     UnauthorizedException,
     UnprocessableEntityException,
+    BadRequestException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService, UserService } from '@app/infrastructure/services';
@@ -33,6 +34,7 @@ import {
 } from '@app/infrastructure/responses';
 
 import { AuthGuard } from '@app/infrastructure/common/guards';
+import { BruteforceGuard } from '@app/infrastructure/common/guards/bruteforce.guard';
 import { IDecodedAccessToken } from '@app/domain/jwt';
 import {
     getRefreshCookieName,
@@ -49,6 +51,7 @@ export class AuthController {
 
     @RegistrationSwaggerDecorator()
     @HttpCode(201)
+    @UseGuards(BruteforceGuard)
     @Post('/registration')
     public async registration(
         @Body() dto: RegistrationDto,
@@ -68,6 +71,7 @@ export class AuthController {
 
     @LoginSwaggerDecorator()
     @HttpCode(200)
+    @UseGuards(BruteforceGuard)
     @Post('/login')
     public async login(
         @Body() dto: LoginDto,
@@ -85,6 +89,7 @@ export class AuthController {
 
     @UpdateAccessTokenSwaggerDecorator()
     @HttpCode(200)
+    @UseGuards(BruteforceGuard)
     @Post('/refresh')
     public async updateAccessToken(
         @Req() req: Request,
@@ -97,7 +102,7 @@ export class AuthController {
         if (!refreshFromCookie) {
             // cookie ожидается подписанной; отсутствует = невалидна/не отправлена
             throw new UnauthorizedException(
-                'Refresh token cookie is missing or invalid',
+                'Отсутствует или некорректная cookie с refresh токеном',
             );
         }
 
@@ -124,13 +129,13 @@ export class AuthController {
                     expires: new Date(0),
                 });
                 throw new UnauthorizedException(
-                    'Refresh token compromised. Please log in again.',
+                    'Refresh токен скомпрометирован. Пожалуйста, выполните вход заново.',
                 );
             }
 
             if (error instanceof UnprocessableEntityException) {
                 // Неверный формат, истёкший токен, user mismatch
-                throw new UnauthorizedException('Invalid refresh token');
+                throw new UnauthorizedException('Некорректный refresh токен');
             }
 
             throw error;
@@ -145,7 +150,7 @@ export class AuthController {
     ): Promise<CheckResponse> {
         const { id } = request.user as IDecodedAccessToken;
         if (id === undefined) {
-            throw new Error('User ID is required');
+            throw new BadRequestException('Идентификатор пользователя обязателен');
         }
         return this.userService.checkUserAuth(id);
     }
@@ -165,7 +170,7 @@ export class AuthController {
         if (!refreshFromCookie) {
             // cookie ожидается подписанной; отсутствует = невалидна/не отправлена
             throw new UnauthorizedException(
-                'Refresh token cookie is missing or invalid',
+                'Отсутствует или некорректная cookie с refresh токеном',
             );
         }
 

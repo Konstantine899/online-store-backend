@@ -6,6 +6,14 @@ import { BruteforceGuard } from '@app/infrastructure/common/guards/bruteforce.gu
 describe('BruteforceGuard profiles (integration)', () => {
     let app: INestApplication;
 
+    const LOGIN_BODY = { email: 'nope@example.com', password: 'wrong' } as const;
+    const REFRESH_BODY = { refreshToken: 'invalid-token' } as const;
+    const REG_WEAK = (email: string) => ({ email, password: 'weak', firstName: 'Test', lastName: 'User' } as const);
+
+    const expectNot429 = (status: number, ctx: string): void => {
+        if (status === 429) throw new Error(`Unexpected 429 on ${ctx}`);
+    };
+
     beforeAll(async () => {
         // Включаем профиль BruteforceGuard, но отключаем глобальный лимитер
         process.env.NODE_ENV = 'test';
@@ -38,106 +46,46 @@ describe('BruteforceGuard profiles (integration)', () => {
     });
 
     it('should return 429 after exceeding login attempts', async () => {
-        const server = app.getHttpServer();
-
         // Первая попытка (должна пройти до хендлера и дать 400/401)
-        const res1 = await request(server)
-            .post('/online-store/auth/login')
-            .send({ email: 'nope@example.com', password: 'wrong' });
-        
-        if (res1.status === 429) {
-            throw new Error('Unexpected 429 on first attempt');
-        }
+        const res1 = await request(app.getHttpServer()).post('/online-store/auth/login').send(LOGIN_BODY);
+        expectNot429(res1.status, 'first login attempt');
 
         // Вторая попытка (ещё не 429)
-        await request(server)
-            .post('/online-store/auth/login')
-            .send({ email: 'nope@example.com', password: 'wrong' })
-            .expect((res: request.Response) => {
-                if (res.status === 429) {
-                    throw new Error('Unexpected 429 on second attempt');
-                }
-            });
+        const res2 = await request(app.getHttpServer()).post('/online-store/auth/login').send(LOGIN_BODY);
+        expectNot429(res2.status, 'second login attempt');
 
         // Третья попытка должна быть ограничена
-        const res3 = await request(server)
-            .post('/online-store/auth/login')
-            .send({ email: 'nope@example.com', password: 'wrong' });
+        const res3 = await request(app.getHttpServer()).post('/online-store/auth/login').send(LOGIN_BODY);
 
         expect(res3.status).toBe(429);
     });
 
     it('should return 429 after exceeding refresh attempts', async () => {
-        const server = app.getHttpServer();
-
         // Первая попытка (должна пройти до хендлера)
-        const res1 = await request(server)
-            .post('/online-store/auth/refresh')
-            .send({ refreshToken: 'invalid-token' });
-        
-        if (res1.status === 429) {
-            throw new Error('Unexpected 429 on first refresh attempt');
-        }
+        const res1 = await request(app.getHttpServer()).post('/online-store/auth/refresh').send(REFRESH_BODY);
+        expectNot429(res1.status, 'first refresh attempt');
 
         // Вторая попытка (ещё не 429)
-        await request(server)
-            .post('/online-store/auth/refresh')
-            .send({ refreshToken: 'invalid-token' })
-            .expect((res: request.Response) => {
-                if (res.status === 429) {
-                    throw new Error('Unexpected 429 on second refresh attempt');
-                }
-            });
+        const res2 = await request(app.getHttpServer()).post('/online-store/auth/refresh').send(REFRESH_BODY);
+        expectNot429(res2.status, 'second refresh attempt');
 
         // Третья попытка должна быть ограничена
-        const res3 = await request(server)
-            .post('/online-store/auth/refresh')
-            .send({ refreshToken: 'invalid-token' });
+        const res3 = await request(app.getHttpServer()).post('/online-store/auth/refresh').send(REFRESH_BODY);
 
         expect(res3.status).toBe(429);
     });
 
     it('should return 429 after exceeding registration attempts', async () => {
-        const server = app.getHttpServer();
-
         // Первая попытка (должна пройти до хендлера)
-        const res1 = await request(server)
-            .post('/online-store/auth/registration')
-            .send({ 
-                email: 'test@example.com', 
-                password: 'weak', 
-                firstName: 'Test',
-                lastName: 'User'
-            });
-        
-        if (res1.status === 429) {
-            throw new Error('Unexpected 429 on first registration attempt');
-        }
+        const res1 = await request(app.getHttpServer()).post('/online-store/auth/registration').send(REG_WEAK('test@example.com'));
+        expectNot429(res1.status, 'first registration attempt');
 
         // Вторая попытка (ещё не 429)
-        await request(server)
-            .post('/online-store/auth/registration')
-            .send({ 
-                email: 'test2@example.com', 
-                password: 'weak', 
-                firstName: 'Test',
-                lastName: 'User'
-            })
-            .expect((res: request.Response) => {
-                if (res.status === 429) {
-                    throw new Error('Unexpected 429 on second registration attempt');
-                }
-            });
+        const res2 = await request(app.getHttpServer()).post('/online-store/auth/registration').send(REG_WEAK('test2@example.com'));
+        expectNot429(res2.status, 'second registration attempt');
 
         // Третья попытка должна быть ограничена
-        const res3 = await request(server)
-            .post('/online-store/auth/registration')
-            .send({ 
-                email: 'test3@example.com', 
-                password: 'weak', 
-                firstName: 'Test',
-                lastName: 'User'
-            });
+        const res3 = await request(app.getHttpServer()).post('/online-store/auth/registration').send(REG_WEAK('test3@example.com'));
 
         expect(res3.status).toBe(429);
     });
