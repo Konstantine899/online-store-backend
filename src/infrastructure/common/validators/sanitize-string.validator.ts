@@ -9,19 +9,19 @@ import {
 export class IsSanitizedStringConstraint
     implements ValidatorConstraintInterface
 {
-    validate(value: string) {
+    validate(value: string): boolean {
         if (typeof value !== 'string') return false;
 
-        // Удаляем HTML теги
-        const sanitized = value.replace(/<[^>]*>/g, '');
-
         // Удаляем лишние пробелы
-        const trimmed = sanitized.trim();
+        const trimmed = value.trim();
 
-        // Проверяем, что строка не пустая после санитизации
+        // Проверяем, что строка не пустая после обрезки пробелов
         if (trimmed.length === 0) return false;
 
-        // Проверяем на подозрительные символы (базовая защита от XSS)
+        // Проверяем на HTML теги (без флага g для корректной работы с test())
+        if (/<[^>]*>/.test(trimmed)) return false;
+
+        // Проверяем на подозрительные паттерны XSS
         const suspiciousPatterns = [
             /<script/i,
             /javascript:/i,
