@@ -8,6 +8,8 @@ import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validatio
 import cookieParser from 'cookie-parser';
 import { BruteforceGuard } from '@app/infrastructure/common/guards';
 import helmet from 'helmet';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { getConfig } from '@app/infrastructure/config';
 
 
 export async function setupTestApp(): Promise<INestApplication> {
@@ -37,6 +39,29 @@ export async function setupTestApp(): Promise<INestApplication> {
 
     // Установка глобального префикса для тестов
     app.setGlobalPrefix('online-store');
+
+    // Инициализация Swagger для тестов (если SWAGGER_ENABLED=true)
+    const cfg = getConfig();
+    if (cfg.SWAGGER_ENABLED) {
+        const config = new DocumentBuilder()
+            .setTitle('Online Store API (Test)')
+            .setDescription('REST API для интернет-магазина (тестовое окружение)')
+            .setVersion('1.0')
+            .addBearerAuth(
+                {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT',
+                    name: 'JWT',
+                    description: 'Введите JWT токен',
+                    in: 'header',
+                },
+                'JWT-auth',
+            )
+            .build();
+        const document = SwaggerModule.createDocument(app, config);
+        SwaggerModule.setup('online-store/docs', app, document);
+    }
 
     await app.init();
     return app;

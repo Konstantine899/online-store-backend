@@ -14,3 +14,7 @@ export { ICreateRoleDto } from './role/i-create-role-dto';
 export { IAddRoleDto } from './user/i-add-role-dto';
 export { ICreateUserDto } from './user/i-create-user-dto';
 export { IRemoveRoleDto } from './user/i-remove-role-dto';
+export {
+    ICreateUserAddressDto,
+    IUpdateUserAddressDto,
+} from './user-address';

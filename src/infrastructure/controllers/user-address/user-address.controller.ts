@@ -41,7 +41,15 @@ interface AuthenticatedRequest extends Request {
 @UseGuards(AuthGuard, RoleGuard)
 export class UserAddressController {
     // Статические константы для переиспользования
-    private static readonly USER_ROLES = ['CUSTOMER', 'ADMIN'] as const;
+    private static readonly USER_ROLES = [
+        'VIP_CUSTOMER',
+        'WHOLESALE',
+        'CUSTOMER',
+        'AFFILIATE',
+        'GUEST',
+        'USER',
+        'ADMIN',
+    ] as const;
     private static readonly SUCCESS_DESCRIPTION = 'Успех';
     private static readonly CREATED_DESCRIPTION = 'Создано';
     private static readonly UPDATED_DESCRIPTION = 'Обновлено';

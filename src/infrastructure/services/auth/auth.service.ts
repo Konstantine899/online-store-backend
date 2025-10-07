@@ -18,6 +18,7 @@ import {
 } from '@app/infrastructure/responses';
 import { IAuthResponse } from '@app/domain/responses';
 import { IAuthService } from '@app/domain/services';
+import { createLogger, maskPII } from '@app/infrastructure/common/utils/logging';
 
 interface IUpdateAccessTokenResponse extends UpdateAccessTokenResponse {
     refreshToken?: string; // Опционально для внутреннего использования
@@ -27,6 +28,8 @@ interface IUpdateAccessTokenResponse extends UpdateAccessTokenResponse {
 
 @Injectable()
 export class AuthService implements IAuthService {
+    private readonly logger = createLogger('AuthService');
+
     constructor(
         private readonly userService: UserService,
         private readonly tokenService: TokenService,
@@ -40,6 +43,16 @@ export class AuthService implements IAuthService {
         const refreshToken = await this.tokenService.generateRefreshToken(
             user,
             60 * 60 * 24 * 30,
+        );
+
+        // Бизнес-логирование: регистрация пользователя (info level)
+        this.logger.info(
+            {
+                userId: user.id,
+                email: maskPII(user.email),
+                roles: user.roles?.map((r) => r.role),
+            },
+            'Пользователь успешно зарегистрирован',
         );
 
         return this.getToken(accessToken, refreshToken);
@@ -61,6 +74,17 @@ export class AuthService implements IAuthService {
             user,
             60 * 60 * 24 * 30,
         );
+
+        // Бизнес-логирование: успешный логин (info level)
+        this.logger.info(
+            {
+                userId: user.id,
+                email: maskPII(user.email),
+                roles: user.roles?.map((r) => r.role),
+            },
+            'Пользователь успешно вошёл в систему',
+        );
+
         return this.getToken(accessToken, refreshToken);
     }
 
@@ -92,8 +116,13 @@ export class AuthService implements IAuthService {
                 refreshToken: newRefreshToken, // Возвращаем новый refresh для cookie
             };
         } catch (error) {
-            // Логируем для отладки
-            console.error('Token rotation failed:', error);
+            // Логируем ошибку ротации токена (warn level - не критично)
+            this.logger.warn(
+                {
+                    error: error instanceof Error ? error.message : String(error),
+                },
+                'Token rotation failed',
+            );
             // Пробрасываем все ошибки наверх - пусть контроллер решает что делать
             throw error;
         }

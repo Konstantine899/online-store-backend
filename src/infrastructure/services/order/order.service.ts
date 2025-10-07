@@ -18,9 +18,12 @@ import {
     GuestCreateOrderResponse,
 } from '@app/infrastructure/responses';
 import { IOrderService } from '@app/domain/services';
+import { createLogger, maskPII } from '@app/infrastructure/common/utils/logging';
 
 @Injectable()
 export class OrderService implements IOrderService {
+    private readonly logger = createLogger('OrderService');
+
     constructor(
         private readonly orderRepository: OrderRepository,
         private readonly cartRepository: CartRepository,
@@ -145,21 +148,37 @@ export class OrderService implements IOrderService {
         userId: number,
         cartId: number,
     ): Promise<UserCreateOrderResponse> {
-        /*Если есть userId ищем пользователя в БД. Если пользователь не найден выдаст исключение*/
-        if (userId) {
-            await this.userService.getUser(userId);
-        }
-        const cart = await this.cartRepository.findCart(cartId);
+        /*Параллельная проверка пользователя и поиск корзины для оптимизации производительности*/
+        const [, cart] = await Promise.all([
+            userId ? this.userService.getUser(userId) : Promise.resolve(null),
+            this.cartRepository.findCart(cartId),
+        ]);
+
         if (!cart) {
             this.notFound(`Корзины с id:${cartId} не найдена БД`);
         }
         if (cart.products.length === 0) {
             this.notFound('Ваша корзина пуста');
         }
+
         /*Для создания заказа отправляю сформированный в клиентской части объект
          * который содержит в себе данные пользователя, и данные заказа с корзины*/
-        const order = this.orderRepository.createOrder(dto, userId);
-        // после оформления заказа корзину нужно очистить
+        const order = await this.orderRepository.createOrder(dto, userId);
+
+        // Бизнес-логирование: создание заказа (info level)
+        this.logger.info(
+            {
+                orderId: order.id,
+                userId,
+                amount: order.amount,
+                itemsCount: cart.products.length,
+                email: maskPII(dto.email),
+                phone: maskPII(dto.phone),
+            },
+            'Новый заказ создан',
+        );
+
+        // После оформления заказа корзину нужно очистить
         await this.cartRepository.clearCart(cartId);
         return order;
     }

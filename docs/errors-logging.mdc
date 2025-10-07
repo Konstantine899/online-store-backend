@@ -1,0 +1,482 @@
+---
+description: Руководство по обработке ошибок и логированию
+module: infrastructure
+binding: true
+---
+
+# Ошибки и логирование
+
+## Формат ошибок (единый контракт)
+
+Все HTTP-ошибки возвращаются в едином формате:
+
+```json
+{
+    "statusCode": number,
+    "url": string,
+    "path": string,
+    "name": string,
+    "message": string | string[],
+    "timestamp?": string
+}
+```
+
+### Правила:
+- **Сообщения** — на русском, конкретные и понятные пользователю
+- **message** — строка для одиночной ошибки, массив для валидационных ошибок
+- **timestamp** — добавляется опционально для критичных ошибок
+
+## Exception Filters (глобальные)
+
+### CustomNotFoundExceptionFilter
+Обрабатывает 404 ошибки с подробной информацией:
+- `url` - полный URL запроса
+- `path` - путь без query параметров
+- `name` - имя исключения
+- `message` - описание ошибки
+
+### SequelizeDatabaseErrorExceptionFilter
+Обрабатывает ошибки базы данных:
+- Маппит Sequelize ошибки в понятные клиенту сообщения
+- Добавляет `timestamp` для отладки
+- Скрывает внутренние детали БД
+
+### SequelizeUniqueConstraintExceptionFilter
+Обрабатывает конфликты уникальности:
+- Возвращает 409 Conflict
+- Указывает поле конфликта
+- Русское сообщение об ошибке
+
+### Добавление новых фильтров
+При добавлении новых типов ошибок:
+1. Создать отдельный exception filter
+2. Согласовать формат ответа (контракт выше)
+3. Зарегистрировать глобально в `main.ts`
+4. Добавить в PR чек-лист
+
+## Валидация и ошибки
+
+- **GlobalValidationPipe** - глобальная валидация всех DTO
+- **Сообщения об ошибках** - всегда на русском языке
+- **Кастомные валидаторы** - `@IsSanitizedString`, `@IsValidName`, `@IsValidPhone`
+- **Формат** - массив строк с конкретными описаниями
+
+## Логирование (pino)
+
+### Общая структура
+
+Используется **pino** для структурированного JSON-логирования:
+
+```typescript
+import { createLogger, maskPII } from '@app/infrastructure/common/utils/logging';
+
+class MyService {
+    private readonly logger = createLogger('MyService');
+    
+    someMethod() {
+        this.logger.info({ userId: 123, email: maskPII(email) }, 'User action');
+    }
+}
+```
+
+### Уровни логирования
+
+#### `info` - бизнес-события
+Логируем ключевые переходы состояний:
+- Регистрация пользователя
+- Успешный логин
+- Создание заказа
+- Смена статуса заказа
+- Создание важных сущностей
+
+**Пример:**
+```typescript
+logger.info({ userId: 123, orderId: 456 }, 'Заказ успешно создан');
+```
+
+#### `warn` - деградации и нестандартные ситуации
+Логируем проблемы, не блокирующие работу:
+- Ретраи операций
+- Rate limiting срабатывания
+- Деградация внешних сервисов
+- Медленные запросы
+- Неудачные попытки аутентификации
+
+**Пример:**
+```typescript
+logger.warn({ ip, attempts: 5 }, 'Rate limit exceeded');
+```
+
+#### `error` - критичные ошибки
+Логируем серьёзные проблемы:
+- Падения приложения
+- Необработанные исключения
+- Критичные ошибки БД
+- Ошибки внешних интеграций
+- Process-level ошибки
+
+**Пример:**
+```typescript
+logger.error({ error: err.message, stack: err.stack }, 'Database connection failed');
+```
+
+#### `debug` - отладочная информация
+Только в development окружении:
+- Детальные данные запросов
+- Промежуточные состояния
+- Отладка алгоритмов
+
+### Форматы логов
+
+**Development:**
+```
+[12:34:56] INFO (MyService): User action
+    userId: 123
+    email: "u***@example.com"
+```
+
+**Production:**
+```json
+{
+    "level": "info",
+    "time": "2025-10-07T12:34:56.789Z",
+    "context": "MyService",
+    "userId": 123,
+    "email": "u***@example.com",
+    "msg": "User action",
+    "correlationId": "uuid-here"
+}
+```
+
+## Correlation ID
+
+### CorrelationIdMiddleware
+
+Генерирует уникальный ID для каждого запроса:
+- Читает `x-request-id` из заголовка (если есть)
+- Генерирует новый UUID если отсутствует
+- Добавляет в ответ заголовок `x-request-id`
+- Пробрасывает через весь стек вызовов
+
+### Использование в логах
+
+**Автоматически** через pino-http:
+```typescript
+// HTTP запросы автоматически получают correlationId
+app.use(pinoHttp({
+    customProps: (req) => ({ correlationId: req.correlationId })
+}));
+```
+
+**Вручную** в сервисах:
+```typescript
+const logger = createLoggerWithCorrelation('MyService', req);
+logger.info({ data }, 'Action completed');
+```
+
+### Трассировка запросов
+
+1. Клиент → HTTP request → middleware генерирует `x-request-id`
+2. Все логи запроса содержат `correlationId`
+3. Ответ → клиент содержит `x-request-id` header
+4. Клиент может передать тот же ID для повторных запросов
+5. Агрегация логов по `correlationId` для полной трассировки
+
+## Маскирование PII
+
+### Автоматическое маскирование (pino redact)
+
+Настроено в `pino.config.ts`:
+
+```typescript
+redact: {
+    paths: [
+        'authorization', 'token', 'password', 'secret',
+        'email', 'phone', 'firstName', 'lastName',
+        'address', 'apiKey', '*.password', '*.email'
+    ],
+    censor: '[REDACTED]'
+}
+```
+
+### Ручное маскирование
+
+Для явного маскирования используйте `maskPII()`:
+
+```typescript
+import { maskPII } from '@app/infrastructure/common/utils/logging';
+
+// Email: user@example.com → u***@example.com
+logger.info({ email: maskPII(email) }, 'User registered');
+
+// Phone: +79991234567 → +7***67
+logger.info({ phone: maskPII(phone) }, 'SMS sent');
+```
+
+### Что НЕ логировать напрямую
+
+❌ **Никогда не логируйте без маскирования:**
+- Email адреса
+- Телефоны
+- Имена и фамилии
+- Адреса
+- IP адреса (GDPR)
+- Токены любого вида
+- Пароли
+- API ключи
+- Номера банковских карт
+- Персональные документы
+
+## Rate Limiting и безопасность
+
+### BruteforceGuard
+
+Логирование блокировок на уровне `warn`:
+```typescript
+logger.warn({ ip }, 'Rate limit exceeded');
+```
+
+**Правила:**
+- Логировать без PII
+- Указывать только IP (частично замаскированный)
+- Не логировать полные данные попыток
+- Агрегировать аномалии
+
+### Аномальная активность
+
+Логировать агрегированно:
+- Частые 401/403 по IP
+- Массовые 429 (DDoS попытки)
+- Подозрительные паттерны запросов
+
+**Без PII:**
+```typescript
+logger.warn({ 
+    ip: '192.168.***.***',
+    attempts: 100,
+    timeWindow: '5m'
+}, 'Suspicious activity detected');
+```
+
+## SQL и производительность
+
+### SQL логирование
+
+Управляется через `SQL_LOGGING` env переменную:
+- `false` (default) - отключено в production
+- `true` - включено в development для отладки
+
+### Медленные запросы
+
+Логировать на уровне `warn`:
+```typescript
+const start = Date.now();
+const result = await db.query();
+const duration = Date.now() - start;
+
+if (duration > 1000) { // >1 секунды
+    logger.warn({ duration, query: 'getUserOrders' }, 'Slow query detected');
+}
+```
+
+### Долгие endpoints
+
+Логировать превышение SLA:
+```typescript
+const start = Date.now();
+// ... операция ...
+const duration = Date.now() - start;
+
+if (duration > 500) {
+    logger.warn({ endpoint: '/api/orders', duration }, 'Slow endpoint');
+}
+```
+
+## Process-level обработка
+
+### Необработанные Promise rejections
+
+```typescript
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error({ reason }, 'Unhandled Promise rejection');
+    process.exit(1); // Graceful shutdown
+});
+```
+
+### Необработанные исключения
+
+```typescript
+process.on('uncaughtException', (error) => {
+    logger.error({ error: error.message, stack }, 'Uncaught exception');
+    process.exit(1); // Критичная ошибка
+});
+```
+
+## Health endpoint и шум логов
+
+### Минимальное логирование
+
+`/health` не должен шуметь в логах:
+- **НЕ логировать** успешные health checks
+- **Логировать** только деградации (error level)
+- **Логировать** критичные падения зависимостей
+
+### Статические ассеты
+
+Отключить избыточные access-логи для:
+- `/static/**` - статические файлы
+- `/favicon.ico` - иконка
+- Health checks от балансировщика
+
+## Best Practices
+
+### 1. Структура логов
+
+✅ **Хорошо:**
+```typescript
+logger.info({ userId: 123, action: 'purchase', amount: 1000 }, 'Order created');
+```
+
+❌ **Плохо:**
+```typescript
+console.log('User 123 created order for 1000');
+```
+
+### 2. Контекст и корреляция
+
+✅ **Хорошо:**
+```typescript
+const logger = createLoggerWithCorrelation('Service', req);
+logger.info({ data }, 'Action');
+```
+
+❌ **Плохо:**
+```typescript
+console.log('Action completed');
+```
+
+### 3. Маскирование
+
+✅ **Хорошо:**
+```typescript
+logger.info({ email: maskPII(email) }, 'Email sent');
+```
+
+❌ **Плохо:**
+```typescript
+logger.info({ email }, 'Email sent'); // Утечка PII!
+```
+
+### 4. Уровни
+
+✅ **Хорошо:**
+```typescript
+logger.info({}, 'User registered');    // Бизнес-событие
+logger.warn({}, 'Retry attempt 3/5');  // Деградация
+logger.error({}, 'DB connection lost'); // Критично
+```
+
+❌ **Плохо:**
+```typescript
+logger.error({}, 'User registered'); // Неправильный уровень!
+```
+
+## PR Чек-лист
+
+При добавлении логирования проверяйте:
+
+- [ ] Используется `createLogger()` вместо `console.*`
+- [ ] Все PII данные замаскированы через `maskPII()`
+- [ ] Добавлен correlation ID где возможно
+- [ ] Выбран правильный уровень (info/warn/error)
+- [ ] Логи структурированы (объект данных + сообщение)
+- [ ] Русские сообщения, понятные для человека
+- [ ] Нет утечки секретов (токены, пароли, API keys)
+- [ ] Проверено в development с `pino-pretty`
+- [ ] Проверено в production режиме (JSON формат)
+
+## Примеры использования
+
+### Регистрация пользователя
+```typescript
+this.logger.info(
+    { userId: user.id, email: maskPII(user.email), role: 'CUSTOMER' },
+    'Пользователь успешно зарегистрирован'
+);
+```
+
+### Создание заказа
+```typescript
+this.logger.info(
+    { orderId: order.id, userId, amount: order.amount },
+    'Новый заказ создан'
+);
+```
+
+### Rate limiting
+```typescript
+this.logger.warn({ ip: maskPII(ip) }, 'Rate limit exceeded');
+```
+
+### Ошибка БД
+```typescript
+this.logger.error(
+    { error: err.message, query: 'findUser' },
+    'Database query failed'
+);
+```
+
+## Мониторинг и агрегация
+
+### Рекомендуемые инструменты
+
+**Development:**
+- `pino-pretty` - читаемый вывод в консоль
+- Локальные файлы логов
+
+**Production:**
+- Elasticsearch + Kibana - агрегация и поиск
+- CloudWatch Logs - AWS native
+- Grafana Loki - легковесная альтернатива
+- DataDog / New Relic - APM платформы
+
+### Метрики для мониторинга
+
+1. **Error Rate** - частота ошибок по эндпоинтам
+2. **Response Time** - время ответа (p50, p95, p99)
+3. **Rate Limiting** - количество заблокированных запросов
+4. **Authentication Failures** - неудачные попытки входа
+5. **Database Errors** - ошибки БД
+
+### Алерты
+
+Настроить уведомления на:
+- Error rate > 1% за 5 минут
+- Response time p95 > 1 секунда
+- Database connection errors
+- Unhandled exceptions
+- Аномальная активность (100+ 429 за минуту)
+
+## Производительность логирования
+
+### Оптимизации
+
+1. **Асинхронность** - pino пишет асинхронно (не блокирует event loop)
+2. **Мемоизация** - базовый логгер singleton
+3. **Child loggers** - минимальные аллокации
+4. **Условная детализация** - debug только в development
+
+### Измерения
+
+- Overhead: < 5% CPU в production
+- Throughput: > 10,000 logs/sec
+- Latency: < 1ms на лог
+
+## Заключение
+
+Следуя этим правилам, вы обеспечите:
+- ✅ Безопасность - нет утечек PII
+- ✅ Трассируемость - correlation ID
+- ✅ Структурированность - JSON логи
+- ✅ Производительность - асинхронное логирование
+- ✅ Мониторинг - готовность к агрегации

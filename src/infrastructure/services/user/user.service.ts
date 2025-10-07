@@ -31,9 +31,12 @@ import { compare, hash } from 'bcrypt';
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
 import { LoginHistoryService } from '../login-history/login-history.service';
+import { createLogger, maskPII } from '@app/infrastructure/common/utils/logging';
 
 @Injectable()
 export class UserService implements IUserService {
+    private readonly logger = createLogger('UserService');
+    
     private static readonly ADMIN_EMAILS = [
         'kostay375298918971@gmail.com',
     ] as const;
@@ -179,6 +182,17 @@ export class UserService implements IUserService {
             const user = await this.userRepository.createUser(dto);
             await this.linkUserRole(user.id, role.id);
             user.roles = [role as UserModel['roles'][0]];
+            
+            // Бизнес-логирование: создание пользователя (info level)
+            this.logger.info(
+                {
+                    userId: user.id,
+                    email: maskPII(user.email),
+                    role: role.role,
+                },
+                'Новый пользователь создан',
+            );
+            
             return this.userRepository.findRegisteredUser(user.id);
         } catch (error: unknown) {
             if (

@@ -60,6 +60,9 @@ module.exports = {
     }
   },
   
+  // Загрузка environment переменных перед тестами
+  setupFilesAfterEnv: ['<rootDir>/tests/jest-setup.ts'],
+  
   // Очистка моков между тестами
   clearMocks: true,
   restoreMocks: true,

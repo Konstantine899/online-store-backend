@@ -78,6 +78,8 @@ export class UserAddressRepository {
             {
                 user_id: userId,
                 ...allowed,
+                // Используем дефолтное значение, если country не передано
+                country: allowed.country || 'Россия',
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             { transaction: trx },
         );
