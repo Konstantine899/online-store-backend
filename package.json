@@ -52,7 +52,9 @@
     "cleanup:ports:force": "node -e \"if(process.platform==='win32'){require('child_process').exec('powershell -ExecutionPolicy Bypass -File scripts/cleanup-ports.ps1 -Force')}else{require('child_process').exec('bash scripts/cleanup-ports.sh --force')}\"",
     "cleanup:ports:all": "node -e \"if(process.platform==='win32'){require('child_process').exec('powershell -ExecutionPolicy Bypass -File scripts/cleanup-ports.ps1 -AllNodeProcesses')}else{require('child_process').exec('bash scripts/cleanup-ports.sh --all-node')}\"",
     "cleanup:ports:all:force": "node -e \"if(process.platform==='win32'){require('child_process').exec('powershell -ExecutionPolicy Bypass -File scripts/cleanup-ports.ps1 -AllNodeProcesses -Force')}else{require('child_process').exec('bash scripts/cleanup-ports.sh --all-node --force')}\"",
-    "start:clean": "npm run cleanup:ports:force && npm run start:dev"
+    "start:clean": "npm run cleanup:ports:force && npm run start:dev",
+    "ci:check": "npm run lint:ts && npm run build && npm run test:unit && npm run test:integration",
+    "ci:check:full": "npm run lint:ts && npm run build && npm run test:unit && npm run test:integration && npm run test:cov"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",
