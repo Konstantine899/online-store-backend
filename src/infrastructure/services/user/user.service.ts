@@ -266,7 +266,8 @@ export class UserService implements IUserService {
         }
         if (dto.email) {
             const foundEmail = await this.findUserByEmail(dto.email);
-            if (foundEmail) {
+            // Проверяем что найденный пользователь - это ДРУГОЙ пользователь (не текущий)
+            if (foundEmail && foundEmail.id !== id) {
                 this.conflictException(
                     `Пользователь с таким email: ${dto.email} уже существует`,
                 );

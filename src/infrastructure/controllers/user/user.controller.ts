@@ -177,8 +177,8 @@ export class UserController implements IUserController {
 
     @AddRoleUserSwaggerDecorator()
     @HttpCode(201)
-    @Roles(...MANAGER_ROLES)
-    @ManagerGuards()
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Post('/role/add')
     public async addRole(@Body() dto: AddRoleDto): Promise<AddRoleResponse> {
         return this.userService.addRole(dto);
@@ -186,8 +186,8 @@ export class UserController implements IUserController {
 
     @RemoveRoleUserSwaggerDecorator()
     @HttpCode(200)
-    @Roles(...MANAGER_ROLES)
-    @ManagerGuards()
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
     @Delete('/role/delete')
     public async removeRole(
         @Body() dto: RemoveRoleDto,
