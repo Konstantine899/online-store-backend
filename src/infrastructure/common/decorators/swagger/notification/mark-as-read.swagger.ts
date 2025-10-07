@@ -1,10 +1,7 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
-import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiParam,
-    ApiResponse,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { UnauthorizedResponse, ForbiddenResponse, NotFoundResponse, MESSAGE_RESPONSE_SCHEMA } from './common-responses';
+import { createIdParam } from './common-schemas';
 
 export function MarkAsReadSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
@@ -14,16 +11,12 @@ export function MarkAsReadSwaggerDecorator(): MethodDecorator {
                 'Отмечает уведомление как прочитанное. Клиенты могут отмечать только свои уведомления.',
         }),
         ApiBearerAuth('JWT-auth'),
-        ApiParam({
-            name: 'id',
-            description: 'ID уведомления',
-            example: 1,
-        }),
+        createIdParam('уведомления'),
         ApiResponse({
             status: HttpStatus.OK,
             description: 'Уведомление отмечено как прочитанное',
             schema: {
-                type: 'object',
+                ...MESSAGE_RESPONSE_SCHEMA,
                 properties: {
                     message: {
                         type: 'string',
@@ -32,18 +25,8 @@ export function MarkAsReadSwaggerDecorator(): MethodDecorator {
                 },
             },
         }),
-        ApiResponse({
-            status: HttpStatus.UNAUTHORIZED,
-            description: 'Не авторизован',
-        }),
-        ApiResponse({
-            status: HttpStatus.FORBIDDEN,
-            description: 'Недостаточно прав доступа',
-        }),
-        ApiResponse({
-            status: HttpStatus.NOT_FOUND,
-            description: 'Уведомление не найдено',
-        }),
+        UnauthorizedResponse(),
+        ForbiddenResponse(),
+        NotFoundResponse('Уведомление'),
     );
 }
-

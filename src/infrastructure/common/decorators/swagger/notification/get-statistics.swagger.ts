@@ -1,10 +1,37 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiQuery,
-    ApiResponse,
-} from '@nestjs/swagger';
+    UnauthorizedResponse,
+    ForbiddenResponse,
+} from './common-responses';
+
+// Константа для схемы статистики
+const STATISTICS_SCHEMA = {
+    type: 'object' as const,
+    properties: {
+        totalSent: { type: 'number', example: 1000 },
+        totalDelivered: { type: 'number', example: 950 },
+        totalRead: { type: 'number', example: 800 },
+        deliveryRate: { type: 'number', example: 95.0 },
+        readRate: { type: 'number', example: 84.2 },
+        byType: {
+            type: 'object',
+            properties: {
+                email: { type: 'number', example: 800 },
+                push: { type: 'number', example: 200 },
+            },
+        },
+        byStatus: {
+            type: 'object',
+            properties: {
+                sent: { type: 'number', example: 1000 },
+                delivered: { type: 'number', example: 950 },
+                read: { type: 'number', example: 800 },
+                failed: { type: 'number', example: 50 },
+            },
+        },
+    },
+};
 
 export function GetStatisticsSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
@@ -29,41 +56,9 @@ export function GetStatisticsSwaggerDecorator(): MethodDecorator {
         ApiResponse({
             status: HttpStatus.OK,
             description: 'Статистика уведомлений получена',
-            schema: {
-                type: 'object',
-                properties: {
-                    totalSent: { type: 'number', example: 1000 },
-                    totalDelivered: { type: 'number', example: 950 },
-                    totalRead: { type: 'number', example: 800 },
-                    deliveryRate: { type: 'number', example: 95.0 },
-                    readRate: { type: 'number', example: 84.2 },
-                    byType: {
-                        type: 'object',
-                        properties: {
-                            email: { type: 'number', example: 800 },
-                            push: { type: 'number', example: 200 },
-                        },
-                    },
-                    byStatus: {
-                        type: 'object',
-                        properties: {
-                            sent: { type: 'number', example: 1000 },
-                            delivered: { type: 'number', example: 950 },
-                            read: { type: 'number', example: 800 },
-                            failed: { type: 'number', example: 50 },
-                        },
-                    },
-                },
-            },
+            schema: STATISTICS_SCHEMA,
         }),
-        ApiResponse({
-            status: HttpStatus.UNAUTHORIZED,
-            description: 'Не авторизован',
-        }),
-        ApiResponse({
-            status: HttpStatus.FORBIDDEN,
-            description: 'Недостаточно прав доступа',
-        }),
+        UnauthorizedResponse(),
+        ForbiddenResponse(),
     );
 }
-

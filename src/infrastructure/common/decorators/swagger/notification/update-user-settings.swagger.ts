@@ -1,9 +1,7 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
-import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiResponse,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { UnauthorizedResponse, ForbiddenResponse } from './common-responses';
+import { USER_SETTINGS_SCHEMA } from './get-user-settings.swagger';
 
 export function UpdateUserSettingsSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
@@ -16,25 +14,15 @@ export function UpdateUserSettingsSwaggerDecorator(): MethodDecorator {
             status: HttpStatus.OK,
             description: 'Настройки уведомлений обновлены',
             schema: {
-                type: 'object',
+                ...USER_SETTINGS_SCHEMA,
                 properties: {
-                    id: { type: 'number', example: 1 },
-                    userId: { type: 'number', example: 123 },
-                    emailEnabled: { type: 'boolean', example: true },
+                    ...USER_SETTINGS_SCHEMA.properties,
                     pushEnabled: { type: 'boolean', example: false },
-                    orderUpdates: { type: 'boolean', example: true },
                     marketing: { type: 'boolean', example: true },
                 },
             },
         }),
-        ApiResponse({
-            status: HttpStatus.UNAUTHORIZED,
-            description: 'Не авторизован',
-        }),
-        ApiResponse({
-            status: HttpStatus.FORBIDDEN,
-            description: 'Недостаточно прав доступа',
-        }),
+        UnauthorizedResponse(),
+        ForbiddenResponse(),
     );
 }
-

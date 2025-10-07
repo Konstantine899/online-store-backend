@@ -1,10 +1,11 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiParam,
-    ApiResponse,
-} from '@nestjs/swagger';
+    UnauthorizedResponse,
+    ForbiddenResponse,
+    NotFoundResponse,
+} from './common-responses';
+import { createIdParam } from './common-schemas';
 
 export function DeleteTemplateSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
@@ -14,27 +15,13 @@ export function DeleteTemplateSwaggerDecorator(): MethodDecorator {
                 'Удаляет шаблон уведомления. Доступно только администраторам тенанта и платформы.',
         }),
         ApiBearerAuth('JWT-auth'),
-        ApiParam({
-            name: 'id',
-            description: 'ID шаблона',
-            example: 1,
-        }),
+        createIdParam('шаблона'),
         ApiResponse({
             status: HttpStatus.NO_CONTENT,
             description: 'Шаблон уведомления удален',
         }),
-        ApiResponse({
-            status: HttpStatus.UNAUTHORIZED,
-            description: 'Не авторизован',
-        }),
-        ApiResponse({
-            status: HttpStatus.FORBIDDEN,
-            description: 'Недостаточно прав доступа',
-        }),
-        ApiResponse({
-            status: HttpStatus.NOT_FOUND,
-            description: 'Шаблон не найден',
-        }),
+        UnauthorizedResponse(),
+        ForbiddenResponse(),
+        NotFoundResponse('Шаблон'),
     );
 }
-

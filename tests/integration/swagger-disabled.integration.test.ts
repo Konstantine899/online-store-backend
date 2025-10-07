@@ -10,12 +10,20 @@ import { getConfig } from '@app/infrastructure/config';
  * (по умолчанию только в dev/test окружениях)
  * 
  * В production/staging Swagger должен быть отключен для безопасности.
+ * 
+ * Оптимизировано: конфигурация кэшируется в beforeAll, вызов getConfig() только 1 раз.
  */
 describe('Swagger Access Control (integration)', () => {
     let app: INestApplication;
+    let config: ReturnType<typeof getConfig>; // Кэшируем конфигурацию
+
+    // Константы для сообщений (оптимизация: избежание дублирования строк)
+    const MSG_ENABLED_SKIP = '⚠️  Swagger включен (SWAGGER_ENABLED=true), пропускаем тест недоступности';
+    const MSG_DISABLED_SKIP = '⚠️  Swagger отключен (SWAGGER_ENABLED=false), пропускаем тест доступности';
 
     beforeAll(async () => {
         app = await setupTestApp();
+        config = getConfig(); // Единственный вызов для всех тестов
     });
 
     afterAll(async () => {
@@ -24,17 +32,12 @@ describe('Swagger Access Control (integration)', () => {
 
     describe('Swagger documentation endpoint', () => {
         it('should return 404 when SWAGGER_ENABLED=false', async () => {
-            const cfg = getConfig();
-
-            // Если Swagger включен, пропускаем тест
-            if (cfg.SWAGGER_ENABLED) {
-                console.log(
-                    '⚠️  Swagger включен (SWAGGER_ENABLED=true), пропускаем тест недоступности',
-                );
+            // Используем кэшированную конфигурацию
+            if (config.SWAGGER_ENABLED) {
+                console.log(MSG_ENABLED_SKIP);
                 return;
             }
 
-            // Проверяем, что /online-store/docs недоступен
             const res = await request(app.getHttpServer()).get(
                 '/online-store/docs',
             );
@@ -43,17 +46,11 @@ describe('Swagger Access Control (integration)', () => {
         });
 
         it('should return 404 for JSON endpoint when SWAGGER_ENABLED=false', async () => {
-            const cfg = getConfig();
-
-            // Если Swagger включен, пропускаем тест
-            if (cfg.SWAGGER_ENABLED) {
-                console.log(
-                    '⚠️  Swagger включен (SWAGGER_ENABLED=true), пропускаем тест недоступности',
-                );
+            if (config.SWAGGER_ENABLED) {
+                console.log(MSG_ENABLED_SKIP);
                 return;
             }
 
-            // Проверяем, что /online-store/docs-json недоступен
             const res = await request(app.getHttpServer()).get(
                 '/online-store/docs-json',
             );
@@ -62,17 +59,11 @@ describe('Swagger Access Control (integration)', () => {
         });
 
         it('should be accessible when SWAGGER_ENABLED=true', async () => {
-            const cfg = getConfig();
-
-            // Если Swagger отключен, пропускаем тест
-            if (!cfg.SWAGGER_ENABLED) {
-                console.log(
-                    '⚠️  Swagger отключен (SWAGGER_ENABLED=false), пропускаем тест доступности',
-                );
+            if (!config.SWAGGER_ENABLED) {
+                console.log(MSG_DISABLED_SKIP);
                 return;
             }
 
-            // Проверяем, что /online-store/docs доступен
             const res = await request(app.getHttpServer()).get(
                 '/online-store/docs',
             );
@@ -83,13 +74,9 @@ describe('Swagger Access Control (integration)', () => {
         });
 
         it('should serve OpenAPI JSON spec when SWAGGER_ENABLED=true', async () => {
-            const cfg = getConfig();
-
-            // Если Swagger отключен, пропускаем тест
-            if (!cfg.SWAGGER_ENABLED) {
-                console.log(
-                    '⚠️  Swagger отключен (SWAGGER_ENABLED=false), пропускаем тест доступности',
-                );
+            // Используем кэшированную конфигурацию вместо нового вызова
+            if (!config.SWAGGER_ENABLED) {
+                console.log(MSG_DISABLED_SKIP);
                 return;
             }
 
@@ -108,23 +95,21 @@ describe('Swagger Access Control (integration)', () => {
 
     describe('Environment-based defaults', () => {
         it('should respect SWAGGER_ENABLED environment variable', () => {
-            const cfg = getConfig();
-
-            expect(cfg).toHaveProperty('SWAGGER_ENABLED');
-            expect(typeof cfg.SWAGGER_ENABLED).toBe('boolean');
+            // Используем кэшированную конфигурацию вместо нового вызова
+            expect(config).toHaveProperty('SWAGGER_ENABLED');
+            expect(typeof config.SWAGGER_ENABLED).toBe('boolean');
 
             // В тестовом окружении по умолчанию должен быть включен
-            if (cfg.NODE_ENV === 'test' || cfg.NODE_ENV === 'development') {
+            if (config.NODE_ENV === 'test' || config.NODE_ENV === 'development') {
                 // В dev/test по умолчанию true (если не переопределено)
-                expect([true, false]).toContain(cfg.SWAGGER_ENABLED);
+                expect([true, false]).toContain(config.SWAGGER_ENABLED);
             }
 
             // В production/staging по умолчанию должен быть отключен
-            if (cfg.NODE_ENV === 'production' || cfg.NODE_ENV === 'staging') {
+            if (config.NODE_ENV === 'production' || config.NODE_ENV === 'staging') {
                 // В prod/staging по умолчанию false (если не переопределено)
-                expect([true, false]).toContain(cfg.SWAGGER_ENABLED);
+                expect([true, false]).toContain(config.SWAGGER_ENABLED);
             }
         });
     });
 });
-

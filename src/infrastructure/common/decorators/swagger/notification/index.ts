@@ -8,4 +8,3 @@ export { CreateTemplateSwaggerDecorator } from './create-template.swagger';
 export { UpdateTemplateSwaggerDecorator } from './update-template.swagger';
 export { DeleteTemplateSwaggerDecorator } from './delete-template.swagger';
 export { GetStatisticsSwaggerDecorator } from './get-statistics.swagger';
-

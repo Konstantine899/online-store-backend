@@ -1,9 +1,6 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
-import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiResponse,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { UnauthorizedResponse, ForbiddenResponse } from './common-responses';
 
 export function GetUnreadCountSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
@@ -23,14 +20,7 @@ export function GetUnreadCountSwaggerDecorator(): MethodDecorator {
                 },
             },
         }),
-        ApiResponse({
-            status: HttpStatus.UNAUTHORIZED,
-            description: 'Не авторизован',
-        }),
-        ApiResponse({
-            status: HttpStatus.FORBIDDEN,
-            description: 'Недостаточно прав доступа',
-        }),
+        UnauthorizedResponse(),
+        ForbiddenResponse(),
     );
 }
-
