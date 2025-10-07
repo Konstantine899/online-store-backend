@@ -3,10 +3,16 @@
 /node_modules
 /static
 
+# Environment files (NEVER commit secrets!)
+.env
+.env.local
+.env.*.local
 /.development.env
 /.migrate.env
 /.production.env
-
+/.test.env
+*.env
+!*.env.example
 
 # Logs
 logs
@@ -43,3 +49,15 @@ lerna-debug.log*
 .history/
 .vscode/
 .cursor/
+
+# Security - additional sensitive files
+secrets/
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+.secret
+.secrets
+*secret*.json
+*credentials*.json

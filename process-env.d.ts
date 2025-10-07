@@ -24,6 +24,8 @@ declare global {
             RATE_LIMIT_REFRESH_WINDOW?: string;
             RATE_LIMIT_REG_ATTEMPTS?: string;
             RATE_LIMIT_REG_WINDOW?: string;
+            JWT_SECRET_ROTATION_DATE?: string;
+            JWT_SECRET_VERSION?: string;
             DIALECT?: string;
             MYSQL_HOST?: string;
             MYSQL_USER?: string;

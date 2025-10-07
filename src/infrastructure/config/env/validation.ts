@@ -25,6 +25,9 @@ export type ValidatedEnv = {
     RATE_LIMIT_REFRESH_WINDOW: string; // e.g. "5m"
     RATE_LIMIT_REG_ATTEMPTS: number;
     RATE_LIMIT_REG_WINDOW: string; // e.g. "1m"
+    // Параметры ротации секретов (опционально)
+    JWT_SECRET_ROTATION_DATE?: string; // ISO date когда секрет должен быть заменён
+    JWT_SECRET_VERSION?: string; // версия секрета для отслеживания
 };
 
 function asNumber(value: string | undefined, name: string, opts?: { min?: number; max?: number }): number {
@@ -48,6 +51,68 @@ function requiredString(value: string | undefined, name: string): string {
     return value;
 }
 
+// Оптимизация: массив создаётся один раз, не при каждом вызове
+const WEAK_SECRET_PATTERNS = [
+    'change-me',
+    'please_change_me',
+    'replace-with-strong-secret',
+    'secret',
+    'password',
+    'test',
+] as const;
+
+function requiredSecret(
+    value: string | undefined,
+    name: string,
+    minLength: number,
+    env: string,
+): string {
+    if (!value || value.trim().length === 0) {
+        throw new Error(`Переменная ${name} обязательна и не может быть пустой`);
+    }
+    const trimmed = value.trim();
+
+    // В production и staging требуем сильные секреты
+    if (env === 'production' || env === 'staging') {
+        // Оптимизация: проверка длины перед дорогими операциями
+        if (trimmed.length < minLength) {
+            throw new Error(
+                `Секрет ${name} в ${env} окружении должен содержать минимум ${minLength} символов`,
+            );
+        }
+
+        // Оптимизация: toLowerCase() вызывается один раз
+        const lowerValue = trimmed.toLowerCase();
+        if (WEAK_SECRET_PATTERNS.some((weak) => lowerValue.includes(weak))) {
+            throw new Error(
+                `Секрет ${name} содержит слабое значение. В ${env} используйте криптографически стойкий секрет`,
+            );
+        }
+    }
+
+    return trimmed;
+}
+
+function checkSecretRotation(
+    rotationDate: string | undefined,
+    env: string,
+): void {
+    // Проверка только для production/staging
+    if (!rotationDate || (env !== 'production' && env !== 'staging')) {
+        return;
+    }
+
+    const rotation = new Date(rotationDate);
+    const now = new Date();
+
+    // Оптимизация: используем числовое сравнение вместо объектов Date
+    if (now.getTime() > rotation.getTime()) {
+        console.warn(
+            `⚠️  ВНИМАНИЕ: Секреты JWT должны быть ротированы! Дата ротации: ${rotationDate}`,
+        );
+    }
+}
+
 export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
     const NODE_ENV_RAW = requiredString(raw.NODE_ENV || 'development', 'NODE_ENV').toLowerCase();
     if (!['development', 'test', 'staging', 'production'].includes(NODE_ENV_RAW)) {
@@ -61,9 +126,25 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         .map((s) => s.trim())
         .filter(Boolean);
 
-    const COOKIE_PARSER_SECRET_KEY = requiredString(raw.COOKIE_PARSER_SECRET_KEY, 'COOKIE_PARSER_SECRET_KEY');
-    const JWT_ACCESS_SECRET = requiredString(raw.JWT_ACCESS_SECRET, 'JWT_ACCESS_SECRET');
-    const JWT_REFRESH_SECRET = requiredString(raw.JWT_REFRESH_SECRET, 'JWT_REFRESH_SECRET');
+    // Оптимизация: передаём NODE_ENV_RAW чтобы не читать process.env повторно
+    const COOKIE_PARSER_SECRET_KEY = requiredSecret(
+        raw.COOKIE_PARSER_SECRET_KEY,
+        'COOKIE_PARSER_SECRET_KEY',
+        32,
+        NODE_ENV_RAW,
+    );
+    const JWT_ACCESS_SECRET = requiredSecret(
+        raw.JWT_ACCESS_SECRET,
+        'JWT_ACCESS_SECRET',
+        32,
+        NODE_ENV_RAW,
+    );
+    const JWT_REFRESH_SECRET = requiredSecret(
+        raw.JWT_REFRESH_SECRET,
+        'JWT_REFRESH_SECRET',
+        32,
+        NODE_ENV_RAW,
+    );
 
     const JWT_ACCESS_TTL = requiredString(raw.JWT_ACCESS_TTL || '900s', 'JWT_ACCESS_TTL');
     const JWT_REFRESH_TTL = requiredString(raw.JWT_REFRESH_TTL || '30d', 'JWT_REFRESH_TTL');
@@ -113,6 +194,13 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         'RATE_LIMIT_REG_WINDOW',
     );
 
+    // Опциональные параметры ротации секретов
+    const JWT_SECRET_ROTATION_DATE = raw.JWT_SECRET_ROTATION_DATE;
+    const JWT_SECRET_VERSION = raw.JWT_SECRET_VERSION;
+
+    // Проверяем необходимость ротации (вынесено в отдельную функцию)
+    checkSecretRotation(JWT_SECRET_ROTATION_DATE, NODE_ENV_RAW);
+
     return {
         NODE_ENV: NODE_ENV_RAW as ValidatedEnv['NODE_ENV'],
         PORT,
@@ -135,7 +223,7 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         RATE_LIMIT_REFRESH_WINDOW,
         RATE_LIMIT_REG_ATTEMPTS,
         RATE_LIMIT_REG_WINDOW,
+        JWT_SECRET_ROTATION_DATE,
+        JWT_SECRET_VERSION,
     };
 }
-
-

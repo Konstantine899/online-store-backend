@@ -152,12 +152,27 @@ async function bootstrap(): Promise<void> {
             // маскируем токены/куки/PII
             redact: {
                 paths: [
+                    // Токены и авторизация
                     'req.headers.authorization',
                     'req.headers.cookie',
                     'res.headers["set-cookie"]',
                     'req.body.password',
                     'req.body.token',
                     'req.body.refreshToken',
+                    'req.body.accessToken',
+                    // PII данные
+                    'req.body.email',
+                    'req.body.phone',
+                    'req.body.firstName',
+                    'req.body.lastName',
+                    'req.body.name',
+                    'req.body.address',
+                    // Query параметры с PII
+                    'req.query.email',
+                    'req.query.phone',
+                    // Response body (может содержать PII)
+                    'res.body.email',
+                    'res.body.phone',
                 ],
                 censor: '[REDACTED]',
             },
