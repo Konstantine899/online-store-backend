@@ -36,10 +36,8 @@ module.exports = {
         {
             ...commonConfig,
             displayName: 'unit',
-            testMatch: ['<rootDir>/tests/unit/**/*.test.ts'], // Убрали глобы ** в начале
+            testMatch: ['<rootDir>/tests/unit/**/*.test.ts'],
             testTimeout: 5000, // Unit тесты должны быть быстрыми
-            // Unit тесты могут использовать больше параллелизма
-            maxConcurrency: isCI ? 5 : 10,
         },
         {
             ...commonConfig,
@@ -49,8 +47,6 @@ module.exports = {
                 '<rootDir>/src/**/*.integration.test.ts'
             ],
             testTimeout: 30000, // Integration тесты могут быть медленнее
-            // Integration тесты ограничиваем для стабильности БД
-            maxConcurrency: isCI ? 2 : 3,
         }
     ],
 
@@ -133,7 +129,6 @@ module.exports = {
     // Не запускать тесты из node_modules
     watchPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/dist/'],
     
-    // Отключить нотификации в CI (экономит ресурсы)
-    notify: !isCI,
-    notifyMode: 'failure-change',
+    // Нотификации отключены (требуют optional dependency node-notifier)
+    notify: false,
 };
