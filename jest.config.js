@@ -1,155 +1,139 @@
-module.exports = {
-  // Projects configuration for unit and integration tests
-  projects: [
-    {
-      displayName: 'unit',
-      preset: 'ts-jest',
-      testEnvironment: 'node',
-      testMatch: ['**/tests/unit/**/*.test.ts'],
-      moduleFileExtensions: ['js', 'json', 'ts'],
-      transform: {
+// Определяем окружение для оптимизации
+const isCI = process.env.CI === 'true';
+const isDebug = process.argv.includes('--debug') || process.argv.includes('--detectOpenHandles');
+
+// Общие настройки для переиспользования
+const commonConfig = {
+    preset: 'ts-jest',
+    testEnvironment: 'node',
+    moduleFileExtensions: ['js', 'json', 'ts'],
+    transform: {
         '^.+\\.(t|j)s$': ['ts-jest', {
-          tsconfig: {
-            moduleResolution: 'node',
-            esModuleInterop: true,
-            allowSyntheticDefaultImports: true,
-            experimentalDecorators: true,
-            emitDecoratorMetadata: true
-          }
+            tsconfig: {
+                moduleResolution: 'node',
+                esModuleInterop: true,
+                allowSyntheticDefaultImports: true,
+                experimentalDecorators: true,
+                emitDecoratorMetadata: true
+            },
+            // Оптимизации ts-jest для быстрой трансформации
+            isolatedModules: true,  // Отключить проверку типов между модулями (в 2-3× быстрее)
+            diagnostics: false,      // TypeScript диагностика уже выполнена линтером
         }]
-      },
-      moduleNameMapper: {
-        '^@app/(.*)$': '<rootDir>/src/$1'
-      },
-      transformIgnorePatterns: ['node_modules/(?!(uuid)/)'],
-      setupFilesAfterEnv: ['<rootDir>/tests/jest-setup.ts'],
-      clearMocks: true,
-      restoreMocks: true,
     },
-    {
-      displayName: 'integration',
-      preset: 'ts-jest',
-      testEnvironment: 'node',
-      testMatch: ['**/tests/integration/**/*.test.ts', '**/src/**/*.integration.test.ts'],
-      moduleFileExtensions: ['js', 'json', 'ts'],
-      transform: {
-        '^.+\\.(t|j)s$': ['ts-jest', {
-          tsconfig: {
-            moduleResolution: 'node',
-            esModuleInterop: true,
-            allowSyntheticDefaultImports: true,
-            experimentalDecorators: true,
-            emitDecoratorMetadata: true
-          }
-        }]
-      },
-      moduleNameMapper: {
+    moduleNameMapper: {
         '^@app/(.*)$': '<rootDir>/src/$1'
-      },
-      transformIgnorePatterns: ['node_modules/(?!(uuid)/)'],
-      setupFilesAfterEnv: ['<rootDir>/tests/jest-setup.ts'],
-      clearMocks: true,
-      restoreMocks: true,
-      testTimeout: 30000, // Longer timeout for integration tests
-    }
-  ],
-  
-  // Базовые настройки (fallback для test:cov без --selectProjects)
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  
-  // Расширения файлов
-  moduleFileExtensions: ['js', 'json', 'ts'],
-  
-  // Паттерны для поиска тестов
-  testMatch: [
-    '**/tests/**/*.test.ts',
-    '**/tests/**/*.test.js',
-    '**/src/**/*.spec.ts',
-    '**/src/**/*.test.ts'
-  ],
-  
-  // Трансформация файлов
-  transform: {
-    '^.+\\.(t|j)s$': ['ts-jest', {
-      tsconfig: {
-        moduleResolution: 'node',
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true,
-        experimentalDecorators: true,
-        emitDecoratorMetadata: true
-      }
-    }]
-  },
-  
-  // Алиасы путей
-  moduleNameMapper: {
-    '^@app/(.*)$': '<rootDir>/src/$1'
-  },
-  
-  // Игнорируем трансформацию для некоторых модулей
-  transformIgnorePatterns: [
-    'node_modules/(?!(uuid)/)'
-  ],
-  
-  // Настройки для coverage
-  collectCoverageFrom: [
-    'src/**/*.(t|j)s',
-    '!src/**/*.spec.ts',
-    '!src/**/*.test.ts',
-    '!src/main.ts',
-    '!src/**/*.module.ts',
-    '!src/**/*.dto.ts',
-    '!src/**/*.interface.ts',
-    '!src/**/*.response.ts',
-    '!src/**/*.request.ts'
-  ],
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
-  coverageThreshold: {
-    global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70
-    }
-  },
-  
-  // Загрузка environment переменных перед тестами
-  setupFilesAfterEnv: ['<rootDir>/tests/jest-setup.ts'],
-  
-  // Очистка моков между тестами
-  clearMocks: true,
-  restoreMocks: true,
-  
-  // Verbose режим для детального вывода
-  verbose: true,
-  
-  // HTML репортеры для результатов тестов
-  reporters: [
-    'default',
-    ['jest-html-reporters', {
-      publicPath: './test-reports',
-      filename: 'test-report.html',
-      expand: true,
-      hideIcon: false,
-      pageTitle: 'Online Store Backend - Test Results',
-      logoImgPath: undefined,
-      darkTheme: false,
-      includeFailureMsg: true,
-      includeSuiteFailure: true,
-      includeConsoleLog: true,
-      includeStackTrace: true,
-      includeObsoleteSnapshots: true,
-      reportTitle: 'Test Results Report',
-      sort: 'status'
-    }]
-  ],
-  
-  // Настройки для CI/CD
-  detectOpenHandles: true,
-  forceExit: true,
-  
-  // Игнорируем node_modules и dist
-  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/dist/']
+    },
+    transformIgnorePatterns: ['node_modules/(?!(uuid)/)'],
+    setupFilesAfterEnv: ['<rootDir>/tests/jest-setup.ts'],
+    clearMocks: true,
+    restoreMocks: true,
+};
+
+module.exports = {
+    // Projects configuration - основная конфигурация
+    projects: [
+        {
+            ...commonConfig,
+            displayName: 'unit',
+            testMatch: ['<rootDir>/tests/unit/**/*.test.ts'], // Убрали глобы ** в начале
+            testTimeout: 5000, // Unit тесты должны быть быстрыми
+            // Unit тесты могут использовать больше параллелизма
+            maxConcurrency: isCI ? 5 : 10,
+        },
+        {
+            ...commonConfig,
+            displayName: 'integration',
+            testMatch: [
+                '<rootDir>/tests/integration/**/*.test.ts',
+                '<rootDir>/src/**/*.integration.test.ts'
+            ],
+            testTimeout: 30000, // Integration тесты могут быть медленнее
+            // Integration тесты ограничиваем для стабильности БД
+            maxConcurrency: isCI ? 2 : 3,
+        }
+    ],
+
+    // Coverage configuration - V8 для максимальной производительности
+    coverageProvider: 'v8',  // В 3-5× быстрее, чем babel coverage
+    collectCoverageFrom: [
+        'src/**/*.(t|j)s',
+        '!src/**/*.spec.ts',
+        '!src/**/*.test.ts',
+        '!src/**/*.integration.test.ts',
+        '!src/main.ts',
+        '!src/**/*.module.ts',
+        '!src/**/*.dto.ts',
+        '!src/**/*.interface.ts',
+        '!src/**/*.response.ts',
+        '!src/**/*.request.ts'
+    ],
+    coverageDirectory: 'coverage',
+    // В CI минимум репортеров для скорости, локально - с HTML
+    coverageReporters: isCI 
+        ? ['text-summary', 'lcov'] // text-summary быстрее чем text в CI
+        : ['text', 'lcov', 'html', 'json-summary'],
+    coverageThreshold: {
+        global: {
+            branches: 70,
+            functions: 70,
+            lines: 70,
+            statements: 70
+        }
+    },
+
+    // HTML репортер только для локальной разработки (медленный в CI)
+    reporters: isCI
+        ? ['default', 'github-actions'] // GitHub Actions reporter для аннотаций
+        : [
+            'default',
+            ['jest-html-reporters', {
+                publicPath: './test-reports',
+                filename: 'test-report.html',
+                expand: true,
+                hideIcon: false,
+                pageTitle: 'Online Store Backend - Test Results',
+                darkTheme: false,
+                includeFailureMsg: true,
+                includeSuiteFailure: true,
+                includeConsoleLog: true,
+                includeStackTrace: true,
+                includeObsoleteSnapshots: true,
+                reportTitle: 'Test Results Report',
+                sort: 'status'
+            }]
+        ],
+
+    // Оптимизации производительности
+    cache: true,
+    cacheDirectory: '<rootDir>/.jest-cache',
+    
+    // Worker threads вместо child processes (на 10-15% быстрее)
+    workerThreads: true,
+    
+    // Параллелизм: CI - 2 воркера (стабильность), локально - 50% CPU
+    maxWorkers: isCI ? 2 : '50%',
+    
+    // Memory management: перезапуск воркеров при превышении лимита памяти
+    workerIdleMemoryLimit: isCI ? '256MB' : '512MB', // В CI строже с памятью
+    
+    // Fail-fast в CI: останавливаться на первой ошибке (экономит время)
+    bail: isCI ? 1 : 0,
+
+    // detectOpenHandles только для отладки (замедляет ~15-20%)
+    detectOpenHandles: isDebug,
+    
+    // Silent mode в CI для производительности (меньше I/O)
+    silent: isCI && !isDebug,
+    verbose: isDebug,
+
+    // Игнорируем node_modules и dist
+    testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/dist/'],
+    
+    // Не запускать тесты из node_modules
+    watchPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/dist/'],
+    
+    // Отключить нотификации в CI (экономит ресурсы)
+    notify: !isCI,
+    notifyMode: 'failure-change',
 };

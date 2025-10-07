@@ -6,6 +6,37 @@ on:
   push:
     branches: [main, develop]
 
+# Автоматическая отмена устаревших запусков при новых коммитах
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Общие переменные окружения для всех джоб
+env:
+  NODE_VERSION: '22'
+  NODE_ENV: test
+  # Database configuration
+  DB_HOST: 127.0.0.1
+  DB_PORT: 3306
+  DB_NAME: online_store_test
+  DB_USER: test_user
+  DB_PASS: test_password
+  # JWT secrets for tests
+  JWT_ACCESS_SECRET: test-secret-key-for-ci-pipeline-access-token-32chars
+  JWT_REFRESH_SECRET: test-secret-key-for-ci-pipeline-refresh-token-32chars
+  JWT_ACCESS_TTL: 15m
+  JWT_REFRESH_TTL: 30d
+  # Security
+  COOKIE_PARSER_SECRET_KEY: test-cookie-parser-secret-key-for-ci-pipeline-min-32-chars
+  # Rate limiting
+  RATE_LIMIT_ENABLED: 'true'
+  RATE_LIMIT_LOGIN_ATTEMPTS: '5'
+  RATE_LIMIT_LOGIN_WINDOW: '15m'
+  RATE_LIMIT_REFRESH_ATTEMPTS: '10'
+  RATE_LIMIT_REFRESH_WINDOW: '5m'
+  RATE_LIMIT_REG_ATTEMPTS: '3'
+  RATE_LIMIT_REG_WINDOW: '1m'
+
 jobs:
   lint:
     name: Lint Code
@@ -17,7 +48,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -29,7 +60,7 @@ jobs:
   build:
     name: Build Application
     runs-on: ubuntu-latest
-    needs: lint
+    # Параллельно с lint, не блокируем друг друга
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -37,7 +68,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -54,9 +85,9 @@ jobs:
           retention-days: 7
 
   test-unit:
-    name: Unit Tests
+    name: Unit Tests with Coverage
     runs-on: ubuntu-latest
-    needs: lint
+    # Параллельно с build и migration-check
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -64,194 +95,134 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run unit tests
-        run: npm run test:unit
+      - name: Run unit tests with coverage
+        run: npm run test:cov:unit
+        # Все env vars наследуются из workflow-level env
 
-  test-integration:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    needs: [lint, test-unit]
-    
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: test_root_password
-          MYSQL_DATABASE: online_store_test
-          MYSQL_USER: test_user
-          MYSQL_PASSWORD: test_password
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Wait for MySQL
-        run: |
-          until mysqladmin ping -h 127.0.0.1 -P 3306 --silent; do
-            echo 'waiting for mysql...'
-            sleep 2
-          done
-
-      - name: Run database migrations
-        run: npm run db:migrate:test
-        env:
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_NAME: online_store_test
-          DB_USER: test_user
-          DB_PASS: test_password
-          NODE_ENV: test
-
-      - name: Run database seeds
-        run: npm run db:seed:test
-        env:
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_NAME: online_store_test
-          DB_USER: test_user
-          DB_PASS: test_password
-          NODE_ENV: test
-
-      - name: Run integration tests
-        run: npm run test:integration
-        env:
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_NAME: online_store_test
-          DB_USER: test_user
-          DB_PASS: test_password
-          NODE_ENV: test
-          JWT_ACCESS_SECRET: test-secret-key-for-ci-pipeline-access-token-32chars
-          JWT_REFRESH_SECRET: test-secret-key-for-ci-pipeline-refresh-token-32chars
-          JWT_ACCESS_TTL: 15m
-          JWT_REFRESH_TTL: 30d
-          COOKIE_PARSER_SECRET_KEY: test-cookie-parser-secret-key-for-ci-pipeline-min-32-chars
-          RATE_LIMIT_ENABLED: 'true'
-          RATE_LIMIT_LOGIN_ATTEMPTS: '5'
-          RATE_LIMIT_LOGIN_WINDOW: '15m'
-          RATE_LIMIT_REFRESH_ATTEMPTS: '10'
-          RATE_LIMIT_REFRESH_WINDOW: '5m'
-          RATE_LIMIT_REG_ATTEMPTS: '3'
-          RATE_LIMIT_REG_WINDOW: '1m'
-
-  coverage:
-    name: Code Coverage
-    runs-on: ubuntu-latest
-    needs: [test-unit, test-integration]
-    
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: test_root_password
-          MYSQL_DATABASE: online_store_test
-          MYSQL_USER: test_user
-          MYSQL_PASSWORD: test_password
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Wait for MySQL
-        run: |
-          until mysqladmin ping -h 127.0.0.1 -P 3306 --silent; do
-            echo 'waiting for mysql...'
-            sleep 2
-          done
-
-      - name: Run database migrations
-        run: npm run db:migrate:test
-        env:
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_NAME: online_store_test
-          DB_USER: test_user
-          DB_PASS: test_password
-          NODE_ENV: test
-
-      - name: Run database seeds
-        run: npm run db:seed:test
-        env:
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_NAME: online_store_test
-          DB_USER: test_user
-          DB_PASS: test_password
-          NODE_ENV: test
-
-      - name: Generate coverage report
-        run: npm run test:cov
-        env:
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_NAME: online_store_test
-          DB_USER: test_user
-          DB_PASS: test_password
-          NODE_ENV: test
-          JWT_ACCESS_SECRET: test-secret-key-for-ci-pipeline-access-token-32chars
-          JWT_REFRESH_SECRET: test-secret-key-for-ci-pipeline-refresh-token-32chars
-          JWT_ACCESS_TTL: 15m
-          JWT_REFRESH_TTL: 30d
-          COOKIE_PARSER_SECRET_KEY: test-cookie-parser-secret-key-for-ci-pipeline-min-32-chars
-          RATE_LIMIT_ENABLED: 'true'
-
-      - name: Upload coverage report
+      - name: Upload unit test coverage
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
+          name: coverage-unit
           path: coverage/
-          retention-days: 30
+          retention-days: 7
 
-      - name: Check coverage thresholds
+  test-integration:
+    name: Integration Tests with Coverage
+    runs-on: ubuntu-latest
+    # Параллельно с test-unit, не зависим друг от друга
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_root_password
+          MYSQL_DATABASE: online_store_test
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+          --tmpfs /var/lib/mysql:rw
+          --mount type=tmpfs,destination=/tmp
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for MySQL
         run: |
-          echo "Coverage thresholds checked by Jest (70% minimum)"
-          if [ $? -ne 0 ]; then
-            echo "Coverage below threshold!"
-            exit 1
+          until mysqladmin ping -h $DB_HOST -P $DB_PORT --silent; do
+            echo 'waiting for mysql...'
+            sleep 2
+          done
+
+      - name: Optimize MySQL for tests
+        run: |
+          mysql -h $DB_HOST -P $DB_PORT -u root -ptest_root_password -e "
+            SET GLOBAL innodb_flush_log_at_trx_commit = 2;
+            SET GLOBAL sync_binlog = 0;
+            SET GLOBAL innodb_doublewrite = 0;
+          "
+
+      - name: Run database migrations
+        run: npm run db:migrate:test
+
+      - name: Run database seeds
+        run: npm run db:seed:test
+
+      - name: Run integration tests with coverage
+        run: npm run test:cov:integration
+
+      - name: Upload integration test coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration
+          path: coverage/
+          retention-days: 7
+
+  coverage-report:
+    name: Combine Coverage Reports
+    runs-on: ubuntu-latest
+    needs: [test-unit, test-integration]
+    # Только агрегация отчетов, без прогона тестов заново
+    
+    steps:
+      - name: Download unit test coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-unit
+          path: coverage-unit/
+
+      - name: Download integration test coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-integration
+          path: coverage-integration/
+
+      - name: Display coverage summary
+        run: |
+          echo "=== Unit Tests Coverage ==="
+          if [ -f coverage-unit/coverage-summary.json ]; then
+            cat coverage-unit/coverage-summary.json
           fi
+          echo ""
+          echo "=== Integration Tests Coverage ==="
+          if [ -f coverage-integration/coverage-summary.json ]; then
+            cat coverage-integration/coverage-summary.json
+          fi
+
+      - name: Upload combined coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-combined
+          path: |
+            coverage-unit/
+            coverage-integration/
+          retention-days: 30
 
   migration-check:
     name: Database Migrations Check
     runs-on: ubuntu-latest
-    needs: lint
+    # Параллельно со всеми остальными джобами
     
     services:
       mysql:
@@ -268,6 +239,8 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
+          --tmpfs /var/lib/mysql:rw
+          --mount type=tmpfs,destination=/tmp
 
     steps:
       - name: Checkout code
@@ -276,7 +249,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -284,45 +257,32 @@ jobs:
 
       - name: Wait for MySQL
         run: |
-          until mysqladmin ping -h 127.0.0.1 -P 3306 --silent; do
+          until mysqladmin ping -h $DB_HOST -P $DB_PORT --silent; do
             echo 'waiting for mysql...'
             sleep 2
           done
 
+      - name: Optimize MySQL for tests
+        run: |
+          mysql -h $DB_HOST -P $DB_PORT -u root -ptest_root_password -e "
+            SET GLOBAL innodb_flush_log_at_trx_commit = 2;
+            SET GLOBAL sync_binlog = 0;
+            SET GLOBAL innodb_doublewrite = 0;
+          "
+
       - name: Check migrations can be applied
         run: npm run db:migrate:test
-        env:
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_NAME: online_store_test
-          DB_USER: test_user
-          DB_PASS: test_password
-          NODE_ENV: test
 
       - name: Check migrations can be rolled back
         run: npm run db:migrate:undo:test
-        env:
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_NAME: online_store_test
-          DB_USER: test_user
-          DB_PASS: test_password
-          NODE_ENV: test
 
       - name: Re-apply migrations
         run: npm run db:migrate:test
-        env:
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_NAME: online_store_test
-          DB_USER: test_user
-          DB_PASS: test_password
-          NODE_ENV: test
 
   all-checks-passed:
     name: All Checks Passed
     runs-on: ubuntu-latest
-    needs: [lint, build, test-unit, test-integration, coverage, migration-check]
+    needs: [lint, build, test-unit, test-integration, coverage-report, migration-check]
     if: always()
     steps:
       - name: Check all jobs status
@@ -331,10 +291,10 @@ jobs:
              [ "${{ needs.build.result }}" != "success" ] || \
              [ "${{ needs.test-unit.result }}" != "success" ] || \
              [ "${{ needs.test-integration.result }}" != "success" ] || \
-             [ "${{ needs.coverage.result }}" != "success" ] || \
+             [ "${{ needs.coverage-report.result }}" != "success" ] || \
              [ "${{ needs.migration-check.result }}" != "success" ]; then
             echo "One or more checks failed"
             exit 1
           fi
-          echo "All checks passed successfully!"
+          echo "All checks passed successfully! 🚀"
 

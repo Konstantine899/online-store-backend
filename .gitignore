@@ -31,6 +31,7 @@ lerna-debug.log*
 /.nyc_output
 /.test.env
 /test-reports
+/.jest-cache
 
 # IDEs and editors
 /.idea
