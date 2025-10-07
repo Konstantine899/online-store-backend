@@ -1,0 +1,11 @@
+export { GetUserNotificationsSwaggerDecorator } from './get-user-notifications.swagger';
+export { GetUnreadCountSwaggerDecorator } from './get-unread-count.swagger';
+export { MarkAsReadSwaggerDecorator } from './mark-as-read.swagger';
+export { GetUserSettingsSwaggerDecorator } from './get-user-settings.swagger';
+export { UpdateUserSettingsSwaggerDecorator } from './update-user-settings.swagger';
+export { GetTemplatesSwaggerDecorator } from './get-templates.swagger';
+export { CreateTemplateSwaggerDecorator } from './create-template.swagger';
+export { UpdateTemplateSwaggerDecorator } from './update-template.swagger';
+export { DeleteTemplateSwaggerDecorator } from './delete-template.swagger';
+export { GetStatisticsSwaggerDecorator } from './get-statistics.swagger';
+

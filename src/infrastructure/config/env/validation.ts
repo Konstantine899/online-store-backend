@@ -16,6 +16,7 @@ export type ValidatedEnv = {
     SECURITY_HELMET_ENABLED: boolean;
     SECURITY_CORS_ENABLED: boolean;
     SECURITY_CSP_ENABLED: boolean;
+    SWAGGER_ENABLED: boolean;
     RATE_LIMIT_ENABLED: boolean;
     RATE_LIMIT_GLOBAL_RPS: number;
     RATE_LIMIT_GLOBAL_RPM: number;
@@ -153,6 +154,12 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
     const SECURITY_HELMET_ENABLED = asBoolean(raw.SECURITY_HELMET_ENABLED, 'true');
     const SECURITY_CORS_ENABLED = asBoolean(raw.SECURITY_CORS_ENABLED, 'true');
     const SECURITY_CSP_ENABLED = asBoolean(raw.SECURITY_CSP_ENABLED, 'true');
+    
+    // Swagger: по умолчанию включён только в dev/test, отключён в staging/production
+    const SWAGGER_ENABLED = asBoolean(
+        raw.SWAGGER_ENABLED,
+        NODE_ENV_RAW === 'development' || NODE_ENV_RAW === 'test' ? 'true' : 'false'
+    );
 
     // Rate limiting
     const RATE_LIMIT_ENABLED = asBoolean(raw.RATE_LIMIT_ENABLED, 'true');
@@ -214,6 +221,7 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         SECURITY_HELMET_ENABLED,
         SECURITY_CORS_ENABLED,
         SECURITY_CSP_ENABLED,
+        SWAGGER_ENABLED,
         RATE_LIMIT_ENABLED,
         RATE_LIMIT_GLOBAL_RPS,
         RATE_LIMIT_GLOBAL_RPM,

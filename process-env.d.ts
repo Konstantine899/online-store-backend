@@ -15,6 +15,7 @@ declare global {
             SECURITY_HELMET_ENABLED?: string;
             SECURITY_CORS_ENABLED?: string;
             SECURITY_CSP_ENABLED?: string;
+            SWAGGER_ENABLED?: string;
             RATE_LIMIT_ENABLED?: string;
             RATE_LIMIT_GLOBAL_RPS?: string;
             RATE_LIMIT_GLOBAL_RPM?: string;

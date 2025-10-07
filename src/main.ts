@@ -179,8 +179,12 @@ async function bootstrap(): Promise<void> {
         }),
     );
 
-    if (process.env.NODE_ENV !== 'production') {
+    // Swagger документация: управляется через SWAGGER_ENABLED (по умолчанию только dev/test)
+    if (cfg.SWAGGER_ENABLED) {
         swaggerConfig(app);
+        console.log(`Swagger документация доступна: http://localhost:${PORT}/online-store/docs`);
+    } else {
+        console.log('Swagger документация отключена (SWAGGER_ENABLED=false)');
     }
 
     app.enableShutdownHooks();
@@ -201,9 +205,6 @@ async function bootstrap(): Promise<void> {
 
     await app.listen(PORT, () => {
         console.log(`Приложение запущено на порту ${PORT}`);
-        console.log(
-            `Swagger документация: http://localhost:${PORT}/online-store/docs`,
-        );
         console.log(`Префикс API: /online-store`);
     });
 }
