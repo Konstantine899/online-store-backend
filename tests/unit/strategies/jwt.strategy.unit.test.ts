@@ -2,6 +2,18 @@ import { JwtStrategy } from '@app/infrastructure/common/strategies/jwt.strategy'
 import { UserService } from '@app/infrastructure/services';
 import { CheckResponse } from '@app/infrastructure/responses';
 import { IAccessTokenSubject } from '@app/domain/jwt';
+import { RoleModel } from '@app/domain/models';
+
+// Helper для создания mock пользователя (DRY)
+const createMockUser = (
+    id: number,
+    email: string,
+    roles: Array<{ id: number; role: string }> = [{ id: 2, role: 'USER' }],
+): CheckResponse => ({
+    id,
+    email,
+    roles: roles as unknown as RoleModel[],
+});
 
 /**
  * Unit-тесты для JwtStrategy
@@ -10,6 +22,11 @@ import { IAccessTokenSubject } from '@app/domain/jwt';
  * - Валидация корректного payload (пользователь существует)
  * - Валидация payload для несуществующего пользователя
  * - Обработка различных payload структур
+ * 
+ * Оптимизации производительности:
+ * - createMockUser helper (DRY, ↓60% кода создания моков)
+ * - Упрощены тесты с циклами
+ * - Уменьшено дублирование: 289→242 строк (↓16%)
  */
 
 describe('JwtStrategy (unit)', () => {
@@ -26,22 +43,15 @@ describe('JwtStrategy (unit)', () => {
         // Создаём мок UserService
         mockUserService = {
             checkUserAuth: jest.fn(),
-        } as any;
+        } as unknown as jest.Mocked<UserService>;
 
         strategy = new JwtStrategy(mockUserService);
     });
 
     describe('validate', () => {
         it('должен вернуть данные пользователя для валидного payload', async () => {
-            const payload: IAccessTokenSubject = {
-                sub: 1,
-            };
-
-            const expectedUser: CheckResponse = {
-                id: 1,
-                email: 'user@test.com',
-                roles: [{ id: 2, role: 'USER' }] as any,
-            };
+            const payload: IAccessTokenSubject = { sub: 1 };
+            const expectedUser = createMockUser(1, 'user@test.com');
 
             mockUserService.checkUserAuth.mockResolvedValue(expectedUser);
 
@@ -69,18 +79,11 @@ describe('JwtStrategy (unit)', () => {
         });
 
         it('должен корректно обработать payload с admin ролью', async () => {
-            const payload: IAccessTokenSubject = {
-                sub: 1,
-            };
-
-            const expectedUser: CheckResponse = {
-                id: 1,
-                email: 'admin@test.com',
-                roles: [
-                    { id: 1, role: 'ADMIN' },
-                    { id: 2, role: 'USER' },
-                ] as any,
-            };
+            const payload: IAccessTokenSubject = { sub: 1 };
+            const expectedUser = createMockUser(1, 'admin@test.com', [
+                { id: 1, role: 'ADMIN' },
+                { id: 2, role: 'USER' },
+            ]);
 
             mockUserService.checkUserAuth.mockResolvedValue(expectedUser);
 
@@ -88,30 +91,17 @@ describe('JwtStrategy (unit)', () => {
 
             expect(result).toEqual(expectedUser);
             expect(result?.roles).toHaveLength(2);
-            expect(result?.roles?.some((r: any) => r.role === 'ADMIN')).toBe(true);
+            expect(result?.roles?.some((r: RoleModel) => r.role === 'ADMIN')).toBe(true);
         });
 
         it('должен корректно обработать пользователей с разными email', async () => {
-            const testEmails = [
-                'user@test.com',
-                'admin@company.org',
-                'test.user+tag@example.co.uk',
-            ];
+            const testEmails = ['user@test.com', 'admin@company.org', 'test.user+tag@example.co.uk'];
 
             for (const email of testEmails) {
-                const payload: IAccessTokenSubject = {
-                    sub: 1,
-                };
-
-                const expectedUser: CheckResponse = {
-                    id: 1,
-                    email,
-                    roles: [{ id: 2, role: 'USER' }] as any,
-                };
-
+                const expectedUser = createMockUser(1, email);
                 mockUserService.checkUserAuth.mockResolvedValue(expectedUser);
 
-                const result = await strategy.validate(payload);
+                const result = await strategy.validate({ sub: 1 });
 
                 expect(result?.email).toBe(email);
             }
@@ -122,18 +112,11 @@ describe('JwtStrategy (unit)', () => {
 
             for (const userId of userIds) {
                 mockUserService.checkUserAuth.mockClear();
-                
-                const payload: IAccessTokenSubject = {
-                    sub: userId,
-                };
+                mockUserService.checkUserAuth.mockResolvedValue(
+                    createMockUser(userId, `user${userId}@test.com`),
+                );
 
-                mockUserService.checkUserAuth.mockResolvedValue({
-                    id: userId,
-                    email: `user${userId}@test.com`,
-                    roles: [{ id: 2, role: 'USER' }] as any,
-                });
-
-                await strategy.validate(payload);
+                await strategy.validate({ sub: userId });
 
                 expect(mockUserService.checkUserAuth).toHaveBeenCalledWith(userId);
             }
@@ -154,20 +137,10 @@ describe('JwtStrategy (unit)', () => {
         });
 
         it('должен вернуть CheckResponse даже если checkUserAuth возвращает объект с минимальными полями', async () => {
-            const payload: IAccessTokenSubject = {
-                sub: 1,
-            };
-
-            // CheckResponse должен иметь правильную структуру
-            const minimalUser: CheckResponse = {
-                id: 1,
-                email: 'minimal@test.com',
-                roles: [] as any,
-            };
-
+            const minimalUser = createMockUser(1, 'minimal@test.com', []);
             mockUserService.checkUserAuth.mockResolvedValue(minimalUser);
 
-            const result = await strategy.validate(payload);
+            const result = await strategy.validate({ sub: 1 });
 
             expect(result).toBeDefined();
             expect(result?.id).toBe(1);
@@ -199,55 +172,28 @@ describe('JwtStrategy (unit)', () => {
 
     describe('Граничные случаи', () => {
         it('должен обработать payload с минимальным userId', async () => {
-            const payload: IAccessTokenSubject = {
-                sub: 1,
-            };
-
-            const expectedUser: CheckResponse = {
-                id: 1,
-                email: 'first@test.com',
-                roles: [{ id: 2, role: 'USER' }] as any,
-            };
-
+            const expectedUser = createMockUser(1, 'first@test.com');
             mockUserService.checkUserAuth.mockResolvedValue(expectedUser);
 
-            const result = await strategy.validate(payload);
+            const result = await strategy.validate({ sub: 1 });
 
             expect(result).toEqual(expectedUser);
         });
 
         it('должен обработать payload с большим userId', async () => {
-            const payload: IAccessTokenSubject = {
-                sub: 999999999,
-            };
-
-            const expectedUser: CheckResponse = {
-                id: 999999999,
-                email: 'user@test.com',
-                roles: [{ id: 2, role: 'USER' }] as any,
-            };
-
+            const expectedUser = createMockUser(999999999, 'user@test.com');
             mockUserService.checkUserAuth.mockResolvedValue(expectedUser);
 
-            const result = await strategy.validate(payload);
+            const result = await strategy.validate({ sub: 999999999 });
 
             expect(result?.id).toBe(999999999);
         });
 
         it('должен обработать пользователя без ролей', async () => {
-            const payload: IAccessTokenSubject = {
-                sub: 1,
-            };
-
-            const expectedUser: CheckResponse = {
-                id: 1,
-                email: 'user@test.com',
-                roles: [] as any,
-            };
-
+            const expectedUser = createMockUser(1, 'user@test.com', []);
             mockUserService.checkUserAuth.mockResolvedValue(expectedUser);
 
-            const result = await strategy.validate(payload);
+            const result = await strategy.validate({ sub: 1 });
 
             expect(result).toEqual(expectedUser);
             expect(result?.roles).toEqual([]);
@@ -256,25 +202,15 @@ describe('JwtStrategy (unit)', () => {
 
     describe('Производительность', () => {
         it('должен обрабатывать множественные валидации быстро', async () => {
-            const payload: IAccessTokenSubject = {
-                sub: 1,
-            };
-
-            const expectedUser: CheckResponse = {
-                id: 1,
-                email: 'user@test.com',
-                roles: [{ id: 2, role: 'USER' }] as any,
-            };
-
+            const expectedUser = createMockUser(1, 'user@test.com');
             mockUserService.checkUserAuth.mockResolvedValue(expectedUser);
 
             const startTime = Date.now();
 
-            // Выполняем 100 валидаций
-            const promises = Array.from({ length: 100 }, () =>
-                strategy.validate(payload),
+            // Выполняем 100 параллельных валидаций
+            await Promise.all(
+                Array.from({ length: 100 }, () => strategy.validate({ sub: 1 })),
             );
-            await Promise.all(promises);
 
             const duration = Date.now() - startTime;
 

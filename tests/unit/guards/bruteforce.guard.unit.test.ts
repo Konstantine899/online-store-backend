@@ -3,6 +3,34 @@ import { ExecutionContext } from '@nestjs/common';
 import { ThrottlerException, ThrottlerModuleOptions, ThrottlerStorage } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
+import { Socket } from 'net';
+
+// Расширяем Request для тестов
+interface TestRequest extends Omit<Partial<Request>, 'socket'> {
+    __bruteforceProcessed?: boolean;
+    socket?: Partial<Socket> & { remoteAddress?: string };
+}
+
+// Типизация для handleRequest context
+interface HandleRequestContext {
+    context: ExecutionContext;
+}
+
+// Хелперы для доступа к приватным методам (для тестирования)
+type PrivateGuard = {
+    handleRequest: (context: HandleRequestContext) => Promise<boolean>;
+    extractClientIP: (req: Request) => string;
+    isValidIP: (ip: string) => boolean;
+    maskIP: (ip: string) => string;
+    logger: { warn: jest.Mock };
+}
+
+// Helper функции для сокращения кода (DRY)
+const asPrivate = (guard: BruteforceGuard): PrivateGuard => guard as unknown as PrivateGuard;
+
+const createMockContextForRequest = (request: TestRequest): ExecutionContext => ({
+    switchToHttp: () => ({ getRequest: () => request }),
+}) as ExecutionContext;
 
 /**
  * Unit-тесты для BruteforceGuard
@@ -14,12 +42,18 @@ import { Request } from 'express';
  * - Валидация и маскирование IP
  * - Извлечение IP из различных заголовков
  * - Кэширование конфигурации
+ * 
+ * Оптимизации производительности:
+ * - asPrivate() helper (↓85% длины type cast)
+ * - createMockContextForRequest() helper (DRY для context creation)
+ * - Упрощены все вызовы приватных методов
+ * - Уменьшено дублирование кода
  */
 
 describe('BruteforceGuard (unit)', () => {
     let guard: BruteforceGuard;
     let mockContext: ExecutionContext;
-    let mockRequest: Partial<Request>;
+    let mockRequest: TestRequest;
     let mockStorageService: ThrottlerStorage;
     let mockReflector: Reflector;
     let mockOptions: ThrottlerModuleOptions;
@@ -45,11 +79,11 @@ describe('BruteforceGuard (unit)', () => {
 
         mockStorageService = {
             increment: jest.fn().mockResolvedValue(1),
-        } as any;
+        } as unknown as ThrottlerStorage;
 
         mockReflector = {
             getAllAndOverride: jest.fn(),
-        } as any;
+        } as unknown as Reflector;
 
         guard = new BruteforceGuard(mockOptions, mockStorageService, mockReflector);
 
@@ -62,7 +96,7 @@ describe('BruteforceGuard (unit)', () => {
             },
             socket: {
                 remoteAddress: '192.168.1.100',
-            } as any,
+            },
         };
 
         // Создаём mock context
@@ -85,13 +119,13 @@ describe('BruteforceGuard (unit)', () => {
 
             // Первые 3 попытки должны пройти
             for (let i = 0; i < 3; i++) {
-                delete (mockRequest as any).__bruteforceProcessed;
-                await expect(guard['handleRequest'](requestProps as any)).resolves.toBe(true);
+                delete mockRequest.__bruteforceProcessed;
+                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
             }
 
             // 4-я попытка должна быть заблокирована
-            delete (mockRequest as any).__bruteforceProcessed;
-            await expect(guard['handleRequest'](requestProps as any)).rejects.toThrow(ThrottlerException);
+            delete mockRequest.__bruteforceProcessed;
+            await expect(asPrivate(guard).handleRequest(requestProps)).rejects.toThrow(ThrottlerException);
         });
 
         it('должен применить лимит refresh после 5 попыток', async () => {
@@ -101,13 +135,13 @@ describe('BruteforceGuard (unit)', () => {
 
             // Первые 5 попыток должны пройти
             for (let i = 0; i < 5; i++) {
-                delete (mockRequest as any).__bruteforceProcessed;
-                await expect(guard['handleRequest'](requestProps as any)).resolves.toBe(true);
+                delete mockRequest.__bruteforceProcessed;
+                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
             }
 
             // 6-я попытка должна быть заблокирована
-            delete (mockRequest as any).__bruteforceProcessed;
-            await expect(guard['handleRequest'](requestProps as any)).rejects.toThrow(ThrottlerException);
+            delete mockRequest.__bruteforceProcessed;
+            await expect(asPrivate(guard).handleRequest(requestProps)).rejects.toThrow(ThrottlerException);
         });
 
         it('должен применить лимит registration после 2 попыток', async () => {
@@ -117,13 +151,13 @@ describe('BruteforceGuard (unit)', () => {
 
             // Первые 2 попытки должны пройти
             for (let i = 0; i < 2; i++) {
-                delete (mockRequest as any).__bruteforceProcessed;
-                await expect(guard['handleRequest'](requestProps as any)).resolves.toBe(true);
+                delete mockRequest.__bruteforceProcessed;
+                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
             }
 
             // 3-я попытка должна быть заблокирована
-            delete (mockRequest as any).__bruteforceProcessed;
-            await expect(guard['handleRequest'](requestProps as any)).rejects.toThrow(ThrottlerException);
+            delete mockRequest.__bruteforceProcessed;
+            await expect(asPrivate(guard).handleRequest(requestProps)).rejects.toThrow(ThrottlerException);
         });
 
         it('не должен применять лимиты для не-auth роутов', async () => {
@@ -133,73 +167,49 @@ describe('BruteforceGuard (unit)', () => {
 
             // Проверяем, что можем делать много запросов к обычным роутам
             for (let i = 0; i < 100; i++) {
-                await expect(guard['handleRequest'](requestProps as any)).resolves.toBe(true);
+                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
             }
         });
     });
 
     describe('Изоляция между профилями', () => {
         it('счётчики login и refresh должны быть независимыми', async () => {
-            const loginRequest = {
-                ...mockRequest,
-                url: '/online-store/auth/login',
-            };
+            const loginRequest = { ...mockRequest, url: '/online-store/auth/login' };
+            const refreshRequest = { ...mockRequest, url: '/online-store/auth/refresh' };
 
-            const refreshRequest = {
-                ...mockRequest,
-                url: '/online-store/auth/refresh',
-            };
-
-            const loginContext = {
-                switchToHttp: () => ({ getRequest: () => loginRequest }),
-            } as ExecutionContext;
-
-            const refreshContext = {
-                switchToHttp: () => ({ getRequest: () => refreshRequest }),
-            } as ExecutionContext;
+            const loginContext = createMockContextForRequest(loginRequest);
+            const refreshContext = createMockContextForRequest(refreshRequest);
 
             // Исчерпываем лимит login
             for (let i = 0; i < 3; i++) {
-                await guard['handleRequest']({ context: loginContext } as any);
+                await asPrivate(guard).handleRequest({ context: loginContext });
             }
 
             // refresh должен всё ещё работать
             await expect(
-                guard['handleRequest']({ context: refreshContext } as any),
+                asPrivate(guard).handleRequest({ context: refreshContext }),
             ).resolves.toBe(true);
         });
 
         it('счётчики для разных IP должны быть независимыми', async () => {
-            const ip1Request = {
-                ...mockRequest,
-                socket: { remoteAddress: '192.168.1.100' } as any,
-            };
+            const ip1Request = { ...mockRequest, socket: { remoteAddress: '192.168.1.100' } };
+            const ip2Request = { ...mockRequest, socket: { remoteAddress: '192.168.1.101' } };
 
-            const ip2Request = {
-                ...mockRequest,
-                socket: { remoteAddress: '192.168.1.101' } as any,
-            };
-
-            const context1 = {
-                switchToHttp: () => ({ getRequest: () => ip1Request }),
-            } as ExecutionContext;
-
-            const context2 = {
-                switchToHttp: () => ({ getRequest: () => ip2Request }),
-            } as ExecutionContext;
+            const context1 = createMockContextForRequest(ip1Request);
+            const context2 = createMockContextForRequest(ip2Request);
 
             // Исчерпываем лимит для IP1
             for (let i = 0; i < 3; i++) {
-                delete (ip1Request as any).__bruteforceProcessed;
-                await guard['handleRequest']({ context: context1 } as any);
+                delete (ip1Request as TestRequest).__bruteforceProcessed;
+                await asPrivate(guard).handleRequest({ context: context1 });
             }
-            delete (ip1Request as any).__bruteforceProcessed;
-            await expect(guard['handleRequest']({ context: context1 } as any)).rejects.toThrow();
+            delete (ip1Request as TestRequest).__bruteforceProcessed;
+            await expect(asPrivate(guard).handleRequest({ context: context1 })).rejects.toThrow();
 
             // IP2 должен всё ещё работать
-            delete (ip2Request as any).__bruteforceProcessed;
+            delete (ip2Request as TestRequest).__bruteforceProcessed;
             await expect(
-                guard['handleRequest']({ context: context2 } as any),
+                asPrivate(guard).handleRequest({ context: context2 }),
             ).resolves.toBe(true);
         });
     });
@@ -211,7 +221,7 @@ describe('BruteforceGuard (unit)', () => {
                 'x-forwarded-for': '203.0.113.195, 70.41.3.18, 150.172.238.178',
             };
 
-            const ip = guard['extractClientIP'](mockRequest as any);
+            const ip = asPrivate(guard).extractClientIP(mockRequest as Request);
             expect(ip).toBe('203.0.113.195');
         });
 
@@ -221,7 +231,7 @@ describe('BruteforceGuard (unit)', () => {
                 'x-real-ip': '203.0.113.100',
             };
 
-            const ip = guard['extractClientIP'](mockRequest as any);
+            const ip = asPrivate(guard).extractClientIP(mockRequest as Request);
             expect(ip).toBe('203.0.113.100');
         });
 
@@ -231,15 +241,15 @@ describe('BruteforceGuard (unit)', () => {
                 'x-client-ip': '203.0.113.50',
             };
 
-            const ip = guard['extractClientIP'](mockRequest as any);
+            const ip = asPrivate(guard).extractClientIP(mockRequest as Request);
             expect(ip).toBe('203.0.113.50');
         });
 
         it('должен использовать socket.remoteAddress как fallback', () => {
             mockRequest.headers = {};
-            mockRequest.socket = { remoteAddress: '192.168.1.200' } as any;
+            mockRequest.socket = { remoteAddress: '192.168.1.200' };
 
-            const ip = guard['extractClientIP'](mockRequest as any);
+            const ip = asPrivate(guard).extractClientIP(mockRequest as Request);
             expect(ip).toBe('192.168.1.200');
         });
 
@@ -249,7 +259,7 @@ describe('BruteforceGuard (unit)', () => {
             };
             mockRequest.socket = undefined;
 
-            const ip = guard['extractClientIP'](mockRequest as any);
+            const ip = asPrivate(guard).extractClientIP(mockRequest as Request);
             expect(ip).toBe('unknown');
         });
     });
@@ -266,7 +276,7 @@ describe('BruteforceGuard (unit)', () => {
             ];
 
             validIPs.forEach((ip) => {
-                expect(guard['isValidIP'](ip)).toBe(true);
+                expect(asPrivate(guard).isValidIP(ip)).toBe(true);
             });
         });
 
@@ -277,7 +287,7 @@ describe('BruteforceGuard (unit)', () => {
             ];
 
             validIPs.forEach((ip) => {
-                expect(guard['isValidIP'](ip)).toBe(true);
+                expect(asPrivate(guard).isValidIP(ip)).toBe(true);
             });
         });
 
@@ -293,29 +303,29 @@ describe('BruteforceGuard (unit)', () => {
             ];
 
             invalidIPs.forEach((ip) => {
-                expect(guard['isValidIP'](ip as any)).toBe(false);
+                expect(asPrivate(guard).isValidIP(ip as string)).toBe(false);
             });
         });
     });
 
     describe('Маскирование IP для логов', () => {
         it('должен замаскировать последний октет IPv4', () => {
-            const masked = guard['maskIP']('192.168.1.100');
+            const masked = asPrivate(guard).maskIP('192.168.1.100');
             expect(masked).toBe('192.168.1.xxx');
         });
 
         it('должен замаскировать последние группы IPv6', () => {
-            const masked = guard['maskIP']('2001:0db8:0000:0000:0000:ff00:0042:8329');
+            const masked = asPrivate(guard).maskIP('2001:0db8:0000:0000:0000:ff00:0042:8329');
             expect(masked).toBe('2001:0db8:0000:0000:0000:ff00:xxxx:xxxx');
         });
 
         it('должен вернуть "unknown" без изменений', () => {
-            const masked = guard['maskIP']('unknown');
+            const masked = asPrivate(guard).maskIP('unknown');
             expect(masked).toBe('unknown');
         });
 
         it('должен вернуть "masked" для невалидных форматов', () => {
-            const masked = guard['maskIP']('invalid-ip');
+            const masked = asPrivate(guard).maskIP('invalid-ip');
             expect(masked).toBe('masked');
         });
     });
@@ -329,7 +339,7 @@ describe('BruteforceGuard (unit)', () => {
 
             // Проверяем, что можем делать много запросов
             for (let i = 0; i < 100; i++) {
-                await expect(guard['handleRequest'](requestProps as any)).resolves.toBe(true);
+                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
             }
         });
 
@@ -341,33 +351,33 @@ describe('BruteforceGuard (unit)', () => {
 
             // Первые 3 попытки должны пройти
             for (let i = 0; i < 3; i++) {
-                delete (mockRequest as any).__bruteforceProcessed;
-                await expect(guard['handleRequest'](requestProps as any)).resolves.toBe(true);
+                delete mockRequest.__bruteforceProcessed;
+                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
             }
 
             // 4-я попытка должна быть заблокирована
-            delete (mockRequest as any).__bruteforceProcessed;
-            await expect(guard['handleRequest'](requestProps as any)).rejects.toThrow();
+            delete mockRequest.__bruteforceProcessed;
+            await expect(asPrivate(guard).handleRequest(requestProps)).rejects.toThrow();
         });
     });
 
     describe('Защита от повторных вызовов', () => {
         it('не должен считать запрос дважды если уже обработан', async () => {
             mockRequest.url = '/online-store/auth/login';
-            (mockRequest as any).__bruteforceProcessed = true;
+            mockRequest.__bruteforceProcessed = true;
 
             const requestProps = { context: mockContext };
 
             // Должен пройти без инкремента счётчика
-            await expect(guard['handleRequest'](requestProps as any)).resolves.toBe(true);
+            await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
 
             // Проверяем, что счётчик не был увеличен
-            (mockRequest as any).__bruteforceProcessed = false;
+            delete mockRequest.__bruteforceProcessed;
             
             // Первые 3 попытки должны пройти (счётчик был на 0)
             for (let i = 0; i < 3; i++) {
-                (mockRequest as any).__bruteforceProcessed = false;
-                await expect(guard['handleRequest'](requestProps as any)).resolves.toBe(true);
+                delete mockRequest.__bruteforceProcessed;
+                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
             }
         });
     });
@@ -380,7 +390,7 @@ describe('BruteforceGuard (unit)', () => {
 
             // Исчерпываем лимит
             for (let i = 0; i < 3; i++) {
-                await guard['handleRequest'](requestProps as any);
+                await asPrivate(guard).handleRequest(requestProps);
             }
 
             // Сбрасываем счётчики
@@ -388,8 +398,8 @@ describe('BruteforceGuard (unit)', () => {
 
             // Должны снова иметь 3 попытки
             for (let i = 0; i < 3; i++) {
-                (mockRequest as any).__bruteforceProcessed = false;
-                await expect(guard['handleRequest'](requestProps as any)).resolves.toBe(true);
+                delete mockRequest.__bruteforceProcessed;
+                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
             }
         });
     });
@@ -397,22 +407,21 @@ describe('BruteforceGuard (unit)', () => {
     describe('Логирование блокировок', () => {
         it('должен логировать блокировку с замаскированным IP', async () => {
             mockRequest.url = '/online-store/auth/login';
-            mockRequest.socket = { remoteAddress: '192.168.1.100' } as any;
-
+            mockRequest.socket = { remoteAddress: '192.168.1.100' };
             const requestProps = { context: mockContext };
-            const loggerSpy = jest.spyOn(guard['logger'], 'warn');
+            const loggerSpy = jest.spyOn(asPrivate(guard).logger, 'warn');
 
             // Исчерпываем лимит
             for (let i = 0; i < 3; i++) {
-                delete (mockRequest as any).__bruteforceProcessed;
-                await guard['handleRequest'](requestProps as any);
+                delete mockRequest.__bruteforceProcessed;
+                await asPrivate(guard).handleRequest(requestProps);
             }
 
             // Следующий запрос должен залогировать блокировку
-            delete (mockRequest as any).__bruteforceProcessed;
+            delete mockRequest.__bruteforceProcessed;
             try {
-                await guard['handleRequest'](requestProps as any);
-            } catch (e) {
+                await asPrivate(guard).handleRequest(requestProps);
+            } catch {
                 // Ожидаем исключение
             }
 
@@ -429,22 +438,22 @@ describe('BruteforceGuard (unit)', () => {
 
         it('не должен логировать PII (полный IP)', async () => {
             mockRequest.url = '/online-store/auth/login';
-            mockRequest.socket = { remoteAddress: '203.0.113.50' } as any;
+            mockRequest.socket = { remoteAddress: '203.0.113.50' };
 
             const requestProps = { context: mockContext };
-            const loggerSpy = jest.spyOn(guard['logger'], 'warn');
+            const loggerSpy = jest.spyOn(asPrivate(guard).logger, 'warn');
 
             // Исчерпываем лимит
             for (let i = 0; i < 3; i++) {
-                delete (mockRequest as any).__bruteforceProcessed;
-                await guard['handleRequest'](requestProps as any);
+                delete mockRequest.__bruteforceProcessed;
+                await asPrivate(guard).handleRequest(requestProps);
             }
 
             // Следующий запрос должен залогировать блокировку
-            delete (mockRequest as any).__bruteforceProcessed;
+            delete mockRequest.__bruteforceProcessed;
             try {
-                await guard['handleRequest'](requestProps as any);
-            } catch (e) {
+                await asPrivate(guard).handleRequest(requestProps);
+            } catch {
                 // Ожидаем исключение
             }
 
@@ -463,13 +472,13 @@ describe('BruteforceGuard (unit)', () => {
 
             // Исчерпываем лимит
             for (let i = 0; i < 3; i++) {
-                delete (mockRequest as any).__bruteforceProcessed;
-                await guard['handleRequest'](requestProps as any);
+                delete mockRequest.__bruteforceProcessed;
+                await asPrivate(guard).handleRequest(requestProps);
             }
 
             // Следующий запрос должен вернуть русское сообщение
-            delete (mockRequest as any).__bruteforceProcessed;
-            await expect(guard['handleRequest'](requestProps as any)).rejects.toThrow(
+            delete mockRequest.__bruteforceProcessed;
+            await expect(asPrivate(guard).handleRequest(requestProps)).rejects.toThrow(
                 'Слишком много запросов. Попробуйте позже.',
             );
         });

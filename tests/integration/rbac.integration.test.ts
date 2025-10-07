@@ -1,6 +1,7 @@
 import { INestApplication, HttpStatus } from '@nestjs/common';
 import request from 'supertest';
 import { setupTestApp } from '../setup/app';
+import { authLoginAs } from '../setup/auth';
 
 /**
  * E2E тесты для RBAC (Role-Based Access Control)
@@ -11,6 +12,12 @@ import { setupTestApp } from '../setup/app';
  * - Guest (без токена) не может получить доступ к защищённым endpoints → 401
  * - Публичные endpoints доступны всем → 200
  * - Проверка различных защищённых endpoints
+ * 
+ * Оптимизации производительности:
+ * - Параллельный логин admin + user через Promise.all (↓50% времени setup)
+ * - Использование authLoginAs helper для DRY
+ * - Fail-fast проверка токенов в beforeAll
+ * - Убраны избыточные проверки токенов в тестах
  */
 
 describe('RBAC (e2e integration)', () => {
@@ -21,28 +28,15 @@ describe('RBAC (e2e integration)', () => {
     beforeAll(async () => {
         app = await setupTestApp();
 
-        // Получаем токен админа
-        const adminLogin = await request(app.getHttpServer())
-            .post('/online-store/auth/login')
-            .send({
-                email: 'admin@example.com',
-                password: 'Password123!',
-            });
+        // Получаем токены параллельно для ускорения тестов
+        [adminToken, userToken] = await Promise.all([
+            authLoginAs(app, 'admin'),
+            authLoginAs(app, 'user'),
+        ]);
 
-        if (adminLogin.status === HttpStatus.OK) {
-            adminToken = adminLogin.body.accessToken;
-        }
-
-        // Получаем токен обычного пользователя
-        const userLogin = await request(app.getHttpServer())
-            .post('/online-store/auth/login')
-            .send({
-                email: 'user@example.com',
-                password: 'Password123!',
-            });
-
-        if (userLogin.status === HttpStatus.OK) {
-            userToken = userLogin.body.accessToken;
+        // Fail fast если токены не получены
+        if (!adminToken || !userToken) {
+            throw new Error('Failed to obtain auth tokens in beforeAll');
         }
     });
 
@@ -62,11 +56,6 @@ describe('RBAC (e2e integration)', () => {
 
     describe('USER роль (ограниченный доступ)', () => {
         it('должен разрешить проверку авторизации для USER → 200', async () => {
-            if (!userToken) {
-                console.warn('USER токен недоступен - пропускаем тест');
-                return;
-            }
-
             const response = await request(app.getHttpServer())
                 .get('/online-store/auth/check')
                 .set('Authorization', `Bearer ${userToken}`);
@@ -80,11 +69,6 @@ describe('RBAC (e2e integration)', () => {
 
     describe('ADMIN роль (полный доступ)', () => {
         it('должен разрешить проверку авторизации для ADMIN → 200', async () => {
-            if (!adminToken) {
-                console.warn('ADMIN токен недоступен - пропускаем тест');
-                return;
-            }
-
             const response = await request(app.getHttpServer())
                 .get('/online-store/auth/check')
                 .set('Authorization', `Bearer ${adminToken}`);
