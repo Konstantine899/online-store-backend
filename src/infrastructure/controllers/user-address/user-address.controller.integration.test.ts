@@ -2,7 +2,6 @@ import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
 
 // Внутренние импорты
-import { setupTestApp } from '../../../../tests/setup/app';
 import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
 import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
 import { Test } from '@nestjs/testing';
@@ -131,7 +130,6 @@ describe('UserAddressController (integration)', () => {
                 .expect((r: { status: number; body: unknown }) => {
                     if (r.status >= 500) {
                         // выводим тело при ошибке для диагностики
-                        // eslint-disable-next-line no-console
                         console.log('Create address 500 body:', r.body);
                     }
                 })
@@ -146,7 +144,6 @@ describe('UserAddressController (integration)', () => {
                 .set('Authorization', `Bearer ${accessToken}`)
                 .expect((r: { status: number; body: unknown }) => {
                     if (r.status >= 500) {
-                        // eslint-disable-next-line no-console
                         console.log('Get addresses 500 body:', r.body);
                     }
                 })

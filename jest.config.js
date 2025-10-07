@@ -1,5 +1,60 @@
 module.exports = {
-  // Базовые настройки
+  // Projects configuration for unit and integration tests
+  projects: [
+    {
+      displayName: 'unit',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      testMatch: ['**/tests/unit/**/*.test.ts'],
+      moduleFileExtensions: ['js', 'json', 'ts'],
+      transform: {
+        '^.+\\.(t|j)s$': ['ts-jest', {
+          tsconfig: {
+            moduleResolution: 'node',
+            esModuleInterop: true,
+            allowSyntheticDefaultImports: true,
+            experimentalDecorators: true,
+            emitDecoratorMetadata: true
+          }
+        }]
+      },
+      moduleNameMapper: {
+        '^@app/(.*)$': '<rootDir>/src/$1'
+      },
+      transformIgnorePatterns: ['node_modules/(?!(uuid)/)'],
+      setupFilesAfterEnv: ['<rootDir>/tests/jest-setup.ts'],
+      clearMocks: true,
+      restoreMocks: true,
+    },
+    {
+      displayName: 'integration',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      testMatch: ['**/tests/integration/**/*.test.ts', '**/src/**/*.integration.test.ts'],
+      moduleFileExtensions: ['js', 'json', 'ts'],
+      transform: {
+        '^.+\\.(t|j)s$': ['ts-jest', {
+          tsconfig: {
+            moduleResolution: 'node',
+            esModuleInterop: true,
+            allowSyntheticDefaultImports: true,
+            experimentalDecorators: true,
+            emitDecoratorMetadata: true
+          }
+        }]
+      },
+      moduleNameMapper: {
+        '^@app/(.*)$': '<rootDir>/src/$1'
+      },
+      transformIgnorePatterns: ['node_modules/(?!(uuid)/)'],
+      setupFilesAfterEnv: ['<rootDir>/tests/jest-setup.ts'],
+      clearMocks: true,
+      restoreMocks: true,
+      testTimeout: 30000, // Longer timeout for integration tests
+    }
+  ],
+  
+  // Базовые настройки (fallback для test:cov без --selectProjects)
   preset: 'ts-jest',
   testEnvironment: 'node',
   
