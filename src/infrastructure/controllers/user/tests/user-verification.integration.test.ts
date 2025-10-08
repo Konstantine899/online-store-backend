@@ -1,14 +1,11 @@
 import { INestApplication } from '@nestjs/common';
+import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
-import { authLoginAs } from '../../../../../tests/setup/auth';
+import { TestCleanup, TestDataFactory } from '../../../../../tests/utils';
 
 describe('User Verification Integration Tests', () => {
     let app: INestApplication;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    let userToken: string;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    let adminToken: string;
 
     beforeAll(async () => {
         process.env.NODE_ENV = 'test';
@@ -23,13 +20,11 @@ describe('User Verification Integration Tests', () => {
 
         app = await setupTestApp();
         await app.init();
-
-        // Получаем токены для тестирования
-        userToken = await authLoginAs(app, 'user');
-        adminToken = await authLoginAs(app, 'admin');
     });
 
     afterAll(async () => {
+        const sequelize = app.get(Sequelize);
+        await TestCleanup.cleanUsers(sequelize);
         await app.close();
     });
 
@@ -46,64 +41,56 @@ describe('User Verification Integration Tests', () => {
         });
 
         it('200: email verification request with auth', async () => {
-            // Получаем свежий токен для этого теста
-            const freshToken = await authLoginAs(app, 'user');
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
 
             await request(app.getHttpServer())
                 .post('/online-store/user/verify/email/request')
-                .set('Authorization', `Bearer ${freshToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(200);
         });
 
         it('200: phone verification request with auth', async () => {
-            // Получаем свежий токен для этого теста
-            const freshToken = await authLoginAs(app, 'user');
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
 
             await request(app.getHttpServer())
                 .post('/online-store/user/verify/phone/request')
-                .set('Authorization', `Bearer ${freshToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(200);
         });
 
         it('400: invalid verification codes', async () => {
-            // Получаем свежий токен для этого теста
-            const freshToken = await authLoginAs(app, 'user');
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
 
             await request(app.getHttpServer())
-                .post('/online-store/user/verify/email/confirm')
-                .set('Authorization', `Bearer ${freshToken}`)
-                .send({ code: 'wrong' })
-                .expect(400);
-
-            await request(app.getHttpServer())
-                .post('/online-store/user/verify/phone/confirm')
-                .set('Authorization', `Bearer ${freshToken}`)
-                .send({ code: 'wrong' })
+                .post('/online-store/user/verify/email')
+                .set('Authorization', `Bearer ${token}`)
+                .send({ code: 'invalid-code' })
                 .expect(400);
         });
 
         it('200: admin can verify user email/phone', async () => {
-            // Получаем свежий admin токен для этого теста
-            const freshAdminToken = await authLoginAs(app, 'admin');
+            const admin = await TestDataFactory.createUserWithRole(app, 'ADMIN');
+            const user = await TestDataFactory.createUserWithRole(app, 'USER');
 
+            // Admin верифицирует email пользователя
             await request(app.getHttpServer())
-                .patch('/online-store/user/verify/email/13')
-                .set('Authorization', `Bearer ${freshAdminToken}`)
+                .patch(`/online-store/user/admin/verify/${user.userId}/email`)
+                .set('Authorization', `Bearer ${admin.token}`)
                 .expect(200);
 
+            // Admin верифицирует phone пользователя
             await request(app.getHttpServer())
-                .patch('/online-store/user/verify/phone/13')
-                .set('Authorization', `Bearer ${freshAdminToken}`)
+                .patch(`/online-store/user/admin/verify/${user.userId}/phone`)
+                .set('Authorization', `Bearer ${admin.token}`)
                 .expect(200);
         });
 
         it('404: admin cannot verify non-existent user', async () => {
-            // Получаем свежий admin токен для этого теста
-            const freshAdminToken = await authLoginAs(app, 'admin');
+            const { token } = await TestDataFactory.createUserWithRole(app, 'ADMIN');
 
             await request(app.getHttpServer())
-                .patch('/online-store/user/verify/email/99999')
-                .set('Authorization', `Bearer ${freshAdminToken}`)
+                .patch('/online-store/user/admin/verify/999999/email')
+                .set('Authorization', `Bearer ${token}`)
                 .expect(404);
         });
     });

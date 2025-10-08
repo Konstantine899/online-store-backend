@@ -1,11 +1,11 @@
 import { INestApplication } from '@nestjs/common';
+import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
-import { authLoginAs } from '../../../../../tests/setup/auth';
+import { TestCleanup, TestDataFactory } from '../../../../../tests/utils';
 
 describe('User Preferences Integration Tests', () => {
     let app: INestApplication;
-    let userToken: string;
 
     beforeAll(async () => {
         process.env.NODE_ENV = 'test';
@@ -20,13 +20,12 @@ describe('User Preferences Integration Tests', () => {
 
         app = await setupTestApp();
         await app.init();
-
-        // Получаем токены для тестирования
-        userToken = await authLoginAs(app, 'user');
     });
 
     afterAll(async () => {
         if (app) {
+            const sequelize = app.get(Sequelize);
+            await TestCleanup.cleanUsers(sequelize);
             await app.close();
         }
     });
@@ -34,6 +33,7 @@ describe('User Preferences Integration Tests', () => {
     // ===== PREFERENCES ENDPOINTS =====
     describe('PATCH /user/profile/preferences', () => {
         it('200: updates preferences with valid data', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
             const preferencesData = {
                 themePreference: 'dark',
                 defaultLanguage: 'en',
@@ -41,7 +41,7 @@ describe('User Preferences Integration Tests', () => {
 
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/preferences')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send(preferencesData)
                 .expect(200);
 
@@ -50,13 +50,14 @@ describe('User Preferences Integration Tests', () => {
         });
 
         it('200: updates only provided preferences', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
             const preferencesData = {
                 themePreference: 'light',
             };
 
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/preferences')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send(preferencesData)
                 .expect(200);
 
@@ -64,13 +65,14 @@ describe('User Preferences Integration Tests', () => {
         });
 
         it('400: invalid enum values', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
             const invalidData = {
                 themePreference: 'neon',
             };
 
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/preferences')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send(invalidData)
                 .expect(400);
 
@@ -88,9 +90,11 @@ describe('User Preferences Integration Tests', () => {
         });
 
         it('200: accepts empty object', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/preferences')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({})
                 .expect(200);
 
@@ -98,6 +102,7 @@ describe('User Preferences Integration Tests', () => {
         });
 
         it('400: very long strings in preferences', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
             const longString = 'a'.repeat(1000);
             const preferencesData = {
                 themePreference: longString,
@@ -105,7 +110,7 @@ describe('User Preferences Integration Tests', () => {
 
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/preferences')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send(preferencesData)
                 .expect(400);
 
@@ -114,9 +119,7 @@ describe('User Preferences Integration Tests', () => {
         });
 
         it('200: special characters in preferences', async () => {
-            // Получаем свежий токен для этого теста
-            const freshToken = await authLoginAs(app, 'user');
-
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
             const preferencesData = {
                 defaultLanguage: 'en',
                 notificationPreferences: {
@@ -127,7 +130,7 @@ describe('User Preferences Integration Tests', () => {
 
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/preferences')
-                .set('Authorization', `Bearer ${freshToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send(preferencesData)
                 .expect(200);
 
