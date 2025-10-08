@@ -1,0 +1,471 @@
+# Security Hardening Execution Plan (Binding)
+
+binding: true
+module: mvp-security-hardening
+epic_ref: PROD-010-TO-015
+version: 1.0
+
+execution_policy:
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - каждая задача = один коммит - production-grade security standards - pass security tests before DoD complete
+
+context:
+goal: Довести security до production-grade уровня
+timeline: Неделя 3-4 (20-24 часа)
+current: базовый JWT, минимальная валидация
+target: Helmet, CORS whitelist, JWT rotation, Rate Limiting, Input sanitization
+
+tasks:
+
+# PROD-010: Environment Validation
+
+- id: PROD-010-01
+  title: Установить Joi для валидации environment
+  branch: "feature/security/PROD-010/env-validation"
+  files_scope:
+    - "package.json"
+      steps:
+    - npm install @nestjs/config joi
+    - npm install --save-dev @types/joi
+      dod:
+    - Joi установлен
+    - зависимости в package.json
+      estimated_time: 10 минут
+      gate:
+    - require: "Одобряю PROD-010-01"
+
+- id: PROD-010-02
+  title: Создать Joi схему для env переменных
+  branch: "feature/security/PROD-010/env-validation"
+  files_scope:
+    - "src/infrastructure/config/env.validation.ts"
+      steps:
+    - создать файл env.validation.ts
+    - добавить Joi схему для всех env (DB, JWT, CORS, Rate Limiting, Logging)
+    - установить required для критичных переменных
+    - добавить defaults для опциональных
+    - добавить min длину для secrets (32 символа)
+      dod:
+    - все критичные env переменные в схеме
+    - defaults для опциональных
+    - validation rules корректны
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-010-02"
+
+- id: PROD-010-03
+  title: Подключить env validation в AppModule
+  branch: "feature/security/PROD-010/env-validation"
+  files_scope:
+    - "src/app.module.ts"
+      steps:
+    - импортировать ConfigModule и envValidationSchema
+    - настроить ConfigModule.forRoot с validation
+    - установить isGlobal true
+    - настроить validationOptions (abortEarly false)
+      dod:
+    - валидация работает при старте
+    - app не стартует с невалидными env
+    - показывает все ошибки валидации
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-010-03"
+
+- id: PROD-010-04
+  title: Типизировать process.env
+  branch: "feature/security/PROD-010/env-validation"
+  files_scope:
+    - "process-env.d.ts"
+      steps:
+    - обновить ProcessEnv interface
+    - добавить типы для всех env переменных
+    - использовать union types для enum values (NODE_ENV, LOG_LEVEL)
+      dod:
+    - process.env типизирован
+    - TypeScript autocomplete работает
+    - нет any для env переменных
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-010-04"
+
+- id: PROD-010-05
+  title: Создать comprehensive .env.example
+  branch: "feature/security/PROD-010/env-validation"
+  files_scope:
+    - ".env.example"
+      steps:
+    - создать .env.example со всеми переменными
+    - добавить комментарии для каждой секции
+    - добавить примеры валидных значений
+    - добавить инструкции генерации секретов
+      dod:
+    - все переменные описаны
+    - комментарии понятные
+    - примеры валидных значений
+    - инструкции для секретов (openssl rand -base64 32)
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-010-05"
+
+# PROD-011: HTTP Security
+
+- id: PROD-011-01
+  title: Установить Helmet
+  branch: "feature/security/PROD-011/http-headers"
+  files_scope:
+    - "package.json"
+      steps:
+    - npm install helmet
+    - npm install --save-dev @types/helmet
+      dod:
+    - Helmet установлен
+      estimated_time: 5 минут
+      gate:
+    - require: "Одобряю PROD-011-01"
+
+- id: PROD-011-02
+  title: Настроить Helmet в main.ts
+  branch: "feature/security/PROD-011/http-headers"
+  files_scope:
+    - "src/main.ts"
+      steps:
+    - импортировать helmet
+    - настроить helmet с CSP directives
+    - разрешить unsafe-inline для Swagger в dev
+    - настроить crossOriginResourcePolicy
+      dod:
+    - Helmet настроен
+    - security headers присутствуют в responses
+    - Swagger работает в dev
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-011-02"
+
+- id: PROD-011-03
+  title: Настроить CORS с whitelist
+  branch: "feature/security/PROD-011/http-headers"
+  files_scope:
+    - "src/main.ts"
+      steps:
+    - настроить CORS с whitelist из ALLOWED_ORIGINS
+    - разрешить credentials для cookies
+    - настроить allowed methods и headers
+    - настроить exposed headers (x-request-id)
+      dod:
+    - CORS работает для allowed origins
+    - блокирует неразрешённые origins
+    - credentials enabled для cookies
+      estimated_time: 45 минут
+      gate:
+    - require: "Одобряю PROD-011-03"
+
+- id: PROD-011-04
+  title: Добавить conditional CSP для dev/prod
+  branch: "feature/security/PROD-011/http-headers"
+  files_scope:
+    - "src/main.ts"
+      steps:
+    - создать условные CSP directives
+    - dev разрешает unsafe-inline для Swagger
+    - production строже - только self
+    - применить через helmet
+      dod:
+    - Swagger работает в dev
+    - stricter CSP в production
+    - безопасность не ломает функционал
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-011-04"
+
+# PROD-012: JWT Hardening
+
+- id: PROD-012-01
+  title: Обновить JWT TTL на production значения
+  branch: "feature/security/PROD-012/jwt-hardening"
+  files_scope:
+    - ".env"
+    - ".env.example"
+      steps:
+    - установить JWT_ACCESS_EXPIRATION=15m
+    - установить JWT_REFRESH_EXPIRATION=30d
+    - обновить .env.example
+      dod:
+    - access короткий (15m)
+    - refresh длинный (30d)
+    - documented в .env.example
+      estimated_time: 10 минут
+      gate:
+    - require: "Одобряю PROD-012-01"
+
+- id: PROD-012-02
+  title: Настроить HttpOnly cookies для refresh token
+  branch: "feature/security/PROD-012/jwt-hardening"
+  files_scope:
+    - "src/infrastructure/controllers/auth/auth.controller.ts"
+      steps:
+    - в login методе установить refresh token в cookie
+    - настроить httpOnly, secure, sameSite flags
+    - вернуть только accessToken в body
+    - обновить Response types
+      dod:
+    - refresh в HttpOnly cookie
+    - secure в production
+    - sameSite настроен (strict/lax по окружению)
+    - только accessToken в response body
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-012-02"
+
+- id: PROD-012-03
+  title: Читать refresh token из cookies
+  branch: "feature/security/PROD-012/jwt-hardening"
+  files_scope:
+    - "src/infrastructure/controllers/auth/auth.controller.ts"
+      steps:
+    - в refresh методе читать из request.cookies
+    - обрабатывать отсутствие токена (401)
+    - установить новый refresh в cookie после rotation
+    - обновить Swagger документацию
+      dod:
+    - refresh token из cookies
+    - proper error handling
+    - rotation работает
+    - Swagger updated
+      estimated_time: 45 минут
+      gate:
+    - require: "Одобряю PROD-012-03"
+
+- id: PROD-012-04
+  title: Реализовать refresh token rotation
+  branch: "feature/security/PROD-012/jwt-hardening"
+  files_scope:
+    - "src/infrastructure/services/token/token.service.ts"
+    - "src/infrastructure/services/auth/auth.service.ts"
+      steps:
+    - при refresh инвалидировать старый токен
+    - создать новый refresh token
+    - вернуть оба токена (access + refresh)
+    - обновить логику в TokenService
+      dod:
+    - старый токен инвалидируется
+    - новый токен создаётся
+    - rotation работает
+    - нельзя переиспользовать старые токены
+      estimated_time: 1.5 часа
+      gate:
+    - require: "Одобряю PROD-012-04"
+
+- id: PROD-012-05
+  title: Маскировать токены в логах
+  branch: "feature/security/PROD-012/jwt-hardening"
+  files_scope:
+    - "src/infrastructure/common/utils/logging/mask-token.ts"
+    - "src/infrastructure/common/utils/logging/index.ts"
+      steps:
+    - создать mask utility
+    - реализовать maskToken функцию
+    - использовать в местах логирования токенов
+    - протестировать что токены маскируются
+      dod:
+    - токены маскируются в логах
+    - нет утечки секретов
+    - показывает только первые 6 и последние 4 символа
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-012-05"
+
+# PROD-013: Rate Limiting
+
+- id: PROD-013-01
+  title: Настроить BruteforceGuard профили из env
+  branch: "feature/security/PROD-013/rate-limiting"
+  files_scope:
+    - "src/infrastructure/common/guards/bruteforce.guard.ts"
+      steps:
+    - обновить профили для чтения из env
+    - login 5 attempts / 15min
+    - refresh 10 attempts / 5min
+    - registration 3 attempts / 1min
+    - добавить defaults если env не задан
+      dod:
+    - профили настраиваются из env
+    - defaults разумные
+    - все профили работают
+      estimated_time: 45 минут
+      gate:
+    - require: "Одобряю PROD-013-01"
+
+- id: PROD-013-02
+  title: Добавить глобальный rate limiter
+  branch: "feature/security/PROD-013/rate-limiting"
+  files_scope:
+    - "src/main.ts"
+    - "package.json"
+      steps:
+    - установить express-rate-limit
+    - добавить middleware для global limit
+    - настроить 100 requests/min
+    - включать только если RATE_LIMIT_ENABLED=true
+      dod:
+    - global limiter работает
+    - 429 при превышении
+    - configurable через env
+      estimated_time: 45 минут
+      gate:
+    - require: "Одобряю PROD-013-02"
+
+- id: PROD-013-03
+  title: Логировать блокировки без PII
+  branch: "feature/security/PROD-013/rate-limiting"
+  files_scope:
+    - "src/infrastructure/common/guards/bruteforce.guard.ts"
+      steps:
+    - добавить logger в BruteforceGuard
+    - логировать блокировки на уровне warn
+    - включать route, method, profile, correlationId
+    - НЕ логировать IP, email, пароли
+      dod:
+    - блокировки логируются
+    - нет PII в логах
+    - correlation ID для трекинга
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-013-03"
+
+# PROD-014: Input Validation
+
+- id: PROD-014-01
+  title: Убедиться что CustomValidationPipe глобален
+  branch: "feature/security/PROD-014/input-validation"
+  files_scope:
+    - "src/main.ts"
+      steps:
+    - проверить что app.useGlobalPipes настроен
+    - включить whitelist true
+    - включить forbidNonWhitelisted true
+    - включить transform true
+      dod:
+    - ValidationPipe глобально применяется
+    - whitelist включен
+    - extra fields rejected
+      estimated_time: 15 минут
+      gate:
+    - require: "Одобряю PROD-014-01"
+
+- id: PROD-014-02
+  title: Audit всех DTO на @IsSanitizedString
+  branch: "feature/security/PROD-014/input-validation"
+  files_scope:
+    - "src/infrastructure/dto/\*_/_.dto.ts"
+    - "src/domain/dto/\*_/_.dto.ts"
+      steps:
+    - просмотреть все DTO файлы
+    - для всех строковых полей добавить @IsSanitizedString
+    - убедиться что сообщения на русском
+    - проверить что валидация работает
+      dod:
+    - все string поля санитизируются
+    - русские сообщения об ошибках
+    - XSS patterns rejected
+      estimated_time: 2 часа
+      gate:
+    - require: "Одобряю PROD-014-02"
+
+- id: PROD-014-03
+  title: Написать XSS prevention integration tests
+  branch: "feature/security/PROD-014/input-validation"
+  files_scope:
+    - "tests/integration/security/xss-prevention.integration.test.ts"
+      steps:
+    - создать test file
+    - тесты с XSS попытками в registration
+    - тесты с XSS в product creation
+    - тесты с script tags, event handlers, iframe
+    - проверить что всё rejected (400)
+      dod:
+    - тесты на XSS patterns проходят
+    - все XSS попытки отклоняются
+    - валидация работает корректно
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-014-03"
+
+# PROD-015: Swagger + Logging
+
+- id: PROD-015-01
+  title: Закрыть Swagger в production
+  branch: "feature/security/PROD-015/swagger-logging"
+  files_scope:
+    - "src/infrastructure/config/swagger/swagger.config.ts"
+      steps:
+    - добавить проверку NODE_ENV в setupSwagger
+    - return early если production
+    - оставить доступным в dev/stage
+      dod:
+    - Swagger недоступен в production
+    - работает в dev/stage
+    - нет information disclosure
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-015-01"
+
+- id: PROD-015-02
+  title: Настроить pino structured logging
+  branch: "feature/security/PROD-015/swagger-logging"
+  files_scope:
+    - "src/main.ts"
+    - "package.json"
+      steps:
+    - npm install pino pino-http pino-pretty nestjs-pino
+    - настроить pino logger в main.ts
+    - JSON logs в production
+    - pretty logs в development
+    - настроить log levels
+      dod:
+    - pino настроен
+    - structured JSON logs
+    - pretty format в dev
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-015-02"
+
+- id: PROD-015-03
+  title: Создать PII masking utilities
+  branch: "feature/security/PROD-015/swagger-logging"
+  files_scope:
+    - "src/infrastructure/common/utils/logging/mask-pii.ts"
+    - "src/infrastructure/common/utils/logging/index.ts"
+      steps:
+    - создать mask-pii.ts
+    - реализовать maskEmail функцию
+    - реализовать maskPhone функцию
+    - реализовать maskToken функцию (если не было)
+    - экспортировать через index.ts
+      dod:
+    - email маскируются (показать первый символ)
+    - phone маскируются (показать последние 4 цифры)
+    - tokens маскируются (6 первых + 4 последних)
+      estimated_time: 45 минут
+      gate:
+    - require: "Одобряю PROD-015-03"
+
+# Success Criteria для Security Hardening
+
+success_criteria:
+quantitative: - env_validation_coverage: 100% критичных переменных - security_headers: все endpoints - rate_limiting_coverage: 100% auth endpoints - dto_sanitization: 100% string fields - pii_leaks: 0
+qualitative: - production_grade: true - follows_owasp_top_10: true - comprehensive_security_tests: true
+
+checkpoints:
+after_prod_010: - env validation: works - app fails with invalid env: true
+after_prod_011: - helmet headers: present - cors whitelist: enforced
+after_prod_012: - jwt cookies: httpOnly - token rotation: working
+after_prod_013: - rate limiting: comprehensive - brute force: prevented
+after_prod_014: - input sanitization: 100% - xss tests: passing
+after_prod_015: - swagger: closed in prod - pii masking: working
+
+next_steps:
+
+- переход к Coverage Improvement (PROD-020 series)
+- maintain security standards в новом коде
+- regular security audits

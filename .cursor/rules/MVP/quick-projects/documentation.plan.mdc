@@ -1,0 +1,423 @@
+# Documentation Execution Plan (Binding)
+
+binding: true
+module: mvp-documentation
+epic_ref: PROD-050-TO-053
+version: 1.0
+
+execution_policy:
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - каждая задача = один коммит - professional quality documentation - comprehensive и понятная
+
+context:
+goal: Создать профессиональную документацию для Middle портфолио
+timeline: Неделя 9 (12-16 часов)
+current: базовый README, неполный Swagger
+target: Professional README, ADR, 100% Swagger, optimized GitHub
+
+tasks:
+
+# PROD-050: Professional README
+
+- id: PROD-050-01
+  title: Создать структуру README с badges
+  branch: "docs/PROD-050/professional-readme"
+  files_scope:
+    - "README.md"
+      steps:
+    - создать hero section с названием и описанием
+    - добавить badges (CI, Coverage, TypeScript)
+    - добавить Live Demo links
+    - создать структуру с sections
+    - About, Features, Architecture, Tech Stack
+      dod:
+    - структура README создана
+    - badges present
+    - links working
+    - professional первое впечатление
+      estimated_time: 1.5 часа
+      gate:
+    - require: "Одобряю PROD-050-01"
+
+- id: PROD-050-02
+  title: Добавить comprehensive Tech Stack section
+  branch: "docs/PROD-050/professional-readme"
+  files_scope:
+    - "README.md"
+      steps:
+    - детально описать Core (NestJS, TypeScript, Node.js)
+    - Database (PostgreSQL, Sequelize, migrations)
+    - Auth & Security (JWT, RBAC, bcrypt, Helmet, CORS)
+    - Testing (Jest, coverage, strategy)
+    - Documentation (Swagger, ADR)
+    - DevOps (Docker, GitHub Actions, Railway)
+      dod:
+    - tech stack comprehensive
+    - все технологии перечислены
+    - показывает breadth of knowledge
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-050-02"
+
+- id: PROD-050-03
+  title: Добавить Installation и Usage instructions
+  branch: "docs/PROD-050/professional-readme"
+  files_scope:
+    - "README.md"
+      steps:
+    - Prerequisites section
+    - step-by-step Installation (clone, install, env, migrations)
+    - Docker Setup (recommended)
+    - Development vs Production запуск
+    - troubleshooting tips
+      dod:
+    - anyone может запустить за 5 минут
+    - инструкции clear и complete
+    - Docker и manual setup покрыты
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-050-03"
+
+- id: PROD-050-04
+  title: Добавить API Examples section
+  branch: "docs/PROD-050/professional-readme"
+  files_scope:
+    - "README.md"
+      steps:
+    - примеры Authentication (register, login)
+    - примеры Products (list, get, create)
+    - примеры Orders (create, list)
+    - curl команды для каждого
+    - ссылка на full Swagger documentation
+      dod:
+    - API examples понятны
+    - curl команды рабочие
+    - показывает key features
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-050-04"
+
+- id: PROD-050-05
+  title: Добавить Project Metrics section
+  branch: "docs/PROD-050/professional-readme"
+  files_scope:
+    - "README.md"
+      steps:
+    - Total Endpoints (50+)
+    - Data Models (13)
+    - Test Coverage (75%+, 85%+ critical)
+    - Total Tests (335+)
+    - Lines of Code (~15,000)
+    - Database Tables (15+)
+    - Migrations (24)
+      dod:
+    - метрики впечатляют
+    - quantify работу
+    - показывает scope проекта
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-050-05"
+
+# PROD-051: ADR Documents
+
+- id: PROD-051-01
+  title: Создать ADR structure и template
+  branch: "docs/PROD-051/adr-documents"
+  files_scope:
+    - "docs/adr/README.md"
+    - "docs/adr/template.md"
+      steps:
+    - создать docs/adr/ directory
+    - создать template.md с sections
+    - Status, Context, Decision, Consequences, Alternatives
+    - создать README для навигации
+      dod:
+    - ADR structure готова
+    - template professional
+    - ready для документов
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-051-01"
+
+- id: PROD-051-02
+  title: ADR-001 Clean Architecture decision
+  branch: "docs/PROD-051/adr-documents"
+  files_scope:
+    - "docs/adr/001-clean-architecture.md"
+      steps:
+    - объяснить Context (зачем Clean Architecture)
+    - Decision (Domain/Infrastructure separation)
+    - Positive consequences (testability, independence)
+    - Negative consequences (boilerplate)
+    - Alternatives (MVC, Layered)
+      dod:
+    - ADR-001 complete
+    - trade-offs explained
+    - alternatives considered
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-051-02"
+
+- id: PROD-051-03
+  title: ADR-002 Sequelize ORM choice
+  branch: "docs/PROD-051/adr-documents"
+  files_scope:
+    - "docs/adr/002-sequelize-orm.md"
+      steps:
+    - Context (выбор ORM)
+    - Decision (Sequelize over TypeORM/Prisma)
+    - Positive (migrations CLI, PostgreSQL support)
+    - Negative (TypeScript support хуже)
+    - Alternatives (TypeORM, Prisma)
+      dod:
+    - ADR-002 complete
+    - ORM choice explained
+      estimated_time: 45 минут
+      gate:
+    - require: "Одобряю PROD-051-03"
+
+- id: PROD-051-04
+  title: ADR-003 JWT authentication strategy
+  branch: "docs/PROD-051/adr-documents"
+  files_scope:
+    - "docs/adr/003-jwt-refresh-tokens.md"
+      steps:
+    - Decision (JWT + refresh rotation)
+    - Positive (stateless, secure cookies)
+    - Negative (complexity, refresh table)
+    - Alternatives (sessions, OAuth only)
+      dod:
+    - ADR-003 complete
+    - JWT strategy explained
+      estimated_time: 45 минут
+      gate:
+    - require: "Одобряю PROD-051-04"
+
+- id: PROD-051-05
+  title: ADR-004 Testing strategy
+  branch: "docs/PROD-051/adr-documents"
+  files_scope:
+    - "docs/adr/004-testing-strategy.md"
+      steps:
+    - Decision (Test Pyramid, 75%/85% thresholds)
+    - Positive (fast tests, high confidence)
+    - Negative (discipline required)
+    - Coverage breakdown (unit > integration > e2e)
+      dod:
+    - ADR-004 complete
+    - testing approach documented
+    - 4-5 ADR готовы
+      estimated_time: 45 минут
+      gate:
+    - require: "Одобряю PROD-051-05"
+
+# PROD-052: Swagger Complete
+
+- id: PROD-052-01
+  title: Audit Swagger documentation completeness
+  branch: "docs/PROD-052/swagger-complete"
+  files_scope:
+    - "docs/swagger-audit.md"
+      steps:
+    - проверить каждый endpoint
+    - составить список endpoints без @ApiOperation
+    - составить список без @ApiResponse
+    - составить список без examples
+    - документировать gaps
+      dod:
+    - полный список gaps
+    - plan для improvement
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-052-01"
+
+- id: PROD-052-02
+  title: Дополнить Swagger documentation для всех endpoints
+  branch: "docs/PROD-052/swagger-complete"
+  files_scope:
+    - "src/infrastructure/controllers/\*_/_.controller.ts"
+      steps:
+    - для каждого endpoint добавить @ApiOperation
+    - добавить @ApiResponse для всех статусов
+    - добавить @ApiBearerAuth для protected
+    - добавить examples где нужно
+    - использовать кастомные decorators
+      dod:
+    - 100% endpoints documented
+    - examples для всех
+    - responses complete
+      estimated_time: 3 часа
+      gate:
+    - require: "Одобряю PROD-052-02"
+
+- id: PROD-052-03
+  title: Улучшить Swagger tags и группировку
+  branch: "docs/PROD-052/swagger-complete"
+  files_scope:
+    - "src/infrastructure/controllers/\*_/_.controller.ts"
+      steps:
+    - убедиться все controllers имеют @ApiTags
+    - логичная группировка (Auth, Users, Products, Orders, etc.)
+    - proper порядок tags
+    - descriptions для tags
+      dod:
+    - tags для всех controllers
+    - логичная группировка
+    - easy navigation в Swagger UI
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-052-03"
+
+- id: PROD-052-04
+  title: Validate Swagger schemas
+  branch: "docs/PROD-052/swagger-complete"
+  files_scope:
+    - "Swagger UI"
+      steps:
+    - запустить Swagger UI
+    - протестировать каждый endpoint через UI
+    - проверить что schemas корректны
+    - исправить несоответствия если есть
+    - verify что можно тестировать
+      dod:
+    - все schemas валидны
+    - можно тестировать через UI
+    - no schema errors
+      estimated_time: 1.5 часа
+      gate:
+    - require: "Одобряю PROD-052-04"
+
+# PROD-053: GitHub Profile
+
+- id: PROD-053-01
+  title: Настроить GitHub repository settings
+  branch: "docs/PROD-053/github-profile"
+  files_scope:
+    - "GitHub repository settings"
+      steps:
+    - About section с description
+    - Website link на Railway
+    - Topics (nestjs, typescript, postgresql, clean-architecture, ecommerce, rest-api)
+    - Pin repository в профиле
+    - Social preview image (optional)
+      dod:
+    - About заполнен
+    - Topics добавлены
+    - repository pinned
+    - professional presentation
+      estimated_time: 15 минут
+      gate:
+    - require: "Одобряю PROD-053-01"
+
+- id: PROD-053-02
+  title: Создать GitHub Profile README
+  branch: "docs/PROD-053/github-profile"
+  files_scope:
+    - "username/username repository README.md"
+      steps:
+    - создать специальный repository username/username
+    - создать profile README
+    - описать себя как Middle Backend Developer
+    - указать tech stack
+    - featured project (online-store-backend)
+    - contact information
+      dod:
+    - profile README создан
+    - shows на GitHub профиле
+    - professional presentation
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-053-02"
+
+- id: PROD-053-03
+  title: Optimize contributions graph
+  branch: "ongoing"
+  files_scope:
+    - "regular commits"
+      steps:
+    - делать регулярные коммиты
+    - атомарные задачи естественно создают activity
+    - показать active development
+    - зелёный graph в последние 3 месяца
+      dod:
+    - graph зелёный
+    - показывает активность
+    - consistent contributions
+      estimated_time: ongoing
+      gate:
+    - require: "Одобряю PROD-053-03"
+
+- id: PROD-053-04
+  title: Добавить architecture diagram
+  branch: "docs/PROD-053/github-profile"
+  files_scope:
+    - "docs/architecture-diagram.png"
+    - "README.md"
+      steps:
+    - создать diagram (draw.io, Excalidraw, или Mermaid)
+    - показать Domain/Infrastructure layers
+    - показать data flow (Client → Controller → Service → Repository → DB)
+    - показать Guards, Pipes, Filters
+    - добавить в README
+      dod:
+    - diagram создан
+    - добавлен в README
+    - визуально понятен
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-053-04"
+
+- id: PROD-053-05
+  title: Создать demo video/GIF (optional)
+  branch: "docs/PROD-053/github-profile"
+  files_scope:
+    - "docs/demo.gif"
+    - "README.md"
+      steps:
+    - screen recording Swagger UI
+    - показать auth flow (register → login)
+    - показать product list → create order
+    - convert to GIF (max 10MB)
+    - добавить в README
+      dod:
+    - GIF/video создан
+    - показывает ключевые features
+    - добавлен в README (optional)
+      estimated_time: 1-2 часа
+      gate:
+    - require: "Одобряю PROD-053-05"
+
+# Success Criteria для Documentation
+
+success_criteria:
+readme: - structure: professional с badges - length: 500-1000 строк - sections: 10-12 - badges: 3-5 (CI, coverage, TypeScript) - diagrams: 1-2 - examples: 5-10 API calls - metrics: quantified - installation: step-by-step - live_demo: linked
+adr: - count: 4-5 documents - format: consistent - trade_offs: explained - alternatives: considered - decisions: justified
+swagger: - coverage: 100% endpoints - api_operation: all - api_response: all status codes - examples: comprehensive - testable: через UI
+github: - repository_pinned: true - about_complete: true - topics: 5-7 - profile_readme: created - contributions: active
+
+visual_elements:
+
+- ci_badge: green
+- coverage_badge: 75%+
+- typescript_badge: strict
+- architecture_diagram: clear
+- demo_gif: optional
+
+checkpoints:
+after_prod_050: - README: professional - metrics: visible
+after_prod_051: - ADR: 4-5 documents - architecture: explained
+after_prod_052: - Swagger: 100% - API: fully documented
+after_prod_053: - GitHub: optimized - portfolio: impressive
+
+next_steps:
+
+- переход к Phase 2 (Job Search)
+- use documentation в резюме
+- demo проект на собеседованиях
+- maintain документацию актуальной
+
+final_result:
+production_ready_project: - tests: 0 failed, 75%+ coverage - security: production-grade - performance: optimized - deployment: live on Railway - documentation: comprehensive - portfolio: Middle-level impressive
+
+ready_for_job_search: - strong single project > multiple weak projects - demonstrates Middle-level skills - production experience shown - architectural thinking visible - professional presentation

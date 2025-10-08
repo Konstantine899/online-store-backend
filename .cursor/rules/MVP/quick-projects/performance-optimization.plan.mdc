@@ -1,0 +1,311 @@
+# Performance Optimization Execution Plan (Binding)
+
+binding: true
+module: mvp-performance
+epic_ref: PROD-030-TO-032
+version: 1.0
+
+execution_policy:
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - каждая задача = один коммит - measure before/after для каждой оптимизации - verify с EXPLAIN ANALYZE
+
+context:
+goal: Оптимизировать производительность до production уровня
+timeline: Неделя 7 (10-14 часов)
+current: N+1 queries, missing indexes, no pagination limits
+target: 1 query per list, proper indexes, enforced limits
+
+tasks:
+
+# PROD-030: N+1 Queries
+
+- id: PROD-030-01
+  title: Fix N+1 в Products list
+  branch: "perf/PROD-030/fix-n-plus-one"
+  files_scope:
+    - "src/infrastructure/repositories/product/product.repository.ts"
+    - "src/infrastructure/controllers/product/product.controller.ts"
+      steps:
+    - запустить GET /products с SQL logging
+    - идентифицировать N+1 для category, brand, ratings
+    - добавить include с eager loading
+    - выбирать только нужные attributes
+    - проверить что стало 1 query
+      dod:
+    - 1 query вместо N+1
+    - product list оптимизирован
+    - response time улучшен (measure!)
+      estimated_time: 1.5 часа
+      gate:
+    - require: "Одобряю PROD-030-01"
+
+- id: PROD-030-02
+  title: Fix N+1 в Orders list
+  branch: "perf/PROD-030/fix-n-plus-one"
+  files_scope:
+    - "src/infrastructure/repositories/order/order.repository.ts"
+      steps:
+    - включить SQL logging для GET /orders
+    - идентифицировать N+1 для user, order_items, products
+    - добавить nested include
+    - выбирать только нужные attributes
+    - verify 1 query
+      dod:
+    - N+1 исправлен
+    - orders loading оптимизирован
+    - response time измерен и улучшен
+      estimated_time: 1.5 часа
+      gate:
+    - require: "Одобряю PROD-030-02"
+
+- id: PROD-030-03
+  title: Fix N+1 в Users admin list
+  branch: "perf/PROD-030/fix-n-plus-one"
+  files_scope:
+    - "src/infrastructure/repositories/user/user.repository.ts"
+      steps:
+    - проверить GET /admin/users
+    - добавить include для roles, addresses если нужно
+    - использовать attributes для выбора только нужных полей
+    - exclude password, sensitive data
+      dod:
+    - N+1 исправлен для users
+    - только нужные поля выбираются
+    - password никогда не возвращается
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-030-03"
+
+- id: PROD-030-04
+  title: Fix N+1 в Cart retrieval
+  branch: "perf/PROD-030/fix-n-plus-one"
+  files_scope:
+    - "src/infrastructure/repositories/cart/cart.repository.ts"
+      steps:
+    - проверить GET /cart
+    - оптимизировать loading cart_products + products
+    - добавить include с product details
+    - attributes только нужные (id, name, price, imageUrl)
+      dod:
+    - cart loading оптимизирован
+    - 1 query вместо N
+    - fast cart retrieval
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-030-04"
+
+- id: PROD-030-05
+  title: Add attributes filtering везде
+  branch: "perf/PROD-030/fix-n-plus-one"
+  files_scope:
+    - "src/infrastructure/repositories/\*_/_.repository.ts"
+      steps:
+    - audit всех findAll/findOne
+    - добавить attributes с exclusion
+    - exclude password, createdAt, updatedAt где не нужны
+    - select only needed fields
+      dod:
+    - не выбираем лишние поля
+    - password никогда не возвращается
+    - data transfer minimized
+      estimated_time: 2 часа
+      gate:
+    - require: "Одобряю PROD-030-05"
+
+# PROD-031: Database Indexes
+
+- id: PROD-031-01
+  title: Audit существующих индексов
+  branch: "perf/PROD-031/database-indexes"
+  files_scope:
+    - "docs/performance/index-audit.md"
+      steps:
+    - подключиться к БД
+    - запустить query для списка индексов
+    - составить список всех существующих
+    - идентифицировать недостающие
+    - документировать в index-audit.md
+      dod:
+    - список всех текущих индексов
+    - план добавления новых
+    - documented
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-031-01"
+
+- id: PROD-031-02
+  title: Создать миграцию для FK indexes
+  branch: "perf/PROD-031/database-indexes"
+  files_scope:
+    - "db/migrations/YYYYMMDDHHMMSS-add-foreign-key-indexes.ts"
+      steps:
+    - создать миграцию
+    - добавить indexes для всех FK
+    - products (category_id, brand_id)
+    - order_items (order_id, product_id)
+    - cart_products (cart_id, product_id)
+    - user_roles (user_id, role_id)
+    - и т.д. для всех FK
+    - реализовать down method
+      dod:
+    - миграция up/down работает
+    - все FK индексированы
+    - rollback безопасен
+      estimated_time: 1.5 часа
+      gate:
+    - require: "Одобряю PROD-031-02"
+
+- id: PROD-031-03
+  title: Добавить индексы для filter fields
+  branch: "perf/PROD-031/database-indexes"
+  files_scope:
+    - "db/migrations/YYYYMMDDHHMMSS-add-filter-indexes.ts"
+      steps:
+    - создать миграцию для filter indexes
+    - products (status, featured, price)
+    - orders (status)
+    - users (active, email)
+    - реализовать down method
+      dod:
+    - filter indexes добавлены
+    - фильтрация быстрее
+    - часто используемые поля indexed
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-031-03"
+
+- id: PROD-031-04
+  title: Добавить composite indexes
+  branch: "perf/PROD-031/database-indexes"
+  files_scope:
+    - "db/migrations/YYYYMMDDHHMMSS-add-composite-indexes.ts"
+      steps:
+    - создать миграцию для composite indexes
+    - products (category_id, status) для частого запроса
+    - orders (user_id, status) для мои заказы по статусу
+    - carts (user_id, session_id) для guest carts
+    - реализовать down
+      dod:
+    - composite indexes для hot queries
+    - multi-column queries быстрые
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-031-04"
+
+- id: PROD-031-05
+  title: Verify indexes с EXPLAIN ANALYZE
+  branch: "perf/PROD-031/database-indexes"
+  files_scope:
+    - "docs/performance/query-plans.md"
+      steps:
+    - для каждого оптимизированного query запустить EXPLAIN ANALYZE
+    - проверить что indexes используются (Index Scan)
+    - зафиксировать improvement в performance
+    - документировать в query-plans.md
+      dod:
+    - indexes используются
+    - query plans оптимальны
+    - improvements documented
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-031-05"
+
+# PROD-032: Pagination
+
+- id: PROD-032-01
+  title: Audit пагинации на всех list endpoints
+  branch: "perf/PROD-032/pagination-limits"
+  files_scope:
+    - "docs/performance/pagination-audit.md"
+      steps:
+    - проверить каждый GET endpoint
+    - составить список endpoints с пагинацией
+    - составить список endpoints БЕЗ пагинации
+    - документировать
+      dod:
+    - список endpoints с пагинацией
+    - список endpoints БЕЗ пагинации
+    - plan для добавления
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-032-01"
+
+- id: PROD-032-02
+  title: Добавить пагинацию где отсутствует
+  branch: "perf/PROD-032/pagination-limits"
+  files_scope:
+    - "src/infrastructure/controllers/\*_/_.controller.ts"
+      steps:
+    - для каждого списка без пагинации добавить page/limit
+    - использовать DefaultValuePipe(1) для page
+    - использовать DefaultValuePipe(5) для limit
+    - ParseIntPipe для валидации
+    - обновить service methods
+      dod:
+    - все списки пагинированы
+    - default limit 5
+    - page/limit работают
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-032-02"
+
+- id: PROD-032-03
+  title: Enforce max limit через MaxLimitPipe
+  branch: "perf/PROD-032/pagination-limits"
+  files_scope:
+    - "src/infrastructure/common/pipes/max-limit.pipe.ts"
+    - "src/infrastructure/controllers/\*_/_.controller.ts"
+      steps:
+    - создать MaxLimitPipe
+    - transform value к Math.min(value, 100)
+    - применить везде на limit параметр
+    - протестировать что 100 max enforced
+      dod:
+    - max limit 100 enforced
+    - клиент не может запросить больше
+    - memory overflow prevented
+      estimated_time: 45 минут
+      gate:
+    - require: "Одобряю PROD-032-03"
+
+- id: PROD-032-04
+  title: Verify pagination Meta correctness
+  branch: "perf/PROD-032/pagination-limits"
+  files_scope:
+    - "tests/integration/pagination/meta-validation.integration.test.ts"
+      steps:
+    - создать test для проверки Meta structure
+    - проверить все endpoints с пагинацией
+    - убедиться что Meta содержит все поля
+    - totalCount, currentPage, lastPage, nextPage, previousPage, limit
+    - написать integration test
+      dod:
+    - Meta корректный везде
+    - test проверяет структуру
+    - pagination contract { data, meta } соблюдён
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-032-04"
+
+# Success Criteria для Performance
+
+success_criteria:
+quantitative: - n_plus_one_queries: 0 (все исправлены) - avg_response_products: <100ms (было ~500ms) - avg_response_orders: <50ms (было ~300ms) - avg_response_cart: <30ms (было ~200ms) - database_queries_per_request: ≤3 - all_fk_indexed: true - all_filters_indexed: true - pagination_coverage: 100% list endpoints
+qualitative: - query_optimization: comprehensive - index_strategy: proper (FK + filters + composite) - attributes_filtering: everywhere - pagination: enforced with limits
+
+performance_metrics:
+before: - GET /products: 15 queries, ~500ms - GET /orders: 10 queries, ~300ms - GET /cart: 8 queries, ~200ms
+after: - GET /products: 1 query, ~50ms - GET /orders: 1 query, ~30ms - GET /cart: 1 query, ~20ms
+improvement: - query_count: -85% - response_time: -90%
+
+checkpoints:
+after_prod_030: - N+1 fixed: products, orders, users, cart - attributes filtering: applied
+after_prod_031: - FK indexes: all created - filter indexes: added - composite indexes: strategic
+after_prod_032: - pagination: 100% coverage - max limit: enforced - Meta: correct
+
+next_steps:
+
+- переход к Deployment (PROD-040 series)
+- monitor performance в production
+- add caching strategy (future)

@@ -1,0 +1,440 @@
+# Coverage Improvement Execution Plan (Binding)
+
+binding: true
+module: mvp-coverage-improvement
+epic_ref: PROD-020-TO-023
+version: 1.0
+
+execution_policy:
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - каждая задача = один коммит - минимум 5 тестов на задачу - comprehensive coverage (success + failure cases)
+
+context:
+goal: Повысить coverage с 47% до 75%+ (85%+ для auth/guards)
+timeline: Неделя 5-6 (32-40 часов)
+current_coverage: 47% functions, 50% lines
+target_coverage: 75% global, 85%+ critical modules
+
+tasks:
+
+# PROD-020: Auth Comprehensive Tests
+
+- id: PROD-020-01
+  title: Registration success flow tests
+  branch: "test/PROD-020/auth-comprehensive"
+  files_scope:
+    - "tests/integration/auth/registration.integration.test.ts"
+      steps:
+    - создать test file
+    - тест успешной регистрации с валидными данными
+    - тест создания user в database
+    - тест назначения USER role по умолчанию
+    - тест хэширования пароля
+    - тест возврата access и refresh tokens
+    - тест сохранения refresh token в БД
+      dod:
+    - 6+ тестов проходят
+    - auth module coverage +5%
+    - все success cases покрыты
+      estimated_time: 2 часа
+      gate:
+    - require: "Одобряю PROD-020-01"
+
+- id: PROD-020-02
+  title: Registration validation failure tests
+  branch: "test/PROD-020/auth-comprehensive"
+  files_scope:
+    - "tests/integration/auth/registration.integration.test.ts"
+      steps:
+    - тест invalid email format (400)
+    - тест weak password (400)
+    - тест missing required fields (400)
+    - тест duplicate email (400/409)
+    - тест invalid firstName с special chars (400)
+    - тест invalid lastName (400)
+    - тест XSS attempt в name fields (400)
+    - тест SQL injection attempt (400)
+      dod:
+    - 8+ validation тестов
+    - 400 responses для invalid input
+    - русские сообщения об ошибках проверяются
+      estimated_time: 2 часа
+      gate:
+    - require: "Одобряю PROD-020-02"
+
+- id: PROD-020-03
+  title: Login flow comprehensive tests
+  branch: "test/PROD-020/auth-comprehensive"
+  files_scope:
+    - "tests/integration/auth/login.integration.test.ts"
+      steps:
+    - тест успешного login с valid credentials
+    - тест возврата access и refresh tokens
+    - тест создания login history record
+    - тест refresh token rotation при login
+    - тест invalid password (401)
+    - тест non-existent email (401)
+    - тест missing credentials (400)
+    - тест invalid email format (400)
+    - тест blocked user cannot login (403)
+    - тест deleted user cannot login (401/403)
+      dod:
+    - 10+ тестов login flow
+    - success и failure cases покрыты
+    - auth module coverage +8%
+      estimated_time: 2.5 часа
+      gate:
+    - require: "Одобряю PROD-020-03"
+
+- id: PROD-020-04
+  title: Refresh token flow tests
+  branch: "test/PROD-020/auth-comprehensive"
+  files_scope:
+    - "tests/integration/auth/refresh.integration.test.ts"
+      steps:
+    - тест successful refresh с valid token
+    - тест old refresh token invalidated
+    - тест new refresh token generated
+    - тест access token renewed
+    - тест expired refresh token (401)
+    - тест invalid refresh token (401)
+    - тест missing refresh token (401)
+    - тест reused already-rotated token (401)
+      dod:
+    - 8+ refresh тестов
+    - rotation comprehensive tested
+    - auth coverage +7%
+      estimated_time: 2 часа
+      gate:
+    - require: "Одобряю PROD-020-04"
+
+- id: PROD-020-05
+  title: Password reset flow tests
+  branch: "test/PROD-020/auth-comprehensive"
+  files_scope:
+    - "tests/integration/auth/password-reset.integration.test.ts"
+      steps:
+    - тест request password reset sends code
+    - тест verification code saved to database
+    - тест verify code с valid code
+    - тест reset password с verified code
+    - тест invalid verification code (400)
+    - тест expired verification code (400)
+      dod:
+    - 6+ password reset тестов
+    - full flow покрыт
+    - auth coverage +5%
+      estimated_time: 2 часа
+      gate:
+    - require: "Одобряю PROD-020-05"
+
+- id: PROD-020-06
+  title: Logout flow tests
+  branch: "test/PROD-020/auth-comprehensive"
+  files_scope:
+    - "tests/integration/auth/logout.integration.test.ts"
+      steps:
+    - тест logout invalidates refresh token
+    - тест logout clears cookie
+    - тест cannot refresh after logout
+    - тест logout без token (401 or success)
+      dod:
+    - 4+ logout тестов
+    - invalidation работает
+    - auth module достигает 85%+ coverage
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-020-06"
+
+# PROD-021: Security Tests
+
+- id: PROD-021-01
+  title: Brute force protection tests для login
+  branch: "test/PROD-021/security-tests"
+  files_scope:
+    - "tests/integration/security/brute-force.integration.test.ts"
+      steps:
+    - создать test file
+    - тест 5 failed attempts allowed
+    - тест 6th attempt returns 429
+    - тест counter resets after window
+    - тест different IPs separate counters
+    - тест successful login resets counter
+    - тест 429 includes Retry-After header
+      dod:
+    - 6+ brute force тестов
+    - BruteforceGuard coverage +10%
+    - all scenarios tested
+      estimated_time: 2 часа
+      gate:
+    - require: "Одобряю PROD-021-01"
+
+- id: PROD-021-02
+  title: Rate limiting tests для refresh и registration
+  branch: "test/PROD-021/security-tests"
+  files_scope:
+    - "tests/integration/security/brute-force.integration.test.ts"
+      steps:
+    - тест refresh 10 attempts in 5min allowed
+    - тест refresh 11th attempt blocked (429)
+    - тест registration 3 attempts in 1min allowed
+    - тест registration 4th attempt blocked (429)
+    - тест rate limits per-IP
+    - тест rate limit window expires correctly
+      dod:
+    - 6+ rate limiting тестов
+    - все профили протестированы
+    - guards coverage +8%
+      estimated_time: 1.5 часа
+      gate:
+    - require: "Одобряю PROD-021-02"
+
+- id: PROD-021-03
+  title: XSS prevention validation tests
+  branch: "test/PROD-021/security-tests"
+  files_scope:
+    - "tests/integration/security/input-validation.integration.test.ts"
+      steps:
+    - тест XSS в registration firstName
+    - тест XSS в registration lastName
+    - тест XSS в product name
+    - тест XSS в category description
+    - тест script tags rejected
+    - тест event handlers rejected (onload, onerror)
+    - тест iframe injection blocked
+    - тест valid special chars allowed
+      dod:
+    - 8+ XSS prevention тестов
+    - все XSS patterns rejected
+    - validation pipes coverage +10%
+      estimated_time: 2 часа
+      gate:
+    - require: "Одобряю PROD-021-03"
+
+- id: PROD-021-04
+  title: SQL injection prevention tests
+  branch: "test/PROD-021/security-tests"
+  files_scope:
+    - "tests/integration/security/input-validation.integration.test.ts"
+      steps:
+    - тест SQL injection в email field
+    - тест SQL injection в search query
+    - тест UNION-based injection
+    - тест blind SQL injection
+    - тест time-based injection
+    - тест Sequelize parameterization защищает
+      dod:
+    - 6+ SQL injection тестов
+    - все попытки блокируются
+    - Sequelize protection verified
+      estimated_time: 1.5 часа
+      gate:
+    - require: "Одобряю PROD-021-04"
+
+- id: PROD-021-05
+  title: CustomValidationPipe comprehensive tests
+  branch: "test/PROD-021/security-tests"
+  files_scope:
+    - "tests/integration/security/validation-pipe.integration.test.ts"
+      steps:
+    - тест extra fields rejected (whitelist)
+    - тест wrong type rejected
+    - тест null where not allowed
+    - тест array when object expected
+    - тест transform works
+    - тест nested validation works
+      dod:
+    - 6+ validation pipe тестов
+    - pipe coverage +12%
+    - all edge cases tested
+      estimated_time: 1.5 часа
+      gate:
+    - require: "Одобряю PROD-021-05"
+
+# PROD-022: RBAC Tests
+
+- id: PROD-022-01
+  title: Role hierarchy tests
+  branch: "test/PROD-022/rbac-comprehensive"
+  files_scope:
+    - "tests/integration/rbac/role-hierarchy.integration.test.ts"
+      steps:
+    - тест SUPER_ADMIN has all permissions
+    - тест ADMIN has admin permissions
+    - тест USER has basic permissions
+    - тест USER cannot access admin endpoints (403)
+    - тест GUEST not logged in blocked (401)
+    - тест role assignment persists
+      dod:
+    - 6+ role hierarchy тестов
+    - RoleGuard coverage +15%
+    - all roles tested
+      estimated_time: 2 часа
+      gate:
+    - require: "Одобряю PROD-022-01"
+
+- id: PROD-022-02
+  title: Permission matrix tests для endpoints
+  branch: "test/PROD-022/rbac-comprehensive"
+  files_scope:
+    - "tests/integration/rbac/permission-matrix.integration.test.ts"
+      steps:
+    - тест ADMIN can create user
+    - тест USER cannot create user (403)
+    - тест ADMIN can delete user
+    - тест USER cannot delete user (403)
+    - тест USER can update own profile
+    - тест USER cannot update other profile (403)
+    - тест ADMIN can view all orders
+    - тест USER can view own orders only
+    - тест unauthorized blocked (401)
+    - тест forbidden when wrong role (403)
+      dod:
+    - 10+ permission matrix тестов
+    - все критичные endpoints протестированы
+    - guards coverage +12%
+      estimated_time: 3 часа
+      gate:
+    - require: "Одобряю PROD-022-02"
+
+- id: PROD-022-03
+  title: Tenant isolation tests
+  branch: "test/PROD-022/rbac-comprehensive"
+  files_scope:
+    - "tests/integration/rbac/tenant-isolation.integration.test.ts"
+      steps:
+    - тест user sees only own tenant data
+    - тест user cannot access other tenant products (404)
+    - тест user cannot access other tenant orders (404)
+    - тест admin sees only own tenant users
+    - тест admin cannot manage other tenant (403)
+    - тест tenant filter applies to all queries
+      dod:
+    - 6+ tenant isolation тестов
+    - isolation guaranteed
+    - multi-tenant готовность проверена
+      estimated_time: 2 часа
+      gate:
+    - require: "Одобряю PROD-022-03"
+
+- id: PROD-022-04
+  title: Role assignment restriction tests
+  branch: "test/PROD-022/rbac-comprehensive"
+  files_scope:
+    - "tests/integration/rbac/role-assignment.integration.test.ts"
+      steps:
+    - тест USER cannot assign ADMIN role (403)
+    - тест USER cannot assign SUPER_ADMIN role (403)
+    - тест ADMIN can assign USER role
+    - тест SUPER_ADMIN can assign any role
+      dod:
+    - 4+ role assignment тестов
+    - restrictions enforced
+    - RoleGuard достигает 85%+ coverage
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-022-04"
+
+# PROD-023: Coverage Configuration
+
+- id: PROD-023-01
+  title: Configure per-module coverage thresholds
+  branch: "test/PROD-023/coverage-config"
+  files_scope:
+    - "jest.config.js"
+      steps:
+    - добавить coverageThreshold в jest.config
+    - global 70% branches/functions, 75% lines/statements
+    - auth/\*_/_.ts 85%+ all metrics
+    - guards/\*_/_.ts 85%+ all metrics
+    - controllers/\*_/_.ts 70%+ all metrics
+    - исключить DTO, responses, interfaces
+      dod:
+    - thresholds настроены
+    - DTO/Responses excluded
+    - критичные модули 85%+
+    - global 75%+
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-023-01"
+
+- id: PROD-023-02
+  title: CI coverage check integration
+  branch: "test/PROD-023/coverage-config"
+  files_scope:
+    - ".github/workflows/ci.yml"
+      steps:
+    - добавить coverage check step в CI
+    - npm run test:cov
+    - upload coverage to Codecov
+    - fail build при падении threshold
+      dod:
+    - CI блокирует merge при низком coverage
+    - coverage reports uploaded
+    - badge доступен
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-023-02"
+
+- id: PROD-023-03
+  title: Coverage reports и badges
+  branch: "test/PROD-023/coverage-config"
+  files_scope:
+    - "README.md"
+      steps:
+    - добавить coverage badge в README
+    - настроить Codecov или Coveralls
+    - добавить ссылку на coverage reports
+      dod:
+    - badge в README
+    - coverage tracking настроен
+    - reports доступны
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-023-03"
+
+- id: PROD-023-04
+  title: Update testing documentation
+  branch: "test/PROD-023/coverage-config"
+  files_scope:
+    - ".cursor/rules/testing.mdc"
+    - "README.md"
+      steps:
+    - обновить testing.mdc с новыми стандартами
+    - документировать global 75% requirement
+    - документировать critical 85% requirement
+    - добавить примеры в README
+      dod:
+    - документация актуальна
+    - новые разработчики понимают требования
+    - standards задокументированы
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-023-04"
+
+# Success Criteria для Coverage Improvement
+
+success_criteria:
+quantitative: - total_tests: 412+ (from 335) - new_tests_added: 77+ - global_coverage_functions: 70%+ - global_coverage_lines: 75%+ - auth_module_coverage: 85%+ - guards_module_coverage: 85%+ - controllers_coverage: 70%+
+qualitative: - comprehensive_auth_tests: true - negative_scenarios: covered - security_tests: comprehensive - rbac_matrix: complete - edge_cases: covered
+operational: - test_execution_time: <30s total - flaky_tests: 0 - deterministic: true - ci_integration: working
+
+test_distribution:
+auth_tests: 42+ новых
+security_tests: 32+ новых
+rbac_tests: 26+ новых
+config: 4 задачи
+total: 77+ новых тестов
+
+checkpoints:
+after_prod_020: - auth tests: +42 - auth coverage: 85%+
+after_prod_021: - security tests: +32 - guards coverage: 80%+
+after_prod_022: - rbac tests: +26 - guards coverage: 85%+
+after_prod_023: - ci integration: done - coverage badge: visible
+
+next_steps:
+
+- переход к Performance Optimization (PROD-030 series)
+- maintain высокий coverage в новом коде
+- регулярно проверять coverage reports

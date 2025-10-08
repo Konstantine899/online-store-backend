@@ -1,0 +1,389 @@
+# Coverage Improvement: Концепция и подход
+
+## 🎯 Проблема
+
+Текущий test coverage: **47%**
+
+- Functions: 47%
+- Lines: 50%
+- Statements: 50%
+- Branches: 45%
+
+**Критичные модули (должны быть 85%+):**
+
+- Auth: ~60% ⚠️
+- Guards: ~55% ⚠️
+- Security: ~40% ❌
+
+**Проблема для Middle:**
+
+- Низкий coverage = плохое впечатление
+- Нет comprehensive тестов = недоверие
+- Middle должен знать testing strategies
+
+**Цель:** 75%+ global, 85%+ critical modules
+
+---
+
+## 🔍 Анализ пробелов
+
+### Что покрыто:
+
+- ✅ Базовые CRUD операции (60-70%)
+- ✅ Happy path сценарии
+- ✅ Некоторые integration тесты
+
+### Что НЕ покрыто:
+
+- ❌ Edge cases (граничные условия)
+- ❌ Failure scenarios (что при ошибках)
+- ❌ Security scenarios (XSS, rate limiting)
+- ❌ RBAC comprehensive (все роли/permissions)
+- ❌ Race conditions
+- ❌ Concurrent operations
+
+**Итого: нет критичных сценариев!**
+
+---
+
+## 🎯 Стратегия улучшения
+
+### Test Pyramid (правильный)
+
+```
+        /\
+       /  \  E2E (5 tests)
+      /────\
+     /      \  Integration (185+ tests)
+    /────────\
+   /          \  Unit (150+ tests)
+  /────────────\
+```
+
+**Наша цель:**
+
+- Unit: ~150 тестов (быстрые, моки)
+- Integration: ~185 тестов (реальная БД)
+- E2E: ~5 тестов (критичные flows)
+
+### Coverage Targets (production-grade)
+
+| Модуль           | Текущий | Цель | Приоритет |
+| ---------------- | ------- | ---- | --------- |
+| **Auth**         | 60%     | 85%+ | КРИТИЧНО  |
+| **Guards**       | 55%     | 85%+ | КРИТИЧНО  |
+| **Services**     | 50%     | 75%+ | ВЫСОКИЙ   |
+| **Controllers**  | 45%     | 70%+ | СРЕДНИЙ   |
+| **Repositories** | 40%     | 65%+ | СРЕДНИЙ   |
+
+**Focus: критичные модули сначала!**
+
+---
+
+## 📋 Компоненты решения
+
+### 1. Comprehensive Auth Tests (+30 тестов)
+
+**Покрываем:**
+
+- Registration flow (success + validation)
+- Login flow (success + failures)
+- Refresh token flow (rotation + errors)
+- Password reset flow (full cycle)
+- Logout flow (invalidation)
+
+**Типы тестов:**
+
+- ✅ Success paths (happy flow)
+- ❌ Validation errors (400)
+- ❌ Auth errors (401)
+- ❌ Permission errors (403)
+- ⏱️ Rate limiting (429)
+
+### 2. Security Tests (+27 тестов)
+
+**Brute Force Protection:**
+
+- Login rate limiting
+- Refresh rate limiting
+- Registration rate limiting
+- 429 responses с Retry-After
+
+**Input Validation:**
+
+- XSS prevention
+- SQL injection prevention
+- Validation pipes comprehensive
+
+### 3. RBAC Tests (+20 тестов)
+
+**Role Hierarchy:**
+
+- SUPER_ADMIN → ADMIN → USER → GUEST
+- Permissions наследуются
+
+**Permission Matrix:**
+
+- Каждая роль × критичные endpoints
+- 403 для forbidden actions
+- Tenant isolation
+
+### 4. Coverage Configuration
+
+**jest.config.js:**
+
+- Global thresholds
+- Per-module thresholds
+- Exclude DTO/responses
+
+**CI Integration:**
+
+- Блокировка merge при падении coverage
+- Coverage reports upload
+- Badge в README
+
+---
+
+## 🎓 Middle vs Junior Testing
+
+### Junior подход:
+
+- "Написал пару тестов для основных функций"
+- Coverage ~30-50%
+- Только happy paths
+- Моки "где-то там"
+
+### Middle подход (твой):
+
+- **Comprehensive coverage:** 75%+ с фокусом на критичные 85%+
+- **Test pyramid:** правильное соотношение unit/integration
+- **Negative scenarios:** все failure cases покрыты
+- **Security testing:** XSS, SQL injection, rate limiting
+- **RBAC matrix:** все роли и permissions протестированы
+- **CI/CD integration:** автоматическая проверка coverage
+
+**Это показывает серьёзный подход к quality!**
+
+---
+
+## 📊 Метрики
+
+### До улучшения:
+
+- Total tests: 335
+- Coverage: 47% global
+- Auth module: 60%
+- Guards: 55%
+- Negative tests: ~20%
+
+### После улучшения:
+
+- Total tests: 412+ (+77)
+- Coverage: 75%+ global
+- Auth module: 85%+
+- Guards: 85%+
+- Negative tests: 50%+
+
+**Improvement:**
+
+- +77 тестов
+- +28% coverage
+- +25% для critical modules
+
+---
+
+## 📋 Разбиение на задачи (High-Level)
+
+### Задача 1: PROD-020 - Comprehensive Auth Tests
+
+**Проблема:** Auth module coverage только 60%
+
+**Подзадачи:**
+
+1. Registration success tests (+6 тестов)
+2. Registration validation tests (+8 тестов)
+3. Login flow tests (+10 тестов)
+4. Refresh token flow tests (+8 тестов)
+5. Password reset flow tests (+6 тестов)
+6. Logout flow tests (+4 тестов)
+
+**Результат:** +42 auth теста, coverage ≥85%
+
+**Оценка:** 16-20 часов
+
+---
+
+### Задача 2: PROD-021 - Security Tests
+
+**Проблема:** Нет тестов для rate limiting и XSS prevention
+
+**Подзадачи:**
+
+1. Brute force protection tests (+6 тестов)
+2. Rate limiting tests для refresh/registration (+6 тестов)
+3. XSS prevention tests (+8 тестов)
+4. SQL injection tests (+6 тестов)
+5. Validation pipes tests (+6 тестов)
+
+**Результат:** +32 security теста
+
+**Оценка:** 10-12 часов
+
+---
+
+### Задача 3: PROD-022 - RBAC Tests
+
+**Проблема:** Guards coverage только 55%, нет permission matrix
+
+**Подзадачи:**
+
+1. Role hierarchy tests (+6 тестов)
+2. Permission matrix tests (+10 тестов)
+3. Tenant isolation tests (+6 тестов)
+4. Role assignment restrictions (+4 теста)
+
+**Результат:** +26 RBAC тестов, Guards ≥85%
+
+**Оценка:** 14-18 часов
+
+---
+
+### Задача 4: PROD-023 - Coverage Configuration
+
+**Проблема:** Нет thresholds, CI не проверяет coverage
+
+**Подзадачи:**
+
+1. Configure per-module thresholds в jest.config
+2. CI coverage check
+3. Coverage reports и badges
+4. Update testing documentation
+
+**Результат:** CI блокирует при низком coverage
+
+**Оценка:** 3-4 часа
+
+---
+
+## 🔧 Testing Utilities
+
+### Для эффективного тестирования создаём:
+
+**TestDataFactory** (уже есть из Testing Fixes):
+
+- Уникальные данные
+- Реалистичные значения
+- Переиспользуемые билдеры
+
+**TestCleanup** (уже есть):
+
+- Изоляция тестов
+- Правильный порядок cleanup
+
+**AuthTestHelpers:**
+
+- `authLoginAs(role)` - быстрый логин
+- `createAuthHeaders(token)` - headers для запросов
+- `expectUnauthorized()` - проверки 401
+
+**AssertionHelpers:**
+
+- `expectPaginatedResponse()` - проверка { data, meta }
+- `expectValidationError()` - проверка 400 с сообщениями
+- `expectRateLimitError()` - проверка 429
+
+---
+
+## 🎯 Типы тестов
+
+### Unit Tests (быстрые, много)
+
+**Что тестируем:**
+
+- Сервисы изолированно (моки для репозиториев)
+- Guards logic (моки для requests)
+- Pipes transformation (моки для metadata)
+- Utilities (чистые функции)
+
+**Характеристики:**
+
+- Быстрые (<1ms каждый)
+- Изолированные (нет БД/сети)
+- Много (60-70% от всех тестов)
+
+### Integration Tests (реальная БД)
+
+**Что тестируем:**
+
+- Контроллеры через HTTP
+- Репозитории с реальной БД
+- Auth flow end-to-end
+- Валидация DTO
+
+**Характеристики:**
+
+- Медленнее (~50-200ms)
+- Реальная БД (миграции + seeds)
+- Меньше unit (30-40% от всех)
+
+### E2E Tests (редкие, критичные)
+
+**Что тестируем:**
+
+- Полные user journeys
+- Registration → Login → Shopping → Checkout
+- Admin user management flow
+
+**Характеристики:**
+
+- Самые медленные (~1-5s)
+- Минимум моков
+- Очень мало (~5 тестов)
+
+---
+
+## ✅ Критерии успеха
+
+### Количественные:
+
+- [ ] Total tests ≥ 412
+- [ ] Global coverage ≥ 75%
+- [ ] Auth coverage ≥ 85%
+- [ ] Guards coverage ≥ 85%
+- [ ] 100% pass rate
+
+### Качественные:
+
+- [ ] Все edge cases покрыты
+- [ ] Negative scenarios comprehensive
+- [ ] Security tests включены
+- [ ] RBAC matrix протестирована
+- [ ] CI integration работает
+
+### Операционные:
+
+- [ ] Тесты быстрые (<30s total)
+- [ ] Нет flaky tests
+- [ ] Deterministic results
+- [ ] CI блокирует при падении
+
+---
+
+## 🚀 Ожидаемый результат
+
+**Для портфолио:**
+
+- "75%+ test coverage с comprehensive strategy"
+- "85%+ для критичных модулей (auth, security)"
+- "412+ тестов включая negative scenarios и edge cases"
+
+**Для собеседований:**
+
+- Можешь объяснить testing strategy
+- Можешь показать comprehensive coverage
+- Можешь рассказать про Test Pyramid
+- Понимаешь trade-offs (unit vs integration)
+
+**Это strong Middle навык!**
+
+**Детальный план:** см. [coverage-improvement.plan.mdc](./coverage-improvement.plan.mdc)

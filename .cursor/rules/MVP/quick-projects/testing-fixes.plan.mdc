@@ -1,0 +1,370 @@
+# Testing Fixes Execution Plan (Binding)
+
+binding: true
+module: mvp-testing-fixes
+epic_ref: PROD-001-TO-004
+version: 1.0
+
+execution_policy:
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - каждая задача = один коммит - следовать атомарному подходу - pass all tests before DoD complete
+
+context:
+goal: Исправить все проблемы в тестах и сделать их стабильными
+timeline: Неделя 1-2 (14-20 часов)
+current_issues: race conditions, 500 errors, FK constraints, SQL logging
+target: 0 failed tests, stable and deterministic tests
+
+tasks:
+
+# PROD-001: Race Conditions
+
+- id: PROD-001-01
+  title: Добавить cleanup для user_role в afterEach
+  branch: "test/PROD-001/fix-user-admin-races"
+  files_scope:
+    - "src/infrastructure/controllers/user/tests/user-admin.integration.test.ts"
+      steps:
+    - открыть user-admin.integration.test.ts
+    - найти afterEach hook (или создать если нет)
+    - добавить cleanup для user_role
+    - запустить тесты для проверки
+      dod:
+    - afterEach с cleanup user_role добавлен
+    - тесты проходят стабильно
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-001-01"
+
+- id: PROD-001-02
+  title: Добавить cleanup для user_address в afterEach
+  branch: "test/PROD-001/fix-user-admin-races"
+  files_scope:
+    - "src/infrastructure/controllers/user/tests/user-admin.integration.test.ts"
+      steps:
+    - в том же afterEach добавить cleanup для addresses
+    - соблюдать порядок - сначала addresses (FK), потом roles
+    - запустить тесты
+      dod:
+    - cleanup addresses добавлен
+    - порядок важен - сначала addresses, потом roles
+    - нет FK constraint violations
+      estimated_time: 20 минут
+      gate:
+    - require: "Одобряю PROD-001-02"
+
+- id: PROD-001-03
+  title: Создать TestDataFactory с uniqueEmail
+  branch: "test/PROD-001/fix-user-admin-races"
+  files_scope:
+    - "tests/utils/test-helpers.ts"
+    - "tests/utils/index.ts"
+      steps:
+    - создать tests/utils/test-helpers.ts
+    - добавить TestDataFactory класс
+    - реализовать метод uniqueEmail()
+    - экспортировать через tests/utils/index.ts
+      dod:
+    - TestDataFactory создан
+    - метод uniqueEmail работает
+    - генерирует уникальные email
+    - нет дублирования
+      estimated_time: 40 минут
+      gate:
+    - require: "Одобряю PROD-001-03"
+
+- id: PROD-001-04
+  title: Использовать uniqueEmail в user-admin тестах
+  branch: "test/PROD-001/fix-user-admin-races"
+  files_scope:
+    - "src/infrastructure/controllers/user/tests/user-admin.integration.test.ts"
+      steps:
+    - импортировать TestDataFactory
+    - найти все статичные email
+    - заменить на TestDataFactory.uniqueEmail()
+    - запустить тесты несколько раз для проверки
+      dod:
+    - все статичные email заменены
+    - тесты проходят при любом порядке
+    - нет race conditions по email
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-001-04"
+
+- id: PROD-001-05
+  title: Добавить uniquePhone в TestDataFactory
+  branch: "test/PROD-001/fix-user-admin-races"
+  files_scope:
+    - "tests/utils/test-helpers.ts"
+      steps:
+    - добавить метод uniquePhone() в TestDataFactory
+    - генерировать валидные российские номера
+    - обновить экспорты
+      dod:
+    - uniquePhone генерирует валидные номера
+    - формат +7XXXXXXXXXX
+    - нет дублирования
+      estimated_time: 20 минут
+      gate:
+    - require: "Одобряю PROD-001-05"
+
+- id: PROD-001-06
+  title: Использовать uniquePhone в тестах
+  branch: "test/PROD-001/fix-user-admin-races"
+  files_scope:
+    - "src/infrastructure/controllers/user/tests/user-admin.integration.test.ts"
+      steps:
+    - найти все статичные phone
+    - заменить на TestDataFactory.uniquePhone()
+    - проверить тесты
+      dod:
+    - все статичные phone заменены
+    - нет race conditions по phone
+    - тесты стабильны
+      estimated_time: 20 минут
+      gate:
+    - require: "Одобряю PROD-001-06"
+
+# PROD-002: 500 Errors
+
+- id: PROD-002-01
+  title: Добавить детальное логирование в authLoginAs
+  branch: "test/PROD-002/fix-user-profile-login"
+  files_scope:
+    - "tests/setup/auth.ts"
+      steps:
+    - открыть tests/setup/auth.ts
+    - найти функцию authLoginAs
+    - добавить try-catch с детальным логированием
+    - логировать status, body, email при ошибках
+      dod:
+    - логирование добавлено
+    - при ошибке видны детали
+    - помогает debugить проблемы
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-002-01"
+
+- id: PROD-002-02
+  title: Исследовать проблему LoginHistoryService
+  branch: "test/PROD-002/fix-user-profile-login"
+  files_scope:
+    - "src/infrastructure/services/auth/login-history.service.ts"
+    - "tests/setup/auth.ts"
+      steps:
+    - запустить user-profile тесты с логированием
+    - проанализировать stack trace
+    - проверить LoginHistoryService.create на async/await
+    - проверить FK constraints для login_history
+    - определить root cause
+      dod:
+    - причина ошибки идентифицирована
+    - план исправления определён
+    - задокументировано в комментарии/issue
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-002-02"
+
+- id: PROD-002-03
+  title: Исправить async в LoginHistoryService
+  branch: "test/PROD-002/fix-user-profile-login"
+  files_scope:
+    - "src/infrastructure/services/auth/login-history.service.ts"
+      steps:
+    - убедиться что метод create правильно async
+    - добавить proper error handling
+    - проверить что userId существует перед созданием
+    - добавить try-catch если нужно
+      dod:
+    - LoginHistoryService работает корректно
+    - нет uncaught promises
+    - FK constraints соблюдены
+    - async/await правильно используется
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-002-03"
+
+- id: PROD-002-04
+  title: Добавить cleanup login_history в тестах
+  branch: "test/PROD-002/fix-user-profile-login"
+  files_scope:
+    - "src/infrastructure/controllers/user/tests/user-profile.integration.test.ts"
+      steps:
+    - добавить afterEach с cleanup для login_history
+    - проверить что cleanup работает
+    - запустить тесты
+      dod:
+    - cleanup добавлен
+    - тесты стабильны
+    - нет 500 errors
+      estimated_time: 20 минут
+      gate:
+    - require: "Одобряю PROD-002-04"
+
+# PROD-003: Addresses & RBAC
+
+- id: PROD-003-01
+  title: Исправить FK constraint в address тестах
+  branch: "test/PROD-003/fix-user-addresses"
+  files_scope:
+    - "src/infrastructure/controllers/user-address/user-address.controller.integration.test.ts"
+      steps:
+    - использовать существующих пользователей из seeds
+    - получить user_id из seed пользователя (user@example.com)
+    - обновить тесты для использования этого user_id
+    - не создавать новых юзеров в address тестах
+      dod:
+    - FK constraints соблюдены
+    - используются seed пользователи
+    - нет constraint violations
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-003-01"
+
+- id: PROD-003-02
+  title: Добавить cleanup addresses в afterEach
+  branch: "test/PROD-003/fix-user-addresses"
+  files_scope:
+    - "src/infrastructure/controllers/user-address/user-address.controller.integration.test.ts"
+      steps:
+    - добавить afterEach с cleanup для addresses
+    - проверить что cleanup работает
+      dod:
+    - cleanup работает
+    - нет остатков данных между тестами
+    - тесты изолированы
+      estimated_time: 20 минут
+      gate:
+    - require: "Одобряю PROD-003-02"
+
+- id: PROD-003-03
+  title: Исправить undefined role в rbac тестах
+  branch: "test/PROD-003/fix-rbac-auth"
+  files_scope:
+    - "tests/integration/rbac.integration.test.ts"
+    - "db/seeders/20250101000000-roles.ts"
+      steps:
+    - проверить что seeds ролей запускаются перед тестами
+    - в beforeAll добавить проверку существования ролей
+    - если ролей нет - явно создать в beforeAll
+    - убедиться что роли доступны для тестов
+      dod:
+    - роли существуют перед тестами
+    - нет undefined role parameter
+    - rbac тесты проходят
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-003-03"
+
+- id: PROD-003-04
+  title: Добавить cleanup refresh_token в auth тестах
+  branch: "test/PROD-003/fix-rbac-auth"
+  files_scope:
+    - "tests/integration/auth-flow.integration.test.ts"
+      steps:
+    - добавить afterEach с cleanup для refresh_token
+    - проверить что cleanup работает
+      dod:
+    - cleanup добавлен
+    - auth flow тесты стабильны
+    - нет конфликтов токенов
+      estimated_time: 20 минут
+      gate:
+    - require: "Одобряю PROD-003-04"
+
+# PROD-004: Test Utilities
+
+- id: PROD-004-01
+  title: Создать TestCleanup utility
+  branch: "test/PROD-004/test-utilities"
+  files_scope:
+    - "tests/utils/test-cleanup.ts"
+    - "tests/utils/index.ts"
+      steps:
+    - создать tests/utils/test-cleanup.ts
+    - реализовать TestCleanup класс
+    - добавить методы cleanUsers, cleanOrders, cleanCart, cleanAll
+    - соблюдать правильный порядок (FK dependencies)
+    - экспортировать через index.ts
+      dod:
+    - TestCleanup создан
+    - методы работают
+    - правильный порядок cleanup (FK first)
+    - нет orphaned records
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-004-01"
+
+- id: PROD-004-02
+  title: Рефакторить тесты для использования TestCleanup
+  branch: "test/PROD-004/test-utilities"
+  files_scope:
+    - "tests/integration/\*_/_.test.ts"
+    - "src/infrastructure/controllers/**/tests/**/\*.test.ts"
+      steps:
+    - импортировать TestCleanup в каждом тесте
+    - заменить ручной cleanup на TestCleanup методы
+    - проверить все тесты
+    - убедиться что нет дублирования
+      dod:
+    - нет дублирования cleanup кода
+    - все тесты используют TestCleanup
+    - тесты проходят
+      estimated_time: 1.5 часа
+      gate:
+    - require: "Одобряю PROD-004-02"
+
+- id: PROD-004-03
+  title: Отключить SQL logging в тестах
+  branch: "test/PROD-004/test-utilities"
+  files_scope:
+    - "tests/setup/test-app.module.ts"
+    - ".test.env"
+      steps:
+    - в test-app.module.ts принудительно отключить logging
+    - добавить SQL_LOGGING=false в .test.env
+    - проверить что SQL не выводится при запуске тестов
+      dod:
+    - SQL logging отключен в тестах
+    - вывод чистый
+    - только test results видны
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-004-03"
+
+- id: PROD-004-04
+  title: Установить LOG_LEVEL=error в тестовом окружении
+  branch: "test/PROD-004/test-utilities"
+  files_scope:
+    - ".test.env"
+    - "tests/setup/test-app.module.ts"
+      steps:
+    - добавить LOG_LEVEL=error в .test.env
+    - убедиться что info/debug логи не выводятся
+    - проверить что только errors показываются
+      dod:
+    - только errors в тестах
+    - чистый вывод
+    - легко читать test results
+      estimated_time: 10 минут
+      gate:
+    - require: "Одобряю PROD-004-04"
+
+# Итоговые метрики для Testing Fixes
+
+success_criteria:
+quantitative: - total_failed_tests: 0 - test_stability: 100% (10 consecutive runs pass) - deterministic: true (any order works) - sql_logging_lines: 0
+qualitative: - cleanup_duplication: none (all use TestCleanup) - unique_test_data: always (TestDataFactory) - async_issues: none - fk_constraints: all satisfied
+
+checkpoints:
+after_prod_001: - user-admin tests: 0 failed - race conditions: fixed
+after_prod_002: - user-profile tests: 0 failed - 500 errors: fixed
+after_prod_003: - address tests: 0 failed - rbac tests: 0 failed
+after_prod_004: - test utilities: created - clean output: achieved
+
+next_steps:
+
+- переход к Security Hardening (PROD-010 series)
+- использовать TestDataFactory и TestCleanup в новых тестах
+- поддерживать чистоту вывода

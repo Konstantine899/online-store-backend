@@ -1,0 +1,351 @@
+# Deployment & CI/CD Execution Plan (Binding)
+
+binding: true
+module: mvp-deployment
+epic_ref: PROD-040-TO-042
+version: 1.0
+
+execution_policy:
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - каждая задача = один коммит - production-ready deployment - CI/CD best practices
+
+context:
+goal: Настроить CI/CD и production deployment
+timeline: Неделя 8 (12-16 часов)
+platforms: GitHub Actions, Railway, PostgreSQL
+target: live production API с automated checks
+
+tasks:
+
+# PROD-040: CI/CD Pipeline
+
+- id: PROD-040-01
+  title: Создать базовый GitHub Actions CI workflow
+  branch: "ci/PROD-040/github-actions"
+  files_scope:
+    - ".github/workflows/ci.yml"
+      steps:
+    - создать .github/workflows/ci.yml
+    - настроить trigger на push/PR к main/develop
+    - добавить PostgreSQL service
+    - setup Node.js 18 с npm cache
+    - npm ci для установки dependencies
+    - npm run lint
+    - npm run test:cov
+      dod:
+    - workflow создан
+    - тесты запускаются в CI
+    - PostgreSQL service работает
+      estimated_time: 1.5 часа
+      gate:
+    - require: "Одобряю PROD-040-01"
+
+- id: PROD-040-02
+  title: Добавить lint и type check steps
+  branch: "ci/PROD-040/github-actions"
+  files_scope:
+    - ".github/workflows/ci.yml"
+      steps:
+    - добавить step для ESLint
+    - добавить step для TypeScript build
+    - fail CI при ошибках lint
+    - fail CI при type errors
+      dod:
+    - lint блокирует при ошибках
+    - type check проходит
+    - code quality enforced
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-040-02"
+
+- id: PROD-040-03
+  title: Добавить database migrations check
+  branch: "ci/PROD-040/github-actions"
+  files_scope:
+    - ".github/workflows/ci.yml"
+      steps:
+    - добавить step для migrations
+    - npm run migration:run в db/
+    - настроить test database credentials
+    - fail при ошибках миграций
+      dod:
+    - migrations запускаются в CI
+    - блокирует при broken migrations
+    - database setup automated
+      estimated_time: 45 минут
+      gate:
+    - require: "Одобряю PROD-040-03"
+
+- id: PROD-040-04
+  title: Добавить coverage threshold check
+  branch: "ci/PROD-040/github-actions"
+  files_scope:
+    - ".github/workflows/ci.yml"
+      steps:
+    - npm run test:cov проверяет thresholds
+    - upload coverage to Codecov
+    - fail при coverage < threshold
+    - always upload даже при failure
+      dod:
+    - CI fails при низком coverage
+    - coverage reports uploaded
+    - badge доступен
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-040-04"
+
+- id: PROD-040-05
+  title: Optimize CI с npm cache
+  branch: "ci/PROD-040/github-actions"
+  files_scope:
+    - ".github/workflows/ci.yml"
+      steps:
+    - добавить cache для node_modules
+    - использовать actions/cache
+    - cache key based on package-lock.json
+    - verify что CI быстрее
+      dod:
+    - CI быстрее с cache
+    - cache hits работают
+    - build time улучшен
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-040-05"
+
+# PROD-041: Railway Production
+
+- id: PROD-041-01
+  title: Создать Railway account и проект
+  branch: "deploy/PROD-041/railway-setup"
+  files_scope:
+    - "docs/deployment/railway-setup.md"
+      steps:
+    - зарегистрироваться на railway.app
+    - подключить GitHub account
+    - создать новый проект
+    - документировать setup
+      dod:
+    - Railway account готов
+    - GitHub connected
+    - project created
+      estimated_time: 15 минут
+      gate:
+    - require: "Одобряю PROD-041-01"
+
+- id: PROD-041-02
+  title: Создать PostgreSQL на Railway
+  branch: "deploy/PROD-041/railway-setup"
+  files_scope:
+    - "docs/deployment/railway-setup.md"
+      steps:
+    - добавить PostgreSQL service в Railway
+    - скопировать DATABASE_URL
+    - записать credentials
+    - документировать
+      dod:
+    - PostgreSQL база создана
+    - credentials сохранены
+    - connection string готов
+      estimated_time: 10 минут
+      gate:
+    - require: "Одобряю PROD-041-02"
+
+- id: PROD-041-03
+  title: Настроить environment variables в Railway
+  branch: "deploy/PROD-041/railway-setup"
+  files_scope:
+    - "docs/deployment/railway-env.md"
+      steps:
+    - добавить все env из .env.example
+    - database config из Railway PostgreSQL
+    - сгенерировать новые JWT secrets для prod
+    - настроить ALLOWED_ORIGINS
+    - NODE_ENV=production
+    - LOG_LEVEL=info
+      dod:
+    - все env variables настроены
+    - production values используются
+    - секреты уникальные для prod
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-041-03"
+
+- id: PROD-041-04
+  title: Deploy приложения на Railway
+  branch: "deploy/PROD-041/railway-setup"
+  files_scope:
+    - "Railway dashboard"
+      steps:
+    - создать service из GitHub repo
+    - build command npm run build
+    - start command npm run start:prod
+    - deploy и проверить логи
+    - verify что app стартует
+      dod:
+    - app deployed
+    - логи показывают успешный старт
+    - no errors в startup
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-041-04"
+
+- id: PROD-041-05
+  title: Запустить migrations на production БД
+  branch: "deploy/PROD-041/railway-setup"
+  files_scope:
+    - "local terminal"
+      steps:
+    - подключиться к Railway БД локально
+    - запустить DATABASE_URL=<url> npm run migration:run
+    - запустить seeds для ролей
+    - verify что таблицы созданы
+      dod:
+    - миграции применены
+    - seeds запущены
+    - база готова к использованию
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-041-05"
+
+- id: PROD-041-06
+  title: Создать health check endpoints
+  branch: "feature/health/PROD-041/health-checks"
+  files_scope:
+    - "src/infrastructure/controllers/health/health.controller.ts"
+    - "src/infrastructure/controllers/health/health.module.ts"
+      steps:
+    - создать HealthController
+    - GET /health - basic uptime check
+    - GET /health/db - database connectivity check
+    - добавить в app.module.ts
+      dod:
+    - GET /health работает
+    - GET /health/db проверяет БД connection
+    - Railway может использовать для monitoring
+      estimated_time: 45 минут
+      gate:
+    - require: "Одобряю PROD-041-06"
+
+- id: PROD-041-07
+  title: Verify production deployment
+  branch: "deploy/PROD-041/railway-setup"
+  files_scope:
+    - "docs/deployment/verification.md"
+      steps:
+    - проверить https://[проект].railway.app/health
+    - проверить что Swagger закрыт в prod
+    - проверить auth flow через Postman
+    - проверить CORS headers
+    - записать production URL
+    - документировать
+      dod:
+    - API работает в production
+    - Swagger закрыт
+    - auth работает
+    - HTTPS enabled
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-041-07"
+
+# PROD-042: Docker Production
+
+- id: PROD-042-01
+  title: Создать multi-stage Dockerfile
+  branch: "docker/PROD-042/production-docker"
+  files_scope:
+    - "Dockerfile"
+      steps:
+    - создать build stage с npm ci и build
+    - создать production stage с node:18-alpine
+    - copy только dist и node_modules production
+    - minimize image size
+    - set proper CMD
+      dod:
+    - multi-stage build работает
+    - image size оптимизирован (<500MB)
+    - production ready
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-042-01"
+
+- id: PROD-042-02
+  title: Оптимизировать .dockerignore
+  branch: "docker/PROD-042/production-docker"
+  files_scope:
+    - ".dockerignore"
+      steps:
+    - исключить node_modules, dist, coverage
+    - исключить test-reports, .git
+    - исключить .env файлы
+    - исключить docs, .vscode, .cursor
+      dod:
+    - docker build быстрее
+    - image меньше
+    - security лучше (no secrets)
+      estimated_time: 15 минут
+      gate:
+    - require: "Одобряю PROD-042-02"
+
+- id: PROD-042-03
+  title: Создать docker-compose.prod.yml
+  branch: "docker/PROD-042/production-docker"
+  files_scope:
+    - "docker-compose.prod.yml"
+      steps:
+    - создать production compose file
+    - api service с build из Dockerfile
+    - postgres service с volumes
+    - env_file для .env.production
+    - restart policies (unless-stopped)
+      dod:
+    - production compose работает
+    - volumes для persistence
+    - restart автоматический
+      estimated_time: 1 час
+      gate:
+    - require: "Одобряю PROD-042-03"
+
+- id: PROD-042-04
+  title: Verify local production build
+  branch: "docker/PROD-042/production-docker"
+  files_scope:
+    - "local terminal"
+      steps:
+    - docker build -t online-store-api .
+    - docker-compose -f docker-compose.prod.yml up
+    - проверить что всё работает
+    - проверить health check
+    - проверить API endpoints
+      dod:
+    - docker build успешен
+    - compose up работает
+    - API доступен
+    - ready для production
+      estimated_time: 30 минут
+      gate:
+    - require: "Одобряю PROD-042-04"
+
+# Success Criteria для Deployment
+
+success_criteria:
+ci_cd: - github_actions_pipeline: working - lint_check: enabled - test_check: enabled - coverage_check: enabled - migrations_check: enabled - build_cache: optimized
+production_deployment: - railway_deployment: live - postgresql_database: configured - migrations_applied: true - seeds_run: true - env_variables: configured - health_checks: working - https: enabled
+docker: - multi_stage_dockerfile: optimized - dockerignore: complete - docker_compose_prod: working - image_size: <500MB
+
+live_urls:
+api: "https://[your-project].railway.app"
+health: "https://[your-project].railway.app/health"
+health_db: "https://[your-project].railway.app/health/db"
+swagger_dev: "http://localhost:3000/online-store/docs"
+
+checkpoints:
+after_prod_040: - CI pipeline: green - all checks: passing
+after_prod_041: - production API: live - database: working
+after_prod_042: - docker: production-ready
+
+next_steps:
+
+- переход к Documentation (PROD-050 series)
+- monitor production metrics
+- setup alerts для errors
