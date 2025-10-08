@@ -1,5 +1,6 @@
-import request from 'supertest';
 import { INestApplication, HttpStatus } from '@nestjs/common';
+import { Sequelize } from 'sequelize-typescript';
+import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { authLoginAs } from '../../../../../tests/setup/auth';
 
@@ -27,6 +28,17 @@ describe('User Addresses Integration Tests', () => {
 
     afterAll(async () => {
         await app.close();
+    });
+
+    afterEach(async () => {
+        const sequelize = app.get(Sequelize);
+
+        // Cleanup адресов user 13 (созданных в тестах)
+        await sequelize.query(`DELETE FROM user_address WHERE user_id = 13`);
+
+        // Cleanup временных данных (как в TEST-001 и TEST-002)
+        await sequelize.query(`DELETE FROM login_history WHERE user_id > 14`);
+        await sequelize.query(`DELETE FROM refresh_token WHERE user_id > 14`);
     });
 
     // ===== USER ADDRESSES ENDPOINTS =====
@@ -221,15 +233,7 @@ describe('User Addresses Integration Tests', () => {
                 ).is_default,
             ).toBe(false);
 
-            // Cleanup
-            await http
-                .delete(`/online-store/user-addresses/${id1}`)
-                .set('Authorization', `Bearer ${userToken}`)
-                .expect(HttpStatus.OK);
-            await http
-                .delete(`/online-store/user-addresses/${id2}`)
-                .set('Authorization', `Bearer ${userToken}`)
-                .expect(HttpStatus.OK);
+            // Cleanup выполнится автоматически в afterEach
         });
     });
 });
