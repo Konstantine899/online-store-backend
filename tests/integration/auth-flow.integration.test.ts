@@ -169,12 +169,15 @@ describe('Auth Flow (e2e integration)', () => {
 
     describe('Login flow', () => {
         it('должен успешно войти с корректными credentials', async () => {
+            // Создаём unique пользователя для этого теста
+            const { email, password } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
-                .send({
-                    email: 'admin@example.com',
-                    password: 'Password123!',
-                });
+                .send({ email, password });
 
             expect(response.status).toBe(HttpStatus.OK);
             expect(response.body).toHaveProperty('accessToken');
@@ -199,11 +202,14 @@ describe('Auth Flow (e2e integration)', () => {
         });
 
         it('должен вернуть 401 для неправильного пароля', async () => {
+            // Создаём unique пользователя
+            const { email } = await TestDataFactory.createUserWithRole(app, 'USER');
+
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
                 .send({
-                    email: 'admin@example.com',
-                    password: 'WrongPassword123!',
+                    email,
+                    password: 'WrongPassword123!', // Неправильный пароль
                 });
 
             expect(response.status).toBe(HttpStatus.UNAUTHORIZED);
@@ -223,13 +229,16 @@ describe('Auth Flow (e2e integration)', () => {
 
     describe('Refresh token rotation', () => {
         it('должен запретить использование старого refresh токена после ротации', async () => {
+            // Создаём unique пользователя для этого теста
+            const { email, password } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
             // Логинимся для получения refresh токена
             const loginResponse = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
-                .send({
-                    email: 'admin@example.com',
-                    password: 'Password123!',
-                });
+                .send({ email, password });
 
             const initialRefreshCookie = extractRefreshCookie(
                 loginResponse.headers['set-cookie'],
@@ -257,13 +266,16 @@ describe('Auth Flow (e2e integration)', () => {
         });
 
         it('должен разрешить использование нового refresh токена', async () => {
+            // Создаём unique пользователя для этого теста
+            const { email, password } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
             // Свежий логин для изолированного теста
             const loginResponse = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
-                .send({
-                    email: 'admin@example.com',
-                    password: 'Password123!',
-                });
+                .send({ email, password });
 
             const initialRefreshCookie = extractRefreshCookie(
                 loginResponse.headers['set-cookie'],
@@ -322,10 +334,14 @@ describe('Auth Flow (e2e integration)', () => {
 
     describe('Registration валидация', () => {
         it('должен отклонить регистрацию с существующим email', async () => {
+            // Создаём пользователя
+            const { email } = await TestDataFactory.createUserWithRole(app, 'USER');
+
+            // Пытаемся зарегистрировать ещё раз с тем же email
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
                 .send({
-                    email: 'admin@example.com', // Уже существует
+                    email, // Уже существует
                     password: 'SecurePass123!',
                 });
 
@@ -394,13 +410,16 @@ describe('Auth Flow (e2e integration)', () => {
 
     describe('Concurrent auth operations', () => {
         it('должен обрабатывать параллельные refresh requests корректно', async () => {
+            // Создаём unique пользователя для этого теста
+            const { email, password } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
             // Логинимся для получения refresh токена
             const loginResponse = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
-                .send({
-                    email: 'admin@example.com',
-                    password: 'Password123!',
-                });
+                .send({ email, password });
 
             const refreshCookie = extractRefreshCookie(
                 loginResponse.headers['set-cookie'],
