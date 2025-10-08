@@ -31,7 +31,10 @@ describe('User Flags Integration Tests', () => {
     // ===== FLAGS ENDPOINTS =====
     describe('PATCH /user/profile/flags', () => {
         it('200: updates flags with valid data', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             const flagsData = {
                 isActive: true,
                 isNewsletterSubscribed: true,
@@ -52,7 +55,10 @@ describe('User Flags Integration Tests', () => {
         });
 
         it('200: updates only provided flags', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             const flagsData = {
                 isActive: false,
                 isVipCustomer: true,
@@ -69,7 +75,10 @@ describe('User Flags Integration Tests', () => {
         });
 
         it('400: invalid data types', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             const invalidData = {
                 isActive: 'invalid_boolean',
                 isVipCustomer: 123,
@@ -94,8 +103,11 @@ describe('User Flags Integration Tests', () => {
         });
 
         it('200: accepts empty object', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
-            
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/flags')
                 .set('Authorization', `Bearer ${token}`)
@@ -107,7 +119,10 @@ describe('User Flags Integration Tests', () => {
         });
 
         it('400: null and undefined values in flags', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             const flagsData = {
                 isActive: null,
                 isVipCustomer: undefined,
@@ -123,8 +138,11 @@ describe('User Flags Integration Tests', () => {
         });
 
         it('400: array instead of object', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
-            
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/flags')
                 .set('Authorization', `Bearer ${token}`)

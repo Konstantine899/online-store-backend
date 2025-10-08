@@ -1,9 +1,9 @@
+import { RoleModel, UserModel } from '@app/domain/models';
 import { CreateUserDto } from '@app/infrastructure/dto';
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
 import { hash } from 'bcrypt';
 import { Sequelize } from 'sequelize-typescript';
-import { UserModel, RoleModel } from '@app/domain/models';
+import request from 'supertest';
 
 /**
  * TestDataFactory - генерация уникальных тестовых данных
@@ -101,7 +101,7 @@ export class TestDataFactory {
     /**
      * Создаёт пользователя напрямую в БД (быстрее чем через API)
      * Используется когда не нужна полная регистрация
-     * 
+     *
      * @param sequelize - Sequelize instance
      * @param overrides - переопределение полей
      * @returns userId нового пользователя
@@ -157,7 +157,7 @@ export class TestDataFactory {
     /**
      * Создаёт пользователя через API /registration и возвращает access token
      * Полный цикл регистрации (как настоящий пользователь)
-     * 
+     *
      * @param app - NestJS application
      * @param overrides - переопределение полей DTO
      * @returns { email, password, accessToken, userId }
@@ -193,7 +193,7 @@ export class TestDataFactory {
 
     /**
      * Логинит существующего пользователя и возвращает токен
-     * 
+     *
      * @param app - NestJS application
      * @param email - email пользователя
      * @param password - пароль пользователя
@@ -221,7 +221,7 @@ export class TestDataFactory {
     /**
      * Создаёт пользователя в БД с определённой ролью и возвращает токен
      * Комбинация createUserInDB + loginUser для быстрых тестов
-     * 
+     *
      * @param app - NestJS application
      * @param role - роль пользователя (USER, ADMIN, и т.д.)
      * @param overrides - переопределение полей
@@ -235,7 +235,12 @@ export class TestDataFactory {
             firstName: string;
             lastName: string;
         }> = {},
-    ): Promise<{ userId: number; email: string; password: string; token: string }> {
+    ): Promise<{
+        userId: number;
+        email: string;
+        password: string;
+        token: string;
+    }> {
         const sequelize = app.get(Sequelize);
         const { userId, email, password } = await this.createUserInDB(
             sequelize,

@@ -170,10 +170,8 @@ describe('Auth Flow (e2e integration)', () => {
     describe('Login flow', () => {
         it('должен успешно войти с корректными credentials', async () => {
             // Создаём unique пользователя для этого теста
-            const { email, password } = await TestDataFactory.createUserWithRole(
-                app,
-                'USER',
-            );
+            const { email, password } =
+                await TestDataFactory.createUserWithRole(app, 'USER');
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
@@ -203,7 +201,10 @@ describe('Auth Flow (e2e integration)', () => {
 
         it('должен вернуть 401 для неправильного пароля', async () => {
             // Создаём unique пользователя
-            const { email } = await TestDataFactory.createUserWithRole(app, 'USER');
+            const { email } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
@@ -230,10 +231,8 @@ describe('Auth Flow (e2e integration)', () => {
     describe('Refresh token rotation', () => {
         it('должен запретить использование старого refresh токена после ротации', async () => {
             // Создаём unique пользователя для этого теста
-            const { email, password } = await TestDataFactory.createUserWithRole(
-                app,
-                'USER',
-            );
+            const { email, password } =
+                await TestDataFactory.createUserWithRole(app, 'USER');
 
             // Логинимся для получения refresh токена
             const loginResponse = await request(app.getHttpServer())
@@ -267,10 +266,8 @@ describe('Auth Flow (e2e integration)', () => {
 
         it('должен разрешить использование нового refresh токена', async () => {
             // Создаём unique пользователя для этого теста
-            const { email, password } = await TestDataFactory.createUserWithRole(
-                app,
-                'USER',
-            );
+            const { email, password } =
+                await TestDataFactory.createUserWithRole(app, 'USER');
 
             // Свежий логин для изолированного теста
             const loginResponse = await request(app.getHttpServer())
@@ -335,7 +332,10 @@ describe('Auth Flow (e2e integration)', () => {
     describe('Registration валидация', () => {
         it('должен отклонить регистрацию с существующим email', async () => {
             // Создаём пользователя
-            const { email } = await TestDataFactory.createUserWithRole(app, 'USER');
+            const { email } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
 
             // Пытаемся зарегистрировать ещё раз с тем же email
             const response = await request(app.getHttpServer())
@@ -411,10 +411,8 @@ describe('Auth Flow (e2e integration)', () => {
     describe('Concurrent auth operations', () => {
         it('должен обрабатывать параллельные refresh requests корректно', async () => {
             // Создаём unique пользователя для этого теста
-            const { email, password } = await TestDataFactory.createUserWithRole(
-                app,
-                'USER',
-            );
+            const { email, password } =
+                await TestDataFactory.createUserWithRole(app, 'USER');
 
             // Логинимся для получения refresh токена
             const loginResponse = await request(app.getHttpServer())

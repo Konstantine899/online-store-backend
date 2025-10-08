@@ -41,7 +41,10 @@ describe('User Verification Integration Tests', () => {
         });
 
         it('200: email verification request with auth', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
 
             await request(app.getHttpServer())
                 .post('/online-store/user/verify/email/request')
@@ -50,7 +53,10 @@ describe('User Verification Integration Tests', () => {
         });
 
         it('200: phone verification request with auth', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
 
             await request(app.getHttpServer())
                 .post('/online-store/user/verify/phone/request')
@@ -59,7 +65,10 @@ describe('User Verification Integration Tests', () => {
         });
 
         it('400: invalid verification codes', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
 
             await request(app.getHttpServer())
                 .post('/online-store/user/verify/email')
@@ -69,7 +78,10 @@ describe('User Verification Integration Tests', () => {
         });
 
         it('200: admin can verify user email/phone', async () => {
-            const admin = await TestDataFactory.createUserWithRole(app, 'ADMIN');
+            const admin = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
             const user = await TestDataFactory.createUserWithRole(app, 'USER');
 
             // Admin верифицирует email пользователя
@@ -86,7 +98,10 @@ describe('User Verification Integration Tests', () => {
         });
 
         it('404: admin cannot verify non-existent user', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'ADMIN');
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
 
             await request(app.getHttpServer())
                 .patch('/online-store/user/admin/verify/999999/email')

@@ -2,7 +2,6 @@ import { INestApplication } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
-import { authLoginAs } from '../../../../../tests/setup/auth';
 import { TestCleanup, TestDataFactory } from '../../../../../tests/utils';
 
 describe('User Profile Integration Tests', () => {
@@ -33,9 +32,12 @@ describe('User Profile Integration Tests', () => {
     // ===== PHONE ENDPOINTS =====
     describe('PATCH /user/profile/phone', () => {
         it('200: updates phone with valid number', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             const uniquePhone = TestDataFactory.uniquePhone();
-            
+
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/phone')
                 .set('Authorization', `Bearer ${token}`)
@@ -47,8 +49,11 @@ describe('User Profile Integration Tests', () => {
         });
 
         it('400: rejects invalid phone format', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
-            
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/phone')
                 .set('Authorization', `Bearer ${token}`)
@@ -72,7 +77,7 @@ describe('User Profile Integration Tests', () => {
             const user1 = await TestDataFactory.createUserWithRole(app, 'USER');
             const user2 = await TestDataFactory.createUserWithRole(app, 'USER');
             const uniquePhone = TestDataFactory.uniquePhone();
-            
+
             // User 1 устанавливает уникальный телефон
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/phone')
@@ -92,7 +97,10 @@ describe('User Profile Integration Tests', () => {
     // ===== PROFILE ENDPOINTS =====
     describe('PATCH /user/profile', () => {
         it('200: user updates own profile', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             const payload = {
                 firstName: 'Владимир',
                 lastName: 'Владимиров',
@@ -111,8 +119,11 @@ describe('User Profile Integration Tests', () => {
         });
 
         it('200: partial update only firstName', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
-            
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
             // Сначала устанавливаем полный профиль
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile')
@@ -151,8 +162,11 @@ describe('User Profile Integration Tests', () => {
     // ===== PASSWORD MANAGEMENT =====
     describe('Password management', () => {
         it('400: wrong old password', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
-            
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/password')
                 .set('Authorization', `Bearer ${token}`)
@@ -164,8 +178,11 @@ describe('User Profile Integration Tests', () => {
     // ===== MISC ENDPOINTS =====
     describe('Misc endpoints', () => {
         it('200: GET /user/me with minimal body', async () => {
-            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
-            
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
             const res = await request(app.getHttpServer())
                 .get('/online-store/user/me')
                 .set('Authorization', `Bearer ${token}`)
