@@ -1,11 +1,13 @@
-import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
+import { Sequelize } from 'sequelize-typescript';
+import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { authLoginAs } from '../../../../../tests/setup/auth';
 
 describe('User Profile Integration Tests', () => {
     let app: INestApplication;
     let userToken: string;
+    let adminToken: string;
 
     beforeAll(async () => {
         process.env.NODE_ENV = 'test';
@@ -23,10 +25,28 @@ describe('User Profile Integration Tests', () => {
 
         // Получаем токены для тестирования
         userToken = await authLoginAs(app, 'user');
+        adminToken = await authLoginAs(app, 'admin');
     });
 
     afterAll(async () => {
         await app.close();
+    });
+
+    afterEach(async () => {
+        const sequelize = app.get(Sequelize);
+
+        // Сбрасываем user 13 (user@example.com) к дефолтным значениям из seed
+        await sequelize.query(`
+            UPDATE user SET
+                phone = '+79990000013',
+                first_name = NULL,
+                last_name = NULL
+            WHERE id = 13
+        `);
+
+        // Cleanup временных данных (как в user-admin тестах)
+        await sequelize.query(`DELETE FROM login_history WHERE user_id > 14`);
+        await sequelize.query(`DELETE FROM refresh_token WHERE user_id > 14`);
     });
 
     // ===== PHONE ENDPOINTS =====
@@ -63,17 +83,17 @@ describe('User Profile Integration Tests', () => {
         });
 
         it('409: rejects duplicate phone for another user', async () => {
-            const tokenUser = await authLoginAs(app, 'user');
+            // User 13 устанавливает телефон
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/phone')
-                .set('Authorization', `Bearer ${tokenUser}`)
+                .set('Authorization', `Bearer ${userToken}`)
                 .send({ phone: '+79990000998' })
                 .expect(200);
 
-            const tokenAdmin = await authLoginAs(app, 'admin');
+            // Admin (user 14) пытается установить тот же телефон - должна быть ошибка 409
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/phone')
-                .set('Authorization', `Bearer ${tokenAdmin}`)
+                .set('Authorization', `Bearer ${adminToken}`)
                 .send({ phone: '+79990000998' })
                 .expect(409);
         });
@@ -100,6 +120,14 @@ describe('User Profile Integration Tests', () => {
         });
 
         it('200: partial update only firstName', async () => {
+            // Сначала устанавливаем полный профиль
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile')
+                .set('Authorization', `Bearer ${userToken}`)
+                .send({ firstName: 'Иван', lastName: 'Иванов' })
+                .expect(200);
+
+            // Теперь обновляем только firstName
             const payload = {
                 firstName: 'Алексей',
             };
@@ -111,8 +139,8 @@ describe('User Profile Integration Tests', () => {
                 .expect(200);
 
             expect(response.body.firstName).toBe(payload.firstName);
-            // lastName остался прежним
-            expect(response.body.lastName).toBe('Владимиров');
+            // lastName остался прежним (Иванов)
+            expect(response.body.lastName).toBe('Иванов');
         });
 
         it('401: requires auth', async () => {
