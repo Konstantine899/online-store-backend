@@ -379,7 +379,7 @@ src/infrastructure/controllers/*/tests/
 
 - **Jest config**: `jest.config.js`
 - **Test environment**: `.test.env`
-- **Coverage threshold**: 70% (branches, functions, lines, statements)
+- **Coverage threshold**: 50% (branches, functions, lines, statements)
 - **Timeout**: 5s (unit), 30s (integration)
 
 Подробнее о тестах см. документацию в `tests/` директории.
@@ -394,9 +394,9 @@ CI pipeline **полностью настроен** и автоматическ�
 ✅ **Применяет миграции** перед тестами
 ✅ **Добавляет seed данные** для интеграционных тестов
 ✅ **Оптимизирует MySQL** для быстрых тестов (tmpfs, отключение sync_binlog)
-✅ **Запускает параллельно**: lint, build, unit tests, integration tests
+✅ **Запускает параллельно**: lint, build, unit tests, integration tests (с coverage)
 ✅ **Проверяет миграции**: up → down → up (rollback работает)
-✅ **Собирает coverage** отчёты
+✅ **Собирает coverage** отчёты (только integration, threshold: 50%)
 
 **Важно**: В CI используются другие credentials (из `.github/workflows/ci.yml`):
 

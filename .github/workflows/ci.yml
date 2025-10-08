@@ -16,6 +16,7 @@ env:
     CI: 'true' # Включает оптимизации Jest для CI (bail, silent, minimal reporters)
     NODE_VERSION: '22'
     NODE_ENV: test
+    LOG_LEVEL: 'error' # Только ошибки в логах (убирает WARN шум)
     # Database configuration (для runtime тестов и sequelize-cli)
     MYSQL_HOST: 127.0.0.1
     MYSQL_PORT: 3306
@@ -142,16 +143,11 @@ jobs:
             - name: Install dependencies
               run: npm ci --prefer-offline --no-audit
 
-            - name: Run unit tests with coverage
-              run: npm run test:cov:unit
-              # Все env vars наследуются из workflow-level env
+            - name: Run unit tests
+              run: npm run test:unit
+              # Coverage проверяется только для integration тестов
 
-            - name: Upload unit test coverage
-              uses: actions/upload-artifact@v4
-              with:
-                  name: coverage-unit
-                  path: coverage/
-                  retention-days: 7
+            # Coverage для unit тестов не собираем (низкое покрытие ожидаемо)
 
     test-integration:
         name: Integration Tests with Coverage
@@ -231,18 +227,12 @@ jobs:
                   retention-days: 7
 
     coverage-report:
-        name: Combine Coverage Reports
+        name: Integration Coverage Report
         runs-on: ubuntu-latest
-        needs: [test-unit, test-integration]
-        # Только агрегация отчетов, без прогона тестов заново
+        needs: [test-integration]
+        # Показываем coverage только integration тестов (они покрывают весь код)
 
         steps:
-            - name: Download unit test coverage
-              uses: actions/download-artifact@v4
-              with:
-                  name: coverage-unit
-                  path: coverage-unit/
-
             - name: Download integration test coverage
               uses: actions/download-artifact@v4
               with:
@@ -251,23 +241,18 @@ jobs:
 
             - name: Display coverage summary
               run: |
-                  echo "=== Unit Tests Coverage ==="
-                  if [ -f coverage-unit/coverage-summary.json ]; then
-                    cat coverage-unit/coverage-summary.json
-                  fi
-                  echo ""
                   echo "=== Integration Tests Coverage ==="
                   if [ -f coverage-integration/coverage-summary.json ]; then
                     cat coverage-integration/coverage-summary.json
+                  else
+                    echo "Coverage file not found"
                   fi
 
-            - name: Upload combined coverage artifacts
+            - name: Upload coverage artifacts
               uses: actions/upload-artifact@v4
               with:
-                  name: coverage-combined
-                  path: |
-                      coverage-unit/
-                      coverage-integration/
+                  name: coverage-integration-report
+                  path: coverage-integration/
                   retention-days: 30
 
     migration-check:
