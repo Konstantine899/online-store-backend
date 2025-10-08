@@ -23,9 +23,6 @@ describe('User Profile Integration Tests', () => {
     });
 
     afterAll(async () => {
-        const sequelize = app.get(Sequelize);
-        // Cleanup всех созданных пользователей (id > 14)
-        await TestCleanup.cleanUsers(sequelize);
         await app.close();
     });
 

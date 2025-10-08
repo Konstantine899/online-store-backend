@@ -24,8 +24,6 @@ describe('User Preferences Integration Tests', () => {
 
     afterAll(async () => {
         if (app) {
-            const sequelize = app.get(Sequelize);
-            await TestCleanup.cleanUsers(sequelize);
             await app.close();
         }
     });

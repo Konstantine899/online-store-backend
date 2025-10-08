@@ -24,8 +24,6 @@ describe('User Admin Integration Tests', () => {
     }, 30000);
 
     afterAll(async () => {
-        const sequelize = app.get(Sequelize);
-        await TestCleanup.cleanUsers(sequelize);
         await app.close();
     });
 

@@ -23,8 +23,6 @@ describe('User Verification Integration Tests', () => {
     });
 
     afterAll(async () => {
-        const sequelize = app.get(Sequelize);
-        await TestCleanup.cleanUsers(sequelize);
         await app.close();
     });
 

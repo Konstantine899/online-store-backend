@@ -38,8 +38,6 @@ describe('RBAC (e2e integration)', () => {
     });
 
     afterAll(async () => {
-        const sequelize = app.get(Sequelize);
-        await TestCleanup.cleanUsers(sequelize);
         await app?.close();
     });
 
