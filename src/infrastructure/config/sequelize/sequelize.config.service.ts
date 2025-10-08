@@ -1,28 +1,28 @@
 import {
-    SequelizeModuleOptions,
-    SequelizeOptionsFactory,
-} from '@nestjs/sequelize';
+    BrandModel,
+    CartModel,
+    CartProductModel,
+    CategoryModel,
+    NotificationModel,
+    NotificationTemplateModel,
+    OrderItemModel,
+    OrderModel,
+    ProductModel,
+    ProductPropertyModel,
+    RatingModel,
+    RefreshTokenModel,
+    RoleModel,
+    UserAddressModel,
+    UserModel,
+    UserRoleModel,
+} from '@app/domain/models';
+import { dbToken } from '@app/infrastructure/config/sequelize/db-token';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
-    ProductModel,
-    CategoryModel,
-    BrandModel,
-    ProductPropertyModel,
-    UserModel,
-    RoleModel,
-    UserRoleModel,
-    RefreshTokenModel,
-    CartModel,
-    CartProductModel,
-    RatingModel,
-    OrderModel,
-    OrderItemModel,
-    UserAddressModel,
-    NotificationModel,
-    NotificationTemplateModel,
-} from '@app/domain/models';
-import { dbToken } from '@app/infrastructure/config/sequelize/db-token';
+    SequelizeModuleOptions,
+    SequelizeOptionsFactory,
+} from '@nestjs/sequelize';
 
 @Injectable()
 export class SequelizeConfigService implements SequelizeOptionsFactory {

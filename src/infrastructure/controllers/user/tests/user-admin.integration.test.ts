@@ -1,9 +1,9 @@
-import request from 'supertest';
+import { UpdateUserDto } from '@app/infrastructure/dto';
 import { INestApplication } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
+import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { authLoginAs } from '../../../../../tests/setup/auth';
-import { UpdateUserDto } from '@app/infrastructure/dto';
 
 describe('User Admin Integration Tests', () => {
     let app: INestApplication;
@@ -37,7 +37,7 @@ describe('User Admin Integration Tests', () => {
 
         // Сбрасываем флаги пользователя 13 (user@example.com) в дефолтное состояние
         await sequelize.query(`
-            UPDATE user SET 
+            UPDATE user SET
                 is_blocked = 0,
                 is_suspended = 0,
                 is_deleted = 0,
@@ -53,7 +53,7 @@ describe('User Admin Integration Tests', () => {
 
         // Очищаем добавленные роли (оставляем только CUSTOMER с role_id = 10)
         await sequelize.query(`
-            DELETE FROM user_role 
+            DELETE FROM user_role
             WHERE user_id = 13 AND role_id != 10
         `);
 
