@@ -376,20 +376,24 @@ phase_6_status: pending
 # PHASE 1 - Фактический статус (08.10.2025):
 
 # ✅ TEST-005: Test utilities созданы (TestDataFactory, TestCleanup, TestTransaction)
-
 # ✅ TEST-006: SQL логирование отключено в тестах
+# ❌ TEST-001/002/003/004: НЕ ВЫПОЛНЕНО - критическая нестабильность тестов
 
-# ⚠️ TEST-001/002: Частично - 334 passed, 1 failed (flaky: partial update lastName)
+# Детальное расследование (08.10.2025, 4 часа):
+# - Тесты показывают flaky rate 0-23% (от 335 passed до 257 passed)
+# - Проблема: shared mutable state (users 13/14 модифицируются между тестами)
+# - TestCleanup не восстанавливает email/роли корректно
+# - Попытки исправления TestCleanup сломали 39-73 тестов (ухудшение)
+# - Попытки добавить resetUser14() привели к 401/500 errors из-за неверных role IDs
+# - Транзакционная изоляция невозможна (HTTP tests через отдельные DB connections)
 
-# ⚠️ TEST-003: user-addresses интегрированы в user-profile тесты
+# Выводы:
+# - Точечные исправления НЕ работают - только ухудшают ситуацию
+# - Нужен фундаментальный рефакторинг (unique users per test) - 10-15 часов
+# - ИЛИ принять текущую нестабильность и добавить retry в CI
 
-# ✅ TEST-004: RBAC тесты проходят, auth-flow нестабильны (зависит от workers)
-
-#
-
-# Текущие метрики: 335 tests total, 334 passed (99.7%), 1 flaky test
-
-# Проблемы: race conditions при --maxWorkers=1, нужны транзакции для изоляции
+# Текущие метрики: 335 tests, 257-335 passed (77-100%), highly flaky
+# Проблемы: shared state, broken cleanup, no transaction isolation, worker count sensitivity
 
 checkpoints:
 week_2:
