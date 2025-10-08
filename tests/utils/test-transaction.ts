@@ -1,34 +1,34 @@
-import { Sequelize } from 'sequelize-typescript';
 import { Transaction } from 'sequelize';
+import { Sequelize } from 'sequelize-typescript';
 
 /**
  * TestTransaction - изоляция тестов через транзакции
- * 
+ *
  * Назначение:
  * - Автоматический rollback после каждого теста
  * - Полная изоляция тестов без ручного cleanup
  * - Быстрее чем cleanup (rollback vs DELETE queries)
- * 
+ *
  * Использование:
  * ```typescript
  * describe('My tests with transaction isolation', () => {
  *     let transaction: Transaction;
- *     
+ *
  *     beforeEach(async () => {
  *         const sequelize = app.get(Sequelize);
  *         transaction = await TestTransaction.start(sequelize);
  *     });
- *     
+ *
  *     afterEach(async () => {
  *         await TestTransaction.rollback(transaction);
  *     });
- *     
+ *
  *     it('test will be rolled back automatically', async () => {
  *         // Все изменения в БД будут отменены после теста
  *     });
  * });
  * ```
- * 
+ *
  * Ограничения:
  * - Не работает с тестами, которые делают commit внутри (например, сервисы с транзакциями)
  * - Не подходит для тестов с параллельными запросами к одной записи
@@ -62,7 +62,7 @@ export class TestTransaction {
 
     /**
      * Wrapper для тестовой функции с автоматическим rollback
-     * 
+     *
      * @example
      * ```typescript
      * it('test with auto rollback', async () => {
@@ -88,16 +88,16 @@ export class TestTransaction {
 
     /**
      * Создает wrapper для всего test suite с транзакционной изоляцией
-     * 
+     *
      * @example
      * ```typescript
      * describe('My isolated suite', () => {
      *     const { beforeEach, afterEach } = TestTransaction.suite(() => app.get(Sequelize));
-     *     
+     *
      *     // Используем возвращенные hooks
      *     beforeEach();
      *     afterEach();
-     *     
+     *
      *     it('test 1', async () => { ... });
      *     it('test 2', async () => { ... });
      * });

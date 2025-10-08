@@ -2,12 +2,12 @@ import { CreateUserDto } from '@app/infrastructure/dto';
 
 /**
  * TestDataFactory - генерация уникальных тестовых данных
- * 
+ *
  * Назначение:
  * - Предотвращение race conditions через уникальные данные
  * - Избежание конфликтов unique constraints
  * - DRY принцип для тестовых данных
- * 
+ *
  * Использование:
  * ```typescript
  * const email = TestDataFactory.uniqueEmail();
@@ -39,7 +39,9 @@ export class TestDataFactory {
      * Создает DTO для создания пользователя с уникальными данными
      * @param overrides - переопределение полей
      */
-    static createUserDto(overrides: Partial<CreateUserDto> = {}): CreateUserDto {
+    static createUserDto(
+        overrides: Partial<CreateUserDto> = {},
+    ): CreateUserDto {
         return {
             email: this.uniqueEmail(),
             password: 'SecurePass123!',
@@ -51,7 +53,14 @@ export class TestDataFactory {
      * Генерирует случайное имя для тестов
      */
     static randomFirstName(): string {
-        const names = ['Иван', 'Петр', 'Сергей', 'Алексей', 'Михаил', 'Дмитрий'];
+        const names = [
+            'Иван',
+            'Петр',
+            'Сергей',
+            'Алексей',
+            'Михаил',
+            'Дмитрий',
+        ];
         return names[Math.floor(Math.random() * names.length)];
     }
 

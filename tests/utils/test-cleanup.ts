@@ -2,13 +2,13 @@ import { Sequelize } from 'sequelize-typescript';
 
 /**
  * TestCleanup - централизованная очистка БД между тестами
- * 
+ *
  * Назначение:
  * - Предотвращение database pollution
  * - Изоляция тестов друг от друга
  * - Правильный порядок cleanup (FK constraints)
  * - DRY принцип для cleanup кода
- * 
+ *
  * Использование:
  * ```typescript
  * afterEach(async () => {
@@ -16,7 +16,7 @@ import { Sequelize } from 'sequelize-typescript';
  *     await TestCleanup.cleanUsers(sequelize);
  * });
  * ```
- * 
+ *
  * Или для полного cleanup:
  * ```typescript
  * afterEach(async () => {
@@ -29,7 +29,7 @@ export class TestCleanup {
     /**
      * Очищает временных пользователей (id > 14) и связанные данные
      * Порядок важен - соблюдаются FK constraints
-     * 
+     *
      * Удаляет:
      * - user_role (связи пользователь-роль)
      * - refresh_token (refresh токены)
@@ -48,7 +48,7 @@ export class TestCleanup {
 
     /**
      * Сбрасывает user 13 (user@example.com) к дефолтным значениям
-     * 
+     *
      * Используется в тестах, которые модифицируют существующего пользователя:
      * - user-admin тесты (флаги)
      * - user-profile тесты (phone, имя)
@@ -56,7 +56,7 @@ export class TestCleanup {
     static async resetUser13(sequelize: Sequelize): Promise<void> {
         // Сброс всех флагов к дефолту
         await sequelize.query(`
-            UPDATE user SET 
+            UPDATE user SET
                 is_blocked = 0,
                 is_suspended = 0,
                 is_deleted = 0,
@@ -75,7 +75,7 @@ export class TestCleanup {
 
         // Очищаем добавленные роли (оставляем только CUSTOMER с role_id = 10)
         await sequelize.query(`
-            DELETE FROM user_role 
+            DELETE FROM user_role
             WHERE user_id = 13 AND role_id != 10
         `);
 
