@@ -1,0 +1,951 @@
+# Test Coverage Improvement Plan (SaaS Production-Ready)
+
+**Goal**: Достижение 70%+ coverage для production-ready SaaS продукта  
+**Status**: 🔴 IN PROGRESS  
+**Owner**: Development Team  
+**Timeline**: 9 недель  
+
+---
+
+## Current State
+
+**Metrics**:
+- Tests: 335 total (320 passing, 15 failing)
+- Coverage: ~47% functions, ~50% lines, ~50% statements
+- Issues: Race conditions, SQL logging noise, missing edge cases
+
+**Coverage by Type**:
+- Unit tests: 159 tests, ~25% coverage (expected - моки)
+- Integration tests: 176 tests, ~47% coverage (реальная БД + HTTP)
+
+**What's Covered**:
+- ✅ Basic auth flow (login, refresh, logout)
+- ✅ RBAC checks (admin/user permissions)
+- ✅ CRUD operations (users, products, orders)
+- ✅ Main business processes
+
+**What's Missing**:
+- ❌ Edge cases и error handlers (~30% кода)
+- ❌ Security tests (brute force, injection, XSS)
+- ❌ Race condition scenarios
+- ❌ External service failures
+- ❌ Complete E2E user journeys
+
+---
+
+## Target State (Production-Ready SaaS)
+
+**Metrics**:
+- Tests: 469+ total (100% passing)
+- Coverage: 75% global, 85%+ critical modules
+- CI: All checks passing, no flaky tests
+
+**Coverage Requirements**:
+
+```javascript
+// Global (all code)
+global: {
+    branches: 70%,
+    functions: 70%,
+    lines: 75%,
+    statements: 75%
+}
+
+// Critical modules (auth, security, payments)
+auth/**/*.ts: 85%+ all metrics
+guards/**/*.ts: 85%+ all metrics
+payment/**/*.ts: 85%+ all metrics
+
+// Important modules (controllers, services)
+controllers/**/*.ts: 70%+ all metrics
+services/**/*.ts: 65%+ all metrics
+```
+
+---
+
+## Phase 1: Fix Current Issues (Week 1-2)
+
+**Priority**: 🔴 CRITICAL  
+**Goal**: 0 failed tests, clean logs, stable foundation  
+
+### Task 1.1: Fix Failing Tests (15 → 0)
+
+**Problem**: Race conditions в БД, 500 errors при логине
+
+**Root Causes**:
+- Параллельное выполнение тестов изменяет одни и те же данные
+- Отсутствие изоляции между тестами
+- Нет cleanup после каждого теста
+
+**Solution**:
+
+```typescript
+// Вариант A: Транзакции (рекомендуется)
+describe('User Tests', () => {
+    let transaction: Transaction;
+
+    beforeEach(async () => {
+        transaction = await sequelize.transaction();
+    });
+
+    afterEach(async () => {
+        await transaction.rollback();
+    });
+
+    it('should create user', async () => {
+        const user = await userRepo.create(data, { transaction });
+        // ... assertions
+    });
+});
+
+// Вариант B: Cleanup в afterEach
+afterEach(async () => {
+    await UserModel.destroy({ where: { email: 'test@example.com' } });
+    await LoginHistoryModel.destroy({ where: { userId: testUserId } });
+});
+
+// Вариант C: Уникальные данные для каждого теста
+const uniqueEmail = `test-${Date.now()}-${Math.random()}@example.com`;
+```
+
+**Files to Fix**:
+1. `src/infrastructure/controllers/user/tests/user-admin.integration.test.ts`
+2. `src/infrastructure/controllers/user/tests/user-profile.integration.test.ts`
+3. `src/infrastructure/controllers/user/tests/user-flags.integration.test.ts`
+4. `src/infrastructure/controllers/user/tests/user-addresses.integration.test.ts`
+5. `tests/integration/auth-flow.integration.test.ts`
+6. `tests/integration/rbac.integration.test.ts`
+
+**Acceptance Criteria**:
+- ✅ All 335 tests passing
+- ✅ No race conditions
+- ✅ Tests can run in any order
+- ✅ Repeatable results
+
+**Estimate**: 8-12 hours
+
+---
+
+### Task 1.2: Disable SQL Logging
+
+**Problem**: SQL логи захламляют вывод тестов
+
+**Solution**:
+
+```typescript
+// tests/setup/test-app.module.ts
+SequelizeModule.forRootAsync({
+    useFactory: () => ({
+        ...config,
+        logging: false, // ← Принудительно отключить
+        benchmark: false,
+    })
+})
+```
+
+**Also update**: `.test.env`
+```env
+SQL_LOGGING=false
+SEQUELIZE_LOGGING=false
+LOG_LEVEL=error  # Только ошибки
+```
+
+**Acceptance Criteria**:
+- ✅ Нет SQL запросов в console
+- ✅ Только ошибки и критичные логи
+- ✅ Чистый вывод тестов
+
+**Estimate**: 1-2 hours
+
+---
+
+### Task 1.3: Add Test Utilities
+
+**Create**: `tests/utils/test-helpers.ts`
+
+```typescript
+export class TestDataFactory {
+    static uniqueEmail(): string {
+        return `test-${Date.now()}-${Math.random()}@example.com`;
+    }
+
+    static uniquePhone(): string {
+        return `+7999${Math.floor(Math.random() * 10000000)}`;
+    }
+
+    static createUser(overrides = {}) {
+        return {
+            email: this.uniqueEmail(),
+            password: 'Password123!',
+            firstName: 'Test',
+            lastName: 'User',
+            ...overrides
+        };
+    }
+}
+
+export class TestCleanup {
+    static async cleanUsers(emails: string[]) {
+        await UserModel.destroy({ where: { email: emails } });
+    }
+
+    static async cleanAll() {
+        await Promise.all([
+            OrderModel.destroy({ truncate: true }),
+            CartModel.destroy({ truncate: true }),
+            LoginHistoryModel.destroy({ truncate: true }),
+        ]);
+    }
+}
+```
+
+**Estimate**: 2-3 hours
+
+---
+
+**Phase 1 Total**: 11-17 hours (~2 weeks part-time)
+
+---
+
+## Phase 2: Auth & Security Tests (Week 3-4)
+
+**Priority**: 🔴 CRITICAL  
+**Goal**: 85%+ coverage для auth & security модулей  
+**Tests to Add**: +57  
+
+### Task 2.1: Authentication Flow Tests (+30 tests)
+
+**File**: `tests/integration/auth/auth-comprehensive.integration.test.ts`
+
+**Coverage areas**:
+
+```typescript
+describe('Registration Flow', () => {
+    // Positive cases
+    it('201: register with valid data');
+    it('201: register with optional fields');
+    
+    // Validation
+    it('400: reject invalid email format');
+    it('400: reject weak password');
+    it('400: reject invalid phone format');
+    it('400: sanitize XSS in firstName/lastName');
+    
+    // Business rules
+    it('409: reject duplicate email');
+    it('409: reject duplicate phone');
+    
+    // Side effects
+    it('should send verification email');
+    it('should create user with default flags');
+    it('should assign default USER role');
+});
+
+describe('Login Flow', () => {
+    // Success
+    it('200: login with valid email');
+    it('200: login with valid phone');
+    it('200: return accessToken + refreshToken');
+    it('200: set HttpOnly refresh cookie');
+    
+    // Failures
+    it('401: reject wrong password');
+    it('401: reject non-existent user');
+    it('403: reject unverified email');
+    it('403: reject blocked user');
+    it('403: reject suspended user');
+    
+    // Tracking
+    it('should create login_history record');
+    it('should track IP and user agent');
+});
+
+describe('Password Management', () => {
+    // Reset flow
+    it('200: send reset email with token');
+    it('200: validate reset token');
+    it('200: update password with valid token');
+    
+    // Validation
+    it('400: reject weak new password');
+    it('400: reject expired token (>1h)');
+    it('400: reject already used token');
+    it('404: reject invalid token');
+    
+    // Change password
+    it('200: change password with correct old password');
+    it('400: reject wrong old password');
+});
+
+describe('Refresh Token Flow', () => {
+    it('200: refresh with valid token');
+    it('200: implement token rotation (new refresh token)');
+    it('200: revoke old refresh token');
+    it('401: reject expired refresh token');
+    it('401: reject revoked refresh token');
+    it('401: reject invalid refresh token');
+});
+```
+
+**Estimate**: 16-20 hours
+
+---
+
+### Task 2.2: Brute Force Protection Tests (+12 tests)
+
+**File**: `tests/integration/security/brute-force.integration.test.ts`
+
+**Note**: Использовать `setupTestAppWithRateLimit()` вместо `setupTestApp()`
+
+```typescript
+describe('Login Rate Limiting', () => {
+    it('200: allow 5 login attempts within 15min');
+    it('429: block 6th login attempt');
+    it('should return Retry-After header');
+    it('should track by IP address');
+    it('200: reset counter after 15min timeout');
+    it('should not block different users from same IP');
+});
+
+describe('Registration Rate Limiting', () => {
+    it('201: allow 3 registrations per minute');
+    it('429: block 4th registration');
+    it('should track by IP for registration');
+});
+
+describe('Refresh Rate Limiting', () => {
+    it('200: allow 10 refresh attempts in 5min');
+    it('429: block 11th refresh attempt');
+});
+
+describe('Password Reset Rate Limiting', () => {
+    it('should limit reset requests per email');
+});
+```
+
+**Estimate**: 8-10 hours
+
+---
+
+### Task 2.3: Input Validation & Security (+15 tests)
+
+**File**: `tests/integration/security/input-validation.integration.test.ts`
+
+```typescript
+describe('SQL Injection Prevention', () => {
+    it('400: reject SQL in name field');
+    it('400: reject SQL in search queries');
+    it('should use parameterized queries (не падает)');
+});
+
+describe('XSS Prevention', () => {
+    it('should sanitize <script> tags from input');
+    it('should sanitize onclick/onerror handlers');
+    it('should escape HTML entities');
+    it('should remove javascript: URLs');
+});
+
+describe('NoSQL Injection Prevention', () => {
+    it('400: reject $where operators');
+    it('400: reject function() in queries');
+});
+
+describe('Path Traversal Prevention', () => {
+    it('400: reject ../ in file paths');
+    it('400: reject absolute paths in uploads');
+});
+
+describe('CSRF Protection', () => {
+    it('should validate origin header');
+    it('should validate CORS');
+});
+
+describe('Header Injection', () => {
+    it('should sanitize user-agent header');
+});
+```
+
+**Estimate**: 10-12 hours
+
+---
+
+**Phase 2 Total**: 34-42 hours (~4 weeks part-time)
+
+---
+
+## Phase 3: RBAC Tests (Week 5)
+
+**Priority**: 🔴 CRITICAL  
+**Goal**: 85%+ coverage для authorization logic  
+**Tests to Add**: +20  
+
+### Task 3.1: Role Hierarchy Tests (+12 tests)
+
+**File**: `tests/integration/rbac/role-hierarchy.integration.test.ts`
+
+```typescript
+describe('Role Access Levels', () => {
+    // SUPER_ADMIN
+    it('SUPER_ADMIN: can access all endpoints');
+    it('SUPER_ADMIN: can manage all tenants');
+    
+    // TENANT_ADMIN
+    it('TENANT_ADMIN: can manage own tenant users');
+    it('403: TENANT_ADMIN cannot access other tenant data');
+    
+    // MANAGER
+    it('MANAGER: can view reports');
+    it('403: MANAGER cannot manage users');
+    
+    // USER
+    it('USER: can access own data');
+    it('403: USER cannot access other user data');
+    it('403: USER cannot access admin endpoints');
+    
+    // GUEST
+    it('401: GUEST requires authentication');
+    it('GUEST: can browse public catalog');
+});
+
+describe('Role Assignment', () => {
+    it('200: SUPER_ADMIN can assign any role');
+    it('403: ADMIN cannot assign SUPER_ADMIN role');
+    it('403: USER cannot assign roles');
+});
+```
+
+**Estimate**: 8-10 hours
+
+---
+
+### Task 3.2: Permission Matrix Tests (+8 tests)
+
+**File**: `tests/integration/rbac/permission-matrix.integration.test.ts`
+
+```typescript
+describe('Endpoint Permission Matrix', () => {
+    const matrix = [
+        { endpoint: 'POST /user', roles: ['SUPER_ADMIN', 'ADMIN'], forbidden: ['USER'] },
+        { endpoint: 'DELETE /user/:id', roles: ['SUPER_ADMIN'], forbidden: ['ADMIN', 'USER'] },
+        { endpoint: 'GET /user/me', roles: ['USER', 'ADMIN'], forbidden: ['GUEST'] },
+        // ... etc
+    ];
+
+    matrix.forEach(({ endpoint, roles, forbidden }) => {
+        roles.forEach(role => {
+            it(`${role}: can access ${endpoint}`);
+        });
+        
+        forbidden.forEach(role => {
+            it(`${role}: 403 on ${endpoint}`);
+        });
+    });
+});
+```
+
+**Estimate**: 6-8 hours
+
+---
+
+**Phase 3 Total**: 14-18 hours (~1 week part-time)
+
+---
+
+## Phase 4: Business Logic & Edge Cases (Week 6-7)
+
+**Priority**: 🟡 HIGH  
+**Goal**: 70%+ coverage для business logic  
+**Tests to Add**: +52  
+
+### Task 4.1: User Management Tests (+25 tests)
+
+**File**: `tests/integration/user/user-management.integration.test.ts`
+
+```typescript
+describe('User CRUD', () => {
+    it('201: create user with all fields');
+    it('200: update user profile');
+    it('200: soft delete user (is_deleted = true)');
+    it('200: restore deleted user');
+    it('409: duplicate email on create');
+    it('409: duplicate email on update');
+    it('404: update non-existent user');
+    it('should handle concurrent updates (last-write-wins)');
+});
+
+describe('User Flags Management', () => {
+    // Boolean flags
+    it('200: toggle is_newsletter_subscribed');
+    it('200: toggle is_vip_customer');
+    it('200: block/unblock user');
+    it('200: suspend/unsuspend user');
+    it('200: verify/unverify email');
+    it('200: premium upgrade/downgrade');
+    
+    // Flag combinations
+    it('should prevent: blocked + active');
+    it('should prevent: deleted + active');
+    it('should track flag change history');
+});
+
+describe('User Addresses', () => {
+    it('201: add first address (auto default)');
+    it('201: add second address (not default)');
+    it('200: set different default address');
+    it('200: update address');
+    it('200: delete address');
+    it('should auto-reassign default on delete');
+    it('400: validate required fields');
+    it('should limit max addresses per user');
+});
+
+describe('User Preferences', () => {
+    it('200: update language');
+    it('200: update timezone');
+    it('200: update theme');
+    it('400: validate JSON structure');
+});
+```
+
+**Estimate**: 16-20 hours
+
+---
+
+### Task 4.2: Error Handling Tests (+15 tests)
+
+**File**: `tests/integration/errors/error-handling.integration.test.ts`
+
+```typescript
+describe('Database Errors', () => {
+    it('should retry on deadlock');
+    it('should rollback on constraint violation');
+    it('500: handle connection timeout gracefully');
+});
+
+describe('External Service Failures', () => {
+    it('should handle email service down');
+    it('should queue failed emails for retry');
+    it('should implement circuit breaker');
+});
+
+describe('Validation Errors', () => {
+    it('400: return detailed validation messages');
+    it('400: validate nested objects');
+    it('400: validate array items');
+});
+
+describe('File Upload Errors', () => {
+    it('413: reject too large file');
+    it('415: reject unsupported MIME type');
+    it('400: validate file extension');
+});
+
+describe('Business Logic Errors', () => {
+    it('400: prevent negative quantities');
+    it('400: prevent negative prices');
+    it('409: prevent double order submission');
+});
+```
+
+**Estimate**: 10-12 hours
+
+---
+
+### Task 4.3: Race Condition Tests (+12 tests)
+
+**File**: `tests/integration/concurrency/race-conditions.integration.test.ts`
+
+```typescript
+describe('Inventory Race Conditions', () => {
+    it('should handle 2 users buying last item');
+    it('should use pessimistic locking');
+    it('409: second user gets out-of-stock');
+});
+
+describe('Cart Race Conditions', () => {
+    it('should handle concurrent cart updates');
+    it('should prevent double-add same product');
+});
+
+describe('Order Race Conditions', () => {
+    it('should prevent duplicate order creation');
+    it('should handle concurrent checkouts');
+});
+
+describe('Payment Race Conditions', () => {
+    it('should prevent double charge');
+    it('should handle retry with idempotency key');
+});
+
+describe('User Update Race Conditions', () => {
+    it('should handle concurrent profile updates');
+    it('should resolve with optimistic locking or last-write-wins');
+});
+```
+
+**Estimate**: 10-14 hours
+
+---
+
+**Phase 4 Total**: 36-46 hours (~2 weeks part-time)
+
+---
+
+## Phase 5: Coverage Configuration (Week 8)
+
+**Priority**: 🟡 HIGH  
+**Goal**: Enforce coverage thresholds per module  
+
+### Task 5.1: Configure Per-Module Thresholds
+
+**File**: `jest.config.js`
+
+```javascript
+coverageThreshold: {
+    global: {
+        branches: 70,
+        functions: 70,
+        lines: 75,
+        statements: 75
+    },
+    
+    // CRITICAL: Auth & Security (85%+)
+    './src/infrastructure/services/auth/**/*.ts': {
+        branches: 85,
+        functions: 85,
+        lines: 90,
+        statements: 90
+    },
+    './src/infrastructure/common/guards/**/*.ts': {
+        branches: 85,
+        functions: 85,
+        lines: 90,
+        statements: 90
+    },
+    './src/infrastructure/common/strategies/**/*.ts': {
+        branches: 85,
+        functions: 85,
+        lines: 90,
+        statements: 90
+    },
+    
+    // HIGH: User & Order Management (80%+)
+    './src/infrastructure/services/user/**/*.ts': {
+        branches: 80,
+        functions: 80,
+        lines: 85,
+        statements: 85
+    },
+    './src/infrastructure/services/order/**/*.ts': {
+        branches: 75,
+        functions: 75,
+        lines: 80,
+        statements: 80
+    },
+    
+    // MEDIUM: Controllers (70%+)
+    './src/infrastructure/controllers/**/*.ts': {
+        branches: 70,
+        functions: 70,
+        lines: 75,
+        statements: 75
+    },
+    
+    // LOW: Services general (65%+)
+    './src/infrastructure/services/**/*.ts': {
+        branches: 65,
+        functions: 65,
+        lines: 70,
+        statements: 70
+    },
+    
+    // EXCLUDED: No coverage requirements
+    './src/**/*.dto.ts': { branches: 0, functions: 0, lines: 0, statements: 0 },
+    './src/**/*.response.ts': { branches: 0, functions: 0, lines: 0, statements: 0 },
+    './src/**/*.interface.ts': { branches: 0, functions: 0, lines: 0, statements: 0 },
+    './src/**/*.module.ts': { branches: 0, functions: 0, lines: 0, statements: 0 },
+}
+```
+
+**Estimate**: 2-3 hours
+
+---
+
+### Task 5.2: Update CI Configuration
+
+**File**: `.github/workflows/ci.yml`
+
+```yaml
+- name: Run integration tests with coverage
+  run: npm run test:cov:integration
+
+- name: Check coverage thresholds
+  run: |
+    if ! npm run test:cov:integration; then
+      echo "❌ Coverage threshold not met"
+      exit 1
+    fi
+```
+
+**Estimate**: 1 hour
+
+---
+
+**Phase 5 Total**: 3-4 hours (~1 week setup)
+
+---
+
+## Phase 6: E2E Critical Flows (Week 9)
+
+**Priority**: 🟢 MEDIUM  
+**Goal**: Complete user journeys from start to finish  
+**Tests to Add**: +5  
+
+### Task 6.1: E2E User Journeys
+
+**File**: `tests/e2e/critical-flows.e2e.test.ts`
+
+```typescript
+describe('E2E: New User Onboarding', () => {
+    it('Complete flow: Registration → Email Verification → First Login → Profile Setup', async () => {
+        // 1. POST /auth/registration
+        const regRes = await request(app).post('/auth/registration').send({
+            email: 'newuser@example.com',
+            password: 'SecurePass123!',
+            firstName: 'New',
+            lastName: 'User'
+        });
+        expect(regRes.status).toBe(201);
+
+        // 2. GET verification code from DB (имитация email click)
+        const code = await VerificationCodeModel.findOne({ 
+            where: { email: 'newuser@example.com' } 
+        });
+
+        // 3. POST /auth/verify-email
+        const verifyRes = await request(app).post('/auth/verify-email').send({
+            code: code.code
+        });
+        expect(verifyRes.status).toBe(200);
+
+        // 4. POST /auth/login
+        const loginRes = await request(app).post('/auth/login').send({
+            email: 'newuser@example.com',
+            password: 'SecurePass123!'
+        });
+        expect(loginRes.status).toBe(200);
+        const token = loginRes.body.accessToken;
+
+        // 5. PATCH /user/profile (complete profile)
+        const profileRes = await request(app)
+            .patch('/user/profile')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ phone: '+79991234567', city: 'Moscow' });
+        expect(profileRes.status).toBe(200);
+
+        // 6. Verify profile is completed
+        const meRes = await request(app)
+            .get('/user/me')
+            .set('Authorization', `Bearer ${token}`);
+        expect(meRes.body.is_profile_completed).toBe(true);
+    });
+});
+
+describe('E2E: Shopping Journey', () => {
+    it('Browse → Add to Cart → Update Quantity → Checkout → Payment → Order Created', async () => {
+        // Полный флоу покупки
+    });
+});
+
+describe('E2E: Admin User Management', () => {
+    it('Admin Login → Create User → Assign Role → Update Flags → Soft Delete → Restore', async () => {
+        // Полный флоу управления пользователями
+    });
+});
+```
+
+**Estimate**: 10-12 hours
+
+---
+
+**Phase 6 Total**: 10-12 hours (~1 week)
+
+---
+
+## Roadmap Summary
+
+| Phase | Priority | Tests | Coverage | Hours | Weeks |
+|-------|----------|-------|----------|-------|-------|
+| **Phase 1**: Fix Issues | 🔴 CRITICAL | +0 | 47% → 50% | 11-17h | 1-2 |
+| **Phase 2**: Auth & Security | 🔴 CRITICAL | +57 | 50% → 60% | 34-42h | 3-4 |
+| **Phase 3**: RBAC | 🔴 CRITICAL | +20 | 60% → 65% | 14-18h | 5 |
+| **Phase 4**: Business Logic | 🟡 HIGH | +52 | 65% → 72% | 36-46h | 6-7 |
+| **Phase 5**: Configuration | 🟡 HIGH | +0 | 72% → 75% | 3-4h | 8 |
+| **Phase 6**: E2E Flows | 🟢 MEDIUM | +5 | 75% | 10-12h | 9 |
+| **TOTAL** | - | **+134** | **47% → 75%** | **108-139h** | **9 weeks** |
+
+**Part-time estimate**: 12-15 hours/week (~3 часа/день)  
+**Full-time estimate**: 3-4 weeks (40 hours/week)
+
+---
+
+## Success Metrics
+
+### Quantitative:
+- ✅ Tests: 335 → 469 (+40%)
+- ✅ Coverage global: 47% → 75% (+60%)
+- ✅ Coverage critical modules: 47% → 85%+ (+80%)
+- ✅ Passing rate: 96% → 100%
+- ✅ CI pipeline: Green on all checks
+
+### Qualitative:
+- ✅ Уверенность в стабильности для production deploy
+- ✅ Соответствие SaaS quality standards
+- ✅ SLA compliance readiness
+- ✅ Security audit preparation
+- ✅ Customer trust & professional image
+
+---
+
+## Monitoring & Progress Tracking
+
+### Weekly Checkpoints:
+
+```bash
+# Every Monday: Run coverage report
+npm run test:cov
+
+# Expected results by week:
+Week 2:  50% coverage, 0 failed tests ✅
+Week 4:  60% coverage, +57 auth tests ✅
+Week 5:  65% coverage, +20 RBAC tests ✅
+Week 7:  72% coverage, +52 business tests ✅
+Week 8:  75% coverage, thresholds configured ✅
+Week 9:  75% coverage, +5 E2E tests ✅
+```
+
+### Daily Progress Log:
+
+```markdown
+## Week 1
+- [x] Day 1: Исправлен user-preferences.integration.test.ts
+- [ ] Day 2: Исправить user-admin race conditions
+- [ ] Day 3: Исправить user-profile 500 errors
+- [ ] Day 4: Добавить test utilities
+- [ ] Day 5: Отключить SQL logging
+
+## Week 2
+- [ ] Day 1: Проверка всех тестов (0 failed)
+- [ ] Day 2: Review code coverage gaps
+- [ ] Day 3-5: Buffer для доработок
+```
+
+---
+
+## Risks & Mitigation
+
+### Risk 1: Race Conditions остаются
+**Impact**: HIGH  
+**Probability**: MEDIUM  
+**Mitigation**:
+- Use transactions для изоляции
+- Use unique test data (Date.now() + random)
+- Run tests sequentially for problematic suites (maxWorkers: 1)
+
+### Risk 2: Медленные тесты (>60s)
+**Impact**: MEDIUM  
+**Probability**: HIGH  
+**Mitigation**:
+- tmpfs для MySQL (уже есть в CI)
+- Minimize seed data
+- Parallel test execution where safe
+- Cache test app initialization
+
+### Risk 3: Flaky tests (intermittent failures)
+**Impact**: HIGH  
+**Probability**: MEDIUM  
+**Mitigation**:
+- Deterministic test data
+- Proper cleanup (afterEach/afterAll)
+- Avoid time-based assertions (use polling)
+- Retry failed tests (jest-retry)
+
+### Risk 4: Coverage threshold блокирует PR
+**Impact**: LOW  
+**Probability**: LOW  
+**Mitigation**:
+- Start with 50%, gradually increase
+- Per-module thresholds (strict for critical, relaxed for others)
+- Allow coverage decrease for new features (temporary)
+
+---
+
+## Dependencies & Prerequisites
+
+**Technical**:
+- ✅ MySQL Docker container (port 3308)
+- ✅ Test database with migrations + seeds
+- ✅ Jest configured with projects (unit/integration)
+- ✅ CI pipeline with MySQL service
+
+**Knowledge**:
+- ✅ NestJS testing patterns
+- ✅ Sequelize transactions
+- ✅ Supertest for HTTP assertions
+- 🔄 Advanced mocking strategies (Phase 2+)
+- 🔄 E2E testing patterns (Phase 6)
+
+**Tools**:
+- ✅ jest, supertest, @nestjs/testing
+- 🔄 jest-retry (для flaky tests)
+- 🔄 @faker-js/faker (для test data generation)
+
+---
+
+## Next Steps
+
+### Immediate (This Week):
+
+1. ✅ Review and approve this plan
+2. 🔄 Reset test database: `npm run db:reset:test`
+3. 🔄 Run tests to verify current state: `npm run test`
+4. 🔄 Начать исправление падающих тестов (Phase 1, Task 1.1)
+
+### Commands:
+
+```bash
+# Start work
+git checkout dev
+git pull origin dev
+git checkout -b test/phase1-fix-failing-tests
+
+# Run tests
+npm run test
+
+# Fix one file at a time
+npm run test:integration -- --testPathPattern="user-admin"
+
+# Commit atomically
+git add <fixed-file>
+git commit -m "fix(tests): resolve race condition in user-admin tests"
+```
+
+---
+
+## Approval & Sign-off
+
+**Plan Status**: 📋 READY FOR APPROVAL
+
+**Requires approval from**:
+- [ ] Tech Lead / Senior Developer
+- [ ] Product Owner (for timeline)
+- [ ] QA Lead (for test strategy)
+
+**Approval command**: `Одобряю testing-coverage-plan`
+
+---
+
+**Created**: 2025-10-08  
+**Last Updated**: 2025-10-08  
+**Version**: 1.0  
+**Status**: 🔴 Awaiting Approval
