@@ -1,4 +1,4 @@
-import { INestApplication, HttpStatus } from '@nestjs/common';
+import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../setup/app';
@@ -6,14 +6,14 @@ import { authLoginAs } from '../setup/auth';
 
 /**
  * E2E тесты для RBAC (Role-Based Access Control)
- * 
+ *
  * Цель: проверить корректную работу контроля доступа на основе ролей
  * - USER не может получить доступ к ADMIN endpoints → 403
  * - ADMIN может получить доступ к ADMIN endpoints → 200
  * - Guest (без токена) не может получить доступ к защищённым endpoints → 401
  * - Публичные endpoints доступны всем → 200
  * - Проверка различных защищённых endpoints
- * 
+ *
  * Оптимизации производительности:
  * - Параллельный логин admin + user через Promise.all (↓50% времени setup)
  * - Использование authLoginAs helper для DRY
@@ -55,8 +55,9 @@ describe('RBAC (e2e integration)', () => {
 
     describe('Guest (без токена)', () => {
         it('должен вернуть 401 при доступе к /auth/check без токена', async () => {
-            const response = await request(app.getHttpServer())
-                .get('/online-store/auth/check');
+            const response = await request(app.getHttpServer()).get(
+                '/online-store/auth/check',
+            );
 
             expect(response.status).toBe(HttpStatus.UNAUTHORIZED);
             expect(response.body).toHaveProperty('message');
@@ -92,8 +93,9 @@ describe('RBAC (e2e integration)', () => {
 
     describe('Публичные endpoints (доступны всем)', () => {
         it('должен разрешить доступ к health endpoint без токена → 200', async () => {
-            const response = await request(app.getHttpServer())
-                .get('/online-store/health');
+            const response = await request(app.getHttpServer()).get(
+                '/online-store/health',
+            );
 
             expect(response.status).toBe(HttpStatus.OK);
             expect(response.body).toHaveProperty('status');
@@ -102,8 +104,9 @@ describe('RBAC (e2e integration)', () => {
 
     describe('Проверка сообщений об ошибках RBAC', () => {
         it('должен вернуть корректное русское сообщение об ошибке для 401', async () => {
-            const response = await request(app.getHttpServer())
-                .get('/online-store/auth/check');
+            const response = await request(app.getHttpServer()).get(
+                '/online-store/auth/check',
+            );
 
             expect(response.status).toBe(HttpStatus.UNAUTHORIZED);
             expect(response.body).toHaveProperty('message');
@@ -113,4 +116,3 @@ describe('RBAC (e2e integration)', () => {
         });
     });
 });
-
