@@ -104,7 +104,7 @@ export class TestDataFactory {
      *
      * @param sequelize - Sequelize instance
      * @param overrides - переопределение полей
-     * @returns userId нового пользователя
+     * @returns userId, email, password, id нового пользователя
      */
     static async createUserInDB(
         sequelize: Sequelize,
@@ -116,7 +116,12 @@ export class TestDataFactory {
             lastName: string;
             role: string;
         }> = {},
-    ): Promise<{ userId: number; email: string; password: string }> {
+    ): Promise<{
+        userId: number;
+        email: string;
+        password: string;
+        id: number;
+    }> {
         this.userCounter++;
         const email = overrides.email || this.uniqueEmail();
         const password = overrides.password || 'TestPass123!';
@@ -151,7 +156,7 @@ export class TestDataFactory {
             },
         );
 
-        return { userId: user.id, email, password };
+        return { userId: user.id, email, password, id: user.id };
     }
 
     /**
@@ -240,6 +245,7 @@ export class TestDataFactory {
         email: string;
         password: string;
         token: string;
+        user: { userId: number; email: string };
     }> {
         const sequelize = app.get(Sequelize);
         const { userId, email, password } = await this.createUserInDB(
@@ -249,6 +255,12 @@ export class TestDataFactory {
 
         const token = await this.loginUser(app, email, password);
 
-        return { userId, email, password, token };
+        return {
+            userId,
+            email,
+            password,
+            token,
+            user: { userId, email },
+        };
     }
 }

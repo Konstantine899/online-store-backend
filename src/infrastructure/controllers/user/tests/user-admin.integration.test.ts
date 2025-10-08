@@ -85,11 +85,12 @@ describe('User Admin Integration Tests', () => {
         let targetUserId: number;
 
         beforeAll(async () => {
+            const sequelize = app.get(Sequelize);
             // Создаём админа, юзера и target user для этого describe блока
             const [admin, user, targetUser] = await Promise.all([
                 TestDataFactory.createUserWithRole(app, 'ADMIN'),
                 TestDataFactory.createUserWithRole(app, 'USER'),
-                TestDataFactory.createUserInDB(app),
+                TestDataFactory.createUserInDB(sequelize),
             ]);
             adminToken = admin.token;
             userToken = user.token;
@@ -208,10 +209,11 @@ describe('User Admin Integration Tests', () => {
         });
 
         it('200: admin can update user profile', async () => {
+            const sequelize = app.get(Sequelize);
             const { token: adminToken } =
                 await TestDataFactory.createUserWithRole(app, 'ADMIN');
             const { id: targetUserId } =
-                await TestDataFactory.createUserInDB(app);
+                await TestDataFactory.createUserInDB(sequelize);
 
             const payload = {
                 firstName: 'Петр',
@@ -232,10 +234,11 @@ describe('User Admin Integration Tests', () => {
         });
 
         it('409: duplicate email on update', async () => {
+            const sequelize = app.get(Sequelize);
             const { token: adminToken, user: admin } =
                 await TestDataFactory.createUserWithRole(app, 'ADMIN');
             const { id: targetUserId } =
-                await TestDataFactory.createUserInDB(app);
+                await TestDataFactory.createUserInDB(sequelize);
 
             const payload: Partial<UpdateUserDto> = {
                 email: admin.email, // Попытка установить email админа
@@ -251,10 +254,11 @@ describe('User Admin Integration Tests', () => {
     // ===== ROLE MANAGEMENT =====
     describe('Role management', () => {
         it('200: admin can add and remove roles', async () => {
+            const sequelize = app.get(Sequelize);
             const { token: adminToken } =
                 await TestDataFactory.createUserWithRole(app, 'ADMIN');
             const { id: targetUserId } =
-                await TestDataFactory.createUserInDB(app);
+                await TestDataFactory.createUserInDB(sequelize);
 
             // Добавляем роль ADMIN пользователю, затем удаляем ADMIN
             await request(app.getHttpServer())
