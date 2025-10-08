@@ -211,6 +211,9 @@ Swagger - доступен по [http://localhost:5000/online-store/docs](http:/
 
 **Статистика**: 24 test suites, 335 тестов (unit + integration)
 
+⚠️ **Известная проблема:** ~10% integration тестов нестабильны (flaky) из-за shared state. 
+Автоматический retry включён (`jest.retryTimes(1)`). Подробнее: [docs/KNOWN_FLAKY_TESTS.md](docs/KNOWN_FLAKY_TESTS.md)
+
 ---
 
 ### Требования для тестов

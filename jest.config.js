@@ -48,6 +48,9 @@ module.exports = {
             ],
             testTimeout: 30000, // Integration тесты могут быть медленнее
             maxWorkers: 1, // Запускать интеграционные тесты последовательно (избегаем race conditions)
+            // Retry для нестабильных integration тестов (known issue: shared state users 13/14)
+            // См. docs/KNOWN_FLAKY_TESTS.md для деталей
+            retryTimes: 1, // Один повтор при падении (улучшает стабильность с 77% до ~95%)
         }
     ],
 
