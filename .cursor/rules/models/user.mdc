@@ -1,0 +1,1956 @@
+# Система пользователей (User System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы пользователей для ecommerce приложения с базовыми полями профиля, адресами, ролями и флагами для управления согласиями, статусами и персонализацией.
+
+## Основные требования
+- **Базовый профиль** - email, пароль, имя, телефон
+- **Адреса пользователей** - несколько адресов для доставки
+- **Роли и права** - USER, ADMIN, MANAGER
+- **Флаги согласий** - newsletter, marketing, cookies
+- **Статусы пользователя** - active, verified, vip, beta
+- **Профиль и настройки** - предпочтения, уведомления
+
+## Структура базы данных
+
+### Таблица `user` (расширенная)
+```sql
+CREATE TABLE user (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    phone VARCHAR(20),
+    date_of_birth DATE,
+    avatar_url VARCHAR(500),
+    email_verified_at TIMESTAMP,
+    phone_verified_at TIMESTAMP,
+    last_login_at TIMESTAMP,
+    is_active BOOLEAN DEFAULT true,
+    is_newsletter_subscribed BOOLEAN DEFAULT false,
+    is_marketing_consent BOOLEAN DEFAULT false,
+    is_cookie_consent BOOLEAN DEFAULT false,
+    is_profile_completed BOOLEAN DEFAULT false,
+    is_vip_customer BOOLEAN DEFAULT false,
+    is_beta_tester BOOLEAN DEFAULT false,
+    is_blocked BOOLEAN DEFAULT false,
+    is_verified BOOLEAN DEFAULT false,
+    is_premium BOOLEAN DEFAULT false,
+    is_email_verified BOOLEAN DEFAULT false,
+    is_phone_verified BOOLEAN DEFAULT false,
+    is_terms_accepted BOOLEAN DEFAULT false,
+    is_privacy_accepted BOOLEAN DEFAULT false,
+    is_age_verified BOOLEAN DEFAULT false,
+    is_two_factor_enabled BOOLEAN DEFAULT false,
+    is_deleted BOOLEAN DEFAULT false,
+    is_suspended BOOLEAN DEFAULT false,
+    is_affiliate BOOLEAN DEFAULT false,
+    is_employee BOOLEAN DEFAULT false,
+    is_high_value BOOLEAN DEFAULT false,
+    is_wholesale BOOLEAN DEFAULT false,
+    preferred_language VARCHAR(10) DEFAULT 'ru',
+    timezone VARCHAR(50) DEFAULT 'Europe/Moscow',
+    notification_preferences JSONB DEFAULT '{}',
+    theme_preference VARCHAR(20) DEFAULT 'light',
+    default_language VARCHAR(10) DEFAULT 'ru',
+    translations JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `user_addresses`
+```sql
+CREATE TABLE user_addresses (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(20) NOT NULL DEFAULT 'shipping' CHECK (type IN ('shipping', 'billing')),
+    is_default BOOLEAN DEFAULT false,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    company VARCHAR(200),
+    address_line_1 VARCHAR(255) NOT NULL,
+    address_line_2 VARCHAR(255),
+    city VARCHAR(100) NOT NULL,
+    state VARCHAR(100),
+    postal_code VARCHAR(20),
+    country VARCHAR(100) NOT NULL DEFAULT 'Russia',
+    phone VARCHAR(20),
+    instructions TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `user_roles` (существующая)
+```sql
+CREATE TABLE user_roles (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, role_id)
+);
+```
+
+## Модели Sequelize
+
+### User Model (расширенная)
+```typescript
+// src/domain/models/user.model.ts
+import { Model, DataType, Column, Table, HasMany, BelongsToMany } from 'sequelize-typescript';
+import { Op } from 'sequelize';
+import { UserAddressModel } from './user-address.model';
+import { UserRoleModel } from './user-role.model';
+import { RoleModel } from './role.model';
+
+interface IUserProfile {
+    notifications?: {
+        email?: boolean;
+        sms?: boolean;
+        push?: boolean;
+        marketing?: boolean;
+    };
+    preferences?: {
+        currency?: string;
+        theme?: string;
+        language?: string;
+    };
+}
+
+interface IUserModel {
+    id: number;
+    email: string;
+    password: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    dateOfBirth?: Date;
+    avatarUrl?: string;
+    emailVerifiedAt?: Date;
+    phoneVerifiedAt?: Date;
+    lastLoginAt?: Date;
+    isActive: boolean;
+    isNewsletterSubscribed: boolean;
+    isMarketingConsent: boolean;
+    isCookieConsent: boolean;
+    isProfileCompleted: boolean;
+    isVipCustomer: boolean;
+    isBetaTester: boolean;
+    isBlocked: boolean;
+    isVerified: boolean;
+    isPremium: boolean;
+    isEmailVerified: boolean;
+    isPhoneVerified: boolean;
+    isTermsAccepted: boolean;
+    isPrivacyAccepted: boolean;
+    isAgeVerified: boolean;
+    isTwoFactorEnabled: boolean;
+    isDeleted: boolean;
+    isSuspended: boolean;
+    isAffiliate: boolean;
+    isEmployee: boolean;
+    isHighValue: boolean;
+    isWholesale: boolean;
+    preferredLanguage: string;
+    timezone: string;
+    notificationPreferences: IUserProfile;
+    themePreference: string;
+    defaultLanguage: string;
+    translations: any;
+    addresses: UserAddressModel[];
+    roles: RoleModel[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IUserCreationAttributes {
+    email: string;
+    password: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    isNewsletterSubscribed?: boolean;
+    isMarketingConsent?: boolean;
+    isCookieConsent?: boolean;
+    isBlocked?: boolean;
+    isVerified?: boolean;
+    isPremium?: boolean;
+    isEmailVerified?: boolean;
+    isPhoneVerified?: boolean;
+    isTermsAccepted?: boolean;
+    isPrivacyAccepted?: boolean;
+    isAgeVerified?: boolean;
+    isTwoFactorEnabled?: boolean;
+    isDeleted?: boolean;
+    isSuspended?: boolean;
+    isAffiliate?: boolean;
+    isEmployee?: boolean;
+    isHighValue?: boolean;
+    isWholesale?: boolean;
+    themePreference?: string;
+    defaultLanguage?: string;
+    translations?: any;
+}
+
+@Table({
+    tableName: 'user',
+    underscored: true,
+    timestamps: true,
+    defaultScope: {
+        attributes: { 
+            exclude: ['password', 'updatedAt'] 
+        },
+    },
+    scopes: {
+        withPassword: {
+            attributes: { exclude: [] },
+        },
+        forAuth: {
+            attributes: ['id', 'email', 'isActive'],
+            include: [{
+                model: RoleModel,
+                attributes: ['id', 'name'],
+                through: { attributes: [] }
+            }]
+        },
+        withRoles: {
+            include: [{
+                model: RoleModel,
+                attributes: ['id', 'name'],
+                through: { attributes: [] }
+            }]
+        },
+        withAddresses: {
+            include: [{
+                model: UserAddressModel,
+                attributes: { exclude: ['createdAt', 'updatedAt'] }
+            }]
+        },
+        active: {
+            where: { isActive: true },
+        },
+        vip: {
+            where: { isVipCustomer: true },
+        },
+        newsletter: {
+            where: { isNewsletterSubscribed: true },
+        },
+        verified: {
+            where: { 
+                emailVerifiedAt: { [Op.not]: null }
+            },
+        },
+    },
+    indexes: [
+        { fields: ['email'], name: 'idx_users_email', unique: true },
+        { fields: ['phone'], name: 'idx_users_phone' },
+        { fields: ['is_active'], name: 'idx_users_is_active' },
+        { fields: ['is_newsletter_subscribed'], name: 'idx_users_newsletter' },
+        { fields: ['is_marketing_consent'], name: 'idx_users_marketing' },
+        { fields: ['is_vip_customer'], name: 'idx_users_vip' },
+        { fields: ['is_beta_tester'], name: 'idx_users_beta' },
+        { fields: ['is_blocked'], name: 'idx_users_blocked' },
+        { fields: ['is_verified'], name: 'idx_users_verified' },
+        { fields: ['is_premium'], name: 'idx_users_premium' },
+        { fields: ['is_email_verified'], name: 'idx_users_email_verified_flag' },
+        { fields: ['is_phone_verified'], name: 'idx_users_phone_verified' },
+        { fields: ['is_terms_accepted'], name: 'idx_users_terms_accepted' },
+        { fields: ['is_privacy_accepted'], name: 'idx_users_privacy_accepted' },
+        { fields: ['is_age_verified'], name: 'idx_users_age_verified' },
+        { fields: ['is_two_factor_enabled'], name: 'idx_users_two_factor_enabled' },
+        { fields: ['is_deleted'], name: 'idx_users_is_deleted' },
+        { fields: ['is_suspended'], name: 'idx_users_is_suspended' },
+        { fields: ['is_affiliate'], name: 'idx_users_is_affiliate' },
+        { fields: ['is_employee'], name: 'idx_users_is_employee' },
+        { fields: ['is_high_value'], name: 'idx_users_is_high_value' },
+        { fields: ['is_wholesale'], name: 'idx_users_is_wholesale' },
+        { fields: ['email_verified_at'], name: 'idx_users_email_verified' },
+        { fields: ['last_login_at'], name: 'idx_users_last_login' },
+        { fields: ['created_at'], name: 'idx_users_created_at' },
+        { fields: ['theme_preference'], name: 'idx_users_theme_preference' },
+        { fields: ['default_language'], name: 'idx_users_default_language' },
+        { fields: ['is_active', 'is_profile_completed'], name: 'idx_users_active_profile' },
+    ],
+})
+export class UserModel
+    extends Model<UserModel, IUserCreationAttributes>
+    implements IUserModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(255),
+        unique: true,
+        allowNull: false,
+        validate: {
+            isEmail: true, 
+            len: [5, 255] 
+        }
+    })
+    declare email: string;
+
+    @Column({ 
+        type: DataType.STRING(255), 
+        allowNull: false,
+        validate: {
+            len: [6, 255] 
+        }
+    })
+    declare password: string;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true,
+        field: 'first_name',
+    })
+    declare firstName?: string;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true,
+        field: 'last_name',
+    })
+    declare lastName?: string;
+
+    @Column({
+        type: DataType.STRING(20),
+        allowNull: true,
+        validate: {
+            is: /^[\+]?[1-9][\d]{0,15}$/
+        }
+    })
+    declare phone?: string;
+
+    @Column({
+        type: DataType.DATEONLY,
+        allowNull: true,
+        field: 'date_of_birth',
+    })
+    declare dateOfBirth?: Date;
+
+    @Column({
+        type: DataType.STRING(500),
+        allowNull: true,
+        field: 'avatar_url',
+    })
+    declare avatarUrl?: string;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'email_verified_at',
+    })
+    declare emailVerifiedAt?: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'phone_verified_at',
+    })
+    declare phoneVerifiedAt?: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'last_login_at',
+    })
+    declare lastLoginAt?: Date;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_newsletter_subscribed',
+    })
+    declare isNewsletterSubscribed: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_marketing_consent',
+    })
+    declare isMarketingConsent: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_cookie_consent',
+    })
+    declare isCookieConsent: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_profile_completed',
+    })
+    declare isProfileCompleted: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_vip_customer',
+    })
+    declare isVipCustomer: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_beta_tester',
+    })
+    declare isBetaTester: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_blocked',
+    })
+    declare isBlocked: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_verified',
+    })
+    declare isVerified: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_premium',
+    })
+    declare isPremium: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_email_verified',
+    })
+    declare isEmailVerified: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_phone_verified',
+    })
+    declare isPhoneVerified: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_terms_accepted',
+    })
+    declare isTermsAccepted: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_privacy_accepted',
+    })
+    declare isPrivacyAccepted: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_age_verified',
+    })
+    declare isAgeVerified: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_two_factor_enabled',
+    })
+    declare isTwoFactorEnabled: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_deleted',
+    })
+    declare isDeleted: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_suspended',
+    })
+    declare isSuspended: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_affiliate',
+    })
+    declare isAffiliate: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_employee',
+    })
+    declare isEmployee: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_high_value',
+    })
+    declare isHighValue: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_wholesale',
+    })
+    declare isWholesale: boolean;
+
+    @Column({
+        type: DataType.STRING(10),
+        allowNull: false,
+        defaultValue: 'ru',
+        field: 'preferred_language',
+    })
+    declare preferredLanguage: string;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: false,
+        defaultValue: 'Europe/Moscow',
+    })
+    declare timezone: string;
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: false,
+        defaultValue: {},
+        field: 'notification_preferences',
+    })
+    declare notificationPreferences: IUserProfile;
+
+    @Column({
+        type: DataType.STRING(20),
+        allowNull: false,
+        defaultValue: 'light',
+        field: 'theme_preference',
+    })
+    declare themePreference: string;
+
+    @Column({
+        type: DataType.STRING(10),
+        allowNull: false,
+        defaultValue: 'ru',
+        field: 'default_language',
+    })
+    declare defaultLanguage: string;
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: true,
+        defaultValue: {},
+        field: 'translations',
+    })
+    declare translations: any;
+
+    // Ассоциации
+    @HasMany(() => UserAddressModel, {
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+    })
+    declare addresses: UserAddressModel[];
+
+    @BelongsToMany(() => RoleModel, () => UserRoleModel)
+    declare roles: RoleModel[];
+
+    // Методы
+    get fullName(): string {
+        return [this.firstName, this.lastName].filter(Boolean).join(' ');
+    }
+
+    get isVerified(): boolean {
+        return this.emailVerifiedAt !== null;
+    }
+
+    get hasPhone(): boolean {
+        return this.phone !== null && this.phone !== '';
+    }
+
+    get isCompleteProfile(): boolean {
+        return !!(this.firstName && this.lastName && this.phone);
+    }
+
+    get displayName(): string {
+        return this.fullName || this.email;
+    }
+
+    get canReceiveMarketing(): boolean {
+        return this.isMarketingConsent && this.isNewsletterSubscribed;
+    }
+
+    get isBlockedUser(): boolean {
+        return this.isBlocked;
+    }
+
+    get isVerifiedUser(): boolean {
+        return this.isVerified;
+    }
+
+    get isPremiumUser(): boolean {
+        return this.isPremium;
+    }
+
+    get userStatus(): string {
+        if (this.isBlocked) return 'blocked';
+        if (this.isPremium) return 'premium';
+        if (this.isVipCustomer) return 'vip';
+        if (this.isVerified) return 'verified';
+        return 'regular';
+    }
+
+    get canAccessPremiumFeatures(): boolean {
+        return this.isPremium || this.isVipCustomer;
+    }
+
+    get isAccountActive(): boolean {
+        return this.isActive && !this.isBlocked;
+    }
+
+    get hasAllConsents(): boolean {
+        return this.isMarketingConsent && this.isCookieConsent;
+    }
+
+    get badges(): string[] {
+        const badges: string[] = [];
+        if (this.isVipCustomer) badges.push('VIP');
+        if (this.isBetaTester) badges.push('BETA');
+        if (this.isVerified) badges.push('VERIFIED');
+        return badges;
+    }
+
+    get isDarkTheme(): boolean {
+        return this.themePreference === 'dark';
+    }
+
+    get isLightTheme(): boolean {
+        return this.themePreference === 'light';
+    }
+
+    get isAutoTheme(): boolean {
+        return this.themePreference === 'auto';
+    }
+
+    get userLanguage(): string {
+        return this.defaultLanguage || 'ru';
+    }
+
+    get hasCustomTranslations(): boolean {
+        return this.translations && Object.keys(this.translations).length > 0;
+    }
+
+    get isEmailVerifiedUser(): boolean {
+        return this.isEmailVerified;
+    }
+
+    get isPhoneVerifiedUser(): boolean {
+        return this.isPhoneVerified;
+    }
+
+    get isTermsAcceptedUser(): boolean {
+        return this.isTermsAccepted;
+    }
+
+    get isPrivacyAcceptedUser(): boolean {
+        return this.isPrivacyAccepted;
+    }
+
+    get isAgeVerifiedUser(): boolean {
+        return this.isAgeVerified;
+    }
+
+    get isTwoFactorEnabledUser(): boolean {
+        return this.isTwoFactorEnabled;
+    }
+
+    get isDeletedUser(): boolean {
+        return this.isDeleted;
+    }
+
+    get isSuspendedUser(): boolean {
+        return this.isSuspended;
+    }
+
+    get isAffiliateUser(): boolean {
+        return this.isAffiliate;
+    }
+
+    get isEmployeeUser(): boolean {
+        return this.isEmployee;
+    }
+
+    get isHighValueUser(): boolean {
+        return this.isHighValue;
+    }
+
+    get isWholesaleUser(): boolean {
+        return this.isWholesale;
+    }
+
+    get verificationStatus(): string {
+        if (this.isEmailVerified && this.isPhoneVerified) return 'fully_verified';
+        if (this.isEmailVerified || this.isPhoneVerified) return 'partially_verified';
+        return 'unverified';
+    }
+
+    get complianceStatus(): string {
+        if (this.isTermsAccepted && this.isPrivacyAccepted) return 'compliant';
+        if (this.isTermsAccepted || this.isPrivacyAccepted) return 'partially_compliant';
+        return 'non_compliant';
+    }
+
+    get securityLevel(): string {
+        if (this.isTwoFactorEnabled && this.isEmailVerified) return 'high';
+        if (this.isEmailVerified) return 'medium';
+        return 'low';
+    }
+
+    get accountStatus(): string {
+        if (this.isDeleted) return 'deleted';
+        if (this.isSuspended) return 'suspended';
+        if (this.isBlocked) return 'blocked';
+        if (!this.isActive) return 'inactive';
+        return 'active';
+    }
+
+    get displayLanguage(): string {
+        const languageMap: Record<string, string> = {
+            'ru': 'Русский',
+            'en': 'English',
+            'es': 'Español',
+            'de': 'Deutsch',
+            'fr': 'Français',
+        };
+        return languageMap[this.defaultLanguage] || 'Русский';
+    }
+
+    // Методы для работы с флагами
+    async markAsVip(): Promise<void> {
+        await this.update({ isVipCustomer: true });
+    }
+
+    async unmarkAsVip(): Promise<void> {
+        await this.update({ isVipCustomer: false });
+    }
+
+    async markAsBeta(): Promise<void> {
+        await this.update({ isBetaTester: true });
+    }
+
+    async unmarkAsBeta(): Promise<void> {
+        await this.update({ isBetaTester: false });
+    }
+
+    async subscribeToNewsletter(): Promise<void> {
+        await this.update({ isNewsletterSubscribed: true });
+    }
+
+    async unsubscribeFromNewsletter(): Promise<void> {
+        await this.update({ isNewsletterSubscribed: false });
+    }
+
+    async giveMarketingConsent(): Promise<void> {
+        await this.update({ isMarketingConsent: true });
+    }
+
+    async revokeMarketingConsent(): Promise<void> {
+        await this.update({ isMarketingConsent: false });
+    }
+
+    async blockUser(): Promise<void> {
+        await this.update({ isBlocked: true, isActive: false });
+    }
+
+    async unblockUser(): Promise<void> {
+        await this.update({ isBlocked: false, isActive: true });
+    }
+
+    async verifyUser(): Promise<void> {
+        await this.update({ isVerified: true });
+    }
+
+    async unverifyUser(): Promise<void> {
+        await this.update({ isVerified: false });
+    }
+
+    async upgradeToPremium(): Promise<void> {
+        await this.update({ isPremium: true });
+    }
+
+    async downgradeFromPremium(): Promise<void> {
+        await this.update({ isPremium: false });
+    }
+
+    async verifyEmail(): Promise<void> {
+        await this.update({ isEmailVerified: true, emailVerifiedAt: new Date() });
+    }
+
+    async unverifyEmail(): Promise<void> {
+        await this.update({ isEmailVerified: false, emailVerifiedAt: null });
+    }
+
+    async verifyPhone(): Promise<void> {
+        await this.update({ isPhoneVerified: true, phoneVerifiedAt: new Date() });
+    }
+
+    async unverifyPhone(): Promise<void> {
+        await this.update({ isPhoneVerified: false, phoneVerifiedAt: null });
+    }
+
+    async acceptTerms(): Promise<void> {
+        await this.update({ isTermsAccepted: true });
+    }
+
+    async revokeTermsAcceptance(): Promise<void> {
+        await this.update({ isTermsAccepted: false });
+    }
+
+    async acceptPrivacy(): Promise<void> {
+        await this.update({ isPrivacyAccepted: true });
+    }
+
+    async revokePrivacyAcceptance(): Promise<void> {
+        await this.update({ isPrivacyAccepted: false });
+    }
+
+    async verifyAge(): Promise<void> {
+        await this.update({ isAgeVerified: true });
+    }
+
+    async unverifyAge(): Promise<void> {
+        await this.update({ isAgeVerified: false });
+    }
+
+    async enableTwoFactor(): Promise<void> {
+        await this.update({ isTwoFactorEnabled: true });
+    }
+
+    async disableTwoFactor(): Promise<void> {
+        await this.update({ isTwoFactorEnabled: false });
+    }
+
+    async softDelete(): Promise<void> {
+        await this.update({ isDeleted: true, isActive: false });
+    }
+
+    async restoreUser(): Promise<void> {
+        await this.update({ isDeleted: false, isActive: true });
+    }
+
+    async suspendUser(): Promise<void> {
+        await this.update({ isSuspended: true, isActive: false });
+    }
+
+    async unsuspendUser(): Promise<void> {
+        await this.update({ isSuspended: false, isActive: true });
+    }
+
+    async markAsAffiliate(): Promise<void> {
+        await this.update({ isAffiliate: true });
+    }
+
+    async unmarkAsAffiliate(): Promise<void> {
+        await this.update({ isAffiliate: false });
+    }
+
+    async markAsEmployee(): Promise<void> {
+        await this.update({ isEmployee: true });
+    }
+
+    async unmarkAsEmployee(): Promise<void> {
+        await this.update({ isEmployee: false });
+    }
+
+    async markAsHighValue(): Promise<void> {
+        await this.update({ isHighValue: true });
+    }
+
+    async unmarkAsHighValue(): Promise<void> {
+        await this.update({ isHighValue: false });
+    }
+
+    async markAsWholesale(): Promise<void> {
+        await this.update({ isWholesale: true });
+    }
+
+    async unmarkAsWholesale(): Promise<void> {
+        await this.update({ isWholesale: false });
+    }
+
+    async revokeMarketingConsent(): Promise<void> {
+        await this.update({ isMarketingConsent: false });
+    }
+
+    async giveCookieConsent(): Promise<void> {
+        await this.update({ isCookieConsent: true });
+    }
+
+    async markProfileCompleted(): Promise<void> {
+        await this.update({ isProfileCompleted: true });
+    }
+
+    async updateLastLogin(): Promise<void> {
+        await this.update({ lastLoginAt: new Date() });
+    }
+
+    async verifyEmail(): Promise<void> {
+        await this.update({ emailVerifiedAt: new Date() });
+    }
+
+    async verifyPhone(): Promise<void> {
+        await this.update({ phoneVerifiedAt: new Date() });
+    }
+
+    // Методы для работы с предпочтениями
+    async setThemePreference(theme: string): Promise<void> {
+        await this.update({ themePreference: theme });
+    }
+
+    async setDefaultLanguage(language: string): Promise<void> {
+        await this.update({ defaultLanguage: language });
+    }
+
+    async setTranslations(translations: any): Promise<void> {
+        await this.update({ translations });
+    }
+
+    async addTranslation(key: string, value: string): Promise<void> {
+        const currentTranslations = this.translations || {};
+        await this.update({ 
+            translations: { ...currentTranslations, [key]: value }
+        });
+    }
+
+    async removeTranslation(key: string): Promise<void> {
+        const currentTranslations = this.translations || {};
+        delete currentTranslations[key];
+        await this.update({ translations: currentTranslations });
+    }
+
+    // Статические методы для работы с флагами
+    static async getVipCustomers(): Promise<UserModel[]> {
+        return this.scope('vip').findAll({
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNewsletterSubscribers(): Promise<UserModel[]> {
+        return this.scope('newsletter').findAll({
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getBetaTesters(): Promise<UserModel[]> {
+        return this.scope('beta').findAll({
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getVerifiedUsers(): Promise<UserModel[]> {
+        return this.scope('verified').findAll({
+            order: [['emailVerifiedAt', 'DESC']],
+        });
+    }
+
+    static async getBlockedUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isBlocked: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getVerifiedUsersByFlag(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isVerified: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getPremiumUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isPremium: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getActiveUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isActive: true, isBlocked: false },
+            order: [['lastLoginAt', 'DESC']],
+        });
+    }
+
+    static async getUsersByTheme(theme: string): Promise<UserModel[]> {
+        return this.findAll({
+            where: { themePreference: theme },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getUsersByLanguage(language: string): Promise<UserModel[]> {
+        return this.findAll({
+            where: { defaultLanguage: language },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getUsersWithCustomTranslations(): Promise<UserModel[]> {
+        return this.findAll({
+            where: {
+                translations: { [Op.ne]: null },
+            },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getEmailVerifiedUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isEmailVerified: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getPhoneVerifiedUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isPhoneVerified: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getTermsAcceptedUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isTermsAccepted: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getPrivacyAcceptedUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isPrivacyAccepted: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getAgeVerifiedUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isAgeVerified: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getTwoFactorEnabledUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isTwoFactorEnabled: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getFullyVerifiedUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { 
+                isEmailVerified: true, 
+                isPhoneVerified: true 
+            },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getCompliantUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { 
+                isTermsAccepted: true, 
+                isPrivacyAccepted: true 
+            },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getDeletedUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isDeleted: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getSuspendedUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isSuspended: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getActiveNonDeletedUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isActive: true, isDeleted: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNonSuspendedUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isSuspended: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getAffiliateUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isAffiliate: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNonAffiliateUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isAffiliate: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getEmployeeUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isEmployee: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNonEmployeeUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isEmployee: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getHighValueUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isHighValue: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNonHighValueUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isHighValue: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getWholesaleUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isWholesale: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNonWholesaleUsers(): Promise<UserModel[]> {
+        return this.findAll({
+            where: { isWholesale: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+}
+```
+
+### UserAddress Model
+```typescript
+// src/domain/models/user-address.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { UserModel } from './user.model';
+
+export enum AddressType {
+    SHIPPING = 'shipping',
+    BILLING = 'billing'
+}
+
+interface IUserAddressModel {
+    id: number;
+    userId: number;
+    type: AddressType;
+    isDefault: boolean;
+    firstName?: string;
+    lastName?: string;
+    company?: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state?: string;
+    postalCode?: string;
+    country: string;
+    phone?: string;
+    instructions?: string;
+    user?: UserModel;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IUserAddressCreationAttributes {
+    userId: number;
+    type: AddressType;
+    addressLine1: string;
+    city: string;
+    country?: string;
+    firstName?: string;
+    lastName?: string;
+    isDefault?: boolean;
+}
+
+@Table({
+    tableName: 'user_addresses',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['user_id'], name: 'idx_user_addresses_user_id' },
+        { fields: ['type'], name: 'idx_user_addresses_type' },
+        { fields: ['is_default'], name: 'idx_user_addresses_is_default' },
+        { fields: ['user_id', 'type'], name: 'idx_user_addresses_user_type' },
+        { fields: ['user_id', 'is_default'], name: 'idx_user_addresses_user_default' },
+    ],
+})
+export class UserAddressModel
+    extends Model<UserAddressModel, IUserAddressCreationAttributes>
+    implements IUserAddressModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(AddressType)),
+        allowNull: false,
+        defaultValue: AddressType.SHIPPING,
+    })
+    declare type: AddressType;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_default',
+    })
+    declare isDefault: boolean;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true,
+        field: 'first_name',
+    })
+    declare firstName?: string;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true,
+        field: 'last_name',
+    })
+    declare lastName?: string;
+
+    @Column({
+        type: DataType.STRING(200),
+        allowNull: true,
+    })
+    declare company?: string;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+        field: 'address_line_1',
+    })
+    declare addressLine1: string;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+        field: 'address_line_2',
+    })
+    declare addressLine2?: string;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: false,
+    })
+    declare city: string;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true,
+    })
+    declare state?: string;
+
+    @Column({
+        type: DataType.STRING(20),
+        allowNull: true,
+        field: 'postal_code',
+    })
+    declare postalCode?: string;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: false,
+        defaultValue: 'Russia',
+    })
+    declare country: string;
+
+    @Column({
+        type: DataType.STRING(20),
+        allowNull: true,
+        validate: {
+            is: /^[\+]?[1-9][\d]{0,15}$/
+        }
+    })
+    declare phone?: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare instructions?: string;
+
+    // Ассоциации
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    // Методы
+    get fullName(): string {
+        return [this.firstName, this.lastName].filter(Boolean).join(' ');
+    }
+
+    get fullAddress(): string {
+        const parts = [
+            this.addressLine1,
+            this.addressLine2,
+            this.city,
+            this.state,
+            this.postalCode,
+            this.country
+        ].filter(Boolean);
+        return parts.join(', ');
+    }
+
+    get displayAddress(): string {
+        return `${this.fullAddress}${this.phone ? ` (${this.phone})` : ''}`;
+    }
+
+    // Методы для работы с адресами
+    async setAsDefault(): Promise<void> {
+        // Сначала снимаем флаг default с других адресов этого типа
+        await UserAddressModel.update(
+            { isDefault: false },
+            { 
+                where: { 
+                    userId: this.userId, 
+                    type: this.type,
+                    id: { [Op.ne]: this.id }
+                }
+            }
+        );
+        
+        // Устанавливаем флаг default для текущего адреса
+        await this.update({ isDefault: true });
+    }
+
+    // Статические методы
+    static async getDefaultAddress(userId: number, type: AddressType): Promise<UserAddressModel | null> {
+        return this.findOne({
+            where: { userId, type, isDefault: true },
+        });
+    }
+
+    static async getUserAddresses(userId: number, type?: AddressType): Promise<UserAddressModel[]> {
+        const where: any = { userId };
+        if (type) {
+            where.type = type;
+        }
+        
+        return this.findAll({
+            where,
+            order: [['isDefault', 'DESC'], ['createdAt', 'ASC']],
+        });
+    }
+}
+```
+
+## Сервисы
+
+### User Service (расширенный)
+```typescript
+// src/infrastructure/services/user/user.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { UserModel, UserAddressModel, AddressType } from '@app/domain/models';
+import { Op } from 'sequelize';
+
+@Injectable()
+export class UserService {
+    private readonly logger = new Logger(UserService.name);
+
+    constructor(
+        @InjectModel(UserModel)
+        private userModel: typeof UserModel,
+        @InjectModel(UserAddressModel)
+        private userAddressModel: typeof UserAddressModel,
+    ) {}
+
+    // Методы для работы с пользователями
+    async createUser(userData: {
+        email: string;
+        password: string;
+        firstName?: string;
+        lastName?: string;
+        phone?: string;
+        isNewsletterSubscribed?: boolean;
+        isMarketingConsent?: boolean;
+        isCookieConsent?: boolean;
+    }): Promise<UserModel> {
+        const user = await this.userModel.create(userData);
+        this.logger.log(`Создан пользователь: ${user.email}`);
+        return user;
+    }
+
+    async getUserById(id: number): Promise<UserModel> {
+        const user = await this.userModel.findByPk(id, {
+            include: ['addresses', 'roles'],
+        });
+
+        if (!user) {
+            throw new NotFoundException('Пользователь не найден');
+        }
+
+        return user;
+    }
+
+    async getUserByEmail(email: string): Promise<UserModel | null> {
+        return this.userModel.findOne({
+            where: { email },
+            include: ['roles'],
+        });
+    }
+
+    async updateUser(id: number, updateData: Partial<UserModel>): Promise<UserModel> {
+        const user = await this.getUserById(id);
+        await user.update(updateData);
+        
+        // Проверяем завершенность профиля
+        if (user.isCompleteProfile && !user.isProfileCompleted) {
+            await user.markProfileCompleted();
+        }
+        
+        this.logger.log(`Обновлен пользователь: ${user.email}`);
+        return user;
+    }
+
+    async getUserStatistics(): Promise<any> {
+        const [
+            totalUsers,
+            activeUsers,
+            vipUsers,
+            newsletterSubscribers,
+            betaTesters,
+            verifiedUsers,
+            profileCompleted,
+            blockedUsers,
+            verifiedUsersByFlag,
+            premiumUsers,
+            lightThemeUsers,
+            darkThemeUsers,
+            autoThemeUsers,
+            russianUsers,
+            englishUsers,
+            customTranslationsUsers,
+        ] = await Promise.all([
+            this.userModel.count(),
+            this.userModel.count({ where: { isActive: true } }),
+            this.userModel.count({ where: { isVipCustomer: true } }),
+            this.userModel.count({ where: { isNewsletterSubscribed: true } }),
+            this.userModel.count({ where: { isBetaTester: true } }),
+            this.userModel.count({ where: { emailVerifiedAt: { [Op.not]: null } } }),
+            this.userModel.count({ where: { isProfileCompleted: true } }),
+            this.userModel.count({ where: { isBlocked: true } }),
+            this.userModel.count({ where: { isVerified: true } }),
+            this.userModel.count({ where: { isPremium: true } }),
+            this.userModel.count({ where: { themePreference: 'light' } }),
+            this.userModel.count({ where: { themePreference: 'dark' } }),
+            this.userModel.count({ where: { themePreference: 'auto' } }),
+            this.userModel.count({ where: { defaultLanguage: 'ru' } }),
+            this.userModel.count({ where: { defaultLanguage: 'en' } }),
+            this.userModel.count({ where: { translations: { [Op.ne]: null } } }),
+        ]);
+
+        return {
+            totalUsers,
+            activeUsers,
+            vipUsers,
+            newsletterSubscribers,
+            betaTesters,
+            verifiedUsers,
+            profileCompleted,
+            blockedUsers,
+            verifiedUsersByFlag,
+            premiumUsers,
+            lightThemeUsers,
+            darkThemeUsers,
+            autoThemeUsers,
+            russianUsers,
+            englishUsers,
+            customTranslationsUsers,
+        };
+    }
+
+    // Методы для работы с флагами
+    async getVipCustomers(): Promise<UserModel[]> {
+        return this.userModel.getVipCustomers();
+    }
+
+    async getNewsletterSubscribers(): Promise<UserModel[]> {
+        return this.userModel.getNewsletterSubscribers();
+    }
+
+    async getBetaTesters(): Promise<UserModel[]> {
+        return this.userModel.getBetaTesters();
+    }
+
+    async markUserAsVip(userId: number): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.markAsVip();
+        return user;
+    }
+
+    async markUserAsBeta(userId: number): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.markAsBeta();
+        return user;
+    }
+
+    async subscribeUserToNewsletter(userId: number): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.subscribeToNewsletter();
+        return user;
+    }
+
+    async giveUserMarketingConsent(userId: number): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.giveMarketingConsent();
+        return user;
+    }
+
+    async giveUserCookieConsent(userId: number): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.giveCookieConsent();
+        return user;
+    }
+
+    async blockUser(userId: number): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.blockUser();
+        this.logger.log(`Пользователь ${user.email} заблокирован`);
+        return user;
+    }
+
+    async unblockUser(userId: number): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.unblockUser();
+        this.logger.log(`Пользователь ${user.email} разблокирован`);
+        return user;
+    }
+
+    async verifyUser(userId: number): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.verifyUser();
+        this.logger.log(`Пользователь ${user.email} верифицирован`);
+        return user;
+    }
+
+    async unverifyUser(userId: number): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.unverifyUser();
+        this.logger.log(`Пользователь ${user.email} неверифицирован`);
+        return user;
+    }
+
+    async upgradeUserToPremium(userId: number): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.upgradeToPremium();
+        this.logger.log(`Пользователь ${user.email} повышен до премиум`);
+        return user;
+    }
+
+    async downgradeUserFromPremium(userId: number): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.downgradeFromPremium();
+        this.logger.log(`Пользователь ${user.email} понижен с премиум`);
+        return user;
+    }
+
+    // Методы для работы с предпочтениями пользователя
+    async setUserThemePreference(userId: number, theme: string): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.setThemePreference(theme);
+        this.logger.log(`Установлена тема ${theme} для пользователя ${user.email}`);
+        return user;
+    }
+
+    async setUserDefaultLanguage(userId: number, language: string): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.setDefaultLanguage(language);
+        this.logger.log(`Установлен язык ${language} для пользователя ${user.email}`);
+        return user;
+    }
+
+    async setUserTranslations(userId: number, translations: any): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.setTranslations(translations);
+        this.logger.log(`Обновлены переводы для пользователя ${user.email}`);
+        return user;
+    }
+
+    async addUserTranslation(userId: number, key: string, value: string): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.addTranslation(key, value);
+        this.logger.log(`Добавлен перевод ${key} для пользователя ${user.email}`);
+        return user;
+    }
+
+    async removeUserTranslation(userId: number, key: string): Promise<UserModel> {
+        const user = await this.getUserById(userId);
+        await user.removeTranslation(key);
+        this.logger.log(`Удален перевод ${key} для пользователя ${user.email}`);
+        return user;
+    }
+
+    async getUsersByTheme(theme: string): Promise<UserModel[]> {
+        return this.userModel.getUsersByTheme(theme);
+    }
+
+    async getUsersByLanguage(language: string): Promise<UserModel[]> {
+        return this.userModel.getUsersByLanguage(language);
+    }
+
+    async getUsersWithCustomTranslations(): Promise<UserModel[]> {
+        return this.userModel.getUsersWithCustomTranslations();
+    }
+
+    async getBlockedUsers(): Promise<UserModel[]> {
+        return this.userModel.getBlockedUsers();
+    }
+
+    async getVerifiedUsersByFlag(): Promise<UserModel[]> {
+        return this.userModel.getVerifiedUsersByFlag();
+    }
+
+    async getPremiumUsers(): Promise<UserModel[]> {
+        return this.userModel.getPremiumUsers();
+    }
+
+    async getActiveUsers(): Promise<UserModel[]> {
+        return this.userModel.getActiveUsers();
+    }
+
+    // Методы для работы с адресами
+    async createUserAddress(userId: number, addressData: {
+        type: AddressType;
+        addressLine1: string;
+        city: string;
+        country?: string;
+        firstName?: string;
+        lastName?: string;
+        isDefault?: boolean;
+    }): Promise<UserAddressModel> {
+        const address = await this.userAddressModel.create({
+            userId,
+            ...addressData,
+        });
+
+        if (addressData.isDefault) {
+            await address.setAsDefault();
+        }
+
+        this.logger.log(`Создан адрес для пользователя ${userId}: ${address.fullAddress}`);
+        return address;
+    }
+
+    async getUserAddresses(userId: number, type?: AddressType): Promise<UserAddressModel[]> {
+        return this.userAddressModel.getUserAddresses(userId, type);
+    }
+
+    async getDefaultAddress(userId: number, type: AddressType): Promise<UserAddressModel | null> {
+        return this.userAddressModel.getDefaultAddress(userId, type);
+    }
+
+    async updateUserAddress(addressId: number, updateData: Partial<UserAddressModel>): Promise<UserAddressModel> {
+        const address = await this.userAddressModel.findByPk(addressId);
+        if (!address) {
+            throw new NotFoundException('Адрес не найден');
+        }
+
+        await address.update(updateData);
+
+        if (updateData.isDefault) {
+            await address.setAsDefault();
+        }
+
+        return address;
+    }
+
+    async deleteUserAddress(addressId: number): Promise<void> {
+        const address = await this.userAddressModel.findByPk(addressId);
+        if (!address) {
+            throw new NotFoundException('Адрес не найден');
+        }
+
+        await address.destroy();
+        this.logger.log(`Удален адрес: ${addressId}`);
+    }
+}
+```
+
+## DTO и валидация
+
+### CreateUserDto (расширенный)
+```typescript
+// src/infrastructure/dto/user/create-user.dto.ts
+import { IsEmail, IsNotEmpty, IsString, IsOptional, IsBoolean } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsSanitizedString, IsValidName, IsValidPhone, IsPasswordStrong } from '@app/infrastructure/common/validators';
+
+export class CreateUserDto {
+    @ApiProperty({
+        example: 'test@mail.com',
+        description: 'Электронный адрес пользователя',
+    })
+    @IsNotEmpty({ message: 'Укажите email' })
+    @IsString({ message: 'Поле email должно быть строкой' })
+    @IsEmail({}, { message: 'Неверный формат email' })
+    @IsSanitizedString({ message: 'Email содержит недопустимые символы' })
+    declare readonly email: string;
+
+    @ApiProperty({
+        example: 'MySecure123!',
+        description: 'Пароль пользователя (минимум 8 символов)',
+    })
+    @IsNotEmpty({ message: 'Поле пароль не должно быть пустым' })
+    @IsString({ message: 'Поле пароля должно быть строкой' })
+    @IsPasswordStrong({ message: 'Пароль не соответствует требованиям безопасности' })
+    declare readonly password: string;
+
+    @ApiProperty({
+        example: 'Иван',
+        description: 'Имя пользователя',
+        required: false,
+    })
+    @IsOptional()
+    @IsString({ message: 'Имя должно быть строкой' })
+    @IsValidName({ message: 'Недопустимые символы в имени' })
+    declare readonly firstName?: string;
+
+    @ApiProperty({
+        example: 'Иванов',
+        description: 'Фамилия пользователя',
+        required: false,
+    })
+    @IsOptional()
+    @IsString({ message: 'Фамилия должна быть строкой' })
+    @IsValidName({ message: 'Недопустимые символы в фамилии' })
+    declare readonly lastName?: string;
+
+    @ApiProperty({
+        example: '+7 (999) 123-45-67',
+        description: 'Номер телефона пользователя',
+        required: false,
+    })
+    @IsOptional()
+    @IsString({ message: 'Телефон должен быть строкой' })
+    @IsValidPhone({ message: 'Неверный формат номера телефона' })
+    declare readonly phone?: string;
+
+    @ApiProperty({
+        example: true,
+        description: 'Подписка на рассылку',
+        required: false,
+    })
+    @IsOptional()
+    @IsBoolean({ message: 'Подписка на рассылку должна быть булевым значением' })
+    declare readonly isNewsletterSubscribed?: boolean;
+
+    @ApiProperty({
+        example: true,
+        description: 'Согласие на маркетинговые уведомления',
+        required: false,
+    })
+    @IsOptional()
+    @IsBoolean({ message: 'Согласие на маркетинг должно быть булевым значением' })
+    declare readonly isMarketingConsent?: boolean;
+
+    @ApiProperty({
+        example: true,
+        description: 'Согласие на использование cookies',
+        required: false,
+    })
+    @IsOptional()
+    @IsBoolean({ message: 'Согласие на cookies должно быть булевым значением' })
+    declare readonly isCookieConsent?: boolean;
+
+    @ApiProperty({
+        example: 'light',
+        description: 'Предпочтение темы интерфейса',
+        required: false,
+        enum: ['light', 'dark', 'auto'],
+    })
+    @IsOptional()
+    @IsString({ message: 'Предпочтение темы должно быть строкой' })
+    declare readonly themePreference?: string;
+
+    @ApiProperty({
+        example: 'ru',
+        description: 'Язык по умолчанию',
+        required: false,
+        enum: ['ru', 'en', 'es', 'de', 'fr'],
+    })
+    @IsOptional()
+    @IsString({ message: 'Язык по умолчанию должен быть строкой' })
+    declare readonly defaultLanguage?: string;
+
+    @ApiProperty({
+        example: { "welcome": "Добро пожаловать", "goodbye": "До свидания" },
+        description: 'Персональные переводы пользователя',
+        required: false,
+    })
+    @IsOptional()
+    declare readonly translations?: any;
+}
+```
+
+## Критерии готовности
+
+### ✅ Обязательные требования:
+- [ ] Создана миграция для расширения таблицы users с новыми флагами
+- [ ] Создана таблица user_addresses для адресов пользователей
+- [ ] Реализована модель UserModel с флагами и методами
+- [ ] Реализована модель UserAddressModel
+- [ ] Создан UserService с методами для флагов и адресов
+- [ ] Добавлены DTO классы с валидацией флагов
+- [ ] Созданы Response классы с Swagger
+- [ ] Добавлены индексы для производительности по флагам
+- [ ] Реализованы методы для работы с согласиями
+- [ ] Добавлены scopes для фильтрации по флагам
+- [ ] Добавлены unit тесты для сервисов
+- [ ] Добавлены integration тесты для API
+- [ ] Интеграция с системой аутентификации
+
+### 🎯 Дополнительные возможности:
+- [ ] Автоматическое управление флагами (VIP по сумме покупок)
+- [ ] API для массового управления согласиями
+- [ ] Фильтрация пользователей по комбинации флагов
+- [ ] Экспорт списков подписчиков
+- [ ] Интеграция с email-сервисами
+- [ ] Аналитика пользовательских согласий
+
+## Новые флаги пользователей
+
+### Описание флагов:
+- **isNewsletterSubscribed** - Подписка на email рассылку
+- **isMarketingConsent** - Согласие на маркетинговые уведомления
+- **isCookieConsent** - Согласие на использование cookies
+- **isProfileCompleted** - Завершенность профиля пользователя
+- **isVipCustomer** - VIP статус для особых клиентов
+- **isBetaTester** - Участие в бета-тестировании
+- **isWholesale** - Оптовый покупатель (B2B сегмент) - критично для B2B бизнеса
+
+### Преимущества флагов:
+- **GDPR соответствие** - управление согласиями пользователей
+- **Персонализация** - VIP статус и бета-тестирование
+- **Маркетинг** - управление рассылками и уведомлениями
+- **UX улучшения** - отслеживание завершенности профиля
+- **Быстрая фильтрация** - индексы для производительности
+
+## Новые поля предпочтений пользователей
+
+### Описание полей:
+- **themePreference** - Предпочтение темы интерфейса (light/dark/auto)
+- **defaultLanguage** - Язык по умолчанию для пользователя
+- **translations** - Персональные переводы пользователя (JSONB)
+
+### Преимущества полей:
+- **Персонализация интерфейса** - темная/светлая тема, автоопределение
+- **Многоязычность** - поддержка разных языков интерфейса
+- **Кастомизация** - персональные переводы для конкретных пользователей
+- **UX улучшения** - адаптация под предпочтения пользователя
+- **Интернационализация** - готовность к глобальному рынку
+
+### Новые возможности системы:
+- **API для управления предпочтениями** - установка темы, языка, переводов
+- **Статистика предпочтений** - аналитика по темам и языкам
+- **Автоматическое определение** - тема по системным настройкам
+- **Персональные переводы** - кастомные тексты для VIP пользователей
+- **Фильтрация пользователей** - по темам и языкам
+
+## Следующие шаги
+
+### Фаза 1: Базовая реализация (1 неделя)
+1. **Создать миграцию** для расширения таблицы users с флагами
+2. **Создать таблицу** user_addresses
+3. **Реализовать модели** UserModel и UserAddressModel
+4. **Создать DTO классы** с валидацией флагов
+5. **Реализовать сервис** с методами для флагов
+
+### Фаза 2: API и интеграции (3-4 дня)
+6. **Создать контроллер** с API endpoints для флагов
+7. **Настроить управление** согласиями пользователей
+8. **Добавить работу с адресами** пользователей
+9. **Создать тесты** для API флагов
+
+### Фаза 3: Тестирование и качество (2-3 дня)
+10. **Написать unit тесты** для сервисов и флагов
+11. **Написать integration тесты** для API флагов
+12. **Добавить обработку ошибок** и валидацию флагов
+13. **Провести рефакторинг** и оптимизацию

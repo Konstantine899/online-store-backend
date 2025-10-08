@@ -50,7 +50,10 @@ lerna-debug.log*
 !.vscode/extensions.json
 .history/
 .vscode/
-.cursor/
+
+# Cursor IDE - игнорируем кеш, но НЕ игнорируем правила!
+.cursor/*
+!.cursor/rules/
 
 # Security - additional sensitive files
 secrets/

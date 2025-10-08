@@ -1,0 +1,421 @@
+# Technical Models Module Execution Plan (Binding)
+
+binding: true
+module: technical-models
+epic_ref: SAAS-015
+version: 1.0
+
+execution_policy:
+  must_follow: true
+  allow_code_changes_only_after: "Одобряю <TASK_ID>"
+  constraints:
+    - no public API changes without explicit approval
+    - operate within files_scope
+    - pass lints/tests and Swagger before DoD complete
+
+context:
+  goal: Technical models for audit, logging, caching and sessions with tenant isolation
+
+tasks:
+  # Фаза 1: Базовая реализация
+  - id: SAAS-015-00
+    title: Создать контроллеры технических моделей с полной системой ролей
+    branch: "feature/technical/SAAS-015/technical-controller-roles"
+    files_scope:
+      - ".cursor/rules/models/technical-models.mdc"
+      - "src/infrastructure/controllers/audit/**"
+      - "src/infrastructure/controllers/logs/**"
+      - "src/infrastructure/controllers/cache/**"
+      - "src/infrastructure/controllers/session/**"
+      - "src/infrastructure/controllers/api-key/**"
+    steps:
+      - добавить секции контроллеров в technical-models.mdc
+      - создать контроллеры с импортами RoleGuard и Roles
+      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+      - реализовать методы с правильными ролями:
+        - управление аудит-логами: ADMIN_ROLES
+        - управление системными логами: ADMIN_ROLES
+        - управление кэшем: MANAGER_ROLES
+        - управление сессиями: MANAGER_ROLES
+        - управление API ключами: ADMIN_ROLES
+    dod:
+      - все контроллеры созданы с полной системой ролей
+      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+      - тенантская изоляция ролей обеспечена
+    gate:
+      - require: "Одобряю SAAS-015-00"
+
+  - id: SAAS-015-01
+    title: Создать миграции для технических таблиц
+    branch: "feature/technical/SAAS-015/technical-core-tables"
+    files_scope:
+      - "db/migrations/**"
+      - "src/domain/models/audit-log.ts"
+      - "src/domain/models/system-log.ts"
+      - "src/domain/models/cache-entry.ts"
+      - "src/domain/models/session.ts"
+      - "src/domain/models/api-key.ts"
+    steps:
+      - создать таблицы audit_logs, system_logs, cache_entries, sessions, api_keys с tenant_id
+      - добавить индексы для производительности
+      - создать модели для всех технических таблиц
+    dod:
+      - миграция up/down успешна
+      - Technical модели содержат tenant_id
+      - индексы созданы для производительности
+    gate:
+      - require: "Одобряю SAAS-015-01"
+
+  - id: SAAS-015-02
+    title: Реализовать технические модели
+    branch: "feature/technical/SAAS-015/technical-core-models"
+    files_scope:
+      - "src/domain/models/audit-log.ts"
+      - "src/domain/models/system-log.ts"
+      - "src/domain/models/cache-entry.ts"
+      - "src/domain/models/session.ts"
+      - "src/domain/models/api-key.ts"
+    steps:
+      - добавить методы для работы с аудитом
+      - реализовать методы для логирования
+      - добавить методы для кэширования
+      - добавить методы для сессий и API ключей
+    dod:
+      - все методы аудита реализованы
+      - методы логирования работают корректно
+      - методы кэширования функциональны
+      - методы сессий и API ключей активны
+    gate:
+      - require: "Одобряю SAAS-015-02"
+
+  - id: SAAS-015-03
+    title: Создать DTO классы с валидацией
+    branch: "feature/technical/SAAS-015/technical-dto-validation"
+    files_scope:
+      - "src/infrastructure/dto/technical/**"
+      - "src/domain/dto/**"
+    steps:
+      - создать CreateAuditLogDto для создания аудита
+      - создать CreateSystemLogDto для системных логов
+      - создать CreateApiKeyDto для API ключей
+      - добавить валидаторы с русскими сообщениями
+    dod:
+      - DTO содержат все необходимые поля
+      - валидация работает с русскими сообщениями
+      - CustomValidationPipe обрабатывает все DTO
+    gate:
+      - require: "Одобряю SAAS-015-03"
+
+  - id: SAAS-015-04
+    title: Создать Response классы с Swagger
+    branch: "feature/technical/SAAS-015/technical-response-swagger"
+    files_scope:
+      - "src/infrastructure/responses/technical/**"
+      - "src/infrastructure/common/decorators/swagger/technical/**"
+    steps:
+      - создать Response классы с явными полями (не extends TechnicalModel)
+      - добавить Swagger декораторы для всех полей
+      - создать Response для списков технических данных с пагинацией
+    dod:
+      - Response классы не наследуются от модели
+      - Swagger схемы корректны
+      - пагинация возвращает { data, meta }
+    gate:
+      - require: "Одобряю SAAS-015-04"
+
+  - id: SAAS-015-05
+    title: Реализовать сервисы с основной логикой
+    branch: "feature/technical/SAAS-015/technical-service-methods"
+    files_scope:
+      - "src/infrastructure/services/audit/**"
+      - "src/infrastructure/services/logging/**"
+      - "src/infrastructure/services/cache/**"
+      - "src/infrastructure/services/session/**"
+      - "src/infrastructure/services/api-key/**"
+      - "src/domain/services/**"
+    steps:
+      - добавить методы для аудита
+      - реализовать методы для логирования
+      - добавить методы для кэширования
+      - добавить методы для сессий и API ключей
+      - добавить статистику технических данных
+    dod:
+      - все методы сервисов реализованы
+      - аудит работает корректно
+      - логирование функционально
+      - кэширование активно
+      - статистика возвращает корректные данные
+    gate:
+      - require: "Одобряю SAAS-015-05"
+
+  # Фаза 2: API и интеграции
+  - id: SAAS-015-06
+    title: Создать контроллеры с API endpoints
+    branch: "feature/technical/SAAS-015/technical-controller-endpoints"
+    files_scope:
+      - "src/infrastructure/controllers/audit/**"
+      - "src/infrastructure/controllers/logging/**"
+      - "src/infrastructure/controllers/api-key/**"
+      - "src/infrastructure/common/decorators/swagger/technical/**"
+    steps:
+      - добавить эндпоинты для аудита (GET /admin/audit)
+      - добавить эндпоинты для логов (GET /admin/logs)
+      - добавить эндпоинты для API ключей (CRUD)
+      - добавить статистику (GET /admin/technical/stats)
+    dod:
+      - все эндпоинты работают корректно
+      - Swagger документация обновлена
+      - Guards и роли применены правильно
+    gate:
+      - require: "Одобряю SAAS-015-06"
+
+  - id: SAAS-015-07
+    title: Настроить middleware для аудита и логирования
+    branch: "feature/technical/SAAS-015/technical-middleware"
+    files_scope:
+      - "src/infrastructure/common/middleware/**"
+      - "src/infrastructure/common/interceptors/**"
+    steps:
+      - реализовать middleware для автоматического аудита
+      - добавить middleware для логирования запросов
+      - добавить middleware для кэширования
+    dod:
+      - middleware аудита работает корректно
+      - middleware логирования функционален
+      - middleware кэширования активен
+    gate:
+      - require: "Одобряю SAAS-015-07"
+
+  - id: SAAS-015-08
+    title: Добавить обработку ошибок и валидацию
+    branch: "feature/technical/SAAS-015/technical-error-handling"
+    files_scope:
+      - "src/infrastructure/common/filters/**"
+      - "src/infrastructure/common/pipes/**"
+    steps:
+      - добавить обработку ошибок для технических данных
+      - улучшить валидацию с русскими сообщениями
+      - добавить логирование ошибок
+    dod:
+      - ошибки обрабатываются корректно
+      - сообщения на русском языке
+      - логирование работает
+    gate:
+      - require: "Одобряю SAAS-015-08"
+
+  - id: SAAS-015-09
+    title: Создать тесты для API технических данных
+    branch: "feature/technical/SAAS-015/technical-api-tests"
+    files_scope:
+      - "src/infrastructure/controllers/technical/tests/**"
+      - "src/infrastructure/services/technical/tests/**"
+      - "src/infrastructure/repositories/technical/tests/**"
+    steps:
+      - написать integration тесты для технических данных
+      - написать unit тесты для сервисов
+      - добавить негативные тесты
+    dod:
+      - все тесты проходят
+      - покрытие критичных модулей ≥80%
+      - негативные сценарии покрыты
+    gate:
+      - require: "Одобряю SAAS-015-09"
+
+  # Фаза 3: Тестирование и качество
+  - id: SAAS-015-10
+    title: Написать unit тесты для сервисов
+    branch: "feature/technical/SAAS-015/technical-unit-tests"
+    files_scope:
+      - "src/infrastructure/services/technical/tests/**"
+      - "src/infrastructure/repositories/technical/tests/**"
+    steps:
+      - покрыть AuditService методами
+      - покрыть LoggingService методами
+      - покрыть CacheService методами
+    dod:
+      - unit тесты покрывают все методы
+      - тесты стабильны и быстры
+      - моки настроены корректно
+    gate:
+      - require: "Одобряю SAAS-015-10"
+
+  - id: SAAS-015-11
+    title: Написать integration тесты для API
+    branch: "feature/technical/SAAS-015/technical-integration-tests"
+    files_scope:
+      - "src/infrastructure/controllers/technical/tests/**"
+    steps:
+      - покрыть все эндпоинты технических данных
+      - покрыть эндпоинты аудита
+      - покрыть эндпоинты статистики
+    dod:
+      - integration тесты покрывают все эндпоинты
+      - тесты изолированы и детерминированы
+      - негативные сценарии покрыты
+    gate:
+      - require: "Одобряю SAAS-015-11"
+
+  - id: SAAS-015-12
+    title: Провести рефакторинг и оптимизацию
+    branch: "feature/technical/SAAS-015/technical-optimization"
+    files_scope:
+      - "src/infrastructure/**"
+      - "src/domain/**"
+    steps:
+      - оптимизировать запросы к БД
+      - рефакторить дублирующийся код
+      - улучшить производительность
+    dod:
+      - код оптимизирован
+      - дублирование устранено
+      - производительность улучшена
+    gate:
+      - require: "Одобряю SAAS-015-12"
+
+  # Дополнительные возможности
+  - id: SAAS-015-13
+    title: Автоматическая очистка старых данных
+    branch: "feature/technical/SAAS-015/technical-cleanup"
+    files_scope:
+      - "src/infrastructure/services/technical/**"
+      - "src/infrastructure/common/scheduler/**"
+    steps:
+      - реализовать автоматическую очистку старых логов
+      - добавить очистку устаревших кэш-записей
+      - настроить планировщик для очистки
+    dod:
+      - автоматическая очистка логов работает
+      - очистка кэш-записей функциональна
+      - планировщик очистки активен
+    gate:
+      - require: "Одобряю SAAS-015-13"
+
+  - id: SAAS-015-14
+    title: Аналитика технических данных
+    branch: "feature/technical/SAAS-015/technical-analytics"
+    files_scope:
+      - "src/infrastructure/controllers/technical/**"
+      - "src/infrastructure/services/technical/**"
+    steps:
+      - создать эндпоинты аналитики технических данных
+      - добавить метрики и дашборды
+      - настроить отчеты по техническим данным
+    dod:
+      - аналитика технических данных работает
+      - метрики корректны
+      - отчеты генерируются
+    gate:
+      - require: "Одобряю SAAS-015-14"
+
+  # Unit тесты для технических репозиториев
+  - id: SAAS-015-15
+    title: Unit тесты для ProductPropertyRepository
+    branch: "test/technical/SAAS-015/product-property-repository-unit-tests"
+    files_scope:
+      - "tests/unit/repositories/product-property.repository.unit.test.ts"
+      - "src/infrastructure/repositories/product-property/product-property.repository.ts"
+    steps:
+      - создать файл tests/unit/repositories/product-property.repository.unit.test.ts
+      - настроить моки для ProductPropertyModel
+      - написать тесты для CRUD операций
+      - написать тесты для работы с характеристиками продуктов
+      - добавить тесты обработки ошибок
+    dod:
+      - покрытие branches ≥ 75%
+      - покрытие functions ≥ 75%
+      - покрытие lines ≥ 75%
+      - все тесты проходят
+      - линтеры проходят без ошибок
+    estimated_time: 2-3 часа
+    gate:
+      - require: "Одобряю SAAS-015-15"
+
+  - id: SAAS-015-16
+    title: Unit тесты для LoginHistoryRepository
+    branch: "test/technical/SAAS-015/login-history-repository-unit-tests"
+    files_scope:
+      - "tests/unit/repositories/login-history.repository.unit.test.ts"
+      - "src/infrastructure/repositories/login-history/login-history.repository.ts"
+    steps:
+      - создать файл tests/unit/repositories/login-history.repository.unit.test.ts
+      - настроить моки для LoginHistoryModel
+      - написать тесты для CRUD операций
+      - написать тесты для записи истории входов
+      - написать тесты для поиска по пользователю и IP
+      - добавить тесты обработки ошибок
+    dod:
+      - покрытие branches ≥ 75%
+      - покрытие functions ≥ 75%
+      - покрытие lines ≥ 75%
+      - все тесты проходят
+      - линтеры проходят без ошибок
+    estimated_time: 2-3 часа
+    gate:
+      - require: "Одобряю SAAS-015-16"
+
+  - id: SAAS-015-17
+    title: Unit тесты для RefreshTokenRepository
+    branch: "test/technical/SAAS-015/refresh-token-repository-unit-tests"
+    files_scope:
+      - "tests/unit/repositories/refresh-token.repository.unit.test.ts"
+      - "src/infrastructure/repositories/refresh-token/refresh-token.repository.ts"
+    steps:
+      - создать файл tests/unit/repositories/refresh-token.repository.unit.test.ts
+      - настроить моки для RefreshTokenModel
+      - написать тесты для CRUD операций
+      - написать тесты для создания и валидации токенов
+      - написать тесты для отзыва токенов
+      - добавить тесты обработки ошибок
+    dod:
+      - покрытие branches ≥ 85%
+      - покрытие functions ≥ 85%
+      - покрытие lines ≥ 85%
+      - все тесты проходят
+      - линтеры проходят без ошибок
+    estimated_time: 2-3 часа
+    gate:
+      - require: "Одобряю SAAS-015-17"
+
+  - id: SAAS-015-18
+    title: Unit тесты для OrderItemRepository
+    branch: "test/technical/SAAS-015/order-item-repository-unit-tests"
+    files_scope:
+      - "tests/unit/repositories/order-item.repository.unit.test.ts"
+      - "src/infrastructure/repositories/order-item/order-item-repository.ts"
+    steps:
+      - создать файл tests/unit/repositories/order-item.repository.unit.test.ts
+      - настроить моки для OrderItemModel
+      - написать тесты для CRUD операций
+      - написать тесты для работы с позициями заказов
+      - добавить тесты обработки ошибок
+    dod:
+      - покрытие branches ≥ 90%
+      - покрытие functions ≥ 90%
+      - покрытие lines ≥ 90%
+      - все тесты проходят
+      - линтеры проходят без ошибок
+    estimated_time: 2-3 часа
+    gate:
+      - require: "Одобряю SAAS-015-18"
+
+  - id: SAAS-015-19
+    title: Unit тесты для UserAddressRepository
+    branch: "test/technical/SAAS-015/user-address-repository-unit-tests"
+    files_scope:
+      - "tests/unit/repositories/user-address.repository.unit.test.ts"
+      - "src/infrastructure/repositories/user-address/user-address.repository.ts"
+    steps:
+      - создать файл tests/unit/repositories/user-address.repository.unit.test.ts
+      - настроить моки для UserAddressModel
+      - написать тесты для CRUD операций
+      - написать тесты для работы с адресами пользователей
+      - добавить тесты обработки ошибок
+    dod:
+      - покрытие branches ≥ 90%
+      - покрытие functions ≥ 90%
+      - покрытие lines ≥ 90%
+      - все тесты проходят
+      - линтеры проходят без ошибок
+    estimated_time: 2-3 часа
+    gate:
+      - require: "Одобряю SAAS-015-19"

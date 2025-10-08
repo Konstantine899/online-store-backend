@@ -1,0 +1,402 @@
+# User Module Execution Plan (Binding)
+
+binding: true
+module: user
+epic_ref: SAAS-002
+version: 1.0
+
+execution_policy:
+  must_follow: true
+  allow_code_changes_only_after: "Одобряю <TASK_ID>"
+  constraints:
+    - no public API changes without explicit approval
+    - operate strictly within files_scope
+    - pass lints/tests and Swagger before DoD complete
+
+context:
+  goal: User MVP без маркетинговых флагов; verify, guards, русская валидация.
+
+tasks:
+  # Фаза 1: Базовая реализация
+  - id: SAAS-002-00
+    title: Обновить систему ролей в контроллере пользователей
+    branch: "feature/user/SAAS-002/user-roles-update"
+    files_scope:
+      - ".cursor/rules/models/user.mdc"
+    steps:
+      - добавить импорты RoleGuard и Roles в контроллер
+      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+      - обновить методы с правильными ролями:
+        - управление пользователями: ADMIN_ROLES
+        - управление ролями пользователей: MANAGER_ROLES
+        - просмотр профилей: STAFF_ROLES
+        - управление флагами и предпочтениями: MANAGER_ROLES
+    dod:
+      - все методы контроллера используют полную систему ролей
+      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+      - тенантская изоляция ролей обеспечена
+    gate:
+      - require: "Одобряю SAAS-002-00"
+
+  - id: SAAS-002-01
+    title: Создать миграцию для расширения таблицы users с флагами
+    branch: "feature/user/SAAS-002/user-extended-model"
+    files_scope:
+      - "db/migrations/**"
+      - "src/domain/models/user.ts"
+    steps:
+      - добавить все флаги в таблицу user (newsletter, marketing, cookie, vip, beta, etc.)
+      - добавить поля предпочтений (theme, language, translations, timezone)
+      - создать индексы для производительности по флагам
+      - обновить UserModel с новыми полями
+    dod:
+      - миграция up/down успешна
+      - UserModel содержит все флаги и методы
+      - индексы созданы для производительности
+    gate:
+      - require: "Одобряю SAAS-002-01"
+
+  - id: SAAS-002-02
+    title: Создать таблицу user_addresses
+    branch: "feature/user/SAAS-002/user-extended-model"
+    files_scope:
+      - "db/migrations/**"
+      - "src/domain/models/user-address.ts"
+    steps:
+      - создать таблицу user_addresses с полями адреса
+      - добавить индексы (user_id, type, is_default)
+      - создать UserAddressModel с методами
+    dod:
+      - миграция up/down успешна
+      - UserAddressModel создана с методами
+      - индексы созданы
+    gate:
+      - require: "Одобряю SAAS-002-02"
+
+  - id: SAAS-002-03
+    title: Реализовать модели UserModel и UserAddressModel
+    branch: "feature/user/SAAS-002/user-extended-model"
+    files_scope:
+      - "src/domain/models/user.ts"
+      - "src/domain/models/user-address.ts"
+    steps:
+      - добавить все методы для работы с флагами
+      - добавить scopes для фильтрации (active, vip, newsletter, etc.)
+      - реализовать методы для адресов (setAsDefault, getUserAddresses)
+    dod:
+      - все методы флагов реализованы
+      - scopes работают корректно
+      - методы адресов функциональны
+    gate:
+      - require: "Одобряю SAAS-002-03"
+
+  - id: SAAS-002-04
+    title: Создать DTO классы с валидацией флагов
+    branch: "feature/user/SAAS-002/user-dto-validation"
+    files_scope:
+      - "src/infrastructure/dto/user/**"
+      - "src/domain/dto/**"
+    steps:
+      - расширить CreateUserDto полями phone, consents, preferences
+      - создать UpdateUserFlagsDto для управления флагами
+      - создать UpdateUserPreferencesDto для настроек
+      - добавить валидаторы с русскими сообщениями
+    dod:
+      - DTO содержат все необходимые поля
+      - валидация работает с русскими сообщениями
+      - CustomValidationPipe обрабатывает все DTO
+    gate:
+      - require: "Одобряю SAAS-002-04"
+
+  - id: SAAS-002-05
+    title: Реализовать сервис с методами для флагов
+    branch: "feature/user/SAAS-002/user-service-methods"
+    files_scope:
+      - "src/infrastructure/services/user/**"
+      - "src/domain/services/**"
+    steps:
+      - добавить методы для работы с флагами (markAsVip, subscribeToNewsletter, etc.)
+      - добавить методы для предпочтений (setThemePreference, setDefaultLanguage)
+      - добавить методы для адресов (createUserAddress, getUserAddresses)
+      - добавить статистику пользователей
+    dod:
+      - все методы флагов реализованы
+      - методы предпочтений работают
+      - методы адресов функциональны
+      - статистика возвращает корректные данные
+    gate:
+      - require: "Одобряю SAAS-002-05"
+
+  # Фаза 2: API и интеграции
+  - id: SAAS-002-06
+    title: Создать контроллер с API endpoints для флагов
+    branch: "feature/user/SAAS-002/user-controller-endpoints"
+    files_scope:
+      - "src/infrastructure/controllers/user/**"
+      - "src/infrastructure/common/decorators/swagger/user/**"
+    steps:
+      - добавить эндпоинты для управления флагами (PATCH /profile/flags)
+      - добавить эндпоинты для предпочтений (PATCH /profile/preferences)
+      - добавить эндпоинты для адресов (CRUD)
+      - добавить статистику (GET /admin/stats)
+    dod:
+      - все эндпоинты работают корректно
+      - Swagger документация обновлена
+      - Guards и роли применены правильно
+    gate:
+      - require: "Одобряю SAAS-002-06"
+
+  - id: SAAS-002-07
+    title: Настроить управление согласиями пользователей
+    branch: "feature/user/SAAS-002/user-consent-management"
+    files_scope:
+      - "src/infrastructure/controllers/user/**"
+      - "src/infrastructure/services/user/**"
+    steps:
+      - реализовать методы для согласий (newsletter, marketing, cookie)
+      - добавить эндпоинты для массового управления согласиями
+      - добавить валидацию согласий
+    dod:
+      - управление согласиями работает
+      - массовые операции функциональны
+      - валидация согласий корректна
+    gate:
+      - require: "Одобряю SAAS-002-07"
+
+  - id: SAAS-002-08
+    title: Добавить работу с адресами пользователей
+    branch: "feature/user/SAAS-002/user-address-management"
+    files_scope:
+      - "src/infrastructure/controllers/user/**"
+      - "src/infrastructure/services/user/**"
+      - "src/infrastructure/dto/user/**"
+    steps:
+      - создать CRUD эндпоинты для адресов
+      - реализовать логику default адресов
+      - добавить валидацию адресов
+    dod:
+      - CRUD адресов работает
+      - default адреса устанавливаются корректно
+      - валидация адресов проходит
+    gate:
+      - require: "Одобряю SAAS-002-08"
+
+  - id: SAAS-002-09
+    title: Создать тесты для API флагов
+    branch: "feature/user/SAAS-002/user-api-tests"
+    files_scope:
+      - "src/infrastructure/controllers/user/tests/**"
+      - "src/infrastructure/services/user/tests/**"
+      - "src/infrastructure/repositories/user/tests/**"
+    steps:
+      - написать integration тесты для флагов
+      - написать unit тесты для сервисов
+      - добавить негативные тесты
+    dod:
+      - все тесты проходят
+      - покрытие критичных модулей ≥80%
+      - негативные сценарии покрыты
+    gate:
+      - require: "Одобряю SAAS-002-09"
+
+  # Фаза 3: Тестирование и качество
+  - id: SAAS-002-10
+    title: Написать unit тесты для сервисов и флагов
+    branch: "feature/user/SAAS-002/user-unit-tests"
+    files_scope:
+      - "src/infrastructure/services/user/tests/**"
+      - "src/infrastructure/repositories/user/tests/**"
+    steps:
+      - покрыть UserService методами флагов
+      - покрыть методы предпочтений
+      - покрыть методы адресов
+    dod:
+      - unit тесты покрывают все методы
+      - тесты стабильны и быстры
+      - моки настроены корректно
+    gate:
+      - require: "Одобряю SAAS-002-10"
+
+  - id: SAAS-002-11
+    title: Написать integration тесты для API флагов
+    branch: "feature/user/SAAS-002/user-integration-tests"
+    files_scope:
+      - "src/infrastructure/controllers/user/tests/**"
+    steps:
+      - покрыть все эндпоинты флагов
+      - покрыть эндпоинты предпочтений
+      - покрыть эндпоинты адресов
+    dod:
+      - integration тесты покрывают все эндпоинты
+      - тесты изолированы и детерминированы
+      - негативные сценарии покрыты
+    gate:
+      - require: "Одобряю SAAS-002-11"
+
+  - id: SAAS-002-12
+    title: Добавить обработку ошибок и валидацию флагов
+    branch: "feature/user/SAAS-002/user-error-handling"
+    files_scope:
+      - "src/infrastructure/common/filters/**"
+      - "src/infrastructure/common/pipes/**"
+    steps:
+      - добавить обработку ошибок для флагов
+      - улучшить валидацию с русскими сообщениями
+      - добавить логирование ошибок
+    dod:
+      - ошибки обрабатываются корректно
+      - сообщения на русском языке
+      - логирование работает
+    gate:
+      - require: "Одобряю SAAS-002-12"
+
+  - id: SAAS-002-13
+    title: Провести рефакторинг и оптимизацию
+    branch: "feature/user/SAAS-002/user-optimization"
+    files_scope:
+      - "src/infrastructure/**"
+      - "src/domain/**"
+    steps:
+      - оптимизировать запросы к БД
+      - рефакторить дублирующийся код
+      - улучшить производительность
+    dod:
+      - код оптимизирован
+      - дублирование устранено
+      - производительность улучшена
+    gate:
+      - require: "Одобряю SAAS-002-13"
+
+  # Дополнительные возможности
+  - id: SAAS-002-14
+    title: Автоматическое управление флагами (VIP по сумме покупок)
+    branch: "feature/user/SAAS-002/user-auto-flags"
+    files_scope:
+      - "src/infrastructure/services/user/**"
+      - "src/infrastructure/services/order/**"
+    steps:
+      - реализовать автоматическое назначение VIP статуса
+      - добавить логику по сумме покупок
+      - добавить уведомления о смене статуса
+    dod:
+      - автоматическое управление работает
+      - логика по сумме покупок корректна
+      - уведомления отправляются
+    gate:
+      - require: "Одобряю SAAS-002-14"
+
+  - id: SAAS-002-15
+    title: API для массового управления согласиями
+    branch: "feature/user/SAAS-002/user-bulk-consents"
+    files_scope:
+      - "src/infrastructure/controllers/user/**"
+      - "src/infrastructure/services/user/**"
+    steps:
+      - создать эндпоинт для массового управления
+      - добавить фильтрацию пользователей
+      - добавить транзакционность операций
+    dod:
+      - массовые операции работают
+      - фильтрация корректна
+      - транзакции безопасны
+    gate:
+      - require: "Одобряю SAAS-002-15"
+
+  - id: SAAS-002-16
+    title: Фильтрация пользователей по комбинации флагов
+    branch: "feature/user/SAAS-002/user-flag-filtering"
+    files_scope:
+      - "src/infrastructure/controllers/user/**"
+      - "src/infrastructure/services/user/**"
+    steps:
+      - добавить фильтрацию по нескольким флагам
+      - создать эндпоинт для сложных запросов
+      - добавить пагинацию для результатов
+    dod:
+      - фильтрация по флагам работает
+      - сложные запросы выполняются
+      - пагинация корректна
+    gate:
+      - require: "Одобряю SAAS-002-16"
+
+  - id: SAAS-002-17
+    title: Экспорт списков подписчиков
+    branch: "feature/user/SAAS-002/user-export"
+    files_scope:
+      - "src/infrastructure/controllers/user/**"
+      - "src/infrastructure/services/user/**"
+    steps:
+      - создать эндпоинт экспорта CSV
+      - добавить фильтрацию по типам подписок
+      - добавить защиту и аудит экспорта
+    dod:
+      - экспорт CSV работает
+      - фильтрация корректна
+      - безопасность обеспечена
+    gate:
+      - require: "Одобряю SAAS-002-17"
+
+  - id: SAAS-002-18
+    title: Интеграция с email-сервисами
+    branch: "feature/user/SAAS-002/user-email-integration"
+    files_scope:
+      - "src/infrastructure/services/notification/**"
+      - "src/infrastructure/services/user/**"
+    steps:
+      - интегрировать с email провайдером
+      - добавить шаблоны уведомлений
+      - настроить отправку по событиям
+    dod:
+      - email интеграция работает
+      - шаблоны настроены
+      - события обрабатываются
+    gate:
+      - require: "Одобряю SAAS-002-18"
+
+  - id: SAAS-002-19
+    title: Аналитика пользовательских согласий
+    branch: "feature/user/SAAS-002/user-analytics"
+    files_scope:
+      - "src/infrastructure/controllers/user/**"
+      - "src/infrastructure/services/user/**"
+    steps:
+      - создать эндпоинты аналитики согласий
+      - добавить метрики и дашборды
+      - настроить отчеты по согласиям
+    dod:
+      - аналитика работает
+      - метрики корректны
+      - отчеты генерируются
+    gate:
+      - require: "Одобряю SAAS-002-19"
+
+  # Unit тесты для UserRepository (дополнительные методы)
+  - id: SAAS-002-20
+    title: Unit тесты для UserRepository (дополнительные методы)
+    branch: "test/user/SAAS-002/user-repository-additional-unit-tests"
+    files_scope:
+      - "tests/unit/repositories/user.repository.additional.unit.test.ts"
+      - "src/infrastructure/repositories/user/user.repository.ts"
+    steps:
+      - создать файл tests/unit/repositories/user.repository.additional.unit.test.ts
+      - настроить моки для UserModel и транзакций
+      - написать тесты для batchUpdateFlags() - батчевые операции с транзакциями
+      - написать тесты для findUserWithTokens() - загрузка пользователя с токенами
+      - написать тесты для findUserWithOrders() - загрузка пользователя с заказами
+      - написать тесты для findUserWithProducts() - загрузка пользователя с продуктами
+      - написать тесты для findUserWithAddresses() - загрузка пользователя с адресами
+      - написать тесты для findUserWithVerificationCode() - загрузка с кодом верификации
+      - написать тесты для findUserWithLoginHistory() - загрузка с историей входов
+      - написать тесты для handleSequelizeError() - централизованная обработка ошибок
+      - добавить тесты отката транзакций при ошибках
+    dod:
+      - покрытие branches ≥ 80%
+      - покрытие functions ≥ 80%
+      - покрытие lines ≥ 80%
+      - все тесты проходят
+      - тесты транзакций проверяют commit/rollback
+      - линтеры проходят без ошибок
+    estimated_time: 5-7 часов
+    gate:
+      - require: "Одобряю SAAS-002-20"
+

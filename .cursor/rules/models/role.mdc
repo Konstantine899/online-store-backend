@@ -1,0 +1,792 @@
+# Role Management Module Specification
+
+## Overview
+Система управления ролями для мультитенантного SaaS интернет-магазина с иерархической структурой и тенантской изоляцией.
+
+## Database Structure
+
+### Table: roles
+```sql
+CREATE TABLE roles (
+    id SERIAL PRIMARY KEY,
+    role VARCHAR(50) UNIQUE NOT NULL,
+    description VARCHAR(255) NOT NULL,
+    level INTEGER NOT NULL DEFAULT 0, -- Уровень в иерархии (0-100)
+    permissions JSONB DEFAULT '{}', -- Разрешения в JSON формате
+    is_system_role BOOLEAN DEFAULT FALSE, -- Системная роль (платформа) или тенантская
+    is_active BOOLEAN DEFAULT TRUE,
+    tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE, -- NULL для системных ролей
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Индексы
+CREATE INDEX idx_roles_level ON roles(level);
+CREATE INDEX idx_roles_tenant_id ON roles(tenant_id);
+CREATE INDEX idx_roles_is_system_role ON roles(is_system_role);
+CREATE INDEX idx_roles_is_active ON roles(is_active);
+```
+
+### Table: user_roles (расширенная)
+```sql
+CREATE TABLE user_roles (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
+    tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE, -- Контекст роли
+    granted_by INTEGER REFERENCES users(id), -- Кто назначил роль
+    granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL, -- Время истечения роли (NULL = бессрочно)
+    is_active BOOLEAN DEFAULT TRUE,
+    metadata JSONB DEFAULT '{}', -- Дополнительные данные
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, role_id, tenant_id)
+);
+
+-- Индексы
+CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
+CREATE INDEX idx_user_roles_role_id ON user_roles(role_id);
+CREATE INDEX idx_user_roles_tenant_id ON user_roles(tenant_id);
+CREATE INDEX idx_user_roles_expires_at ON user_roles(expires_at);
+CREATE INDEX idx_user_roles_is_active ON user_roles(is_active);
+```
+
+### Table: role_permissions (для детального управления)
+```sql
+CREATE TABLE role_permissions (
+    id SERIAL PRIMARY KEY,
+    role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
+    resource VARCHAR(100) NOT NULL, -- products, orders, users, etc.
+    action VARCHAR(50) NOT NULL, -- create, read, update, delete, manage
+    conditions JSONB DEFAULT '{}', -- Условия доступа
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(role_id, resource, action)
+);
+
+-- Индексы
+CREATE INDEX idx_role_permissions_role_id ON role_permissions(role_id);
+CREATE INDEX idx_role_permissions_resource ON role_permissions(resource);
+CREATE INDEX idx_role_permissions_action ON role_permissions(action);
+```
+
+## Role Hierarchy
+
+### System Roles (Platform Level)
+```typescript
+const SYSTEM_ROLES = {
+    SUPER_ADMIN: {
+        level: 100,
+        description: 'Супер-администратор платформы',
+        permissions: ['*'], // Все разрешения
+        is_system_role: true,
+        tenant_id: null
+    },
+    PLATFORM_ADMIN: {
+        level: 90,
+        description: 'Администратор платформы',
+        permissions: ['platform.manage', 'tenants.manage', 'billing.manage'],
+        is_system_role: true,
+        tenant_id: null
+    },
+    SUPPORT: {
+        level: 80,
+        description: 'Техническая поддержка',
+        permissions: ['platform.view', 'tenants.support', 'users.support'],
+        is_system_role: true,
+        tenant_id: null
+    },
+    BILLING_ADMIN: {
+        level: 85,
+        description: 'Администратор биллинга',
+        permissions: ['billing.manage', 'payments.manage', 'subscriptions.manage'],
+        is_system_role: true,
+        tenant_id: null
+    }
+};
+```
+
+### Tenant Roles (Store Level)
+```typescript
+const TENANT_ROLES = {
+    TENANT_OWNER: {
+        level: 70,
+        description: 'Владелец магазина',
+        permissions: ['store.manage', 'users.manage', 'billing.manage'],
+        is_system_role: false,
+        tenant_id: 'dynamic'
+    },
+    TENANT_ADMIN: {
+        level: 60,
+        description: 'Администратор магазина',
+        permissions: ['store.manage', 'users.view', 'analytics.view'],
+        is_system_role: false,
+        tenant_id: 'dynamic'
+    },
+    MANAGER: {
+        level: 50,
+        description: 'Менеджер магазина',
+        permissions: ['products.manage', 'orders.manage', 'customers.view'],
+        is_system_role: false,
+        tenant_id: 'dynamic'
+    },
+    CONTENT_MANAGER: {
+        level: 40,
+        description: 'Контент-менеджер',
+        permissions: ['products.edit', 'categories.manage', 'content.manage'],
+        is_system_role: false,
+        tenant_id: 'dynamic'
+    },
+    CUSTOMER_SERVICE: {
+        level: 35,
+        description: 'Служба поддержки клиентов',
+        permissions: ['orders.view', 'customers.view', 'tickets.manage'],
+        is_system_role: false,
+        tenant_id: 'dynamic'
+    }
+};
+```
+
+### Customer Roles (User Level)
+```typescript
+const CUSTOMER_ROLES = {
+    VIP_CUSTOMER: {
+        level: 30,
+        description: 'VIP покупатель',
+        permissions: ['orders.create', 'profile.manage', 'analytics.personal'],
+        is_system_role: false,
+        tenant_id: 'dynamic'
+    },
+    WHOLESALE: {
+        level: 25,
+        description: 'Оптовый покупатель',
+        permissions: ['products.wholesale', 'orders.create', 'analytics.personal'],
+        is_system_role: false,
+        tenant_id: 'dynamic'
+    },
+    CUSTOMER: {
+        level: 20,
+        description: 'Обычный покупатель',
+        permissions: ['orders.create', 'profile.manage'],
+        is_system_role: false,
+        tenant_id: 'dynamic'
+    },
+    AFFILIATE: {
+        level: 15,
+        description: 'Партнер/аффилиат',
+        permissions: ['products.view', 'analytics.affiliate'],
+        is_system_role: false,
+        tenant_id: 'dynamic'
+    },
+    GUEST: {
+        level: 10,
+        description: 'Гостевой пользователь',
+        permissions: ['products.view', 'cart.manage'],
+        is_system_role: false,
+        tenant_id: 'dynamic'
+    }
+};
+```
+
+## Sequelize Models
+
+### RoleModel
+```typescript
+@Table({
+    tableName: 'roles',
+    underscored: true,
+    timestamps: true,
+    defaultScope: {
+        attributes: { exclude: ['updatedAt', 'createdAt'] },
+    },
+    scopes: {
+        system: {
+            where: { is_system_role: true },
+        },
+        tenant: {
+            where: { is_system_role: false },
+        },
+        active: {
+            where: { is_active: true },
+        },
+        byLevel: (level: number) => ({
+            where: { level },
+        }),
+        byTenant: (tenantId: number) => ({
+            where: { tenant_id: tenantId },
+        }),
+        withPermissions: {
+            include: [{
+                model: RolePermissionModel,
+                as: 'permissions',
+            }],
+        },
+    },
+})
+export class RoleModel extends Model<RoleModel> implements IRoleModel {
+    @Column({
+        type: DataType.INTEGER,
+        unique: true,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: false,
+        unique: true,
+    })
+    declare role: string;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+    })
+    declare description: string;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+    })
+    declare level: number;
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: false,
+        defaultValue: {},
+    })
+    declare permissions: Record<string, any>;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    })
+    declare is_system_role: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+    })
+    declare is_active: boolean;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+    })
+    declare tenant_id: number;
+
+    // Associations
+    @HasMany(() => UserRoleModel, 'role_id')
+    declare user_roles: UserRoleModel[];
+
+    @HasMany(() => RolePermissionModel, 'role_id')
+    declare role_permissions: RolePermissionModel[];
+
+    // Methods
+    public hasPermission(resource: string, action: string): boolean {
+        const rolePermissions = this.permissions as Record<string, string[]>;
+        return rolePermissions['*']?.includes('*') || 
+               rolePermissions[resource]?.includes(action) ||
+               rolePermissions[resource]?.includes('*');
+    }
+
+    public canAccessLevel(requiredLevel: number): boolean {
+        return this.level >= requiredLevel;
+    }
+
+    public isSystemRole(): boolean {
+        return this.is_system_role;
+    }
+
+    public isTenantRole(): boolean {
+        return !this.is_system_role;
+    }
+}
+```
+
+### UserRoleModel (расширенная)
+```typescript
+@Table({
+    tableName: 'user_roles',
+    underscored: true,
+    timestamps: true,
+    defaultScope: {
+        attributes: { exclude: ['updatedAt', 'createdAt'] },
+    },
+    scopes: {
+        active: {
+            where: { is_active: true },
+        },
+        expired: {
+            where: {
+                expires_at: {
+                    [Op.lt]: new Date(),
+                },
+            },
+        },
+        byTenant: (tenantId: number) => ({
+            where: { tenant_id: tenantId },
+        }),
+        withRole: {
+            include: [{
+                model: RoleModel,
+                as: 'role',
+            }],
+        },
+    },
+})
+export class UserRoleModel extends Model<UserRoleModel> implements IUserRoleModel {
+    @Column({
+        type: DataType.INTEGER,
+        unique: true,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    declare user_id: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    declare role_id: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    declare tenant_id: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+    })
+    declare granted_by: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+    })
+    declare granted_at: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+    })
+    declare expires_at: Date;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+    })
+    declare is_active: boolean;
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: false,
+        defaultValue: {},
+    })
+    declare metadata: Record<string, any>;
+
+    // Associations
+    @BelongsTo(() => UserModel, 'user_id')
+    declare user: UserModel;
+
+    @BelongsTo(() => RoleModel, 'role_id')
+    declare role: RoleModel;
+
+    @BelongsTo(() => UserModel, 'granted_by')
+    declare granter: UserModel;
+
+    // Methods
+    public isExpired(): boolean {
+        return this.expires_at && this.expires_at < new Date();
+    }
+
+    public isValid(): boolean {
+        return this.is_active && !this.isExpired();
+    }
+
+    public getEffectivePermissions(): string[] {
+        if (!this.isValid()) return [];
+        return this.role?.permissions || [];
+    }
+}
+```
+
+## Service Methods
+
+### RoleService
+```typescript
+@Injectable()
+export class RoleService implements IRoleService {
+    constructor(
+        @InjectModel(RoleModel) private readonly roleModel: typeof RoleModel,
+        @InjectModel(UserRoleModel) private readonly userRoleModel: typeof UserRoleModel,
+        @InjectModel(RolePermissionModel) private readonly rolePermissionModel: typeof RolePermissionModel,
+    ) {}
+
+    // CRUD Operations
+    async createRole(dto: CreateRoleDto): Promise<CreateRoleResponse>;
+    async getRole(id: number): Promise<GetRoleResponse>;
+    async updateRole(id: number, dto: UpdateRoleDto): Promise<UpdateRoleResponse>;
+    async deleteRole(id: number): Promise<DeleteRoleResponse>;
+    async getRolesList(page?: number, limit?: number): Promise<GetPaginatedRolesResponse>;
+
+    // Role Management
+    async assignRoleToUser(dto: AssignRoleDto): Promise<AssignRoleResponse>;
+    async removeRoleFromUser(dto: RemoveRoleDto): Promise<RemoveRoleResponse>;
+    async getUserRoles(userId: number, tenantId?: number): Promise<GetUserRolesResponse>;
+    async getUsersByRole(roleId: number, tenantId?: number): Promise<GetUsersByRoleResponse>;
+
+    // Permission Management
+    async addPermissionToRole(dto: AddPermissionDto): Promise<AddPermissionResponse>;
+    async removePermissionFromRole(dto: RemovePermissionDto): Promise<RemovePermissionResponse>;
+    async getUserPermissions(userId: number, tenantId?: number): Promise<GetUserPermissionsResponse>;
+
+    // Role Hierarchy
+    async canUserAccessLevel(userId: number, requiredLevel: number, tenantId?: number): Promise<boolean>;
+    async getUserEffectiveRoles(userId: number, tenantId?: number): Promise<RoleModel[]>;
+    async getRoleHierarchy(tenantId?: number): Promise<GetRoleHierarchyResponse>;
+
+    // System Operations
+    async initializeSystemRoles(): Promise<void>;
+    async initializeTenantRoles(tenantId: number): Promise<void>;
+    async cleanupExpiredRoles(): Promise<void>;
+    async auditRoleChanges(userId: number, action: string, details: any): Promise<void>;
+
+    // Business Logic
+    async autoAssignVipRole(userId: number, tenantId: number): Promise<void>;
+    async autoAssignWholesaleRole(userId: number, tenantId: number): Promise<void>;
+    async promoteUserRole(userId: number, fromRole: string, toRole: string, tenantId: number): Promise<void>;
+}
+```
+
+## DTO Classes
+
+### CreateRoleDto
+```typescript
+export class CreateRoleDto implements ICreateRoleDto {
+    @ApiProperty({ example: 'MANAGER', description: 'Название роли' })
+    @IsNotEmpty({ message: 'Название роли обязательно' })
+    @IsString({ message: 'Название роли должно быть строкой' })
+    @MaxLength(50, { message: 'Название роли не должно превышать 50 символов' })
+    @IsSanitizedString({ message: 'Название роли содержит недопустимые символы' })
+    declare readonly role: string;
+
+    @ApiProperty({ example: 'Менеджер магазина', description: 'Описание роли' })
+    @IsNotEmpty({ message: 'Описание роли обязательно' })
+    @IsString({ message: 'Описание роли должно быть строкой' })
+    @MaxLength(255, { message: 'Описание роли не должно превышать 255 символов' })
+    declare readonly description: string;
+
+    @ApiProperty({ example: 50, description: 'Уровень роли в иерархии' })
+    @IsOptional()
+    @IsInt({ message: 'Уровень роли должен быть числом' })
+    @Min(0, { message: 'Уровень роли не может быть отрицательным' })
+    @Max(100, { message: 'Уровень роли не может превышать 100' })
+    declare readonly level?: number;
+
+    @ApiProperty({ example: { 'products': ['create', 'read', 'update'] }, description: 'Разрешения роли' })
+    @IsOptional()
+    @IsObject({ message: 'Разрешения должны быть объектом' })
+    declare readonly permissions?: Record<string, string[]>;
+
+    @ApiProperty({ example: false, description: 'Системная роль или тенантская' })
+    @IsOptional()
+    @IsBoolean({ message: 'Поле is_system_role должно быть булевым значением' })
+    declare readonly is_system_role?: boolean;
+
+    @ApiProperty({ example: 1, description: 'ID тенанта (для тенантских ролей)' })
+    @IsOptional()
+    @IsInt({ message: 'ID тенанта должен быть числом' })
+    declare readonly tenant_id?: number;
+}
+```
+
+### AssignRoleDto
+```typescript
+export class AssignRoleDto implements IAssignRoleDto {
+    @ApiProperty({ example: 1, description: 'ID пользователя' })
+    @IsNotEmpty({ message: 'ID пользователя обязателен' })
+    @IsInt({ message: 'ID пользователя должен быть числом' })
+    declare readonly user_id: number;
+
+    @ApiProperty({ example: 1, description: 'ID роли' })
+    @IsNotEmpty({ message: 'ID роли обязателен' })
+    @IsInt({ message: 'ID роли должен быть числом' })
+    declare readonly role_id: number;
+
+    @ApiProperty({ example: 1, description: 'ID тенанта' })
+    @IsNotEmpty({ message: 'ID тенанта обязателен' })
+    @IsInt({ message: 'ID тенанта должен быть числом' })
+    declare readonly tenant_id: number;
+
+    @ApiProperty({ example: '2024-12-31T23:59:59Z', description: 'Дата истечения роли' })
+    @IsOptional()
+    @IsDateString({}, { message: 'Дата истечения должна быть валидной датой' })
+    declare readonly expires_at?: string;
+
+    @ApiProperty({ example: { reason: 'Повышение' }, description: 'Дополнительные данные' })
+    @IsOptional()
+    @IsObject({ message: 'Метаданные должны быть объектом' })
+    declare readonly metadata?: Record<string, any>;
+}
+```
+
+## Response Classes
+
+### GetRoleResponse
+```typescript
+export class GetRoleResponse extends RoleModel {
+    @ApiProperty({ example: 1, description: 'ID роли' })
+    declare id: number;
+
+    @ApiProperty({ example: 'MANAGER', description: 'Название роли' })
+    declare role: string;
+
+    @ApiProperty({ example: 'Менеджер магазина', description: 'Описание роли' })
+    declare description: string;
+
+    @ApiProperty({ example: 50, description: 'Уровень роли' })
+    declare level: number;
+
+    @ApiProperty({ example: { 'products': ['create', 'read', 'update'] }, description: 'Разрешения' })
+    declare permissions: Record<string, string[]>;
+
+    @ApiProperty({ example: false, description: 'Системная роль' })
+    declare is_system_role: boolean;
+
+    @ApiProperty({ example: true, description: 'Активна ли роль' })
+    declare is_active: boolean;
+
+    @ApiProperty({ example: 1, description: 'ID тенанта' })
+    declare tenant_id: number;
+
+    @ApiProperty({ type: () => [RolePermissionModel], description: 'Детальные разрешения' })
+    declare role_permissions: RolePermissionModel[];
+}
+```
+
+### GetUserRolesResponse
+```typescript
+export class GetUserRolesResponse {
+    @ApiProperty({ example: 1, description: 'ID пользователя' })
+    declare readonly user_id: number;
+
+    @ApiProperty({ type: () => [UserRoleModel], description: 'Роли пользователя' })
+    declare readonly roles: UserRoleModel[];
+
+    @ApiProperty({ example: ['products.create', 'orders.manage'], description: 'Эффективные разрешения' })
+    declare readonly effective_permissions: string[];
+
+    @ApiProperty({ example: 50, description: 'Максимальный уровень доступа' })
+    declare readonly max_level: number;
+}
+```
+
+## Controller Endpoints
+
+### RoleController
+```typescript
+@ApiTags('Роли')
+@Controller('roles')
+@UseGuards(AuthGuard, RoleGuard)
+export class RoleController implements IRoleController {
+    constructor(private readonly roleService: RoleService) {}
+
+    @CreateRoleSwaggerDecorator()
+    @HttpCode(201)
+    @Roles('SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER')
+    @Post()
+    async createRole(@Body() dto: CreateRoleDto): Promise<CreateRoleResponse>;
+
+    @GetRoleSwaggerDecorator()
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN')
+    @Get(':id')
+    async getRole(@Param('id', ParseIntPipe) id: number): Promise<GetRoleResponse>;
+
+    @UpdateRoleSwaggerDecorator()
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER')
+    @Patch(':id')
+    async updateRole(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateRoleDto): Promise<UpdateRoleResponse>;
+
+    @DeleteRoleSwaggerDecorator()
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER')
+    @Delete(':id')
+    async deleteRole(@Param('id', ParseIntPipe) id: number): Promise<DeleteRoleResponse>;
+
+    @GetRolesListSwaggerDecorator()
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN')
+    @Get()
+    async getRolesList(@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number, @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number): Promise<GetPaginatedRolesResponse>;
+
+    @AssignRoleSwaggerDecorator()
+    @HttpCode(201)
+    @Roles('SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN')
+    @Post('assign')
+    async assignRole(@Body() dto: AssignRoleDto): Promise<AssignRoleResponse>;
+
+    @RemoveRoleSwaggerDecorator()
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN')
+    @Delete('remove')
+    async removeRole(@Body() dto: RemoveRoleDto): Promise<RemoveRoleResponse>;
+
+    @GetUserRolesSwaggerDecorator()
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN')
+    @Get('user/:userId')
+    async getUserRoles(@Param('userId', ParseIntPipe) userId: number, @Query('tenant_id', ParseIntPipe) tenantId?: number): Promise<GetUserRolesResponse>;
+
+    @GetRoleHierarchySwaggerDecorator()
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN')
+    @Get('hierarchy')
+    async getRoleHierarchy(@Query('tenant_id', ParseIntPipe) tenantId?: number): Promise<GetRoleHierarchyResponse>;
+}
+```
+
+## Guards and Middleware
+
+### RoleHierarchyGuard
+```typescript
+@Injectable()
+export class RoleHierarchyGuard implements CanActivate {
+    constructor(
+        private readonly roleService: RoleService,
+        private readonly reflector: Reflector,
+    ) {}
+
+    async canActivate(context: ExecutionContext): Promise<boolean> {
+        const requiredLevel = this.reflector.get<number>('required_level', context.getHandler());
+        if (!requiredLevel) return true;
+
+        const request = context.switchToHttp().getRequest();
+        const user = request.user;
+        const tenantId = request.headers['x-tenant-id'];
+
+        return this.roleService.canUserAccessLevel(user.id, requiredLevel, tenantId);
+    }
+}
+```
+
+### TenantRoleGuard
+```typescript
+@Injectable()
+export class TenantRoleGuard implements CanActivate {
+    constructor(
+        private readonly roleService: RoleService,
+        private readonly reflector: Reflector,
+    ) {}
+
+    async canActivate(context: ExecutionContext): Promise<boolean> {
+        const request = context.switchToHttp().getRequest();
+        const user = request.user;
+        const tenantId = request.headers['x-tenant-id'];
+
+        if (!tenantId) {
+            throw new BadRequestException('Тенант не указан');
+        }
+
+        const userRoles = await this.roleService.getUserRoles(user.id, tenantId);
+        return userRoles.roles.length > 0;
+    }
+}
+```
+
+## Business Logic
+
+### Auto Role Assignment
+```typescript
+// Автоматическое назначение VIP роли по сумме покупок
+async autoAssignVipRole(userId: number, tenantId: number): Promise<void> {
+    const totalSpent = await this.orderService.getUserTotalSpent(userId, tenantId);
+    const vipThreshold = await this.tenantService.getVipThreshold(tenantId);
+    
+    if (totalSpent >= vipThreshold) {
+        const vipRole = await this.roleService.getRoleByName('VIP_CUSTOMER', tenantId);
+        await this.roleService.assignRoleToUser({
+            user_id: userId,
+            role_id: vipRole.id,
+            tenant_id: tenantId,
+            metadata: { auto_assigned: true, total_spent: totalSpent }
+        });
+    }
+}
+
+// Автоматическое назначение оптовой роли
+async autoAssignWholesaleRole(userId: number, tenantId: number): Promise<void> {
+    const orderCount = await this.orderService.getUserOrderCount(userId, tenantId);
+    const wholesaleThreshold = await this.tenantService.getWholesaleThreshold(tenantId);
+    
+    if (orderCount >= wholesaleThreshold) {
+        const wholesaleRole = await this.roleService.getRoleByName('WHOLESALE', tenantId);
+        await this.roleService.assignRoleToUser({
+            user_id: userId,
+            role_id: wholesaleRole.id,
+            tenant_id: tenantId,
+            metadata: { auto_assigned: true, order_count: orderCount }
+        });
+    }
+}
+```
+
+## Readiness Criteria
+
+### Database
+- [ ] Миграции для таблиц roles, user_roles, role_permissions созданы
+- [ ] Индексы для производительности добавлены
+- [ ] Сиды с системными ролями созданы
+- [ ] Триггеры для автоматического назначения ролей настроены
+
+### Models
+- [ ] RoleModel с методами иерархии реализован
+- [ ] UserRoleModel с поддержкой истечения ролей реализован
+- [ ] RolePermissionModel для детального управления создан
+- [ ] Ассоциации между моделями настроены
+
+### Services
+- [ ] RoleService с полным CRUD функционалом реализован
+- [ ] Методы управления разрешениями работают
+- [ ] Логика иерархии ролей реализована
+- [ ] Автоматическое назначение ролей работает
+
+### API
+- [ ] RoleController с полным набором endpoints создан
+- [ ] Guards для проверки ролей и иерархии работают
+- [ ] Swagger документация обновлена
+- [ ] Валидация входных данных настроена
+
+### Security
+- [ ] Тенантская изоляция ролей работает
+- [ ] Аудит изменений ролей ведется
+- [ ] Временные роли поддерживаются
+- [ ] Проверка разрешений на уровне ресурсов работает
+
+### Testing
+- [ ] Unit тесты для RoleService написаны
+- [ ] Integration тесты для API endpoints созданы
+- [ ] Тесты безопасности и изоляции написаны
+- [ ] Тесты автоматического назначения ролей созданы
+
+### Performance
+- [ ] Кэширование ролей и разрешений настроено
+- [ ] Оптимизированные запросы для проверки ролей
+- [ ] Индексы для быстрого поиска ролей созданы
+- [ ] Мониторинг производительности настроен

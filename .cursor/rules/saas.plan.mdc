@@ -1,0 +1,93 @@
+# SaaS Execution Plan (Binding)
+
+binding: true
+owner: platform
+version: 1.0
+
+execution_policy:
+  must_follow: true
+  allow_code_changes_only_after: "Одобряю <TASK_ID>"
+  triggers:
+    - "Планируй": update this file only
+    - "Покажи код <TASK_ID>": show diffs/commands, no changes
+    - "Одобряю <TASK_ID>": implement exactly that task
+    - "Коммит <TASK_ID>": commit & prepare PR notes
+  constraints:
+    - no public API changes without explicit approval
+    - changes only within task files_scope
+    - pass lints/tests before marking DoD done
+
+roadmap:
+  epic: SAAS-CORE
+  description: Global roadmap for multi-tenant ecommerce SaaS
+
+references:
+  - models_user: ./.cursor/rules/models/user.plan.mdc
+
+tasks:
+  - id: SAAS-001
+    title: Enable multi-tenant core (DB + Middleware + Scope)
+    branch: "feature/infra/SAAS-001/enable-multi-tenant-core"
+    files_scope:
+      - "db/migrations/**"
+      - "src/infrastructure/common/middleware/**"
+      - "src/infrastructure/repositories/**"
+      - "src/main.ts"
+      - "src/infrastructure/common/swagger/**"
+    steps:
+      - create tenants and tenant_users migrations with indexes
+      - add tenant_id to core tables + indexes + backfill
+      - tenant middleware resolve by x-tenant-id or subdomain
+      - enforce tenant filter in repositories via helper/scope
+      - document global x-tenant-id header in Swagger
+    dod:
+      - migrations up/down succeed transactionally
+      - deterministic backfill to default tenant
+      - missing x-tenant-id -> 400; with header -> isolated data
+      - integration tests green for isolation
+      - Swagger documents x-tenant-id as global header
+    gate:
+      - require: "Одобряю SAAS-001"
+
+  - id: SAAS-002
+    title: User module MVP cleanup (strict API)
+    branch: "feature/user/SAAS-002/user-mvp-cleanup"
+    files_scope:
+      - "src/infrastructure/controllers/user/**"
+      - "src/infrastructure/services/user/**"
+      - "src/infrastructure/dto/user/**"
+      - "src/infrastructure/responses/user/**"
+      - "src/infrastructure/common/decorators/swagger/user/**"
+    steps:
+      - remove VIP/Premium/Beta/Wholesale/Affiliate/Employee/HighValue endpoints
+      - keep lifecycle flags (active/blocked/suspended/deleted, email/phone verified)
+      - replace response inheritance with explicit Response DTO (whitelist fields)
+      - BruteforceGuard for verify routes, russian validation messages
+    dod:
+      - public contracts aligned; removed endpoints only
+      - unit/integration tests green (success + negative cases)
+      - Swagger updated with summary/description/responses
+    gate:
+      - require: "Одобряю SAAS-002"
+
+  - id: SAAS-003
+    title: Catalog tenant filters and pagination
+    branch: "feature/catalog/SAAS-003/tenant-pagination"
+    files_scope:
+      - "src/infrastructure/controllers/product/**"
+      - "src/infrastructure/repositories/product/**"
+      - "src/infrastructure/services/product/**"
+      - "db/migrations/**"
+    steps:
+      - add tenant filters to all product queries
+      - ensure pagination contract { data, meta }
+      - add required indexes for performance
+    dod:
+      - product lists are tenant-isolated and paginated
+      - integration tests for success and error pass
+    gate:
+      - require: "Одобряю SAAS-003"
+
+notes:
+  - Any change to this plan must be requested via trigger "Планируй" and approved.
+

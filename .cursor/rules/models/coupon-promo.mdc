@@ -1,0 +1,1279 @@
+# Система купонов (Coupon System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы купонов для ecommerce приложения с базовыми типами скидок, фокусом на быструю разработку и готовность к масштабированию.
+
+## Основные требования
+- **Типы скидок** - процентные, фиксированные, бесплатная доставка
+- **Ограничения** - по времени, использованию, минимальной сумме
+- **Валидация** - проверка применимости купонов
+- **История** - отслеживание использования купонов
+- **Управление** - CRUD операции для администраторов
+
+## Структура базы данных
+
+### Таблица `coupons`
+```sql
+CREATE TABLE coupons (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('percentage', 'fixed', 'free_shipping')),
+    value DECIMAL(10,2) NOT NULL,
+    min_order_amount DECIMAL(10,2) DEFAULT 0.00,
+    max_discount DECIMAL(10,2),
+    usage_limit INTEGER,
+    usage_count INTEGER DEFAULT 0,
+    user_limit INTEGER DEFAULT 1,
+    valid_from TIMESTAMP NOT NULL,
+    valid_to TIMESTAMP NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    applicable_products INTEGER[],
+    applicable_categories INTEGER[],
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `coupon_usage`
+```sql
+CREATE TABLE coupon_usage (
+    id SERIAL PRIMARY KEY,
+    coupon_id INTEGER REFERENCES coupons(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+    discount_amount DECIMAL(10,2) NOT NULL,
+    used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Модели Sequelize
+
+### Coupon Model
+```typescript
+// src/domain/models/coupon.model.ts
+import { Model, DataType, Column, Table, HasMany } from 'sequelize-typescript';
+import { CouponUsageModel } from './coupon-usage.model';
+
+export enum CouponType {
+    PERCENTAGE = 'percentage',
+    FIXED = 'fixed',
+    FREE_SHIPPING = 'free_shipping'
+}
+
+interface ICouponModel {
+    id: number;
+    code: string;
+    name: string;
+    description?: string;
+    type: CouponType;
+    value: number;
+    minOrderAmount: number;
+    maxDiscount?: number;
+    usageLimit?: number;
+    usageCount: number;
+    userLimit: number;
+    validFrom: Date;
+    validTo: Date;
+    isActive: boolean;
+    applicableProducts?: number[];
+    applicableCategories?: number[];
+    usages: CouponUsageModel[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface ICouponCreationAttributes {
+    code: string;
+    name: string;
+    description?: string;
+    type: CouponType;
+    value: number;
+    minOrderAmount?: number;
+    maxDiscount?: number;
+    usageLimit?: number;
+    userLimit?: number;
+    validFrom: Date;
+    validTo: Date;
+    isActive?: boolean;
+    applicableProducts?: number[];
+    applicableCategories?: number[];
+}
+
+@Table({
+    tableName: 'coupons',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['code'], name: 'idx_coupons_code', unique: true },
+        { fields: ['type'], name: 'idx_coupons_type' },
+        { fields: ['is_active'], name: 'idx_coupons_is_active' },
+        { fields: ['valid_from', 'valid_to'], name: 'idx_coupons_validity' },
+    ],
+})
+export class CouponModel
+    extends Model<CouponModel, ICouponCreationAttributes>
+    implements ICouponModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: false,
+        unique: true,
+    })
+    declare code: string;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: false,
+    })
+    declare name: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare description: string;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(CouponType)),
+        allowNull: false,
+    })
+    declare type: CouponType;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+    })
+    declare value: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00,
+        field: 'min_order_amount',
+    })
+    declare minOrderAmount: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: true,
+        field: 'max_discount',
+    })
+    declare maxDiscount: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'usage_limit',
+    })
+    declare usageLimit: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'usage_count',
+    })
+    declare usageCount: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+        field: 'user_limit',
+    })
+    declare userLimit: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        field: 'valid_from',
+    })
+    declare validFrom: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        field: 'valid_to',
+    })
+    declare validTo: Date;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.ARRAY(DataType.INTEGER),
+        allowNull: true,
+        field: 'applicable_products',
+    })
+    declare applicableProducts: number[];
+
+    @Column({
+        type: DataType.ARRAY(DataType.INTEGER),
+        allowNull: true,
+        field: 'applicable_categories',
+    })
+    declare applicableCategories: number[];
+
+    @HasMany(() => CouponUsageModel)
+    declare usages: CouponUsageModel[];
+}
+```
+
+### CouponUsage Model
+```typescript
+// src/domain/models/coupon-usage.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { CouponModel } from './coupon.model';
+import { UserModel } from './user.model';
+import { OrderModel } from './order.model';
+
+interface ICouponUsageModel {
+    id: number;
+    couponId: number;
+    userId: number;
+    orderId: number;
+    discountAmount: number;
+    coupon: CouponModel;
+    user: UserModel;
+    order: OrderModel;
+    usedAt: Date;
+}
+
+interface ICouponUsageCreationAttributes {
+    couponId: number;
+    userId: number;
+    orderId: number;
+    discountAmount: number;
+}
+
+@Table({
+    tableName: 'coupon_usage',
+    underscored: true,
+    timestamps: true,
+    createdAt: 'usedAt',
+    updatedAt: false,
+    indexes: [
+        { fields: ['coupon_id'], name: 'idx_coupon_usage_coupon_id' },
+        { fields: ['user_id'], name: 'idx_coupon_usage_user_id' },
+        { fields: ['order_id'], name: 'idx_coupon_usage_order_id' },
+        { fields: ['used_at'], name: 'idx_coupon_usage_used_at' },
+    ],
+})
+export class CouponUsageModel
+    extends Model<CouponUsageModel, ICouponUsageCreationAttributes>
+    implements ICouponUsageModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => CouponModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'coupon_id',
+    })
+    declare couponId: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @ForeignKey(() => OrderModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'order_id',
+    })
+    declare orderId: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        field: 'discount_amount',
+    })
+    declare discountAmount: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'used_at',
+    })
+    declare usedAt: Date;
+
+    @BelongsTo(() => CouponModel)
+    declare coupon: CouponModel;
+
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    @BelongsTo(() => OrderModel)
+    declare order: OrderModel;
+}
+```
+
+## Сервисы
+
+### Coupon Service
+```typescript
+// src/infrastructure/services/coupon.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { CouponModel, CouponType } from '@app/domain/models/coupon.model';
+import { CouponUsageModel } from '@app/domain/models/coupon-usage.model';
+import { Op } from 'sequelize';
+
+@Injectable()
+export class CouponService {
+    private readonly logger = new Logger(CouponService.name);
+
+    constructor(
+        @InjectModel(CouponModel)
+        private couponModel: typeof CouponModel,
+        @InjectModel(CouponUsageModel)
+        private couponUsageModel: typeof CouponUsageModel,
+    ) {}
+
+    async findAll(
+        page: number = 1,
+        limit: number = 10,
+        search?: string,
+        isActive?: boolean,
+    ): Promise<{ data: CouponModel[]; total: number }> {
+        const where: any = {};
+
+        if (search) {
+            where[Op.or] = [
+                { code: { [Op.iLike]: `%${search}%` } },
+                { name: { [Op.iLike]: `%${search}%` } },
+            ];
+        }
+
+        if (isActive !== undefined) {
+            where.isActive = isActive;
+        }
+
+        const { rows: coupons, count: total } = await this.couponModel.findAndCountAll({
+            where,
+            order: [['created_at', 'DESC']],
+            limit,
+            offset: (page - 1) * limit,
+            include: [
+                {
+                    model: CouponUsageModel,
+                    attributes: ['id'],
+                    required: false,
+                },
+            ],
+        });
+
+        return { data: coupons, total };
+    }
+
+    async findById(id: number): Promise<CouponModel> {
+        const coupon = await this.couponModel.findByPk(id, {
+            include: [
+                {
+                    model: CouponUsageModel,
+                    include: ['user', 'order'],
+                    required: false,
+                },
+            ],
+        });
+
+        if (!coupon) {
+            throw new NotFoundException('Купон не найден');
+        }
+
+        return coupon;
+    }
+
+    async findByCode(code: string): Promise<CouponModel> {
+        const coupon = await this.couponModel.findOne({
+            where: { code: code.toUpperCase() },
+        });
+
+        if (!coupon) {
+            throw new NotFoundException('Купон не найден');
+        }
+
+        return coupon;
+    }
+
+    async create(couponData: Partial<CouponModel>): Promise<CouponModel> {
+        // Проверяем уникальность кода
+        const existingCoupon = await this.couponModel.findOne({
+            where: { code: couponData.code.toUpperCase() },
+        });
+
+        if (existingCoupon) {
+            throw new BadRequestException('Купон с таким кодом уже существует');
+        }
+
+        const coupon = await this.couponModel.create({
+            ...couponData,
+            code: couponData.code.toUpperCase(),
+        });
+
+        this.logger.log(`Coupon created: ${coupon.code} (${coupon.name})`);
+        return coupon;
+    }
+
+    async update(id: number, couponData: Partial<CouponModel>): Promise<CouponModel> {
+        const coupon = await this.findById(id);
+
+        // Проверяем уникальность кода при обновлении
+        if (couponData.code && couponData.code !== coupon.code) {
+            const existingCoupon = await this.couponModel.findOne({
+                where: { code: couponData.code.toUpperCase() },
+            });
+
+            if (existingCoupon) {
+                throw new BadRequestException('Купон с таким кодом уже существует');
+            }
+        }
+
+        await coupon.update({
+            ...couponData,
+            code: couponData.code ? couponData.code.toUpperCase() : coupon.code,
+        });
+
+        this.logger.log(`Coupon updated: ${coupon.code} (${coupon.name})`);
+        return coupon;
+    }
+
+    async delete(id: number): Promise<void> {
+        const coupon = await this.findById(id);
+
+        // Проверяем, есть ли использование купона
+        const usageCount = await this.couponUsageModel.count({
+            where: { couponId: id },
+        });
+
+        if (usageCount > 0) {
+            throw new BadRequestException('Нельзя удалить купон, который уже использовался');
+        }
+
+        await coupon.destroy();
+        this.logger.log(`Coupon deleted: ${coupon.code} (${coupon.name})`);
+    }
+
+    async validateCoupon(
+        code: string,
+        userId: number,
+        orderAmount: number,
+        productIds?: number[],
+        categoryIds?: number[],
+    ): Promise<{ isValid: boolean; message?: string; coupon?: CouponModel; discount?: number }> {
+        try {
+            const coupon = await this.findByCode(code.toUpperCase());
+
+            // Проверяем активность
+            if (!coupon.isActive) {
+                return { isValid: false, message: 'Купон неактивен' };
+            }
+
+            // Проверяем срок действия
+            const now = new Date();
+            if (now < coupon.validFrom || now > coupon.validTo) {
+                return { isValid: false, message: 'Купон недействителен в данный момент' };
+            }
+
+            // Проверяем минимальную сумму заказа
+            if (orderAmount < coupon.minOrderAmount) {
+                return { 
+                    isValid: false, 
+                    message: `Минимальная сумма заказа для использования купона: ${coupon.minOrderAmount} руб.` 
+                };
+            }
+
+            // Проверяем лимит использования
+            if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) {
+                return { isValid: false, message: 'Купон больше не может быть использован' };
+            }
+
+            // Проверяем лимит использования пользователем
+            const userUsageCount = await this.couponUsageModel.count({
+                where: { couponId: coupon.id, userId },
+            });
+
+            if (userUsageCount >= coupon.userLimit) {
+                return { isValid: false, message: 'Вы уже использовали этот купон максимальное количество раз' };
+            }
+
+            // Проверяем применимость к товарам
+            if (coupon.applicableProducts && productIds) {
+                const hasApplicableProduct = productIds.some(id => 
+                    coupon.applicableProducts.includes(id)
+                );
+                if (!hasApplicableProduct) {
+                    return { isValid: false, message: 'Купон не применим к выбранным товарам' };
+                }
+            }
+
+            // Проверяем применимость к категориям
+            if (coupon.applicableCategories && categoryIds) {
+                const hasApplicableCategory = categoryIds.some(id => 
+                    coupon.applicableCategories.includes(id)
+                );
+                if (!hasApplicableCategory) {
+                    return { isValid: false, message: 'Купон не применим к выбранным категориям' };
+                }
+            }
+
+            // Рассчитываем скидку
+            let discount = 0;
+            switch (coupon.type) {
+                case CouponType.PERCENTAGE:
+                    discount = (orderAmount * coupon.value) / 100;
+                    if (coupon.maxDiscount && discount > coupon.maxDiscount) {
+                        discount = coupon.maxDiscount;
+                    }
+                    break;
+                case CouponType.FIXED:
+                    discount = coupon.value;
+                    break;
+                case CouponType.FREE_SHIPPING:
+                    discount = 0; // Логика бесплатной доставки обрабатывается отдельно
+                    break;
+            }
+
+            return { isValid: true, coupon, discount };
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                return { isValid: false, message: 'Купон не найден' };
+            }
+            throw error;
+        }
+    }
+
+    async applyCoupon(
+        couponId: number,
+        userId: number,
+        orderId: number,
+        discountAmount: number,
+    ): Promise<CouponUsageModel> {
+        const coupon = await this.findById(couponId);
+
+        // Проверяем лимит использования
+        if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) {
+            throw new BadRequestException('Купон больше не может быть использован');
+        }
+
+        // Проверяем лимит использования пользователем
+        const userUsageCount = await this.couponUsageModel.count({
+            where: { couponId, userId },
+        });
+
+        if (userUsageCount >= coupon.userLimit) {
+            throw new BadRequestException('Вы уже использовали этот купон максимальное количество раз');
+        }
+
+        // Создаем запись об использовании
+        const usage = await this.couponUsageModel.create({
+            couponId,
+            userId,
+            orderId,
+            discountAmount,
+        });
+
+        // Увеличиваем счетчик использования
+        await coupon.update({
+            usageCount: coupon.usageCount + 1,
+        });
+
+        this.logger.log(`Coupon ${coupon.code} applied to order ${orderId}`);
+        return usage;
+    }
+
+    async getCouponUsage(couponId: number): Promise<CouponUsageModel[]> {
+        return this.couponUsageModel.findAll({
+            where: { couponId },
+            include: ['user', 'order'],
+            order: [['used_at', 'DESC']],
+        });
+    }
+
+    async getActiveCoupons(): Promise<CouponModel[]> {
+        const now = new Date();
+        return this.couponModel.findAll({
+            where: {
+                isActive: true,
+                validFrom: { [Op.lte]: now },
+                validTo: { [Op.gte]: now },
+            },
+            order: [['created_at', 'DESC']],
+        });
+    }
+}
+```
+
+## Контроллеры
+
+### Coupon Controller
+```typescript
+// src/infrastructure/controllers/coupon.controller.ts
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
+import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
+import { Roles } from '@app/infrastructure/common/decorators/roles.decorator';
+import { CurrentUser } from '@app/infrastructure/common/decorators/current-user.decorator';
+import { CouponService } from '@app/infrastructure/services/coupon.service';
+import { CreateCouponDto } from '@app/infrastructure/dto/coupon/create-coupon.dto';
+import { UpdateCouponDto } from '@app/infrastructure/dto/coupon/update-coupon.dto';
+import { ValidateCouponDto } from '@app/infrastructure/dto/coupon/validate-coupon.dto';
+import { CouponResponse, CouponListResponse } from '@app/infrastructure/responses/coupon/coupon.response';
+
+@ApiTags('Купоны')
+@Controller('coupons')
+export class CouponController {
+    constructor(private readonly couponService: CouponService) {}
+
+    @Get()
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить список купонов (только для админов)' })
+    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
+    @ApiQuery({ name: 'search', required: false, description: 'Поиск по коду или названию' })
+    @ApiQuery({ name: 'isActive', required: false, description: 'Фильтр по активности' })
+    @ApiResponse({ status: 200, description: 'Список купонов получен', type: CouponListResponse })
+    async getCoupons(
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+        @Query('search') search?: string,
+        @Query('isActive') isActive?: boolean,
+    ): Promise<CouponListResponse> {
+        const result = await this.couponService.findAll(page, limit, search, isActive);
+        
+        return {
+            data: result.data.map(coupon => ({
+                id: coupon.id,
+                code: coupon.code,
+                name: coupon.name,
+                description: coupon.description,
+                type: coupon.type,
+                value: coupon.value,
+                minOrderAmount: coupon.minOrderAmount,
+                maxDiscount: coupon.maxDiscount,
+                usageLimit: coupon.usageLimit,
+                usageCount: coupon.usageCount,
+                userLimit: coupon.userLimit,
+                validFrom: coupon.validFrom,
+                validTo: coupon.validTo,
+                isActive: coupon.isActive,
+                applicableProducts: coupon.applicableProducts,
+                applicableCategories: coupon.applicableCategories,
+                createdAt: coupon.createdAt,
+                updatedAt: coupon.updatedAt,
+            })),
+            meta: {
+                totalCount: result.total,
+                currentPage: page,
+                limit,
+                lastPage: Math.ceil(result.total / limit),
+                nextPage: page < Math.ceil(result.total / limit) ? page + 1 : null,
+                previousPage: page > 1 ? page - 1 : null,
+            },
+        };
+    }
+
+    @Get('active')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить активные купоны' })
+    @ApiResponse({ status: 200, description: 'Активные купоны получены', type: [CouponResponse] })
+    async getActiveCoupons(): Promise<CouponResponse[]> {
+        const coupons = await this.couponService.getActiveCoupons();
+        
+        return coupons.map(coupon => ({
+            id: coupon.id,
+            code: coupon.code,
+            name: coupon.name,
+            description: coupon.description,
+            type: coupon.type,
+            value: coupon.value,
+            minOrderAmount: coupon.minOrderAmount,
+            maxDiscount: coupon.maxDiscount,
+            validFrom: coupon.validFrom,
+            validTo: coupon.validTo,
+        }));
+    }
+
+    @Post('validate')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Валидировать купон' })
+    @ApiResponse({ status: 200, description: 'Результат валидации купона' })
+    async validateCoupon(
+        @Body() validateCouponDto: ValidateCouponDto,
+        @CurrentUser() user: any,
+    ): Promise<{ isValid: boolean; message?: string; discount?: number }> {
+        const result = await this.couponService.validateCoupon(
+            validateCouponDto.code,
+            user.id,
+            validateCouponDto.orderAmount,
+            validateCouponDto.productIds,
+            validateCouponDto.categoryIds,
+        );
+
+        return {
+            isValid: result.isValid,
+            message: result.message,
+            discount: result.discount,
+        };
+    }
+
+    @Get(':id')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить купон по ID (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Купон получен', type: CouponResponse })
+    @ApiResponse({ status: 404, description: 'Купон не найден' })
+    async getCouponById(@Param('id') id: number): Promise<CouponResponse> {
+        const coupon = await this.couponService.findById(id);
+        
+        return {
+            id: coupon.id,
+            code: coupon.code,
+            name: coupon.name,
+            description: coupon.description,
+            type: coupon.type,
+            value: coupon.value,
+            minOrderAmount: coupon.minOrderAmount,
+            maxDiscount: coupon.maxDiscount,
+            usageLimit: coupon.usageLimit,
+            usageCount: coupon.usageCount,
+            userLimit: coupon.userLimit,
+            validFrom: coupon.validFrom,
+            validTo: coupon.validTo,
+            isActive: coupon.isActive,
+            applicableProducts: coupon.applicableProducts,
+            applicableCategories: coupon.applicableCategories,
+            createdAt: coupon.createdAt,
+            updatedAt: coupon.updatedAt,
+        };
+    }
+
+    @Post()
+    @HttpCode(HttpStatus.CREATED)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Создать новый купон (только для админов)' })
+    @ApiResponse({ status: 201, description: 'Купон создан', type: CouponResponse })
+    @ApiResponse({ status: 400, description: 'Ошибка валидации' })
+    async createCoupon(@Body() createCouponDto: CreateCouponDto): Promise<CouponResponse> {
+        const coupon = await this.couponService.create(createCouponDto);
+        
+        return {
+            id: coupon.id,
+            code: coupon.code,
+            name: coupon.name,
+            description: coupon.description,
+            type: coupon.type,
+            value: coupon.value,
+            minOrderAmount: coupon.minOrderAmount,
+            maxDiscount: coupon.maxDiscount,
+            usageLimit: coupon.usageLimit,
+            usageCount: coupon.usageCount,
+            userLimit: coupon.userLimit,
+            validFrom: coupon.validFrom,
+            validTo: coupon.validTo,
+            isActive: coupon.isActive,
+            applicableProducts: coupon.applicableProducts,
+            applicableCategories: coupon.applicableCategories,
+            createdAt: coupon.createdAt,
+            updatedAt: coupon.updatedAt,
+        };
+    }
+
+    @Put(':id')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Обновить купон (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Купон обновлен', type: CouponResponse })
+    @ApiResponse({ status: 404, description: 'Купон не найден' })
+    @ApiResponse({ status: 400, description: 'Ошибка валидации' })
+    async updateCoupon(
+        @Param('id') id: number,
+        @Body() updateCouponDto: UpdateCouponDto,
+    ): Promise<CouponResponse> {
+        const coupon = await this.couponService.update(id, updateCouponDto);
+        
+        return {
+            id: coupon.id,
+            code: coupon.code,
+            name: coupon.name,
+            description: coupon.description,
+            type: coupon.type,
+            value: coupon.value,
+            minOrderAmount: coupon.minOrderAmount,
+            maxDiscount: coupon.maxDiscount,
+            usageLimit: coupon.usageLimit,
+            usageCount: coupon.usageCount,
+            userLimit: coupon.userLimit,
+            validFrom: coupon.validFrom,
+            validTo: coupon.validTo,
+            isActive: coupon.isActive,
+            applicableProducts: coupon.applicableProducts,
+            applicableCategories: coupon.applicableCategories,
+            createdAt: coupon.createdAt,
+            updatedAt: coupon.updatedAt,
+        };
+    }
+
+    @Delete(':id')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Удалить купон (только для админов)' })
+    @ApiResponse({ status: 204, description: 'Купон удален' })
+    @ApiResponse({ status: 404, description: 'Купон не найден' })
+    @ApiResponse({ status: 400, description: 'Нельзя удалить купон, который уже использовался' })
+    async deleteCoupon(@Param('id') id: number): Promise<void> {
+        return this.couponService.delete(id);
+    }
+}
+```
+
+## Миграции
+
+### Создание таблиц купонов
+```typescript
+// db/migrations/YYYYMMDDHHMMSS-create-coupon-system.ts
+import { QueryInterface, DataTypes } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+    // Создание таблицы coupons
+    await queryInterface.createTable('coupons', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        code: {
+            type: DataTypes.STRING(50),
+            allowNull: false,
+            unique: true,
+        },
+        name: {
+            type: DataTypes.STRING(100),
+            allowNull: false,
+        },
+        description: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        type: {
+            type: DataTypes.ENUM('percentage', 'fixed', 'free_shipping'),
+            allowNull: false,
+        },
+        value: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+        },
+        min_order_amount: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+            defaultValue: 0.00,
+        },
+        max_discount: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: true,
+        },
+        usage_limit: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        usage_count: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        },
+        user_limit: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 1,
+        },
+        valid_from: {
+            type: DataTypes.DATE,
+            allowNull: false,
+        },
+        valid_to: {
+            type: DataTypes.DATE,
+            allowNull: false,
+        },
+        is_active: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        },
+        applicable_products: {
+            type: DataTypes.ARRAY(DataTypes.INTEGER),
+            allowNull: true,
+        },
+        applicable_categories: {
+            type: DataTypes.ARRAY(DataTypes.INTEGER),
+            allowNull: true,
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание таблицы coupon_usage
+    await queryInterface.createTable('coupon_usage', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        coupon_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'coupons', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        user_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'users', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        order_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'orders', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        discount_amount: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+        },
+        used_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание индексов
+    await queryInterface.addIndex('coupons', ['code'], { unique: true });
+    await queryInterface.addIndex('coupons', ['type']);
+    await queryInterface.addIndex('coupons', ['is_active']);
+    await queryInterface.addIndex('coupons', ['valid_from', 'valid_to']);
+
+    await queryInterface.addIndex('coupon_usage', ['coupon_id']);
+    await queryInterface.addIndex('coupon_usage', ['user_id']);
+    await queryInterface.addIndex('coupon_usage', ['order_id']);
+    await queryInterface.addIndex('coupon_usage', ['used_at']);
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+    await queryInterface.dropTable('coupon_usage');
+    await queryInterface.dropTable('coupons');
+}
+```
+
+## DTO и валидация
+
+### CreateCouponDto
+```typescript
+// src/infrastructure/dto/coupon/create-coupon.dto.ts
+import { IsString, IsEnum, IsNumber, IsBoolean, IsOptional, IsArray, IsDateString, Length, Min, Max } from 'class-validator';
+import { CouponType } from '@app/domain/models/coupon.model';
+
+export class CreateCouponDto {
+    @IsString({ message: 'Код купона должен быть строкой' })
+    @Length(3, 50, { message: 'Код купона должен быть от 3 до 50 символов' })
+    declare readonly code: string;
+
+    @IsString({ message: 'Название купона должно быть строкой' })
+    @Length(1, 100, { message: 'Название купона должно быть от 1 до 100 символов' })
+    declare readonly name: string;
+
+    @IsOptional()
+    @IsString({ message: 'Описание должно быть строкой' })
+    declare readonly description?: string;
+
+    @IsEnum(CouponType, { message: 'Тип купона должен быть одним из: percentage, fixed, free_shipping' })
+    declare readonly type: CouponType;
+
+    @IsNumber({}, { message: 'Значение должно быть числом' })
+    @Min(0, { message: 'Значение не может быть отрицательным' })
+    declare readonly value: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Минимальная сумма заказа должна быть числом' })
+    @Min(0, { message: 'Минимальная сумма заказа не может быть отрицательной' })
+    declare readonly minOrderAmount?: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Максимальная скидка должна быть числом' })
+    @Min(0, { message: 'Максимальная скидка не может быть отрицательной' })
+    declare readonly maxDiscount?: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Лимит использования должен быть числом' })
+    @Min(1, { message: 'Лимит использования должен быть больше 0' })
+    declare readonly usageLimit?: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Лимит использования пользователем должен быть числом' })
+    @Min(1, { message: 'Лимит использования пользователем должен быть больше 0' })
+    declare readonly userLimit?: number;
+
+    @IsDateString({}, { message: 'Дата начала действия должна быть валидной датой' })
+    declare readonly validFrom: string;
+
+    @IsDateString({}, { message: 'Дата окончания действия должна быть валидной датой' })
+    declare readonly validTo: string;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Статус активности должен быть булевым значением' })
+    declare readonly isActive?: boolean;
+
+    @IsOptional()
+    @IsArray({ message: 'Применимые товары должны быть массивом' })
+    @IsNumber({}, { each: true, message: 'ID товара должен быть числом' })
+    declare readonly applicableProducts?: number[];
+
+    @IsOptional()
+    @IsArray({ message: 'Применимые категории должны быть массивом' })
+    @IsNumber({}, { each: true, message: 'ID категории должен быть числом' })
+    declare readonly applicableCategories?: number[];
+}
+```
+
+### UpdateCouponDto
+```typescript
+// src/infrastructure/dto/coupon/update-coupon.dto.ts
+import { PartialType } from '@nestjs/swagger';
+import { CreateCouponDto } from './create-coupon.dto';
+
+export class UpdateCouponDto extends PartialType(CreateCouponDto) {}
+```
+
+### ValidateCouponDto
+```typescript
+// src/infrastructure/dto/coupon/validate-coupon.dto.ts
+import { IsString, IsNumber, IsOptional, IsArray, Length, Min } from 'class-validator';
+
+export class ValidateCouponDto {
+    @IsString({ message: 'Код купона должен быть строкой' })
+    @Length(3, 50, { message: 'Код купона должен быть от 3 до 50 символов' })
+    declare readonly code: string;
+
+    @IsNumber({}, { message: 'Сумма заказа должна быть числом' })
+    @Min(0, { message: 'Сумма заказа не может быть отрицательной' })
+    declare readonly orderAmount: number;
+
+    @IsOptional()
+    @IsArray({ message: 'ID товаров должны быть массивом' })
+    @IsNumber({}, { each: true, message: 'ID товара должен быть числом' })
+    declare readonly productIds?: number[];
+
+    @IsOptional()
+    @IsArray({ message: 'ID категорий должны быть массивом' })
+    @IsNumber({}, { each: true, message: 'ID категории должен быть числом' })
+    declare readonly categoryIds?: number[];
+}
+```
+
+## Response классы
+
+### CouponResponse
+```typescript
+// src/infrastructure/responses/coupon/coupon.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+import { CouponType } from '@app/domain/models/coupon.model';
+
+export class CouponResponse {
+    @ApiProperty({ description: 'ID купона' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'Код купона' })
+    declare readonly code: string;
+
+    @ApiProperty({ description: 'Название купона' })
+    declare readonly name: string;
+
+    @ApiProperty({ description: 'Описание купона', required: false })
+    declare readonly description?: string;
+
+    @ApiProperty({ description: 'Тип купона', enum: CouponType })
+    declare readonly type: CouponType;
+
+    @ApiProperty({ description: 'Значение скидки' })
+    declare readonly value: number;
+
+    @ApiProperty({ description: 'Минимальная сумма заказа' })
+    declare readonly minOrderAmount: number;
+
+    @ApiProperty({ description: 'Максимальная скидка', required: false })
+    declare readonly maxDiscount?: number;
+
+    @ApiProperty({ description: 'Лимит использования', required: false })
+    declare readonly usageLimit?: number;
+
+    @ApiProperty({ description: 'Количество использований' })
+    declare readonly usageCount: number;
+
+    @ApiProperty({ description: 'Лимит использования пользователем' })
+    declare readonly userLimit: number;
+
+    @ApiProperty({ description: 'Дата начала действия' })
+    declare readonly validFrom: Date;
+
+    @ApiProperty({ description: 'Дата окончания действия' })
+    declare readonly validTo: Date;
+
+    @ApiProperty({ description: 'Активен ли купон' })
+    declare readonly isActive: boolean;
+
+    @ApiProperty({ description: 'Применимые товары', required: false })
+    declare readonly applicableProducts?: number[];
+
+    @ApiProperty({ description: 'Применимые категории', required: false })
+    declare readonly applicableCategories?: number[];
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления' })
+    declare readonly updatedAt: Date;
+}
+
+export class CouponListResponse {
+    @ApiProperty({ description: 'Список купонов', type: [CouponResponse] })
+    declare readonly data: CouponResponse[];
+
+    @ApiProperty({ description: 'Метаданные пагинации' })
+    declare readonly meta: {
+        totalCount: number;
+        currentPage: number;
+        limit: number;
+        lastPage: number;
+        nextPage: number | null;
+        previousPage: number | null;
+    };
+}
+```
+
+## Критерии готовности
+
+### ✅ Обязательные требования:
+- [ ] Созданы миграции для таблиц coupons и coupon_usage
+- [ ] Реализованы модели Sequelize (CouponModel, CouponUsageModel)
+- [ ] Создан CouponService с валидацией и применением купонов
+- [ ] Реализован CouponController с API endpoints
+- [ ] Добавлены DTO классы с валидацией
+- [ ] Созданы Response классы с Swagger
+- [ ] Добавлены индексы для производительности
+- [ ] Реализована валидация купонов
+- [ ] Добавлены unit тесты для CouponService
+- [ ] Добавлены integration тесты для API
+- [ ] Интеграция с системой заказов
+
+### 🎯 Дополнительные возможности:
+- [ ] Кэширование активных купонов
+- [ ] Автоматические промоакции
+- [ ] Персональные предложения
+- [ ] Аналитика по эффективности купонов
+- [ ] Интеграция с email маркетингом
+
+## Следующие шаги
+
+### Фаза 1: Базовая реализация (1 неделя)
+1. **Создать миграции** для таблиц coupons и coupon_usage
+2. **Реализовать модели** Sequelize
+3. **Создать DTO классы** с валидацией
+4. **Создать Response классы** с Swagger
+5. **Реализовать CouponService** с основной логикой
+
+### Фаза 2: API и интеграции (3-4 дня)
+6. **Создать CouponController** с API endpoints
+7. **Добавить валидацию купонов** при оформлении заказов
+8. **Интегрировать с корзиной** для применения скидок
+9. **Реализовать проверку лимитов** использования
+
+### Фаза 3: Тестирование и качество (2-3 дня)
+10. **Написать unit тесты** для CouponService
+11. **Написать integration тесты** для API
+12. **Добавить обработку ошибок** и валидацию
+13. **Провести рефакторинг** и оптимизацию
+
+## Риски и альтернативы
+
+### ⚠️ Риски:
+- **Финансовые потери**: неправильный расчет скидок
+- **Мошенничество**: использование купонов не по назначению
+- **Производительность**: сложные запросы для валидации
+
+### 🔄 Альтернативы:
+- **Кэширование**: Redis для быстрой валидации купонов
+- **Внешние сервисы**: интеграция с платформами промоакций
+- **Упрощенная система**: только базовые купоны без сложных условий
+
+## Интеграция с другими системами
+
+### 🔗 Связанные системы:
+- **OrderService** - применение купонов к заказам
+- **CartService** - валидация купонов в корзине
+- **UserService** - проверка лимитов использования
+- **ProductService** - проверка применимости к товарам
+
+### 📊 Аналитика:
+- Популярные купоны
+- Эффективность скидок
+- Статистика использования
+
+## TL;DR
+
+Упрощенная система купонов включает:
+- **2 таблицы**: coupons, coupon_usage
+- **2 модели**: CouponModel, CouponUsageModel
+- **1 сервис**: CouponService с валидацией и применением
+- **1 контроллер**: API для управления купонами
+- **Функции**: процентные/фиксированные скидки, бесплатная доставка
+- **Валидация**: по времени, лимитам, товарам, категориям
+- **Готовность**: к масштабированию и дополнительным функциям
+```

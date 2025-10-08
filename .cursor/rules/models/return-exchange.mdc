@@ -1,0 +1,1165 @@
+# Система возвратов (Return System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы возвратов для ecommerce приложения с базовыми функциями запроса, модерации и обработки возвратов, фокусом на быструю разработку и готовность к масштабированию.
+
+## Основные требования
+- **Базовые возвраты** - простые запросы на возврат товаров
+- **Простая модерация** - approve/reject с заметками
+- **Базовые причины** - фиксированный список причин возврата
+- **Простые статусы** - requested, approved, rejected, completed
+- **Интеграция с платежами** - возврат средств через существующую систему
+
+## Структура базы данных
+
+### Таблица `returns` (основная)
+```sql
+CREATE TABLE returns (
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    return_number VARCHAR(50) UNIQUE NOT NULL,
+    reason VARCHAR(50) NOT NULL CHECK (reason IN ('defective', 'wrong_item', 'not_satisfied', 'damaged_shipping', 'other')),
+    status VARCHAR(20) NOT NULL DEFAULT 'requested' CHECK (status IN ('requested', 'approved', 'rejected', 'completed')),
+    refund_amount DECIMAL(10,2),
+    notes TEXT,
+    admin_notes TEXT,
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    approved_at TIMESTAMP,
+    rejected_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `return_items`
+```sql
+CREATE TABLE return_items (
+    id SERIAL PRIMARY KEY,
+    return_id INTEGER REFERENCES returns(id) ON DELETE CASCADE,
+    order_item_id INTEGER REFERENCES order_items(id),
+    product_id INTEGER REFERENCES products(id),
+    quantity INTEGER NOT NULL,
+    item_notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Модели Sequelize
+
+### Return Model
+```typescript
+// src/domain/models/return.model.ts
+import { Model, DataType, Column, Table, BelongsTo, HasMany, ForeignKey } from 'sequelize-typescript';
+import { OrderModel } from './order.model';
+import { UserModel } from './user.model';
+import { ReturnItemModel } from './return-item.model';
+
+export enum ReturnReason {
+    DEFECTIVE = 'defective',
+    WRONG_ITEM = 'wrong_item',
+    NOT_SATISFIED = 'not_satisfied',
+    DAMAGED_SHIPPING = 'damaged_shipping',
+    OTHER = 'other'
+}
+
+export enum ReturnStatus {
+    REQUESTED = 'requested',
+    APPROVED = 'approved',
+    REJECTED = 'rejected',
+    COMPLETED = 'completed'
+}
+
+interface IReturnModel {
+    id: number;
+    orderId: number;
+    userId: number;
+    returnNumber: string;
+    reason: ReturnReason;
+    status: ReturnStatus;
+    refundAmount?: number;
+    notes?: string;
+    adminNotes?: string;
+    requestedAt: Date;
+    approvedAt?: Date;
+    rejectedAt?: Date;
+    completedAt?: Date;
+    order: OrderModel;
+    user: UserModel;
+    items: ReturnItemModel[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IReturnCreationAttributes {
+    orderId: number;
+    userId: number;
+    reason: ReturnReason;
+    refundAmount?: number;
+    notes?: string;
+}
+
+@Table({
+    tableName: 'returns',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['order_id'], name: 'idx_returns_order_id' },
+        { fields: ['user_id'], name: 'idx_returns_user_id' },
+        { fields: ['return_number'], name: 'idx_returns_return_number', unique: true },
+        { fields: ['status'], name: 'idx_returns_status' },
+        { fields: ['requested_at'], name: 'idx_returns_requested_at' },
+        { fields: ['reason'], name: 'idx_returns_reason' },
+    ],
+})
+export class ReturnModel
+    extends Model<ReturnModel, IReturnCreationAttributes>
+    implements IReturnModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => OrderModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'order_id',
+    })
+    declare orderId: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: false,
+        unique: true,
+        field: 'return_number',
+    })
+    declare returnNumber: string;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(ReturnReason)),
+        allowNull: false,
+    })
+    declare reason: ReturnReason;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(ReturnStatus)),
+        allowNull: false,
+        defaultValue: ReturnStatus.REQUESTED,
+    })
+    declare status: ReturnStatus;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: true,
+        field: 'refund_amount',
+    })
+    declare refundAmount: number;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare notes: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'admin_notes',
+    })
+    declare adminNotes: string;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'requested_at',
+    })
+    declare requestedAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'approved_at',
+    })
+    declare approvedAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'rejected_at',
+    })
+    declare rejectedAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'completed_at',
+    })
+    declare completedAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'updated_at',
+    })
+    declare updatedAt: Date;
+
+    // Связи
+    @BelongsTo(() => OrderModel)
+    declare order: OrderModel;
+
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    @HasMany(() => ReturnItemModel)
+    declare items: ReturnItemModel[];
+
+    // Методы
+    get isRequested(): boolean {
+        return this.status === ReturnStatus.REQUESTED;
+    }
+
+    get isApproved(): boolean {
+        return this.status === ReturnStatus.APPROVED;
+    }
+
+    get isRejected(): boolean {
+        return this.status === ReturnStatus.REJECTED;
+    }
+
+    get isCompleted(): boolean {
+        return this.status === ReturnStatus.COMPLETED;
+    }
+
+    get canBeApproved(): boolean {
+        return this.status === ReturnStatus.REQUESTED;
+    }
+
+    get canBeRejected(): boolean {
+        return this.status === ReturnStatus.REQUESTED;
+    }
+
+    get canBeCompleted(): boolean {
+        return this.status === ReturnStatus.APPROVED;
+    }
+
+    // Метод для одобрения возврата
+    async approve(adminNotes?: string): Promise<void> {
+        if (!this.canBeApproved) {
+            throw new Error('Возврат не может быть одобрен в текущем статусе');
+        }
+
+        await this.update({
+            status: ReturnStatus.APPROVED,
+            approvedAt: new Date(),
+            adminNotes,
+        });
+    }
+
+    // Метод для отклонения возврата
+    async reject(adminNotes?: string): Promise<void> {
+        if (!this.canBeRejected) {
+            throw new Error('Возврат не может быть отклонен в текущем статусе');
+        }
+
+        await this.update({
+            status: ReturnStatus.REJECTED,
+            rejectedAt: new Date(),
+            adminNotes,
+        });
+    }
+
+    // Метод для завершения возврата
+    async complete(): Promise<void> {
+        if (!this.canBeCompleted) {
+            throw new Error('Возврат не может быть завершен в текущем статусе');
+        }
+
+        await this.update({
+            status: ReturnStatus.COMPLETED,
+            completedAt: new Date(),
+        });
+    }
+}
+```
+
+### Return Item Model
+```typescript
+// src/domain/models/return-item.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { ReturnModel } from './return.model';
+import { OrderItemModel } from './order-item.model';
+import { ProductModel } from './product.model';
+
+interface IReturnItemModel {
+    id: number;
+    returnId: number;
+    orderItemId: number;
+    productId: number;
+    quantity: number;
+    itemNotes?: string;
+    return: ReturnModel;
+    orderItem: OrderItemModel;
+    product: ProductModel;
+    createdAt: Date;
+}
+
+interface IReturnItemCreationAttributes {
+    returnId: number;
+    orderItemId: number;
+    productId: number;
+    quantity: number;
+    itemNotes?: string;
+}
+
+@Table({
+    tableName: 'return_items',
+    underscored: true,
+    timestamps: false,
+    indexes: [
+        { fields: ['return_id'], name: 'idx_return_items_return_id' },
+        { fields: ['order_item_id'], name: 'idx_return_items_order_item_id' },
+        { fields: ['product_id'], name: 'idx_return_items_product_id' },
+    ],
+})
+export class ReturnItemModel
+    extends Model<ReturnItemModel, IReturnItemCreationAttributes>
+    implements IReturnItemModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => ReturnModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'return_id',
+    })
+    declare returnId: number;
+
+    @ForeignKey(() => OrderItemModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'order_item_id',
+    })
+    declare orderItemId: number;
+
+    @ForeignKey(() => ProductModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'product_id',
+    })
+    declare productId: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        validate: {
+            min: 1
+        }
+    })
+    declare quantity: number;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'item_notes',
+    })
+    declare itemNotes: string;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    // Связи
+    @BelongsTo(() => ReturnModel)
+    declare return: ReturnModel;
+
+    @BelongsTo(() => OrderItemModel)
+    declare orderItem: OrderItemModel;
+
+    @BelongsTo(() => ProductModel)
+    declare product: ProductModel;
+}
+```
+
+## Сервисы
+
+### Return Service
+```typescript
+// src/infrastructure/services/return.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { ReturnModel, ReturnStatus, ReturnReason } from '@app/domain/models/return.model';
+import { ReturnItemModel } from '@app/domain/models/return-item.model';
+import { OrderModel } from '@app/domain/models/order.model';
+import { OrderItemModel } from '@app/domain/models/order-item.model';
+import { ProductModel } from '@app/domain/models/product.model';
+
+@Injectable()
+export class ReturnService {
+    private readonly logger = new Logger(ReturnService.name);
+
+    constructor(
+        @InjectModel(ReturnModel)
+        private returnModel: typeof ReturnModel,
+        @InjectModel(ReturnItemModel)
+        private returnItemModel: typeof ReturnItemModel,
+        @InjectModel(OrderModel)
+        private orderModel: typeof OrderModel,
+        @InjectModel(OrderItemModel)
+        private orderItemModel: typeof OrderItemModel,
+        @InjectModel(ProductModel)
+        private productModel: typeof ProductModel,
+    ) {}
+
+    async createReturn(returnData: {
+        orderId: number;
+        userId: number;
+        reason: ReturnReason;
+        items: Array<{
+            orderItemId: number;
+            quantity: number;
+            itemNotes?: string;
+        }>;
+        notes?: string;
+    }): Promise<ReturnModel> {
+        // Проверяем существование заказа
+        const order = await this.orderModel.findByPk(returnData.orderId, {
+            include: [{ association: 'items' }],
+        });
+
+        if (!order) {
+            throw new NotFoundException('Заказ не найден');
+        }
+
+        // Проверяем, что заказ принадлежит пользователю
+        if (order.userId !== returnData.userId) {
+            throw new BadRequestException('Заказ не принадлежит пользователю');
+        }
+
+        // Проверяем, что заказ может быть возвращен
+        if (order.status !== 'completed' && order.status !== 'delivered') {
+            throw new BadRequestException('Заказ не может быть возвращен в текущем статусе');
+        }
+
+        // Проверяем, что на этот заказ еще нет возврата
+        const existingReturn = await this.returnModel.findOne({
+            where: { orderId: returnData.orderId },
+        });
+
+        if (existingReturn) {
+            throw new BadRequestException('На этот заказ уже создан возврат');
+        }
+
+        // Валидируем товары для возврата
+        await this.validateReturnItems(returnData.items, order.items);
+
+        // Генерируем номер возврата
+        const returnNumber = await this.generateReturnNumber();
+
+        // Рассчитываем сумму возврата
+        const refundAmount = await this.calculateRefundAmount(returnData.items);
+
+        // Создаем возврат
+        const returnRequest = await this.returnModel.create({
+            orderId: returnData.orderId,
+            userId: returnData.userId,
+            returnNumber,
+            reason: returnData.reason,
+            refundAmount,
+            notes: returnData.notes,
+            status: ReturnStatus.REQUESTED,
+        });
+
+        // Создаем позиции возврата
+        for (const item of returnData.items) {
+            const orderItem = await this.orderItemModel.findByPk(item.orderItemId);
+            await this.returnItemModel.create({
+                returnId: returnRequest.id,
+                orderItemId: item.orderItemId,
+                productId: orderItem.productId,
+                quantity: item.quantity,
+                itemNotes: item.itemNotes,
+            });
+        }
+
+        this.logger.log(`Создан возврат ${returnNumber} для заказа ${returnData.orderId}`);
+        return returnRequest;
+    }
+
+    async getReturnById(returnId: number): Promise<ReturnModel> {
+        const returnRequest = await this.returnModel.findByPk(returnId, {
+            include: [
+                { association: 'order' },
+                { association: 'user' },
+                { association: 'items', include: [{ association: 'product' }] },
+            ],
+        });
+
+        if (!returnRequest) {
+            throw new NotFoundException('Возврат не найден');
+        }
+
+        return returnRequest;
+    }
+
+    async getUserReturns(
+        userId: number,
+        page: number = 1,
+        limit: number = 10,
+    ): Promise<{ data: ReturnModel[]; total: number }> {
+        const { rows: returns, count: total } = await this.returnModel.findAndCountAll({
+            where: { userId },
+            include: [
+                { association: 'order' },
+                { association: 'items', include: [{ association: 'product' }] },
+            ],
+            order: [['requestedAt', 'DESC']],
+            limit,
+            offset: (page - 1) * limit,
+        });
+
+        return { data: returns, total };
+    }
+
+    async approveReturn(returnId: number, adminNotes?: string): Promise<ReturnModel> {
+        const returnRequest = await this.getReturnById(returnId);
+
+        if (!returnRequest.canBeApproved) {
+            throw new BadRequestException('Возврат не может быть одобрен в текущем статусе');
+        }
+
+        await returnRequest.approve(adminNotes);
+
+        this.logger.log(`Возврат ${returnRequest.returnNumber} одобрен`);
+        return returnRequest;
+    }
+
+    async rejectReturn(returnId: number, adminNotes?: string): Promise<ReturnModel> {
+        const returnRequest = await this.getReturnById(returnId);
+
+        if (!returnRequest.canBeRejected) {
+            throw new BadRequestException('Возврат не может быть отклонен в текущем статусе');
+        }
+
+        await returnRequest.reject(adminNotes);
+
+        this.logger.log(`Возврат ${returnRequest.returnNumber} отклонен`);
+        return returnRequest;
+    }
+
+    async completeReturn(returnId: number): Promise<ReturnModel> {
+        const returnRequest = await this.getReturnById(returnId);
+
+        if (!returnRequest.canBeCompleted) {
+            throw new BadRequestException('Возврат не может быть завершен в текущем статусе');
+        }
+
+        // Здесь должна быть логика возврата средств через платежную систему
+        await this.processRefund(returnRequest);
+
+        await returnRequest.complete();
+
+        this.logger.log(`Возврат ${returnRequest.returnNumber} завершен`);
+        return returnRequest;
+    }
+
+    async getPendingReturns(page: number = 1, limit: number = 20): Promise<{ data: ReturnModel[]; total: number }> {
+        const { rows: returns, count: total } = await this.returnModel.findAndCountAll({
+            where: { status: ReturnStatus.REQUESTED },
+            include: [
+                { association: 'order' },
+                { association: 'user' },
+                { association: 'items', include: [{ association: 'product' }] },
+            ],
+            order: [['requestedAt', 'ASC']],
+            limit,
+            offset: (page - 1) * limit,
+        });
+
+        return { data: returns, total };
+    }
+
+    async getReturnStatistics(): Promise<{
+        totalReturns: number;
+        pendingReturns: number;
+        approvedReturns: number;
+        rejectedReturns: number;
+        completedReturns: number;
+        averageRefundAmount: number;
+        returnsByReason: Record<string, number>;
+    }> {
+        const [
+            totalReturns,
+            pendingReturns,
+            approvedReturns,
+            rejectedReturns,
+            completedReturns,
+            averageRefundResult,
+            returnsByReasonResult,
+        ] = await Promise.all([
+            this.returnModel.count(),
+            this.returnModel.count({ where: { status: ReturnStatus.REQUESTED } }),
+            this.returnModel.count({ where: { status: ReturnStatus.APPROVED } }),
+            this.returnModel.count({ where: { status: ReturnStatus.REJECTED } }),
+            this.returnModel.count({ where: { status: ReturnStatus.COMPLETED } }),
+            this.returnModel.findOne({
+                attributes: [
+                    [this.returnModel.sequelize.fn('AVG', this.returnModel.sequelize.col('refund_amount')), 'avg'],
+                ],
+                raw: true,
+            }),
+            this.returnModel.findAll({
+                attributes: [
+                    'reason',
+                    [this.returnModel.sequelize.fn('COUNT', this.returnModel.sequelize.col('id')), 'count'],
+                ],
+                group: ['reason'],
+                raw: true,
+            }),
+        ]);
+
+        const returnsByReason = returnsByReasonResult.reduce((acc, item) => {
+            acc[item.reason] = parseInt(item.count);
+            return acc;
+        }, {});
+
+        return {
+            totalReturns,
+            pendingReturns,
+            approvedReturns,
+            rejectedReturns,
+            completedReturns,
+            averageRefundAmount: parseFloat(averageRefundResult?.avg || '0'),
+            returnsByReason,
+        };
+    }
+
+    private async validateReturnItems(
+        items: Array<{ orderItemId: number; quantity: number }>,
+        orderItems: OrderItemModel[],
+    ): Promise<void> {
+        for (const item of items) {
+            const orderItem = orderItems.find(oi => oi.id === item.orderItemId);
+            if (!orderItem) {
+                throw new BadRequestException(`Товар с ID ${item.orderItemId} не найден в заказе`);
+            }
+
+            if (item.quantity > orderItem.quantity) {
+                throw new BadRequestException(
+                    `Количество для возврата (${item.quantity}) превышает количество в заказе (${orderItem.quantity})`,
+                );
+            }
+        }
+    }
+
+    private async generateReturnNumber(): Promise<string> {
+        const prefix = 'RET';
+        const timestamp = Date.now().toString().slice(-8);
+        const random = Math.random().toString(36).substr(2, 4).toUpperCase();
+        return `${prefix}${timestamp}${random}`;
+    }
+
+    private async calculateRefundAmount(items: Array<{ orderItemId: number; quantity: number }>): Promise<number> {
+        let totalAmount = 0;
+
+        for (const item of items) {
+            const orderItem = await this.orderItemModel.findByPk(item.orderItemId);
+            if (orderItem) {
+                totalAmount += orderItem.price * item.quantity;
+            }
+        }
+
+        return totalAmount;
+    }
+
+    private async processRefund(returnRequest: ReturnModel): Promise<void> {
+        // Здесь должна быть интеграция с платежной системой для возврата средств
+        // Пока что просто логируем
+        this.logger.log(`Обработка возврата средств ${returnRequest.refundAmount} для возврата ${returnRequest.returnNumber}`);
+    }
+}
+```
+
+## Контроллеры
+
+### Return Controller
+```typescript
+// src/infrastructure/controllers/return.controller.ts
+import { Controller, Get, Post, Put, Param, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
+import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
+import { Roles } from '@app/infrastructure/common/decorators/roles.decorator';
+import { CurrentUser } from '@app/infrastructure/common/decorators/current-user.decorator';
+import { ReturnService } from '@app/infrastructure/services/return.service';
+import { CreateReturnDto } from '@app/infrastructure/dto/return/create-return.dto';
+import { ReturnResponse, ReturnStatisticsResponse } from '@app/infrastructure/responses/return/return.response';
+
+@ApiTags('Возвраты')
+@Controller('returns')
+export class ReturnController {
+    // Ролевые константы (совместимы с многоарендной моделью)
+    private static readonly ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN'] as const;
+    private static readonly MANAGER_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CUSTOMER_SERVICE'] as const;
+    private static readonly STAFF_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
+    private static readonly CUSTOMER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST'] as const;
+    private static readonly ALL_ROLES = [
+        ...ReturnController.ADMIN_ROLES,
+        ...ReturnController.MANAGER_ROLES,
+        ...ReturnController.CUSTOMER_ROLES,
+    ] as const;
+    constructor(private readonly returnService: ReturnService) {}
+
+    @Post()
+    @HttpCode(HttpStatus.CREATED)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReturnController.CUSTOMER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Создать новый возврат' })
+    @ApiResponse({ status: 201, description: 'Возврат создан', type: ReturnResponse })
+    async createReturn(
+        @Body() createReturnDto: CreateReturnDto,
+        @CurrentUser() user: any,
+    ): Promise<ReturnResponse> {
+        const returnRequest = await this.returnService.createReturn({
+            ...createReturnDto,
+            userId: user.id,
+        });
+        
+        return {
+            id: returnRequest.id,
+            orderId: returnRequest.orderId,
+            userId: returnRequest.userId,
+            returnNumber: returnRequest.returnNumber,
+            reason: returnRequest.reason,
+            status: returnRequest.status,
+            refundAmount: returnRequest.refundAmount,
+            notes: returnRequest.notes,
+            adminNotes: returnRequest.adminNotes,
+            requestedAt: returnRequest.requestedAt,
+            approvedAt: returnRequest.approvedAt,
+            rejectedAt: returnRequest.rejectedAt,
+            completedAt: returnRequest.completedAt,
+            createdAt: returnRequest.createdAt,
+            updatedAt: returnRequest.updatedAt,
+        };
+    }
+
+    @Get('user')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReturnController.CUSTOMER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить возвраты пользователя' })
+    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
+    @ApiResponse({ status: 200, description: 'Возвраты пользователя получены', type: [ReturnResponse] })
+    async getUserReturns(
+        @CurrentUser() user: any,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+    ): Promise<{ data: ReturnResponse[]; total: number }> {
+        const result = await this.returnService.getUserReturns(user.id, page, limit);
+        
+        return {
+            data: result.data.map(returnRequest => ({
+                id: returnRequest.id,
+                orderId: returnRequest.orderId,
+                userId: returnRequest.userId,
+                returnNumber: returnRequest.returnNumber,
+                reason: returnRequest.reason,
+                status: returnRequest.status,
+                refundAmount: returnRequest.refundAmount,
+                notes: returnRequest.notes,
+                adminNotes: returnRequest.adminNotes,
+                requestedAt: returnRequest.requestedAt,
+                approvedAt: returnRequest.approvedAt,
+                rejectedAt: returnRequest.rejectedAt,
+                completedAt: returnRequest.completedAt,
+                createdAt: returnRequest.createdAt,
+                updatedAt: returnRequest.updatedAt,
+            })),
+            total: result.total,
+        };
+    }
+
+    @Get(':id')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReturnController.STAFF_ROLES)
+    @ApiOperation({ summary: 'Получить возврат по ID' })
+    @ApiResponse({ status: 200, description: 'Возврат получен', type: ReturnResponse })
+    @ApiResponse({ status: 404, description: 'Возврат не найден' })
+    async getReturnById(@Param('id') returnId: number): Promise<ReturnResponse> {
+        const returnRequest = await this.returnService.getReturnById(returnId);
+        
+        return {
+            id: returnRequest.id,
+            orderId: returnRequest.orderId,
+            userId: returnRequest.userId,
+            returnNumber: returnRequest.returnNumber,
+            reason: returnRequest.reason,
+            status: returnRequest.status,
+            refundAmount: returnRequest.refundAmount,
+            notes: returnRequest.notes,
+            adminNotes: returnRequest.adminNotes,
+            requestedAt: returnRequest.requestedAt,
+            approvedAt: returnRequest.approvedAt,
+            rejectedAt: returnRequest.rejectedAt,
+            completedAt: returnRequest.completedAt,
+            createdAt: returnRequest.createdAt,
+            updatedAt: returnRequest.updatedAt,
+        };
+    }
+
+    @Put(':id/approve')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReturnController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Одобрить возврат (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Возврат одобрен', type: ReturnResponse })
+    @ApiResponse({ status: 400, description: 'Возврат не может быть одобрен' })
+    @ApiResponse({ status: 404, description: 'Возврат не найден' })
+    async approveReturn(
+        @Param('id') returnId: number,
+        @Body('adminNotes') adminNotes?: string,
+    ): Promise<ReturnResponse> {
+        const returnRequest = await this.returnService.approveReturn(returnId, adminNotes);
+        
+        return {
+            id: returnRequest.id,
+            orderId: returnRequest.orderId,
+            userId: returnRequest.userId,
+            returnNumber: returnRequest.returnNumber,
+            reason: returnRequest.reason,
+            status: returnRequest.status,
+            refundAmount: returnRequest.refundAmount,
+            notes: returnRequest.notes,
+            adminNotes: returnRequest.adminNotes,
+            requestedAt: returnRequest.requestedAt,
+            approvedAt: returnRequest.approvedAt,
+            rejectedAt: returnRequest.rejectedAt,
+            completedAt: returnRequest.completedAt,
+            createdAt: returnRequest.createdAt,
+            updatedAt: returnRequest.updatedAt,
+        };
+    }
+
+    @Put(':id/reject')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReturnController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отклонить возврат (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Возврат отклонен', type: ReturnResponse })
+    @ApiResponse({ status: 400, description: 'Возврат не может быть отклонен' })
+    @ApiResponse({ status: 404, description: 'Возврат не найден' })
+    async rejectReturn(
+        @Param('id') returnId: number,
+        @Body('adminNotes') adminNotes?: string,
+    ): Promise<ReturnResponse> {
+        const returnRequest = await this.returnService.rejectReturn(returnId, adminNotes);
+        
+        return {
+            id: returnRequest.id,
+            orderId: returnRequest.orderId,
+            userId: returnRequest.userId,
+            returnNumber: returnRequest.returnNumber,
+            reason: returnRequest.reason,
+            status: returnRequest.status,
+            refundAmount: returnRequest.refundAmount,
+            notes: returnRequest.notes,
+            adminNotes: returnRequest.adminNotes,
+            requestedAt: returnRequest.requestedAt,
+            approvedAt: returnRequest.approvedAt,
+            rejectedAt: returnRequest.rejectedAt,
+            completedAt: returnRequest.completedAt,
+            createdAt: returnRequest.createdAt,
+            updatedAt: returnRequest.updatedAt,
+        };
+    }
+
+    @Put(':id/complete')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReturnController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Завершить возврат (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Возврат завершен', type: ReturnResponse })
+    @ApiResponse({ status: 400, description: 'Возврат не может быть завершен' })
+    @ApiResponse({ status: 404, description: 'Возврат не найден' })
+    async completeReturn(@Param('id') returnId: number): Promise<ReturnResponse> {
+        const returnRequest = await this.returnService.completeReturn(returnId);
+        
+        return {
+            id: returnRequest.id,
+            orderId: returnRequest.orderId,
+            userId: returnRequest.userId,
+            returnNumber: returnRequest.returnNumber,
+            reason: returnRequest.reason,
+            status: returnRequest.status,
+            refundAmount: returnRequest.refundAmount,
+            notes: returnRequest.notes,
+            adminNotes: returnRequest.adminNotes,
+            requestedAt: returnRequest.requestedAt,
+            approvedAt: returnRequest.approvedAt,
+            rejectedAt: returnRequest.rejectedAt,
+            completedAt: returnRequest.completedAt,
+            createdAt: returnRequest.createdAt,
+            updatedAt: returnRequest.updatedAt,
+        };
+    }
+
+    @Get('admin/pending')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReturnController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить возвраты на рассмотрении (только для админов)' })
+    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
+    @ApiResponse({ status: 200, description: 'Возвраты на рассмотрении получены', type: [ReturnResponse] })
+    async getPendingReturns(
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 20,
+    ): Promise<{ data: ReturnResponse[]; total: number }> {
+        const result = await this.returnService.getPendingReturns(page, limit);
+        
+        return {
+            data: result.data.map(returnRequest => ({
+                id: returnRequest.id,
+                orderId: returnRequest.orderId,
+                userId: returnRequest.userId,
+                returnNumber: returnRequest.returnNumber,
+                reason: returnRequest.reason,
+                status: returnRequest.status,
+                refundAmount: returnRequest.refundAmount,
+                notes: returnRequest.notes,
+                adminNotes: returnRequest.adminNotes,
+                requestedAt: returnRequest.requestedAt,
+                approvedAt: returnRequest.approvedAt,
+                rejectedAt: returnRequest.rejectedAt,
+                completedAt: returnRequest.completedAt,
+                createdAt: returnRequest.createdAt,
+                updatedAt: returnRequest.updatedAt,
+            })),
+            total: result.total,
+        };
+    }
+
+    @Get('admin/statistics')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить статистику возвратов (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Статистика получена', type: ReturnStatisticsResponse })
+    async getReturnStatistics(): Promise<ReturnStatisticsResponse> {
+        const statistics = await this.returnService.getReturnStatistics();
+        
+        return {
+            totalReturns: statistics.totalReturns,
+            pendingReturns: statistics.pendingReturns,
+            approvedReturns: statistics.approvedReturns,
+            rejectedReturns: statistics.rejectedReturns,
+            completedReturns: statistics.completedReturns,
+            averageRefundAmount: statistics.averageRefundAmount,
+            returnsByReason: statistics.returnsByReason,
+        };
+    }
+}
+```
+
+## DTO
+
+### Create Return DTO
+```typescript
+// src/infrastructure/dto/return/create-return.dto.ts
+import { IsNumber, IsString, IsArray, IsOptional, IsEnum, ValidateNested, Min, Length } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+import { ReturnReason } from '@app/domain/models/return.model';
+
+export class ReturnItemDto {
+    @ApiProperty({ description: 'ID позиции заказа', example: 1 })
+    @IsNumber({}, { message: 'ID позиции заказа должен быть числом' })
+    @Type(() => Number)
+    orderItemId: number;
+
+    @ApiProperty({ description: 'Количество для возврата', example: 1, minimum: 1 })
+    @IsNumber({}, { message: 'Количество должно быть числом' })
+    @Min(1, { message: 'Количество не может быть меньше 1' })
+    @Type(() => Number)
+    quantity: number;
+
+    @ApiProperty({ description: 'Примечания к товару', example: 'Товар поврежден при доставке', required: false })
+    @IsOptional()
+    @IsString({ message: 'Примечания должны быть строкой' })
+    @Length(1, 500, { message: 'Примечания должны быть от 1 до 500 символов' })
+    itemNotes?: string;
+}
+
+export class CreateReturnDto {
+    @ApiProperty({ description: 'ID заказа', example: 1 })
+    @IsNumber({}, { message: 'ID заказа должен быть числом' })
+    @Type(() => Number)
+    orderId: number;
+
+    @ApiProperty({ description: 'Причина возврата', example: 'defective', enum: ReturnReason })
+    @IsEnum(ReturnReason, { message: 'Неверная причина возврата' })
+    reason: ReturnReason;
+
+    @ApiProperty({ description: 'Товары для возврата', type: [ReturnItemDto] })
+    @IsArray({ message: 'Товары должны быть массивом' })
+    @ValidateNested({ each: true })
+    @Type(() => ReturnItemDto)
+    items: ReturnItemDto[];
+
+    @ApiProperty({ description: 'Общие примечания', example: 'Прошу вернуть деньги на карту', required: false })
+    @IsOptional()
+    @IsString({ message: 'Примечания должны быть строкой' })
+    @Length(1, 1000, { message: 'Примечания должны быть от 1 до 1000 символов' })
+    notes?: string;
+}
+```
+
+## Responses
+
+### Return Response
+```typescript
+// src/infrastructure/responses/return/return.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class ReturnResponse {
+    @ApiProperty({ description: 'ID возврата', example: 1 })
+    id: number;
+
+    @ApiProperty({ description: 'ID заказа', example: 1 })
+    orderId: number;
+
+    @ApiProperty({ description: 'ID пользователя', example: 1 })
+    userId: number;
+
+    @ApiProperty({ description: 'Номер возврата', example: 'RET20240115A1B2' })
+    returnNumber: string;
+
+    @ApiProperty({ description: 'Причина возврата', example: 'defective' })
+    reason: string;
+
+    @ApiProperty({ description: 'Статус возврата', example: 'requested' })
+    status: string;
+
+    @ApiProperty({ description: 'Сумма возврата', example: 1500.00 })
+    refundAmount: number;
+
+    @ApiProperty({ description: 'Примечания пользователя', example: 'Прошу вернуть деньги', required: false })
+    notes?: string;
+
+    @ApiProperty({ description: 'Примечания админа', example: 'Одобрено', required: false })
+    adminNotes?: string;
+
+    @ApiProperty({ description: 'Дата запроса', example: '2024-01-15T10:00:00Z' })
+    requestedAt: Date;
+
+    @ApiProperty({ description: 'Дата одобрения', example: '2024-01-15T11:00:00Z', required: false })
+    approvedAt?: Date;
+
+    @ApiProperty({ description: 'Дата отклонения', example: '2024-01-15T11:00:00Z', required: false })
+    rejectedAt?: Date;
+
+    @ApiProperty({ description: 'Дата завершения', example: '2024-01-15T12:00:00Z', required: false })
+    completedAt?: Date;
+
+    @ApiProperty({ description: 'Дата создания', example: '2024-01-15T10:00:00Z' })
+    createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления', example: '2024-01-15T12:00:00Z' })
+    updatedAt: Date;
+}
+```
+
+### Return Statistics Response
+```typescript
+// src/infrastructure/responses/return/return-statistics.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class ReturnStatisticsResponse {
+    @ApiProperty({ description: 'Общее количество возвратов', example: 150 })
+    totalReturns: number;
+
+    @ApiProperty({ description: 'Количество возвратов на рассмотрении', example: 25 })
+    pendingReturns: number;
+
+    @ApiProperty({ description: 'Количество одобренных возвратов', example: 100 })
+    approvedReturns: number;
+
+    @ApiProperty({ description: 'Количество отклоненных возвратов', example: 15 })
+    rejectedReturns: number;
+
+    @ApiProperty({ description: 'Количество завершенных возвратов', example: 85 })
+    completedReturns: number;
+
+    @ApiProperty({ description: 'Средняя сумма возврата', example: 1250.50 })
+    averageRefundAmount: number;
+
+    @ApiProperty({ description: 'Возвраты по причинам', example: { defective: 50, wrong_item: 30, not_satisfied: 40, other: 30 } })
+    returnsByReason: Record<string, number>;
+}
+```
+
+## Критерии готовности
+
+- [ ] Создана миграция для таблицы `returns`
+- [ ] Создана миграция для таблицы `return_items`
+- [ ] Созданы модели `ReturnModel`, `ReturnItemModel`
+- [ ] Добавлены валидации для новых полей
+- [ ] Созданы индексы для производительности
+- [ ] Реализован `ReturnService` с методами для работы с возвратами
+- [ ] Создан `ReturnController` с API endpoints
+- [ ] Созданы DTO для валидации входных данных
+- [ ] Созданы Response классы для API ответов
+- [ ] Написаны тесты для новой функциональности
+- [ ] Обновлена документация API
+- [ ] Проверена обратная совместимость
+
+## Следующие шаги
+
+После завершения улучшений Return переходим к:
+1. Technical Models - аудит, логирование, кэширование
+2. Analytics - метрики и отчеты
+3. Search - полнотекстовый поиск
+```

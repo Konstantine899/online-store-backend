@@ -1,0 +1,950 @@
+# Технические модели (Technical Models) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичных технических моделей для ecommerce приложения с базовыми функциями аудита, логирования, кэширования и сессий, фокусом на быструю разработку и готовность к масштабированию.
+
+## Основные требования
+- **Базовый аудит** - отслеживание изменений в основных сущностях
+- **Простое логирование** - основные системные логи без детализации
+- **Базовый кэш** - простые записи для часто используемых данных
+- **Простые сессии** - базовая информация о пользовательских сессиях
+- **API ключи** - простые ключи для интеграций
+
+## Структура базы данных
+
+### Таблица `audit_logs` (основная)
+```sql
+CREATE TABLE audit_logs (
+    id SERIAL PRIMARY KEY,
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id INTEGER NOT NULL,
+    action VARCHAR(20) NOT NULL CHECK (action IN ('create', 'update', 'delete', 'login', 'logout')),
+    user_id INTEGER REFERENCES users(id),
+    old_values JSONB,
+    new_values JSONB,
+    ip_address INET,
+    user_agent TEXT,
+    request_id VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `system_logs`
+```sql
+CREATE TABLE system_logs (
+    id SERIAL PRIMARY KEY,
+    level VARCHAR(10) NOT NULL CHECK (level IN ('info', 'warn', 'error')),
+    message TEXT NOT NULL,
+    context JSONB,
+    user_id INTEGER REFERENCES users(id),
+    request_id VARCHAR(255),
+    ip_address INET,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `cache_entries`
+```sql
+CREATE TABLE cache_entries (
+    id SERIAL PRIMARY KEY,
+    cache_key VARCHAR(500) UNIQUE NOT NULL,
+    cache_value JSONB NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `user_sessions`
+```sql
+CREATE TABLE user_sessions (
+    id VARCHAR(255) PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    device_info JSONB,
+    ip_address INET NOT NULL,
+    user_agent TEXT,
+    is_active BOOLEAN DEFAULT true,
+    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `api_keys`
+```sql
+CREATE TABLE api_keys (
+    id SERIAL PRIMARY KEY,
+    key_hash VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    user_id INTEGER REFERENCES users(id),
+    permissions TEXT[] DEFAULT '{}',
+    rate_limit INTEGER DEFAULT 1000,
+    is_active BOOLEAN DEFAULT true,
+    last_used TIMESTAMP,
+    expires_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Модели Sequelize
+
+### Audit Log Model
+```typescript
+// src/domain/models/audit-log.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { UserModel } from './user.model';
+
+export enum AuditAction {
+    CREATE = 'create',
+    UPDATE = 'update',
+    DELETE = 'delete',
+    LOGIN = 'login',
+    LOGOUT = 'logout',
+}
+
+interface IAuditLogModel {
+    id: number;
+    entityType: string;
+    entityId: number;
+    action: AuditAction;
+    userId?: number;
+    oldValues?: any;
+    newValues?: any;
+    ipAddress?: string;
+    userAgent?: string;
+    requestId?: string;
+    user?: UserModel;
+    createdAt: Date;
+}
+
+interface IAuditLogCreationAttributes {
+    entityType: string;
+    entityId: number;
+    action: AuditAction;
+    userId?: number;
+    oldValues?: any;
+    newValues?: any;
+    ipAddress?: string;
+    userAgent?: string;
+    requestId?: string;
+}
+
+@Table({
+    tableName: 'audit_logs',
+    underscored: true,
+    timestamps: false,
+    indexes: [
+        { fields: ['entity_type', 'entity_id'], name: 'idx_audit_logs_entity' },
+        { fields: ['action'], name: 'idx_audit_logs_action' },
+        { fields: ['user_id'], name: 'idx_audit_logs_user_id' },
+        { fields: ['created_at'], name: 'idx_audit_logs_created_at' },
+        { fields: ['request_id'], name: 'idx_audit_logs_request_id' },
+    ],
+})
+export class AuditLogModel
+    extends Model<AuditLogModel, IAuditLogCreationAttributes>
+    implements IAuditLogModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: false,
+        field: 'entity_type',
+    })
+    declare entityType: string;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'entity_id',
+    })
+    declare entityId: number;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(AuditAction)),
+        allowNull: false,
+    })
+    declare action: AuditAction;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: true,
+        field: 'old_values',
+    })
+    declare oldValues: any;
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: true,
+        field: 'new_values',
+    })
+    declare newValues: any;
+
+    @Column({
+        type: DataType.INET,
+        allowNull: true,
+        field: 'ip_address',
+    })
+    declare ipAddress: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'user_agent',
+    })
+    declare userAgent: string;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+        field: 'request_id',
+    })
+    declare requestId: string;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    // Связи
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    // Методы
+    get isCreateAction(): boolean {
+        return this.action === AuditAction.CREATE;
+    }
+
+    get isUpdateAction(): boolean {
+        return this.action === AuditAction.UPDATE;
+    }
+
+    get isDeleteAction(): boolean {
+        return this.action === AuditAction.DELETE;
+    }
+
+    get isLoginAction(): boolean {
+        return this.action === AuditAction.LOGIN;
+    }
+
+    get isLogoutAction(): boolean {
+        return this.action === AuditAction.LOGOUT;
+    }
+
+    get hasChanges(): boolean {
+        return this.oldValues !== null && this.newValues !== null;
+    }
+
+    // Статический метод для создания записи аудита
+    static async createAuditLog(data: IAuditLogCreationAttributes): Promise<AuditLogModel> {
+        return this.create(data);
+    }
+}
+```
+
+### System Log Model
+```typescript
+// src/domain/models/system-log.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { UserModel } from './user.model';
+
+export enum LogLevel {
+    INFO = 'info',
+    WARN = 'warn',
+    ERROR = 'error',
+}
+
+interface ISystemLogModel {
+    id: number;
+    level: LogLevel;
+    message: string;
+    context?: any;
+    userId?: number;
+    requestId?: string;
+    ipAddress?: string;
+    user?: UserModel;
+    createdAt: Date;
+}
+
+interface ISystemLogCreationAttributes {
+    level: LogLevel;
+    message: string;
+    context?: any;
+    userId?: number;
+    requestId?: string;
+    ipAddress?: string;
+}
+
+@Table({
+    tableName: 'system_logs',
+    underscored: true,
+    timestamps: false,
+    indexes: [
+        { fields: ['level'], name: 'idx_system_logs_level' },
+        { fields: ['created_at'], name: 'idx_system_logs_created_at' },
+        { fields: ['request_id'], name: 'idx_system_logs_request_id' },
+        { fields: ['user_id'], name: 'idx_system_logs_user_id' },
+    ],
+})
+export class SystemLogModel
+    extends Model<SystemLogModel, ISystemLogCreationAttributes>
+    implements ISystemLogModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(LogLevel)),
+        allowNull: false,
+    })
+    declare level: LogLevel;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: false,
+    })
+    declare message: string;
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: true,
+    })
+    declare context: any;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+        field: 'request_id',
+    })
+    declare requestId: string;
+
+    @Column({
+        type: DataType.INET,
+        allowNull: true,
+        field: 'ip_address',
+    })
+    declare ipAddress: string;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    // Связи
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    // Методы
+    get isInfo(): boolean {
+        return this.level === LogLevel.INFO;
+    }
+
+    get isWarning(): boolean {
+        return this.level === LogLevel.WARN;
+    }
+
+    get isError(): boolean {
+        return this.level === LogLevel.ERROR;
+    }
+
+    get hasContext(): boolean {
+        return this.context !== null && this.context !== undefined;
+    }
+
+    // Статические методы для создания логов
+    static async logInfo(message: string, context?: any, userId?: number, requestId?: string): Promise<SystemLogModel> {
+        return this.create({
+            level: LogLevel.INFO,
+            message,
+            context,
+            userId,
+            requestId,
+        });
+    }
+
+    static async logWarning(message: string, context?: any, userId?: number, requestId?: string): Promise<SystemLogModel> {
+        return this.create({
+            level: LogLevel.WARN,
+            message,
+            context,
+            userId,
+            requestId,
+        });
+    }
+
+    static async logError(message: string, context?: any, userId?: number, requestId?: string): Promise<SystemLogModel> {
+        return this.create({
+            level: LogLevel.ERROR,
+            message,
+            context,
+            userId,
+            requestId,
+        });
+    }
+}
+```
+
+### Cache Entry Model
+```typescript
+// src/domain/models/cache-entry.model.ts
+import { Model, DataType, Column, Table } from 'sequelize-typescript';
+
+interface ICacheEntryModel {
+    id: number;
+    cacheKey: string;
+    cacheValue: any;
+    expiresAt: Date;
+    createdAt: Date;
+}
+
+interface ICacheEntryCreationAttributes {
+    cacheKey: string;
+    cacheValue: any;
+    expiresAt: Date;
+}
+
+@Table({
+    tableName: 'cache_entries',
+    underscored: true,
+    timestamps: false,
+    indexes: [
+        { fields: ['cache_key'], unique: true, name: 'idx_cache_entries_key' },
+        { fields: ['expires_at'], name: 'idx_cache_entries_expires_at' },
+    ],
+})
+export class CacheEntryModel
+    extends Model<CacheEntryModel, ICacheEntryCreationAttributes>
+    implements ICacheEntryModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(500),
+        allowNull: false,
+        unique: true,
+        field: 'cache_key',
+    })
+    declare cacheKey: string;
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: false,
+        field: 'cache_value',
+    })
+    declare cacheValue: any;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        field: 'expires_at',
+    })
+    declare expiresAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    // Методы
+    get isExpired(): boolean {
+        return new Date() > this.expiresAt;
+    }
+
+    get timeUntilExpiry(): number {
+        return this.expiresAt.getTime() - new Date().getTime();
+    }
+
+    // Статические методы для работы с кэшем
+    static async get(key: string): Promise<any> {
+        const entry = await this.findOne({
+            where: { cacheKey: key },
+        });
+
+        if (!entry || entry.isExpired) {
+            return null;
+        }
+
+        return entry.cacheValue;
+    }
+
+    static async set(key: string, value: any, ttlSeconds: number = 3600): Promise<CacheEntryModel> {
+        const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
+        
+        const [entry] = await this.upsert({
+            cacheKey: key,
+            cacheValue: value,
+            expiresAt,
+        });
+
+        return entry;
+    }
+
+    static async delete(key: string): Promise<boolean> {
+        const deleted = await this.destroy({
+            where: { cacheKey: key },
+        });
+
+        return deleted > 0;
+    }
+
+    static async clear(): Promise<number> {
+        return this.destroy({
+            where: {},
+        });
+    }
+
+    static async cleanup(): Promise<number> {
+        return this.destroy({
+            where: {
+                expiresAt: {
+                    [this.sequelize.Sequelize.Op.lt]: new Date(),
+                },
+            },
+        });
+    }
+}
+```
+
+### User Session Model
+```typescript
+// src/domain/models/user-session.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { UserModel } from './user.model';
+
+interface IUserSessionModel {
+    id: string;
+    userId?: number;
+    deviceInfo?: any;
+    ipAddress: string;
+    userAgent?: string;
+    isActive: boolean;
+    lastAccessed: Date;
+    expiresAt: Date;
+    createdAt: Date;
+    user?: UserModel;
+}
+
+interface IUserSessionCreationAttributes {
+    id: string;
+    userId?: number;
+    deviceInfo?: any;
+    ipAddress: string;
+    userAgent?: string;
+    expiresAt: Date;
+}
+
+@Table({
+    tableName: 'user_sessions',
+    underscored: true,
+    timestamps: false,
+    indexes: [
+        { fields: ['user_id'], name: 'idx_user_sessions_user_id' },
+        { fields: ['is_active'], name: 'idx_user_sessions_is_active' },
+        { fields: ['expires_at'], name: 'idx_user_sessions_expires_at' },
+        { fields: ['last_accessed'], name: 'idx_user_sessions_last_accessed' },
+    ],
+})
+export class UserSessionModel
+    extends Model<UserSessionModel, IUserSessionCreationAttributes>
+    implements IUserSessionModel
+{
+    @Column({
+        type: DataType.STRING(255),
+        primaryKey: true,
+    })
+    declare id: string;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: true,
+        field: 'device_info',
+    })
+    declare deviceInfo: any;
+
+    @Column({
+        type: DataType.INET,
+        allowNull: false,
+        field: 'ip_address',
+    })
+    declare ipAddress: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'user_agent',
+    })
+    declare userAgent: string;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'last_accessed',
+    })
+    declare lastAccessed: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        field: 'expires_at',
+    })
+    declare expiresAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    // Связи
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    // Методы
+    get isExpired(): boolean {
+        return new Date() > this.expiresAt;
+    }
+
+    get isValid(): boolean {
+        return this.isActive && !this.isExpired;
+    }
+
+    get timeUntilExpiry(): number {
+        return this.expiresAt.getTime() - new Date().getTime();
+    }
+
+    get hasDeviceInfo(): boolean {
+        return this.deviceInfo !== null && this.deviceInfo !== undefined;
+    }
+
+    // Методы для управления сессией
+    async extend(ttlSeconds: number = 3600): Promise<void> {
+        const newExpiresAt = new Date(Date.now() + ttlSeconds * 1000);
+        await this.update({
+            expiresAt: newExpiresAt,
+            lastAccessed: new Date(),
+        });
+    }
+
+    async deactivate(): Promise<void> {
+        await this.update({
+            isActive: false,
+        });
+    }
+
+    // Статические методы
+    static async createSession(data: IUserSessionCreationAttributes): Promise<UserSessionModel> {
+        return this.create(data);
+    }
+
+    static async findActiveSession(sessionId: string): Promise<UserSessionModel | null> {
+        const session = await this.findOne({
+            where: { id: sessionId },
+            include: [{ association: 'user' }],
+        });
+
+        if (!session || !session.isValid) {
+            return null;
+        }
+
+        // Обновляем время последнего обращения
+        await session.update({
+            lastAccessed: new Date(),
+        });
+
+        return session;
+    }
+
+    static async cleanupExpired(): Promise<number> {
+        return this.destroy({
+            where: {
+                expiresAt: {
+                    [this.sequelize.Sequelize.Op.lt]: new Date(),
+                },
+            },
+        });
+    }
+
+    static async deactivateUserSessions(userId: number): Promise<number> {
+        return this.update(
+            { isActive: false },
+            { where: { userId, isActive: true } }
+        );
+    }
+}
+```
+
+### API Key Model
+```typescript
+// src/domain/models/api-key.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { UserModel } from './user.model';
+import * as crypto from 'crypto';
+
+interface IApiKeyModel {
+    id: number;
+    keyHash: string;
+    name: string;
+    userId?: number;
+    permissions: string[];
+    rateLimit: number;
+    isActive: boolean;
+    lastUsed?: Date;
+    expiresAt?: Date;
+    createdAt: Date;
+    user?: UserModel;
+}
+
+interface IApiKeyCreationAttributes {
+    name: string;
+    userId?: number;
+    permissions?: string[];
+    rateLimit?: number;
+    expiresAt?: Date;
+}
+
+@Table({
+    tableName: 'api_keys',
+    underscored: true,
+    timestamps: false,
+    indexes: [
+        { fields: ['key_hash'], unique: true, name: 'idx_api_keys_key_hash' },
+        { fields: ['user_id'], name: 'idx_api_keys_user_id' },
+        { fields: ['is_active'], name: 'idx_api_keys_is_active' },
+        { fields: ['expires_at'], name: 'idx_api_keys_expires_at' },
+    ],
+})
+export class ApiKeyModel
+    extends Model<ApiKeyModel, IApiKeyCreationAttributes>
+    implements IApiKeyModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+        unique: true,
+        field: 'key_hash',
+    })
+    declare keyHash: string;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+    })
+    declare name: string;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.ARRAY(DataType.TEXT),
+        allowNull: false,
+        defaultValue: [],
+    })
+    declare permissions: string[];
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 1000,
+        field: 'rate_limit',
+    })
+    declare rateLimit: number;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'last_used',
+    })
+    declare lastUsed: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'expires_at',
+    })
+    declare expiresAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    // Связи
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    // Методы
+    get isExpired(): boolean {
+        return this.expiresAt ? new Date() > this.expiresAt : false;
+    }
+
+    get isValid(): boolean {
+        return this.isActive && !this.isExpired;
+    }
+
+    get hasPermission(): (permission: string) => boolean {
+        return (permission: string) => this.permissions.includes(permission) || this.permissions.includes('*');
+    }
+
+    // Методы для управления ключом
+    async markAsUsed(): Promise<void> {
+        await this.update({
+            lastUsed: new Date(),
+        });
+    }
+
+    async deactivate(): Promise<void> {
+        await this.update({
+            isActive: false,
+        });
+    }
+
+    // Статические методы
+    static async createApiKey(data: IApiKeyCreationAttributes): Promise<{ apiKey: ApiKeyModel; plainKey: string }> {
+        const plainKey = crypto.randomBytes(32).toString('hex');
+        const keyHash = crypto.createHash('sha256').update(plainKey).digest('hex');
+
+        const apiKey = await this.create({
+            ...data,
+            keyHash,
+            permissions: data.permissions || [],
+            rateLimit: data.rateLimit || 1000,
+        });
+
+        return { apiKey, plainKey };
+    }
+
+    static async validateKey(key: string): Promise<ApiKeyModel | null> {
+        const keyHash = crypto.createHash('sha256').update(key).digest('hex');
+        
+        const apiKey = await this.findOne({
+            where: { keyHash },
+            include: [{ association: 'user' }],
+        });
+
+        if (!apiKey || !apiKey.isValid) {
+            return null;
+        }
+
+        // Обновляем время последнего использования
+        await apiKey.markAsUsed();
+
+        return apiKey;
+    }
+
+    static async cleanupExpired(): Promise<number> {
+        return this.destroy({
+            where: {
+                expiresAt: {
+                    [this.sequelize.Sequelize.Op.lt]: new Date(),
+                },
+            },
+        });
+    }
+}
+```
+
+## Критерии готовности
+
+- [ ] Создана миграция для таблицы `audit_logs`
+- [ ] Создана миграция для таблицы `system_logs`
+- [ ] Создана миграция для таблицы `cache_entries`
+- [ ] Создана миграция для таблицы `user_sessions`
+- [ ] Создана миграция для таблицы `api_keys`
+- [ ] Созданы модели `AuditLogModel`, `SystemLogModel`, `CacheEntryModel`, `UserSessionModel`, `ApiKeyModel`
+- [ ] Добавлены валидации для новых полей
+- [ ] Созданы индексы для производительности
+- [ ] Реализован `TechnicalService` с методами для работы с техническими моделями
+- [ ] Создан `TechnicalController` с API endpoints
+- [ ] Созданы DTO для валидации входных данных
+- [ ] Написаны тесты для новой функциональности
+- [ ] Обновлена документация API
+- [ ] Проверена обратная совместимость
+- [ ] Настроены автоматические задачи очистки
+
+## Следующие шаги
+
+После завершения улучшений Technical Models переходим к:
+1. Analytics - метрики и отчеты
+2. Search - полнотекстовый поиск
+3. Integration - внешние интеграции

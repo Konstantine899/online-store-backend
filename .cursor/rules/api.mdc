@@ -1,0 +1,50 @@
+---
+description: Правила API и контроллеров
+globs:
+alwaysApply: true
+---
+
+# API
+
+## Swagger Documentation
+- **Обязательно**: summary, description, responses для каждого endpoint
+- **Использовать**: кастомные Swagger декораторы из `@app/infrastructure/common/decorators/swagger`
+- **Пример**: `@CreateUserSwaggerDecorator()`, `@ApiBearerAuth('JWT-auth')`
+- **Цель**: автоматическая генерация документации на `/online-store/docs`
+
+## Валидация входных данных
+- **DTO**: все входные данные через DTO с `class-validator`
+- **Кастомные валидаторы**: `@IsValidName`, `@IsValidPhone`, `@IsSanitizedString`
+- **Глобальная валидация**: `CustomValidationPipe` обрабатывает все DTO автоматически
+- **Сообщения об ошибках**: всегда на русском языке с конкретным описанием
+
+## Пагинация
+- **Контракт**: `{ data: T[], meta: MetaData }`
+- **Query параметры**: `page` (default: 1), `limit` (default: 5)
+- **MetaData**: `totalCount`, `lastPage`, `currentPage`, `nextPage`, `previousPage`, `limit`
+- **Использование**: `@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number`
+
+## Авторизация и безопасность
+- **JWT Guard**: `AuthGuard` для проверки токена
+- **Role Guard**: `RoleGuard` для проверки ролей
+- **Декораторы**: `@Roles('ADMIN')`, `@UseGuards(AuthGuard, RoleGuard)`
+- **Rate Limiting**: `BruteforceGuard` с разными лимитами для auth endpoints
+- **Cookies**: refresh token в HttpOnly cookies
+
+## Обработка ошибок
+См. `errors-logging.mdc` — единый формат ошибок и глобальные фильтры (Sequelize, NotFound и др.).
+
+## Middleware и Interceptors
+- **Correlation ID**: `CorrelationIdMiddleware` для трекинга запросов
+- **File Upload**: `FileInterceptor` с `multer` конфигурацией
+- **Security**: `helmet` для безопасности заголовков
+- **CORS**: настройка разрешенных origins из переменных окружения
+
+## Логирование и мониторинг
+См. `errors-logging.mdc` — уровни логов, `pino/pino-http`, correlation ID и `/health`.
+
+## Структура контроллеров
+- **Интерфейсы**: каждый контроллер реализует соответствующий interface
+- **ApiTags**: группировка endpoints в Swagger
+- **HttpCode**: явное указание статус кодов
+- **Dependency Injection**: все зависимости через constructor

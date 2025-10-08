@@ -1,0 +1,310 @@
+# Brand Module Execution Plan (Binding)
+
+binding: true
+module: brand
+epic_ref: SAAS-003
+version: 1.0
+
+execution_policy:
+  must_follow: true
+  allow_code_changes_only_after: "Одобряю <TASK_ID>"
+  constraints:
+    - no public API changes without explicit approval
+    - operate strictly within files_scope
+    - pass lints/tests and Swagger before DoD complete
+
+context:
+  goal: Brand management with tenant isolation
+
+tasks:
+  # Фаза 1: Базовая реализация
+  - id: SAAS-009-00
+    title: Создать контроллер брендов с полной системой ролей
+    branch: "feature/catalog/SAAS-009/brand-controller-roles"
+    files_scope:
+      - ".cursor/rules/models/brand.mdc"
+      - "src/infrastructure/controllers/brand/**"
+    steps:
+      - добавить секцию контроллера в brand.mdc
+      - создать BrandController с импортами RoleGuard и Roles
+      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+      - реализовать методы с правильными ролями:
+        - просмотр брендов: ALL_ROLES
+        - управление брендами: MANAGER_ROLES
+        - управление флагами брендов: MANAGER_ROLES
+        - статистика брендов: MANAGER_ROLES
+    dod:
+      - контроллер создан с полной системой ролей
+      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+      - тенантская изоляция ролей обеспечена
+    gate:
+      - require: "Одобряю SAAS-009-00"
+
+  - id: SAAS-009-01
+    title: Создать миграцию для расширения таблицы brands
+    branch: "feature/catalog/SAAS-009/brand-extended-model"
+    files_scope:
+      - "db/migrations/**"
+      - "src/domain/models/brand.ts"
+    steps:
+      - добавить все флаги в таблицу brands (is_active, is_featured, etc.)
+      - добавить поля SEO и мета-данных
+      - создать индексы для производительности
+      - обновить BrandModel с tenant_id
+    dod:
+      - миграция up/down успешна
+      - BrandModel содержит все флаги и tenant_id
+      - индексы созданы для производительности
+    gate:
+      - require: "Одобряю SAAS-009-01"
+
+  - id: SAAS-009-02
+    title: Реализовать модель BrandModel с флагами
+    branch: "feature/catalog/SAAS-009/brand-extended-model"
+    files_scope:
+      - "src/domain/models/brand.ts"
+    steps:
+      - добавить все методы для работы с флагами брендов
+      - добавить scopes для фильтрации (active, featured, etc.)
+      - реализовать методы для SEO оптимизации
+    dod:
+      - все методы флагов реализованы
+      - scopes работают корректно
+      - SEO методы функциональны
+    gate:
+      - require: "Одобряю SAAS-009-02"
+
+  - id: SAAS-009-03
+    title: Создать DTO классы с валидацией
+    branch: "feature/catalog/SAAS-009/brand-dto-validation"
+    files_scope:
+      - "src/infrastructure/dto/brand/**"
+      - "src/domain/dto/**"
+    steps:
+      - создать CreateBrandDto для создания брендов
+      - создать UpdateBrandDto для обновления брендов
+      - создать BrandFlagsDto для управления флагами
+      - добавить валидаторы с русскими сообщениями
+    dod:
+      - DTO содержат все необходимые поля
+      - валидация работает с русскими сообщениями
+      - CustomValidationPipe обрабатывает все DTO
+    gate:
+      - require: "Одобряю SAAS-009-03"
+
+  - id: SAAS-009-04
+    title: Создать Response классы с Swagger
+    branch: "feature/catalog/SAAS-009/brand-response-swagger"
+    files_scope:
+      - "src/infrastructure/responses/brand/**"
+      - "src/infrastructure/common/decorators/swagger/brand/**"
+    steps:
+      - создать Response классы с явными полями (не extends BrandModel)
+      - добавить Swagger декораторы для всех флагов
+      - создать Response для списков брендов с пагинацией
+    dod:
+      - Response классы не наследуются от модели
+      - Swagger схемы корректны
+      - пагинация возвращает { data, meta }
+    gate:
+      - require: "Одобряю SAAS-009-04"
+
+  - id: SAAS-009-05
+    title: Реализовать сервис с методами для флагов
+    branch: "feature/catalog/SAAS-009/brand-service-methods"
+    files_scope:
+      - "src/infrastructure/services/brand/**"
+      - "src/domain/services/**"
+    steps:
+      - добавить методы для работы с флагами (markAsActive, markAsFeatured, etc.)
+      - добавить методы для SEO оптимизации
+      - добавить методы для управления логотипами
+      - добавить статистику брендов
+    dod:
+      - все методы флагов реализованы
+      - SEO методы работают
+      - методы логотипов функциональны
+      - статистика возвращает корректные данные
+    gate:
+      - require: "Одобряю SAAS-009-05"
+
+  # Фаза 2: API и интеграции
+  - id: SAAS-009-06
+    title: Создать контроллер с API endpoints
+    branch: "feature/catalog/SAAS-009/brand-controller-endpoints"
+    files_scope:
+      - "src/infrastructure/controllers/brand/**"
+      - "src/infrastructure/common/decorators/swagger/brand/**"
+    steps:
+      - добавить эндпоинты для управления брендами (CRUD)
+      - добавить эндпоинты для флагов (PATCH /brands/:id/flags)
+      - добавить эндпоинты для логотипов (POST /brands/:id/logo)
+      - добавить статистику (GET /admin/brands/stats)
+    dod:
+      - все эндпоинты работают корректно
+      - Swagger документация обновлена
+      - Guards и роли применены правильно
+    gate:
+      - require: "Одобряю SAAS-009-06"
+
+  - id: SAAS-009-07
+    title: Настроить фильтрацию и поиск брендов
+    branch: "feature/catalog/SAAS-009/brand-filtering-search"
+    files_scope:
+      - "src/infrastructure/controllers/brand/**"
+      - "src/infrastructure/services/brand/**"
+    steps:
+      - реализовать фильтрацию по флагам (active, featured, etc.)
+      - добавить поиск по названию и описанию
+      - добавить сортировку по различным полям
+      - добавить пагинацию для списков брендов
+    dod:
+      - фильтрация по флагам работает
+      - поиск корректно находит бренды
+      - сортировка и пагинация функциональны
+    gate:
+      - require: "Одобряю SAAS-009-07"
+
+  - id: SAAS-009-08
+    title: Добавить обработку ошибок и валидацию
+    branch: "feature/catalog/SAAS-009/brand-error-handling"
+    files_scope:
+      - "src/infrastructure/common/filters/**"
+      - "src/infrastructure/common/pipes/**"
+    steps:
+      - добавить обработку ошибок для брендов
+      - улучшить валидацию с русскими сообщениями
+      - добавить логирование ошибок
+    dod:
+      - ошибки обрабатываются корректно
+      - сообщения на русском языке
+      - логирование работает
+    gate:
+      - require: "Одобряю SAAS-009-08"
+
+  - id: SAAS-009-09
+    title: Создать тесты для API брендов
+    branch: "feature/catalog/SAAS-009/brand-api-tests"
+    files_scope:
+      - "src/infrastructure/controllers/brand/tests/**"
+      - "src/infrastructure/services/brand/tests/**"
+      - "src/infrastructure/repositories/brand/tests/**"
+    steps:
+      - написать integration тесты для брендов
+      - написать unit тесты для сервисов
+      - добавить негативные тесты
+    dod:
+      - все тесты проходят
+      - покрытие критичных модулей ≥80%
+      - негативные сценарии покрыты
+    gate:
+      - require: "Одобряю SAAS-009-09"
+
+  # Фаза 3: Тестирование и качество
+  - id: SAAS-009-10
+    title: Написать unit тесты для сервисов
+    branch: "feature/catalog/SAAS-009/brand-unit-tests"
+    files_scope:
+      - "src/infrastructure/services/brand/tests/**"
+      - "src/infrastructure/repositories/brand/tests/**"
+    steps:
+      - покрыть BrandService методами флагов
+      - покрыть методы SEO оптимизации
+      - покрыть методы управления логотипами
+    dod:
+      - unit тесты покрывают все методы
+      - тесты стабильны и быстры
+      - моки настроены корректно
+    gate:
+      - require: "Одобряю SAAS-009-10"
+
+  - id: SAAS-009-11
+    title: Написать integration тесты для API
+    branch: "feature/catalog/SAAS-009/brand-integration-tests"
+    files_scope:
+      - "src/infrastructure/controllers/brand/tests/**"
+    steps:
+      - покрыть все эндпоинты брендов
+      - покрыть эндпоинты флагов
+      - покрыть эндпоинты статистики
+    dod:
+      - integration тесты покрывают все эндпоинты
+      - тесты изолированы и детерминированы
+      - негативные сценарии покрыты
+    gate:
+      - require: "Одобряю SAAS-009-11"
+
+  - id: SAAS-009-12
+    title: Провести рефакторинг и оптимизацию
+    branch: "feature/catalog/SAAS-009/brand-optimization"
+    files_scope:
+      - "src/infrastructure/**"
+      - "src/domain/**"
+    steps:
+      - оптимизировать запросы к БД
+      - рефакторить дублирующийся код
+      - улучшить производительность
+    dod:
+      - код оптимизирован
+      - дублирование устранено
+      - производительность улучшена
+    gate:
+      - require: "Одобряю SAAS-009-12"
+
+  # Дополнительные возможности
+  - id: SAAS-009-13
+    title: Автоматическое управление флагами
+    branch: "feature/catalog/SAAS-009/brand-auto-flags"
+    files_scope:
+      - "src/infrastructure/services/brand/**"
+      - "src/infrastructure/services/product/**"
+    steps:
+      - реализовать автоматическое назначение флагов по количеству товаров
+      - добавить логику по популярности брендов
+      - добавить уведомления о смене статусов
+    dod:
+      - автоматическое управление работает
+      - логика по популярности корректна
+      - уведомления отправляются
+    gate:
+      - require: "Одобряю SAAS-009-13"
+
+  - id: SAAS-009-14
+    title: Аналитика брендов
+    branch: "feature/catalog/SAAS-009/brand-analytics"
+    files_scope:
+      - "src/infrastructure/controllers/brand/**"
+      - "src/infrastructure/services/brand/**"
+    steps:
+      - создать эндпоинты аналитики брендов
+      - добавить метрики и дашборды
+      - настроить отчеты по брендам
+    dod:
+      - аналитика брендов работает
+      - метрики корректны
+      - отчеты генерируются
+    gate:
+      - require: "Одобряю SAAS-009-14"
+
+  # Unit тесты для BrandRepository
+  - id: SAAS-009-15
+    title: Unit тесты для BrandRepository
+    branch: "test/brand/SAAS-009/brand-repository-unit-tests"
+    files_scope:
+      - "tests/unit/repositories/brand.repository.unit.test.ts"
+      - "src/infrastructure/repositories/brand/brand.repository.ts"
+    steps:
+      - создать файл tests/unit/repositories/brand.repository.unit.test.ts
+      - настроить моки для BrandModel
+      - написать тесты для CRUD операций
+      - написать тесты для поиска брендов
+      - добавить тесты обработки ошибок
+    dod:
+      - покрытие branches ≥ 75%
+      - покрытие functions ≥ 75%
+      - покрытие lines ≥ 75%
+      - все тесты проходят
+      - линтеры проходят без ошибок
+    estimated_time: 2-3 часа
+    gate:
+      - require: "Одобряю SAAS-009-15"

@@ -1,0 +1,1310 @@
+# Система уведомлений (Notification System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы уведомлений для ecommerce приложения с базовыми email и push уведомлениями, фокусом на быструю разработку и готовность к масштабированию.
+
+## Основные требования
+- **Email уведомления** - подтверждение заказа, статус доставки, сброс пароля
+- **Push уведомления** - мобильные и браузерные уведомления
+- **Шаблоны уведомлений** - переиспользуемые шаблоны
+- **Настройки пользователей** - вкл/выкл уведомления
+- **История уведомлений** - отслеживание отправленных уведомлений
+
+## Структура базы данных
+
+### Таблица `notifications`
+```sql
+CREATE TABLE notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(10) NOT NULL CHECK (type IN ('email', 'push')),
+    template_name VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    data JSONB,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'delivered', 'read', 'failed')),
+    sent_at TIMESTAMP,
+    read_at TIMESTAMP,
+    failed_reason TEXT,
+    is_read BOOLEAN DEFAULT false,
+    is_archived BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `notification_templates`
+```sql
+CREATE TABLE notification_templates (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    type VARCHAR(10) NOT NULL CHECK (type IN ('email', 'push')),
+    subject VARCHAR(255),
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    variables TEXT[],
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `user_notification_settings`
+```sql
+CREATE TABLE user_notification_settings (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    email_enabled BOOLEAN DEFAULT true,
+    push_enabled BOOLEAN DEFAULT true,
+    order_updates BOOLEAN DEFAULT true,
+    marketing BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id)
+);
+```
+
+## Модели Sequelize
+
+### Notification Model
+```typescript
+// src/domain/models/notification.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { UserModel } from './user.model';
+
+export enum NotificationType {
+    EMAIL = 'email',
+    PUSH = 'push'
+}
+
+export enum NotificationStatus {
+    PENDING = 'pending',
+    SENT = 'sent',
+    DELIVERED = 'delivered',
+    READ = 'read',
+    FAILED = 'failed'
+}
+
+interface INotificationModel {
+    id: number;
+    userId: number;
+    type: NotificationType;
+    templateName: string;
+    title: string;
+    message: string;
+    data?: any;
+    status: NotificationStatus;
+    sentAt?: Date;
+    readAt?: Date;
+    failedReason?: string;
+    isRead: boolean;
+    isArchived: boolean;
+    user: UserModel;
+    createdAt: Date;
+}
+
+interface INotificationCreationAttributes {
+    userId: number;
+    type: NotificationType;
+    templateName: string;
+    title: string;
+    message: string;
+    data?: any;
+    status?: NotificationStatus;
+    isRead?: boolean;
+    isArchived?: boolean;
+}
+
+@Table({
+    tableName: 'notifications',
+    underscored: true,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: false,
+    indexes: [
+        { fields: ['user_id'], name: 'idx_notifications_user_id' },
+        { fields: ['type'], name: 'idx_notifications_type' },
+        { fields: ['status'], name: 'idx_notifications_status' },
+        { fields: ['template_name'], name: 'idx_notifications_template_name' },
+        { fields: ['is_read'], name: 'idx_notifications_is_read' },
+        { fields: ['is_archived'], name: 'idx_notifications_is_archived' },
+        { fields: ['created_at'], name: 'idx_notifications_created_at' },
+        { fields: ['user_id', 'status'], name: 'idx_notifications_user_status' },
+    ],
+})
+export class NotificationModel
+    extends Model<NotificationModel, INotificationCreationAttributes>
+    implements INotificationModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(NotificationType)),
+        allowNull: false,
+    })
+    declare type: NotificationType;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: false,
+        field: 'template_name',
+    })
+    declare templateName: string;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+    })
+    declare title: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: false,
+    })
+    declare message: string;
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: true,
+    })
+    declare data: any;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(NotificationStatus)),
+        allowNull: false,
+        defaultValue: NotificationStatus.PENDING,
+    })
+    declare status: NotificationStatus;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'sent_at',
+    })
+    declare sentAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'read_at',
+    })
+    declare readAt: Date;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'failed_reason',
+    })
+    declare failedReason: string;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_read',
+    })
+    declare isRead: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_archived',
+    })
+    declare isArchived: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    // Getters для флагов
+    get isReadNotification(): boolean {
+        return this.isRead;
+    }
+
+    get isArchivedNotification(): boolean {
+        return this.isArchived;
+    }
+
+    get notificationStatus(): string {
+        if (this.isArchived) return 'archived';
+        if (this.isRead) return 'read';
+        return this.status;
+    }
+
+    // Методы для управления флагами
+    async markAsRead(): Promise<void> {
+        await this.update({ isRead: true, readAt: new Date() });
+    }
+
+    async markAsUnread(): Promise<void> {
+        await this.update({ isRead: false, readAt: null });
+    }
+
+    async archiveNotification(): Promise<void> {
+        await this.update({ isArchived: true });
+    }
+
+    async unarchiveNotification(): Promise<void> {
+        await this.update({ isArchived: false });
+    }
+
+    // Статические методы для работы с флагами
+    static async getReadNotifications(): Promise<NotificationModel[]> {
+        return this.findAll({
+            where: { isRead: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getUnreadNotifications(): Promise<NotificationModel[]> {
+        return this.findAll({
+            where: { isRead: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getArchivedNotifications(): Promise<NotificationModel[]> {
+        return this.findAll({
+            where: { isArchived: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNonArchivedNotifications(): Promise<NotificationModel[]> {
+        return this.findAll({
+            where: { isArchived: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+}
+```
+
+### NotificationTemplate Model
+```typescript
+// src/domain/models/notification-template.model.ts
+import { Model, DataType, Column, Table } from 'sequelize-typescript';
+import { NotificationType } from './notification.model';
+
+interface INotificationTemplateModel {
+    id: number;
+    name: string;
+    type: NotificationType;
+    subject?: string;
+    title: string;
+    message: string;
+    variables: string[];
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface INotificationTemplateCreationAttributes {
+    name: string;
+    type: NotificationType;
+    subject?: string;
+    title: string;
+    message: string;
+    variables?: string[];
+    isActive?: boolean;
+}
+
+@Table({
+    tableName: 'notification_templates',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['name'], name: 'idx_notification_templates_name', unique: true },
+        { fields: ['type'], name: 'idx_notification_templates_type' },
+        { fields: ['is_active'], name: 'idx_notification_templates_active' },
+    ],
+})
+export class NotificationTemplateModel
+    extends Model<NotificationTemplateModel, INotificationTemplateCreationAttributes>
+    implements INotificationTemplateModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: false,
+        unique: true,
+    })
+    declare name: string;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(NotificationType)),
+        allowNull: false,
+    })
+    declare type: NotificationType;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+    })
+    declare subject: string;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+    })
+    declare title: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: false,
+    })
+    declare message: string;
+
+    @Column({
+        type: DataType.ARRAY(DataType.TEXT),
+        allowNull: false,
+        defaultValue: [],
+    })
+    declare variables: string[];
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'updated_at',
+    })
+    declare updatedAt: Date;
+}
+```
+
+### UserNotificationSettings Model
+```typescript
+// src/domain/models/user-notification-settings.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { UserModel } from './user.model';
+
+interface IUserNotificationSettingsModel {
+    id: number;
+    userId: number;
+    emailEnabled: boolean;
+    pushEnabled: boolean;
+    orderUpdates: boolean;
+    marketing: boolean;
+    user: UserModel;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IUserNotificationSettingsCreationAttributes {
+    userId: number;
+    emailEnabled?: boolean;
+    pushEnabled?: boolean;
+    orderUpdates?: boolean;
+    marketing?: boolean;
+}
+
+@Table({
+    tableName: 'user_notification_settings',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['user_id'], name: 'idx_user_notification_settings_user_id', unique: true },
+    ],
+})
+export class UserNotificationSettingsModel
+    extends Model<UserNotificationSettingsModel, IUserNotificationSettingsCreationAttributes>
+    implements IUserNotificationSettingsModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        unique: true,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'email_enabled',
+    })
+    declare emailEnabled: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'push_enabled',
+    })
+    declare pushEnabled: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'order_updates',
+    })
+    declare orderUpdates: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    })
+    declare marketing: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'updated_at',
+    })
+    declare updatedAt: Date;
+
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+}
+```
+
+## Сервисы
+
+### Notification Service
+```typescript
+// src/infrastructure/services/notification.service.ts
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { NotificationModel, NotificationType, NotificationStatus } from '@app/domain/models/notification.model';
+import { NotificationTemplateModel } from '@app/domain/models/notification-template.model';
+import { UserNotificationSettingsModel } from '@app/domain/models/user-notification-settings.model';
+import { Op } from 'sequelize';
+
+@Injectable()
+export class NotificationService {
+    private readonly logger = new Logger(NotificationService.name);
+
+    constructor(
+        @InjectModel(NotificationModel)
+        private notificationModel: typeof NotificationModel,
+        @InjectModel(NotificationTemplateModel)
+        private templateModel: typeof NotificationTemplateModel,
+        @InjectModel(UserNotificationSettingsModel)
+        private settingsModel: typeof UserNotificationSettingsModel,
+    ) {}
+
+    async sendNotification(
+        userId: number,
+        templateName: string,
+        variables: Record<string, any> = {},
+        type: NotificationType = NotificationType.EMAIL,
+    ): Promise<NotificationModel> {
+        // Получаем шаблон
+        const template = await this.templateModel.findOne({
+            where: { 
+                name: templateName,
+                type,
+                isActive: true,
+            },
+        });
+
+        if (!template) {
+            throw new NotFoundException(`Шаблон ${templateName} не найден`);
+        }
+
+        // Проверяем настройки пользователя
+        const userSettings = await this.getUserSettings(userId);
+        if (!this.isNotificationEnabled(userSettings, type)) {
+            this.logger.log(`Уведомления ${type} отключены для пользователя ${userId}`);
+            return null;
+        }
+
+        // Заменяем переменные в шаблоне
+        const title = this.replaceVariables(template.title, variables);
+        const message = this.replaceVariables(template.message, variables);
+        const subject = template.subject ? this.replaceVariables(template.subject, variables) : null;
+
+        // Создаем уведомление
+        const notification = await this.notificationModel.create({
+            userId,
+            type,
+            templateName,
+            title,
+            message,
+            data: { subject, variables },
+            status: NotificationStatus.PENDING,
+        });
+
+        // Отправляем уведомление
+        try {
+            await this.deliverNotification(notification);
+            await notification.update({
+                status: NotificationStatus.SENT,
+                sentAt: new Date(),
+            });
+        } catch (error) {
+            await notification.update({
+                status: NotificationStatus.FAILED,
+                failedReason: error.message,
+            });
+            this.logger.error(`Ошибка отправки уведомления ${notification.id}: ${error.message}`);
+        }
+
+        return notification;
+    }
+
+    async sendEmailNotification(
+        userId: number,
+        templateName: string,
+        variables: Record<string, any> = {},
+    ): Promise<NotificationModel> {
+        return this.sendNotification(userId, templateName, variables, NotificationType.EMAIL);
+    }
+
+    async sendPushNotification(
+        userId: number,
+        templateName: string,
+        variables: Record<string, any> = {},
+    ): Promise<NotificationModel> {
+        return this.sendNotification(userId, templateName, variables, NotificationType.PUSH);
+    }
+
+    async getUserNotifications(
+        userId: number,
+        page: number = 1,
+        limit: number = 20,
+    ): Promise<{ data: NotificationModel[]; total: number }> {
+        const { rows: notifications, count: total } = await this.notificationModel.findAndCountAll({
+            where: { userId },
+            order: [['created_at', 'DESC']],
+            limit,
+            offset: (page - 1) * limit,
+        });
+
+        return { data: notifications, total };
+    }
+
+    async markAsRead(notificationId: number, userId: number): Promise<void> {
+        const notification = await this.notificationModel.findOne({
+            where: { id: notificationId, userId },
+        });
+
+        if (!notification) {
+            throw new NotFoundException('Уведомление не найдено');
+        }
+
+        if (notification.status === NotificationStatus.SENT || notification.status === NotificationStatus.DELIVERED) {
+            await notification.update({
+                status: NotificationStatus.READ,
+                readAt: new Date(),
+            });
+        }
+    }
+
+    async getUserSettings(userId: number): Promise<UserNotificationSettingsModel> {
+        let settings = await this.settingsModel.findOne({
+            where: { userId },
+        });
+
+        if (!settings) {
+            // Создаем настройки по умолчанию
+            settings = await this.settingsModel.create({
+                userId,
+                emailEnabled: true,
+                pushEnabled: true,
+                orderUpdates: true,
+                marketing: false,
+            });
+        }
+
+        return settings;
+    }
+
+    async updateUserSettings(
+        userId: number,
+        settings: Partial<Pick<UserNotificationSettingsModel, 'emailEnabled' | 'pushEnabled' | 'orderUpdates' | 'marketing'>>,
+    ): Promise<UserNotificationSettingsModel> {
+        const userSettings = await this.getUserSettings(userId);
+        return userSettings.update(settings);
+    }
+
+    async getUnreadCount(userId: number): Promise<number> {
+        return this.notificationModel.count({
+            where: {
+                userId,
+                status: {
+                    [Op.in]: [NotificationStatus.SENT, NotificationStatus.DELIVERED],
+                },
+            },
+        });
+    }
+
+    private isNotificationEnabled(
+        settings: UserNotificationSettingsModel,
+        type: NotificationType,
+    ): boolean {
+        if (type === NotificationType.EMAIL) {
+            return settings.emailEnabled;
+        }
+        if (type === NotificationType.PUSH) {
+            return settings.pushEnabled;
+        }
+        return false;
+    }
+
+    private replaceVariables(text: string, variables: Record<string, any>): string {
+        let result = text;
+        Object.keys(variables).forEach(key => {
+            const regex = new RegExp(`{{${key}}}`, 'g');
+            result = result.replace(regex, variables[key] || '');
+        });
+        return result;
+    }
+
+    private async deliverNotification(notification: NotificationModel): Promise<void> {
+        // Здесь должна быть интеграция с email/SMS/push провайдерами
+        // Для примера просто логируем
+        this.logger.log(`Отправка ${notification.type} уведомления пользователю ${notification.userId}: ${notification.title}`);
+        
+        // Симуляция отправки
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+}
+```
+
+## Контроллеры
+
+### Notification Controller
+```typescript
+// src/infrastructure/controllers/notification.controller.ts
+import { Controller, Get, Post, Put, Param, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
+import { CurrentUser } from '@app/infrastructure/common/decorators/current-user.decorator';
+import { NotificationService } from '@app/infrastructure/services/notification.service';
+import { MarkAsReadDto } from '@app/infrastructure/dto/notification/mark-as-read.dto';
+import { UpdateSettingsDto } from '@app/infrastructure/dto/notification/update-settings.dto';
+import { NotificationResponse, UserNotificationSettingsResponse } from '@app/infrastructure/responses/notification/notification.response';
+
+@ApiTags('Уведомления')
+@Controller('notifications')
+export class NotificationController {
+    constructor(private readonly notificationService: NotificationService) {}
+
+    @Get()
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить уведомления пользователя' })
+    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
+    @ApiResponse({ status: 200, description: 'Уведомления получены', type: [NotificationResponse] })
+    async getUserNotifications(
+        @CurrentUser() user: any,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 20,
+    ): Promise<{ data: NotificationResponse[]; total: number }> {
+        const result = await this.notificationService.getUserNotifications(user.id, page, limit);
+        
+        return {
+            data: result.data.map(notification => ({
+                id: notification.id,
+                userId: notification.userId,
+                type: notification.type,
+                templateName: notification.templateName,
+                title: notification.title,
+                message: notification.message,
+                data: notification.data,
+                status: notification.status,
+                sentAt: notification.sentAt,
+                readAt: notification.readAt,
+                failedReason: notification.failedReason,
+                createdAt: notification.createdAt,
+            })),
+            total: result.total,
+        };
+    }
+
+    @Get('unread-count')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить количество непрочитанных уведомлений' })
+    @ApiResponse({ status: 200, description: 'Количество непрочитанных уведомлений' })
+    async getUnreadCount(@CurrentUser() user: any): Promise<{ count: number }> {
+        const count = await this.notificationService.getUnreadCount(user.id);
+        return { count };
+    }
+
+    @Put(':id/read')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить уведомление как прочитанное' })
+    @ApiResponse({ status: 200, description: 'Уведомление отмечено как прочитанное' })
+    @ApiResponse({ status: 404, description: 'Уведомление не найдено' })
+    async markAsRead(
+        @Param('id') notificationId: number,
+        @CurrentUser() user: any,
+    ): Promise<{ message: string }> {
+        await this.notificationService.markAsRead(notificationId, user.id);
+        return { message: 'Уведомление отмечено как прочитанное' };
+    }
+
+    @Get('settings')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить настройки уведомлений пользователя' })
+    @ApiResponse({ status: 200, description: 'Настройки получены', type: UserNotificationSettingsResponse })
+    async getUserSettings(@CurrentUser() user: any): Promise<UserNotificationSettingsResponse> {
+        const settings = await this.notificationService.getUserSettings(user.id);
+        
+        return {
+            id: settings.id,
+            userId: settings.userId,
+            emailEnabled: settings.emailEnabled,
+            pushEnabled: settings.pushEnabled,
+            orderUpdates: settings.orderUpdates,
+            marketing: settings.marketing,
+            createdAt: settings.createdAt,
+            updatedAt: settings.updatedAt,
+        };
+    }
+
+    @Put('settings')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Обновить настройки уведомлений пользователя' })
+    @ApiResponse({ status: 200, description: 'Настройки обновлены', type: UserNotificationSettingsResponse })
+    async updateUserSettings(
+        @Body() updateSettingsDto: UpdateSettingsDto,
+        @CurrentUser() user: any,
+    ): Promise<UserNotificationSettingsResponse> {
+        const settings = await this.notificationService.updateUserSettings(user.id, updateSettingsDto);
+        
+        return {
+            id: settings.id,
+            userId: settings.userId,
+            emailEnabled: settings.emailEnabled,
+            pushEnabled: settings.pushEnabled,
+            orderUpdates: settings.orderUpdates,
+            marketing: settings.marketing,
+            createdAt: settings.createdAt,
+            updatedAt: settings.updatedAt,
+        };
+    }
+}
+```
+
+## Миграции
+
+### Создание таблиц уведомлений
+```typescript
+// db/migrations/YYYYMMDDHHMMSS-create-notification-system.ts
+import { QueryInterface, DataTypes } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+    // Создание таблицы notifications
+    await queryInterface.createTable('notifications', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        user_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'users', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        type: {
+            type: DataTypes.ENUM('email', 'push'),
+            allowNull: false,
+        },
+        template_name: {
+            type: DataTypes.STRING(50),
+            allowNull: false,
+        },
+        title: {
+            type: DataTypes.STRING(255),
+            allowNull: false,
+        },
+        message: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+        data: {
+            type: DataTypes.JSONB,
+            allowNull: true,
+        },
+        status: {
+            type: DataTypes.ENUM('pending', 'sent', 'delivered', 'read', 'failed'),
+            allowNull: false,
+            defaultValue: 'pending',
+        },
+        sent_at: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        read_at: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        failed_reason: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание таблицы notification_templates
+    await queryInterface.createTable('notification_templates', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        name: {
+            type: DataTypes.STRING(50),
+            allowNull: false,
+            unique: true,
+        },
+        type: {
+            type: DataTypes.ENUM('email', 'push'),
+            allowNull: false,
+        },
+        subject: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+        },
+        title: {
+            type: DataTypes.STRING(255),
+            allowNull: false,
+        },
+        message: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+        variables: {
+            type: DataTypes.ARRAY(DataTypes.TEXT),
+            allowNull: false,
+            defaultValue: [],
+        },
+        is_active: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание таблицы user_notification_settings
+    await queryInterface.createTable('user_notification_settings', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        user_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'users', key: 'id' },
+            onDelete: 'CASCADE',
+            unique: true,
+        },
+        email_enabled: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        },
+        push_enabled: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        },
+        order_updates: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        },
+        marketing: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание индексов
+    await queryInterface.addIndex('notifications', ['user_id']);
+    await queryInterface.addIndex('notifications', ['type']);
+    await queryInterface.addIndex('notifications', ['status']);
+    await queryInterface.addIndex('notifications', ['template_name']);
+    await queryInterface.addIndex('notifications', ['created_at']);
+    await queryInterface.addIndex('notifications', ['user_id', 'status']);
+
+    await queryInterface.addIndex('notification_templates', ['name'], { unique: true });
+    await queryInterface.addIndex('notification_templates', ['type']);
+    await queryInterface.addIndex('notification_templates', ['is_active']);
+
+    await queryInterface.addIndex('user_notification_settings', ['user_id'], { unique: true });
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+    await queryInterface.dropTable('user_notification_settings');
+    await queryInterface.dropTable('notification_templates');
+    await queryInterface.dropTable('notifications');
+}
+```
+
+### Сиды для шаблонов уведомлений
+```typescript
+// db/seeders/YYYYMMDDHHMMSS-notification-templates.ts
+import { QueryInterface } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+    await queryInterface.bulkInsert('notification_templates', [
+        {
+            name: 'order_confirmation',
+            type: 'email',
+            subject: 'Подтверждение заказа #{{orderNumber}}',
+            title: 'Заказ подтвержден',
+            message: 'Ваш заказ #{{orderNumber}} на сумму {{totalAmount}} руб. подтвержден и принят в обработку.',
+            variables: JSON.stringify(['orderNumber', 'totalAmount']),
+            is_active: true,
+            created_at: new Date(),
+            updated_at: new Date(),
+        },
+        {
+            name: 'order_shipped',
+            type: 'email',
+            subject: 'Заказ #{{orderNumber}} отправлен',
+            title: 'Заказ отправлен',
+            message: 'Ваш заказ #{{orderNumber}} отправлен. Трек-номер: {{trackingNumber}}',
+            variables: JSON.stringify(['orderNumber', 'trackingNumber']),
+            is_active: true,
+            created_at: new Date(),
+            updated_at: new Date(),
+        },
+        {
+            name: 'password_reset',
+            type: 'email',
+            subject: 'Сброс пароля',
+            title: 'Сброс пароля',
+            message: 'Для сброса пароля перейдите по ссылке: {{resetLink}}',
+            variables: JSON.stringify(['resetLink']),
+            is_active: true,
+            created_at: new Date(),
+            updated_at: new Date(),
+        },
+        {
+            name: 'welcome',
+            type: 'email',
+            subject: 'Добро пожаловать!',
+            title: 'Добро пожаловать в наш магазин',
+            message: 'Спасибо за регистрацию! Добро пожаловать в наш интернет-магазин.',
+            variables: JSON.stringify([]),
+            is_active: true,
+            created_at: new Date(),
+            updated_at: new Date(),
+        },
+        {
+            name: 'order_confirmation_push',
+            type: 'push',
+            title: 'Заказ подтвержден',
+            message: 'Ваш заказ #{{orderNumber}} подтвержден',
+            variables: JSON.stringify(['orderNumber']),
+            is_active: true,
+            created_at: new Date(),
+            updated_at: new Date(),
+        },
+        {
+            name: 'order_shipped_push',
+            type: 'push',
+            title: 'Заказ отправлен',
+            message: 'Ваш заказ #{{orderNumber}} отправлен',
+            variables: JSON.stringify(['orderNumber']),
+            is_active: true,
+            created_at: new Date(),
+            updated_at: new Date(),
+        },
+    ]);
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+    await queryInterface.bulkDelete('notification_templates', null, {});
+}
+```
+
+## DTO и валидация
+
+### MarkAsReadDto
+```typescript
+// src/infrastructure/dto/notification/mark-as-read.dto.ts
+import { IsNumber, Min } from 'class-validator';
+
+export class MarkAsReadDto {
+    @IsNumber({}, { message: 'ID уведомления должен быть числом' })
+    @Min(1, { message: 'ID уведомления должен быть больше 0' })
+    declare readonly notificationId: number;
+}
+```
+
+### UpdateSettingsDto
+```typescript
+// src/infrastructure/dto/notification/update-settings.dto.ts
+import { IsOptional, IsBoolean } from 'class-validator';
+
+export class UpdateSettingsDto {
+    @IsOptional()
+    @IsBoolean({ message: 'Настройка email должна быть булевым значением' })
+    declare readonly emailEnabled?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Настройка push должна быть булевым значением' })
+    declare readonly pushEnabled?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Настройка обновлений заказа должна быть булевым значением' })
+    declare readonly orderUpdates?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Настройка маркетинга должна быть булевым значением' })
+    declare readonly marketing?: boolean;
+}
+```
+
+## Response классы
+
+### NotificationResponse
+```typescript
+// src/infrastructure/responses/notification/notification.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class NotificationResponse {
+    @ApiProperty({ description: 'ID уведомления' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'ID пользователя' })
+    declare readonly userId: number;
+
+    @ApiProperty({ description: 'Тип уведомления' })
+    declare readonly type: string;
+
+    @ApiProperty({ description: 'Название шаблона' })
+    declare readonly templateName: string;
+
+    @ApiProperty({ description: 'Заголовок' })
+    declare readonly title: string;
+
+    @ApiProperty({ description: 'Сообщение' })
+    declare readonly message: string;
+
+    @ApiProperty({ description: 'Дополнительные данные', required: false })
+    declare readonly data?: any;
+
+    @ApiProperty({ description: 'Статус уведомления' })
+    declare readonly status: string;
+
+    @ApiProperty({ description: 'Дата отправки', required: false })
+    declare readonly sentAt?: Date;
+
+    @ApiProperty({ description: 'Дата прочтения', required: false })
+    declare readonly readAt?: Date;
+
+    @ApiProperty({ description: 'Причина ошибки', required: false })
+    declare readonly failedReason?: string;
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+}
+```
+
+### UserNotificationSettingsResponse
+```typescript
+// src/infrastructure/responses/notification/notification.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class UserNotificationSettingsResponse {
+    @ApiProperty({ description: 'ID настроек' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'ID пользователя' })
+    declare readonly userId: number;
+
+    @ApiProperty({ description: 'Email уведомления включены' })
+    declare readonly emailEnabled: boolean;
+
+    @ApiProperty({ description: 'Push уведомления включены' })
+    declare readonly pushEnabled: boolean;
+
+    @ApiProperty({ description: 'Обновления заказа включены' })
+    declare readonly orderUpdates: boolean;
+
+    @ApiProperty({ description: 'Маркетинговые уведомления включены' })
+    declare readonly marketing: boolean;
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления' })
+    declare readonly updatedAt: Date;
+}
+```
+
+## Критерии готовности
+
+### ✅ Обязательные требования:
+- [ ] Созданы миграции для таблиц notifications, notification_templates, user_notification_settings
+- [ ] Реализованы модели Sequelize (NotificationModel, NotificationTemplateModel, UserNotificationSettingsModel)
+- [ ] Создан NotificationService с отправкой уведомлений
+- [ ] Реализован контроллер с API endpoints
+- [ ] Добавлены DTO классы с валидацией
+- [ ] Созданы Response классы с Swagger
+- [ ] Добавлены индексы для производительности
+- [ ] Созданы сиды для базовых шаблонов
+- [ ] Добавлены unit тесты для сервисов
+- [ ] Добавлены integration тесты для API
+- [ ] Интеграция с email/push провайдерами
+
+### 🎯 Дополнительные возможности:
+- [ ] SMS уведомления
+- [ ] Webhook уведомления
+- [ ] Планировщик для отложенных уведомлений
+- [ ] Аналитика по доставляемости
+- [ ] A/B тестирование шаблонов
+
+## Следующие шаги
+
+### Фаза 1: Базовая реализация (1 неделя)
+1. **Создать миграции** для всех таблиц
+2. **Реализовать модели** Sequelize
+3. **Создать DTO классы** с валидацией
+4. **Создать Response классы** с Swagger
+5. **Реализовать сервис** с основной логикой
+
+### Фаза 2: API и интеграции (3-4 дня)
+6. **Создать контроллер** с API endpoints
+7. **Настроить интеграцию** с email провайдерами
+8. **Добавить push уведомления** (опционально)
+9. **Создать сиды** для базовых шаблонов
+
+### Фаза 3: Тестирование и качество (2-3 дня)
+10. **Написать unit тесты** для сервисов
+11. **Написать integration тесты** для API
+12. **Добавить обработку ошибок** и валидацию
+13. **Провести рефакторинг** и оптимизацию
+
+## Риски и альтернативы
+
+### ⚠️ Риски:
+- **Производительность**: большое количество уведомлений может замедлить систему
+- **Доставляемость**: email могут попадать в спам
+- **Масштабируемость**: нужна очередь для обработки уведомлений
+
+### 🔄 Альтернативы:
+- **Очередь сообщений**: Redis/RabbitMQ для асинхронной обработки
+- **Внешние сервисы**: SendGrid, Twilio для email/SMS
+- **Кэширование**: Redis для хранения настроек пользователей
+
+## Интеграция с другими системами
+
+### 🔗 Связанные системы:
+- **OrderService** - уведомления о заказах
+- **UserService** - управление пользователями
+- **AuthService** - уведомления о сбросе пароля
+- **EmailService** - отправка email уведомлений
+- **PushService** - отправка push уведомлений
+
+### 📊 Аналитика:
+- Статистика отправленных уведомлений
+- Процент доставляемости
+- Популярные шаблоны
+
+## TL;DR
+
+Упрощенная система уведомлений включает:
+- **3 таблицы**: notifications, notification_templates, user_notification_settings
+- **3 модели**: NotificationModel, NotificationTemplateModel, UserNotificationSettingsModel
+- **1 сервис**: NotificationService
+- **1 контроллер**: NotificationController
+- **Функции**: email и push уведомления, шаблоны, настройки пользователей
+- **Валидация**: проверка настроек и шаблонов
+- **Автоматизация**: отправка уведомлений по событиям
+- **Готовность**: к масштабированию и дополнительным каналам
+```

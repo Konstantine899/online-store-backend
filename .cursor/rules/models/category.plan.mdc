@@ -1,0 +1,312 @@
+# Category Module Execution Plan (Binding)
+
+binding: true
+module: category
+epic_ref: SAAS-003
+version: 1.0
+
+execution_policy:
+  must_follow: true
+  allow_code_changes_only_after: "Одобряю <TASK_ID>"
+  constraints:
+    - no public API changes without explicit approval
+    - operate strictly within files_scope
+    - pass lints/tests and Swagger before DoD complete
+
+context:
+  goal: Category management with tenant isolation and hierarchy
+
+tasks:
+  # Фаза 1: Базовая реализация
+  - id: SAAS-008-00
+    title: Создать контроллер категорий с полной системой ролей
+    branch: "feature/catalog/SAAS-008/category-controller-roles"
+    files_scope:
+      - ".cursor/rules/models/category.mdc"
+      - "src/infrastructure/controllers/category/**"
+    steps:
+      - добавить секцию контроллера в category.mdc
+      - создать CategoryController с импортами RoleGuard и Roles
+      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+      - реализовать методы с правильными ролями:
+        - просмотр категорий: ALL_ROLES
+        - управление категориями: MANAGER_ROLES
+        - управление иерархией: MANAGER_ROLES
+        - статистика категорий: MANAGER_ROLES
+    dod:
+      - контроллер создан с полной системой ролей
+      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+      - тенантская изоляция ролей обеспечена
+    gate:
+      - require: "Одобряю SAAS-008-00"
+
+  - id: SAAS-008-01
+    title: Создать миграцию для расширения таблицы categories
+    branch: "feature/catalog/SAAS-008/category-extended-model"
+    files_scope:
+      - "db/migrations/**"
+      - "src/domain/models/category.ts"
+    steps:
+      - добавить все флаги в таблицу categories (is_active, is_featured, etc.)
+      - добавить поля SEO и мета-данных
+      - создать индексы для производительности
+      - обновить CategoryModel с tenant_id
+    dod:
+      - миграция up/down успешна
+      - CategoryModel содержит все флаги и tenant_id
+      - индексы созданы для производительности
+    gate:
+      - require: "Одобряю SAAS-008-01"
+
+  - id: SAAS-008-02
+    title: Реализовать модель CategoryModel с флагами
+    branch: "feature/catalog/SAAS-008/category-extended-model"
+    files_scope:
+      - "src/domain/models/category.ts"
+    steps:
+      - добавить все методы для работы с флагами категорий
+      - добавить scopes для фильтрации (active, featured, etc.)
+      - реализовать методы для иерархии категорий
+    dod:
+      - все методы флагов реализованы
+      - scopes работают корректно
+      - иерархия категорий функциональна
+    gate:
+      - require: "Одобряю SAAS-008-02"
+
+  - id: SAAS-008-03
+    title: Создать DTO классы с валидацией
+    branch: "feature/catalog/SAAS-008/category-dto-validation"
+    files_scope:
+      - "src/infrastructure/dto/category/**"
+      - "src/domain/dto/**"
+    steps:
+      - создать CreateCategoryDto для создания категорий
+      - создать UpdateCategoryDto для обновления категорий
+      - создать CategoryHierarchyDto для иерархии
+      - добавить валидаторы с русскими сообщениями
+    dod:
+      - DTO содержат все необходимые поля
+      - валидация работает с русскими сообщениями
+      - CustomValidationPipe обрабатывает все DTO
+    gate:
+      - require: "Одобряю SAAS-008-03"
+
+  - id: SAAS-008-04
+    title: Создать Response классы с Swagger
+    branch: "feature/catalog/SAAS-008/category-response-swagger"
+    files_scope:
+      - "src/infrastructure/responses/category/**"
+      - "src/infrastructure/common/decorators/swagger/category/**"
+    steps:
+      - создать Response классы с явными полями (не extends CategoryModel)
+      - добавить Swagger декораторы для всех флагов
+      - создать Response для списков категорий с пагинацией
+    dod:
+      - Response классы не наследуются от модели
+      - Swagger схемы корректны
+      - пагинация возвращает { data, meta }
+    gate:
+      - require: "Одобряю SAAS-008-04"
+
+  - id: SAAS-008-05
+    title: Реализовать сервис с методами для флагов
+    branch: "feature/catalog/SAAS-008/category-service-methods"
+    files_scope:
+      - "src/infrastructure/services/category/**"
+      - "src/domain/services/**"
+    steps:
+      - добавить методы для работы с флагами (markAsActive, markAsFeatured, etc.)
+      - добавить методы для иерархии категорий
+      - добавить методы для SEO оптимизации
+      - добавить статистику категорий
+    dod:
+      - все методы флагов реализованы
+      - методы иерархии работают
+      - SEO методы функциональны
+      - статистика возвращает корректные данные
+    gate:
+      - require: "Одобряю SAAS-008-05"
+
+  # Фаза 2: API и интеграции
+  - id: SAAS-008-06
+    title: Создать контроллер с API endpoints
+    branch: "feature/catalog/SAAS-008/category-controller-endpoints"
+    files_scope:
+      - "src/infrastructure/controllers/category/**"
+      - "src/infrastructure/common/decorators/swagger/category/**"
+    steps:
+      - добавить эндпоинты для управления категориями (CRUD)
+      - добавить эндпоинты для иерархии (GET /categories/tree)
+      - добавить эндпоинты для флагов (PATCH /categories/:id/flags)
+      - добавить статистику (GET /admin/categories/stats)
+    dod:
+      - все эндпоинты работают корректно
+      - Swagger документация обновлена
+      - Guards и роли применены правильно
+    gate:
+      - require: "Одобряю SAAS-008-06"
+
+  - id: SAAS-008-07
+    title: Настроить фильтрацию и поиск категорий
+    branch: "feature/catalog/SAAS-008/category-filtering-search"
+    files_scope:
+      - "src/infrastructure/controllers/category/**"
+      - "src/infrastructure/services/category/**"
+    steps:
+      - реализовать фильтрацию по флагам (active, featured, etc.)
+      - добавить поиск по названию и описанию
+      - добавить сортировку по различным полям
+      - добавить пагинацию для списков категорий
+    dod:
+      - фильтрация по флагам работает
+      - поиск корректно находит категории
+      - сортировка и пагинация функциональны
+    gate:
+      - require: "Одобряю SAAS-008-07"
+
+  - id: SAAS-008-08
+    title: Добавить обработку ошибок и валидацию
+    branch: "feature/catalog/SAAS-008/category-error-handling"
+    files_scope:
+      - "src/infrastructure/common/filters/**"
+      - "src/infrastructure/common/pipes/**"
+    steps:
+      - добавить обработку ошибок для категорий
+      - улучшить валидацию с русскими сообщениями
+      - добавить логирование ошибок
+    dod:
+      - ошибки обрабатываются корректно
+      - сообщения на русском языке
+      - логирование работает
+    gate:
+      - require: "Одобряю SAAS-008-08"
+
+  - id: SAAS-008-09
+    title: Создать тесты для API категорий
+    branch: "feature/catalog/SAAS-008/category-api-tests"
+    files_scope:
+      - "src/infrastructure/controllers/category/tests/**"
+      - "src/infrastructure/services/category/tests/**"
+      - "src/infrastructure/repositories/category/tests/**"
+    steps:
+      - написать integration тесты для категорий
+      - написать unit тесты для сервисов
+      - добавить негативные тесты
+    dod:
+      - все тесты проходят
+      - покрытие критичных модулей ≥80%
+      - негативные сценарии покрыты
+    gate:
+      - require: "Одобряю SAAS-008-09"
+
+  # Фаза 3: Тестирование и качество
+  - id: SAAS-008-10
+    title: Написать unit тесты для сервисов
+    branch: "feature/catalog/SAAS-008/category-unit-tests"
+    files_scope:
+      - "src/infrastructure/services/category/tests/**"
+      - "src/infrastructure/repositories/category/tests/**"
+    steps:
+      - покрыть CategoryService методами флагов
+      - покрыть методы иерархии категорий
+      - покрыть методы SEO оптимизации
+    dod:
+      - unit тесты покрывают все методы
+      - тесты стабильны и быстры
+      - моки настроены корректно
+    gate:
+      - require: "Одобряю SAAS-008-10"
+
+  - id: SAAS-008-11
+    title: Написать integration тесты для API
+    branch: "feature/catalog/SAAS-008/category-integration-tests"
+    files_scope:
+      - "src/infrastructure/controllers/category/tests/**"
+    steps:
+      - покрыть все эндпоинты категорий
+      - покрыть эндпоинты иерархии
+      - покрыть эндпоинты статистики
+    dod:
+      - integration тесты покрывают все эндпоинты
+      - тесты изолированы и детерминированы
+      - негативные сценарии покрыты
+    gate:
+      - require: "Одобряю SAAS-008-11"
+
+  - id: SAAS-008-12
+    title: Провести рефакторинг и оптимизацию
+    branch: "feature/catalog/SAAS-008/category-optimization"
+    files_scope:
+      - "src/infrastructure/**"
+      - "src/domain/**"
+    steps:
+      - оптимизировать запросы к БД
+      - рефакторить дублирующийся код
+      - улучшить производительность
+    dod:
+      - код оптимизирован
+      - дублирование устранено
+      - производительность улучшена
+    gate:
+      - require: "Одобряю SAAS-008-12"
+
+  # Дополнительные возможности
+  - id: SAAS-008-13
+    title: Автоматическое управление флагами
+    branch: "feature/catalog/SAAS-008/category-auto-flags"
+    files_scope:
+      - "src/infrastructure/services/category/**"
+      - "src/infrastructure/services/product/**"
+    steps:
+      - реализовать автоматическое назначение флагов по количеству товаров
+      - добавить логику по популярности категорий
+      - добавить уведомления о смене статусов
+    dod:
+      - автоматическое управление работает
+      - логика по популярности корректна
+      - уведомления отправляются
+    gate:
+      - require: "Одобряю SAAS-008-13"
+
+  - id: SAAS-008-14
+    title: Аналитика категорий
+    branch: "feature/catalog/SAAS-008/category-analytics"
+    files_scope:
+      - "src/infrastructure/controllers/category/**"
+      - "src/infrastructure/services/category/**"
+    steps:
+      - создать эндпоинты аналитики категорий
+      - добавить метрики и дашборды
+      - настроить отчеты по категориям
+    dod:
+      - аналитика категорий работает
+      - метрики корректны
+      - отчеты генерируются
+    gate:
+      - require: "Одобряю SAAS-008-14"
+
+  # Unit тесты для CategoryRepository
+  - id: SAAS-008-15
+    title: Unit тесты для CategoryRepository
+    branch: "test/category/SAAS-008/category-repository-unit-tests"
+    files_scope:
+      - "tests/unit/repositories/category.repository.unit.test.ts"
+      - "src/infrastructure/repositories/category/category.repository.ts"
+    steps:
+      - создать файл tests/unit/repositories/category.repository.unit.test.ts
+      - настроить моки для CategoryModel
+      - написать тесты для CRUD операций - create, findById, findAll, update, delete
+      - написать тесты для иерархии категорий - родительские/дочерние
+      - написать тесты для поиска категорий по названию
+      - написать тесты для работы с продуктами категории
+      - добавить тесты обработки ошибок для всех методов
+    dod:
+      - покрытие branches ≥ 80%
+      - покрытие functions ≥ 80%
+      - покрытие lines ≥ 80%
+      - все тесты проходят
+      - линтеры проходят без ошибок
+    estimated_time: 3-4 часа
+    gate:
+      - require: "Одобряю SAAS-008-15"

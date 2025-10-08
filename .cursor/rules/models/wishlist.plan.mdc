@@ -1,0 +1,282 @@
+# Wishlist Module Execution Plan (Binding)
+
+binding: true
+module: wishlist
+epic_ref: SAAS-014
+version: 1.0
+
+execution_policy:
+  must_follow: true
+  allow_code_changes_only_after: "Одобряю <TASK_ID>"
+  constraints:
+    - no public API changes without explicit approval
+    - operate within files_scope
+    - pass lints/tests and Swagger before DoD complete
+
+context:
+  goal: Wishlist system with tenant isolation and product management
+
+tasks:
+  # Фаза 1: Базовая реализация
+  - id: SAAS-014-00
+    title: Создать контроллер списка желаний с полной системой ролей
+    branch: "feature/wishlist/SAAS-014/wishlist-controller-roles"
+    files_scope:
+      - ".cursor/rules/models/wishlist.mdc"
+      - "src/infrastructure/controllers/wishlist/**"
+    steps:
+      - добавить секцию контроллера в wishlist.mdc
+      - создать WishlistController с импортами RoleGuard и Roles
+      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+      - реализовать методы с правильными ролями:
+        - просмотр списка желаний: CUSTOMER_ROLES
+        - добавление/удаление товаров: CUSTOMER_ROLES
+        - управление приоритетами и заметками: CUSTOMER_ROLES
+    dod:
+      - контроллер создан с полной системой ролей
+      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+      - тенантская изоляция ролей обеспечена
+    gate:
+      - require: "Одобряю SAAS-014-00"
+
+  - id: SAAS-014-01
+    title: Создать миграцию для таблицы wishlist_items
+    branch: "feature/wishlist/SAAS-014/wishlist-core-tables"
+    files_scope:
+      - "db/migrations/**"
+      - "src/domain/models/wishlist-item.ts"
+    steps:
+      - создать таблицу wishlist_items с tenant_id
+      - добавить индексы для производительности
+      - создать модель WishlistItemModel
+    dod:
+      - миграция up/down успешна
+      - WishlistItemModel содержит tenant_id
+      - индексы созданы для производительности
+    gate:
+      - require: "Одобряю SAAS-014-01"
+
+  - id: SAAS-014-02
+    title: Реализовать модель WishlistItemModel
+    branch: "feature/wishlist/SAAS-014/wishlist-core-models"
+    files_scope:
+      - "src/domain/models/wishlist-item.ts"
+    steps:
+      - добавить методы для работы со списком желаний
+      - реализовать scopes для частых запросов
+      - добавить методы для управления товарами в списке
+    dod:
+      - все методы списка желаний реализованы
+      - scopes работают корректно
+      - управление товарами функционально
+    gate:
+      - require: "Одобряю SAAS-014-02"
+
+  - id: SAAS-014-03
+    title: Создать DTO классы с валидацией
+    branch: "feature/wishlist/SAAS-014/wishlist-dto-validation"
+    files_scope:
+      - "src/infrastructure/dto/wishlist/**"
+      - "src/domain/dto/**"
+    steps:
+      - создать AddToWishlistDto для добавления товаров
+      - создать RemoveFromWishlistDto для удаления товаров
+      - создать WishlistItemDto для товаров в списке
+      - добавить валидаторы с русскими сообщениями
+    dod:
+      - DTO содержат все необходимые поля
+      - валидация работает с русскими сообщениями
+      - CustomValidationPipe обрабатывает все DTO
+    gate:
+      - require: "Одобряю SAAS-014-03"
+
+  - id: SAAS-014-04
+    title: Создать Response классы с Swagger
+    branch: "feature/wishlist/SAAS-014/wishlist-response-swagger"
+    files_scope:
+      - "src/infrastructure/responses/wishlist/**"
+      - "src/infrastructure/common/decorators/swagger/wishlist/**"
+    steps:
+      - создать Response классы с явными полями (не extends WishlistItemModel)
+      - добавить Swagger декораторы для всех полей
+      - создать Response для списка желаний с пагинацией
+    dod:
+      - Response классы не наследуются от модели
+      - Swagger схемы корректны
+      - пагинация возвращает { data, meta }
+    gate:
+      - require: "Одобряю SAAS-014-04"
+
+  - id: SAAS-014-05
+    title: Реализовать сервис с основной логикой
+    branch: "feature/wishlist/SAAS-014/wishlist-service-methods"
+    files_scope:
+      - "src/infrastructure/services/wishlist/**"
+      - "src/domain/services/**"
+    steps:
+      - добавить методы для добавления товаров в список желаний
+      - реализовать методы для удаления товаров
+      - добавить методы для получения списка желаний
+      - добавить статистику списка желаний
+    dod:
+      - все методы сервиса реализованы
+      - добавление товаров работает корректно
+      - удаление товаров функционально
+      - статистика возвращает корректные данные
+    gate:
+      - require: "Одобряю SAAS-014-05"
+
+  # Фаза 2: API и интеграции
+  - id: SAAS-014-06
+    title: Создать контроллер с API endpoints
+    branch: "feature/wishlist/SAAS-014/wishlist-controller-endpoints"
+    files_scope:
+      - "src/infrastructure/controllers/wishlist/**"
+      - "src/infrastructure/common/decorators/swagger/wishlist/**"
+    steps:
+      - добавить эндпоинты для списка желаний (GET /wishlist)
+      - добавить эндпоинты для добавления товаров (POST /wishlist)
+      - добавить эндпоинты для удаления товаров (DELETE /wishlist/:id)
+      - добавить статистику (GET /admin/wishlist/stats)
+    dod:
+      - все эндпоинты работают корректно
+      - Swagger документация обновлена
+      - Guards и роли применены правильно
+    gate:
+      - require: "Одобряю SAAS-014-06"
+
+  - id: SAAS-014-07
+    title: Настроить интеграцию с корзиной
+    branch: "feature/wishlist/SAAS-014/wishlist-cart-integration"
+    files_scope:
+      - "src/infrastructure/services/wishlist/**"
+      - "src/infrastructure/services/cart/**"
+    steps:
+      - интегрировать с системой корзины
+      - добавить возможность переноса товаров из списка желаний в корзину
+      - добавить массовые операции с товарами
+    dod:
+      - интеграция с корзиной работает корректно
+      - перенос товаров функционален
+      - массовые операции активны
+    gate:
+      - require: "Одобряю SAAS-014-07"
+
+  - id: SAAS-014-08
+    title: Добавить обработку ошибок и валидацию
+    branch: "feature/wishlist/SAAS-014/wishlist-error-handling"
+    files_scope:
+      - "src/infrastructure/common/filters/**"
+      - "src/infrastructure/common/pipes/**"
+    steps:
+      - добавить обработку ошибок для списка желаний
+      - улучшить валидацию с русскими сообщениями
+      - добавить логирование ошибок
+    dod:
+      - ошибки обрабатываются корректно
+      - сообщения на русском языке
+      - логирование работает
+    gate:
+      - require: "Одобряю SAAS-014-08"
+
+  - id: SAAS-014-09
+    title: Создать тесты для API списка желаний
+    branch: "feature/wishlist/SAAS-014/wishlist-api-tests"
+    files_scope:
+      - "tests/integration/wishlist/**"
+      - "tests/unit/wishlist/**"
+    steps:
+      - написать integration тесты для списка желаний
+      - написать unit тесты для сервисов
+      - добавить негативные тесты
+    dod:
+      - все тесты проходят
+      - покрытие критичных модулей ≥80%
+      - негативные сценарии покрыты
+    gate:
+      - require: "Одобряю SAAS-014-09"
+
+  # Фаза 3: Тестирование и качество
+  - id: SAAS-014-10
+    title: Написать unit тесты для сервисов
+    branch: "feature/wishlist/SAAS-014/wishlist-unit-tests"
+    files_scope:
+      - "tests/unit/wishlist/**"
+    steps:
+      - покрыть WishlistService методами
+      - покрыть методы добавления товаров
+      - покрыть методы удаления товаров
+    dod:
+      - unit тесты покрывают все методы
+      - тесты стабильны и быстры
+      - моки настроены корректно
+    gate:
+      - require: "Одобряю SAAS-014-10"
+
+  - id: SAAS-014-11
+    title: Написать integration тесты для API
+    branch: "feature/wishlist/SAAS-014/wishlist-integration-tests"
+    files_scope:
+      - "tests/integration/wishlist/**"
+    steps:
+      - покрыть все эндпоинты списка желаний
+      - покрыть эндпоинты добавления товаров
+      - покрыть эндпоинты статистики
+    dod:
+      - integration тесты покрывают все эндпоинты
+      - тесты изолированы и детерминированы
+      - негативные сценарии покрыты
+    gate:
+      - require: "Одобряю SAAS-014-11"
+
+  - id: SAAS-014-12
+    title: Провести рефакторинг и оптимизацию
+    branch: "feature/wishlist/SAAS-014/wishlist-optimization"
+    files_scope:
+      - "src/infrastructure/**"
+      - "src/domain/**"
+    steps:
+      - оптимизировать запросы к БД
+      - рефакторить дублирующийся код
+      - улучшить производительность
+    dod:
+      - код оптимизирован
+      - дублирование устранено
+      - производительность улучшена
+    gate:
+      - require: "Одобряю SAAS-014-12"
+
+  # Дополнительные возможности
+  - id: SAAS-014-13
+    title: Уведомления о скидках на товары из списка желаний
+    branch: "feature/wishlist/SAAS-014/wishlist-discount-notifications"
+    files_scope:
+      - "src/infrastructure/services/wishlist/**"
+      - "src/infrastructure/services/notification/**"
+    steps:
+      - реализовать уведомления о скидках на товары из списка желаний
+      - добавить отслеживание изменений цен
+      - настроить автоматическую отправку уведомлений
+    dod:
+      - уведомления о скидках работают
+      - отслеживание изменений цен функционально
+      - автоматическая отправка уведомлений активна
+    gate:
+      - require: "Одобряю SAAS-014-13"
+
+  - id: SAAS-014-14
+    title: Аналитика списка желаний
+    branch: "feature/wishlist/SAAS-014/wishlist-analytics"
+    files_scope:
+      - "src/infrastructure/controllers/wishlist/**"
+      - "src/infrastructure/services/wishlist/**"
+    steps:
+      - создать эндпоинты аналитики списка желаний
+      - добавить метрики и дашборды
+      - настроить отчеты по списку желаний
+    dod:
+      - аналитика списка желаний работает
+      - метрики корректны
+      - отчеты генерируются
+    gate:
+      - require: "Одобряю SAAS-014-14"

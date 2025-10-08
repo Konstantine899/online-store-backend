@@ -1,0 +1,1735 @@
+# Система управления складом (Inventory System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы управления складом для ecommerce приложения с базовым управлением остатками, резервированием товаров и простыми движениями, фокусом на быструю разработку и готовность к масштабированию.
+
+## Основные требования
+- **Управление остатками** - отслеживание количества товаров на складе
+- **Резервирование** - блокировка товаров при оформлении заказа
+- **Движения товаров** - приход, расход, корректировка
+- **Уведомления** - о низких остатках и отсутствии товаров
+- **Валидация** - проверка доступности товаров при заказе
+
+## Структура базы данных
+
+### Таблица `stock_levels`
+```sql
+CREATE TABLE stock_levels (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    warehouse_id INTEGER DEFAULT 1, -- Пока один склад
+    variant_id INTEGER, -- Для вариантов товаров
+    
+    -- Остатки
+    quantity INTEGER NOT NULL DEFAULT 0, -- Общий остаток
+    available_quantity INTEGER NOT NULL DEFAULT 0, -- Доступный остаток
+    reserved_quantity INTEGER NOT NULL DEFAULT 0, -- Зарезервированный остаток
+    
+    -- Настройки
+    min_stock_level INTEGER DEFAULT 0, -- Минимальный уровень
+    reorder_point INTEGER DEFAULT 0, -- Точка заказа
+    
+    -- Статус
+    is_active BOOLEAN DEFAULT true,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE(product_id, warehouse_id, variant_id)
+);
+```
+
+### Таблица `stock_movements`
+```sql
+CREATE TABLE stock_movements (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    warehouse_id INTEGER DEFAULT 1,
+    variant_id INTEGER,
+    
+    -- Движение
+    movement_type VARCHAR(20) NOT NULL CHECK (movement_type IN ('in', 'out', 'adjustment', 'reserve', 'unreserve')),
+    quantity INTEGER NOT NULL, -- Положительное для прихода, отрицательное для расхода
+    reference_type VARCHAR(50), -- Тип ссылки (order, shipment, adjustment)
+    reference_id INTEGER, -- ID ссылки
+    
+    -- Дополнительная информация
+    reason VARCHAR(100), -- Причина движения
+    notes TEXT, -- Заметки
+    
+    -- Пользователь
+    user_id INTEGER REFERENCES users(id),
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `stock_reservations`
+```sql
+CREATE TABLE stock_reservations (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    warehouse_id INTEGER DEFAULT 1,
+    variant_id INTEGER,
+    
+    -- Резервирование
+    quantity INTEGER NOT NULL,
+    order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id),
+    
+    -- Статус
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'expired', 'cancelled', 'fulfilled')),
+    expires_at TIMESTAMP, -- Время истечения резерва
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Модели Sequelize
+
+### StockLevel Model
+```typescript
+// src/domain/models/stock-level.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { ProductModel } from './product.model';
+
+export enum MovementType {
+    IN = 'in',
+    OUT = 'out',
+    ADJUSTMENT = 'adjustment',
+    RESERVE = 'reserve',
+    UNRESERVE = 'unreserve'
+}
+
+interface IStockLevelModel {
+    id: number;
+    productId: number;
+    warehouseId: number;
+    variantId?: number;
+    quantity: number;
+    availableQuantity: number;
+    reservedQuantity: number;
+    minStockLevel: number;
+    reorderPoint: number;
+    isActive: boolean;
+    lastUpdated: Date;
+    product: ProductModel;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IStockLevelCreationAttributes {
+    productId: number;
+    warehouseId?: number;
+    variantId?: number;
+    quantity?: number;
+    availableQuantity?: number;
+    reservedQuantity?: number;
+    minStockLevel?: number;
+    reorderPoint?: number;
+    isActive?: boolean;
+}
+
+@Table({
+    tableName: 'stock_levels',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['product_id'], name: 'idx_stock_levels_product_id' },
+        { fields: ['warehouse_id'], name: 'idx_stock_levels_warehouse_id' },
+        { fields: ['variant_id'], name: 'idx_stock_levels_variant_id' },
+        { fields: ['available_quantity'], name: 'idx_stock_levels_available_quantity' },
+        { fields: ['min_stock_level'], name: 'idx_stock_levels_min_stock_level' },
+        { fields: ['is_active'], name: 'idx_stock_levels_is_active' },
+    ],
+})
+export class StockLevelModel
+    extends Model<StockLevelModel, IStockLevelCreationAttributes>
+    implements IStockLevelModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => ProductModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'product_id',
+    })
+    declare productId: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+        field: 'warehouse_id',
+    })
+    declare warehouseId: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'variant_id',
+    })
+    declare variantId: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+    })
+    declare quantity: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'available_quantity',
+    })
+    declare availableQuantity: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'reserved_quantity',
+    })
+    declare reservedQuantity: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'min_stock_level',
+    })
+    declare minStockLevel: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'reorder_point',
+    })
+    declare reorderPoint: number;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'last_updated',
+    })
+    declare lastUpdated: Date;
+
+    @BelongsTo(() => ProductModel)
+    declare product: ProductModel;
+}
+```
+
+### StockMovement Model
+```typescript
+// src/domain/models/stock-movement.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { ProductModel } from './product.model';
+import { UserModel } from './user.model';
+import { OrderModel } from './order.model';
+
+interface IStockMovementModel {
+    id: number;
+    productId: number;
+    warehouseId: number;
+    variantId?: number;
+    movementType: MovementType;
+    quantity: number;
+    referenceType?: string;
+    referenceId?: number;
+    reason?: string;
+    notes?: string;
+    userId?: number;
+    product: ProductModel;
+    user?: UserModel;
+    order?: OrderModel;
+    createdAt: Date;
+}
+
+interface IStockMovementCreationAttributes {
+    productId: number;
+    warehouseId?: number;
+    variantId?: number;
+    movementType: MovementType;
+    quantity: number;
+    referenceType?: string;
+    referenceId?: number;
+    reason?: string;
+    notes?: string;
+    userId?: number;
+}
+
+@Table({
+    tableName: 'stock_movements',
+    underscored: true,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: false,
+    indexes: [
+        { fields: ['product_id'], name: 'idx_stock_movements_product_id' },
+        { fields: ['warehouse_id'], name: 'idx_stock_movements_warehouse_id' },
+        { fields: ['movement_type'], name: 'idx_stock_movements_movement_type' },
+        { fields: ['reference_type', 'reference_id'], name: 'idx_stock_movements_reference' },
+        { fields: ['created_at'], name: 'idx_stock_movements_created_at' },
+    ],
+})
+export class StockMovementModel
+    extends Model<StockMovementModel, IStockMovementCreationAttributes>
+    implements IStockMovementModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => ProductModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'product_id',
+    })
+    declare productId: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+        field: 'warehouse_id',
+    })
+    declare warehouseId: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'variant_id',
+    })
+    declare variantId: number;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(MovementType)),
+        allowNull: false,
+        field: 'movement_type',
+    })
+    declare movementType: MovementType;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    declare quantity: number;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: true,
+        field: 'reference_type',
+    })
+    declare referenceType: string;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'reference_id',
+    })
+    declare referenceId: number;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true,
+    })
+    declare reason: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare notes: string;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @BelongsTo(() => ProductModel)
+    declare product: ProductModel;
+
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    @BelongsTo(() => OrderModel)
+    declare order: OrderModel;
+}
+```
+
+### StockReservation Model
+```typescript
+// src/domain/models/stock-reservation.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { ProductModel } from './product.model';
+import { UserModel } from './user.model';
+import { OrderModel } from './order.model';
+
+export enum ReservationStatus {
+    ACTIVE = 'active',
+    EXPIRED = 'expired',
+    CANCELLED = 'cancelled',
+    FULFILLED = 'fulfilled'
+}
+
+interface IStockReservationModel {
+    id: number;
+    productId: number;
+    warehouseId: number;
+    variantId?: number;
+    quantity: number;
+    orderId: number;
+    userId: number;
+    status: ReservationStatus;
+    expiresAt?: Date;
+    product: ProductModel;
+    user: UserModel;
+    order: OrderModel;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IStockReservationCreationAttributes {
+    productId: number;
+    warehouseId?: number;
+    variantId?: number;
+    quantity: number;
+    orderId: number;
+    userId: number;
+    status?: ReservationStatus;
+    expiresAt?: Date;
+}
+
+@Table({
+    tableName: 'stock_reservations',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['product_id'], name: 'idx_stock_reservations_product_id' },
+        { fields: ['order_id'], name: 'idx_stock_reservations_order_id' },
+        { fields: ['user_id'], name: 'idx_stock_reservations_user_id' },
+        { fields: ['status'], name: 'idx_stock_reservations_status' },
+        { fields: ['expires_at'], name: 'idx_stock_reservations_expires_at' },
+    ],
+})
+export class StockReservationModel
+    extends Model<StockReservationModel, IStockReservationCreationAttributes>
+    implements IStockReservationModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => ProductModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'product_id',
+    })
+    declare productId: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+        field: 'warehouse_id',
+    })
+    declare warehouseId: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'variant_id',
+    })
+    declare variantId: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    declare quantity: number;
+
+    @ForeignKey(() => OrderModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'order_id',
+    })
+    declare orderId: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(ReservationStatus)),
+        allowNull: false,
+        defaultValue: ReservationStatus.ACTIVE,
+    })
+    declare status: ReservationStatus;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'expires_at',
+    })
+    declare expiresAt: Date;
+
+    @BelongsTo(() => ProductModel)
+    declare product: ProductModel;
+
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    @BelongsTo(() => OrderModel)
+    declare order: OrderModel;
+}
+```
+
+## Сервисы
+
+### Inventory Service
+```typescript
+// src/infrastructure/services/inventory.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { StockLevelModel } from '@app/domain/models/stock-level.model';
+import { StockMovementModel, MovementType } from '@app/domain/models/stock-movement.model';
+import { StockReservationModel, ReservationStatus } from '@app/domain/models/stock-reservation.model';
+import { Op } from 'sequelize';
+
+@Injectable()
+export class InventoryService {
+    private readonly logger = new Logger(InventoryService.name);
+
+    constructor(
+        @InjectModel(StockLevelModel)
+        private stockLevelModel: typeof StockLevelModel,
+        @InjectModel(StockMovementModel)
+        private stockMovementModel: typeof StockMovementModel,
+        @InjectModel(StockReservationModel)
+        private stockReservationModel: typeof StockReservationModel,
+    ) {}
+
+    async getStockLevel(productId: number, warehouseId: number = 1, variantId?: number): Promise<StockLevelModel | null> {
+        return this.stockLevelModel.findOne({
+            where: {
+                productId,
+                warehouseId,
+                variantId: variantId || null,
+            },
+            include: ['product'],
+        });
+    }
+
+    async getAvailableStock(productId: number, warehouseId: number = 1, variantId?: number): Promise<number> {
+        const stockLevel = await this.getStockLevel(productId, warehouseId, variantId);
+        return stockLevel?.availableQuantity || 0;
+    }
+
+    async checkAvailability(productId: number, quantity: number, warehouseId: number = 1, variantId?: number): Promise<boolean> {
+        const availableStock = await this.getAvailableStock(productId, warehouseId, variantId);
+        return availableStock >= quantity;
+    }
+
+    async reserveStock(
+        productId: number,
+        quantity: number,
+        orderId: number,
+        userId: number,
+        warehouseId: number = 1,
+        variantId?: number,
+        expiresAt?: Date,
+    ): Promise<StockReservationModel> {
+        // Проверяем доступность
+        const availableStock = await this.getAvailableStock(productId, warehouseId, variantId);
+        if (availableStock < quantity) {
+            throw new BadRequestException(`Недостаточно товара на складе. Доступно: ${availableStock}, требуется: ${quantity}`);
+        }
+
+        // Получаем или создаем уровень остатков
+        let stockLevel = await this.getStockLevel(productId, warehouseId, variantId);
+        if (!stockLevel) {
+            stockLevel = await this.stockLevelModel.create({
+                productId,
+                warehouseId,
+                variantId,
+                quantity: 0,
+                availableQuantity: 0,
+                reservedQuantity: 0,
+            });
+        }
+
+        // Создаем резервирование
+        const reservation = await this.stockReservationModel.create({
+            productId,
+            warehouseId,
+            variantId,
+            quantity,
+            orderId,
+            userId,
+            expiresAt: expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 часа по умолчанию
+        });
+
+        // Обновляем остатки
+        await stockLevel.update({
+            availableQuantity: stockLevel.availableQuantity - quantity,
+            reservedQuantity: stockLevel.reservedQuantity + quantity,
+            lastUpdated: new Date(),
+        });
+
+        // Создаем движение
+        await this.stockMovementModel.create({
+            productId,
+            warehouseId,
+            variantId,
+            movementType: MovementType.RESERVE,
+            quantity: -quantity,
+            referenceType: 'order',
+            referenceId: orderId,
+            reason: 'Резервирование товара',
+            userId,
+        });
+
+        this.logger.log(`Stock reserved: ${quantity} units of product ${productId} for order ${orderId}`);
+        return reservation;
+    }
+
+    async releaseReservation(reservationId: number): Promise<void> {
+        const reservation = await this.stockReservationModel.findByPk(reservationId);
+        if (!reservation) {
+            throw new NotFoundException('Резервирование не найдено');
+        }
+
+        if (reservation.status !== ReservationStatus.ACTIVE) {
+            throw new BadRequestException('Резервирование уже неактивно');
+        }
+
+        // Получаем уровень остатков
+        const stockLevel = await this.getStockLevel(reservation.productId, reservation.warehouseId, reservation.variantId);
+        if (stockLevel) {
+            // Возвращаем товар в доступные
+            await stockLevel.update({
+                availableQuantity: stockLevel.availableQuantity + reservation.quantity,
+                reservedQuantity: stockLevel.reservedQuantity - reservation.quantity,
+                lastUpdated: new Date(),
+            });
+        }
+
+        // Обновляем статус резервирования
+        await reservation.update({
+            status: ReservationStatus.CANCELLED,
+        });
+
+        // Создаем движение
+        await this.stockMovementModel.create({
+            productId: reservation.productId,
+            warehouseId: reservation.warehouseId,
+            variantId: reservation.variantId,
+            movementType: MovementType.UNRESERVE,
+            quantity: reservation.quantity,
+            referenceType: 'reservation',
+            referenceId: reservationId,
+            reason: 'Отмена резервирования',
+        });
+
+        this.logger.log(`Stock reservation released: ${reservation.quantity} units of product ${reservation.productId}`);
+    }
+
+    async fulfillReservation(reservationId: number): Promise<void> {
+        const reservation = await this.stockReservationModel.findByPk(reservationId);
+        if (!reservation) {
+            throw new NotFoundException('Резервирование не найдено');
+        }
+
+        if (reservation.status !== ReservationStatus.ACTIVE) {
+            throw new BadRequestException('Резервирование уже неактивно');
+        }
+
+        // Получаем уровень остатков
+        const stockLevel = await this.getStockLevel(reservation.productId, reservation.warehouseId, reservation.variantId);
+        if (stockLevel) {
+            // Уменьшаем общий остаток и зарезервированный
+            await stockLevel.update({
+                quantity: stockLevel.quantity - reservation.quantity,
+                reservedQuantity: stockLevel.reservedQuantity - reservation.quantity,
+                lastUpdated: new Date(),
+            });
+        }
+
+        // Обновляем статус резервирования
+        await reservation.update({
+            status: ReservationStatus.FULFILLED,
+        });
+
+        // Создаем движение
+        await this.stockMovementModel.create({
+            productId: reservation.productId,
+            warehouseId: reservation.warehouseId,
+            variantId: reservation.variantId,
+            movementType: MovementType.OUT,
+            quantity: -reservation.quantity,
+            referenceType: 'order',
+            referenceId: reservation.orderId,
+            reason: 'Отгрузка товара',
+        });
+
+        this.logger.log(`Stock fulfilled: ${reservation.quantity} units of product ${reservation.productId} for order ${reservation.orderId}`);
+    }
+
+    async addStock(
+        productId: number,
+        quantity: number,
+        warehouseId: number = 1,
+        variantId?: number,
+        reason?: string,
+        userId?: number,
+    ): Promise<StockLevelModel> {
+        // Получаем или создаем уровень остатков
+        let stockLevel = await this.getStockLevel(productId, warehouseId, variantId);
+        if (!stockLevel) {
+            stockLevel = await this.stockLevelModel.create({
+                productId,
+                warehouseId,
+                variantId,
+                quantity: 0,
+                availableQuantity: 0,
+                reservedQuantity: 0,
+            });
+        }
+
+        // Обновляем остатки
+        await stockLevel.update({
+            quantity: stockLevel.quantity + quantity,
+            availableQuantity: stockLevel.availableQuantity + quantity,
+            lastUpdated: new Date(),
+        });
+
+        // Создаем движение
+        await this.stockMovementModel.create({
+            productId,
+            warehouseId,
+            variantId,
+            movementType: MovementType.IN,
+            quantity,
+            referenceType: 'adjustment',
+            reason: reason || 'Поступление товара',
+            userId,
+        });
+
+        this.logger.log(`Stock added: ${quantity} units of product ${productId}`);
+        return stockLevel;
+    }
+
+    async adjustStock(
+        productId: number,
+        quantity: number,
+        warehouseId: number = 1,
+        variantId?: number,
+        reason?: string,
+        userId?: number,
+    ): Promise<StockLevelModel> {
+        const stockLevel = await this.getStockLevel(productId, warehouseId, variantId);
+        if (!stockLevel) {
+            throw new NotFoundException('Уровень остатков не найден');
+        }
+
+        // Обновляем остатки
+        await stockLevel.update({
+            quantity: stockLevel.quantity + quantity,
+            availableQuantity: stockLevel.availableQuantity + quantity,
+            lastUpdated: new Date(),
+        });
+
+        // Создаем движение
+        await this.stockMovementModel.create({
+            productId,
+            warehouseId,
+            variantId,
+            movementType: MovementType.ADJUSTMENT,
+            quantity,
+            referenceType: 'adjustment',
+            reason: reason || 'Корректировка остатков',
+            userId,
+        });
+
+        this.logger.log(`Stock adjusted: ${quantity} units of product ${productId}`);
+        return stockLevel;
+    }
+
+    async getLowStockProducts(warehouseId: number = 1): Promise<StockLevelModel[]> {
+        return this.stockLevelModel.findAll({
+            where: {
+                warehouseId,
+                isActive: true,
+                availableQuantity: {
+                    [Op.lte]: this.stockLevelModel.sequelize.col('min_stock_level'),
+                },
+            },
+            include: ['product'],
+            order: [['available_quantity', 'ASC']],
+        });
+    }
+
+    async getStockMovements(
+        productId?: number,
+        warehouseId: number = 1,
+        page: number = 1,
+        limit: number = 20,
+    ): Promise<{ data: StockMovementModel[]; total: number }> {
+        const where: any = { warehouseId };
+
+        if (productId) {
+            where.productId = productId;
+        }
+
+        const { rows: movements, count: total } = await this.stockMovementModel.findAndCountAll({
+            where,
+            include: ['product', 'user'],
+            order: [['created_at', 'DESC']],
+            limit,
+            offset: (page - 1) * limit,
+        });
+
+        return { data: movements, total };
+    }
+
+    async getActiveReservations(userId?: number): Promise<StockReservationModel[]> {
+        const where: any = {
+            status: ReservationStatus.ACTIVE,
+        };
+
+        if (userId) {
+            where.userId = userId;
+        }
+
+        return this.stockReservationModel.findAll({
+            where,
+            include: ['product', 'user', 'order'],
+            order: [['created_at', 'DESC']],
+        });
+    }
+
+    async cleanupExpiredReservations(): Promise<number> {
+        const expiredReservations = await this.stockReservationModel.findAll({
+            where: {
+                status: ReservationStatus.ACTIVE,
+                expiresAt: {
+                    [Op.lt]: new Date(),
+                },
+            },
+        });
+
+        let releasedCount = 0;
+        for (const reservation of expiredReservations) {
+            try {
+                await this.releaseReservation(reservation.id);
+                releasedCount++;
+            } catch (error) {
+                this.logger.error(`Failed to release expired reservation ${reservation.id}:`, error);
+            }
+        }
+
+        this.logger.log(`Cleaned up ${releasedCount} expired reservations`);
+        return releasedCount;
+    }
+}
+```
+
+## Контроллеры
+
+### Inventory Controller
+```typescript
+// src/infrastructure/controllers/inventory.controller.ts
+import { Controller, Get, Post, Put, Param, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
+import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
+import { Roles } from '@app/infrastructure/common/decorators/roles.decorator';
+import { CurrentUser } from '@app/infrastructure/common/decorators/current-user.decorator';
+import { InventoryService } from '@app/infrastructure/services/inventory.service';
+import { ReserveStockDto } from '@app/infrastructure/dto/inventory/reserve-stock.dto';
+import { AddStockDto } from '@app/infrastructure/dto/inventory/add-stock.dto';
+import { AdjustStockDto } from '@app/infrastructure/dto/inventory/adjust-stock.dto';
+import { StockLevelResponse, StockMovementResponse, StockReservationResponse } from '@app/infrastructure/responses/inventory/inventory.response';
+
+@ApiTags('Управление складом')
+@Controller('inventory')
+export class InventoryController {
+    constructor(private readonly inventoryService: InventoryService) {}
+
+    @Get('stock/:productId')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить остатки товара' })
+    @ApiQuery({ name: 'warehouseId', required: false, description: 'ID склада' })
+    @ApiQuery({ name: 'variantId', required: false, description: 'ID варианта товара' })
+    @ApiResponse({ status: 200, description: 'Остатки получены', type: StockLevelResponse })
+    @ApiResponse({ status: 404, description: 'Товар не найден' })
+    async getStockLevel(
+        @Param('productId') productId: number,
+        @Query('warehouseId') warehouseId: number = 1,
+        @Query('variantId') variantId?: number,
+    ): Promise<StockLevelResponse | null> {
+        const stockLevel = await this.inventoryService.getStockLevel(productId, warehouseId, variantId);
+        
+        if (!stockLevel) {
+            return null;
+        }
+
+        return {
+            id: stockLevel.id,
+            productId: stockLevel.productId,
+            warehouseId: stockLevel.warehouseId,
+            variantId: stockLevel.variantId,
+            quantity: stockLevel.quantity,
+            availableQuantity: stockLevel.availableQuantity,
+            reservedQuantity: stockLevel.reservedQuantity,
+            minStockLevel: stockLevel.minStockLevel,
+            reorderPoint: stockLevel.reorderPoint,
+            isActive: stockLevel.isActive,
+            lastUpdated: stockLevel.lastUpdated,
+            createdAt: stockLevel.createdAt,
+            updatedAt: stockLevel.updatedAt,
+        };
+    }
+
+    @Get('available/:productId')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить доступный остаток товара' })
+    @ApiQuery({ name: 'warehouseId', required: false, description: 'ID склада' })
+    @ApiQuery({ name: 'variantId', required: false, description: 'ID варианта товара' })
+    @ApiResponse({ status: 200, description: 'Доступный остаток получен' })
+    async getAvailableStock(
+        @Param('productId') productId: number,
+        @Query('warehouseId') warehouseId: number = 1,
+        @Query('variantId') variantId?: number,
+    ): Promise<{ availableQuantity: number }> {
+        const availableQuantity = await this.inventoryService.getAvailableStock(productId, warehouseId, variantId);
+        return { availableQuantity };
+    }
+
+    @Post('check-availability')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Проверить доступность товара' })
+    @ApiResponse({ status: 200, description: 'Результат проверки доступности' })
+    async checkAvailability(@Body() checkAvailabilityDto: any): Promise<{ isAvailable: boolean; availableQuantity: number }> {
+        const { productId, quantity, warehouseId = 1, variantId } = checkAvailabilityDto;
+        
+        const isAvailable = await this.inventoryService.checkAvailability(productId, quantity, warehouseId, variantId);
+        const availableQuantity = await this.inventoryService.getAvailableStock(productId, warehouseId, variantId);
+        
+        return { isAvailable, availableQuantity };
+    }
+
+    @Post('reserve')
+    @HttpCode(HttpStatus.CREATED)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Зарезервировать товар' })
+    @ApiResponse({ status: 201, description: 'Товар зарезервирован', type: StockReservationResponse })
+    @ApiResponse({ status: 400, description: 'Недостаточно товара на складе' })
+    async reserveStock(
+        @Body() reserveStockDto: ReserveStockDto,
+        @CurrentUser() user: any,
+    ): Promise<StockReservationResponse> {
+        const reservation = await this.inventoryService.reserveStock(
+            reserveStockDto.productId,
+            reserveStockDto.quantity,
+            reserveStockDto.orderId,
+            user.id,
+            reserveStockDto.warehouseId,
+            reserveStockDto.variantId,
+            reserveStockDto.expiresAt,
+        );
+
+        return {
+            id: reservation.id,
+            productId: reservation.productId,
+            warehouseId: reservation.warehouseId,
+            variantId: reservation.variantId,
+            quantity: reservation.quantity,
+            orderId: reservation.orderId,
+            userId: reservation.userId,
+            status: reservation.status,
+            expiresAt: reservation.expiresAt,
+            createdAt: reservation.createdAt,
+            updatedAt: reservation.updatedAt,
+        };
+    }
+
+    @Put('reserve/:id/release')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN', 'MANAGER')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Освободить резервирование (только для админов и менеджеров)' })
+    @ApiResponse({ status: 200, description: 'Резервирование освобождено' })
+    @ApiResponse({ status: 404, description: 'Резервирование не найдено' })
+    async releaseReservation(@Param('id') id: number): Promise<{ message: string }> {
+        await this.inventoryService.releaseReservation(id);
+        return { message: 'Резервирование успешно освобождено' };
+    }
+
+    @Put('reserve/:id/fulfill')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN', 'MANAGER')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Выполнить резервирование (только для админов и менеджеров)' })
+    @ApiResponse({ status: 200, description: 'Резервирование выполнено' })
+    @ApiResponse({ status: 404, description: 'Резервирование не найдено' })
+    async fulfillReservation(@Param('id') id: number): Promise<{ message: string }> {
+        await this.inventoryService.fulfillReservation(id);
+        return { message: 'Резервирование успешно выполнено' };
+    }
+
+    @Post('add-stock')
+    @HttpCode(HttpStatus.CREATED)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN', 'MANAGER')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Добавить товар на склад (только для админов и менеджеров)' })
+    @ApiResponse({ status: 201, description: 'Товар добавлен на склад', type: StockLevelResponse })
+    @ApiResponse({ status: 400, description: 'Ошибка валидации' })
+    async addStock(
+        @Body() addStockDto: AddStockDto,
+        @CurrentUser() user: any,
+    ): Promise<StockLevelResponse> {
+        const stockLevel = await this.inventoryService.addStock(
+            addStockDto.productId,
+            addStockDto.quantity,
+            addStockDto.warehouseId,
+            addStockDto.variantId,
+            addStockDto.reason,
+            user.id,
+        );
+
+        return {
+            id: stockLevel.id,
+            productId: stockLevel.productId,
+            warehouseId: stockLevel.warehouseId,
+            variantId: stockLevel.variantId,
+            quantity: stockLevel.quantity,
+            availableQuantity: stockLevel.availableQuantity,
+            reservedQuantity: stockLevel.reservedQuantity,
+            minStockLevel: stockLevel.minStockLevel,
+            reorderPoint: stockLevel.reorderPoint,
+            isActive: stockLevel.isActive,
+            lastUpdated: stockLevel.lastUpdated,
+            createdAt: stockLevel.createdAt,
+            updatedAt: stockLevel.updatedAt,
+        };
+    }
+
+    @Put('adjust-stock')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN', 'MANAGER')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Скорректировать остатки (только для админов и менеджеров)' })
+    @ApiResponse({ status: 200, description: 'Остатки скорректированы', type: StockLevelResponse })
+    @ApiResponse({ status: 404, description: 'Уровень остатков не найден' })
+    async adjustStock(
+        @Body() adjustStockDto: AdjustStockDto,
+        @CurrentUser() user: any,
+    ): Promise<StockLevelResponse> {
+        const stockLevel = await this.inventoryService.adjustStock(
+            adjustStockDto.productId,
+            adjustStockDto.quantity,
+            adjustStockDto.warehouseId,
+            adjustStockDto.variantId,
+            adjustStockDto.reason,
+            user.id,
+        );
+
+        return {
+            id: stockLevel.id,
+            productId: stockLevel.productId,
+            warehouseId: stockLevel.warehouseId,
+            variantId: stockLevel.variantId,
+            quantity: stockLevel.quantity,
+            availableQuantity: stockLevel.availableQuantity,
+            reservedQuantity: stockLevel.reservedQuantity,
+            minStockLevel: stockLevel.minStockLevel,
+            reorderPoint: stockLevel.reorderPoint,
+            isActive: stockLevel.isActive,
+            lastUpdated: stockLevel.lastUpdated,
+            createdAt: stockLevel.createdAt,
+            updatedAt: stockLevel.updatedAt,
+        };
+    }
+
+    @Get('low-stock')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN', 'MANAGER')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить товары с низкими остатками (только для админов и менеджеров)' })
+    @ApiQuery({ name: 'warehouseId', required: false, description: 'ID склада' })
+    @ApiResponse({ status: 200, description: 'Товары с низкими остатками получены', type: [StockLevelResponse] })
+    async getLowStockProducts(@Query('warehouseId') warehouseId: number = 1): Promise<StockLevelResponse[]> {
+        const lowStockProducts = await this.inventoryService.getLowStockProducts(warehouseId);
+        
+        return lowStockProducts.map(stockLevel => ({
+            id: stockLevel.id,
+            productId: stockLevel.productId,
+            warehouseId: stockLevel.warehouseId,
+            variantId: stockLevel.variantId,
+            quantity: stockLevel.quantity,
+            availableQuantity: stockLevel.availableQuantity,
+            reservedQuantity: stockLevel.reservedQuantity,
+            minStockLevel: stockLevel.minStockLevel,
+            reorderPoint: stockLevel.reorderPoint,
+            isActive: stockLevel.isActive,
+            lastUpdated: stockLevel.lastUpdated,
+            createdAt: stockLevel.createdAt,
+            updatedAt: stockLevel.updatedAt,
+        }));
+    }
+
+    @Get('movements')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN', 'MANAGER')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить движения товаров (только для админов и менеджеров)' })
+    @ApiQuery({ name: 'productId', required: false, description: 'ID товара' })
+    @ApiQuery({ name: 'warehouseId', required: false, description: 'ID склада' })
+    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
+    @ApiResponse({ status: 200, description: 'Движения товаров получены', type: [StockMovementResponse] })
+    async getStockMovements(
+        @Query('productId') productId?: number,
+        @Query('warehouseId') warehouseId: number = 1,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 20,
+    ): Promise<{ data: StockMovementResponse[]; total: number }> {
+        const result = await this.inventoryService.getStockMovements(productId, warehouseId, page, limit);
+        
+        return {
+            data: result.data.map(movement => ({
+                id: movement.id,
+                productId: movement.productId,
+                warehouseId: movement.warehouseId,
+                variantId: movement.variantId,
+                movementType: movement.movementType,
+                quantity: movement.quantity,
+                referenceType: movement.referenceType,
+                referenceId: movement.referenceId,
+                reason: movement.reason,
+                notes: movement.notes,
+                userId: movement.userId,
+                createdAt: movement.createdAt,
+            })),
+            total: result.total,
+        };
+    }
+
+    @Get('reservations')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN', 'MANAGER')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить активные резервирования (только для админов и менеджеров)' })
+    @ApiQuery({ name: 'userId', required: false, description: 'ID пользователя' })
+    @ApiResponse({ status: 200, description: 'Активные резервирования получены', type: [StockReservationResponse] })
+    async getActiveReservations(@Query('userId') userId?: number): Promise<StockReservationResponse[]> {
+        const reservations = await this.inventoryService.getActiveReservations(userId);
+        
+        return reservations.map(reservation => ({
+            id: reservation.id,
+            productId: reservation.productId,
+            warehouseId: reservation.warehouseId,
+            variantId: reservation.variantId,
+            quantity: reservation.quantity,
+            orderId: reservation.orderId,
+            userId: reservation.userId,
+            status: reservation.status,
+            expiresAt: reservation.expiresAt,
+            createdAt: reservation.createdAt,
+            updatedAt: reservation.updatedAt,
+        }));
+    }
+
+    @Post('cleanup-expired')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Очистить истекшие резервирования (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Истекшие резервирования очищены' })
+    async cleanupExpiredReservations(): Promise<{ message: string; releasedCount: number }> {
+        const releasedCount = await this.inventoryService.cleanupExpiredReservations();
+        return { 
+            message: `Очищено ${releasedCount} истекших резервирований`,
+            releasedCount 
+        };
+    }
+}
+```
+
+## Миграции
+
+### Создание таблиц управления складом
+```typescript
+// db/migrations/YYYYMMDDHHMMSS-create-inventory-system.ts
+import { QueryInterface, DataTypes } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+    // Создание таблицы stock_levels
+    await queryInterface.createTable('stock_levels', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        product_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'products', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        warehouse_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 1,
+        },
+        variant_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        quantity: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        },
+        available_quantity: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        },
+        reserved_quantity: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        },
+        min_stock_level: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        },
+        reorder_point: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        },
+        is_active: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        },
+        last_updated: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание таблицы stock_movements
+    await queryInterface.createTable('stock_movements', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        product_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'products', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        warehouse_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 1,
+        },
+        variant_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        movement_type: {
+            type: DataTypes.ENUM('in', 'out', 'adjustment', 'reserve', 'unreserve'),
+            allowNull: false,
+        },
+        quantity: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+        reference_type: {
+            type: DataTypes.STRING(50),
+            allowNull: true,
+        },
+        reference_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        reason: {
+            type: DataTypes.STRING(100),
+            allowNull: true,
+        },
+        notes: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        user_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: { model: 'users', key: 'id' },
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание таблицы stock_reservations
+    await queryInterface.createTable('stock_reservations', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        product_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'products', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        warehouse_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 1,
+        },
+        variant_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        quantity: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+        order_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'orders', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        user_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'users', key: 'id' },
+        },
+        status: {
+            type: DataTypes.ENUM('active', 'expired', 'cancelled', 'fulfilled'),
+            allowNull: false,
+            defaultValue: 'active',
+        },
+        expires_at: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание индексов
+    await queryInterface.addIndex('stock_levels', ['product_id']);
+    await queryInterface.addIndex('stock_levels', ['warehouse_id']);
+    await queryInterface.addIndex('stock_levels', ['variant_id']);
+    await queryInterface.addIndex('stock_levels', ['available_quantity']);
+    await queryInterface.addIndex('stock_levels', ['min_stock_level']);
+    await queryInterface.addIndex('stock_levels', ['is_active']);
+    await queryInterface.addIndex('stock_levels', ['product_id', 'warehouse_id', 'variant_id'], { unique: true });
+
+    await queryInterface.addIndex('stock_movements', ['product_id']);
+    await queryInterface.addIndex('stock_movements', ['warehouse_id']);
+    await queryInterface.addIndex('stock_movements', ['movement_type']);
+    await queryInterface.addIndex('stock_movements', ['reference_type', 'reference_id']);
+    await queryInterface.addIndex('stock_movements', ['created_at']);
+
+    await queryInterface.addIndex('stock_reservations', ['product_id']);
+    await queryInterface.addIndex('stock_reservations', ['order_id']);
+    await queryInterface.addIndex('stock_reservations', ['user_id']);
+    await queryInterface.addIndex('stock_reservations', ['status']);
+    await queryInterface.addIndex('stock_reservations', ['expires_at']);
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+    await queryInterface.dropTable('stock_reservations');
+    await queryInterface.dropTable('stock_movements');
+    await queryInterface.dropTable('stock_levels');
+}
+```
+
+## DTO и валидация
+
+### ReserveStockDto
+```typescript
+// src/infrastructure/dto/inventory/reserve-stock.dto.ts
+import { IsNumber, IsOptional, IsDateString, Min } from 'class-validator';
+
+export class ReserveStockDto {
+    @IsNumber({}, { message: 'ID товара должен быть числом' })
+    @Min(1, { message: 'ID товара должен быть больше 0' })
+    declare readonly productId: number;
+
+    @IsNumber({}, { message: 'Количество должно быть числом' })
+    @Min(1, { message: 'Количество должно быть больше 0' })
+    declare readonly quantity: number;
+
+    @IsNumber({}, { message: 'ID заказа должен быть числом' })
+    @Min(1, { message: 'ID заказа должен быть больше 0' })
+    declare readonly orderId: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'ID склада должен быть числом' })
+    @Min(1, { message: 'ID склада должен быть больше 0' })
+    declare readonly warehouseId?: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'ID варианта должен быть числом' })
+    @Min(1, { message: 'ID варианта должен быть больше 0' })
+    declare readonly variantId?: number;
+
+    @IsOptional()
+    @IsDateString({}, { message: 'Дата истечения должна быть валидной датой' })
+    declare readonly expiresAt?: string;
+}
+```
+
+### AddStockDto
+```typescript
+// src/infrastructure/dto/inventory/add-stock.dto.ts
+import { IsNumber, IsOptional, IsString, Min, Length } from 'class-validator';
+
+export class AddStockDto {
+    @IsNumber({}, { message: 'ID товара должен быть числом' })
+    @Min(1, { message: 'ID товара должен быть больше 0' })
+    declare readonly productId: number;
+
+    @IsNumber({}, { message: 'Количество должно быть числом' })
+    @Min(1, { message: 'Количество должно быть больше 0' })
+    declare readonly quantity: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'ID склада должен быть числом' })
+    @Min(1, { message: 'ID склада должен быть больше 0' })
+    declare readonly warehouseId?: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'ID варианта должен быть числом' })
+    @Min(1, { message: 'ID варианта должен быть больше 0' })
+    declare readonly variantId?: number;
+
+    @IsOptional()
+    @IsString({ message: 'Причина должна быть строкой' })
+    @Length(1, 100, { message: 'Причина должна быть от 1 до 100 символов' })
+    declare readonly reason?: string;
+}
+```
+
+### AdjustStockDto
+```typescript
+// src/infrastructure/dto/inventory/adjust-stock.dto.ts
+import { IsNumber, IsOptional, IsString, Length } from 'class-validator';
+
+export class AdjustStockDto {
+    @IsNumber({}, { message: 'ID товара должен быть числом' })
+    declare readonly productId: number;
+
+    @IsNumber({}, { message: 'Количество должно быть числом' })
+    declare readonly quantity: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'ID склада должен быть числом' })
+    declare readonly warehouseId?: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'ID варианта должен быть числом' })
+    declare readonly variantId?: number;
+
+    @IsOptional()
+    @IsString({ message: 'Причина должна быть строкой' })
+    @Length(1, 100, { message: 'Причина должна быть от 1 до 100 символов' })
+    declare readonly reason?: string;
+}
+```
+
+## Response классы
+
+### StockLevelResponse
+```typescript
+// src/infrastructure/responses/inventory/inventory.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class StockLevelResponse {
+    @ApiProperty({ description: 'ID уровня остатков' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'ID товара' })
+    declare readonly productId: number;
+
+    @ApiProperty({ description: 'ID склада' })
+    declare readonly warehouseId: number;
+
+    @ApiProperty({ description: 'ID варианта товара', required: false })
+    declare readonly variantId?: number;
+
+    @ApiProperty({ description: 'Общий остаток' })
+    declare readonly quantity: number;
+
+    @ApiProperty({ description: 'Доступный остаток' })
+    declare readonly availableQuantity: number;
+
+    @ApiProperty({ description: 'Зарезервированный остаток' })
+    declare readonly reservedQuantity: number;
+
+    @ApiProperty({ description: 'Минимальный уровень' })
+    declare readonly minStockLevel: number;
+
+    @ApiProperty({ description: 'Точка заказа' })
+    declare readonly reorderPoint: number;
+
+    @ApiProperty({ description: 'Активен ли остаток' })
+    declare readonly isActive: boolean;
+
+    @ApiProperty({ description: 'Последнее обновление' })
+    declare readonly lastUpdated: Date;
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления' })
+    declare readonly updatedAt: Date;
+}
+
+export class StockMovementResponse {
+    @ApiProperty({ description: 'ID движения' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'ID товара' })
+    declare readonly productId: number;
+
+    @ApiProperty({ description: 'ID склада' })
+    declare readonly warehouseId: number;
+
+    @ApiProperty({ description: 'ID варианта товара', required: false })
+    declare readonly variantId?: number;
+
+    @ApiProperty({ description: 'Тип движения' })
+    declare readonly movementType: string;
+
+    @ApiProperty({ description: 'Количество' })
+    declare readonly quantity: number;
+
+    @ApiProperty({ description: 'Тип ссылки', required: false })
+    declare readonly referenceType?: string;
+
+    @ApiProperty({ description: 'ID ссылки', required: false })
+    declare readonly referenceId?: number;
+
+    @ApiProperty({ description: 'Причина', required: false })
+    declare readonly reason?: string;
+
+    @ApiProperty({ description: 'Заметки', required: false })
+    declare readonly notes?: string;
+
+    @ApiProperty({ description: 'ID пользователя', required: false })
+    declare readonly userId?: number;
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+}
+
+export class StockReservationResponse {
+    @ApiProperty({ description: 'ID резервирования' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'ID товара' })
+    declare readonly productId: number;
+
+    @ApiProperty({ description: 'ID склада' })
+    declare readonly warehouseId: number;
+
+    @ApiProperty({ description: 'ID варианта товара', required: false })
+    declare readonly variantId?: number;
+
+    @ApiProperty({ description: 'Количество' })
+    declare readonly quantity: number;
+
+    @ApiProperty({ description: 'ID заказа' })
+    declare readonly orderId: number;
+
+    @ApiProperty({ description: 'ID пользователя' })
+    declare readonly userId: number;
+
+    @ApiProperty({ description: 'Статус резервирования' })
+    declare readonly status: string;
+
+    @ApiProperty({ description: 'Дата истечения', required: false })
+    declare readonly expiresAt?: Date;
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления' })
+    declare readonly updatedAt: Date;
+}
+```
+
+## Критерии готовности
+
+### ✅ Обязательные требования:
+- [ ] Созданы миграции для таблиц stock_levels, stock_movements, stock_reservations
+- [ ] Реализованы модели Sequelize (StockLevelModel, StockMovementModel, StockReservationModel)
+- [ ] Создан InventoryService с управлением остатками и резервированием
+- [ ] Реализован InventoryController с API endpoints
+- [ ] Добавлены DTO классы с валидацией
+- [ ] Созданы Response классы с Swagger
+- [ ] Добавлены индексы для производительности
+- [ ] Реализована валидация доступности товаров
+- [ ] Добавлены unit тесты для InventoryService
+- [ ] Добавлены integration тесты для API
+- [ ] Интеграция с системой заказов
+
+### 🎯 Дополнительные возможности:
+- [ ] Автоматическая очистка истекших резервирований
+- [ ] Уведомления о низких остатках
+- [ ] Поддержка множественных складов
+- [ ] Аналитика движения товаров
+- [ ] Интеграция с системой поставщиков
+
+## Следующие шаги
+
+### Фаза 1: Базовая реализация (1 неделя)
+1. **Создать миграции** для таблиц stock_levels, stock_movements, stock_reservations
+2. **Реализовать модели** Sequelize
+3. **Создать DTO классы** с валидацией
+4. **Создать Response классы** с Swagger
+5. **Реализовать InventoryService** с основной логикой
+
+### Фаза 2: API и интеграции (3-4 дня)
+6. **Создать InventoryController** с API endpoints
+7. **Добавить валидацию остатков** при оформлении заказов
+8. **Интегрировать с корзиной** для резервирования товаров
+9. **Реализовать автоматическую очистку** истекших резервирований
+
+### Фаза 3: Тестирование и качество (2-3 дня)
+10. **Написать unit тесты** для InventoryService
+11. **Написать integration тесты** для API
+12. **Добавить обработку ошибок** и валидацию
+13. **Провести рефакторинг** и оптимизацию
+
+## Риски и альтернативы
+
+### ⚠️ Риски:
+- **Отрицательные остатки**: неправильное управление резервированием
+- **Блокировка товаров**: долгое резервирование без освобождения
+- **Производительность**: сложные запросы для проверки остатков
+
+### 🔄 Альтернативы:
+- **Кэширование**: Redis для быстрой проверки остатков
+- **Внешние системы**: интеграция с WMS системами
+- **Упрощенная система**: только базовое управление остатками
+
+## Интеграция с другими системами
+
+### 🔗 Связанные системы:
+- **OrderService** - резервирование товаров при заказе
+- **CartService** - проверка доступности товаров
+- **ProductService** - обновление информации о товарах
+- **NotificationService** - уведомления о низких остатках
+
+### 📊 Аналитика:
+- Популярные товары
+- Скорость движения товаров
+- Эффективность управления остатками
+
+## TL;DR
+
+Упрощенная система управления складом включает:
+- **3 таблицы**: stock_levels, stock_movements, stock_reservations
+- **3 модели**: StockLevelModel, StockMovementModel, StockReservationModel
+- **1 сервис**: InventoryService с управлением остатками и резервированием
+- **1 контроллер**: API для управления складом
+- **Функции**: управление остатками, резервирование, движения товаров
+- **Валидация**: проверка доступности товаров при заказе
+- **Автоматизация**: очистка истекших резервирований
+- **Готовность**: к масштабированию и дополнительным функциям

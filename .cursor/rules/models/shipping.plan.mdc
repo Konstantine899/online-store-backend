@@ -1,0 +1,285 @@
+# Shipping Module Execution Plan (Binding)
+
+binding: true
+module: shipping
+epic_ref: SAAS-012
+version: 1.0
+
+execution_policy:
+  must_follow: true
+  allow_code_changes_only_after: "Одобряю <TASK_ID>"
+  constraints:
+    - no public API changes without explicit approval
+    - operate within files_scope
+    - pass lints/tests and Swagger before DoD complete
+
+context:
+  goal: Shipping system with methods, zones, rates and tenant isolation
+
+tasks:
+  # Фаза 1: Базовая реализация
+  - id: SAAS-012-00
+    title: Обновить систему ролей в контроллере доставки
+    branch: "feature/shipping/SAAS-012/shipping-roles-update"
+    files_scope:
+      - ".cursor/rules/models/shipping.mdc"
+    steps:
+      - добавить импорты RoleGuard и Roles в контроллер
+      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+      - обновить методы с правильными ролями:
+        - просмотр способов доставки: ALL_ROLES
+        - расчет стоимости доставки: CUSTOMER_ROLES
+        - управление способами/зонами/тарифами: MANAGER_ROLES
+        - админ-статистика: MANAGER_ROLES
+    dod:
+      - все методы контроллера используют полную систему ролей
+      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+      - тенантская изоляция ролей обеспечена
+    gate:
+      - require: "Одобряю SAAS-012-00"
+
+  - id: SAAS-012-01
+    title: Создать миграции для таблиц shipping_methods, shipping_zones и shipping_rates
+    branch: "feature/shipping/SAAS-012/shipping-core-tables"
+    files_scope:
+      - "db/migrations/**"
+      - "src/domain/models/shipping-method.ts"
+      - "src/domain/models/shipping-zone.ts"
+      - "src/domain/models/shipping-rate.ts"
+    steps:
+      - создать таблицы shipping_methods, shipping_zones и shipping_rates с tenant_id
+      - расширить таблицу orders полями для доставки
+      - добавить индексы для производительности
+    dod:
+      - миграция up/down успешна
+      - Shipping модели содержат tenant_id
+      - индексы созданы для производительности
+    gate:
+      - require: "Одобряю SAAS-012-01"
+
+  - id: SAAS-012-02
+    title: Реализовать модели ShippingMethodModel, ShippingZoneModel и ShippingRateModel
+    branch: "feature/shipping/SAAS-012/shipping-core-models"
+    files_scope:
+      - "src/domain/models/shipping-method.ts"
+      - "src/domain/models/shipping-zone.ts"
+      - "src/domain/models/shipping-rate.ts"
+    steps:
+      - добавить методы для работы с методами доставки
+      - реализовать методы для зон доставки
+      - добавить методы для расчета стоимости доставки
+    dod:
+      - все методы доставки реализованы
+      - методы зон работают корректно
+      - расчет стоимости функционален
+    gate:
+      - require: "Одобряю SAAS-012-02"
+
+  - id: SAAS-012-03
+    title: Создать DTO классы с валидацией
+    branch: "feature/shipping/SAAS-012/shipping-dto-validation"
+    files_scope:
+      - "src/infrastructure/dto/shipping/**"
+      - "src/domain/dto/**"
+    steps:
+      - создать CreateShippingMethodDto для создания методов доставки
+      - создать CreateShippingZoneDto для создания зон
+      - создать CalculateShippingDto для расчета стоимости
+      - добавить валидаторы с русскими сообщениями
+    dod:
+      - DTO содержат все необходимые поля
+      - валидация работает с русскими сообщениями
+      - CustomValidationPipe обрабатывает все DTO
+    gate:
+      - require: "Одобряю SAAS-012-03"
+
+  - id: SAAS-012-04
+    title: Создать Response классы с Swagger
+    branch: "feature/shipping/SAAS-012/shipping-response-swagger"
+    files_scope:
+      - "src/infrastructure/responses/shipping/**"
+      - "src/infrastructure/common/decorators/swagger/shipping/**"
+    steps:
+      - создать Response классы с явными полями (не extends ShippingModel)
+      - добавить Swagger декораторы для всех полей
+      - создать Response для списков методов доставки с пагинацией
+    dod:
+      - Response классы не наследуются от модели
+      - Swagger схемы корректны
+      - пагинация возвращает { data, meta }
+    gate:
+      - require: "Одобряю SAAS-012-04"
+
+  - id: SAAS-012-05
+    title: Реализовать сервис с основной логикой
+    branch: "feature/shipping/SAAS-012/shipping-service-methods"
+    files_scope:
+      - "src/infrastructure/services/shipping/**"
+      - "src/domain/services/**"
+    steps:
+      - добавить методы для управления методами доставки
+      - реализовать методы для зон доставки
+      - добавить методы для расчета стоимости
+      - добавить статистику доставки
+    dod:
+      - все методы сервиса реализованы
+      - управление методами работает корректно
+      - зоны доставки функциональны
+      - статистика возвращает корректные данные
+    gate:
+      - require: "Одобряю SAAS-012-05"
+
+  # Фаза 2: API и интеграции
+  - id: SAAS-012-06
+    title: Создать контроллер с API endpoints
+    branch: "feature/shipping/SAAS-012/shipping-controller-endpoints"
+    files_scope:
+      - "src/infrastructure/controllers/shipping/**"
+      - "src/infrastructure/common/decorators/swagger/shipping/**"
+    steps:
+      - добавить эндпоинты для методов доставки (CRUD)
+      - добавить эндпоинты для зон доставки (CRUD)
+      - добавить эндпоинты для расчета стоимости (POST /shipping/calculate)
+      - добавить статистику (GET /admin/shipping/stats)
+    dod:
+      - все эндпоинты работают корректно
+      - Swagger документация обновлена
+      - Guards и роли применены правильно
+    gate:
+      - require: "Одобряю SAAS-012-06"
+
+  - id: SAAS-012-07
+    title: Настроить интеграцию с внешними службами доставки
+    branch: "feature/shipping/SAAS-012/shipping-external-integration"
+    files_scope:
+      - "src/infrastructure/services/shipping/**"
+      - "src/infrastructure/common/integrations/**"
+    steps:
+      - интегрировать с внешними службами доставки
+      - добавить отслеживание посылок
+      - добавить автоматическое обновление статусов
+    dod:
+      - интеграция с внешними службами работает
+      - отслеживание посылок функционально
+      - автоматическое обновление статусов активно
+    gate:
+      - require: "Одобряю SAAS-012-07"
+
+  - id: SAAS-012-08
+    title: Добавить обработку ошибок и валидацию
+    branch: "feature/shipping/SAAS-012/shipping-error-handling"
+    files_scope:
+      - "src/infrastructure/common/filters/**"
+      - "src/infrastructure/common/pipes/**"
+    steps:
+      - добавить обработку ошибок для доставки
+      - улучшить валидацию с русскими сообщениями
+      - добавить логирование ошибок
+    dod:
+      - ошибки обрабатываются корректно
+      - сообщения на русском языке
+      - логирование работает
+    gate:
+      - require: "Одобряю SAAS-012-08"
+
+  - id: SAAS-012-09
+    title: Создать тесты для API доставки
+    branch: "feature/shipping/SAAS-012/shipping-api-tests"
+    files_scope:
+      - "tests/integration/shipping/**"
+      - "tests/unit/shipping/**"
+    steps:
+      - написать integration тесты для доставки
+      - написать unit тесты для сервисов
+      - добавить негативные тесты
+    dod:
+      - все тесты проходят
+      - покрытие критичных модулей ≥80%
+      - негативные сценарии покрыты
+    gate:
+      - require: "Одобряю SAAS-012-09"
+
+  # Фаза 3: Тестирование и качество
+  - id: SAAS-012-10
+    title: Написать unit тесты для сервисов
+    branch: "feature/shipping/SAAS-012/shipping-unit-tests"
+    files_scope:
+      - "tests/unit/shipping/**"
+    steps:
+      - покрыть ShippingService методами
+      - покрыть методы расчета стоимости
+      - покрыть методы управления зонами
+    dod:
+      - unit тесты покрывают все методы
+      - тесты стабильны и быстры
+      - моки настроены корректно
+    gate:
+      - require: "Одобряю SAAS-012-10"
+
+  - id: SAAS-012-11
+    title: Написать integration тесты для API
+    branch: "feature/shipping/SAAS-012/shipping-integration-tests"
+    files_scope:
+      - "tests/integration/shipping/**"
+    steps:
+      - покрыть все эндпоинты доставки
+      - покрыть эндпоинты расчета стоимости
+      - покрыть эндпоинты статистики
+    dod:
+      - integration тесты покрывают все эндпоинты
+      - тесты изолированы и детерминированы
+      - негативные сценарии покрыты
+    gate:
+      - require: "Одобряю SAAS-012-11"
+
+  - id: SAAS-012-12
+    title: Провести рефакторинг и оптимизацию
+    branch: "feature/shipping/SAAS-012/shipping-optimization"
+    files_scope:
+      - "src/infrastructure/**"
+      - "src/domain/**"
+    steps:
+      - оптимизировать запросы к БД
+      - рефакторить дублирующийся код
+      - улучшить производительность
+    dod:
+      - код оптимизирован
+      - дублирование устранено
+      - производительность улучшена
+    gate:
+      - require: "Одобряю SAAS-012-12"
+
+  # Дополнительные возможности
+  - id: SAAS-012-13
+    title: Автоматическое управление зонами доставки
+    branch: "feature/shipping/SAAS-012/shipping-auto-zones"
+    files_scope:
+      - "src/infrastructure/services/shipping/**"
+      - "src/infrastructure/common/geo/**"
+    steps:
+      - реализовать автоматическое определение зон доставки
+      - добавить интеграцию с геолокацией
+      - добавить автоматическое обновление зон
+    dod:
+      - автоматическое определение зон работает
+      - интеграция с геолокацией функциональна
+      - автоматическое обновление зон активно
+    gate:
+      - require: "Одобряю SAAS-012-13"
+
+  - id: SAAS-012-14
+    title: Аналитика доставки
+    branch: "feature/shipping/SAAS-012/shipping-analytics"
+    files_scope:
+      - "src/infrastructure/controllers/shipping/**"
+      - "src/infrastructure/services/shipping/**"
+    steps:
+      - создать эндпоинты аналитики доставки
+      - добавить метрики и дашборды
+      - настроить отчеты по доставке
+    dod:
+      - аналитика доставки работает
+      - метрики корректны
+      - отчеты генерируются
+    gate:
+      - require: "Одобряю SAAS-012-14"

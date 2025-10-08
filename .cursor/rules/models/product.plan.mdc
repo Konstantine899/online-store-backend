@@ -1,0 +1,432 @@
+# Product Module Execution Plan (Binding)
+
+binding: true
+module: product
+epic_ref: SAAS-003
+version: 1.0
+
+execution_policy:
+  must_follow: true
+  allow_code_changes_only_after: "Одобряю <TASK_ID>"
+  constraints:
+    - no public API changes without explicit approval
+    - operate strictly within files_scope
+    - pass lints/tests and Swagger before DoD complete
+
+context:
+  goal: Product catalog with tenant isolation, filters, pagination, search
+
+tasks:
+  # Фаза 1: Базовая реализация
+  - id: SAAS-003-00
+    title: Обновить систему ролей в контроллере товаров
+    branch: "feature/catalog/SAAS-003/product-roles-update"
+    files_scope:
+      - ".cursor/rules/models/product.mdc"
+    steps:
+      - добавить импорты RoleGuard и Roles в контроллер
+      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+      - обновить методы с правильными ролями:
+        - статистика: ADMIN_ROLES
+        - управление флагами товаров: MANAGER_ROLES
+        - просмотр активных товаров: ALL_ROLES
+        - просмотр просроченных акций: STAFF_ROLES
+    dod:
+      - все методы контроллера используют полную систему ролей
+      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+      - тенантская изоляция ролей обеспечена
+    gate:
+      - require: "Одобряю SAAS-003-00"
+
+  - id: SAAS-003-01
+    title: Создать миграцию для расширения таблицы products с флагами
+    branch: "feature/catalog/SAAS-003/product-extended-model"
+    files_scope:
+      - "db/migrations/**"
+      - "src/domain/models/product.ts"
+    steps:
+      - добавить все флаги в таблицу products (is_featured, is_new, is_bestseller, etc.)
+      - добавить поля вариантов, изображений, мета-данных
+      - создать индексы для производительности по флагам
+      - обновить ProductModel с новыми полями
+    dod:
+      - миграция up/down успешна
+      - ProductModel содержит все флаги и методы
+      - индексы созданы для производительности
+    gate:
+      - require: "Одобряю SAAS-003-01"
+
+  - id: SAAS-003-02
+    title: Реализовать модель Sequelize с флагами
+    branch: "feature/catalog/SAAS-003/product-extended-model"
+    files_scope:
+      - "src/domain/models/product.ts"
+    steps:
+      - добавить все методы для работы с флагами товаров
+      - добавить scopes для фильтрации (active, featured, new, bestseller, etc.)
+      - реализовать методы для управления складом
+    dod:
+      - все методы флагов реализованы
+      - scopes работают корректно
+      - методы склада функциональны
+    gate:
+      - require: "Одобряю SAAS-003-02"
+
+  - id: SAAS-003-03
+    title: Создать DTO классы с валидацией флагов
+    branch: "feature/catalog/SAAS-003/product-dto-validation"
+    files_scope:
+      - "src/infrastructure/dto/product/**"
+      - "src/domain/dto/**"
+    steps:
+      - расширить CreateProductDto полями флагов и вариантов
+      - создать UpdateProductFlagsDto для управления флагами
+      - создать ProductVariantDto для вариантов товаров
+      - добавить валидаторы с русскими сообщениями
+    dod:
+      - DTO содержат все необходимые поля
+      - валидация работает с русскими сообщениями
+      - CustomValidationPipe обрабатывает все DTO
+    gate:
+      - require: "Одобряю SAAS-003-03"
+
+  - id: SAAS-003-04
+    title: Создать Response классы с Swagger для флагов
+    branch: "feature/catalog/SAAS-003/product-response-swagger"
+    files_scope:
+      - "src/infrastructure/responses/product/**"
+      - "src/infrastructure/common/decorators/swagger/product/**"
+    steps:
+      - создать Response классы с явными полями (не extends ProductModel)
+      - добавить Swagger декораторы для всех флагов
+      - создать Response для списков товаров с пагинацией
+    dod:
+      - Response классы не наследуются от модели
+      - Swagger схемы корректны
+      - пагинация возвращает { data, meta }
+    gate:
+      - require: "Одобряю SAAS-003-04"
+
+  - id: SAAS-003-05
+    title: Реализовать сервис с методами для работы с флагами
+    branch: "feature/catalog/SAAS-003/product-service-methods"
+    files_scope:
+      - "src/infrastructure/services/product/**"
+      - "src/domain/services/**"
+    steps:
+      - добавить методы для работы с флагами (markAsFeatured, markAsNew, etc.)
+      - добавить методы для управления складом (reserveStock, updateStock)
+      - добавить методы для вариантов товаров
+      - добавить статистику товаров
+    dod:
+      - все методы флагов реализованы
+      - методы склада работают
+      - методы вариантов функциональны
+      - статистика возвращает корректные данные
+    gate:
+      - require: "Одобряю SAAS-003-05"
+
+  # Фаза 2: API и интеграции
+  - id: SAAS-003-06
+    title: Создать контроллер с API endpoints для флагов
+    branch: "feature/catalog/SAAS-003/product-controller-endpoints"
+    files_scope:
+      - "src/infrastructure/controllers/product/**"
+      - "src/infrastructure/common/decorators/swagger/product/**"
+    steps:
+      - добавить эндпоинты для управления флагами (PATCH /products/:id/featured, etc.)
+      - добавить эндпоинты для управления складом (PATCH /products/:id/stock)
+      - добавить эндпоинты для вариантов товаров
+      - добавить статистику (GET /admin/products/stats)
+    dod:
+      - все эндпоинты работают корректно
+      - Swagger документация обновлена
+      - Guards и роли применены правильно
+    gate:
+      - require: "Одобряю SAAS-003-06"
+
+  - id: SAAS-003-07
+    title: Настроить фильтрацию и поиск товаров по флагам
+    branch: "feature/catalog/SAAS-003/product-filtering-search"
+    files_scope:
+      - "src/infrastructure/controllers/product/**"
+      - "src/infrastructure/services/product/**"
+    steps:
+      - реализовать фильтрацию по флагам (featured, new, bestseller, etc.)
+      - добавить поиск по названию и описанию
+      - добавить сортировку по различным полям
+      - добавить пагинацию для списков товаров
+    dod:
+      - фильтрация по флагам работает
+      - поиск корректно находит товары
+      - сортировка и пагинация функциональны
+    gate:
+      - require: "Одобряю SAAS-003-07"
+
+  - id: SAAS-003-08
+    title: Добавить управление складом и резервирование
+    branch: "feature/catalog/SAAS-003/product-inventory-management"
+    files_scope:
+      - "src/infrastructure/services/product/**"
+      - "src/infrastructure/services/order/**"
+    steps:
+      - реализовать резервирование товаров при заказе
+      - добавить освобождение резерва при отмене
+      - добавить автоматическое управление остатками
+      - добавить уведомления о низких остатках
+    dod:
+      - резервирование работает корректно
+      - освобождение резерва функционально
+      - автоматическое управление активно
+      - уведомления отправляются
+    gate:
+      - require: "Одобряю SAAS-003-08"
+
+  - id: SAAS-003-09
+    title: Создать тесты для API флагов
+    branch: "feature/catalog/SAAS-003/product-api-tests"
+    files_scope:
+      - "src/infrastructure/controllers/product/tests/**"
+      - "src/infrastructure/services/product/tests/**"
+      - "src/infrastructure/repositories/product/tests/**"
+    steps:
+      - написать integration тесты для флагов товаров
+      - написать unit тесты для сервисов
+      - добавить негативные тесты
+    dod:
+      - все тесты проходят
+      - покрытие критичных модулей ≥80%
+      - негативные сценарии покрыты
+    gate:
+      - require: "Одобряю SAAS-003-09"
+
+  # Фаза 3: Тестирование и качество
+  - id: SAAS-003-10
+    title: Написать unit тесты для сервисов и флагов
+    branch: "feature/catalog/SAAS-003/product-unit-tests"
+    files_scope:
+      - "src/infrastructure/services/product/tests/**"
+      - "src/infrastructure/repositories/product/tests/**"
+    steps:
+      - покрыть ProductService методами флагов
+      - покрыть методы управления складом
+      - покрыть методы вариантов товаров
+    dod:
+      - unit тесты покрывают все методы
+      - тесты стабильны и быстры
+      - моки настроены корректно
+    gate:
+      - require: "Одобряю SAAS-003-10"
+
+  - id: SAAS-003-11
+    title: Написать integration тесты для API флагов
+    branch: "feature/catalog/SAAS-003/product-integration-tests"
+    files_scope:
+      - "src/infrastructure/controllers/product/tests/**"
+    steps:
+      - покрыть все эндпоинты флагов товаров
+      - покрыть эндпоинты управления складом
+      - покрыть эндпоинты вариантов товаров
+    dod:
+      - integration тесты покрывают все эндпоинты
+      - тесты изолированы и детерминированы
+      - негативные сценарии покрыты
+    gate:
+      - require: "Одобряю SAAS-003-11"
+
+  - id: SAAS-003-12
+    title: Добавить обработку ошибок и валидацию флагов
+    branch: "feature/catalog/SAAS-003/product-error-handling"
+    files_scope:
+      - "src/infrastructure/common/filters/**"
+      - "src/infrastructure/common/pipes/**"
+    steps:
+      - добавить обработку ошибок для флагов товаров
+      - улучшить валидацию с русскими сообщениями
+      - добавить логирование ошибок
+    dod:
+      - ошибки обрабатываются корректно
+      - сообщения на русском языке
+      - логирование работает
+    gate:
+      - require: "Одобряю SAAS-003-12"
+
+  - id: SAAS-003-13
+    title: Провести рефакторинг и оптимизацию
+    branch: "feature/catalog/SAAS-003/product-optimization"
+    files_scope:
+      - "src/infrastructure/**"
+      - "src/domain/**"
+    steps:
+      - оптимизировать запросы к БД
+      - рефакторить дублирующийся код
+      - улучшить производительность
+    dod:
+      - код оптимизирован
+      - дублирование устранено
+      - производительность улучшена
+    gate:
+      - require: "Одобряю SAAS-003-13"
+
+  # Дополнительные возможности
+  - id: SAAS-003-14
+    title: Автоматическое управление флагами (isNew по дате, isBestseller по продажам)
+    branch: "feature/catalog/SAAS-003/product-auto-flags"
+    files_scope:
+      - "src/infrastructure/services/product/**"
+      - "src/infrastructure/services/order/**"
+    steps:
+      - реализовать автоматическое назначение isNew по дате создания
+      - добавить логику isBestseller по количеству продаж
+      - добавить уведомления о смене статусов
+    dod:
+      - автоматическое управление работает
+      - логика по продажам корректна
+      - уведомления отправляются
+    gate:
+      - require: "Одобряю SAAS-003-14"
+
+  - id: SAAS-003-15
+    title: Расширенные варианты товаров
+    branch: "feature/catalog/SAAS-003/product-extended-variants"
+    files_scope:
+      - "src/infrastructure/services/product/**"
+      - "src/infrastructure/dto/product/**"
+    steps:
+      - реализовать сложные варианты товаров
+      - добавить управление ценами по вариантам
+      - добавить управление остатками по вариантам
+    dod:
+      - сложные варианты работают
+      - цены по вариантам корректны
+      - остатки по вариантам управляются
+    gate:
+      - require: "Одобряю SAAS-003-15"
+
+  - id: SAAS-003-16
+    title: История изменения цен
+    branch: "feature/catalog/SAAS-003/product-price-history"
+    files_scope:
+      - "db/migrations/**"
+      - "src/infrastructure/services/product/**"
+    steps:
+      - создать таблицу price_history
+      - добавить логирование изменений цен
+      - создать API для просмотра истории цен
+    dod:
+      - история цен ведется
+      - логирование работает корректно
+      - API истории цен функционален
+    gate:
+      - require: "Одобряю SAAS-003-16"
+
+  - id: SAAS-003-17
+    title: Автоматическое управление остатками
+    branch: "feature/catalog/SAAS-003/product-auto-inventory"
+    files_scope:
+      - "src/infrastructure/services/product/**"
+      - "src/infrastructure/services/order/**"
+    steps:
+      - реализовать автоматическое пополнение остатков
+      - добавить интеграцию с поставщиками
+      - добавить уведомления о необходимости пополнения
+    dod:
+      - автоматическое пополнение работает
+      - интеграция с поставщиками активна
+      - уведомления отправляются
+    gate:
+      - require: "Одобряю SAAS-003-17"
+
+  - id: SAAS-003-18
+    title: API для массового управления флагами
+    branch: "feature/catalog/SAAS-003/product-bulk-flags"
+    files_scope:
+      - "src/infrastructure/controllers/product/**"
+      - "src/infrastructure/services/product/**"
+    steps:
+      - создать эндпоинт для массового управления флагами
+      - добавить фильтрацию товаров для массовых операций
+      - добавить транзакционность операций
+    dod:
+      - массовые операции работают
+      - фильтрация корректна
+      - транзакции безопасны
+    gate:
+      - require: "Одобряю SAAS-003-18"
+
+  - id: SAAS-003-19
+    title: Фильтрация товаров по комбинации флагов
+    branch: "feature/catalog/SAAS-003/product-complex-filtering"
+    files_scope:
+      - "src/infrastructure/controllers/product/**"
+      - "src/infrastructure/services/product/**"
+    steps:
+      - добавить фильтрацию по нескольким флагам одновременно
+      - создать эндпоинт для сложных запросов
+      - добавить пагинацию для результатов
+    dod:
+      - фильтрация по комбинации флагов работает
+      - сложные запросы выполняются
+      - пагинация корректна
+    gate:
+      - require: "Одобряю SAAS-003-19"
+
+  - id: SAAS-003-20
+    title: Интеграция с внешними каталогами
+    branch: "feature/catalog/SAAS-003/product-external-integration"
+    files_scope:
+      - "src/infrastructure/services/product/**"
+      - "src/infrastructure/common/integrations/**"
+    steps:
+      - создать интерфейс для внешних каталогов
+      - реализовать синхронизацию товаров
+      - добавить маппинг полей
+    dod:
+      - интеграция с внешними каталогами работает
+      - синхронизация товаров активна
+      - маппинг полей корректный
+    gate:
+      - require: "Одобряю SAAS-003-20"
+
+  - id: SAAS-003-21
+    title: Аналитика продаж товаров
+    branch: "feature/catalog/SAAS-003/product-sales-analytics"
+    files_scope:
+      - "src/infrastructure/controllers/product/**"
+      - "src/infrastructure/services/product/**"
+    steps:
+      - создать эндпоинты аналитики продаж
+      - добавить метрики и дашборды
+      - настроить отчеты по продажам товаров
+    dod:
+      - аналитика продаж работает
+      - метрики корректны
+      - отчеты генерируются
+    gate:
+      - require: "Одобряю SAAS-003-21"
+
+  # Unit тесты для ProductRepository
+  - id: SAAS-003-22
+    title: Unit тесты для ProductRepository
+    branch: "test/product/SAAS-003/product-repository-unit-tests"
+    files_scope:
+      - "tests/unit/repositories/product.repository.unit.test.ts"
+      - "src/infrastructure/repositories/product/product.repository.ts"
+    steps:
+      - создать файл tests/unit/repositories/product.repository.unit.test.ts
+      - настроить моки для ProductModel и связанных моделей
+      - написать тесты для CRUD операций - create, findById, update, delete
+      - написать тесты для поиска продуктов - по категории, бренду, цене
+      - написать тесты для пагинации и сортировки
+      - написать тесты для работы с файлами изображений
+      - написать тесты для работы с характеристиками продуктов
+      - добавить тесты обработки ошибок для всех методов
+    dod:
+      - покрытие branches ≥ 80%
+      - покрытие functions ≥ 80%
+      - покрытие lines ≥ 80%
+      - все тесты проходят
+      - линтеры проходят без ошибок
+    estimated_time: 5-6 часов
+    gate:
+      - require: "Одобряю SAAS-003-22"

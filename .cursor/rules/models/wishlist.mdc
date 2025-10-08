@@ -1,0 +1,671 @@
+# Система списка желаний (Wishlist System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы списка желаний для ecommerce приложения с базовыми функциями сохранения товаров, простыми приоритетами и заметками, фокусом на быструю разработку и готовность к масштабированию.
+
+## Основные требования
+- **Один список желаний** на пользователя
+- **Базовые товары** - добавление/удаление товаров
+- **Простые приоритеты** - базовый приоритет (1-5)
+- **Базовые заметки** - простые заметки к товарам
+- **Безопасность** - только владелец может управлять своим списком
+
+## Структура базы данных
+
+### Таблица `wishlist_items`
+```sql
+CREATE TABLE wishlist_items (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+    quantity INTEGER DEFAULT 1,
+    notes TEXT,
+    priority INTEGER DEFAULT 1 CHECK (priority >= 1 AND priority <= 5),
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, product_id)
+);
+```
+
+## Модели Sequelize
+
+### Wishlist Item Model
+```typescript
+// src/domain/models/wishlist-item.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { UserModel } from './user.model';
+import { ProductModel } from './product.model';
+
+interface IWishlistItemModel {
+    id: number;
+    userId: number;
+    productId: number;
+    quantity: number;
+    notes?: string;
+    priority: number;
+    addedAt: Date;
+    user: UserModel;
+    product: ProductModel;
+}
+
+interface IWishlistItemCreationAttributes {
+    userId: number;
+    productId: number;
+    quantity?: number;
+    notes?: string;
+    priority?: number;
+}
+
+@Table({
+    tableName: 'wishlist_items',
+    underscored: true,
+    timestamps: false,
+    scopes: {
+        byUser: (userId: number) => ({
+            where: { userId },
+        }),
+        byProduct: (productId: number) => ({
+            where: { productId },
+        }),
+        withProduct: {
+            include: [{
+                model: ProductModel,
+                attributes: ['id', 'name', 'price', 'salePrice', 'images', 'slug', 'status', 'stock'],
+            }],
+        },
+        highPriority: {
+            where: { priority: { [Op.gte]: 4 } },
+        },
+        recent: {
+            order: [['addedAt', 'DESC']],
+        },
+        byPriority: {
+            order: [['priority', 'DESC'], ['addedAt', 'DESC']],
+        },
+    },
+    indexes: [
+        { fields: ['user_id'], name: 'idx_wishlist_items_user_id' },
+        { fields: ['product_id'], name: 'idx_wishlist_items_product_id' },
+        { fields: ['priority'], name: 'idx_wishlist_items_priority' },
+        { fields: ['added_at'], name: 'idx_wishlist_items_added_at' },
+        { fields: ['user_id', 'product_id'], unique: true, name: 'idx_wishlist_items_unique' },
+        { fields: ['user_id', 'priority'], name: 'idx_wishlist_items_user_priority' },
+    ],
+})
+export class WishlistItemModel
+    extends Model<WishlistItemModel, IWishlistItemCreationAttributes>
+    implements IWishlistItemModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @ForeignKey(() => ProductModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'product_id',
+    })
+    declare productId: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+        validate: {
+            min: 1,
+        },
+    })
+    declare quantity: number;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare notes?: string;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+        validate: {
+            min: 1,
+            max: 5,
+        },
+    })
+    declare priority: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'added_at',
+    })
+    declare addedAt: Date;
+
+    // Связи
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    @BelongsTo(() => ProductModel)
+    declare product: ProductModel;
+
+    // Методы
+    get isHighPriority(): boolean {
+        return this.priority >= 4;
+    }
+
+    get hasNotes(): boolean {
+        return !!this.notes && this.notes.length > 0;
+    }
+
+    get displayPrice(): number {
+        return this.product?.salePrice || this.product?.price || 0;
+    }
+
+    get totalPrice(): number {
+        return this.displayPrice * this.quantity;
+    }
+
+    get isProductAvailable(): boolean {
+        return this.product?.status === 'active' && (this.product?.stock || 0) > 0;
+    }
+
+    // Методы для работы с приоритетом
+    async setPriority(priority: number): Promise<void> {
+        if (priority < 1 || priority > 5) {
+            throw new Error('Приоритет должен быть от 1 до 5');
+        }
+        await this.update({ priority });
+    }
+
+    async increasePriority(): Promise<void> {
+        if (this.priority < 5) {
+            await this.update({ priority: this.priority + 1 });
+        }
+    }
+
+    async decreasePriority(): Promise<void> {
+        if (this.priority > 1) {
+            await this.update({ priority: this.priority - 1 });
+        }
+    }
+
+    // Методы для работы с количеством
+    async updateQuantity(quantity: number): Promise<void> {
+        if (quantity < 1) {
+            throw new Error('Количество должно быть больше 0');
+        }
+        await this.update({ quantity });
+    }
+
+    async increaseQuantity(amount: number = 1): Promise<void> {
+        await this.update({ quantity: this.quantity + amount });
+    }
+
+    async decreaseQuantity(amount: number = 1): Promise<void> {
+        const newQuantity = Math.max(1, this.quantity - amount);
+        await this.update({ quantity: newQuantity });
+    }
+
+    // Статические методы
+    static async getUserWishlist(userId: number, page: number = 1, limit: number = 20): Promise<{
+        data: WishlistItemModel[];
+        total: number;
+    }> {
+        const offset = (page - 1) * limit;
+
+        const { rows: items, count: total } = await this.findAndCountAll({
+            where: { userId },
+            include: [{
+                model: ProductModel,
+                attributes: ['id', 'name', 'price', 'salePrice', 'images', 'slug', 'status', 'stock'],
+            }],
+            order: [['priority', 'DESC'], ['addedAt', 'DESC']],
+            limit,
+            offset,
+        });
+
+        return { data: items, total };
+    }
+
+    static async addToWishlist(
+        userId: number,
+        productId: number,
+        quantity: number = 1,
+        notes?: string,
+        priority: number = 1
+    ): Promise<WishlistItemModel> {
+        const [item, created] = await this.findOrCreate({
+            where: { userId, productId },
+            defaults: {
+                userId,
+                productId,
+                quantity,
+                notes,
+                priority,
+            },
+        });
+
+        if (!created) {
+            // Если товар уже в списке, обновляем количество и приоритет
+            await item.update({
+                quantity: item.quantity + quantity,
+                priority: Math.max(item.priority, priority),
+                notes: notes || item.notes,
+            });
+        }
+
+        return item;
+    }
+
+    static async removeFromWishlist(userId: number, productId: number): Promise<boolean> {
+        const deletedCount = await this.destroy({
+            where: { userId, productId },
+        });
+
+        return deletedCount > 0;
+    }
+
+    static async isInWishlist(userId: number, productId: number): Promise<boolean> {
+        const item = await this.findOne({
+            where: { userId, productId },
+        });
+
+        return !!item;
+    }
+
+    static async getWishlistCount(userId: number): Promise<number> {
+        return this.count({ where: { userId } });
+    }
+
+    static async clearWishlist(userId: number): Promise<number> {
+        return this.destroy({ where: { userId } });
+    }
+
+    static async getPopularProducts(limit: number = 10): Promise<{
+        productId: number;
+        wishlistCount: number;
+        averagePriority: number;
+    }[]> {
+        const results = await this.findAll({
+            attributes: [
+                'productId',
+                [this.sequelize.fn('COUNT', this.sequelize.col('id')), 'wishlistCount'],
+                [this.sequelize.fn('AVG', this.sequelize.col('priority')), 'averagePriority'],
+            ],
+            group: ['productId'],
+            order: [[this.sequelize.fn('COUNT', this.sequelize.col('id')), 'DESC']],
+            limit,
+            raw: true,
+        });
+
+        return results.map(result => ({
+            productId: result.productId,
+            wishlistCount: parseInt(result.wishlistCount),
+            averagePriority: parseFloat(result.averagePriority),
+        }));
+    }
+}
+```
+
+## Сервисы
+
+### Wishlist Service
+```typescript
+// src/infrastructure/services/wishlist.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { WishlistItemModel } from '@app/domain/models/wishlist-item.model';
+import { ProductModel } from '@app/domain/models/product.model';
+import { UserModel } from '@app/domain/models/user.model';
+import { AddToWishlistDto } from '@app/infrastructure/dto/wishlist/add-to-wishlist.dto';
+import { UpdateWishlistItemDto } from '@app/infrastructure/dto/wishlist/update-wishlist-item.dto';
+
+@Injectable()
+export class WishlistService {
+    private readonly logger = new Logger(WishlistService.name);
+
+    constructor(
+        @InjectModel(WishlistItemModel)
+        private wishlistItemModel: typeof WishlistItemModel,
+        @InjectModel(ProductModel)
+        private productModel: typeof ProductModel,
+        @InjectModel(UserModel)
+        private userModel: typeof UserModel,
+    ) {}
+
+    // Получить список желаний пользователя
+    async getUserWishlist(
+        userId: number,
+        page: number = 1,
+        limit: number = 20,
+        priority?: number
+    ): Promise<{ data: WishlistItemModel[]; total: number; meta: any }> {
+        const offset = (page - 1) * limit;
+
+        const whereClause: any = { userId };
+        if (priority !== undefined) {
+            whereClause.priority = priority;
+        }
+
+        const { rows: items, count: total } = await this.wishlistItemModel.findAndCountAll({
+            where: whereClause,
+            include: [{
+                model: ProductModel,
+                attributes: ['id', 'name', 'price', 'salePrice', 'images', 'slug', 'status', 'stock'],
+            }],
+            order: [['priority', 'DESC'], ['addedAt', 'DESC']],
+            limit,
+            offset,
+        });
+
+        const meta = {
+            totalCount: total,
+            currentPage: page,
+            limit,
+            lastPage: Math.ceil(total / limit),
+            nextPage: page < Math.ceil(total / limit) ? page + 1 : null,
+            previousPage: page > 1 ? page - 1 : null,
+        };
+
+        return { data: items, total, meta };
+    }
+
+    // Добавить товар в список желаний
+    async addToWishlist(
+        userId: number,
+        addToWishlistDto: AddToWishlistDto
+    ): Promise<WishlistItemModel> {
+        const { productId, quantity = 1, notes, priority = 1 } = addToWishlistDto;
+
+        // Проверяем, что пользователь существует
+        const user = await this.userModel.findByPk(userId);
+        if (!user) {
+            throw new NotFoundException('Пользователь не найден');
+        }
+
+        // Проверяем, что товар существует и активен
+        const product = await this.productModel.findOne({
+            where: { id: productId, status: 'active' },
+        });
+
+        if (!product) {
+            throw new NotFoundException('Товар не найден или неактивен');
+        }
+
+        // Проверяем лимит товаров в списке желаний (например, максимум 100)
+        const currentCount = await this.wishlistItemModel.getWishlistCount(userId);
+        if (currentCount >= 100) {
+            throw new BadRequestException('Превышен лимит товаров в списке желаний (максимум 100)');
+        }
+
+        const item = await this.wishlistItemModel.addToWishlist(
+            userId,
+            productId,
+            quantity,
+            notes,
+            priority
+        );
+
+        this.logger.log(`Product ${productId} added to wishlist for user ${userId}`);
+        return item;
+    }
+
+    // Обновить товар в списке желаний
+    async updateWishlistItem(
+        userId: number,
+        itemId: number,
+        updateDto: UpdateWishlistItemDto
+    ): Promise<WishlistItemModel> {
+        const item = await this.wishlistItemModel.findOne({
+            where: { id: itemId, userId },
+            include: [{ model: ProductModel }],
+        });
+
+        if (!item) {
+            throw new NotFoundException('Товар не найден в списке желаний');
+        }
+
+        await item.update(updateDto);
+
+        this.logger.log(`Wishlist item ${itemId} updated for user ${userId}`);
+        return item;
+    }
+
+    // Удалить товар из списка желаний
+    async removeFromWishlist(userId: number, productId: number): Promise<void> {
+        const deleted = await this.wishlistItemModel.removeFromWishlist(userId, productId);
+
+        if (!deleted) {
+            throw new NotFoundException('Товар не найден в списке желаний');
+        }
+
+        this.logger.log(`Product ${productId} removed from wishlist for user ${userId}`);
+    }
+
+    // Удалить товар из списка желаний по ID
+    async removeWishlistItem(userId: number, itemId: number): Promise<void> {
+        const item = await this.wishlistItemModel.findOne({
+            where: { id: itemId, userId },
+        });
+
+        if (!item) {
+            throw new NotFoundException('Товар не найден в списке желаний');
+        }
+
+        await item.destroy();
+
+        this.logger.log(`Wishlist item ${itemId} removed for user ${userId}`);
+    }
+
+    // Проверить, есть ли товар в списке желаний
+    async isInWishlist(userId: number, productId: number): Promise<boolean> {
+        return this.wishlistItemModel.isInWishlist(userId, productId);
+    }
+
+    // Получить количество товаров в списке желаний
+    async getWishlistCount(userId: number): Promise<number> {
+        return this.wishlistItemModel.getWishlistCount(userId);
+    }
+
+    // Очистить список желаний
+    async clearWishlist(userId: number): Promise<number> {
+        const deletedCount = await this.wishlistItemModel.clearWishlist(userId);
+
+        this.logger.log(`Wishlist cleared for user ${userId}: ${deletedCount} items removed`);
+        return deletedCount;
+    }
+
+    // Получить популярные товары
+    async getPopularProducts(limit: number = 10): Promise<any[]> {
+        const popularProducts = await this.wishlistItemModel.getPopularProducts(limit);
+
+        // Получаем детали товаров
+        const productIds = popularProducts.map(p => p.productId);
+        const products = await this.productModel.findAll({
+            where: { id: productIds },
+            attributes: ['id', 'name', 'price', 'salePrice', 'images', 'slug'],
+        });
+
+        return popularProducts.map(popular => {
+            const product = products.find(p => p.id === popular.productId);
+            return {
+                ...popular,
+                product,
+            };
+        });
+    }
+
+    // Получить товары с высоким приоритетом
+    async getHighPriorityItems(userId: number): Promise<WishlistItemModel[]> {
+        return this.wishlistItemModel.scope('highPriority').findAll({
+            where: { userId },
+            include: [{
+                model: ProductModel,
+                attributes: ['id', 'name', 'price', 'salePrice', 'images', 'slug', 'status', 'stock'],
+            }],
+            order: [['priority', 'DESC'], ['addedAt', 'DESC']],
+        });
+    }
+
+    // Обновить приоритет товара
+    async updatePriority(userId: number, itemId: number, priority: number): Promise<WishlistItemModel> {
+        if (priority < 1 || priority > 5) {
+            throw new BadRequestException('Приоритет должен быть от 1 до 5');
+        }
+
+        const item = await this.wishlistItemModel.findOne({
+            where: { id: itemId, userId },
+        });
+
+        if (!item) {
+            throw new NotFoundException('Товар не найден в списке желаний');
+        }
+
+        await item.setPriority(priority);
+
+        this.logger.log(`Priority updated for wishlist item ${itemId}: ${priority}`);
+        return item;
+    }
+
+    // Получить статистику списка желаний
+    async getWishlistStats(userId: number): Promise<{
+        totalItems: number;
+        highPriorityItems: number;
+        totalValue: number;
+        averagePriority: number;
+        oldestItem?: Date;
+        newestItem?: Date;
+    }> {
+        const items = await this.wishlistItemModel.findAll({
+            where: { userId },
+            include: [{
+                model: ProductModel,
+                attributes: ['id', 'price', 'salePrice'],
+            }],
+        });
+
+        const totalItems = items.length;
+        const highPriorityItems = items.filter(item => item.isHighPriority).length;
+        const totalValue = items.reduce((sum, item) => sum + item.totalPrice, 0);
+        const averagePriority = items.length > 0 
+            ? items.reduce((sum, item) => sum + item.priority, 0) / items.length 
+            : 0;
+
+        const dates = items.map(item => item.addedAt).sort();
+        const oldestItem = dates[0];
+        const newestItem = dates[dates.length - 1];
+
+        return {
+            totalItems,
+            highPriorityItems,
+            totalValue,
+            averagePriority: Math.round(averagePriority * 100) / 100,
+            oldestItem,
+            newestItem,
+        };
+    }
+}
+```
+
+## DTO
+
+### Add to Wishlist DTO
+```typescript
+// src/infrastructure/dto/wishlist/add-to-wishlist.dto.ts
+import { IsNumber, IsOptional, IsString, Min, Max, Length } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class AddToWishlistDto {
+    @ApiProperty({ description: 'ID товара', example: 1 })
+    @IsNumber({}, { message: 'ID товара должен быть числом' })
+    @Type(() => Number)
+    productId: number;
+
+    @ApiProperty({ description: 'Количество', example: 1, required: false })
+    @IsOptional()
+    @IsNumber({}, { message: 'Количество должно быть числом' })
+    @Min(1, { message: 'Количество должно быть больше 0' })
+    @Type(() => Number)
+    quantity?: number;
+
+    @ApiProperty({ description: 'Заметки', example: 'Для подарка на день рождения', required: false })
+    @IsOptional()
+    @IsString({ message: 'Заметки должны быть строкой' })
+    @Length(1, 500, { message: 'Заметки должны быть от 1 до 500 символов' })
+    notes?: string;
+
+    @ApiProperty({ description: 'Приоритет (1-5)', example: 3, required: false })
+    @IsOptional()
+    @IsNumber({}, { message: 'Приоритет должен быть числом' })
+    @Min(1, { message: 'Приоритет должен быть от 1 до 5' })
+    @Max(5, { message: 'Приоритет должен быть от 1 до 5' })
+    @Type(() => Number)
+    priority?: number;
+}
+```
+
+### Update Wishlist Item DTO
+```typescript
+// src/infrastructure/dto/wishlist/update-wishlist-item.dto.ts
+import { IsNumber, IsOptional, IsString, Min, Max, Length } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class UpdateWishlistItemDto {
+    @ApiProperty({ description: 'Количество', example: 2, required: false })
+    @IsOptional()
+    @IsNumber({}, { message: 'Количество должно быть числом' })
+    @Min(1, { message: 'Количество должно быть больше 0' })
+    @Type(() => Number)
+    quantity?: number;
+
+    @ApiProperty({ description: 'Заметки', example: 'Обновленные заметки', required: false })
+    @IsOptional()
+    @IsString({ message: 'Заметки должны быть строкой' })
+    @Length(1, 500, { message: 'Заметки должны быть от 1 до 500 символов' })
+    notes?: string;
+
+    @ApiProperty({ description: 'Приоритет (1-5)', example: 4, required: false })
+    @IsOptional()
+    @IsNumber({}, { message: 'Приоритет должен быть числом' })
+    @Min(1, { message: 'Приоритет должен быть от 1 до 5' })
+    @Max(5, { message: 'Приоритет должен быть от 1 до 5' })
+    @Type(() => Number)
+    priority?: number;
+}
+```
+
+## Критерии готовности
+
+- [ ] Создана миграция для таблицы `wishlist_items`
+- [ ] Создана модель `WishlistItemModel`
+- [ ] Добавлены валидации для новых полей
+- [ ] Созданы индексы для производительности
+- [ ] Добавлены scopes для частых запросов
+- [ ] Реализован `WishlistService` с методами для работы со списком желаний
+- [ ] Создан `WishlistController` с API endpoints
+- [ ] Созданы DTO для валидации входных данных
+- [ ] Написаны тесты для новой функциональности
+- [ ] Обновлена документация API
+- [ ] Проверена обратная совместимость
+- [ ] Настроена система приоритетов и заметок
+
+## Следующие шаги
+
+После завершения улучшений Wishlist System переходим к:
+1. Cart - система корзины
+2. Order - улучшение системы заказов
+3. Analytics - базовые метрики

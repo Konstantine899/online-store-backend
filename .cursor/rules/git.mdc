@@ -1,0 +1,67 @@
+---
+description: Git-правила, ветвление, коммиты, PR и релизы
+globs:
+alwaysApply: true
+---
+
+# Git
+
+## Приоритет правил
+- System > Developer > User > docs (`docs/ai-rules.md`, `rules/*.md`). Изменения в код — только после «Одобряю» (READ-ONLY по умолчанию).
+
+## Ветвление
+- Формат: `<prefix>/<scope>[-<ticket>]/<kebab-task>[-<extra>]`
+- prefix: feature | fix | chore | refactor | perf | docs | test | ci | hotfix | spike
+- scope: auth | cart | order | product | db | infra | api | docs | build
+- Примеры:
+  - `feature/auth/ABC-123/enable-strong-password-validation`
+  - `fix/cart/prevent-negative-quantity-on-decrement`
+  - `chore/db/add-performance-indexes`
+
+## Коммиты (Conventional Commits)
+- Формат: `type(scope): summary`
+- Примеры:
+  - `feat(auth): add refresh token rotation`
+  - `fix(order): correct total calculation with discounts`
+- Ограничения:
+  - Небольшие коммиты, осмысленные summary, без «fix» подряд для одной задачи.
+  - В коммите — только связанные изменения (одна задача).
+
+## Pull Requests
+- Стратегия merge: `squash & merge` по умолчанию (чистая история), `rebase` — по согласованию.
+- Чек-лист PR:
+  - [ ] Линтеры и форматирование (eslint, prettier) пройдены
+  - [ ] Тесты зелёные (unit/integration) и покрытие не просело для критичных модулей
+  - [ ] Swagger/DTO/валидация обновлены, русские сообщения ошибок
+  - [ ] Для БД: миграции/сиды добавлены, rollback проверен
+  - [ ] Безопасность: не коммитим секреты, логируем без PII
+  - [ ] Документация обновлена (rules/ или README) при изменении контрактов
+- Ревью:
+  - Минимум 1–2 ревьюера в зависимости от критичности
+  - Блокер на большие PR (>500 SLOC): разделить на части
+
+## CI/CD и проверки
+- На PR: `lint`, `test:unit`, `test:integration`, сборка
+- Блокировать merge при падении проверок
+- Для веток `hotfix/*` — ускоренный путь, но с обязательным постревью
+
+## Релизы и теги
+- Семантическое версионирование: `MAJOR.MINOR.PATCH`
+- Теги: `vX.Y.Z`
+- CHANGELOG: вести изменения по типам (feat/fix/breaking)
+- Горячие фиксы: ветка `hotfix/*`, релиз `PATCH`, затем back-merge в `main`
+
+## База данных
+- Все изменения схемы — через миграции (без `synchronize: true`)
+- Нейминг: `YYYYMMDDHHMMSS-action-entity`
+- Обязательно: индексы для FK/частых фильтров, корректный `down`
+- Сиды — детерминированные; в PR описывать порядок применения
+
+## Секреты и большие файлы
+- Секреты не коммитим (проверять `.gitignore`)
+- Большие бинарники — через Git LFS (если нужно), иначе в артефакты/объектное хранилище
+
+## Автоматизация (рекомендуется)
+- `commitlint` + `husky` + `lint-staged`: проверять формат коммитов и линты на pre-commit/pre-push
+- Шаблоны PR/ISSUE (`.github/PULL_REQUEST_TEMPLATE.md`, `ISSUE_TEMPLATE.md`)
+- CODEOWNERS для критичных областей

@@ -1,0 +1,3214 @@
+# Система товаров (Product System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы товаров для ecommerce приложения с базовыми полями, простыми вариантами и стандартным управлением складом, фокусом на быструю разработку и готовность к масштабированию.
+
+## Основные требования
+- **Базовые поля** - name, description, price, stock, images
+- **Простой SKU** - уникальный артикул товара
+- **Минимум статусов** - active, inactive, out_of_stock
+- **Простая цена** - basePrice, salePrice (опционально)
+- **Базовые варианты** - size, color через JSON
+- **SEO базовое** - metaTitle, metaDescription
+
+## Структура базы данных
+
+### Таблица `products` (расширенная)
+```sql
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    sku VARCHAR(100) NOT NULL UNIQUE,
+    category_id INTEGER REFERENCES categories(id),
+    brand_id INTEGER REFERENCES brands(id),
+    base_price DECIMAL(10,2) NOT NULL,
+    sale_price DECIMAL(10,2),
+    currency VARCHAR(3) NOT NULL DEFAULT 'RUB',
+    stock INTEGER NOT NULL DEFAULT 0,
+    reserved_stock INTEGER DEFAULT 0,
+    images TEXT[],
+    variants JSONB,
+    weight DECIMAL(8,2),
+    dimensions JSONB,
+    meta_title VARCHAR(255),
+    meta_description TEXT,
+    tags TEXT[],
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'out_of_stock')),
+    is_active BOOLEAN DEFAULT true,
+    is_featured BOOLEAN DEFAULT false,
+    is_new BOOLEAN DEFAULT false,
+    is_bestseller BOOLEAN DEFAULT false,
+    is_digital BOOLEAN DEFAULT false,
+    requires_shipping BOOLEAN DEFAULT true,
+    is_on_sale BOOLEAN DEFAULT false,
+    is_downloadable BOOLEAN DEFAULT false,
+    is_gift_wrappable BOOLEAN DEFAULT false,
+    is_backorder_allowed BOOLEAN DEFAULT false,
+    is_limited_edition BOOLEAN DEFAULT false,
+    is_out_of_stock BOOLEAN DEFAULT false,
+    is_pre_order BOOLEAN DEFAULT false,
+    is_seasonal BOOLEAN DEFAULT false,
+    is_exclusive BOOLEAN DEFAULT false,
+    is_bundle BOOLEAN DEFAULT false,
+    is_subscription BOOLEAN DEFAULT false,
+    is_taxable BOOLEAN DEFAULT true,
+    is_returnable BOOLEAN DEFAULT true,
+    is_age_restricted BOOLEAN DEFAULT false,
+    is_fragile BOOLEAN DEFAULT false,
+    is_hazardous BOOLEAN DEFAULT false,
+    is_customizable BOOLEAN DEFAULT false,
+    is_exchangeable BOOLEAN DEFAULT true,
+    is_discontinued BOOLEAN DEFAULT false,
+    is_restricted BOOLEAN DEFAULT false,
+    is_test_product BOOLEAN DEFAULT false,
+    is_recommended BOOLEAN DEFAULT false,
+    is_trending BOOLEAN DEFAULT false,
+    is_back_in_stock BOOLEAN DEFAULT false,
+    is_price_changed BOOLEAN DEFAULT false,
+    sale_start_date TIMESTAMP,
+    sale_end_date TIMESTAMP,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Модели Sequelize
+
+### Product Model (расширенная)
+```typescript
+// src/domain/models/product.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { CategoryModel } from './category.model';
+import { BrandModel } from './brand.model';
+
+export enum ProductStatus {
+    ACTIVE = 'active',
+    INACTIVE = 'inactive',
+    OUT_OF_STOCK = 'out_of_stock'
+}
+
+interface IProductVariants {
+    size?: string[];
+    color?: string[];
+    material?: string[];
+    [key: string]: any;
+}
+
+interface IProductDimensions {
+    length?: number;
+    width?: number;
+    height?: number;
+    unit?: string;
+}
+
+interface IProductModel {
+    id: number;
+    name: string;
+    description?: string;
+    sku: string;
+    categoryId?: number;
+    brandId?: number;
+    basePrice: number;
+    salePrice?: number;
+    currency: string;
+    stock: number;
+    reservedStock: number;
+    images: string[];
+    variants?: IProductVariants;
+    weight?: number;
+    dimensions?: IProductDimensions;
+    metaTitle?: string;
+    metaDescription?: string;
+    tags: string[];
+    status: ProductStatus;
+    isActive: boolean;
+    isFeatured: boolean;
+    isNew: boolean;
+    isBestseller: boolean;
+    isDigital: boolean;
+    requiresShipping: boolean;
+    isOnSale: boolean;
+    isDownloadable: boolean;
+    isGiftWrappable: boolean;
+    isBackorderAllowed: boolean;
+    isLimitedEdition: boolean;
+    isOutOfStock: boolean;
+    isPreOrder: boolean;
+    isSeasonal: boolean;
+    isExclusive: boolean;
+    isBundle: boolean;
+    isSubscription: boolean;
+    isTaxable: boolean;
+    isReturnable: boolean;
+    isAgeRestricted: boolean;
+    isFragile: boolean;
+    isHazardous: boolean;
+    isCustomizable: boolean;
+    isExchangeable: boolean;
+    isDiscontinued: boolean;
+    isRestricted: boolean;
+    isTestProduct: boolean;
+    isRecommended: boolean;
+    isTrending: boolean;
+    isBackInStock: boolean;
+    isPriceChanged: boolean;
+    saleStartDate?: Date;
+    saleEndDate?: Date;
+    sortOrder: number;
+    category?: CategoryModel;
+    brand?: BrandModel;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IProductCreationAttributes {
+    name: string;
+    description?: string;
+    sku: string;
+    categoryId?: number;
+    brandId?: number;
+    basePrice: number;
+    salePrice?: number;
+    currency?: string;
+    stock?: number;
+    reservedStock?: number;
+    images?: string[];
+    variants?: IProductVariants;
+    weight?: number;
+    dimensions?: IProductDimensions;
+    metaTitle?: string;
+    metaDescription?: string;
+    tags?: string[];
+    status?: ProductStatus;
+    isFeatured?: boolean;
+    isActive?: boolean;
+    isNew?: boolean;
+    isBestseller?: boolean;
+    isDigital?: boolean;
+    requiresShipping?: boolean;
+    isOnSale?: boolean;
+    isDownloadable?: boolean;
+    isGiftWrappable?: boolean;
+    isBackorderAllowed?: boolean;
+    isLimitedEdition?: boolean;
+    isOutOfStock?: boolean;
+    isPreOrder?: boolean;
+    isSeasonal?: boolean;
+    isExclusive?: boolean;
+    isBundle?: boolean;
+    isSubscription?: boolean;
+    isTaxable?: boolean;
+    isReturnable?: boolean;
+    isAgeRestricted?: boolean;
+    isFragile?: boolean;
+    isHazardous?: boolean;
+    isCustomizable?: boolean;
+    isExchangeable?: boolean;
+    isDiscontinued?: boolean;
+    isRestricted?: boolean;
+    isTestProduct?: boolean;
+    isRecommended?: boolean;
+    isTrending?: boolean;
+    isBackInStock?: boolean;
+    isPriceChanged?: boolean;
+    saleStartDate?: Date;
+    saleEndDate?: Date;
+    sortOrder?: number;
+}
+
+@Table({
+    tableName: 'products',
+    underscored: true,
+    timestamps: true,
+    scopes: {
+        active: {
+            where: { status: ProductStatus.ACTIVE, isActive: true },
+        },
+        featured: {
+            where: { isFeatured: true, isActive: true },
+        },
+        new: {
+            where: { isNew: true, isActive: true },
+        },
+        bestsellers: {
+            where: { isBestseller: true, isActive: true },
+        },
+        digital: {
+            where: { isDigital: true, isActive: true },
+        },
+        physical: {
+            where: { isDigital: false, requiresShipping: true, isActive: true },
+        },
+        onSale: {
+            where: { isOnSale: true, isActive: true },
+        },
+        available: {
+            where: { 
+                status: ProductStatus.ACTIVE, 
+                isActive: true,
+                stock: { [Op.gt]: 0 }
+            },
+        },
+    },
+    indexes: [
+        { fields: ['sku'], name: 'idx_products_sku', unique: true },
+        { fields: ['category_id'], name: 'idx_products_category_id' },
+        { fields: ['brand_id'], name: 'idx_products_brand_id' },
+        { fields: ['status'], name: 'idx_products_status' },
+        { fields: ['is_active'], name: 'idx_products_is_active' },
+        { fields: ['is_featured'], name: 'idx_products_is_featured' },
+        { fields: ['is_new'], name: 'idx_products_is_new' },
+        { fields: ['is_bestseller'], name: 'idx_products_is_bestseller' },
+        { fields: ['is_digital'], name: 'idx_products_is_digital' },
+        { fields: ['requires_shipping'], name: 'idx_products_requires_shipping' },
+        { fields: ['is_on_sale'], name: 'idx_products_is_on_sale' },
+        { fields: ['is_downloadable'], name: 'idx_products_is_downloadable' },
+        { fields: ['is_gift_wrappable'], name: 'idx_products_is_gift_wrappable' },
+        { fields: ['is_backorder_allowed'], name: 'idx_products_is_backorder_allowed' },
+        { fields: ['is_limited_edition'], name: 'idx_products_is_limited_edition' },
+        { fields: ['is_out_of_stock'], name: 'idx_products_is_out_of_stock' },
+        { fields: ['is_pre_order'], name: 'idx_products_is_pre_order' },
+        { fields: ['is_seasonal'], name: 'idx_products_is_seasonal' },
+        { fields: ['is_exclusive'], name: 'idx_products_is_exclusive' },
+        { fields: ['is_bundle'], name: 'idx_products_is_bundle' },
+        { fields: ['is_subscription'], name: 'idx_products_is_subscription' },
+        { fields: ['is_taxable'], name: 'idx_products_is_taxable' },
+        { fields: ['is_returnable'], name: 'idx_products_is_returnable' },
+        { fields: ['is_age_restricted'], name: 'idx_products_is_age_restricted' },
+        { fields: ['is_fragile'], name: 'idx_products_is_fragile' },
+        { fields: ['is_hazardous'], name: 'idx_products_is_hazardous' },
+        { fields: ['is_customizable'], name: 'idx_products_is_customizable' },
+        { fields: ['is_exchangeable'], name: 'idx_products_is_exchangeable' },
+        { fields: ['is_discontinued'], name: 'idx_products_is_discontinued' },
+        { fields: ['is_restricted'], name: 'idx_products_is_restricted' },
+        { fields: ['is_test_product'], name: 'idx_products_is_test_product' },
+        { fields: ['is_recommended'], name: 'idx_products_is_recommended' },
+        { fields: ['is_trending'], name: 'idx_products_is_trending' },
+        { fields: ['is_back_in_stock'], name: 'idx_products_is_back_in_stock' },
+        { fields: ['is_price_changed'], name: 'idx_products_is_price_changed' },
+        { fields: ['sale_start_date'], name: 'idx_products_sale_start_date' },
+        { fields: ['sale_end_date'], name: 'idx_products_sale_end_date' },
+        { fields: ['sort_order'], name: 'idx_products_sort_order' },
+        { fields: ['created_at'], name: 'idx_products_created_at' },
+        { fields: ['base_price'], name: 'idx_products_base_price' },
+        { fields: ['sale_price'], name: 'idx_products_sale_price' },
+        { fields: ['status', 'is_active'], name: 'idx_products_status_active' },
+        { fields: ['status', 'is_featured'], name: 'idx_products_status_featured' },
+        { fields: ['is_active', 'is_featured'], name: 'idx_products_active_featured' },
+    ],
+})
+export class ProductModel
+    extends Model<ProductModel, IProductCreationAttributes>
+    implements IProductModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+    })
+    declare name: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare description: string;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: false,
+        unique: true,
+    })
+    declare sku: string;
+
+    @ForeignKey(() => CategoryModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'category_id',
+    })
+    declare categoryId: number;
+
+    @ForeignKey(() => BrandModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'brand_id',
+    })
+    declare brandId: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        field: 'base_price',
+        validate: {
+            min: 0
+        }
+    })
+    declare basePrice: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: true,
+        field: 'sale_price',
+        validate: {
+            min: 0
+        }
+    })
+    declare salePrice: number;
+
+    @Column({
+        type: DataType.STRING(3),
+        allowNull: false,
+        defaultValue: 'RUB',
+        validate: {
+            isIn: [['RUB', 'USD', 'EUR']]
+        }
+    })
+    declare currency: string;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        validate: {
+            min: 0
+        }
+    })
+    declare stock: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'reserved_stock',
+        validate: {
+            min: 0
+        }
+    })
+    declare reservedStock: number;
+
+    @Column({
+        type: DataType.ARRAY(DataType.TEXT),
+        allowNull: false,
+        defaultValue: [],
+    })
+    declare images: string[];
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: true,
+    })
+    declare variants: IProductVariants;
+
+    @Column({
+        type: DataType.DECIMAL(8, 2),
+        allowNull: true,
+        validate: {
+            min: 0
+        }
+    })
+    declare weight: number;
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: true,
+    })
+    declare dimensions: IProductDimensions;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+        field: 'meta_title',
+    })
+    declare metaTitle: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'meta_description',
+    })
+    declare metaDescription: string;
+
+    @Column({
+        type: DataType.ARRAY(DataType.TEXT),
+        allowNull: false,
+        defaultValue: [],
+    })
+    declare tags: string[];
+
+    @Column({
+        type: DataType.ENUM(...Object.values(ProductStatus)),
+        allowNull: false,
+        defaultValue: ProductStatus.ACTIVE,
+    })
+    declare status: ProductStatus;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_featured',
+    })
+    declare isFeatured: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_new',
+    })
+    declare isNew: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_bestseller',
+    })
+    declare isBestseller: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_digital',
+    })
+    declare isDigital: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'requires_shipping',
+    })
+    declare requiresShipping: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_on_sale',
+    })
+    declare isOnSale: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_downloadable',
+    })
+    declare isDownloadable: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_gift_wrappable',
+    })
+    declare isGiftWrappable: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_backorder_allowed',
+    })
+    declare isBackorderAllowed: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_limited_edition',
+    })
+    declare isLimitedEdition: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_out_of_stock',
+    })
+    declare isOutOfStock: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_pre_order',
+    })
+    declare isPreOrder: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_seasonal',
+    })
+    declare isSeasonal: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_exclusive',
+    })
+    declare isExclusive: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_bundle',
+    })
+    declare isBundle: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_subscription',
+    })
+    declare isSubscription: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_taxable',
+    })
+    declare isTaxable: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_returnable',
+    })
+    declare isReturnable: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_age_restricted',
+    })
+    declare isAgeRestricted: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_fragile',
+    })
+    declare isFragile: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_hazardous',
+    })
+    declare isHazardous: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_customizable',
+    })
+    declare isCustomizable: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_exchangeable',
+    })
+    declare isExchangeable: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_discontinued',
+    })
+    declare isDiscontinued: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_restricted',
+    })
+    declare isRestricted: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_test_product',
+    })
+    declare isTestProduct: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_recommended',
+    })
+    declare isRecommended: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_trending',
+    })
+    declare isTrending: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_back_in_stock',
+    })
+    declare isBackInStock: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_price_changed',
+    })
+    declare isPriceChanged: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'sale_start_date',
+    })
+    declare saleStartDate: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'sale_end_date',
+    })
+    declare saleEndDate: Date;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'sort_order',
+    })
+    declare sortOrder: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'updated_at',
+    })
+    declare updatedAt: Date;
+
+    // Связи
+    @BelongsTo(() => CategoryModel)
+    declare category: CategoryModel;
+
+    @BelongsTo(() => BrandModel)
+    declare brand: BrandModel;
+
+    // Методы
+    get currentPrice(): number {
+        return this.salePrice || this.basePrice;
+    }
+
+    get isOnSale(): boolean {
+        return this.isOnSale || (this.salePrice !== null && this.salePrice < this.basePrice);
+    }
+
+    get hasBadges(): boolean {
+        return this.isNew || this.isBestseller || this.isFeatured || this.isOnSale;
+    }
+
+    get canShip(): boolean {
+        return !this.isDigital && this.requiresShipping;
+    }
+
+    get isDigitalProduct(): boolean {
+        return this.isDigital;
+    }
+
+    get badges(): string[] {
+        const badges: string[] = [];
+        if (this.isNew) badges.push('NEW');
+        if (this.isBestseller) badges.push('BESTSELLER');
+        if (this.isFeatured) badges.push('FEATURED');
+        if (this.isOnSale) badges.push('SALE');
+        if (this.isLimitedEdition) badges.push('LIMITED');
+        return badges;
+    }
+
+    get isDownloadableProduct(): boolean {
+        return this.isDownloadable || this.isDigital;
+    }
+
+    get canBeGiftWrapped(): boolean {
+        return this.isGiftWrappable && !this.isDigital;
+    }
+
+    get allowsBackorder(): boolean {
+        return this.isBackorderAllowed && this.stock <= 0;
+    }
+
+    get isLimitedEditionProduct(): boolean {
+        return this.isLimitedEdition;
+    }
+
+    get hasSpecialFeatures(): boolean {
+        return this.isDownloadable || this.isGiftWrappable || this.isBackorderAllowed || this.isLimitedEdition;
+    }
+
+    get isOutOfStockProduct(): boolean {
+        return this.isOutOfStock || this.stock <= 0;
+    }
+
+    get isPreOrderProduct(): boolean {
+        return this.isPreOrder;
+    }
+
+    get isSeasonalProduct(): boolean {
+        return this.isSeasonal;
+    }
+
+    get isExclusiveProduct(): boolean {
+        return this.isExclusive;
+    }
+
+    get isBundleProduct(): boolean {
+        return this.isBundle;
+    }
+
+    get isSubscriptionProduct(): boolean {
+        return this.isSubscription;
+    }
+
+    get productType(): string {
+        if (this.isBundle) return 'bundle';
+        if (this.isSubscription) return 'subscription';
+        if (this.isPreOrder) return 'preorder';
+        if (this.isDigital) return 'digital';
+        return 'physical';
+    }
+
+    get availabilityStatus(): string {
+        if (this.isOutOfStock) return 'out_of_stock';
+        if (this.isPreOrder) return 'preorder';
+        if (this.stock <= 0) return 'unavailable';
+        return 'available';
+    }
+
+    get isSaleActive(): boolean {
+        if (!this.saleStartDate || !this.saleEndDate) return false;
+        const now = new Date();
+        return now >= this.saleStartDate && now <= this.saleEndDate;
+    }
+
+    get isSaleUpcoming(): boolean {
+        if (!this.saleStartDate) return false;
+        return new Date() < this.saleStartDate;
+    }
+
+    get isSaleExpired(): boolean {
+        if (!this.saleEndDate) return false;
+        return new Date() > this.saleEndDate;
+    }
+
+    get saleDaysRemaining(): number {
+        if (!this.isSaleActive) return 0;
+        const now = new Date();
+        const diffTime = this.saleEndDate.getTime() - now.getTime();
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    get saleDaysUntilStart(): number {
+        if (!this.isSaleUpcoming) return 0;
+        const now = new Date();
+        const diffTime = this.saleStartDate.getTime() - now.getTime();
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    get isTaxableProduct(): boolean {
+        return this.isTaxable;
+    }
+
+    get isReturnableProduct(): boolean {
+        return this.isReturnable;
+    }
+
+    get isAgeRestrictedProduct(): boolean {
+        return this.isAgeRestricted;
+    }
+
+    get isFragileProduct(): boolean {
+        return this.isFragile;
+    }
+
+    get isHazardousProduct(): boolean {
+        return this.isHazardous;
+    }
+
+    get isCustomizableProduct(): boolean {
+        return this.isCustomizable;
+    }
+
+    get isExchangeableProduct(): boolean {
+        return this.isExchangeable;
+    }
+
+    get isDiscontinuedProduct(): boolean {
+        return this.isDiscontinued;
+    }
+
+    get isRestrictedProduct(): boolean {
+        return this.isRestricted;
+    }
+
+    get isTestProductFlag(): boolean {
+        return this.isTestProduct;
+    }
+
+    get isRecommendedProduct(): boolean {
+        return this.isRecommended;
+    }
+
+    get isTrendingProduct(): boolean {
+        return this.isTrending;
+    }
+
+    get isBackInStockProduct(): boolean {
+        return this.isBackInStock;
+    }
+
+    get isPriceChangedProduct(): boolean {
+        return this.isPriceChanged;
+    }
+
+    get productRestrictions(): string[] {
+        const restrictions = [];
+        if (this.isAgeRestricted) restrictions.push('age_restricted');
+        if (this.isFragile) restrictions.push('fragile');
+        if (this.isHazardous) restrictions.push('hazardous');
+        if (this.isRestricted) restrictions.push('restricted');
+        if (this.isDiscontinued) restrictions.push('discontinued');
+        return restrictions;
+    }
+
+    get productCapabilities(): string[] {
+        const capabilities = [];
+        if (this.isReturnable) capabilities.push('returnable');
+        if (this.isExchangeable) capabilities.push('exchangeable');
+        if (this.isCustomizable) capabilities.push('customizable');
+        return capabilities;
+    }
+
+    get availableStock(): number {
+        return this.stock - this.reservedStock;
+    }
+
+    get isInStock(): boolean {
+        return this.availableStock > 0;
+    }
+
+    get isLowStock(): boolean {
+        return this.availableStock <= 5; // Можно сделать настраиваемым
+    }
+
+    get discountPercentage(): number {
+        if (!this.isOnSale) return 0;
+        return Math.round(((this.basePrice - this.salePrice) / this.basePrice) * 100);
+    }
+
+    get displayName(): string {
+        return this.metaTitle || this.name;
+    }
+
+    get seoDescription(): string {
+        return this.metaDescription || this.description || '';
+    }
+
+    // Метод для резервирования товара
+    async reserveStock(quantity: number): Promise<boolean> {
+        if (this.availableStock < quantity) {
+            return false;
+        }
+
+        await this.update({
+            reservedStock: this.reservedStock + quantity,
+        });
+
+        return true;
+    }
+
+    // Метод для освобождения резерва
+    async releaseStock(quantity: number): Promise<void> {
+        const newReservedStock = Math.max(0, this.reservedStock - quantity);
+        await this.update({
+            reservedStock: newReservedStock,
+        });
+    }
+
+    // Метод для списания товара
+    async consumeStock(quantity: number): Promise<boolean> {
+        if (this.availableStock < quantity) {
+            return false;
+        }
+
+        await this.update({
+            stock: this.stock - quantity,
+        });
+
+        return true;
+    }
+
+    // Метод для добавления товара на склад
+    async addStock(quantity: number): Promise<void> {
+        await this.update({
+            stock: this.stock + quantity,
+        });
+    }
+
+    // Методы для работы с флагами
+    async markAsFeatured(): Promise<void> {
+        await this.update({ isFeatured: true });
+    }
+
+    async unmarkAsFeatured(): Promise<void> {
+        await this.update({ isFeatured: false });
+    }
+
+    async markAsNew(): Promise<void> {
+        await this.update({ isNew: true });
+    }
+
+    async unmarkAsNew(): Promise<void> {
+        await this.update({ isNew: false });
+    }
+
+    async markAsBestseller(): Promise<void> {
+        await this.update({ isBestseller: true });
+    }
+
+    async unmarkAsBestseller(): Promise<void> {
+        await this.update({ isBestseller: false });
+    }
+
+    async markAsDigital(): Promise<void> {
+        await this.update({ isDigital: true, requiresShipping: false });
+    }
+
+    async markAsPhysical(): Promise<void> {
+        await this.update({ isDigital: false, requiresShipping: true });
+    }
+
+    async markAsOnSale(): Promise<void> {
+        await this.update({ isOnSale: true });
+    }
+
+    async unmarkAsOnSale(): Promise<void> {
+        await this.update({ isOnSale: false });
+    }
+
+    async markAsDownloadable(): Promise<void> {
+        await this.update({ isDownloadable: true });
+    }
+
+    async unmarkAsDownloadable(): Promise<void> {
+        await this.update({ isDownloadable: false });
+    }
+
+    async markAsGiftWrappable(): Promise<void> {
+        await this.update({ isGiftWrappable: true });
+    }
+
+    async unmarkAsGiftWrappable(): Promise<void> {
+        await this.update({ isGiftWrappable: false });
+    }
+
+    async markAsBackorderAllowed(): Promise<void> {
+        await this.update({ isBackorderAllowed: true });
+    }
+
+    async unmarkAsBackorderAllowed(): Promise<void> {
+        await this.update({ isBackorderAllowed: false });
+    }
+
+    async markAsLimitedEdition(): Promise<void> {
+        await this.update({ isLimitedEdition: true });
+    }
+
+    async unmarkAsLimitedEdition(): Promise<void> {
+        await this.update({ isLimitedEdition: false });
+    }
+
+    async markAsOutOfStock(): Promise<void> {
+        await this.update({ isOutOfStock: true });
+    }
+
+    async unmarkAsOutOfStock(): Promise<void> {
+        await this.update({ isOutOfStock: false });
+    }
+
+    async markAsPreOrder(): Promise<void> {
+        await this.update({ isPreOrder: true });
+    }
+
+    async unmarkAsPreOrder(): Promise<void> {
+        await this.update({ isPreOrder: false });
+    }
+
+    async markAsSeasonal(): Promise<void> {
+        await this.update({ isSeasonal: true });
+    }
+
+    async unmarkAsSeasonal(): Promise<void> {
+        await this.update({ isSeasonal: false });
+    }
+
+    async markAsExclusive(): Promise<void> {
+        await this.update({ isExclusive: true });
+    }
+
+    async unmarkAsExclusive(): Promise<void> {
+        await this.update({ isExclusive: false });
+    }
+
+    async markAsBundle(): Promise<void> {
+        await this.update({ isBundle: true });
+    }
+
+    async unmarkAsBundle(): Promise<void> {
+        await this.update({ isBundle: false });
+    }
+
+    async markAsSubscription(): Promise<void> {
+        await this.update({ isSubscription: true });
+    }
+
+    async unmarkAsSubscription(): Promise<void> {
+        await this.update({ isSubscription: false });
+    }
+
+    async setSaleDates(startDate: Date, endDate: Date): Promise<void> {
+        await this.update({ 
+            saleStartDate: startDate, 
+            saleEndDate: endDate,
+            isOnSale: true 
+        });
+    }
+
+    async clearSaleDates(): Promise<void> {
+        await this.update({ 
+            saleStartDate: null, 
+            saleEndDate: null,
+            isOnSale: false 
+        });
+    }
+
+    async extendSaleEndDate(newEndDate: Date): Promise<void> {
+        await this.update({ saleEndDate: newEndDate });
+    }
+
+    async markAsTaxable(): Promise<void> {
+        await this.update({ isTaxable: true });
+    }
+
+    async unmarkAsTaxable(): Promise<void> {
+        await this.update({ isTaxable: false });
+    }
+
+    async markAsReturnable(): Promise<void> {
+        await this.update({ isReturnable: true });
+    }
+
+    async unmarkAsReturnable(): Promise<void> {
+        await this.update({ isReturnable: false });
+    }
+
+    async markAsAgeRestricted(): Promise<void> {
+        await this.update({ isAgeRestricted: true });
+    }
+
+    async unmarkAsAgeRestricted(): Promise<void> {
+        await this.update({ isAgeRestricted: false });
+    }
+
+    async markAsFragile(): Promise<void> {
+        await this.update({ isFragile: true });
+    }
+
+    async unmarkAsFragile(): Promise<void> {
+        await this.update({ isFragile: false });
+    }
+
+    async markAsHazardous(): Promise<void> {
+        await this.update({ isHazardous: true });
+    }
+
+    async unmarkAsHazardous(): Promise<void> {
+        await this.update({ isHazardous: false });
+    }
+
+    async markAsCustomizable(): Promise<void> {
+        await this.update({ isCustomizable: true });
+    }
+
+    async unmarkAsCustomizable(): Promise<void> {
+        await this.update({ isCustomizable: false });
+    }
+
+    async markAsExchangeable(): Promise<void> {
+        await this.update({ isExchangeable: true });
+    }
+
+    async unmarkAsExchangeable(): Promise<void> {
+        await this.update({ isExchangeable: false });
+    }
+
+    async markAsDiscontinued(): Promise<void> {
+        await this.update({ isDiscontinued: true, isActive: false });
+    }
+
+    async unmarkAsDiscontinued(): Promise<void> {
+        await this.update({ isDiscontinued: false });
+    }
+
+    async markAsRestricted(): Promise<void> {
+        await this.update({ isRestricted: true });
+    }
+
+    async unmarkAsRestricted(): Promise<void> {
+        await this.update({ isRestricted: false });
+    }
+
+    async markAsTestProduct(): Promise<void> {
+        await this.update({ isTestProduct: true });
+    }
+
+    async unmarkAsTestProduct(): Promise<void> {
+        await this.update({ isTestProduct: false });
+    }
+
+    async markAsRecommended(): Promise<void> {
+        await this.update({ isRecommended: true });
+    }
+
+    async unmarkAsRecommended(): Promise<void> {
+        await this.update({ isRecommended: false });
+    }
+
+    async markAsTrending(): Promise<void> {
+        await this.update({ isTrending: true });
+    }
+
+    async unmarkAsTrending(): Promise<void> {
+        await this.update({ isTrending: false });
+    }
+
+    async markAsBackInStock(): Promise<void> {
+        await this.update({ isBackInStock: true });
+    }
+
+    async unmarkAsBackInStock(): Promise<void> {
+        await this.update({ isBackInStock: false });
+    }
+
+    async markAsPriceChanged(): Promise<void> {
+        await this.update({ isPriceChanged: true });
+    }
+
+    async unmarkAsPriceChanged(): Promise<void> {
+        await this.update({ isPriceChanged: false });
+    }
+
+    // Статические методы для работы с флагами
+    static async getFeaturedProducts(limit: number = 10): Promise<ProductModel[]> {
+        return this.scope('featured').findAll({
+            limit,
+            order: [['sortOrder', 'ASC'], ['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNewProducts(limit: number = 10): Promise<ProductModel[]> {
+        return this.scope('new').findAll({
+            limit,
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getBestsellers(limit: number = 10): Promise<ProductModel[]> {
+        return this.scope('bestsellers').findAll({
+            limit,
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getDigitalProducts(): Promise<ProductModel[]> {
+        return this.scope('digital').findAll({
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getPhysicalProducts(): Promise<ProductModel[]> {
+        return this.scope('physical').findAll({
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getOnSaleProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.scope('onSale').findAll({
+            limit,
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getAvailableProducts(): Promise<ProductModel[]> {
+        return this.scope('available').findAll({
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getDownloadableProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isDownloadable: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getGiftWrappableProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isGiftWrappable: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getBackorderAllowedProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isBackorderAllowed: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getLimitedEditionProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isLimitedEdition: true, isActive: true },
+            limit,
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getActiveSaleProducts(limit: number = 20): Promise<ProductModel[]> {
+        const now = new Date();
+        return this.findAll({
+            where: {
+                isActive: true,
+                saleStartDate: { [Op.lte]: now },
+                saleEndDate: { [Op.gte]: now },
+            },
+            limit,
+            order: [['saleEndDate', 'ASC']],
+        });
+    }
+
+    static async getUpcomingSaleProducts(limit: number = 20): Promise<ProductModel[]> {
+        const now = new Date();
+        return this.findAll({
+            where: {
+                isActive: true,
+                saleStartDate: { [Op.gt]: now },
+            },
+            limit,
+            order: [['saleStartDate', 'ASC']],
+        });
+    }
+
+    static async getExpiredSaleProducts(limit: number = 20): Promise<ProductModel[]> {
+        const now = new Date();
+        return this.findAll({
+            where: {
+                isActive: true,
+                saleEndDate: { [Op.lt]: now },
+            },
+            limit,
+            order: [['saleEndDate', 'DESC']],
+        });
+    }
+
+    static async getOutOfStockProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isOutOfStock: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getPreOrderProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isPreOrder: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getSeasonalProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isSeasonal: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getExclusiveProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isExclusive: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getBundleProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isBundle: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getSubscriptionProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isSubscription: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getTaxableProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isTaxable: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getNonTaxableProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isTaxable: false, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getReturnableProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isReturnable: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getNonReturnableProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isReturnable: false, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getAgeRestrictedProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isAgeRestricted: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getFragileProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isFragile: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getHazardousProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isHazardous: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getCustomizableProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isCustomizable: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getExchangeableProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isExchangeable: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getDiscontinuedProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isDiscontinued: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getRestrictedProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isRestricted: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getTestProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isTestProduct: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getNonTestProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isTestProduct: false, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getActiveNonDiscontinuedProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isActive: true, isDiscontinued: false },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getRecommendedProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isRecommended: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getTrendingProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isTrending: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getNonRecommendedProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isRecommended: false, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getNonTrendingProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isTrending: false, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getBackInStockProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isBackInStock: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getNonBackInStockProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isBackInStock: false, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getPriceChangedProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isPriceChanged: true, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+
+    static async getNonPriceChangedProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.findAll({
+            where: { isPriceChanged: false, isActive: true },
+            limit,
+            order: [['name', 'ASC']],
+        });
+    }
+}
+```
+
+## Сервисы
+
+### Product Service
+```typescript
+// src/infrastructure/services/product.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { ProductModel, ProductStatus } from '@app/domain/models/product.model';
+import { Op } from 'sequelize';
+
+@Injectable()
+export class ProductService {
+    private readonly logger = new Logger(ProductService.name);
+
+    constructor(
+        @InjectModel(ProductModel)
+        private productModel: typeof ProductModel,
+    ) {}
+
+    async createProduct(productData: {
+        name: string;
+        description?: string;
+        sku: string;
+        categoryId?: number;
+        brandId?: number;
+        basePrice: number;
+        salePrice?: number;
+        currency?: string;
+        stock?: number;
+        images?: string[];
+        variants?: any;
+        weight?: number;
+        dimensions?: any;
+        metaTitle?: string;
+        metaDescription?: string;
+        tags?: string[];
+        isFeatured?: boolean;
+    }): Promise<ProductModel> {
+        // Проверяем уникальность SKU
+        const existingProduct = await this.productModel.findOne({
+            where: { sku: productData.sku },
+        });
+
+        if (existingProduct) {
+            throw new BadRequestException(`Товар с SKU ${productData.sku} уже существует`);
+        }
+
+        const product = await this.productModel.create({
+            ...productData,
+            status: ProductStatus.ACTIVE,
+            currency: productData.currency || 'RUB',
+            stock: productData.stock || 0,
+            reservedStock: 0,
+            images: productData.images || [],
+            tags: productData.tags || [],
+            isFeatured: productData.isFeatured || false,
+            sortOrder: 0,
+        });
+
+        this.logger.log(`Создан товар ${product.name} с SKU ${product.sku}`);
+        return product;
+    }
+
+    async getProductById(productId: number): Promise<ProductModel> {
+        const product = await this.productModel.findByPk(productId, {
+            include: [
+                { association: 'category' },
+                { association: 'brand' },
+            ],
+        });
+
+        if (!product) {
+            throw new NotFoundException('Товар не найден');
+        }
+
+        return product;
+    }
+
+    async getProductBySku(sku: string): Promise<ProductModel> {
+        const product = await this.productModel.findOne({
+            where: { sku },
+            include: [
+                { association: 'category' },
+                { association: 'brand' },
+            ],
+        });
+
+        if (!product) {
+            throw new NotFoundException(`Товар с SKU ${sku} не найден`);
+        }
+
+        return product;
+    }
+
+    async getProducts(filters: {
+        categoryId?: number;
+        brandId?: number;
+        status?: ProductStatus;
+        isFeatured?: boolean;
+        minPrice?: number;
+        maxPrice?: number;
+        inStock?: boolean;
+        search?: string;
+        tags?: string[];
+        page?: number;
+        limit?: number;
+        sortBy?: string;
+        sortOrder?: 'ASC' | 'DESC';
+    } = {}): Promise<{ data: ProductModel[]; total: number }> {
+        const {
+            categoryId,
+            brandId,
+            status,
+            isFeatured,
+            minPrice,
+            maxPrice,
+            inStock,
+            search,
+            tags,
+            page = 1,
+            limit = 20,
+            sortBy = 'created_at',
+            sortOrder = 'DESC',
+        } = filters;
+
+        const whereClause: any = {};
+
+        if (categoryId) whereClause.categoryId = categoryId;
+        if (brandId) whereClause.brandId = brandId;
+        if (status) whereClause.status = status;
+        if (isFeatured !== undefined) whereClause.isFeatured = isFeatured;
+
+        if (minPrice || maxPrice) {
+            whereClause.basePrice = {};
+            if (minPrice) whereClause.basePrice[Op.gte] = minPrice;
+            if (maxPrice) whereClause.basePrice[Op.lte] = maxPrice;
+        }
+
+        if (inStock) {
+            whereClause[Op.and] = [
+                { stock: { [Op.gt]: 0 } },
+                { status: { [Op.ne]: ProductStatus.OUT_OF_STOCK } },
+            ];
+        }
+
+        if (search) {
+            whereClause[Op.or] = [
+                { name: { [Op.iLike]: `%${search}%` } },
+                { description: { [Op.iLike]: `%${search}%` } },
+                { sku: { [Op.iLike]: `%${search}%` } },
+            ];
+        }
+
+        if (tags && tags.length > 0) {
+            whereClause.tags = { [Op.overlap]: tags };
+        }
+
+        const { rows: products, count: total } = await this.productModel.findAndCountAll({
+            where: whereClause,
+            include: [
+                { association: 'category' },
+                { association: 'brand' },
+            ],
+            order: [[sortBy, sortOrder]],
+            limit,
+            offset: (page - 1) * limit,
+        });
+
+        return { data: products, total };
+    }
+
+    async getFeaturedProducts(limit: number = 10): Promise<ProductModel[]> {
+        return this.productModel.findAll({
+            where: {
+                isFeatured: true,
+                status: ProductStatus.ACTIVE,
+            },
+            include: [
+                { association: 'category' },
+                { association: 'brand' },
+            ],
+            order: [['sort_order', 'ASC'], ['created_at', 'DESC']],
+            limit,
+        });
+    }
+
+    async updateProduct(
+        productId: number,
+        updateData: Partial<{
+            name: string;
+            description: string;
+            basePrice: number;
+            salePrice: number;
+            stock: number;
+            images: string[];
+            variants: any;
+            weight: number;
+            dimensions: any;
+            metaTitle: string;
+            metaDescription: string;
+    tags: string[];
+    status: ProductStatus;
+    isActive: boolean;
+    isFeatured: boolean;
+    isNew: boolean;
+    isBestseller: boolean;
+    isDigital: boolean;
+    requiresShipping: boolean;
+    isOnSale: boolean;
+    sortOrder: number;
+        }>,
+    ): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+
+        await product.update(updateData);
+
+        this.logger.log(`Товар ${product.name} обновлен`);
+        return product;
+    }
+
+    async updateStock(productId: number, newStock: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+
+        await product.update({
+            stock: newStock,
+            status: newStock > 0 ? ProductStatus.ACTIVE : ProductStatus.OUT_OF_STOCK,
+        });
+
+        this.logger.log(`Склад товара ${product.name} обновлен: ${newStock}`);
+        return product;
+    }
+
+    async reserveProduct(productId: number, quantity: number): Promise<boolean> {
+        const product = await this.getProductById(productId);
+        return product.reserveStock(quantity);
+    }
+
+    async releaseProduct(productId: number, quantity: number): Promise<void> {
+        const product = await this.getProductById(productId);
+        await product.releaseStock(quantity);
+    }
+
+    async consumeProduct(productId: number, quantity: number): Promise<boolean> {
+        const product = await this.getProductById(productId);
+        return product.consumeStock(quantity);
+    }
+
+    async getLowStockProducts(threshold: number = 5): Promise<ProductModel[]> {
+        return this.productModel.findAll({
+            where: {
+                stock: { [Op.lte]: threshold },
+                status: ProductStatus.ACTIVE,
+            },
+            include: [
+                { association: 'category' },
+                { association: 'brand' },
+            ],
+            order: [['stock', 'ASC']],
+        });
+    }
+
+    async getProductStatistics(): Promise<{
+        totalProducts: number;
+        activeProducts: number;
+        outOfStockProducts: number;
+        featuredProducts: number;
+        newProducts: number;
+        bestsellers: number;
+        digitalProducts: number;
+        onSaleProducts: number;
+        downloadableProducts: number;
+        giftWrappableProducts: number;
+        backorderAllowedProducts: number;
+        limitedEditionProducts: number;
+        lowStockProducts: number;
+        averagePrice: number;
+        totalStockValue: number;
+    }> {
+        const [
+            totalProducts,
+            activeProducts,
+            outOfStockProducts,
+            featuredProducts,
+            newProducts,
+            bestsellers,
+            digitalProducts,
+            onSaleProducts,
+            downloadableProducts,
+            giftWrappableProducts,
+            backorderAllowedProducts,
+            limitedEditionProducts,
+            lowStockProducts,
+            averagePriceResult,
+            totalStockValueResult,
+        ] = await Promise.all([
+            this.productModel.count(),
+            this.productModel.count({ where: { status: ProductStatus.ACTIVE, isActive: true } }),
+            this.productModel.count({ where: { status: ProductStatus.OUT_OF_STOCK } }),
+            this.productModel.count({ where: { isFeatured: true } }),
+            this.productModel.count({ where: { isNew: true } }),
+            this.productModel.count({ where: { isBestseller: true } }),
+            this.productModel.count({ where: { isDigital: true } }),
+            this.productModel.count({ where: { isOnSale: true } }),
+            this.productModel.count({ where: { isDownloadable: true } }),
+            this.productModel.count({ where: { isGiftWrappable: true } }),
+            this.productModel.count({ where: { isBackorderAllowed: true } }),
+            this.productModel.count({ where: { isLimitedEdition: true } }),
+            this.productModel.count({ where: { stock: { [Op.lte]: 5 } } }),
+            this.productModel.findOne({
+                attributes: [
+                    [this.productModel.sequelize.fn('AVG', this.productModel.sequelize.col('base_price')), 'avg'],
+                ],
+                raw: true,
+            }),
+            this.productModel.findOne({
+                attributes: [
+                    [this.productModel.sequelize.fn('SUM', this.productModel.sequelize.literal('base_price * stock')), 'total'],
+                ],
+                raw: true,
+            }),
+        ]);
+
+        return {
+            totalProducts,
+            activeProducts,
+            outOfStockProducts,
+            featuredProducts,
+            newProducts,
+            bestsellers,
+            digitalProducts,
+            onSaleProducts,
+            downloadableProducts,
+            giftWrappableProducts,
+            backorderAllowedProducts,
+            limitedEditionProducts,
+            lowStockProducts,
+            averagePrice: parseFloat(averagePriceResult?.avg || '0'),
+            totalStockValue: parseFloat(totalStockValueResult?.total || '0'),
+        };
+    }
+
+    // Методы для работы с флагами товаров
+    async getFeaturedProducts(limit: number = 10): Promise<ProductModel[]> {
+        return this.productModel.getFeaturedProducts(limit);
+    }
+
+    async getNewProducts(limit: number = 10): Promise<ProductModel[]> {
+        return this.productModel.getNewProducts(limit);
+    }
+
+    async getBestsellers(limit: number = 10): Promise<ProductModel[]> {
+        return this.productModel.getBestsellers(limit);
+    }
+
+    async getDigitalProducts(): Promise<ProductModel[]> {
+        return this.productModel.getDigitalProducts();
+    }
+
+    async getPhysicalProducts(): Promise<ProductModel[]> {
+        return this.productModel.getPhysicalProducts();
+    }
+
+    async getOnSaleProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.productModel.getOnSaleProducts(limit);
+    }
+
+    async markProductAsFeatured(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsFeatured();
+        return product;
+    }
+
+    async markProductAsNew(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsNew();
+        return product;
+    }
+
+    async markProductAsBestseller(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsBestseller();
+        return product;
+    }
+
+    async markProductAsDigital(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsDigital();
+        return product;
+    }
+
+    async markProductAsPhysical(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsPhysical();
+        return product;
+    }
+
+    async markProductAsOnSale(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsOnSale();
+        return product;
+    }
+
+    // Методы для новых флагов
+    async getDownloadableProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.productModel.getDownloadableProducts(limit);
+    }
+
+    async getGiftWrappableProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.productModel.getGiftWrappableProducts(limit);
+    }
+
+    async getBackorderAllowedProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.productModel.getBackorderAllowedProducts(limit);
+    }
+
+    async getLimitedEditionProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.productModel.getLimitedEditionProducts(limit);
+    }
+
+    async markProductAsDownloadable(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsDownloadable();
+        return product;
+    }
+
+    async markProductAsGiftWrappable(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsGiftWrappable();
+        return product;
+    }
+
+    async markProductAsBackorderAllowed(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsBackorderAllowed();
+        return product;
+    }
+
+    async markProductAsLimitedEdition(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsLimitedEdition();
+        return product;
+    }
+
+    async markProductAsOutOfStock(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsOutOfStock();
+        this.logger.log(`Товар ${product.name} отмечен как закончившийся`);
+        return product;
+    }
+
+    async markProductAsPreOrder(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsPreOrder();
+        this.logger.log(`Товар ${product.name} отмечен как предзаказ`);
+        return product;
+    }
+
+    async markProductAsSeasonal(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsSeasonal();
+        this.logger.log(`Товар ${product.name} отмечен как сезонный`);
+        return product;
+    }
+
+    async markProductAsExclusive(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsExclusive();
+        this.logger.log(`Товар ${product.name} отмечен как эксклюзивный`);
+        return product;
+    }
+
+    async markProductAsBundle(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsBundle();
+        this.logger.log(`Товар ${product.name} отмечен как набор`);
+        return product;
+    }
+
+    async markProductAsSubscription(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.markAsSubscription();
+        this.logger.log(`Товар ${product.name} отмечен как подписка`);
+        return product;
+    }
+
+    async getOutOfStockProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.productModel.getOutOfStockProducts(limit);
+    }
+
+    async getPreOrderProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.productModel.getPreOrderProducts(limit);
+    }
+
+    async getSeasonalProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.productModel.getSeasonalProducts(limit);
+    }
+
+    async getExclusiveProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.productModel.getExclusiveProducts(limit);
+    }
+
+    async getBundleProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.productModel.getBundleProducts(limit);
+    }
+
+    async getSubscriptionProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.productModel.getSubscriptionProducts(limit);
+    }
+
+    async setProductSaleDates(productId: number, startDate: Date, endDate: Date): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.setSaleDates(startDate, endDate);
+        this.logger.log(`Установлены даты распродажи для товара ${product.name}: ${startDate} - ${endDate}`);
+        return product;
+    }
+
+    async clearProductSaleDates(productId: number): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.clearSaleDates();
+        this.logger.log(`Очищены даты распродажи для товара ${product.name}`);
+        return product;
+    }
+
+    async extendProductSaleEndDate(productId: number, newEndDate: Date): Promise<ProductModel> {
+        const product = await this.getProductById(productId);
+        await product.extendSaleEndDate(newEndDate);
+        this.logger.log(`Продлена дата окончания распродажи для товара ${product.name} до ${newEndDate}`);
+        return product;
+    }
+
+    async getActiveSaleProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.productModel.getActiveSaleProducts(limit);
+    }
+
+    async getUpcomingSaleProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.productModel.getUpcomingSaleProducts(limit);
+    }
+
+    async getExpiredSaleProducts(limit: number = 20): Promise<ProductModel[]> {
+        return this.productModel.getExpiredSaleProducts(limit);
+    }
+}
+```
+
+## Миграции
+
+### Расширение таблицы products
+```typescript
+// db/migrations/YYYYMMDDHHMMSS-extend-products-table.ts
+import { QueryInterface, DataTypes } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+    // Добавляем новые колонки к существующей таблице products
+    await Promise.all([
+        queryInterface.addColumn('products', 'sku', {
+            type: DataTypes.STRING(100),
+            allowNull: false,
+            unique: true,
+        }),
+        queryInterface.addColumn('products', 'base_price', {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+        }),
+        queryInterface.addColumn('products', 'sale_price', {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: true,
+        }),
+        queryInterface.addColumn('products', 'currency', {
+            type: DataTypes.STRING(3),
+            allowNull: false,
+            defaultValue: 'RUB',
+        }),
+        queryInterface.addColumn('products', 'reserved_stock', {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        }),
+        queryInterface.addColumn('products', 'images', {
+            type: DataTypes.ARRAY(DataTypes.TEXT),
+            allowNull: false,
+            defaultValue: [],
+        }),
+        queryInterface.addColumn('products', 'variants', {
+            type: DataTypes.JSONB,
+            allowNull: true,
+        }),
+        queryInterface.addColumn('products', 'weight', {
+            type: DataTypes.DECIMAL(8, 2),
+            allowNull: true,
+        }),
+        queryInterface.addColumn('products', 'dimensions', {
+            type: DataTypes.JSONB,
+            allowNull: true,
+        }),
+        queryInterface.addColumn('products', 'meta_title', {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+        }),
+        queryInterface.addColumn('products', 'meta_description', {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        }),
+        queryInterface.addColumn('products', 'tags', {
+            type: DataTypes.ARRAY(DataTypes.TEXT),
+            allowNull: false,
+            defaultValue: [],
+        }),
+        queryInterface.addColumn('products', 'status', {
+            type: DataTypes.ENUM('active', 'inactive', 'out_of_stock'),
+            allowNull: false,
+            defaultValue: 'active',
+        }),
+        queryInterface.addColumn('products', 'is_active', {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        }),
+        queryInterface.addColumn('products', 'is_featured', {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        }),
+        queryInterface.addColumn('products', 'is_new', {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        }),
+        queryInterface.addColumn('products', 'is_bestseller', {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        }),
+        queryInterface.addColumn('products', 'is_digital', {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        }),
+        queryInterface.addColumn('products', 'requires_shipping', {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        }),
+        queryInterface.addColumn('products', 'is_on_sale', {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        }),
+        queryInterface.addColumn('products', 'sort_order', {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        }),
+    ]);
+
+    // Создаем индексы
+    await Promise.all([
+        queryInterface.addIndex('products', ['sku'], { unique: true }),
+        queryInterface.addIndex('products', ['status']),
+        queryInterface.addIndex('products', ['is_active']),
+        queryInterface.addIndex('products', ['is_featured']),
+        queryInterface.addIndex('products', ['is_new']),
+        queryInterface.addIndex('products', ['is_bestseller']),
+        queryInterface.addIndex('products', ['is_digital']),
+        queryInterface.addIndex('products', ['requires_shipping']),
+        queryInterface.addIndex('products', ['is_on_sale']),
+        queryInterface.addIndex('products', ['sort_order']),
+        queryInterface.addIndex('products', ['base_price']),
+        queryInterface.addIndex('products', ['sale_price']),
+        queryInterface.addIndex('products', ['status', 'is_active']),
+        queryInterface.addIndex('products', ['status', 'is_featured']),
+        queryInterface.addIndex('products', ['is_active', 'is_featured']),
+    ]);
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+    // Удаляем индексы
+    await Promise.all([
+        queryInterface.removeIndex('products', ['sku']),
+        queryInterface.removeIndex('products', ['status']),
+        queryInterface.removeIndex('products', ['is_active']),
+        queryInterface.removeIndex('products', ['is_featured']),
+        queryInterface.removeIndex('products', ['is_new']),
+        queryInterface.removeIndex('products', ['is_bestseller']),
+        queryInterface.removeIndex('products', ['is_digital']),
+        queryInterface.removeIndex('products', ['requires_shipping']),
+        queryInterface.removeIndex('products', ['is_on_sale']),
+        queryInterface.removeIndex('products', ['sort_order']),
+        queryInterface.removeIndex('products', ['base_price']),
+        queryInterface.removeIndex('products', ['sale_price']),
+        queryInterface.removeIndex('products', ['status', 'is_active']),
+        queryInterface.removeIndex('products', ['status', 'is_featured']),
+        queryInterface.removeIndex('products', ['is_active', 'is_featured']),
+    ]);
+
+    // Удаляем колонки
+    const columns = [
+        'sku', 'base_price', 'sale_price', 'currency', 'reserved_stock',
+        'images', 'variants', 'weight', 'dimensions', 'meta_title',
+        'meta_description', 'tags', 'status', 'is_active', 'is_featured',
+        'is_new', 'is_bestseller', 'is_digital', 'requires_shipping',
+        'is_on_sale', 'sort_order'
+    ];
+    
+    for (const column of columns) {
+        await queryInterface.removeColumn('products', column);
+    }
+}
+```
+
+## DTO и валидация
+
+### CreateProductDto
+```typescript
+// src/infrastructure/dto/product/create-product.dto.ts
+import { IsString, IsOptional, IsNumber, IsArray, IsBoolean, Min, IsIn, IsObject } from 'class-validator';
+
+export class CreateProductDto {
+    @IsString({ message: 'Название должно быть строкой' })
+    declare readonly name: string;
+
+    @IsOptional()
+    @IsString({ message: 'Описание должно быть строкой' })
+    declare readonly description?: string;
+
+    @IsString({ message: 'SKU должен быть строкой' })
+    declare readonly sku: string;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'ID категории должен быть числом' })
+    declare readonly categoryId?: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'ID бренда должен быть числом' })
+    declare readonly brandId?: number;
+
+    @IsNumber({}, { message: 'Базовая цена должна быть числом' })
+    @Min(0, { message: 'Базовая цена должна быть больше или равна 0' })
+    declare readonly basePrice: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Цена со скидкой должна быть числом' })
+    @Min(0, { message: 'Цена со скидкой должна быть больше или равна 0' })
+    declare readonly salePrice?: number;
+
+    @IsOptional()
+    @IsString({ message: 'Валюта должна быть строкой' })
+    @IsIn(['RUB', 'USD', 'EUR'], { message: 'Неподдерживаемая валюта' })
+    declare readonly currency?: string;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Количество на складе должно быть числом' })
+    @Min(0, { message: 'Количество на складе должно быть больше или равно 0' })
+    declare readonly stock?: number;
+
+    @IsOptional()
+    @IsArray({ message: 'Изображения должны быть массивом' })
+    @IsString({ each: true, message: 'Каждое изображение должно быть строкой' })
+    declare readonly images?: string[];
+
+    @IsOptional()
+    @IsObject({ message: 'Варианты должны быть объектом' })
+    declare readonly variants?: any;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Вес должен быть числом' })
+    @Min(0, { message: 'Вес должен быть больше или равен 0' })
+    declare readonly weight?: number;
+
+    @IsOptional()
+    @IsObject({ message: 'Размеры должны быть объектом' })
+    declare readonly dimensions?: any;
+
+    @IsOptional()
+    @IsString({ message: 'SEO заголовок должен быть строкой' })
+    declare readonly metaTitle?: string;
+
+    @IsOptional()
+    @IsString({ message: 'SEO описание должно быть строкой' })
+    declare readonly metaDescription?: string;
+
+    @IsOptional()
+    @IsArray({ message: 'Теги должны быть массивом' })
+    @IsString({ each: true, message: 'Каждый тег должен быть строкой' })
+    declare readonly tags?: string[];
+
+    @IsOptional()
+    @IsBoolean({ message: 'Активность товара должна быть булевым значением' })
+    declare readonly isActive?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Рекомендуемый товар должен быть булевым значением' })
+    declare readonly isFeatured?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Новинка должна быть булевым значением' })
+    declare readonly isNew?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Бестселлер должен быть булевым значением' })
+    declare readonly isBestseller?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Цифровой товар должен быть булевым значением' })
+    declare readonly isDigital?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Требует доставки должно быть булевым значением' })
+    declare readonly requiresShipping?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Товар на скидке должен быть булевым значением' })
+    declare readonly isOnSale?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Загружаемый товар должен быть булевым значением' })
+    declare readonly isDownloadable?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Товар для подарочной упаковки должен быть булевым значением' })
+    declare readonly isGiftWrappable?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Разрешенный предзаказ должен быть булевым значением' })
+    declare readonly isBackorderAllowed?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Лимитированная серия должна быть булевым значением' })
+    declare readonly isLimitedEdition?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Товар закончился должен быть булевым значением' })
+    declare readonly isOutOfStock?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Предзаказ должен быть булевым значением' })
+    declare readonly isPreOrder?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Сезонный товар должен быть булевым значением' })
+    declare readonly isSeasonal?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Эксклюзивный товар должен быть булевым значением' })
+    declare readonly isExclusive?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Товар-набор должен быть булевым значением' })
+    declare readonly isBundle?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Товар по подписке должен быть булевым значением' })
+    declare readonly isSubscription?: boolean;
+
+    @IsOptional()
+    @IsString({ message: 'Дата начала распродажи должна быть строкой' })
+    declare readonly saleStartDate?: string;
+
+    @IsOptional()
+    @IsString({ message: 'Дата окончания распродажи должна быть строкой' })
+    declare readonly saleEndDate?: string;
+}
+```
+
+### UpdateProductDto
+```typescript
+// src/infrastructure/dto/product/update-product.dto.ts
+import { IsString, IsOptional, IsNumber, IsArray, IsBoolean, Min, IsIn, IsObject, IsEnum } from 'class-validator';
+import { ProductStatus } from '@app/domain/models/product.model';
+
+export class UpdateProductDto {
+    @IsOptional()
+    @IsString({ message: 'Название должно быть строкой' })
+    declare readonly name?: string;
+
+    @IsOptional()
+    @IsString({ message: 'Описание должно быть строкой' })
+    declare readonly description?: string;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Базовая цена должна быть числом' })
+    @Min(0, { message: 'Базовая цена должна быть больше или равна 0' })
+    declare readonly basePrice?: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Цена со скидкой должна быть числом' })
+    @Min(0, { message: 'Цена со скидкой должна быть больше или равна 0' })
+    declare readonly salePrice?: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Количество на складе должно быть числом' })
+    @Min(0, { message: 'Количество на складе должно быть больше или равно 0' })
+    declare readonly stock?: number;
+
+    @IsOptional()
+    @IsArray({ message: 'Изображения должны быть массивом' })
+    @IsString({ each: true, message: 'Каждое изображение должно быть строкой' })
+    declare readonly images?: string[];
+
+    @IsOptional()
+    @IsObject({ message: 'Варианты должны быть объектом' })
+    declare readonly variants?: any;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Вес должен быть числом' })
+    @Min(0, { message: 'Вес должен быть больше или равен 0' })
+    declare readonly weight?: number;
+
+    @IsOptional()
+    @IsObject({ message: 'Размеры должны быть объектом' })
+    declare readonly dimensions?: any;
+
+    @IsOptional()
+    @IsString({ message: 'SEO заголовок должен быть строкой' })
+    declare readonly metaTitle?: string;
+
+    @IsOptional()
+    @IsString({ message: 'SEO описание должно быть строкой' })
+    declare readonly metaDescription?: string;
+
+    @IsOptional()
+    @IsArray({ message: 'Теги должны быть массивом' })
+    @IsString({ each: true, message: 'Каждый тег должен быть строкой' })
+    declare readonly tags?: string[];
+
+    @IsOptional()
+    @IsEnum(ProductStatus, { message: 'Неверный статус товара' })
+    declare readonly status?: ProductStatus;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Активность товара должна быть булевым значением' })
+    declare readonly isActive?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Рекомендуемый товар должен быть булевым значением' })
+    declare readonly isFeatured?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Новинка должна быть булевым значением' })
+    declare readonly isNew?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Бестселлер должен быть булевым значением' })
+    declare readonly isBestseller?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Цифровой товар должен быть булевым значением' })
+    declare readonly isDigital?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Требует доставки должно быть булевым значением' })
+    declare readonly requiresShipping?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Товар на скидке должен быть булевым значением' })
+    declare readonly isOnSale?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Загружаемый товар должен быть булевым значением' })
+    declare readonly isDownloadable?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Товар для подарочной упаковки должен быть булевым значением' })
+    declare readonly isGiftWrappable?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Разрешенный предзаказ должен быть булевым значением' })
+    declare readonly isBackorderAllowed?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Лимитированная серия должна быть булевым значением' })
+    declare readonly isLimitedEdition?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Товар закончился должен быть булевым значением' })
+    declare readonly isOutOfStock?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Предзаказ должен быть булевым значением' })
+    declare readonly isPreOrder?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Сезонный товар должен быть булевым значением' })
+    declare readonly isSeasonal?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Эксклюзивный товар должен быть булевым значением' })
+    declare readonly isExclusive?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Товар-набор должен быть булевым значением' })
+    declare readonly isBundle?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Товар по подписке должен быть булевым значением' })
+    declare readonly isSubscription?: boolean;
+
+    @IsOptional()
+    @IsString({ message: 'Дата начала распродажи должна быть строкой' })
+    declare readonly saleStartDate?: string;
+
+    @IsOptional()
+    @IsString({ message: 'Дата окончания распродажи должна быть строкой' })
+    declare readonly saleEndDate?: string;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Порядок сортировки должен быть числом' })
+    declare readonly sortOrder?: number;
+}
+```
+
+## Response классы
+
+### ProductResponse
+```typescript
+// src/infrastructure/responses/product/product.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class ProductResponse {
+    @ApiProperty({ description: 'ID товара' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'Название товара' })
+    declare readonly name: string;
+
+    @ApiProperty({ description: 'Описание товара', required: false })
+    declare readonly description?: string;
+
+    @ApiProperty({ description: 'SKU товара' })
+    declare readonly sku: string;
+
+    @ApiProperty({ description: 'ID категории', required: false })
+    declare readonly categoryId?: number;
+
+    @ApiProperty({ description: 'ID бренда', required: false })
+    declare readonly brandId?: number;
+
+    @ApiProperty({ description: 'Базовая цена' })
+    declare readonly basePrice: number;
+
+    @ApiProperty({ description: 'Цена со скидкой', required: false })
+    declare readonly salePrice?: number;
+
+    @ApiProperty({ description: 'Валюта' })
+    declare readonly currency: string;
+
+    @ApiProperty({ description: 'Количество на складе' })
+    declare readonly stock: number;
+
+    @ApiProperty({ description: 'Зарезервированное количество' })
+    declare readonly reservedStock: number;
+
+    @ApiProperty({ description: 'Изображения товара' })
+    declare readonly images: string[];
+
+    @ApiProperty({ description: 'Варианты товара', required: false })
+    declare readonly variants?: any;
+
+    @ApiProperty({ description: 'Вес товара', required: false })
+    declare readonly weight?: number;
+
+    @ApiProperty({ description: 'Размеры товара', required: false })
+    declare readonly dimensions?: any;
+
+    @ApiProperty({ description: 'SEO заголовок', required: false })
+    declare readonly metaTitle?: string;
+
+    @ApiProperty({ description: 'SEO описание', required: false })
+    declare readonly metaDescription?: string;
+
+    @ApiProperty({ description: 'Теги товара' })
+    declare readonly tags: string[];
+
+    @ApiProperty({ description: 'Статус товара' })
+    declare readonly status: string;
+
+    @ApiProperty({ description: 'Активность товара' })
+    declare readonly isActive: boolean;
+
+    @ApiProperty({ description: 'Рекомендуемый товар' })
+    declare readonly isFeatured: boolean;
+
+    @ApiProperty({ description: 'Новинка' })
+    declare readonly isNew: boolean;
+
+    @ApiProperty({ description: 'Бестселлер' })
+    declare readonly isBestseller: boolean;
+
+    @ApiProperty({ description: 'Цифровой товар' })
+    declare readonly isDigital: boolean;
+
+    @ApiProperty({ description: 'Требует доставки' })
+    declare readonly requiresShipping: boolean;
+
+    @ApiProperty({ description: 'Товар на скидке' })
+    declare readonly isOnSale: boolean;
+
+    @ApiProperty({ description: 'Загружаемый товар' })
+    declare readonly isDownloadable: boolean;
+
+    @ApiProperty({ description: 'Товар для подарочной упаковки' })
+    declare readonly isGiftWrappable: boolean;
+
+    @ApiProperty({ description: 'Разрешенный предзаказ' })
+    declare readonly isBackorderAllowed: boolean;
+
+    @ApiProperty({ description: 'Лимитированная серия' })
+    declare readonly isLimitedEdition: boolean;
+
+    @ApiProperty({ description: 'Товар закончился' })
+    declare readonly isOutOfStock: boolean;
+
+    @ApiProperty({ description: 'Предзаказ' })
+    declare readonly isPreOrder: boolean;
+
+    @ApiProperty({ description: 'Сезонный товар' })
+    declare readonly isSeasonal: boolean;
+
+    @ApiProperty({ description: 'Эксклюзивный товар' })
+    declare readonly isExclusive: boolean;
+
+    @ApiProperty({ description: 'Товар-набор' })
+    declare readonly isBundle: boolean;
+
+    @ApiProperty({ description: 'Товар по подписке' })
+    declare readonly isSubscription: boolean;
+
+    @ApiProperty({ description: 'Дата начала распродажи', required: false })
+    declare readonly saleStartDate?: Date;
+
+    @ApiProperty({ description: 'Дата окончания распродажи', required: false })
+    declare readonly saleEndDate?: Date;
+
+    @ApiProperty({ description: 'Порядок сортировки' })
+    declare readonly sortOrder: number;
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления' })
+    declare readonly updatedAt: Date;
+}
+```
+
+### ProductStatisticsResponse
+```typescript
+// src/infrastructure/responses/product/product.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class ProductStatisticsResponse {
+    @ApiProperty({ description: 'Общее количество товаров' })
+    declare readonly totalProducts: number;
+
+    @ApiProperty({ description: 'Количество активных товаров' })
+    declare readonly activeProducts: number;
+
+    @ApiProperty({ description: 'Количество товаров не в наличии' })
+    declare readonly outOfStockProducts: number;
+
+    @ApiProperty({ description: 'Количество рекомендуемых товаров' })
+    declare readonly featuredProducts: number;
+
+    @ApiProperty({ description: 'Количество новинок' })
+    declare readonly newProducts: number;
+
+    @ApiProperty({ description: 'Количество бестселлеров' })
+    declare readonly bestsellers: number;
+
+    @ApiProperty({ description: 'Количество цифровых товаров' })
+    declare readonly digitalProducts: number;
+
+    @ApiProperty({ description: 'Количество товаров на скидке' })
+    declare readonly onSaleProducts: number;
+
+    @ApiProperty({ description: 'Количество загружаемых товаров' })
+    declare readonly downloadableProducts: number;
+
+    @ApiProperty({ description: 'Количество товаров для подарочной упаковки' })
+    declare readonly giftWrappableProducts: number;
+
+    @ApiProperty({ description: 'Количество товаров с разрешенным предзаказом' })
+    declare readonly backorderAllowedProducts: number;
+
+    @ApiProperty({ description: 'Количество товаров лимитированной серии' })
+    declare readonly limitedEditionProducts: number;
+
+    @ApiProperty({ description: 'Количество товаров закончившихся' })
+    declare readonly outOfStockProducts: number;
+
+    @ApiProperty({ description: 'Количество товаров предзаказа' })
+    declare readonly preOrderProducts: number;
+
+    @ApiProperty({ description: 'Количество сезонных товаров' })
+    declare readonly seasonalProducts: number;
+
+    @ApiProperty({ description: 'Количество эксклюзивных товаров' })
+    declare readonly exclusiveProducts: number;
+
+    @ApiProperty({ description: 'Количество товаров-наборов' })
+    declare readonly bundleProducts: number;
+
+    @ApiProperty({ description: 'Количество товаров по подписке' })
+    declare readonly subscriptionProducts: number;
+
+    @ApiProperty({ description: 'Количество товаров с низким остатком' })
+    declare readonly lowStockProducts: number;
+
+    @ApiProperty({ description: 'Средняя цена товара' })
+    declare readonly averagePrice: number;
+
+    @ApiProperty({ description: 'Общая стоимость склада' })
+    declare readonly totalStockValue: number;
+
+    @ApiProperty({ description: 'Количество товаров с активными распродажами' })
+    declare readonly activeSaleProducts: number;
+
+    @ApiProperty({ description: 'Количество товаров с предстоящими распродажами' })
+    declare readonly upcomingSaleProducts: number;
+
+    @ApiProperty({ description: 'Количество товаров с истекшими распродажами' })
+    declare readonly expiredSaleProducts: number;
+}
+```
+
+## Критерии готовности
+
+### ✅ Обязательные требования:
+- [ ] Создана миграция для расширения таблицы products с новыми флагами
+- [ ] Реализована модель Sequelize ProductModel с флагами
+- [ ] Создан ProductService с управлением товарами и флагами
+- [ ] Реализован контроллер с API endpoints для флагов
+- [ ] Добавлены DTO классы с валидацией флагов
+- [ ] Созданы Response классы с Swagger для флагов
+- [ ] Добавлены индексы для производительности по флагам
+- [ ] Реализована логика управления складом
+- [ ] Добавлены методы для работы с флагами товаров
+- [ ] Добавлены scopes для фильтрации по флагам
+- [ ] Добавлены unit тесты для сервисов
+- [ ] Добавлены integration тесты для API
+- [ ] Интеграция с системой поиска
+
+### 🎯 Дополнительные возможности:
+- [ ] Автоматическое управление флагами (isNew по дате, isBestseller по продажам)
+- [ ] Расширенные варианты товаров
+- [ ] История изменения цен
+- [ ] Автоматическое управление остатками
+- [ ] API для массового управления флагами
+- [ ] Фильтрация товаров по комбинации флагов
+- [ ] Интеграция с внешними каталогами
+- [ ] Аналитика продаж товаров
+
+## Новые флаги товаров
+
+### Описание флагов:
+- **isActive** - Управление видимостью товаров (включен/выключен)
+- **isFeatured** - Рекомендуемые товары для главной страницы
+- **isNew** - Новинки для выделения свежих поступлений
+- **isBestseller** - Бестселлеры для популярных товаров
+- **isDigital** - Цифровые товары (не требуют доставки)
+- **requiresShipping** - Требует ли товар доставки
+- **isOnSale** - Товары на скидке для акций
+
+### Преимущества флагов:
+- **Быстрая фильтрация** - индексы для производительности
+- **Гибкое управление** - простые boolean значения
+- **Маркетинг** - выделение товаров на сайте
+- **Логика доставки** - разделение цифровых и физических товаров
+- **Управление видимостью** - скрытие товаров без удаления
+
+## Следующие шаги
+
+### Фаза 1: Базовая реализация (1 неделя)
+1. **Создать миграцию** для расширения таблицы products с флагами
+2. **Реализовать модель** Sequelize с флагами
+3. **Создать DTO классы** с валидацией флагов
+4. **Создать Response классы** с Swagger для флагов
+5. **Реализовать сервис** с методами для работы с флагами
+
+### Фаза 2: API и интеграции (3-4 дня)
+6. **Создать контроллер** с API endpoints для флагов
+7. **Настроить фильтрацию** и поиск товаров по флагам
+8. **Добавить управление складом** и резервирование
+9. **Создать тесты** для API флагов
+
+### Фаза 3: Тестирование и качество (2-3 дня)
+10. **Написать unit тесты** для сервисов и флагов
+11. **Написать integration тесты** для API флагов
+12. **Добавить обработку ошибок** и валидацию флагов
+13. **Провести рефакторинг** и оптимизацию
+
+## Новые флаги товаров
+
+### Описание флагов:
+- **isDownloadable** - Загружаемый товар (цифровой контент, файлы)
+- **isGiftWrappable** - Товар для подарочной упаковки (физические товары)
+- **isBackorderAllowed** - Разрешенный предзаказ (при отсутствии на складе)
+- **isLimitedEdition** - Лимитированная серия (ограниченный выпуск)
+- **isOutOfStock** - Товар закончился (критично для управления наличием)
+- **isPreOrder** - Предзаказ товара (доступен для заказа до поступления)
+- **isSeasonal** - Сезонный товар (актуален в определенное время года)
+- **isExclusive** - Эксклюзивный товар (ограниченная доступность)
+- **isBundle** - Товар-набор (состоит из нескольких товаров)
+- **isSubscription** - Товар по подписке (периодическая поставка)
+- **saleStartDate** - Дата начала распродажи товара
+- **saleEndDate** - Дата окончания распродажи товара
+
+### Преимущества флагов:
+- **Цифровые товары** - автоматическое управление загрузками и доставкой
+- **Подарочная упаковка** - дополнительная услуга для физических товаров
+- **Предзаказы** - возможность принимать заказы на отсутствующие товары
+- **Лимитированные серии** - создание ажиотажа и повышение ценности
+- **Управление наличием** - точный контроль доступности товаров
+- **Сезонные товары** - автоматическое управление сезонными акциями
+- **Эксклюзивность** - создание премиального сегмента товаров
+- **Наборы товаров** - возможность продажи комплектов со скидкой
+- **Подписки** - рекуррентные продажи и стабильный доход
+- **Управление распродажами** - точное планирование акций и скидок
+- **Маркетинговые возможности** - сегментация и таргетирование товаров
+
+### Новые возможности системы:
+- **API для управления флагами** - PATCH endpoints для админов
+- **Фильтрация товаров** - GET endpoints по типам товаров
+- **Статистика товаров** - детальная аналитика по флагам
+- **Автоматическая логика** - определение типа доставки и обработки
+- **Маркетинговые кампании** - таргетирование лимитированных серий
+- **Управление распродажами** - автоматическое включение/выключение скидок
+- **Отслеживание акций** - мониторинг активных, предстоящих и истекших распродаж
+- **Управление наличием** - автоматическое отслеживание закончившихся товаров
+- **Предзаказы** - система приема заказов на отсутствующие товары
+- **Сезонные акции** - автоматическое управление сезонными товарами
+- **Эксклюзивные предложения** - создание премиального сегмента
+- **Наборы и подписки** - расширенные возможности продаж
+
+## Риски и альтернативы
+
+### ⚠️ Риски:
+- **Производительность**: большое количество товаров может замедлить поиск
+- **Консистентность**: одновременное резервирование товаров
+- **Масштабируемость**: нужна оптимизация для больших каталогов
+
+### 🔄 Альтернативы:
+- **Поисковые системы**: Elasticsearch для быстрого поиска
+- **Кэширование**: Redis для кэширования популярных товаров
+- **CDN**: для изображений товаров
+
+## Контроллер
+
+### Product Controller
+```typescript
+// src/infrastructure/controllers/product.controller.ts
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, HttpCode, HttpStatus, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ProductService } from '@app/infrastructure/services/product.service';
+import { CreateProductDto, UpdateProductDto } from '@app/infrastructure/dto/product';
+import { ProductResponse, ProductStatisticsResponse } from '@app/infrastructure/responses/product';
+import { AuthGuard } from '@app/infrastructure/guards/auth.guard';
+import { RoleGuard } from '@app/infrastructure/guards/role.guard';
+import { Roles } from '@app/infrastructure/decorators/roles.decorator';
+
+@ApiTags('Products')
+@Controller('products')
+@UseGuards(AuthGuard)
+export class ProductController {
+    // Константы ролей для переиспользования
+    private static readonly ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN'] as const;
+    private static readonly MANAGER_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER'] as const;
+    private static readonly STAFF_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
+    private static readonly CUSTOMER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST'] as const;
+    private static readonly ALL_ROLES = [...ProductController.ADMIN_ROLES, ...ProductController.MANAGER_ROLES, ...ProductController.CUSTOMER_ROLES] as const;
+
+    constructor(private readonly productService: ProductService) {}
+
+    @Get('statistics')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.ADMIN_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить статистику товаров' })
+    @ApiResponse({ status: 200, description: 'Статистика товаров', type: ProductStatisticsResponse })
+    async getProductStatistics(): Promise<ProductStatisticsResponse> {
+        const statistics = await this.productService.getProductStatistics();
+        return {
+            ...statistics,
+            activeSaleProducts: statistics.activeSaleProducts,
+            upcomingSaleProducts: statistics.upcomingSaleProducts,
+            expiredSaleProducts: statistics.expiredSaleProducts,
+        };
+    }
+
+    @Patch(':id/sale-dates')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Установить даты распродажи товара' })
+    @ApiResponse({ status: 200, description: 'Даты распродажи установлены' })
+    async setProductSaleDates(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() body: { startDate: string; endDate: string }
+    ): Promise<ProductModel> {
+        const startDate = new Date(body.startDate);
+        const endDate = new Date(body.endDate);
+        return this.productService.setProductSaleDates(id, startDate, endDate);
+    }
+
+    @Patch(':id/clear-sale-dates')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Очистить даты распродажи товара' })
+    @ApiResponse({ status: 200, description: 'Даты распродажи очищены' })
+    async clearProductSaleDates(@Param('id', ParseIntPipe) id: number): Promise<ProductModel> {
+        return this.productService.clearProductSaleDates(id);
+    }
+
+    @Patch(':id/extend-sale-end')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Продлить дату окончания распродажи' })
+    @ApiResponse({ status: 200, description: 'Дата окончания распродажи продлена' })
+    async extendProductSaleEndDate(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() body: { endDate: string }
+    ): Promise<ProductModel> {
+        const endDate = new Date(body.endDate);
+        return this.productService.extendProductSaleEndDate(id, endDate);
+    }
+
+    @Get('active-sales')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.ALL_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить товары с активными распродажами' })
+    @ApiResponse({ status: 200, description: 'Список товаров с активными распродажами' })
+    async getActiveSaleProducts(@Query('limit', ParseIntPipe) limit: number = 20): Promise<ProductModel[]> {
+        return this.productService.getActiveSaleProducts(limit);
+    }
+
+    @Get('upcoming-sales')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.ALL_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить товары с предстоящими распродажами' })
+    @ApiResponse({ status: 200, description: 'Список товаров с предстоящими распродажами' })
+    async getUpcomingSaleProducts(@Query('limit', ParseIntPipe) limit: number = 20): Promise<ProductModel[]> {
+        return this.productService.getUpcomingSaleProducts(limit);
+    }
+
+    @Get('expired-sales')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.STAFF_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить товары с истекшими распродажами' })
+    @ApiResponse({ status: 200, description: 'Список товаров с истекшими распродажами' })
+    async getExpiredSaleProducts(@Query('limit', ParseIntPipe) limit: number = 20): Promise<ProductModel[]> {
+        return this.productService.getExpiredSaleProducts(limit);
+    }
+
+    @Get('out-of-stock')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.ALL_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить товары закончившиеся' })
+    @ApiResponse({ status: 200, description: 'Список товаров закончившихся' })
+    async getOutOfStockProducts(@Query('limit', ParseIntPipe) limit: number = 20): Promise<ProductModel[]> {
+        return this.productService.getOutOfStockProducts(limit);
+    }
+
+    @Get('pre-orders')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.ALL_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить товары предзаказа' })
+    @ApiResponse({ status: 200, description: 'Список товаров предзаказа' })
+    async getPreOrderProducts(@Query('limit', ParseIntPipe) limit: number = 20): Promise<ProductModel[]> {
+        return this.productService.getPreOrderProducts(limit);
+    }
+
+    @Get('seasonal')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.ALL_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить сезонные товары' })
+    @ApiResponse({ status: 200, description: 'Список сезонных товаров' })
+    async getSeasonalProducts(@Query('limit', ParseIntPipe) limit: number = 20): Promise<ProductModel[]> {
+        return this.productService.getSeasonalProducts(limit);
+    }
+
+    @Get('exclusive')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.ALL_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить эксклюзивные товары' })
+    @ApiResponse({ status: 200, description: 'Список эксклюзивных товаров' })
+    async getExclusiveProducts(@Query('limit', ParseIntPipe) limit: number = 20): Promise<ProductModel[]> {
+        return this.productService.getExclusiveProducts(limit);
+    }
+
+    @Get('bundles')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.ALL_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить товары-наборы' })
+    @ApiResponse({ status: 200, description: 'Список товаров-наборов' })
+    async getBundleProducts(@Query('limit', ParseIntPipe) limit: number = 20): Promise<ProductModel[]> {
+        return this.productService.getBundleProducts(limit);
+    }
+
+    @Get('subscriptions')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.ALL_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить товары по подписке' })
+    @ApiResponse({ status: 200, description: 'Список товаров по подписке' })
+    async getSubscriptionProducts(@Query('limit', ParseIntPipe) limit: number = 20): Promise<ProductModel[]> {
+        return this.productService.getSubscriptionProducts(limit);
+    }
+
+    @Patch(':id/out-of-stock')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить товар как закончившийся' })
+    @ApiResponse({ status: 200, description: 'Товар отмечен как закончившийся' })
+    async markAsOutOfStock(@Param('id', ParseIntPipe) id: number): Promise<ProductModel> {
+        return this.productService.markProductAsOutOfStock(id);
+    }
+
+    @Patch(':id/pre-order')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить товар как предзаказ' })
+    @ApiResponse({ status: 200, description: 'Товар отмечен как предзаказ' })
+    async markAsPreOrder(@Param('id', ParseIntPipe) id: number): Promise<ProductModel> {
+        return this.productService.markProductAsPreOrder(id);
+    }
+
+    @Patch(':id/exclusive')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить товар как эксклюзивный' })
+    @ApiResponse({ status: 200, description: 'Товар отмечен как эксклюзивный' })
+    async markAsExclusive(@Param('id', ParseIntPipe) id: number): Promise<ProductModel> {
+        return this.productService.markProductAsExclusive(id);
+    }
+
+    @Patch(':id/bundle')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить товар как набор' })
+    @ApiResponse({ status: 200, description: 'Товар отмечен как набор' })
+    async markAsBundle(@Param('id', ParseIntPipe) id: number): Promise<ProductModel> {
+        return this.productService.markProductAsBundle(id);
+    }
+
+    @Patch(':id/subscription')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(RoleGuard)
+    @Roles(...ProductController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить товар как подписка' })
+    @ApiResponse({ status: 200, description: 'Товар отмечен как подписка' })
+    async markAsSubscription(@Param('id', ParseIntPipe) id: number): Promise<ProductModel> {
+        return this.productService.markProductAsSubscription(id);
+    }
+}
+```
+
+## Интеграция с другими системами
+
+### 🔗 Связанные системы:
+- **CategoryService** - управление категориями
+- **BrandService** - управление брендами
+- **InventoryService** - управление складом
+- **OrderService** - резервирование товаров
+- **SearchService** - поиск по товарам
+
+### 📊 Аналитика:
+- Статистика товаров по категориям
+- Популярные товары
+- Товары с низким остатком
+
+## TL;DR
+
+Упрощенная система товаров включает:
+- **1 таблица**: products (расширенная)
+- **1 модель**: ProductModel
+- **1 сервис**: ProductService
+- **1 контроллер**: ProductController
+- **Функции**: базовые поля, простые варианты, управление складом
+- **Валидация**: проверка товаров и остатков
+- **Автоматизация**: резервирование и списание товаров
+- **Готовность**: к масштабированию и дополнительным функциям
+```

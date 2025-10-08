@@ -1,0 +1,179 @@
+# Security Hardening Execution Plan (Binding)
+
+binding: true
+module: security
+epic_ref: SEC-HARDENING
+version: 1.0
+
+execution_policy:
+  must_follow: true
+  allow_code_changes_only_after: "Одобряю <TASK_ID>"
+  constraints:
+    - no public API changes without explicit approval
+    - operate strictly within files_scope
+    - pass lints/tests and Swagger before DoD complete
+
+context:
+  goal: Bring backend to production‑grade security baseline (JWT, cookies, CORS, Helmet, CSP, rate limiting, input sanitization, logging without PII, env validation).
+
+tasks:
+  - id: SEC-001
+    title: Валидация конфигурации окружения (Joi) и .env.example
+    branch: "feature/security/SEC-001/env-validation"
+    files_scope:
+      - "src/infrastructure/config/**"
+      - "process-env.d.ts"
+      - ".env.example"
+      - "docs/security.mdc"
+    steps:
+      - добавить Joi-схему для env (JWT, DB, CORS, cookies, rate limiting)
+      - типизировать переменные окружения (process-env.d.ts)
+      - обновить .env.example и документацию
+    dod:
+      - приложение не стартует без валидных env
+      - тесты конфигурации проходят
+    gate:
+      - require: "Одобряю SEC-001"
+
+  - id: SEC-002
+    title: HTTP защита: Helmet, CORS whitelist, базовый CSP
+    branch: "feature/security/SEC-002/http-headers"
+    files_scope:
+      - "src/main.ts"
+      - "src/infrastructure/config/**"
+      - "docs/security.mdc"
+    steps:
+      - включить helmet с безопасной конфигурацией
+      - настроить CORS по whitelist из ALLOWED_ORIGINS
+      - добавить базовый CSP (консервативный пресет)
+    dod:
+      - заголовки безопасности на всех ответах
+      - CORS проходит только для разрешённых origins
+    gate:
+      - require: "Одобряю SEC-002"
+
+  - id: SEC-003
+    title: Укрепление аутентификации: JWT, cookies, ротация refresh
+    branch: "feature/security/SEC-003/auth-hardening"
+    files_scope:
+      - "src/infrastructure/controllers/auth/**"
+      - "src/infrastructure/services/token/**"
+      - "src/infrastructure/common/strategies/**"
+      - "src/infrastructure/common/guards/**"
+    steps:
+      - access: ttl 15m; refresh: ttl 30d
+      - refresh в HttpOnly cookies (Secure, SameSite=strict/lax по окружению)
+      - ротация и ревокация refresh токенов
+      - маскирование токенов в логах
+    dod:
+      - e2e сценарии login/refresh/logout зелёные
+      - cookies флаги подтверждены в тестах
+    gate:
+      - require: "Одобряю SEC-003"
+
+  - id: SEC-004
+    title: Rate limiting и BruteforceGuard профили
+    branch: "feature/security/SEC-004/rate-limiting"
+    files_scope:
+      - "src/infrastructure/common/guards/bruteforce.guard.ts"
+      - "src/infrastructure/config/**"
+      - "src/main.ts"
+    steps:
+      - настроить профили (login, refresh, registration)
+      - общий глобальный лимитер (3 rps / 100 rpm)
+      - логирование блокировок на уровне warn без PII
+    dod:
+      - интеграционные тесты ограничений проходят (429 где нужно)
+    gate:
+      - require: "Одобряю SEC-004"
+
+  - id: SEC-005
+    title: Валидация и санитизация входных данных
+    branch: "feature/security/SEC-005/input-validation"
+    files_scope:
+      - "src/infrastructure/pipes/**"
+      - "src/infrastructure/common/validators/**"
+      - "src/infrastructure/dto/**"
+    steps:
+      - убедиться, что CustomValidationPipe глобален и строг
+      - использовать кастомные валидаторы (@IsSanitizedString и др.)
+      - русские сообщения ошибок, массив сообщений для DTO
+    dod:
+      - негативные тесты на XSS/некорректные строки проходят
+    gate:
+      - require: "Одобряю SEC-005"
+
+  - id: SEC-006
+    title: Секреты и конфигурация
+    branch: "feature/security/SEC-006/secrets-management"
+    files_scope:
+      - ".gitignore"
+      - "docs/security.mdc"
+      - "src/infrastructure/config/**"
+    steps:
+      - проверить, что секреты не коммитятся
+      - маскирование PII в логах
+      - разделение ключей dev/stage/prod, параметры для ротации
+    dod:
+      - репозиторий чист от секретов, сканы чистые
+    gate:
+      - require: "Одобряю SEC-006"
+
+  - id: SEC-007
+    title: Ограничение Swagger в prod и единый стиль API-документации
+    branch: "feature/security/SEC-007/swagger-hardening"
+    files_scope:
+      - "src/infrastructure/config/swagger/**"
+      - "src/infrastructure/controllers/**"
+    steps:
+      - ограничить/скрыть Swagger в prod
+      - использовать кастомные декораторы и ответы для каждого endpoint
+    dod:
+      - /online-store/docs доступен только в dev/stage, прод — закрыт
+    gate:
+      - require: "Одобряю SEC-007"
+
+  - id: SEC-008
+    title: Логирование и маскирование PII (pino)
+    branch: "feature/security/SEC-008/logging-pii-mask"
+    files_scope:
+      - "src/infrastructure/common/utils/logging/**"
+      - "src/main.ts"
+      - "docs/errors-logging.mdc"
+    steps:
+      - pino/pino-http с correlationId
+      - маска e-mail, токенов, cookies
+      - уровни и формат из rules
+    dod:
+      - логи структурированы, без утечек PII
+    gate:
+      - require: "Одобряю SEC-008"
+
+  - id: SEC-009
+    title: Security‑тесты и негативные сценарии
+    branch: "feature/security/SEC-009/security-tests"
+    files_scope:
+      - "tests/**"
+    steps:
+      - негативные кейсы по аутентификации, rate limiting, XSS‑входам
+      - smoke‑набор e2e для критичных маршрутов
+    dod:
+      - тесты зелёные, покрытие по критичным ≥80%
+    gate:
+      - require: "Одобряю SEC-009"
+
+  - id: SEC-010
+    title: CI‑гейты: lint, tests, миграции, отчёты
+    branch: "feature/security/SEC-010/ci-gates"
+    files_scope:
+      - ".github/workflows/**"
+      - "package.json"
+      - "docs/ci-cd.mdc"
+    steps:
+      - добавить шаги lint + unit + integration + миграции
+      - отчёт покрытия и блокировка merge при падении
+    dod:
+      - pipeline стабилен, PR блокируются при ошибках
+    gate:
+      - require: "Одобряю SEC-010"
+
