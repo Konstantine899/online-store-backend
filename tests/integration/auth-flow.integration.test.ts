@@ -4,15 +4,19 @@ import request from 'supertest';
 import { setupTestApp } from '../setup/app';
 
 // Helper для извлечения refreshToken из cookies
-const extractRefreshCookie = (cookies: string | string[] | undefined): string => {
+const extractRefreshCookie = (
+    cookies: string | string[] | undefined,
+): string => {
     if (!cookies) return '';
     const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
-    return cookieArray.find((c: string) => c?.startsWith('refreshToken=')) || '';
+    return (
+        cookieArray.find((c: string) => c?.startsWith('refreshToken=')) || ''
+    );
 };
 
 /**
  * E2E тесты для полного Auth flow
- * 
+ *
  * Цель: проверить сквозной сценарий аутентификации
  * - Registration → создание нового пользователя
  * - Login → получение access и refresh токенов
@@ -21,7 +25,7 @@ const extractRefreshCookie = (cookies: string | string[] | undefined): string =>
  * - Logout → инвалидация refresh токена
  * - Token expiration → истечение токенов
  * - Refresh rotation → использование старого refresh токена должно быть запрещено
- * 
+ *
  * Оптимизации производительности:
  * - extractRefreshCookie helper (DRY, ↓70% кода извлечения cookie)
  * - Fail-fast проверки токенов в Steps (вместо silent skip)
@@ -43,14 +47,20 @@ describe('Auth Flow (e2e integration)', () => {
         if (app) {
             // Cleanup перед закрытием приложения
             const sequelize = app.get(Sequelize);
-            
+
             // Cleanup временных пользователей и их данных (созданных через registration)
             await sequelize.query(`DELETE FROM user_role WHERE user_id > 14`);
-            await sequelize.query(`DELETE FROM refresh_token WHERE user_id > 14`);
-            await sequelize.query(`DELETE FROM login_history WHERE user_id > 14`);
-            await sequelize.query(`DELETE FROM user_address WHERE user_id > 14`);
+            await sequelize.query(
+                `DELETE FROM refresh_token WHERE user_id > 14`,
+            );
+            await sequelize.query(
+                `DELETE FROM login_history WHERE user_id > 14`,
+            );
+            await sequelize.query(
+                `DELETE FROM user_address WHERE user_id > 14`,
+            );
             await sequelize.query(`DELETE FROM user WHERE id > 14`);
-            
+
             await app.close();
         }
     }, 10000); // Увеличенный timeout для graceful shutdown
@@ -73,14 +83,18 @@ describe('Auth Flow (e2e integration)', () => {
             expect(response.body).toHaveProperty('type', 'Bearer');
 
             accessToken = response.body.accessToken;
-            refreshCookie = extractRefreshCookie(response.headers['set-cookie']);
+            refreshCookie = extractRefreshCookie(
+                response.headers['set-cookie'],
+            );
 
             // Fail-fast если токены не получены
             expect(accessToken).toBeDefined();
             expect(typeof accessToken).toBe('string');
-            
+
             if (!refreshCookie) {
-                throw new Error('Failed to get refreshToken from registration response');
+                throw new Error(
+                    'Failed to get refreshToken from registration response',
+                );
             }
         });
 
@@ -108,13 +122,17 @@ describe('Auth Flow (e2e integration)', () => {
             expect(response.body).toHaveProperty('accessToken');
 
             const newAccessToken = response.body.accessToken;
-            const newRefreshCookie = extractRefreshCookie(response.headers['set-cookie']);
+            const newRefreshCookie = extractRefreshCookie(
+                response.headers['set-cookie'],
+            );
 
             // Новый access токен должен отличаться от старого
             expect(newAccessToken).not.toBe(accessToken);
-            
+
             if (!newRefreshCookie) {
-                throw new Error('Failed to get new refreshToken from refresh response');
+                throw new Error(
+                    'Failed to get new refreshToken from refresh response',
+                );
             }
 
             // Обновляем токены для следующих тестов
@@ -146,7 +164,9 @@ describe('Auth Flow (e2e integration)', () => {
 
         it('Step 6: Access after logout - должен запретить доступ после logout', async () => {
             if (!refreshCookie) {
-                throw new Error('refreshCookie не доступен для post-logout теста');
+                throw new Error(
+                    'refreshCookie не доступен для post-logout теста',
+                );
             }
 
             const response = await request(app.getHttpServer())
@@ -172,7 +192,9 @@ describe('Auth Flow (e2e integration)', () => {
             expect(response.body).toHaveProperty('type', 'Bearer');
 
             // RefreshToken должен быть в cookies
-            const refreshCookie = extractRefreshCookie(response.headers['set-cookie']);
+            const refreshCookie = extractRefreshCookie(
+                response.headers['set-cookie'],
+            );
             expect(refreshCookie).toBeTruthy();
         });
 
@@ -220,10 +242,14 @@ describe('Auth Flow (e2e integration)', () => {
                     password: 'Password123!',
                 });
 
-            const initialRefreshCookie = extractRefreshCookie(loginResponse.headers['set-cookie']);
+            const initialRefreshCookie = extractRefreshCookie(
+                loginResponse.headers['set-cookie'],
+            );
 
             if (!initialRefreshCookie) {
-                throw new Error('Failed to get initialRefreshCookie from login');
+                throw new Error(
+                    'Failed to get initialRefreshCookie from login',
+                );
             }
 
             // Делаем первый refresh → получаем новый токен
@@ -250,7 +276,9 @@ describe('Auth Flow (e2e integration)', () => {
                     password: 'Password123!',
                 });
 
-            const initialRefreshCookie = extractRefreshCookie(loginResponse.headers['set-cookie']);
+            const initialRefreshCookie = extractRefreshCookie(
+                loginResponse.headers['set-cookie'],
+            );
 
             if (!initialRefreshCookie) {
                 throw new Error('Failed to get refreshCookie from login');
@@ -263,7 +291,9 @@ describe('Auth Flow (e2e integration)', () => {
 
             expect(firstRefreshResponse.status).toBe(HttpStatus.OK);
 
-            const newRefreshCookie = extractRefreshCookie(firstRefreshResponse.headers['set-cookie']);
+            const newRefreshCookie = extractRefreshCookie(
+                firstRefreshResponse.headers['set-cookie'],
+            );
 
             if (!newRefreshCookie) {
                 throw new Error('Failed to get new refreshCookie from refresh');
@@ -282,7 +312,8 @@ describe('Auth Flow (e2e integration)', () => {
     describe('Token expiration', () => {
         it('должен вернуть 401 для expired access токена', async () => {
             // Используем очевидно невалидный (expired) токен
-            const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImlhdCI6MTUxNjIzOTAyMiwiZXhwIjoxNTE2MjM5MDIyfQ.invalid';
+            const expiredToken =
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImlhdCI6MTUxNjIzOTAyMiwiZXhwIjoxNTE2MjM5MDIyfQ.invalid';
 
             const response = await request(app.getHttpServer())
                 .get('/online-store/auth/check')
@@ -310,7 +341,9 @@ describe('Auth Flow (e2e integration)', () => {
                 });
 
             // Может вернуть 409 (Conflict) или 400 (Validation error) в зависимости от обработки
-            expect([HttpStatus.CONFLICT, HttpStatus.BAD_REQUEST]).toContain(response.status);
+            expect([HttpStatus.CONFLICT, HttpStatus.BAD_REQUEST]).toContain(
+                response.status,
+            );
         });
 
         it('должен отклонить регистрацию со слабым паролем', async () => {
@@ -343,8 +376,9 @@ describe('Auth Flow (e2e integration)', () => {
 
     describe('Authorization header валидация', () => {
         it('должен вернуть 401 при отсутствии Authorization header', async () => {
-            const response = await request(app.getHttpServer())
-                .get('/online-store/auth/check');
+            const response = await request(app.getHttpServer()).get(
+                '/online-store/auth/check',
+            );
 
             expect(response.status).toBe(HttpStatus.UNAUTHORIZED);
         });
@@ -363,7 +397,9 @@ describe('Auth Flow (e2e integration)', () => {
                 .set('Authorization', 'Bearer ');
 
             // Пустой Bearer может вернуть 401 или 403 в зависимости от обработки
-            expect([HttpStatus.UNAUTHORIZED, HttpStatus.FORBIDDEN]).toContain(response.status);
+            expect([HttpStatus.UNAUTHORIZED, HttpStatus.FORBIDDEN]).toContain(
+                response.status,
+            );
         });
     });
 
@@ -377,7 +413,9 @@ describe('Auth Flow (e2e integration)', () => {
                     password: 'Password123!',
                 });
 
-            const refreshCookie = extractRefreshCookie(loginResponse.headers['set-cookie']);
+            const refreshCookie = extractRefreshCookie(
+                loginResponse.headers['set-cookie'],
+            );
 
             // Отправляем 3 параллельных refresh запроса с одним и тем же cookie
             const responses = await Promise.all(
@@ -389,8 +427,12 @@ describe('Auth Flow (e2e integration)', () => {
             );
 
             // Из-за race condition один успешный, остальные 401
-            const successfulResponses = responses.filter((r) => r.status === HttpStatus.OK);
-            const failedResponses = responses.filter((r) => r.status === HttpStatus.UNAUTHORIZED);
+            const successfulResponses = responses.filter(
+                (r) => r.status === HttpStatus.OK,
+            );
+            const failedResponses = responses.filter(
+                (r) => r.status === HttpStatus.UNAUTHORIZED,
+            );
 
             // Общее количество должно быть 3
             expect(successfulResponses.length + failedResponses.length).toBe(3);
@@ -399,4 +441,3 @@ describe('Auth Flow (e2e integration)', () => {
         });
     });
 });
-
