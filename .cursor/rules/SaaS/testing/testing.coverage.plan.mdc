@@ -366,18 +366,38 @@ tasks:
 # ============================================================
 
 progress:
-phase_1_status: in_progress
+phase_1_status: partially_complete
 phase_2_status: pending
 phase_3_status: pending
 phase_4_status: pending
 phase_5_status: pending
 phase_6_status: pending
 
+# PHASE 1 - Фактический статус (08.10.2025):
+
+# ✅ TEST-005: Test utilities созданы (TestDataFactory, TestCleanup, TestTransaction)
+
+# ✅ TEST-006: SQL логирование отключено в тестах
+
+# ⚠️ TEST-001/002: Частично - 334 passed, 1 failed (flaky: partial update lastName)
+
+# ⚠️ TEST-003: user-addresses интегрированы в user-profile тесты
+
+# ✅ TEST-004: RBAC тесты проходят, auth-flow нестабильны (зависит от workers)
+
+#
+
+# Текущие метрики: 335 tests total, 334 passed (99.7%), 1 flaky test
+
+# Проблемы: race conditions при --maxWorkers=1, нужны транзакции для изоляции
+
 checkpoints:
 week_2:
-tests: 335 (0 failed)
+tests: 335 (1 flaky)
 coverage: 50%
-tasks_done: [TEST-001, TEST-002, TEST-003, TEST-004, TEST-005, TEST-006]
+tasks_done: [TEST-005, TEST-006]
+tasks_partial: [TEST-001, TEST-002, TEST-004]
+tasks_skipped: [TEST-003]
 week_4:
 tests: 392 (+57)
 coverage: 60%
