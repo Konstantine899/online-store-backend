@@ -130,4 +130,3 @@ export class TestCleanup {
         await sequelize.query(`DELETE FROM refresh_token WHERE user_id > 14`);
     }
 }
-
