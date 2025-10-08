@@ -1,11 +1,11 @@
 import { INestApplication } from '@nestjs/common';
+import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
-import { authLoginAs } from '../../../../../tests/setup/auth';
+import { TestCleanup, TestDataFactory } from '../../../../../tests/utils';
 
 describe('User Flags Integration Tests', () => {
     let app: INestApplication;
-    let userToken: string;
 
     beforeAll(async () => {
         process.env.NODE_ENV = 'test';
@@ -20,18 +20,18 @@ describe('User Flags Integration Tests', () => {
 
         app = await setupTestApp();
         await app.init();
-
-        // Получаем токены для тестирования
-        userToken = await authLoginAs(app, 'user');
     });
 
     afterAll(async () => {
+        const sequelize = app.get(Sequelize);
+        await TestCleanup.cleanUsers(sequelize);
         await app.close();
     });
 
     // ===== FLAGS ENDPOINTS =====
     describe('PATCH /user/profile/flags', () => {
         it('200: updates flags with valid data', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
             const flagsData = {
                 isActive: true,
                 isNewsletterSubscribed: true,
@@ -43,7 +43,7 @@ describe('User Flags Integration Tests', () => {
 
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/flags')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send(flagsData)
                 .expect(200);
 
@@ -52,6 +52,7 @@ describe('User Flags Integration Tests', () => {
         });
 
         it('200: updates only provided flags', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
             const flagsData = {
                 isActive: false,
                 isVipCustomer: true,
@@ -59,7 +60,7 @@ describe('User Flags Integration Tests', () => {
 
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/flags')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send(flagsData)
                 .expect(200);
 
@@ -68,6 +69,7 @@ describe('User Flags Integration Tests', () => {
         });
 
         it('400: invalid data types', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
             const invalidData = {
                 isActive: 'invalid_boolean',
                 isVipCustomer: 123,
@@ -75,7 +77,7 @@ describe('User Flags Integration Tests', () => {
 
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/flags')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send(invalidData)
                 .expect(400);
 
@@ -92,9 +94,11 @@ describe('User Flags Integration Tests', () => {
         });
 
         it('200: accepts empty object', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/flags')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({})
                 .expect(200);
 
@@ -103,6 +107,7 @@ describe('User Flags Integration Tests', () => {
         });
 
         it('400: null and undefined values in flags', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
             const flagsData = {
                 isActive: null,
                 isVipCustomer: undefined,
@@ -110,7 +115,7 @@ describe('User Flags Integration Tests', () => {
 
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/flags')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send(flagsData)
                 .expect(400);
 
@@ -118,9 +123,11 @@ describe('User Flags Integration Tests', () => {
         });
 
         it('400: array instead of object', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile/flags')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send([{ isActive: true }])
                 .expect(400);
 
