@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
+import { Sequelize } from 'sequelize-typescript';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { authLoginAs } from '../../../../../tests/setup/auth';
 import { UpdateUserDto } from '@app/infrastructure/dto';
@@ -29,6 +30,46 @@ describe('User Admin Integration Tests', () => {
 
     afterAll(async () => {
         await app.close();
+    });
+
+    afterEach(async () => {
+        const sequelize = app.get(Sequelize);
+
+        // Сбрасываем флаги пользователя 13 (user@example.com) в дефолтное состояние
+        await sequelize.query(`
+            UPDATE user SET 
+                is_blocked = 0,
+                is_suspended = 0,
+                is_deleted = 0,
+                is_premium = 0,
+                is_employee = 0,
+                is_vip_customer = 0,
+                is_high_value = 0,
+                is_wholesale = 0,
+                is_affiliate = 0,
+                is_active = 1
+            WHERE id = 13
+        `);
+
+        // Очищаем добавленные роли (оставляем только CUSTOMER с role_id = 10)
+        await sequelize.query(`
+            DELETE FROM user_role 
+            WHERE user_id = 13 AND role_id != 10
+        `);
+
+        // Убеждаемся что роль CUSTOMER существует для пользователя 13
+        await sequelize.query(`
+            INSERT IGNORE INTO user_role (user_id, role_id, created_at, updated_at)
+            VALUES (13, 10, NOW(), NOW())
+        `);
+
+        // Очищаем временные данные тестов (пользователи созданные в тестах)
+        // Порядок важен из-за foreign key constraints
+        await sequelize.query(`DELETE FROM user_role WHERE user_id > 14`);
+        await sequelize.query(`DELETE FROM refresh_token WHERE user_id > 14`);
+        await sequelize.query(`DELETE FROM login_history WHERE user_id > 14`);
+        await sequelize.query(`DELETE FROM user_address WHERE user_id > 14`);
+        await sequelize.query(`DELETE FROM user WHERE id > 14`);
     });
 
     // ===== ADMIN STATS ENDPOINT =====
@@ -148,33 +189,24 @@ describe('User Admin Integration Tests', () => {
         });
 
         it('200: admin can list users', async () => {
-            // Получаем свежий admin токен для этого теста
-            const freshAdminToken = await authLoginAs(app, 'admin');
-
             await request(app.getHttpServer())
                 .get('/online-store/user/get-list-users?page=1&limit=5')
-                .set('Authorization', `Bearer ${freshAdminToken}`)
+                .set('Authorization', `Bearer ${adminToken}`)
                 .expect(200);
         });
 
         it('400: invalid query parameters', async () => {
-            // Получаем свежий admin токен для этого теста
-            const freshAdminToken = await authLoginAs(app, 'admin');
-
             await request(app.getHttpServer())
                 .get('/online-store/user/get-list-users?page=abc&limit=NaN')
-                .set('Authorization', `Bearer ${freshAdminToken}`)
+                .set('Authorization', `Bearer ${adminToken}`)
                 .expect(400);
         });
 
         it('200: admin can create and delete users', async () => {
-            // Получаем свежий admin токен для этого теста
-            const freshAdminToken = await authLoginAs(app, 'admin');
-
             const uniqueEmail = `newuser+${Date.now()}@example.com`;
             const createRes = await request(app.getHttpServer())
                 .post('/online-store/user/create')
-                .set('Authorization', `Bearer ${freshAdminToken}`)
+                .set('Authorization', `Bearer ${adminToken}`)
                 .send({ email: uniqueEmail, password: 'StrongPass123!' })
                 .expect(201);
 
@@ -183,14 +215,11 @@ describe('User Admin Integration Tests', () => {
 
             const delRes = await request(app.getHttpServer())
                 .delete(`/online-store/user/delete/${newUserId}`)
-                .set('Authorization', `Bearer ${freshAdminToken}`);
+                .set('Authorization', `Bearer ${adminToken}`);
             expect([200, 404]).toContain(delRes.status);
         });
 
         it('200: admin can update user profile', async () => {
-            // Получаем свежий admin токен для этого теста
-            const freshAdminToken = await authLoginAs(app, 'admin');
-
             const userId = 13; // user@example.com
             const payload = {
                 firstName: 'Петр',
@@ -199,7 +228,7 @@ describe('User Admin Integration Tests', () => {
 
             const response = await request(app.getHttpServer())
                 .put(`/online-store/user/update/${userId}`)
-                .set('Authorization', `Bearer ${freshAdminToken}`)
+                .set('Authorization', `Bearer ${adminToken}`)
                 .send(payload)
                 .expect(200);
 
@@ -226,19 +255,16 @@ describe('User Admin Integration Tests', () => {
     // ===== ROLE MANAGEMENT =====
     describe('Role management', () => {
         it('200: admin can add and remove roles', async () => {
-            // Получаем свежий admin токен для этого теста
-            const freshAdminToken = await authLoginAs(app, 'admin');
-
             // Добавляем роль ADMIN пользователю 13, затем удаляем ADMIN
             await request(app.getHttpServer())
                 .post('/online-store/user/role/add')
-                .set('Authorization', `Bearer ${freshAdminToken}`)
+                .set('Authorization', `Bearer ${adminToken}`)
                 .send({ userId: 13, role: 'ADMIN' })
                 .expect(201);
 
             await request(app.getHttpServer())
                 .delete('/online-store/user/role/delete')
-                .set('Authorization', `Bearer ${freshAdminToken}`)
+                .set('Authorization', `Bearer ${adminToken}`)
                 .send({ userId: 13, role: 'ADMIN' })
                 .expect(200);
         });

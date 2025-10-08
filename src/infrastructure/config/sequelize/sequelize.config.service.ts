@@ -30,7 +30,7 @@ export class SequelizeConfigService implements SequelizeOptionsFactory {
 
     createSequelizeOptions(): SequelizeModuleOptions {
         const {
-            sql: { dialect, host, port, username, password, database },
+            sql: { dialect, host, port, username, password, database, logging },
         } = this.configService.get(dbToken);
 
         return {
@@ -40,6 +40,7 @@ export class SequelizeConfigService implements SequelizeOptionsFactory {
             username,
             password,
             database,
+            logging, // Используем настройку из ENV переменной SQL_LOGGING
             models: [
                 ProductModel,
                 CategoryModel,
