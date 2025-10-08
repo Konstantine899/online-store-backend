@@ -2,12 +2,10 @@ import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
-import { authLoginAs } from '../../../../../tests/setup/auth';
-import { TestCleanup } from '../../../../../tests/utils';
+import { TestCleanup, TestDataFactory } from '../../../../../tests/utils';
 
 describe('User Addresses Integration Tests', () => {
     let app: INestApplication;
-    let userToken: string;
 
     beforeAll(async () => {
         process.env.NODE_ENV = 'test';
@@ -22,21 +20,12 @@ describe('User Addresses Integration Tests', () => {
 
         app = await setupTestApp();
         await app.init();
-
-        // Получаем токены для тестирования
-        userToken = await authLoginAs(app, 'user');
     });
 
     afterAll(async () => {
-        await app.close();
-    });
-
-    afterEach(async () => {
         const sequelize = app.get(Sequelize);
-
-        // Используем TestCleanup утилиты для DRY кода
-        await TestCleanup.cleanUser13Addresses(sequelize);
-        await TestCleanup.cleanAuthData(sequelize);
+        await TestCleanup.cleanUsers(sequelize);
+        await app.close();
     });
 
     // ===== USER ADDRESSES ENDPOINTS =====
@@ -59,12 +48,16 @@ describe('User Addresses Integration Tests', () => {
         });
 
         it('200: full CRUD flow with auth', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             const http = request(app.getHttpServer());
 
             // Create
             const createRes = await http
                 .post('/online-store/user-addresses')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({
                     title: 'Дом',
                     street: 'ул. Пушкина',
@@ -83,7 +76,7 @@ describe('User Addresses Integration Tests', () => {
             // Get list
             const listRes = await http
                 .get('/online-store/user-addresses')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(HttpStatus.OK);
             const list = listRes.body.data || listRes.body;
             expect(Array.isArray(list)).toBe(true);
@@ -91,7 +84,7 @@ describe('User Addresses Integration Tests', () => {
             // Get one
             const oneRes = await http
                 .get(`/online-store/user-addresses/${id}`)
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(HttpStatus.OK);
             const one = oneRes.body.data || oneRes.body;
             expect(one.id).toBe(id);
@@ -99,7 +92,7 @@ describe('User Addresses Integration Tests', () => {
             // Update
             const updateRes = await http
                 .put(`/online-store/user-addresses/${id}`)
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({ title: 'Квартира', is_default: true })
                 .expect(HttpStatus.OK);
             const updated = updateRes.body.data || updateRes.body;
@@ -109,7 +102,7 @@ describe('User Addresses Integration Tests', () => {
             // Set default again
             const setDefaultRes = await http
                 .patch(`/online-store/user-addresses/${id}/set-default`)
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(HttpStatus.OK);
             const setDefault = setDefaultRes.body.data || setDefaultRes.body;
             expect(setDefault.id).toBe(id);
@@ -118,22 +111,26 @@ describe('User Addresses Integration Tests', () => {
             // Remove
             await http
                 .delete(`/online-store/user-addresses/${id}`)
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(HttpStatus.OK);
         });
 
         it('400: validation errors on create', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             const http = request(app.getHttpServer());
 
             await http
                 .post('/online-store/user-addresses')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({})
                 .expect(HttpStatus.BAD_REQUEST);
 
             await http
                 .post('/online-store/user-addresses')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({
                     title: '',
                     street: '',
@@ -145,48 +142,60 @@ describe('User Addresses Integration Tests', () => {
         });
 
         it('404: non-existent address operations', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             const http = request(app.getHttpServer());
             const nonexistentId = 999999;
 
             await http
                 .get(`/online-store/user-addresses/${nonexistentId}`)
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(HttpStatus.NOT_FOUND);
             await http
                 .put(`/online-store/user-addresses/${nonexistentId}`)
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({ title: 'X' })
                 .expect(HttpStatus.NOT_FOUND);
             await http
                 .delete(`/online-store/user-addresses/${nonexistentId}`)
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(HttpStatus.NOT_FOUND);
         });
 
         it('400: invalid id parameter', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             const http = request(app.getHttpServer());
             await http
                 .get('/online-store/user-addresses/not-a-number')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(HttpStatus.BAD_REQUEST);
             await http
                 .put('/online-store/user-addresses/not-a-number')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({ title: 'X' })
                 .expect(HttpStatus.BAD_REQUEST);
             await http
                 .delete('/online-store/user-addresses/not-a-number')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(HttpStatus.BAD_REQUEST);
         });
 
         it('200: setting new default unsets previous default', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             const http = request(app.getHttpServer());
 
             // Create first default
             const a1 = await http
                 .post('/online-store/user-addresses')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({
                     title: 'A1',
                     street: 'S',
@@ -201,7 +210,7 @@ describe('User Addresses Integration Tests', () => {
             // Create second default -> should unset first
             const a2 = await http
                 .post('/online-store/user-addresses')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({
                     title: 'A2',
                     street: 'S',
@@ -216,7 +225,7 @@ describe('User Addresses Integration Tests', () => {
             // List should return default first
             const listRes = await http
                 .get('/online-store/user-addresses')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(HttpStatus.OK);
             const list = listRes.body.data || listRes.body;
             expect(list[0].id).toBe(id2);
@@ -230,8 +239,6 @@ describe('User Addresses Integration Tests', () => {
                     (x: { id: number; is_default: boolean }) => x.id === id1,
                 ).is_default,
             ).toBe(false);
-
-            // Cleanup выполнится автоматически в afterEach
         });
     });
 });

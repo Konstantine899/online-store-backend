@@ -1,13 +1,8 @@
 import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
-
-// Внутренние импорты
-import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
-import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
-import { Test } from '@nestjs/testing';
-import { TestAppModule } from '../../../../tests/setup/test-app.module';
-import { UnauthorizedException } from '@nestjs/common';
-import { authLoginAs } from '../../../../tests/setup/auth';
+import { Sequelize } from 'sequelize-typescript';
+import { setupTestApp } from '../../../../tests/setup/app';
+import { TestCleanup, TestDataFactory } from '../../../../tests/utils';
 
 // Типы для тестов
 interface TestAddressData {
@@ -62,10 +57,10 @@ const TEST_DATA = {
 
 describe('UserAddressController (integration)', () => {
     let app: INestApplication;
-    let accessToken: string;
 
     // Вспомогательные функции для создания тестовых объектов
     const createTestAddress = async (
+        accessToken: string,
         addressData: TestAddressData,
     ): Promise<number> => {
         const response = await request(app.getHttpServer())
@@ -77,55 +72,34 @@ describe('UserAddressController (integration)', () => {
     };
 
     beforeAll(async () => {
-        // Переопределяем гварды как в нотификациях, чтобы избежать 403 в тестах
-        const moduleRef = await Test.createTestingModule({
-            imports: [TestAppModule],
-        })
-            .overrideGuard(AuthGuard)
-            .useValue({
-                canActivate: (context: { switchToHttp: () => { getRequest: () => { headers: { authorization?: string } } } }) => {
-                    const req = context.switchToHttp().getRequest();
-                    if (!req.headers?.authorization) {
-                        throw new UnauthorizedException();
-                    }
-                    return true;
-                },
-            })
-            .overrideGuard(RoleGuard)
-            .useValue({ canActivate: () => true })
-            .compile();
+        process.env.NODE_ENV = 'test';
+        process.env.ALLOWED_ORIGINS = 'http://localhost:3000';
+        process.env.COOKIE_PARSER_SECRET_KEY = 'test-secret-12345';
+        process.env.JWT_PRIVATE_KEY = 'a'.repeat(64);
+        process.env.JWT_ACCESS_SECRET = 'access-secret-123456';
+        process.env.JWT_REFRESH_SECRET = 'refresh-secret-123456';
+        process.env.JWT_ACCESS_EXPIRES = '15m';
+        process.env.JWT_REFRESH_EXPIRES = '30d';
 
-        app = moduleRef.createNestApplication();
-        
-        // Глобальные настройки как в setupTestApp
-        const { CustomValidationPipe } = await import('@app/infrastructure/pipes/custom-validation-pipe');
-        const cookieParser = (await import('cookie-parser')).default;
-        app.use(cookieParser(process.env.COOKIE_PARSER_SECRET_KEY || 'test-secret'));
-        app.useGlobalPipes(new CustomValidationPipe());
-        app.setGlobalPrefix('online-store');
-        // Мокаем req.user, так как гварды пропущены
-        app.use((req: unknown, _res: unknown, next: unknown) => {
-            const hasAuth = Boolean((req as { headers?: { authorization?: string } }).headers?.authorization);
-            if (hasAuth) {
-                (req as { user?: { id: number } }).user = { id: 13 };
-            }
-            (next as () => void)();
-        });
-        
+        app = await setupTestApp();
         await app.init();
-        accessToken = await authLoginAs(app, 'user');
-        console.log('Access token:', accessToken);
     });
 
     afterAll(async () => {
+        const sequelize = app.get(Sequelize);
+        await TestCleanup.cleanUsers(sequelize);
         await app.close();
     });
 
     describe('CRUD Operations', () => {
         it('should create address successfully', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             const res = await request(app.getHttpServer())
                 .post(TEST_DATA.ENDPOINTS.ADDRESSES)
-                .set('Authorization', `Bearer ${accessToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send(TEST_DATA.ADDRESSES.HOME)
                 .expect((r: { status: number; body: unknown }) => {
                     if (r.status >= 500) {
@@ -139,9 +113,16 @@ describe('UserAddressController (integration)', () => {
         });
 
         it('should get addresses list', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            // Сначала создадим адрес для этого пользователя
+            await createTestAddress(token, TEST_DATA.ADDRESSES.HOME);
+
             const res = await request(app.getHttpServer())
                 .get(TEST_DATA.ENDPOINTS.ADDRESSES)
-                .set('Authorization', `Bearer ${accessToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect((r: { status: number; body: unknown }) => {
                     if (r.status >= 500) {
                         console.log('Get addresses 500 body:', r.body);
@@ -156,11 +137,15 @@ describe('UserAddressController (integration)', () => {
         });
 
         it('should update address', async () => {
-            const id = await createTestAddress(TEST_DATA.ADDRESSES.WORK);
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const id = await createTestAddress(token, TEST_DATA.ADDRESSES.WORK);
 
             await request(app.getHttpServer())
                 .put(`${TEST_DATA.ENDPOINTS.ADDRESSES}/${id}`)
-                .set('Authorization', `Bearer ${accessToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({ street: 'Новая' })
                 .expect(200)
                 .expect(({ body }: { body: TestResponse }) => {
@@ -169,11 +154,15 @@ describe('UserAddressController (integration)', () => {
         });
 
         it('should set default address', async () => {
-            const id = await createTestAddress(TEST_DATA.ADDRESSES.DACHA);
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const id = await createTestAddress(token, TEST_DATA.ADDRESSES.DACHA);
 
             await request(app.getHttpServer())
                 .patch(`${TEST_DATA.ENDPOINTS.ADDRESSES}/${id}/set-default`)
-                .set('Authorization', `Bearer ${accessToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(200)
                 .expect(({ body }: { body: TestResponse }) => {
                     expect(body?.data?.is_default).toBe(true);
@@ -181,11 +170,15 @@ describe('UserAddressController (integration)', () => {
         });
 
         it('should remove address', async () => {
-            const id = await createTestAddress(TEST_DATA.ADDRESSES.TEMP);
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const id = await createTestAddress(token, TEST_DATA.ADDRESSES.TEMP);
 
             await request(app.getHttpServer())
                 .delete(`${TEST_DATA.ENDPOINTS.ADDRESSES}/${id}`)
-                .set('Authorization', `Bearer ${accessToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(200)
                 .expect(({ body }: { body: TestResponse }) => {
                     expect(body?.message).toBe('Адрес успешно удалён');
@@ -201,24 +194,15 @@ describe('UserAddressController (integration)', () => {
         });
 
         it('should return 400 on validation error', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             await request(app.getHttpServer())
                 .post(TEST_DATA.ENDPOINTS.ADDRESSES)
-                .set('Authorization', `Bearer ${accessToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({ title: '', street: '', house: '', city: '' })
                 .expect(400);
         });
     });
-
-    // Условные отладочные тесты
-    const DEBUG_TESTS = process.env.DEBUG_TESTS === 'true';
-
-    if (DEBUG_TESTS) {
-        it('Debug: check token content', async () => {
-            const response = await request(app.getHttpServer())
-                .get(TEST_DATA.ENDPOINTS.ADDRESSES)
-                .set('Authorization', `Bearer ${accessToken}`);
-            console.log('Response status:', response.status);
-            console.log('Response body:', response.body);
-        });
-    }
 });

@@ -2,8 +2,7 @@ import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../setup/app';
-import { authLoginAs } from '../setup/auth';
-import { TestCleanup } from '../utils';
+import { TestCleanup, TestDataFactory } from '../utils';
 
 /**
  * E2E тесты для RBAC (Role-Based Access Control)
@@ -16,41 +15,32 @@ import { TestCleanup } from '../utils';
  * - Проверка различных защищённых endpoints
  *
  * Оптимизации производительности:
- * - Параллельный логин admin + user через Promise.all (↓50% времени setup)
- * - Использование authLoginAs helper для DRY
+ * - Unique users для каждого теста (изоляция данных)
+ * - Использование TestDataFactory для создания пользователей
  * - Fail-fast проверка токенов в beforeAll
- * - Убраны избыточные проверки токенов в тестах
  */
 
 describe('RBAC (e2e integration)', () => {
     let app: INestApplication;
-    let adminToken: string;
-    let userToken: string;
 
     beforeAll(async () => {
+        process.env.NODE_ENV = 'test';
+        process.env.ALLOWED_ORIGINS = 'http://localhost:3000';
+        process.env.COOKIE_PARSER_SECRET_KEY = 'test-secret-12345';
+        process.env.JWT_PRIVATE_KEY = 'a'.repeat(64);
+        process.env.JWT_ACCESS_SECRET = 'access-secret-123456';
+        process.env.JWT_REFRESH_SECRET = 'refresh-secret-123456';
+        process.env.JWT_ACCESS_EXPIRES = '15m';
+        process.env.JWT_REFRESH_EXPIRES = '30d';
+
         app = await setupTestApp();
-
-        // Получаем токены параллельно для ускорения тестов
-        [adminToken, userToken] = await Promise.all([
-            authLoginAs(app, 'admin'),
-            authLoginAs(app, 'user'),
-        ]);
-
-        // Fail fast если токены не получены
-        if (!adminToken || !userToken) {
-            throw new Error('Failed to obtain auth tokens in beforeAll');
-        }
+        await app.init();
     });
 
     afterAll(async () => {
-        await app?.close();
-    });
-
-    afterEach(async () => {
         const sequelize = app.get(Sequelize);
-
-        // Используем TestCleanup утилиты для DRY кода
-        await TestCleanup.cleanAuthData(sequelize);
+        await TestCleanup.cleanUsers(sequelize);
+        await app?.close();
     });
 
     describe('Guest (без токена)', () => {
@@ -66,12 +56,16 @@ describe('RBAC (e2e integration)', () => {
 
     describe('USER роль (ограниченный доступ)', () => {
         it('должен разрешить проверку авторизации для USER → 200', async () => {
+            const { token, user } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             const response = await request(app.getHttpServer())
                 .get('/online-store/auth/check')
-                .set('Authorization', `Bearer ${userToken}`);
+                .set('Authorization', `Bearer ${token}`);
 
             expect(response.status).toBe(HttpStatus.OK);
-            expect(response.body).toHaveProperty('email', 'user@example.com');
+            expect(response.body).toHaveProperty('email', user.email);
             expect(response.body).toHaveProperty('roles');
             expect(Array.isArray(response.body.roles)).toBe(true);
         });
@@ -79,12 +73,16 @@ describe('RBAC (e2e integration)', () => {
 
     describe('ADMIN роль (полный доступ)', () => {
         it('должен разрешить проверку авторизации для ADMIN → 200', async () => {
+            const { token, user } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
             const response = await request(app.getHttpServer())
                 .get('/online-store/auth/check')
-                .set('Authorization', `Bearer ${adminToken}`);
+                .set('Authorization', `Bearer ${token}`);
 
             expect(response.status).toBe(HttpStatus.OK);
-            expect(response.body).toHaveProperty('email', 'admin@example.com');
+            expect(response.body).toHaveProperty('email', user.email);
             expect(response.body).toHaveProperty('roles');
             expect(Array.isArray(response.body.roles)).toBe(true);
             expect(response.body.roles.length).toBeGreaterThan(0);

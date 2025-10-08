@@ -3,13 +3,10 @@ import { INestApplication } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
-import { authLoginAs } from '../../../../../tests/setup/auth';
 import { TestDataFactory, TestCleanup } from '../../../../../tests/utils';
 
 describe('User Admin Integration Tests', () => {
     let app: INestApplication;
-    let userToken: string;
-    let adminToken: string;
 
     beforeAll(async () => {
         process.env.NODE_ENV = 'test';
@@ -23,30 +20,25 @@ describe('User Admin Integration Tests', () => {
         process.env.JWT_REFRESH_EXPIRES = '30d';
 
         app = await setupTestApp();
-
-        // Получаем токены для тестирования
-        userToken = await authLoginAs(app, 'user');
-        adminToken = await authLoginAs(app, 'admin');
+        await app.init();
     }, 30000);
 
     afterAll(async () => {
-        await app.close();
-    });
-
-    afterEach(async () => {
         const sequelize = app.get(Sequelize);
-
-        // Используем TestCleanup утилиты для DRY кода
-        await TestCleanup.resetUser13(sequelize);
         await TestCleanup.cleanUsers(sequelize);
+        await app.close();
     });
 
     // ===== ADMIN STATS ENDPOINT =====
     describe('GET /user/admin/stats', () => {
         it('200: returns user statistics for admin', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
             const response = await request(app.getHttpServer())
                 .get('/online-store/user/admin/stats')
-                .set('Authorization', `Bearer ${adminToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(200);
 
             expect(response.body).toHaveProperty('data');
@@ -69,9 +61,13 @@ describe('User Admin Integration Tests', () => {
         });
 
         it('403: regular user cannot access admin stats', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             await request(app.getHttpServer())
                 .get('/online-store/user/admin/stats')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(403);
         });
 
@@ -84,48 +80,55 @@ describe('User Admin Integration Tests', () => {
 
     // ===== ADMIN FLAG ENDPOINTS =====
     describe('Admin flag endpoints', () => {
-        const targetUserId = 13; // user@example.com // существующий user из сидов
-        const adminCases: Array<{ path: string }> = [
-            { path: `/online-store/user/admin/block/${targetUserId}` },
-            { path: `/online-store/user/admin/unblock/${targetUserId}` },
-            { path: `/online-store/user/admin/suspend/${targetUserId}` },
-            { path: `/online-store/user/admin/unsuspend/${targetUserId}` },
-            { path: `/online-store/user/admin/delete/${targetUserId}` },
-            { path: `/online-store/user/admin/restore/${targetUserId}` },
-            {
-                path: `/online-store/user/admin/premium/upgrade/${targetUserId}`,
-            },
-            {
-                path: `/online-store/user/admin/premium/downgrade/${targetUserId}`,
-            },
-            { path: `/online-store/user/admin/employee/set/${targetUserId}` },
-            { path: `/online-store/user/admin/employee/unset/${targetUserId}` },
-            { path: `/online-store/user/admin/vip/set/${targetUserId}` },
-            { path: `/online-store/user/admin/vip/unset/${targetUserId}` },
-            { path: `/online-store/user/admin/highvalue/set/${targetUserId}` },
-            {
-                path: `/online-store/user/admin/highvalue/unset/${targetUserId}`,
-            },
-            { path: `/online-store/user/admin/wholesale/set/${targetUserId}` },
-            {
-                path: `/online-store/user/admin/wholesale/unset/${targetUserId}`,
-            },
-            { path: `/online-store/user/admin/affiliate/set/${targetUserId}` },
-            {
-                path: `/online-store/user/admin/affiliate/unset/${targetUserId}`,
-            },
+        let adminToken: string;
+        let userToken: string;
+        let targetUserId: number;
+
+        beforeAll(async () => {
+            // Создаём админа, юзера и target user для этого describe блока
+            const [admin, user, targetUser] = await Promise.all([
+                TestDataFactory.createUserWithRole(app, 'ADMIN'),
+                TestDataFactory.createUserWithRole(app, 'USER'),
+                TestDataFactory.createUserInDB(app),
+            ]);
+            adminToken = admin.token;
+            userToken = user.token;
+            targetUserId = targetUser.id;
+        });
+
+        const getAdminCases = (userId: number) => [
+            { path: `/online-store/user/admin/block/${userId}` },
+            { path: `/online-store/user/admin/unblock/${userId}` },
+            { path: `/online-store/user/admin/suspend/${userId}` },
+            { path: `/online-store/user/admin/unsuspend/${userId}` },
+            { path: `/online-store/user/admin/delete/${userId}` },
+            { path: `/online-store/user/admin/restore/${userId}` },
+            { path: `/online-store/user/admin/premium/upgrade/${userId}` },
+            { path: `/online-store/user/admin/premium/downgrade/${userId}` },
+            { path: `/online-store/user/admin/employee/set/${userId}` },
+            { path: `/online-store/user/admin/employee/unset/${userId}` },
+            { path: `/online-store/user/admin/vip/set/${userId}` },
+            { path: `/online-store/user/admin/vip/unset/${userId}` },
+            { path: `/online-store/user/admin/highvalue/set/${userId}` },
+            { path: `/online-store/user/admin/highvalue/unset/${userId}` },
+            { path: `/online-store/user/admin/wholesale/set/${userId}` },
+            { path: `/online-store/user/admin/wholesale/unset/${userId}` },
+            { path: `/online-store/user/admin/affiliate/set/${userId}` },
+            { path: `/online-store/user/admin/affiliate/unset/${userId}` },
         ];
 
-        it.each(adminCases)('ADMIN 200 -> %s', async ({ path }) => {
+        it.each(getAdminCases(0))('ADMIN 200 -> %s', async ({ path }) => {
+            const actualPath = path.replace('/0', `/${targetUserId}`);
             await request(app.getHttpServer())
-                .patch(path)
+                .patch(actualPath)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(200);
         });
 
-        it.each(adminCases)('USER 403 -> %s', async ({ path }) => {
+        it.each(getAdminCases(0))('USER 403 -> %s', async ({ path }) => {
+            const actualPath = path.replace('/0', `/${targetUserId}`);
             await request(app.getHttpServer())
-                .patch(path)
+                .patch(actualPath)
                 .set('Authorization', `Bearer ${userToken}`)
                 .expect(403);
         });
@@ -140,42 +143,58 @@ describe('User Admin Integration Tests', () => {
         });
 
         it('403: regular user cannot access admin endpoints', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
             await request(app.getHttpServer())
                 .get('/online-store/user/get-list-users')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(403);
 
             await request(app.getHttpServer())
                 .get('/online-store/user/1')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(403);
 
             await request(app.getHttpServer())
                 .post('/online-store/user/create')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({ email: 'x@y.z', password: 'Strong123!' })
                 .expect(403);
         });
 
         it('200: admin can list users', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
             await request(app.getHttpServer())
                 .get('/online-store/user/get-list-users?page=1&limit=5')
-                .set('Authorization', `Bearer ${adminToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(200);
         });
 
         it('400: invalid query parameters', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
             await request(app.getHttpServer())
                 .get('/online-store/user/get-list-users?page=abc&limit=NaN')
-                .set('Authorization', `Bearer ${adminToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(400);
         });
 
         it('200: admin can create and delete users', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
             const uniqueEmail = TestDataFactory.uniqueEmail();
             const createRes = await request(app.getHttpServer())
                 .post('/online-store/user/create')
-                .set('Authorization', `Bearer ${adminToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({ email: uniqueEmail, password: 'StrongPass123!' })
                 .expect(201);
 
@@ -184,19 +203,23 @@ describe('User Admin Integration Tests', () => {
 
             const delRes = await request(app.getHttpServer())
                 .delete(`/online-store/user/delete/${newUserId}`)
-                .set('Authorization', `Bearer ${adminToken}`);
+                .set('Authorization', `Bearer ${token}`);
             expect([200, 404]).toContain(delRes.status);
         });
 
         it('200: admin can update user profile', async () => {
-            const userId = 13; // user@example.com
+            const { token: adminToken } =
+                await TestDataFactory.createUserWithRole(app, 'ADMIN');
+            const { id: targetUserId } =
+                await TestDataFactory.createUserInDB(app);
+
             const payload = {
                 firstName: 'Петр',
                 lastName: 'Петров',
             };
 
             const response = await request(app.getHttpServer())
-                .put(`/online-store/user/update/${userId}`)
+                .put(`/online-store/user/update/${targetUserId}`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send(payload)
                 .expect(200);
@@ -209,12 +232,16 @@ describe('User Admin Integration Tests', () => {
         });
 
         it('409: duplicate email on update', async () => {
-            const userId = 13; // user@example.com
+            const { token: adminToken, user: admin } =
+                await TestDataFactory.createUserWithRole(app, 'ADMIN');
+            const { id: targetUserId } =
+                await TestDataFactory.createUserInDB(app);
+
             const payload: Partial<UpdateUserDto> = {
-                email: 'admin@example.com',
+                email: admin.email, // Попытка установить email админа
             };
             await request(app.getHttpServer())
-                .put(`/online-store/user/update/${userId}`)
+                .put(`/online-store/user/update/${targetUserId}`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send(payload)
                 .expect(409);
@@ -224,17 +251,22 @@ describe('User Admin Integration Tests', () => {
     // ===== ROLE MANAGEMENT =====
     describe('Role management', () => {
         it('200: admin can add and remove roles', async () => {
-            // Добавляем роль ADMIN пользователю 13, затем удаляем ADMIN
+            const { token: adminToken } =
+                await TestDataFactory.createUserWithRole(app, 'ADMIN');
+            const { id: targetUserId } =
+                await TestDataFactory.createUserInDB(app);
+
+            // Добавляем роль ADMIN пользователю, затем удаляем ADMIN
             await request(app.getHttpServer())
                 .post('/online-store/user/role/add')
                 .set('Authorization', `Bearer ${adminToken}`)
-                .send({ userId: 13, role: 'ADMIN' })
+                .send({ userId: targetUserId, role: 'ADMIN' })
                 .expect(201);
 
             await request(app.getHttpServer())
                 .delete('/online-store/user/role/delete')
                 .set('Authorization', `Bearer ${adminToken}`)
-                .send({ userId: 13, role: 'ADMIN' })
+                .send({ userId: targetUserId, role: 'ADMIN' })
                 .expect(200);
         });
     });
