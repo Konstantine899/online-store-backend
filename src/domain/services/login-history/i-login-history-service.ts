@@ -11,7 +11,7 @@ export interface ILoginHistoryService {
         failureReason: string,
         ipAddress?: string,
         userAgent?: string,
-    ): Promise<LoginHistoryModel>;
+    ): Promise<LoginHistoryModel | null>;
     getUserLoginHistory(
         userId: number,
         limit?: number,

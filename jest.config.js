@@ -47,6 +47,7 @@ module.exports = {
                 '<rootDir>/src/**/*.integration.test.ts'
             ],
             testTimeout: 30000, // Integration тесты могут быть медленнее
+            maxWorkers: 1, // Запускать интеграционные тесты последовательно (избегаем race conditions)
         }
     ],
 

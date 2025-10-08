@@ -1,6 +1,5 @@
 ## Просто делай коммит до обновления проекта
 
-
 ## Запуск проекта
 
 ```
@@ -12,27 +11,27 @@ npm run start:dev
 ### Быстрый старт (development)
 
 1. Скопируйте пример окружения и заполните значения:
-   ```bash
-   cp .development.env.example .development.env
-   ```
-2a. Убедитесь, что существует файл `.migrate.env` для `sequelize-cli` (используется `db/config/database.js`).
-    Значения DEV_* должны соответствовать runtime-настройкам из `.development.env`:
+    ```bash
+    cp .development.env.example .development.env
+    ```
+    2a. Убедитесь, что существует файл `.migrate.env` для `sequelize-cli` (используется `db/config/database.js`).
+    Значения DEV\_\* должны соответствовать runtime-настройкам из `.development.env`:
     DEV_MYSQL_HOST, DEV_MYSQL_PORT, DEV_MYSQL_DATABASE, DEV_MYSQL_USER, DEV_MYSQL_PASSWORD, DEV_DIALECT.
 2. Установите зависимости:
-   ```bash
-   npm install
-   ```
+    ```bash
+    npm install
+    ```
 3. Примените миграции (если требуется):
-   ```bash
-   npm run db:migrate
-   ```
+    ```bash
+    npm run db:migrate
+    ```
 4. Запустите приложение:
-   ```bash
-   npm run start:dev
-   ```
+    ```bash
+    npm run start:dev
+    ```
 
 Swagger (dev): http://localhost:5000/online-store/docs
-Health:         http://localhost:5000/online-store/health
+Health: http://localhost:5000/online-store/health
 
 ---
 
@@ -52,6 +51,7 @@ Health:         http://localhost:5000/online-store/health
 - `npm run db:migrate:undo:all` - Удаление всех миграций
 - `npm run db:seed:all` - Добавление данных в таблицы
 - `npm run db:seed:undo:all` - Удаление всех данных из таблиц
+
 ---
 
 <br/>
@@ -64,17 +64,15 @@ Swagger - доступен по [http://localhost:5000/online-store/docs](http:/
 <br/>
 <br/>
 
-
-
 ## Миграции
 
 - `db/config` - содержит файл конфигурации, который сообщает `sequelize CLI`, как подключаться к базе данных
 - `db/config/migrations` - содержит все файлы миграций. В названии файлов миграций содержится `hash`.
   Пример: `20230602150332-create-user.js`. `Hash` - это время создания в `unix` формате.
 
-~~~
+```
 Важно! При создании таблицы, автоматически создается ассоциация(и). таким образом если таблица на которую ссылается ассоциация еще не создана, то возникнет ошибка.
-~~~
+```
 
 - `db/models` - содержит все модели проекта.
 - `db/seeders` - файлы которые содержат все исходные данные для добавления в таблицы.
@@ -83,7 +81,6 @@ Swagger - доступен по [http://localhost:5000/online-store/docs](http:/
 
 Подробнее о миграциях можно почитать в
 документации - [Migrations](https://sequelize.org/docs/v6/other-topics/migrations/)
-
 
 ---
 
@@ -173,25 +170,25 @@ Swagger - доступен по [http://localhost:5000/online-store/docs](http:/
 
 ```json
 {
-  "data": [
-    {
-      "id": 1,
-      "name": "iPhone 15",
-      "price": 999.99,
-      "rating": 4.5,
-      "image": "iphone15.jpg",
-      "category_id": 1,
-      "brand_id": 1
+    "data": [
+        {
+            "id": 1,
+            "name": "iPhone 15",
+            "price": 999.99,
+            "rating": 4.5,
+            "image": "iphone15.jpg",
+            "category_id": 1,
+            "brand_id": 1
+        }
+    ],
+    "meta": {
+        "totalCount": 10,
+        "lastPage": 2,
+        "currentPage": 1,
+        "nextPage": 2,
+        "previousPage": null,
+        "limit": 5
     }
-  ],
-  "meta": {
-    "totalCount": 10,
-    "lastPage": 2,
-    "currentPage": 1,
-    "nextPage": 2,
-    "previousPage": null,
-    "limit": 5
-  }
 }
 ```
 
@@ -210,20 +207,202 @@ Swagger - доступен по [http://localhost:5000/online-store/docs](http:/
 
 ## Тестирование
 
-Проект включает интеграционные тесты для проверки критических функций.
+Проект включает **unit** и **integration** тесты для проверки критической функциональности.
+
+**Статистика**: 24 test suites, 335 тестов (unit + integration)
+
+---
+
+### Требования для тестов
+
+Для интеграционных тестов требуется **MySQL сервер** с тестовой БД:
+
+- **Host**: 127.0.0.1
+- **Port**: 3308
+- **Database**: `online_store_test`
+- **User**: `test_user`
+- **Password**: `TestPass123!`
+
+#### Docker MySQL (рекомендуется)
+
+```bash
+docker run -d \
+  --name mysql-test \
+  -e MYSQL_ROOT_PASSWORD=root \
+  -e MYSQL_DATABASE=online_store_test \
+  -e MYSQL_USER=test_user \
+  -e MYSQL_PASSWORD=TestPass123! \
+  -p 3308:3306 \
+  mysql:8.0
+```
+
+---
+
+### Подготовка тестовой БД (первый запуск)
+
+**Важно!** Перед первым запуском тестов необходимо подготовить тестовую БД:
+
+```bash
+# 1. Создать тестовую БД
+npm run db:create:test
+
+# 2. Применить все миграции
+npm run db:migrate:test
+
+# 3. Добавить seed данные (тестовые пользователи и роли)
+npm run db:seed:test
+```
+
+**Seed данные включают**:
+
+- Тестовые пользователи: `admin@example.com`, `user@example.com` (пароль: `Password123!`)
+- Роли: ADMIN, USER, SUPER_ADMIN, и др.
+- Системные данные для тестов
+
+---
 
 ### Запуск тестов
 
 ```bash
-# Запуск всех тестов (unit + integration)
+# Все тесты (unit + integration)
 npm run test
 
-# Запуск только unit тестов
+# С HTML отчётом (автоматически откроется в браузере)
+npm run test:html:open
+
+# Только unit тесты (быстрые, без БД)
 npm run test:unit
 
-# Запуск только integration тестов
+# Только integration тесты (с БД)
 npm run test:integration
+
+# С покрытием кода
+npm run test:cov
+npm run test:cov:open  # + откроет отчёт в браузере
+
+# CI режим (для GitHub Actions)
+npm run test:ci
+
+# Отладка (показывает открытые handles)
+npm run test:debug
 ```
 
-Подробнее о тестах см. [tests/README.md](tests/README.md).
+---
 
+### Управление тестовой БД
+
+```bash
+# Статус миграций
+npm run db:migrate:status:test
+
+# Откат последней миграции
+npm run db:migrate:undo:test
+
+# Откат всех миграций
+npm run db:migrate:undo:all:test
+
+# Удалить seed данные
+npm run db:seed:undo:all:test
+
+# Полный reset БД (drop → create → migrate → seed)
+npm run db:reset:test
+
+# Удалить тестовую БД
+npm run db:drop:test
+```
+
+---
+
+### Troubleshooting
+
+#### Тесты падают с ошибкой "Unknown database"
+
+```bash
+# Создайте тестовую БД и примените миграции
+npm run db:create:test
+npm run db:migrate:test
+npm run db:seed:test
+```
+
+#### Тесты падают с ошибкой "Cannot add or update a child row"
+
+```bash
+# Примените seed данные (тестовые пользователи отсутствуют)
+npm run db:seed:test
+```
+
+#### Connection refused / ECONNREFUSED
+
+```bash
+# Проверьте, что MySQL запущен на порту 3308
+docker ps | grep mysql-test
+
+# Если контейнер остановлен - запустите
+docker start mysql-test
+```
+
+#### Слишком много SQL логов в консоли
+
+Убедитесь, что в `.test.env` установлено:
+
+```env
+SQL_LOGGING=false
+SEQUELIZE_LOGGING=false
+```
+
+---
+
+### Структура тестов
+
+```
+tests/
+├── unit/                    # Unit тесты (моки, без БД)
+│   ├── services/
+│   ├── pipes/
+│   └── guards/
+├── integration/             # Integration тесты (реальная БД)
+│   ├── auth-flow.integration.test.ts
+│   └── rbac.integration.test.ts
+├── setup/                   # Вспомогательные утилиты
+│   ├── app.ts              # Настройка тестового приложения
+│   ├── auth.ts             # Хелперы для авторизации
+│   └── test-app.module.ts  # Тестовый модуль
+└── jest-setup.ts           # Глобальная настройка Jest
+
+src/infrastructure/controllers/*/tests/
+└── *.integration.test.ts    # Integration тесты рядом с контроллерами
+```
+
+---
+
+### Конфигурация тестов
+
+- **Jest config**: `jest.config.js`
+- **Test environment**: `.test.env`
+- **Coverage threshold**: 70% (branches, functions, lines, statements)
+- **Timeout**: 5s (unit), 30s (integration)
+
+Подробнее о тестах см. документацию в `tests/` директории.
+
+---
+
+### CI/CD (GitHub Actions)
+
+CI pipeline **полностью настроен** и автоматически:
+
+✅ **Поднимает MySQL** в Docker контейнере
+✅ **Применяет миграции** перед тестами
+✅ **Добавляет seed данные** для интеграционных тестов
+✅ **Оптимизирует MySQL** для быстрых тестов (tmpfs, отключение doublewrite)
+✅ **Запускает параллельно**: lint, build, unit tests, integration tests
+✅ **Проверяет миграции**: up → down → up (rollback работает)
+✅ **Собирает coverage** отчёты
+
+**Важно**: В CI используются другие credentials (из `.github/workflows/ci.yml`):
+
+- Database: `online_store_test`
+- User: `test_user`
+- Password: `test_password` ⚠️ (не `TestPass123!`)
+- Port: `3306` (не `3308`)
+
+Все тесты проходят автоматически при push/PR в ветки `main` и `dev`.

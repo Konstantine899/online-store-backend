@@ -21,12 +21,11 @@ describe('User Admin Integration Tests', () => {
         process.env.JWT_REFRESH_EXPIRES = '30d';
 
         app = await setupTestApp();
-        await app.init();
 
         // Получаем токены для тестирования
         userToken = await authLoginAs(app, 'user');
         adminToken = await authLoginAs(app, 'admin');
-    });
+    }, 30000);
 
     afterAll(async () => {
         await app.close();

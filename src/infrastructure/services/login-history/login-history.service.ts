@@ -44,7 +44,16 @@ export class LoginHistoryService implements ILoginHistoryService {
         failureReason: string,
         ipAddress?: string,
         userAgent?: string,
-    ): Promise<LoginHistoryModel> {
+    ): Promise<LoginHistoryModel | null> {
+        // Если userId невалиден (0 или отрицательный), только логируем в app logs
+        // без записи в БД (избегаем нарушения FK constraint)
+        if (!userId || userId <= 0) {
+            this.logger.warn(
+                `Failed login attempt from IP ${ipAddress}: ${failureReason} (user not found in DB)`,
+            );
+            return null;
+        }
+
         try {
             const loginRecord =
                 await this.loginHistoryRepository.createLoginRecord({

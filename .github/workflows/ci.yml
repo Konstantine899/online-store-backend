@@ -1,338 +1,361 @@
 name: CI Pipeline
 
 on:
-  pull_request:
-    branches: [main, dev]
-  push:
-    branches: [main, dev]
+    pull_request:
+        branches: [main, dev]
+    push:
+        branches: [main, dev]
 
 # Автоматическая отмена устаревших запусков при новых коммитах
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
 
 # Общие переменные окружения для всех джоб
 env:
-  CI: 'true'  # Включает оптимизации Jest для CI (bail, silent, minimal reporters)
-  NODE_VERSION: '22'
-  NODE_ENV: test
-  # Database configuration
-  DB_HOST: 127.0.0.1
-  DB_PORT: 3306
-  DB_NAME: online_store_test
-  DB_USER: test_user
-  DB_PASS: test_password
-  # JWT secrets for tests
-  JWT_ACCESS_SECRET: test-secret-key-for-ci-pipeline-access-token-32chars
-  JWT_REFRESH_SECRET: test-secret-key-for-ci-pipeline-refresh-token-32chars
-  JWT_ACCESS_TTL: 15m
-  JWT_REFRESH_TTL: 30d
-  # Security
-  COOKIE_PARSER_SECRET_KEY: test-cookie-parser-secret-key-for-ci-pipeline-min-32-chars
-  # Rate limiting
-  RATE_LIMIT_ENABLED: 'true'
-  RATE_LIMIT_LOGIN_ATTEMPTS: '5'
-  RATE_LIMIT_LOGIN_WINDOW: '15m'
-  RATE_LIMIT_REFRESH_ATTEMPTS: '10'
-  RATE_LIMIT_REFRESH_WINDOW: '5m'
-  RATE_LIMIT_REG_ATTEMPTS: '3'
-  RATE_LIMIT_REG_WINDOW: '1m'
+    CI: 'true' # Включает оптимизации Jest для CI (bail, silent, minimal reporters)
+    NODE_VERSION: '22'
+    NODE_ENV: test
+    # Database configuration (для runtime тестов и sequelize-cli)
+    MYSQL_HOST: 127.0.0.1
+    MYSQL_PORT: 3306
+    MYSQL_DATABASE: online_store_test
+    MYSQL_USER: test_user
+    MYSQL_PASSWORD: test_password
+    DIALECT: mysql
+    SQL_LOGGING: 'false'
+    SEQUELIZE_LOGGING: 'false'
+    # Sequelize CLI переменные (для миграций и seeds)
+    TEST_MYSQL_HOST: 127.0.0.1
+    TEST_MYSQL_PORT: 3306
+    TEST_MYSQL_DATABASE: online_store_test
+    TEST_MYSQL_USER: test_user
+    TEST_MYSQL_PASSWORD: test_password
+    TEST_DIALECT: mysql
+    # JWT secrets for tests
+    JWT_PRIVATE_KEY: 9EDFE1DC70282FA9699F8472366EA194948DC526524B6462D05624086435165D
+    JWT_ACCESS_SECRET: test-secret-key-for-ci-pipeline-access-token-32chars
+    JWT_REFRESH_SECRET: test-secret-key-for-ci-pipeline-refresh-token-32chars
+    JWT_ACCESS_EXPIRES: 15m
+    JWT_REFRESH_EXPIRES: 30d
+    # Security
+    COOKIE_PARSER_SECRET_KEY: test-cookie-parser-secret-key-for-ci-pipeline-min-32-chars
+    ALLOWED_ORIGINS: 'http://localhost,http://127.0.0.1:3000,http://127.0.0.1:5000'
+    # Swagger
+    SWAGGER_ENABLED: 'true'
+    # Port
+    PORT: 5001
+    # Rate limiting
+    RATE_LIMIT_ENABLED: 'true'
+    RATE_LIMIT_LOGIN_ATTEMPTS: '5'
+    RATE_LIMIT_LOGIN_WINDOW: '15m'
+    RATE_LIMIT_REFRESH_ATTEMPTS: '10'
+    RATE_LIMIT_REFRESH_WINDOW: '5m'
+    RATE_LIMIT_REG_ATTEMPTS: '3'
+    RATE_LIMIT_REG_WINDOW: '1m'
 
 jobs:
-  lint:
-    name: Lint Code
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1  # Shallow clone для ускорения (не нужна история)
+    lint:
+        name: Lint Code
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 1 # Shallow clone для ускорения (не нужна история)
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
+            - name: Install dependencies
+              run: npm ci --prefer-offline --no-audit
 
-      - name: Run ESLint
-        run: npm run lint:ts
+            - name: Run ESLint
+              run: npm run lint:ts
 
-  build:
-    name: Build Application
-    runs-on: ubuntu-latest
-    # Параллельно с lint, не блокируем друг друга
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1  # Shallow clone для ускорения
+    build:
+        name: Build Application
+        runs-on: ubuntu-latest
+        # Параллельно с lint, не блокируем друг друга
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 1 # Shallow clone для ускорения
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: 'npm'
 
-      - name: Cache TypeScript build
-        uses: actions/cache@v4
-        with:
-          path: |
-            dist
-            **/*.tsbuildinfo
-          key: ${{ runner.os }}-tsc-${{ hashFiles('**/tsconfig*.json', 'src/**/*.ts') }}
-          restore-keys: |
-            ${{ runner.os }}-tsc-
+            - name: Cache TypeScript build
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      dist
+                      **/*.tsbuildinfo
+                  key: ${{ runner.os }}-tsc-${{ hashFiles('**/tsconfig*.json', 'src/**/*.ts') }}
+                  restore-keys: |
+                      ${{ runner.os }}-tsc-
 
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
+            - name: Install dependencies
+              run: npm ci --prefer-offline --no-audit
 
-      - name: Build TypeScript
-        run: npm run build
+            - name: Build TypeScript
+              run: npm run build
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-          retention-days: 7
+            - name: Upload build artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: dist
+                  path: dist/
+                  retention-days: 7
 
-  test-unit:
-    name: Unit Tests with Coverage
-    runs-on: ubuntu-latest
-    # Параллельно с build и migration-check
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1  # Shallow clone для ускорения
+    test-unit:
+        name: Unit Tests with Coverage
+        runs-on: ubuntu-latest
+        # Параллельно с build и migration-check
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 1 # Shallow clone для ускорения
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: 'npm'
 
-      - name: Cache Jest
-        uses: actions/cache@v4
-        with:
-          path: .jest-cache
-          key: ${{ runner.os }}-jest-${{ hashFiles('**/jest.config.js', 'tests/**/*.ts') }}
-          restore-keys: |
-            ${{ runner.os }}-jest-
+            - name: Cache Jest
+              uses: actions/cache@v4
+              with:
+                  path: .jest-cache
+                  key: ${{ runner.os }}-jest-${{ hashFiles('**/jest.config.js', 'tests/**/*.ts') }}
+                  restore-keys: |
+                      ${{ runner.os }}-jest-
 
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
+            - name: Install dependencies
+              run: npm ci --prefer-offline --no-audit
 
-      - name: Run unit tests with coverage
-        run: npm run test:cov:unit
-        # Все env vars наследуются из workflow-level env
+            - name: Run unit tests with coverage
+              run: npm run test:cov:unit
+              # Все env vars наследуются из workflow-level env
 
-      - name: Upload unit test coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-unit
-          path: coverage/
-          retention-days: 7
+            - name: Upload unit test coverage
+              uses: actions/upload-artifact@v4
+              with:
+                  name: coverage-unit
+                  path: coverage/
+                  retention-days: 7
 
-  test-integration:
-    name: Integration Tests with Coverage
-    runs-on: ubuntu-latest
-    # Параллельно с test-unit, не зависим друг от друга
-    
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: test_root_password
-          MYSQL_DATABASE: online_store_test
-          MYSQL_USER: test_user
-          MYSQL_PASSWORD: test_password
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-          --tmpfs /var/lib/mysql:rw
-          --mount type=tmpfs,destination=/tmp
+    test-integration:
+        name: Integration Tests with Coverage
+        runs-on: ubuntu-latest
+        # Параллельно с test-unit, не зависим друг от друга
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1  # Shallow clone для ускорения
+        services:
+            mysql:
+                image: mysql:8.0
+                env:
+                    MYSQL_ROOT_PASSWORD: test_root_password
+                    MYSQL_DATABASE: online_store_test
+                    MYSQL_USER: test_user
+                    MYSQL_PASSWORD: test_password
+                ports:
+                    - 3306:3306
+                options: >-
+                    --health-cmd="mysqladmin ping"
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=3
+                    --tmpfs /var/lib/mysql:rw
+                    --mount type=tmpfs,destination=/tmp
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 1 # Shallow clone для ускорения
 
-      - name: Cache Jest
-        uses: actions/cache@v4
-        with:
-          path: .jest-cache
-          key: ${{ runner.os }}-jest-integration-${{ hashFiles('**/jest.config.js', 'tests/**/*.ts') }}
-          restore-keys: |
-            ${{ runner.os }}-jest-integration-
-            ${{ runner.os }}-jest-
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
+            - name: Cache Jest
+              uses: actions/cache@v4
+              with:
+                  path: .jest-cache
+                  key: ${{ runner.os }}-jest-integration-${{ hashFiles('**/jest.config.js', 'tests/**/*.ts') }}
+                  restore-keys: |
+                      ${{ runner.os }}-jest-integration-
+                      ${{ runner.os }}-jest-
 
-      - name: Wait for MySQL
-        run: |
-          until mysqladmin ping -h $DB_HOST -P $DB_PORT --silent; do
-            echo 'waiting for mysql...'
-            sleep 2
-          done
+            - name: Install dependencies
+              run: npm ci --prefer-offline --no-audit
 
-      - name: Optimize MySQL for tests
-        run: |
-          mysql -h $DB_HOST -P $DB_PORT -u root -ptest_root_password -e "
-            SET GLOBAL innodb_flush_log_at_trx_commit = 2;
-            SET GLOBAL sync_binlog = 0;
-            SET GLOBAL innodb_doublewrite = 0;
-          "
+            - name: Wait for MySQL
+              run: |
+                  until mysqladmin ping -h $MYSQL_HOST -P $MYSQL_PORT --silent; do
+                    echo 'waiting for mysql...'
+                    sleep 2
+                  done
 
-      - name: Run database migrations
-        run: npm run db:migrate:test
+            - name: Optimize MySQL for tests
+              run: |
+                  mysql -h $MYSQL_HOST -P $MYSQL_PORT -u root -ptest_root_password -e "
+                    SET GLOBAL innodb_flush_log_at_trx_commit = 2;
+                    SET GLOBAL sync_binlog = 0;
+                    SET GLOBAL innodb_doublewrite = 0;
+                  "
 
-      - name: Run database seeds
-        run: npm run db:seed:test
+            - name: Run database migrations
+              run: npm run db:migrate:test
 
-      - name: Run integration tests with coverage
-        run: npm run test:cov:integration
+            - name: Run database seeds
+              run: npm run db:seed:test
 
-      - name: Upload integration test coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-integration
-          path: coverage/
-          retention-days: 7
+            - name: Run integration tests with coverage
+              run: npm run test:cov:integration
 
-  coverage-report:
-    name: Combine Coverage Reports
-    runs-on: ubuntu-latest
-    needs: [test-unit, test-integration]
-    # Только агрегация отчетов, без прогона тестов заново
-    
-    steps:
-      - name: Download unit test coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-unit
-          path: coverage-unit/
+            - name: Upload integration test coverage
+              uses: actions/upload-artifact@v4
+              with:
+                  name: coverage-integration
+                  path: coverage/
+                  retention-days: 7
 
-      - name: Download integration test coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-integration
-          path: coverage-integration/
+    coverage-report:
+        name: Combine Coverage Reports
+        runs-on: ubuntu-latest
+        needs: [test-unit, test-integration]
+        # Только агрегация отчетов, без прогона тестов заново
 
-      - name: Display coverage summary
-        run: |
-          echo "=== Unit Tests Coverage ==="
-          if [ -f coverage-unit/coverage-summary.json ]; then
-            cat coverage-unit/coverage-summary.json
-          fi
-          echo ""
-          echo "=== Integration Tests Coverage ==="
-          if [ -f coverage-integration/coverage-summary.json ]; then
-            cat coverage-integration/coverage-summary.json
-          fi
+        steps:
+            - name: Download unit test coverage
+              uses: actions/download-artifact@v4
+              with:
+                  name: coverage-unit
+                  path: coverage-unit/
 
-      - name: Upload combined coverage artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-combined
-          path: |
-            coverage-unit/
-            coverage-integration/
-          retention-days: 30
+            - name: Download integration test coverage
+              uses: actions/download-artifact@v4
+              with:
+                  name: coverage-integration
+                  path: coverage-integration/
 
-  migration-check:
-    name: Database Migrations Check
-    runs-on: ubuntu-latest
-    # Параллельно со всеми остальными джобами
-    
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: test_root_password
-          MYSQL_DATABASE: online_store_test
-          MYSQL_USER: test_user
-          MYSQL_PASSWORD: test_password
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-          --tmpfs /var/lib/mysql:rw
-          --mount type=tmpfs,destination=/tmp
+            - name: Display coverage summary
+              run: |
+                  echo "=== Unit Tests Coverage ==="
+                  if [ -f coverage-unit/coverage-summary.json ]; then
+                    cat coverage-unit/coverage-summary.json
+                  fi
+                  echo ""
+                  echo "=== Integration Tests Coverage ==="
+                  if [ -f coverage-integration/coverage-summary.json ]; then
+                    cat coverage-integration/coverage-summary.json
+                  fi
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1  # Shallow clone для ускорения
+            - name: Upload combined coverage artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: coverage-combined
+                  path: |
+                      coverage-unit/
+                      coverage-integration/
+                  retention-days: 30
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+    migration-check:
+        name: Database Migrations Check
+        runs-on: ubuntu-latest
+        # Параллельно со всеми остальными джобами
 
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
+        services:
+            mysql:
+                image: mysql:8.0
+                env:
+                    MYSQL_ROOT_PASSWORD: test_root_password
+                    MYSQL_DATABASE: online_store_test
+                    MYSQL_USER: test_user
+                    MYSQL_PASSWORD: test_password
+                ports:
+                    - 3306:3306
+                options: >-
+                    --health-cmd="mysqladmin ping"
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=3
+                    --tmpfs /var/lib/mysql:rw
+                    --mount type=tmpfs,destination=/tmp
 
-      - name: Wait for MySQL
-        run: |
-          until mysqladmin ping -h $DB_HOST -P $DB_PORT --silent; do
-            echo 'waiting for mysql...'
-            sleep 2
-          done
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 1 # Shallow clone для ускорения
 
-      - name: Optimize MySQL for tests
-        run: |
-          mysql -h $DB_HOST -P $DB_PORT -u root -ptest_root_password -e "
-            SET GLOBAL innodb_flush_log_at_trx_commit = 2;
-            SET GLOBAL sync_binlog = 0;
-            SET GLOBAL innodb_doublewrite = 0;
-          "
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: 'npm'
 
-      - name: Check migrations can be applied
-        run: npm run db:migrate:test
+            - name: Install dependencies
+              run: npm ci --prefer-offline --no-audit
 
-      - name: Check migrations can be rolled back
-        run: npm run db:migrate:undo:test
+            - name: Wait for MySQL
+              run: |
+                  until mysqladmin ping -h $MYSQL_HOST -P $MYSQL_PORT --silent; do
+                    echo 'waiting for mysql...'
+                    sleep 2
+                  done
 
-      - name: Re-apply migrations
-        run: npm run db:migrate:test
+            - name: Optimize MySQL for tests
+              run: |
+                  mysql -h $MYSQL_HOST -P $MYSQL_PORT -u root -ptest_root_password -e "
+                    SET GLOBAL innodb_flush_log_at_trx_commit = 2;
+                    SET GLOBAL sync_binlog = 0;
+                    SET GLOBAL innodb_doublewrite = 0;
+                  "
 
-  all-checks-passed:
-    name: All Checks Passed
-    runs-on: ubuntu-latest
-    needs: [lint, build, test-unit, test-integration, coverage-report, migration-check]
-    if: always()
-    steps:
-      - name: Check all jobs status
-        run: |
-          if [ "${{ needs.lint.result }}" != "success" ] || \
-             [ "${{ needs.build.result }}" != "success" ] || \
-             [ "${{ needs.test-unit.result }}" != "success" ] || \
-             [ "${{ needs.test-integration.result }}" != "success" ] || \
-             [ "${{ needs.coverage-report.result }}" != "success" ] || \
-             [ "${{ needs.migration-check.result }}" != "success" ]; then
-            echo "One or more checks failed"
-            exit 1
-          fi
-          echo "All checks passed successfully! 🚀"
+            - name: Check migrations can be applied
+              run: npm run db:migrate:test
 
+            - name: Check migrations can be rolled back
+              run: npm run db:migrate:undo:test
+
+            - name: Re-apply migrations
+              run: npm run db:migrate:test
+
+    all-checks-passed:
+        name: All Checks Passed
+        runs-on: ubuntu-latest
+        needs:
+            [
+                lint,
+                build,
+                test-unit,
+                test-integration,
+                coverage-report,
+                migration-check,
+            ]
+        if: always()
+        steps:
+            - name: Check all jobs status
+              run: |
+                  if [ "${{ needs.lint.result }}" != "success" ] || \
+                     [ "${{ needs.build.result }}" != "success" ] || \
+                     [ "${{ needs.test-unit.result }}" != "success" ] || \
+                     [ "${{ needs.test-integration.result }}" != "success" ] || \
+                     [ "${{ needs.coverage-report.result }}" != "success" ] || \
+                     [ "${{ needs.migration-check.result }}" != "success" ]; then
+                    echo "One or more checks failed"
+                    exit 1
+                  fi
+                  echo "All checks passed successfully! 🚀"

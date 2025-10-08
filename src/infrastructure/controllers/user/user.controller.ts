@@ -1,68 +1,68 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpCode,
-    Param,
-    ParseIntPipe,
-    Post,
-    Put,
-    Patch,
-    UseGuards,
-    HttpStatus,
-    Req,
-    Query,
-    DefaultValuePipe,
-} from '@nestjs/common';
-import { UserService } from '@app/infrastructure/services';
-import {
-    CreateUserDto,
     AddRoleDto,
+    CreateUserDto,
     RemoveRoleDto,
     UpdateUserProfileDto,
 } from '@app/infrastructure/dto';
 import { UpdateUserDto } from '@app/infrastructure/dto/user/update-user.dto';
+import { UserService } from '@app/infrastructure/services';
+import {
+    Body,
+    Controller,
+    DefaultValuePipe,
+    Delete,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Param,
+    ParseIntPipe,
+    Patch,
+    Post,
+    Put,
+    Query,
+    Req,
+    UseGuards,
+} from '@nestjs/common';
 
 import {
-    Roles,
+    AddRoleUserSwaggerDecorator,
     CreateUserSwaggerDecorator,
     GetListUsersSwaggerDecorator,
     GetUserSwaggerDecorator,
-    UpdateUserSwaggerDecorator,
-    RemoveUserSwaggerDecorator,
-    AddRoleUserSwaggerDecorator,
     RemoveRoleUserSwaggerDecorator,
+    RemoveUserSwaggerDecorator,
+    Roles,
     UpdateUserPhoneSwaggerDecorator,
+    UpdateUserSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
 import { ChangePasswordSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/change-password.swagger';
-import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
+import { AuthGuard, RoleGuard } from '@app/infrastructure/common/guards';
 import { ApiTags } from '@nestjs/swagger';
 
-import {
-    CreateUserResponse,
-    GetUserResponse,
-    UpdateUserResponse,
-    RemoveUserResponse,
-    AddRoleResponse,
-    RemoveUserRoleResponse,
-    GetPaginatedUsersResponse,
-} from '@app/infrastructure/responses';
-import { UpdateUserPhoneDto } from '@app/infrastructure/dto';
-import { ChangePasswordDto } from '@app/infrastructure/dto/user/change-password.dto';
-import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
-import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
 import { UpdateUserFlagsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-flags.swagger';
 import { UpdateUserPreferencesSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-preferences.swagger';
+import { UpdateUserProfileSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-profile.swagger';
+import { GetUserStatsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/user-stats.swagger';
 import {
     VerifyUserEmailSwaggerDecorator,
     VerifyUserPhoneSwaggerDecorator,
 } from '@app/infrastructure/common/decorators/swagger/user/verify-user.swagger';
-import { UpdateUserProfileSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-profile.swagger';
-import { GetUserStatsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/user-stats.swagger';
-import { UpdateUserPhoneResponse } from '@app/infrastructure/responses';
-import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
+import { UpdateUserPhoneDto } from '@app/infrastructure/dto';
+import { ChangePasswordDto } from '@app/infrastructure/dto/user/change-password.dto';
 import { ConfirmVerificationDto } from '@app/infrastructure/dto/user/confirm-verification.dto';
+import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
+import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
+import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
+import {
+    AddRoleResponse,
+    CreateUserResponse,
+    GetPaginatedUsersResponse,
+    GetUserResponse,
+    RemoveUserResponse,
+    RemoveUserRoleResponse,
+    UpdateUserPhoneResponse,
+    UpdateUserResponse,
+} from '@app/infrastructure/responses';
 
 import { IUserController } from '@app/domain/controllers';
 
@@ -88,14 +88,6 @@ const ADMIN_ROLES = [
     'TENANT_ADMIN',
     'ADMIN',
 ] as const;
-const MANAGER_ROLES = [
-    'TENANT_OWNER',
-    'TENANT_ADMIN',
-    'MANAGER',
-    'CONTENT_MANAGER',
-    'CUSTOMER_SERVICE',
-    'ADMIN',
-] as const;
 const STAFF_ROLES = [
     'TENANT_OWNER',
     'TENANT_ADMIN',
@@ -112,7 +104,6 @@ const validationPipe = new CustomValidationPipe();
 const AdminGuards = () => UseGuards(AuthGuard, RoleGuard);
 const UserGuards = () => UseGuards(AuthGuard, RoleGuard);
 const StaffGuards = () => UseGuards(AuthGuard, RoleGuard);
-const ManagerGuards = () => UseGuards(AuthGuard, RoleGuard);
 
 @ApiTags('Пользователи')
 @Controller('user')
