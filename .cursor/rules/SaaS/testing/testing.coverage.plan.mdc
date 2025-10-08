@@ -408,16 +408,27 @@ phase_6_status: pending
 # Проблемы: shared state, broken cleanup, no transaction isolation, worker count sensitivity
 
 # ========================================
+
 # РЕШЕНИЕ (08.10.2025):
+
 # ========================================
+
 # ✅ Принят ГИБРИДНЫЙ ПОДХОД:
+
 # 1. Добавлен jest.retryTimes(1) → улучшение стабильности с 77% до ~95%
+
 # 2. Создана документация docs/KNOWN_FLAKY_TESTS.md
+
 # 3. README обновлён с предупреждением
+
 # 4. PHASE 2+ будут использовать ТОЛЬКО unique users (TestDataFactory)
+
 # 5. Постепенная миграция старых тестов (15/week) - опционально
+
 #
+
 # PHASE 1 ЗАКРЫТА как partially_complete_with_mitigation
+
 # Готовы к PHASE 2 с новой стратегией (stable tests only)
 
 checkpoints:
