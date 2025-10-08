@@ -3,6 +3,7 @@ import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../setup/app';
 import { authLoginAs } from '../setup/auth';
+import { TestCleanup } from '../utils';
 
 /**
  * E2E тесты для RBAC (Role-Based Access Control)
@@ -48,9 +49,8 @@ describe('RBAC (e2e integration)', () => {
     afterEach(async () => {
         const sequelize = app.get(Sequelize);
 
-        // Cleanup временных данных (как в TEST-001/002/003)
-        await sequelize.query(`DELETE FROM login_history WHERE user_id > 14`);
-        await sequelize.query(`DELETE FROM refresh_token WHERE user_id > 14`);
+        // Используем TestCleanup утилиты для DRY кода
+        await TestCleanup.cleanAuthData(sequelize);
     });
 
     describe('Guest (без токена)', () => {

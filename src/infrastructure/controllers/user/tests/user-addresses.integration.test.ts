@@ -1,8 +1,9 @@
-import { INestApplication, HttpStatus } from '@nestjs/common';
+import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { authLoginAs } from '../../../../../tests/setup/auth';
+import { TestCleanup } from '../../../../../tests/utils';
 
 describe('User Addresses Integration Tests', () => {
     let app: INestApplication;
@@ -33,12 +34,9 @@ describe('User Addresses Integration Tests', () => {
     afterEach(async () => {
         const sequelize = app.get(Sequelize);
 
-        // Cleanup адресов user 13 (созданных в тестах)
-        await sequelize.query(`DELETE FROM user_address WHERE user_id = 13`);
-
-        // Cleanup временных данных (как в TEST-001 и TEST-002)
-        await sequelize.query(`DELETE FROM login_history WHERE user_id > 14`);
-        await sequelize.query(`DELETE FROM refresh_token WHERE user_id > 14`);
+        // Используем TestCleanup утилиты для DRY кода
+        await TestCleanup.cleanUser13Addresses(sequelize);
+        await TestCleanup.cleanAuthData(sequelize);
     });
 
     // ===== USER ADDRESSES ENDPOINTS =====

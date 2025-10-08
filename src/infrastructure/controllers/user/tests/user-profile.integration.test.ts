@@ -3,6 +3,7 @@ import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { authLoginAs } from '../../../../../tests/setup/auth';
+import { TestCleanup, TestDataFactory } from '../../../../../tests/utils';
 
 describe('User Profile Integration Tests', () => {
     let app: INestApplication;
@@ -35,30 +36,22 @@ describe('User Profile Integration Tests', () => {
     afterEach(async () => {
         const sequelize = app.get(Sequelize);
 
-        // Сбрасываем user 13 (user@example.com) к дефолтным значениям из seed
-        await sequelize.query(`
-            UPDATE user SET
-                phone = '+79990000013',
-                first_name = NULL,
-                last_name = NULL
-            WHERE id = 13
-        `);
-
-        // Cleanup временных данных (как в user-admin тестах)
-        await sequelize.query(`DELETE FROM login_history WHERE user_id > 14`);
-        await sequelize.query(`DELETE FROM refresh_token WHERE user_id > 14`);
+        // Используем TestCleanup утилиты для DRY кода
+        await TestCleanup.resetUser13(sequelize);
+        await TestCleanup.cleanAuthData(sequelize);
     });
 
     // ===== PHONE ENDPOINTS =====
     describe('PATCH /user/profile/phone', () => {
         it('200: updates phone with valid number', async () => {
+            const uniquePhone = TestDataFactory.uniquePhone();
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/phone')
                 .set('Authorization', `Bearer ${userToken}`)
-                .send({ phone: '+79990000999' })
+                .send({ phone: uniquePhone })
                 .expect(200)
                 .expect(({ body }) => {
-                    expect(body?.data?.phone).toBe('+79990000999');
+                    expect(body?.data?.phone).toBe(uniquePhone);
                 });
         });
 
@@ -83,18 +76,20 @@ describe('User Profile Integration Tests', () => {
         });
 
         it('409: rejects duplicate phone for another user', async () => {
-            // User 13 устанавливает телефон
+            const uniquePhone = TestDataFactory.uniquePhone();
+            
+            // User 13 устанавливает уникальный телефон
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/phone')
                 .set('Authorization', `Bearer ${userToken}`)
-                .send({ phone: '+79990000998' })
+                .send({ phone: uniquePhone })
                 .expect(200);
 
             // Admin (user 14) пытается установить тот же телефон - должна быть ошибка 409
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/phone')
                 .set('Authorization', `Bearer ${adminToken}`)
-                .send({ phone: '+79990000998' })
+                .send({ phone: uniquePhone })
                 .expect(409);
         });
     });

@@ -4,6 +4,7 @@ import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { authLoginAs } from '../../../../../tests/setup/auth';
+import { TestDataFactory, TestCleanup } from '../../../../../tests/utils';
 
 describe('User Admin Integration Tests', () => {
     let app: INestApplication;
@@ -35,41 +36,9 @@ describe('User Admin Integration Tests', () => {
     afterEach(async () => {
         const sequelize = app.get(Sequelize);
 
-        // Сбрасываем флаги пользователя 13 (user@example.com) в дефолтное состояние
-        await sequelize.query(`
-            UPDATE user SET
-                is_blocked = 0,
-                is_suspended = 0,
-                is_deleted = 0,
-                is_premium = 0,
-                is_employee = 0,
-                is_vip_customer = 0,
-                is_high_value = 0,
-                is_wholesale = 0,
-                is_affiliate = 0,
-                is_active = 1
-            WHERE id = 13
-        `);
-
-        // Очищаем добавленные роли (оставляем только CUSTOMER с role_id = 10)
-        await sequelize.query(`
-            DELETE FROM user_role
-            WHERE user_id = 13 AND role_id != 10
-        `);
-
-        // Убеждаемся что роль CUSTOMER существует для пользователя 13
-        await sequelize.query(`
-            INSERT IGNORE INTO user_role (user_id, role_id, created_at, updated_at)
-            VALUES (13, 10, NOW(), NOW())
-        `);
-
-        // Очищаем временные данные тестов (пользователи созданные в тестах)
-        // Порядок важен из-за foreign key constraints
-        await sequelize.query(`DELETE FROM user_role WHERE user_id > 14`);
-        await sequelize.query(`DELETE FROM refresh_token WHERE user_id > 14`);
-        await sequelize.query(`DELETE FROM login_history WHERE user_id > 14`);
-        await sequelize.query(`DELETE FROM user_address WHERE user_id > 14`);
-        await sequelize.query(`DELETE FROM user WHERE id > 14`);
+        // Используем TestCleanup утилиты для DRY кода
+        await TestCleanup.resetUser13(sequelize);
+        await TestCleanup.cleanUsers(sequelize);
     });
 
     // ===== ADMIN STATS ENDPOINT =====
@@ -203,7 +172,7 @@ describe('User Admin Integration Tests', () => {
         });
 
         it('200: admin can create and delete users', async () => {
-            const uniqueEmail = `newuser+${Date.now()}@example.com`;
+            const uniqueEmail = TestDataFactory.uniqueEmail();
             const createRes = await request(app.getHttpServer())
                 .post('/online-store/user/create')
                 .set('Authorization', `Bearer ${adminToken}`)

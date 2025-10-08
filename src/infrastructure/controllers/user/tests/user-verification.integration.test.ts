@@ -1,5 +1,5 @@
-import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { authLoginAs } from '../../../../../tests/setup/auth';
 

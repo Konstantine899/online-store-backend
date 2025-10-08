@@ -1,7 +1,8 @@
-import { INestApplication, HttpStatus } from '@nestjs/common';
+import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../setup/app';
+import { TestCleanup, TestDataFactory } from '../utils';
 
 // Helper для извлечения refreshToken из cookies
 const extractRefreshCookie = (
@@ -45,28 +46,16 @@ describe('Auth Flow (e2e integration)', () => {
 
     afterAll(async () => {
         if (app) {
-            // Cleanup перед закрытием приложения
+            // Используем TestCleanup утилиты для DRY кода
             const sequelize = app.get(Sequelize);
-
-            // Cleanup временных пользователей и их данных (созданных через registration)
-            await sequelize.query(`DELETE FROM user_role WHERE user_id > 14`);
-            await sequelize.query(
-                `DELETE FROM refresh_token WHERE user_id > 14`,
-            );
-            await sequelize.query(
-                `DELETE FROM login_history WHERE user_id > 14`,
-            );
-            await sequelize.query(
-                `DELETE FROM user_address WHERE user_id > 14`,
-            );
-            await sequelize.query(`DELETE FROM user WHERE id > 14`);
+            await TestCleanup.cleanUsers(sequelize);
 
             await app.close();
         }
     }, 10000); // Увеличенный timeout для graceful shutdown
 
     describe('Полный сценарий: Registration → Login → Access → Refresh → Logout', () => {
-        const uniqueEmail = `test.user.${Date.now()}@test.com`;
+        const uniqueEmail = TestDataFactory.uniqueEmail();
         let accessToken: string;
         let refreshCookie: string;
 
