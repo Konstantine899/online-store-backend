@@ -1,5 +1,5 @@
-import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { authLoginAs } from '../../../../../tests/setup/auth';
 
@@ -26,7 +26,9 @@ describe('User Preferences Integration Tests', () => {
     });
 
     afterAll(async () => {
-        await app.close();
+        if (app) {
+            await app.close();
+        }
     });
 
     // ===== PREFERENCES ENDPOINTS =====
