@@ -1,4 +1,5 @@
 import { INestApplication, HttpStatus } from '@nestjs/common';
+import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../setup/app';
 
@@ -40,6 +41,16 @@ describe('Auth Flow (e2e integration)', () => {
 
     afterAll(async () => {
         if (app) {
+            // Cleanup перед закрытием приложения
+            const sequelize = app.get(Sequelize);
+            
+            // Cleanup временных пользователей и их данных (созданных через registration)
+            await sequelize.query(`DELETE FROM user_role WHERE user_id > 14`);
+            await sequelize.query(`DELETE FROM refresh_token WHERE user_id > 14`);
+            await sequelize.query(`DELETE FROM login_history WHERE user_id > 14`);
+            await sequelize.query(`DELETE FROM user_address WHERE user_id > 14`);
+            await sequelize.query(`DELETE FROM user WHERE id > 14`);
+            
             await app.close();
         }
     }, 10000); // Увеличенный timeout для graceful shutdown
