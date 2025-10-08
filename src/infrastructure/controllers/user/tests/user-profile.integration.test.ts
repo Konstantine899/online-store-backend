@@ -7,8 +7,6 @@ import { TestCleanup, TestDataFactory } from '../../../../../tests/utils';
 
 describe('User Profile Integration Tests', () => {
     let app: INestApplication;
-    let userToken: string;
-    let adminToken: string;
 
     beforeAll(async () => {
         process.env.NODE_ENV = 'test';
@@ -23,31 +21,24 @@ describe('User Profile Integration Tests', () => {
 
         app = await setupTestApp();
         await app.init();
-
-        // Получаем токены для тестирования
-        userToken = await authLoginAs(app, 'user');
-        adminToken = await authLoginAs(app, 'admin');
     });
 
     afterAll(async () => {
-        await app.close();
-    });
-
-    afterEach(async () => {
         const sequelize = app.get(Sequelize);
-
-        // Используем TestCleanup утилиты для DRY кода
-        await TestCleanup.resetUser13(sequelize);
-        await TestCleanup.cleanAuthData(sequelize);
+        // Cleanup всех созданных пользователей (id > 14)
+        await TestCleanup.cleanUsers(sequelize);
+        await app.close();
     });
 
     // ===== PHONE ENDPOINTS =====
     describe('PATCH /user/profile/phone', () => {
         it('200: updates phone with valid number', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
             const uniquePhone = TestDataFactory.uniquePhone();
+            
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/phone')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({ phone: uniquePhone })
                 .expect(200)
                 .expect(({ body }) => {
@@ -56,9 +47,11 @@ describe('User Profile Integration Tests', () => {
         });
 
         it('400: rejects invalid phone format', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/phone')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({ phone: '8(999)123-45-67' })
                 .expect(400)
                 .expect(({ body }) => {
@@ -76,19 +69,21 @@ describe('User Profile Integration Tests', () => {
         });
 
         it('409: rejects duplicate phone for another user', async () => {
+            const user1 = await TestDataFactory.createUserWithRole(app, 'USER');
+            const user2 = await TestDataFactory.createUserWithRole(app, 'USER');
             const uniquePhone = TestDataFactory.uniquePhone();
             
-            // User 13 устанавливает уникальный телефон
+            // User 1 устанавливает уникальный телефон
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/phone')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${user1.token}`)
                 .send({ phone: uniquePhone })
                 .expect(200);
 
-            // Admin (user 14) пытается установить тот же телефон - должна быть ошибка 409
+            // User 2 пытается установить тот же телефон - должна быть ошибка 409
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/phone')
-                .set('Authorization', `Bearer ${adminToken}`)
+                .set('Authorization', `Bearer ${user2.token}`)
                 .send({ phone: uniquePhone })
                 .expect(409);
         });
@@ -97,6 +92,7 @@ describe('User Profile Integration Tests', () => {
     // ===== PROFILE ENDPOINTS =====
     describe('PATCH /user/profile', () => {
         it('200: user updates own profile', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
             const payload = {
                 firstName: 'Владимир',
                 lastName: 'Владимиров',
@@ -104,7 +100,7 @@ describe('User Profile Integration Tests', () => {
 
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send(payload)
                 .expect(200);
 
@@ -115,10 +111,12 @@ describe('User Profile Integration Tests', () => {
         });
 
         it('200: partial update only firstName', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            
             // Сначала устанавливаем полный профиль
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({ firstName: 'Иван', lastName: 'Иванов' })
                 .expect(200);
 
@@ -129,7 +127,7 @@ describe('User Profile Integration Tests', () => {
 
             const response = await request(app.getHttpServer())
                 .patch('/online-store/user/profile')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send(payload)
                 .expect(200);
 
@@ -153,9 +151,11 @@ describe('User Profile Integration Tests', () => {
     // ===== PASSWORD MANAGEMENT =====
     describe('Password management', () => {
         it('400: wrong old password', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/password')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .send({ oldPassword: 'wrong-old', newPassword: 'NewPass123!' })
                 .expect(400);
         });
@@ -164,9 +164,11 @@ describe('User Profile Integration Tests', () => {
     // ===== MISC ENDPOINTS =====
     describe('Misc endpoints', () => {
         it('200: GET /user/me with minimal body', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(app, 'USER');
+            
             const res = await request(app.getHttpServer())
                 .get('/online-store/user/me')
-                .set('Authorization', `Bearer ${userToken}`)
+                .set('Authorization', `Bearer ${token}`)
                 .expect(200);
             expect(res.body?.id).toBeDefined();
         });
