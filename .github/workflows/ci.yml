@@ -212,7 +212,6 @@ jobs:
                   mysql -h $MYSQL_HOST -P $MYSQL_PORT -u root -ptest_root_password -e "
                     SET GLOBAL innodb_flush_log_at_trx_commit = 2;
                     SET GLOBAL sync_binlog = 0;
-                    SET GLOBAL innodb_doublewrite = 0;
                   "
 
             - name: Run database migrations
@@ -321,7 +320,6 @@ jobs:
                   mysql -h $MYSQL_HOST -P $MYSQL_PORT -u root -ptest_root_password -e "
                     SET GLOBAL innodb_flush_log_at_trx_commit = 2;
                     SET GLOBAL sync_binlog = 0;
-                    SET GLOBAL innodb_doublewrite = 0;
                   "
 
             - name: Check migrations can be applied
