@@ -1,7 +1,14 @@
-import { BruteforceGuard, parseWindowToMs } from '@app/infrastructure/common/guards/bruteforce.guard';
+import {
+    BruteforceGuard,
+    parseWindowToMs,
+} from '@app/infrastructure/common/guards/bruteforce.guard';
 import { ExecutionContext } from '@nestjs/common';
-import { ThrottlerException, ThrottlerModuleOptions, ThrottlerStorage } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
+import {
+    ThrottlerException,
+    ThrottlerModuleOptions,
+    ThrottlerStorage,
+} from '@nestjs/throttler';
 import { Request } from 'express';
 import { Socket } from 'net';
 
@@ -23,21 +30,23 @@ type PrivateGuard = {
     isValidIP: (ip: string) => boolean;
     maskIP: (ip: string) => string;
     logger: { warn: jest.Mock };
-}
+};
 
 // Helper функции для сокращения кода (DRY)
-const asPrivate = (guard: BruteforceGuard): PrivateGuard => guard as unknown as PrivateGuard;
+const asPrivate = (guard: BruteforceGuard): PrivateGuard =>
+    guard as unknown as PrivateGuard;
 
-const createMockContextForRequest = (request: TestRequest): ExecutionContext => ({
-    switchToHttp: () => ({ 
-        getRequest: () => request,
-        getResponse: () => ({ setHeader: jest.fn() })
-    }),
-}) as ExecutionContext;
+const createMockContextForRequest = (request: TestRequest): ExecutionContext =>
+    ({
+        switchToHttp: () => ({
+            getRequest: () => request,
+            getResponse: () => ({ setHeader: jest.fn() }),
+        }),
+    }) as ExecutionContext;
 
 /**
  * Unit-тесты для BruteforceGuard
- * 
+ *
  * Цель: покрыть критичные сценарии rate limiting для защиты от brute-force атак
  * - Проверка разных профилей (login/refresh/registration)
  * - Сброс счётчиков после TTL
@@ -45,7 +54,7 @@ const createMockContextForRequest = (request: TestRequest): ExecutionContext => 
  * - Валидация и маскирование IP
  * - Извлечение IP из различных заголовков
  * - Кэширование конфигурации
- * 
+ *
  * Оптимизации производительности:
  * - asPrivate() helper (↓85% длины type cast)
  * - createMockContextForRequest() helper (DRY для context creation)
@@ -65,7 +74,7 @@ describe('BruteforceGuard (unit)', () => {
     beforeEach(() => {
         // Сброс счётчиков перед каждым тестом
         BruteforceGuard.resetCounters();
-        
+
         // Настройка тестового окружения
         process.env.NODE_ENV = 'test';
         process.env.RATE_LIMIT_ENABLED = 'true';
@@ -89,7 +98,11 @@ describe('BruteforceGuard (unit)', () => {
             getAllAndOverride: jest.fn(),
         } as unknown as Reflector;
 
-        guard = new BruteforceGuard(mockOptions, mockStorageService, mockReflector);
+        guard = new BruteforceGuard(
+            mockOptions,
+            mockStorageService,
+            mockReflector,
+        );
 
         // Создаём базовый mock request
         mockRequest = {
@@ -130,12 +143,16 @@ describe('BruteforceGuard (unit)', () => {
             // Первые 3 попытки должны пройти
             for (let i = 0; i < 3; i++) {
                 delete mockRequest.__bruteforceProcessed;
-                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
+                await expect(
+                    asPrivate(guard).handleRequest(requestProps),
+                ).resolves.toBe(true);
             }
 
             // 4-я попытка должна быть заблокирована
             delete mockRequest.__bruteforceProcessed;
-            await expect(asPrivate(guard).handleRequest(requestProps)).rejects.toThrow(ThrottlerException);
+            await expect(
+                asPrivate(guard).handleRequest(requestProps),
+            ).rejects.toThrow(ThrottlerException);
         });
 
         it('должен применить лимит refresh после 5 попыток', async () => {
@@ -146,12 +163,16 @@ describe('BruteforceGuard (unit)', () => {
             // Первые 5 попыток должны пройти
             for (let i = 0; i < 5; i++) {
                 delete mockRequest.__bruteforceProcessed;
-                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
+                await expect(
+                    asPrivate(guard).handleRequest(requestProps),
+                ).resolves.toBe(true);
             }
 
             // 6-я попытка должна быть заблокирована
             delete mockRequest.__bruteforceProcessed;
-            await expect(asPrivate(guard).handleRequest(requestProps)).rejects.toThrow(ThrottlerException);
+            await expect(
+                asPrivate(guard).handleRequest(requestProps),
+            ).rejects.toThrow(ThrottlerException);
         });
 
         it('должен применить лимит registration после 2 попыток', async () => {
@@ -162,12 +183,16 @@ describe('BruteforceGuard (unit)', () => {
             // Первые 2 попытки должны пройти
             for (let i = 0; i < 2; i++) {
                 delete mockRequest.__bruteforceProcessed;
-                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
+                await expect(
+                    asPrivate(guard).handleRequest(requestProps),
+                ).resolves.toBe(true);
             }
 
             // 3-я попытка должна быть заблокирована
             delete mockRequest.__bruteforceProcessed;
-            await expect(asPrivate(guard).handleRequest(requestProps)).rejects.toThrow(ThrottlerException);
+            await expect(
+                asPrivate(guard).handleRequest(requestProps),
+            ).rejects.toThrow(ThrottlerException);
         });
 
         it('не должен применять лимиты для не-auth роутов', async () => {
@@ -177,15 +202,23 @@ describe('BruteforceGuard (unit)', () => {
 
             // Проверяем, что можем делать много запросов к обычным роутам
             for (let i = 0; i < 100; i++) {
-                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
+                await expect(
+                    asPrivate(guard).handleRequest(requestProps),
+                ).resolves.toBe(true);
             }
         });
     });
 
     describe('Изоляция между профилями', () => {
         it('счётчики login и refresh должны быть независимыми', async () => {
-            const loginRequest = { ...mockRequest, url: '/online-store/auth/login' };
-            const refreshRequest = { ...mockRequest, url: '/online-store/auth/refresh' };
+            const loginRequest = {
+                ...mockRequest,
+                url: '/online-store/auth/login',
+            };
+            const refreshRequest = {
+                ...mockRequest,
+                url: '/online-store/auth/refresh',
+            };
 
             const loginContext = createMockContextForRequest(loginRequest);
             const refreshContext = createMockContextForRequest(refreshRequest);
@@ -202,8 +235,14 @@ describe('BruteforceGuard (unit)', () => {
         });
 
         it('счётчики для разных IP должны быть независимыми', async () => {
-            const ip1Request = { ...mockRequest, socket: { remoteAddress: '192.168.1.100' } };
-            const ip2Request = { ...mockRequest, socket: { remoteAddress: '192.168.1.101' } };
+            const ip1Request = {
+                ...mockRequest,
+                socket: { remoteAddress: '192.168.1.100' },
+            };
+            const ip2Request = {
+                ...mockRequest,
+                socket: { remoteAddress: '192.168.1.101' },
+            };
 
             const context1 = createMockContextForRequest(ip1Request);
             const context2 = createMockContextForRequest(ip2Request);
@@ -214,7 +253,9 @@ describe('BruteforceGuard (unit)', () => {
                 await asPrivate(guard).handleRequest({ context: context1 });
             }
             delete (ip1Request as TestRequest).__bruteforceProcessed;
-            await expect(asPrivate(guard).handleRequest({ context: context1 })).rejects.toThrow();
+            await expect(
+                asPrivate(guard).handleRequest({ context: context1 }),
+            ).rejects.toThrow();
 
             // IP2 должен всё ещё работать
             delete (ip2Request as TestRequest).__bruteforceProcessed;
@@ -325,7 +366,9 @@ describe('BruteforceGuard (unit)', () => {
         });
 
         it('должен замаскировать последние группы IPv6', () => {
-            const masked = asPrivate(guard).maskIP('2001:0db8:0000:0000:0000:ff00:0042:8329');
+            const masked = asPrivate(guard).maskIP(
+                '2001:0db8:0000:0000:0000:ff00:0042:8329',
+            );
             expect(masked).toBe('2001:0db8:0000:0000:0000:ff00:xxxx:xxxx');
         });
 
@@ -349,7 +392,9 @@ describe('BruteforceGuard (unit)', () => {
 
             // Проверяем, что можем делать много запросов
             for (let i = 0; i < 100; i++) {
-                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
+                await expect(
+                    asPrivate(guard).handleRequest(requestProps),
+                ).resolves.toBe(true);
             }
         });
 
@@ -362,12 +407,16 @@ describe('BruteforceGuard (unit)', () => {
             // Первые 3 попытки должны пройти
             for (let i = 0; i < 3; i++) {
                 delete mockRequest.__bruteforceProcessed;
-                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
+                await expect(
+                    asPrivate(guard).handleRequest(requestProps),
+                ).resolves.toBe(true);
             }
 
             // 4-я попытка должна быть заблокирована
             delete mockRequest.__bruteforceProcessed;
-            await expect(asPrivate(guard).handleRequest(requestProps)).rejects.toThrow();
+            await expect(
+                asPrivate(guard).handleRequest(requestProps),
+            ).rejects.toThrow();
         });
     });
 
@@ -379,15 +428,19 @@ describe('BruteforceGuard (unit)', () => {
             const requestProps = { context: mockContext };
 
             // Должен пройти без инкремента счётчика
-            await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
+            await expect(
+                asPrivate(guard).handleRequest(requestProps),
+            ).resolves.toBe(true);
 
             // Проверяем, что счётчик не был увеличен
             delete mockRequest.__bruteforceProcessed;
-            
+
             // Первые 3 попытки должны пройти (счётчик был на 0)
             for (let i = 0; i < 3; i++) {
                 delete mockRequest.__bruteforceProcessed;
-                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
+                await expect(
+                    asPrivate(guard).handleRequest(requestProps),
+                ).resolves.toBe(true);
             }
         });
     });
@@ -409,7 +462,9 @@ describe('BruteforceGuard (unit)', () => {
             // Должны снова иметь 3 попытки
             for (let i = 0; i < 3; i++) {
                 delete mockRequest.__bruteforceProcessed;
-                await expect(asPrivate(guard).handleRequest(requestProps)).resolves.toBe(true);
+                await expect(
+                    asPrivate(guard).handleRequest(requestProps),
+                ).resolves.toBe(true);
             }
         });
     });
@@ -488,9 +543,9 @@ describe('BruteforceGuard (unit)', () => {
 
             // Следующий запрос должен вернуть русское сообщение
             delete mockRequest.__bruteforceProcessed;
-            await expect(asPrivate(guard).handleRequest(requestProps)).rejects.toThrow(
-                'Слишком много запросов. Попробуйте позже.',
-            );
+            await expect(
+                asPrivate(guard).handleRequest(requestProps),
+            ).rejects.toThrow('Слишком много запросов. Попробуйте позже.');
         });
     });
 
@@ -502,10 +557,11 @@ describe('BruteforceGuard (unit)', () => {
             // Первый запрос - создаёт кэш
             mockRequest.url = '/online-store/auth/login';
             const requestProps = { context: mockContext };
-            
+
             await asPrivate(guard).handleRequest(requestProps);
 
             // Проверяем что кэш создан
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const firstConfig = (BruteforceGuard as any).cachedConfig;
             expect(firstConfig).toBeDefined();
             expect(firstConfig.loginLimit).toBe(3);
@@ -520,6 +576,7 @@ describe('BruteforceGuard (unit)', () => {
             await asPrivate(guard).handleRequest(requestProps);
 
             // Кэш должен обновиться (новый timestamp)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const secondConfig = (BruteforceGuard as any).cachedConfig;
             expect(secondConfig).toBeDefined();
 
@@ -528,29 +585,45 @@ describe('BruteforceGuard (unit)', () => {
 
         it('должен использовать кэшированную конфигурацию для всех профилей', async () => {
             // Очищаем кэш
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (BruteforceGuard as any).cachedConfig = null;
 
             // Вызываем handleRequest для каждого профиля
-            const loginContext = createMockContextForRequest({ ...mockRequest, url: '/online-store/auth/login' });
-            const refreshContext = createMockContextForRequest({ ...mockRequest, url: '/online-store/auth/refresh' });
-            const regContext = createMockContextForRequest({ ...mockRequest, url: '/online-store/auth/registration' });
+            const loginContext = createMockContextForRequest({
+                ...mockRequest,
+                url: '/online-store/auth/login',
+            });
+            const refreshContext = createMockContextForRequest({
+                ...mockRequest,
+                url: '/online-store/auth/refresh',
+            });
+            const regContext = createMockContextForRequest({
+                ...mockRequest,
+                url: '/online-store/auth/registration',
+            });
 
             // Первый вызов создаёт кэш
             await asPrivate(guard).handleRequest({ context: loginContext });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const cachedConfig = (BruteforceGuard as any).cachedConfig;
             expect(cachedConfig).toBeDefined();
 
             // Следующие вызовы должны использовать кэш (не создавать новый)
-            const timestampAfterFirst = (BruteforceGuard as any).configCacheTime;
-            
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const timestampAfterFirst = (BruteforceGuard as any)
+                .configCacheTime;
+
             delete (mockRequest as TestRequest).__bruteforceProcessed;
             await asPrivate(guard).handleRequest({ context: refreshContext });
-            
+
             delete (mockRequest as TestRequest).__bruteforceProcessed;
             await asPrivate(guard).handleRequest({ context: regContext });
 
             // Timestamp не должен измениться (кэш используется)
-            expect((BruteforceGuard as any).configCacheTime).toBe(timestampAfterFirst);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            expect((BruteforceGuard as any).configCacheTime).toBe(
+                timestampAfterFirst,
+            );
         });
     });
 
@@ -563,13 +636,16 @@ describe('BruteforceGuard (unit)', () => {
 
             // Создаём первый счётчик
             await asPrivate(guard).handleRequest(requestProps);
-            
+
             // Создаём второй счётчик для другого IP
-            const request2 = { ...mockRequest, socket: { remoteAddress: '10.0.0.1' } };
+            const request2 = {
+                ...mockRequest,
+                socket: { remoteAddress: '10.0.0.1' },
+            };
             const context2 = createMockContextForRequest(request2);
             delete (request2 as TestRequest).__bruteforceProcessed;
             await asPrivate(guard).handleRequest({ context: context2 });
-            
+
             expect(BruteforceGuard['counters'].size).toBe(2);
 
             // Ждём пока счётчики истекут (1 минута + 1 секунда)
@@ -591,15 +667,15 @@ describe('BruteforceGuard (unit)', () => {
         it('cleanup должен удалять только истёкшие записи', () => {
             // Создаём актуальный счётчик
             const now = Date.now();
-            BruteforceGuard['counters'].set('login:192.168.1.1', { 
-                count: 1, 
-                resetAt: now + 10000  // Истекает через 10 секунд
+            BruteforceGuard['counters'].set('login:192.168.1.1', {
+                count: 1,
+                resetAt: now + 10000, // Истекает через 10 секунд
             });
 
             // Создаём истёкший счётчик
-            BruteforceGuard['counters'].set('login:192.168.1.2', { 
-                count: 2, 
-                resetAt: now - 1000  // Уже истёк
+            BruteforceGuard['counters'].set('login:192.168.1.2', {
+                count: 2,
+                resetAt: now - 1000, // Уже истёк
             });
 
             expect(BruteforceGuard['counters'].size).toBe(2);
@@ -608,12 +684,17 @@ describe('BruteforceGuard (unit)', () => {
             BruteforceGuard['lastCleanupTime'] = now - 61000;
 
             // Вызываем cleanup напрямую
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (guard as any).cleanExpiredCounters();
 
             // Должен остаться только актуальный счётчик
             expect(BruteforceGuard['counters'].size).toBe(1);
-            expect(BruteforceGuard['counters'].has('login:192.168.1.1')).toBe(true);
-            expect(BruteforceGuard['counters'].has('login:192.168.1.2')).toBe(false);
+            expect(BruteforceGuard['counters'].has('login:192.168.1.1')).toBe(
+                true,
+            );
+            expect(BruteforceGuard['counters'].has('login:192.168.1.2')).toBe(
+                false,
+            );
         });
     });
 
@@ -657,4 +738,3 @@ describe('BruteforceGuard (unit)', () => {
         });
     });
 });
-
