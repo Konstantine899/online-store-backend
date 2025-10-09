@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 import { TokenService } from '../token/token.service';
+import { PasswordResetTokenRepository } from '@app/infrastructure/repositories/password-reset-token/password-reset-token.repository';
 import { CreateUserDto } from '@app/infrastructure/dto';
 import { UserModel } from '@app/domain/models';
 import {
@@ -69,6 +70,7 @@ describe('AuthService', () => {
                         findAuthenticatedUser: jest.fn(),
                         updateLastLoginAt: jest.fn(),
                         logFailedLogin: jest.fn(),
+                        updatePassword: jest.fn(),
                     },
                 },
                 {
@@ -79,6 +81,17 @@ describe('AuthService', () => {
                         decodeRefreshToken: jest.fn(),
                         removeRefreshToken: jest.fn(),
                         rotateRefreshToken: jest.fn(),
+                        revokeAllUserTokens: jest.fn(),
+                    },
+                },
+                {
+                    provide: PasswordResetTokenRepository,
+                    useValue: {
+                        createToken: jest.fn(),
+                        findValidToken: jest.fn(),
+                        markAsUsed: jest.fn(),
+                        cleanExpiredTokens: jest.fn(),
+                        revokeUserTokens: jest.fn(),
                     },
                 },
             ],

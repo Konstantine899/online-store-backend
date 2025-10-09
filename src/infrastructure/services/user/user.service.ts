@@ -266,6 +266,7 @@ export class UserService implements IUserService {
         const foundUser = await this.userRepository.findUser(id);
         if (!foundUser) {
             this.notFound(`Пользователь с id: ${id} не найден в БД`);
+            return; // TypeScript flow control
         }
         if (dto.email) {
             const foundEmail = await this.findUserByEmail(dto.email);
@@ -274,6 +275,7 @@ export class UserService implements IUserService {
                 this.conflictException(
                     `Пользователь с таким email: ${dto.email} уже существует`,
                 );
+                return; // TypeScript flow control
             }
         }
         let updatedUser: UpdateUserResponse;
@@ -287,6 +289,7 @@ export class UserService implements IUserService {
                 this.conflictException(
                     `Пользователь с таким email: ${dto.email} уже существует`,
                 );
+                return; // TypeScript flow control
             }
             throw error;
         }
@@ -299,8 +302,9 @@ export class UserService implements IUserService {
         const role = await this.getRoleWithCache('CUSTOMER');
         if (!role) {
             this.notFound('Роль CUSTOMER не найдена');
+            return; // TypeScript flow control
         }
-        await this.linkUserRole(updatedUser.id, role!.id);
+        await this.linkUserRole(updatedUser.id, role.id);
         updatedUser.roles = [role as UserModel['roles'][0]];
         return updatedUser;
     }

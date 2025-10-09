@@ -316,7 +316,8 @@ describe('UserService', () => {
 
         it('должен выбросить ConflictException если email уже используется', async () => {
             userRepository.findUser.mockResolvedValue(mockUser);
-            userRepository.findUserByEmail.mockResolvedValue(mockUser);
+            // findUserByEmail возвращает ДРУГОГО пользователя (id=2), чтобы сработала проверка id !== foundEmail.id
+            userRepository.findUserByEmail.mockResolvedValue(mockAdminUser);
 
             await expect(service.updateUser(1, validUserDto)).rejects.toThrow(
                 new ConflictException({
