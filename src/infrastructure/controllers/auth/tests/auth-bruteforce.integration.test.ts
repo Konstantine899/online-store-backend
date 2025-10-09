@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { setupTestAppWithRateLimit } from '../setup/app';
+import { setupTestAppWithRateLimit } from '../../../../../tests/setup/app';
 import { BruteforceGuard } from '@app/infrastructure/common/guards/bruteforce.guard';
 
 describe('BruteforceGuard profiles (integration)', () => {

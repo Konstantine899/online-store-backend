@@ -1,8 +1,8 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
-import { setupTestApp } from '../setup/app';
-import { TestCleanup, TestDataFactory } from '../utils';
+import { setupTestApp } from '../../../../../tests/setup/app';
+import { TestCleanup, TestDataFactory } from '../../../../../tests/utils';
 
 /**
  * E2E тесты для RBAC (Role-Based Access Control)

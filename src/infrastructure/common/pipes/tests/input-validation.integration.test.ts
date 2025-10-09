@@ -1,6 +1,6 @@
 import { INestApplication, HttpStatus } from '@nestjs/common';
 import request from 'supertest';
-import { setupTestApp } from '../setup/app';
+import { setupTestApp } from '../../../../../tests/setup/app';
 
 describe('Input Validation and Sanitization (integration)', () => {
     let app: INestApplication;

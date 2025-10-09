@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
-import { setupTestApp } from '../setup/app';
+import { setupTestApp } from '../../../../../tests/setup/app';
 import { getConfig } from '@app/infrastructure/config';
 
 /**
