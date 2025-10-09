@@ -16,6 +16,12 @@ execution_policy:
 context:
   goal: Review and comment system with tenant isolation and moderation
 
+# DEFAULT PRE-COMMIT WORKFLOW
+default_pre_commit_workflow: "МИНИМАЛЬНЫЙ (вспомогательный модуль)"
+default_pre_commit_steps:
+  - "«Автофикс» → linter/prettier"
+  - "«Коммит» → feat(review): <TASK_ID> complete"
+
 tasks:
   # Фаза 1: Базовая реализация
   - id: SAAS-011-00

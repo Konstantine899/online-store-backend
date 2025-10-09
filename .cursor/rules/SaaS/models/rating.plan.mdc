@@ -16,6 +16,12 @@ execution_policy:
 context:
   goal: Product ratings with tenant isolation
 
+# DEFAULT PRE-COMMIT WORKFLOW
+default_pre_commit_workflow: "МИНИМАЛЬНЫЙ (вспомогательный модуль)"
+default_pre_commit_steps:
+  - "«Автофикс» → linter/prettier"
+  - "«Коммит» → feat(rating): <TASK_ID> complete"
+
 tasks:
   - id: SAAS-008-00
     title: Создать контроллер рейтингов с полной системой ролей

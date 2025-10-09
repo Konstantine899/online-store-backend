@@ -16,6 +16,14 @@ execution_policy:
 context:
   goal: Shopping cart with tenant isolation and guest support
 
+# DEFAULT PRE-COMMIT WORKFLOW для всех cart задач
+default_pre_commit_workflow: "СТАНДАРТНЫЙ (business logic: cart/checkout)"
+default_pre_commit_steps:
+  - "«Ревью» → cart logic, pricing calculations, concurrency handling"
+  - "«Автофикс» → linter/prettier"
+  - "Тесты: cart integration tests, race condition tests"
+  - "«Коммит» → feat(cart): <TASK_ID> complete"
+
 tasks:
   # Фаза 1: Базовая реализация
   - id: SAAS-004-00

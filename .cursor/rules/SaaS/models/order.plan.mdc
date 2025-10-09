@@ -6,364 +6,375 @@ epic_ref: SAAS-005
 version: 1.0
 
 execution_policy:
-  must_follow: true
-  allow_code_changes_only_after: "Одобряю <TASK_ID>"
-  constraints:
-    - no public API changes without explicit approval
-    - operate strictly within files_scope
-    - pass lints/tests and Swagger before DoD complete
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - no public API changes without explicit approval - operate strictly within files_scope - pass lints/tests and Swagger before DoD complete
 
 context:
-  goal: Order management with tenant isolation and status tracking
+goal: Order management with tenant isolation and status tracking
+
+# DEFAULT PRE-COMMIT WORKFLOW для всех order задач
+
+default_pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: order/checkout)"
+default_pre_commit_steps:
+
+- "«Ревью» → business logic, order state machine, финансовые расчёты"
+- "«Оптимизируй» → DB queries (N+1 для order_items), transaction handling"
+- "«Автофикс» → linter/prettier"
+- "Тесты: order integration tests, edge cases (concurrent updates)"
+- "Coverage: order модуль ≥80%"
+- "«Коммит» → feat(order): <TASK_ID> complete"
 
 tasks:
-  # Фаза 1: Базовая реализация
-  - id: SAAS-005-00
-    title: Обновить систему ролей в контроллере заказов
-    branch: "feature/order/SAAS-005/order-roles-update"
-    files_scope:
-      - ".cursor/rules/models/order.mdc"
-    steps:
-      - добавить импорты RoleGuard и Roles в контроллер
-      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
-      - обновить методы с правильными ролями:
-        - создание заказов: CUSTOMER_ROLES
-        - управление заказами (статусы, отмена, возврат): MANAGER_ROLES
-        - просмотр заказов: MANAGER_ROLES
-        - статистика и аналитика: MANAGER_ROLES
-    dod:
-      - все методы контроллера используют полную систему ролей
-      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
-      - тенантская изоляция ролей обеспечена
-    gate:
-      - require: "Одобряю SAAS-005-00"
 
-  - id: SAAS-005-01
-    title: Создать миграции для расширения таблиц orders и order_items
-    branch: "feature/order/SAAS-005/order-extended-model"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/order.ts"
-      - "src/domain/models/order-item.ts"
-    steps:
-      - добавить все флаги в таблицу orders (is_gift_order, is_express_delivery, etc.)
-      - создать таблицу order_status_history
-      - добавить индексы для производительности
-      - обновить OrderModel и OrderItemModel с tenant_id
-    dod:
-      - миграция up/down успешна
-      - Order модели содержат все флаги и tenant_id
-      - индексы созданы для производительности
-    gate:
-      - require: "Одобряю SAAS-005-01"
+# Фаза 1: Базовая реализация
 
-  - id: SAAS-005-02
-    title: Реализовать модели Sequelize (OrderModel, OrderStatusHistoryModel)
-    branch: "feature/order/SAAS-005/order-extended-model"
-    files_scope:
-      - "src/domain/models/order.ts"
-      - "src/domain/models/order-item.ts"
-      - "src/domain/models/order-status-history.ts"
-    steps:
-      - добавить все методы для работы с флагами заказов
-      - реализовать логику изменения статусов
-      - добавить методы для работы с историей статусов
-    dod:
-      - все методы флагов реализованы
-      - логика статусов работает корректно
-      - история статусов функциональна
-    gate:
-      - require: "Одобряю SAAS-005-02"
+- id: SAAS-005-00
+  title: Обновить систему ролей в контроллере заказов
+  branch: "feature/order/SAAS-005/order-roles-update"
+  files_scope:
+    - ".cursor/rules/models/order.mdc"
+      steps:
+    - добавить импорты RoleGuard и Roles в контроллер
+    - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+    - обновить методы с правильными ролями: - создание заказов: CUSTOMER_ROLES - управление заказами (статусы, отмена, возврат): MANAGER_ROLES - просмотр заказов: MANAGER_ROLES - статистика и аналитика: MANAGER_ROLES
+      dod:
+    - все методы контроллера используют полную систему ролей
+    - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+    - тенантская изоляция ролей обеспечена
+      gate:
+    - require: "Одобряю SAAS-005-00"
 
-  - id: SAAS-005-03
-    title: Создать DTO классы с валидацией
-    branch: "feature/order/SAAS-005/order-dto-validation"
-    files_scope:
-      - "src/infrastructure/dto/order/**"
-      - "src/domain/dto/**"
-    steps:
-      - создать CreateOrderDto для создания заказов
-      - создать UpdateOrderStatusDto для изменения статусов
-      - создать OrderItemDto для товаров в заказе
-      - добавить валидаторы с русскими сообщениями
-    dod:
-      - DTO содержат все необходимые поля
-      - валидация работает с русскими сообщениями
-      - CustomValidationPipe обрабатывает все DTO
-    gate:
-      - require: "Одобряю SAAS-005-03"
+- id: SAAS-005-01
+  title: Создать миграции для расширения таблиц orders и order_items
+  branch: "feature/order/SAAS-005/order-extended-model"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/order.ts"
+    - "src/domain/models/order-item.ts"
+      steps:
+    - добавить все флаги в таблицу orders (is_gift_order, is_express_delivery, etc.)
+    - создать таблицу order_status_history
+    - добавить индексы для производительности
+    - обновить OrderModel и OrderItemModel с tenant_id
+      dod:
+    - миграция up/down успешна
+    - Order модели содержат все флаги и tenant_id
+    - индексы созданы для производительности
+      gate:
+    - require: "Одобряю SAAS-005-01"
 
-  - id: SAAS-005-04
-    title: Создать Response классы с Swagger
-    branch: "feature/order/SAAS-005/order-response-swagger"
-    files_scope:
-      - "src/infrastructure/responses/order/**"
-      - "src/infrastructure/common/decorators/swagger/order/**"
-    steps:
-      - создать Response классы с явными полями (не extends OrderModel)
-      - добавить Swagger декораторы для всех флагов
-      - создать Response для списков заказов с пагинацией
-    dod:
-      - Response классы не наследуются от модели
-      - Swagger схемы корректны
-      - пагинация возвращает { data, meta }
-    gate:
-      - require: "Одобряю SAAS-005-04"
+- id: SAAS-005-02
+  title: Реализовать модели Sequelize (OrderModel, OrderStatusHistoryModel)
+  branch: "feature/order/SAAS-005/order-extended-model"
+  files_scope:
+    - "src/domain/models/order.ts"
+    - "src/domain/models/order-item.ts"
+    - "src/domain/models/order-status-history.ts"
+      steps:
+    - добавить все методы для работы с флагами заказов
+    - реализовать логику изменения статусов
+    - добавить методы для работы с историей статусов
+      dod:
+    - все методы флагов реализованы
+    - логика статусов работает корректно
+    - история статусов функциональна
+      gate:
+    - require: "Одобряю SAAS-005-02"
 
-  - id: SAAS-005-05
-    title: Реализовать сервис с основной логикой
-    branch: "feature/order/SAAS-005/order-service-methods"
-    files_scope:
-      - "src/infrastructure/services/order/**"
-      - "src/domain/services/**"
-    steps:
-      - добавить методы для создания заказов из корзины
-      - реализовать логику изменения статусов
-      - добавить методы для работы с флагами заказов
-      - добавить статистику заказов
-    dod:
-      - все методы сервиса реализованы
-      - создание заказов работает корректно
-      - изменение статусов функционально
-      - статистика возвращает корректные данные
-    gate:
-      - require: "Одобряю SAAS-005-05"
+- id: SAAS-005-03
+  title: Создать DTO классы с валидацией
+  branch: "feature/order/SAAS-005/order-dto-validation"
+  files_scope:
+    - "src/infrastructure/dto/order/\*\*"
+    - "src/domain/dto/\*\*"
+      steps:
+    - создать CreateOrderDto для создания заказов
+    - создать UpdateOrderStatusDto для изменения статусов
+    - создать OrderItemDto для товаров в заказе
+    - добавить валидаторы с русскими сообщениями
+      dod:
+    - DTO содержат все необходимые поля
+    - валидация работает с русскими сообщениями
+    - CustomValidationPipe обрабатывает все DTO
+      gate:
+    - require: "Одобряю SAAS-005-03"
 
-  # Фаза 2: API и интеграции
-  - id: SAAS-005-06
-    title: Создать контроллер с API endpoints
-    branch: "feature/order/SAAS-005/order-controller-endpoints"
-    files_scope:
-      - "src/infrastructure/controllers/order/**"
-      - "src/infrastructure/common/decorators/swagger/order/**"
-    steps:
-      - добавить эндпоинты для создания заказов (POST /orders)
-      - добавить эндпоинты для управления статусами (PATCH /orders/:id/status)
-      - добавить эндпоинты для просмотра заказов (GET /orders, GET /orders/:id)
-      - добавить статистику (GET /admin/orders/stats)
-    dod:
-      - все эндпоинты работают корректно
-      - Swagger документация обновлена
-      - Guards и роли применены правильно
-    gate:
-      - require: "Одобряю SAAS-005-06"
+- id: SAAS-005-04
+  title: Создать Response классы с Swagger
+  branch: "feature/order/SAAS-005/order-response-swagger"
+  files_scope:
+    - "src/infrastructure/responses/order/\*\*"
+    - "src/infrastructure/common/decorators/swagger/order/\*\*"
+      steps:
+    - создать Response классы с явными полями (не extends OrderModel)
+    - добавить Swagger декораторы для всех флагов
+    - создать Response для списков заказов с пагинацией
+      dod:
+    - Response классы не наследуются от модели
+    - Swagger схемы корректны
+    - пагинация возвращает { data, meta }
+      gate:
+    - require: "Одобряю SAAS-005-04"
 
-  - id: SAAS-005-07
-    title: Настроить интеграцию с системой уведомлений
-    branch: "feature/order/SAAS-005/order-notification-integration"
-    files_scope:
-      - "src/infrastructure/services/order/**"
-      - "src/infrastructure/services/notification/**"
-    steps:
-      - реализовать уведомления при изменении статусов
-      - добавить шаблоны уведомлений для заказов
-      - настроить отправку уведомлений по событиям
-    dod:
-      - уведомления при изменении статусов работают
-      - шаблоны уведомлений настроены
-      - события обрабатываются корректно
-    gate:
-      - require: "Одобряю SAAS-005-07"
+- id: SAAS-005-05
+  title: Реализовать сервис с основной логикой
+  branch: "feature/order/SAAS-005/order-service-methods"
+  files_scope:
+    - "src/infrastructure/services/order/\*\*"
+    - "src/domain/services/\*\*"
+      steps:
+    - добавить методы для создания заказов из корзины
+    - реализовать логику изменения статусов
+    - добавить методы для работы с флагами заказов
+    - добавить статистику заказов
+      dod:
+    - все методы сервиса реализованы
+    - создание заказов работает корректно
+    - изменение статусов функционально
+    - статистика возвращает корректные данные
+      gate:
+    - require: "Одобряю SAAS-005-05"
 
-  - id: SAAS-005-08
-    title: Добавить валидацию статусов и переходов
-    branch: "feature/order/SAAS-005/order-status-validation"
-    files_scope:
-      - "src/infrastructure/services/order/**"
-      - "src/infrastructure/common/validators/**"
-    steps:
-      - реализовать валидацию переходов между статусами
-      - добавить проверки прав на изменение статусов
-      - добавить логирование изменений статусов
-    dod:
-      - валидация переходов работает корректно
-      - проверки прав функциональны
-      - логирование изменений активно
-    gate:
-      - require: "Одобряю SAAS-005-08"
+# Фаза 2: API и интеграции
 
-  - id: SAAS-005-09
-    title: Создать тесты для API
-    branch: "feature/order/SAAS-005/order-api-tests"
-    files_scope:
-      - "src/infrastructure/controllers/order/tests/**"
-      - "src/infrastructure/services/order/tests/**"
-      - "src/infrastructure/repositories/order/tests/**"
-    steps:
-      - написать integration тесты для заказов
-      - написать unit тесты для сервисов
-      - добавить негативные тесты
-    dod:
-      - все тесты проходят
-      - покрытие критичных модулей ≥80%
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-005-09"
+- id: SAAS-005-06
+  title: Создать контроллер с API endpoints
+  branch: "feature/order/SAAS-005/order-controller-endpoints"
+  files_scope:
+    - "src/infrastructure/controllers/order/\*\*"
+    - "src/infrastructure/common/decorators/swagger/order/\*\*"
+      steps:
+    - добавить эндпоинты для создания заказов (POST /orders)
+    - добавить эндпоинты для управления статусами (PATCH /orders/:id/status)
+    - добавить эндпоинты для просмотра заказов (GET /orders, GET /orders/:id)
+    - добавить статистику (GET /admin/orders/stats)
+      dod:
+    - все эндпоинты работают корректно
+    - Swagger документация обновлена
+    - Guards и роли применены правильно
+      gate:
+    - require: "Одобряю SAAS-005-06"
 
-  # Фаза 3: Тестирование и качество
-  - id: SAAS-005-10
-    title: Написать unit тесты для сервисов и флагов
-    branch: "feature/order/SAAS-005/order-unit-tests"
-    files_scope:
-      - "src/infrastructure/services/order/tests/**"
-      - "src/infrastructure/repositories/order/tests/**"
-    steps:
-      - покрыть OrderService методами флагов
-      - покрыть методы изменения статусов
-      - покрыть методы создания заказов
-    dod:
-      - unit тесты покрывают все методы
-      - тесты стабильны и быстры
-      - моки настроены корректно
-    gate:
-      - require: "Одобряю SAAS-005-10"
+- id: SAAS-005-07
+  title: Настроить интеграцию с системой уведомлений
+  branch: "feature/order/SAAS-005/order-notification-integration"
+  files_scope:
+    - "src/infrastructure/services/order/\*\*"
+    - "src/infrastructure/services/notification/\*\*"
+      steps:
+    - реализовать уведомления при изменении статусов
+    - добавить шаблоны уведомлений для заказов
+    - настроить отправку уведомлений по событиям
+      dod:
+    - уведомления при изменении статусов работают
+    - шаблоны уведомлений настроены
+    - события обрабатываются корректно
+      gate:
+    - require: "Одобряю SAAS-005-07"
 
-  - id: SAAS-005-11
-    title: Написать integration тесты для API флагов
-    branch: "feature/order/SAAS-005/order-integration-tests"
-    files_scope:
-      - "src/infrastructure/controllers/order/tests/**"
-    steps:
-      - покрыть все эндпоинты заказов
-      - покрыть эндпоинты изменения статусов
-      - покрыть эндпоинты статистики
-    dod:
-      - integration тесты покрывают все эндпоинты
-      - тесты изолированы и детерминированы
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-005-11"
+- id: SAAS-005-08
+  title: Добавить валидацию статусов и переходов
+  branch: "feature/order/SAAS-005/order-status-validation"
+  files_scope:
+    - "src/infrastructure/services/order/\*\*"
+    - "src/infrastructure/common/validators/\*\*"
+      steps:
+    - реализовать валидацию переходов между статусами
+    - добавить проверки прав на изменение статусов
+    - добавить логирование изменений статусов
+      dod:
+    - валидация переходов работает корректно
+    - проверки прав функциональны
+    - логирование изменений активно
+      gate:
+    - require: "Одобряю SAAS-005-08"
 
-  - id: SAAS-005-12
-    title: Добавить обработку ошибок и валидацию флагов
-    branch: "feature/order/SAAS-005/order-error-handling"
-    files_scope:
-      - "src/infrastructure/common/filters/**"
-      - "src/infrastructure/common/pipes/**"
-    steps:
-      - добавить обработку ошибок для заказов
-      - улучшить валидацию с русскими сообщениями
-      - добавить логирование ошибок
-    dod:
-      - ошибки обрабатываются корректно
-      - сообщения на русском языке
-      - логирование работает
-    gate:
-      - require: "Одобряю SAAS-005-12"
+- id: SAAS-005-09
+  title: Создать тесты для API
+  branch: "feature/order/SAAS-005/order-api-tests"
+  files_scope:
+    - "src/infrastructure/controllers/order/tests/\*\*"
+    - "src/infrastructure/services/order/tests/\*\*"
+    - "src/infrastructure/repositories/order/tests/\*\*"
+      steps:
+    - написать integration тесты для заказов
+    - написать unit тесты для сервисов
+    - добавить негативные тесты
+      dod:
+    - все тесты проходят
+    - покрытие критичных модулей ≥80%
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-005-09"
 
-  # Дополнительные возможности
-  - id: SAAS-005-13
-    title: Частичная оплата заказов
-    branch: "feature/order/SAAS-005/order-partial-payment"
-    files_scope:
-      - "src/infrastructure/services/order/**"
-      - "src/infrastructure/services/payment/**"
-    steps:
-      - реализовать логику частичной оплаты
-      - добавить отслеживание остатка к доплате
-      - добавить уведомления о частичной оплате
-    dod:
-      - частичная оплата работает корректно
-      - отслеживание остатка функционально
-      - уведомления отправляются
-    gate:
-      - require: "Одобряю SAAS-005-13"
+# Фаза 3: Тестирование и качество
 
-  - id: SAAS-005-14
-    title: Множественные методы доставки
-    branch: "feature/order/SAAS-005/order-multiple-shipping"
-    files_scope:
-      - "src/infrastructure/services/order/**"
-      - "src/infrastructure/services/shipping/**"
-    steps:
-      - реализовать поддержку множественных методов доставки
-      - добавить расчет стоимости доставки
-      - добавить выбор метода доставки при оформлении
-    dod:
-      - множественные методы доставки работают
-      - расчет стоимости корректный
-      - выбор метода доставки функционален
-    gate:
-      - require: "Одобряю SAAS-005-14"
+- id: SAAS-005-10
+  title: Написать unit тесты для сервисов и флагов
+  branch: "feature/order/SAAS-005/order-unit-tests"
+  files_scope:
+    - "src/infrastructure/services/order/tests/\*\*"
+    - "src/infrastructure/repositories/order/tests/\*\*"
+      steps:
+    - покрыть OrderService методами флагов
+    - покрыть методы изменения статусов
+    - покрыть методы создания заказов
+      dod:
+    - unit тесты покрывают все методы
+    - тесты стабильны и быстры
+    - моки настроены корректно
+      gate:
+    - require: "Одобряю SAAS-005-10"
 
-  - id: SAAS-005-15
-    title: Система возвратов и обменов
-    branch: "feature/order/SAAS-005/order-returns-exchanges"
-    files_scope:
-      - "src/infrastructure/services/order/**"
-      - "src/infrastructure/services/return/**"
-    steps:
-      - реализовать систему возвратов заказов
-      - добавить систему обменов товаров
-      - добавить обработку возвратных платежей
-    dod:
-      - система возвратов работает
-      - система обменов функциональна
-      - обработка платежей корректна
-    gate:
-      - require: "Одобряю SAAS-005-15"
+- id: SAAS-005-11
+  title: Написать integration тесты для API флагов
+  branch: "feature/order/SAAS-005/order-integration-tests"
+  files_scope:
+    - "src/infrastructure/controllers/order/tests/\*\*"
+      steps:
+    - покрыть все эндпоинты заказов
+    - покрыть эндпоинты изменения статусов
+    - покрыть эндпоинты статистики
+      dod:
+    - integration тесты покрывают все эндпоинты
+    - тесты изолированы и детерминированы
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-005-11"
 
-  - id: SAAS-005-16
-    title: Интеграция с платежными системами
-    branch: "feature/order/SAAS-005/order-payment-integration"
-    files_scope:
-      - "src/infrastructure/services/order/**"
-      - "src/infrastructure/services/payment/**"
-    steps:
-      - интегрировать с платежными системами
-      - добавить обработку webhook'ов платежей
-      - добавить автоматическое обновление статусов при оплате
-    dod:
-      - интеграция с платежными системами работает
-      - webhook'и обрабатываются корректно
-      - автоматическое обновление статусов активно
-    gate:
-      - require: "Одобряю SAAS-005-16"
+- id: SAAS-005-12
+  title: Добавить обработку ошибок и валидацию флагов
+  branch: "feature/order/SAAS-005/order-error-handling"
+  files_scope:
+    - "src/infrastructure/common/filters/\*\*"
+    - "src/infrastructure/common/pipes/\*\*"
+      steps:
+    - добавить обработку ошибок для заказов
+    - улучшить валидацию с русскими сообщениями
+    - добавить логирование ошибок
+      dod:
+    - ошибки обрабатываются корректно
+    - сообщения на русском языке
+    - логирование работает
+      gate:
+    - require: "Одобряю SAAS-005-12"
 
-  - id: SAAS-005-17
-    title: Автоматическое обновление статусов
-    branch: "feature/order/SAAS-005/order-auto-status-updates"
-    files_scope:
-      - "src/infrastructure/services/order/**"
-      - "src/infrastructure/common/events/**"
-    steps:
-      - реализовать автоматическое обновление статусов
-      - добавить события для изменения статусов
-      - настроить автоматические переходы статусов
-    dod:
-      - автоматическое обновление работает
-      - события обрабатываются корректно
-      - автоматические переходы настроены
-    gate:
-      - require: "Одобряю SAAS-005-17"
+# Дополнительные возможности
 
-  # Unit тесты для OrderRepository
-  - id: SAAS-005-18
-    title: Unit тесты для OrderRepository
-    branch: "test/order/SAAS-005/order-repository-unit-tests"
-    files_scope:
-      - "tests/unit/repositories/order.repository.unit.test.ts"
-      - "src/infrastructure/repositories/order/order.repository.ts"
-    steps:
-      - создать файл tests/unit/repositories/order.repository.unit.test.ts
-      - настроить моки для OrderModel, OrderItemModel, OrderItemRepository
-      - написать тесты для adminFindOrderListUser() - получение всех заказов и заказов пользователя
-      - написать тесты для adminFindOrderUser() - получение заказа админом
-      - написать тесты для adminCreateOrder() - создание заказа админом
-      - написать тесты для adminRemoveOrder() - удаление заказа админом
-      - написать тесты для userFindOrderList() - получение заказов пользователя
-      - написать тесты для userFindOrder() - получение заказа пользователем
-      - написать тесты для userCreateOrder() - создание заказа пользователем
-      - написать тесты для guestCreateOrder() - создание заказа гостем
-      - добавить тесты безопасности - проверка принадлежности заказов пользователям
-      - добавить тесты обработки ошибок для всех методов
-    dod:
-      - покрытие branches ≥ 90%
-      - покрытие functions ≥ 90%
-      - покрытие lines ≥ 90%
-      - все тесты проходят
-      - тесты безопасности проверяют изоляцию пользователей
-      - линтеры проходят без ошибок
-    estimated_time: 6-8 часов
-    gate:
-      - require: "Одобряю SAAS-005-18"
+- id: SAAS-005-13
+  title: Частичная оплата заказов
+  branch: "feature/order/SAAS-005/order-partial-payment"
+  files_scope:
+    - "src/infrastructure/services/order/\*\*"
+    - "src/infrastructure/services/payment/\*\*"
+      steps:
+    - реализовать логику частичной оплаты
+    - добавить отслеживание остатка к доплате
+    - добавить уведомления о частичной оплате
+      dod:
+    - частичная оплата работает корректно
+    - отслеживание остатка функционально
+    - уведомления отправляются
+      gate:
+    - require: "Одобряю SAAS-005-13"
+
+- id: SAAS-005-14
+  title: Множественные методы доставки
+  branch: "feature/order/SAAS-005/order-multiple-shipping"
+  files_scope:
+    - "src/infrastructure/services/order/\*\*"
+    - "src/infrastructure/services/shipping/\*\*"
+      steps:
+    - реализовать поддержку множественных методов доставки
+    - добавить расчет стоимости доставки
+    - добавить выбор метода доставки при оформлении
+      dod:
+    - множественные методы доставки работают
+    - расчет стоимости корректный
+    - выбор метода доставки функционален
+      gate:
+    - require: "Одобряю SAAS-005-14"
+
+- id: SAAS-005-15
+  title: Система возвратов и обменов
+  branch: "feature/order/SAAS-005/order-returns-exchanges"
+  files_scope:
+    - "src/infrastructure/services/order/\*\*"
+    - "src/infrastructure/services/return/\*\*"
+      steps:
+    - реализовать систему возвратов заказов
+    - добавить систему обменов товаров
+    - добавить обработку возвратных платежей
+      dod:
+    - система возвратов работает
+    - система обменов функциональна
+    - обработка платежей корректна
+      gate:
+    - require: "Одобряю SAAS-005-15"
+
+- id: SAAS-005-16
+  title: Интеграция с платежными системами
+  branch: "feature/order/SAAS-005/order-payment-integration"
+  files_scope:
+    - "src/infrastructure/services/order/\*\*"
+    - "src/infrastructure/services/payment/\*\*"
+      steps:
+    - интегрировать с платежными системами
+    - добавить обработку webhook'ов платежей
+    - добавить автоматическое обновление статусов при оплате
+      dod:
+    - интеграция с платежными системами работает
+    - webhook'и обрабатываются корректно
+    - автоматическое обновление статусов активно
+      gate:
+    - require: "Одобряю SAAS-005-16"
+
+- id: SAAS-005-17
+  title: Автоматическое обновление статусов
+  branch: "feature/order/SAAS-005/order-auto-status-updates"
+  files_scope:
+    - "src/infrastructure/services/order/\*\*"
+    - "src/infrastructure/common/events/\*\*"
+      steps:
+    - реализовать автоматическое обновление статусов
+    - добавить события для изменения статусов
+    - настроить автоматические переходы статусов
+      dod:
+    - автоматическое обновление работает
+    - события обрабатываются корректно
+    - автоматические переходы настроены
+      gate:
+    - require: "Одобряю SAAS-005-17"
+
+# Unit тесты для OrderRepository
+
+- id: SAAS-005-18
+  title: Unit тесты для OrderRepository
+  branch: "test/order/SAAS-005/order-repository-unit-tests"
+  files_scope:
+    - "tests/unit/repositories/order.repository.unit.test.ts"
+    - "src/infrastructure/repositories/order/order.repository.ts"
+      steps:
+    - создать файл tests/unit/repositories/order.repository.unit.test.ts
+    - настроить моки для OrderModel, OrderItemModel, OrderItemRepository
+    - написать тесты для adminFindOrderListUser() - получение всех заказов и заказов пользователя
+    - написать тесты для adminFindOrderUser() - получение заказа админом
+    - написать тесты для adminCreateOrder() - создание заказа админом
+    - написать тесты для adminRemoveOrder() - удаление заказа админом
+    - написать тесты для userFindOrderList() - получение заказов пользователя
+    - написать тесты для userFindOrder() - получение заказа пользователем
+    - написать тесты для userCreateOrder() - создание заказа пользователем
+    - написать тесты для guestCreateOrder() - создание заказа гостем
+    - добавить тесты безопасности - проверка принадлежности заказов пользователям
+    - добавить тесты обработки ошибок для всех методов
+      dod:
+    - покрытие branches ≥ 90%
+    - покрытие functions ≥ 90%
+    - покрытие lines ≥ 90%
+    - все тесты проходят
+    - тесты безопасности проверяют изоляцию пользователей
+    - линтеры проходят без ошибок
+      estimated_time: 6-8 часов
+      gate:
+    - require: "Одобряю SAAS-005-18"

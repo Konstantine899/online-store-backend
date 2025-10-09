@@ -16,6 +16,14 @@ execution_policy:
 context:
   goal: Product catalog with tenant isolation, filters, pagination, search
 
+# DEFAULT PRE-COMMIT WORKFLOW для всех product задач
+default_pre_commit_workflow: "СТАНДАРТНЫЙ (business logic: product catalog)"
+default_pre_commit_steps:
+  - "«Ревью» → catalog logic, filtering, search performance"
+  - "«Автофикс» → linter/prettier"
+  - "Тесты: product integration tests"
+  - "«Коммит» → feat(product): <TASK_ID> complete"
+
 tasks:
   # Фаза 1: Базовая реализация
   - id: SAAS-003-00

@@ -16,6 +16,12 @@ execution_policy:
 context:
   goal: Wishlist system with tenant isolation and product management
 
+# DEFAULT PRE-COMMIT WORKFLOW
+default_pre_commit_workflow: "МИНИМАЛЬНЫЙ (вспомогательный модуль)"
+default_pre_commit_steps:
+  - "«Автофикс» → linter/prettier"
+  - "«Коммит» → feat(wishlist): <TASK_ID> complete"
+
 tasks:
   # Фаза 1: Базовая реализация
   - id: SAAS-014-00

@@ -16,6 +16,12 @@ execution_policy:
 context:
   goal: Store management system with settings, maintenance mode and tenant isolation
 
+# DEFAULT PRE-COMMIT WORKFLOW
+default_pre_commit_workflow: "МИНИМАЛЬНЫЙ (вспомогательный модуль)"
+default_pre_commit_steps:
+  - "«Автофикс» → linter/prettier"
+  - "«Коммит» → feat(store): <TASK_ID> complete"
+
 tasks:
   # Фаза 1: Базовая реализация
   - id: SAAS-013-00

@@ -16,6 +16,14 @@ execution_policy:
 context:
   goal: User MVP без маркетинговых флагов; verify, guards, русская валидация.
 
+# DEFAULT PRE-COMMIT WORKFLOW для всех user задач
+default_pre_commit_workflow: "СТАНДАРТНЫЙ (business logic: user management)"
+default_pre_commit_steps:
+  - "«Ревью» → business logic, user data handling, validation"
+  - "«Автофикс» → linter/prettier"
+  - "Тесты: user integration tests"
+  - "«Коммит» → feat(user): <TASK_ID> complete"
+
 tasks:
   # Фаза 1: Базовая реализация
   - id: SAAS-002-00

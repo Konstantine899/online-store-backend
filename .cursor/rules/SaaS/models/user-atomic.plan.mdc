@@ -16,6 +16,12 @@ execution_policy:
 context:
   goal: Atomic user system development with incremental functionality
 
+# DEFAULT PRE-COMMIT WORKFLOW для всех user atomic задач
+default_pre_commit_workflow: "МИНИМАЛЬНЫЙ (atomic task: single feature)"
+default_pre_commit_steps:
+  - "«Автофикс» → linter/prettier"
+  - "«Коммит» → feat(user): <TASK_ID> complete"
+
 tasks:
   # Фаза 1: Базовый профиль пользователя
   - id: SAAS-016-00

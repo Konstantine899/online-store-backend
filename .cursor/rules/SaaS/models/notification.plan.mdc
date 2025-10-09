@@ -16,6 +16,14 @@ execution_policy:
 context:
   goal: Notification system with tenant isolation and multiple channels
 
+# DEFAULT PRE-COMMIT WORKFLOW для всех notification задач
+default_pre_commit_workflow: "СТАНДАРТНЫЙ (business logic: notifications)"
+default_pre_commit_steps:
+  - "«Ревью» → notification logic, template rendering, delivery"
+  - "«Автофикс» → linter/prettier"
+  - "Тесты: notification integration tests"
+  - "«Коммит» → feat(notification): <TASK_ID> complete"
+
 tasks:
   - id: SAAS-009-00
     title: Создать контроллер уведомлений с полной системой ролей

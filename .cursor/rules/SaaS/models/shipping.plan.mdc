@@ -16,6 +16,12 @@ execution_policy:
 context:
   goal: Shipping system with methods, zones, rates and tenant isolation
 
+# DEFAULT PRE-COMMIT WORKFLOW
+default_pre_commit_workflow: "МИНИМАЛЬНЫЙ (вспомогательный модуль)"
+default_pre_commit_steps:
+  - "«Автофикс» → linter/prettier"
+  - "«Коммит» → feat(shipping): <TASK_ID> complete"
+
 tasks:
   # Фаза 1: Базовая реализация
   - id: SAAS-012-00

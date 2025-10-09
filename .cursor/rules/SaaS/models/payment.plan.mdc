@@ -6,281 +6,306 @@ epic_ref: SAAS-006
 version: 1.0
 
 execution_policy:
-  must_follow: true
-  allow_code_changes_only_after: "Одобряю <TASK_ID>"
-  constraints:
-    - no public API changes without explicit approval
-    - operate strictly within files_scope
-    - pass lints/tests and Swagger before DoD complete
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - no public API changes without explicit approval - operate strictly within files_scope - pass lints/tests and Swagger before DoD complete
 
 context:
-  goal: Payment processing with provider abstraction and tenant isolation
+goal: Payment processing with provider abstraction and tenant isolation
+
+# DEFAULT PRE-COMMIT WORKFLOW для всех payment задач
+
+default_pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: payments/finance)"
+default_pre_commit_steps:
+
+- "«Ревью» → security, financial data handling, error handling"
+- "«Оптимизируй» → DB queries, payment processing performance"
+- "«Автофикс» → linter/prettier"
+- "Тесты: payment integration/unit tests"
+- "Coverage: payment модуль ≥80%"
+- "«Коммит» → feat(payment): <TASK_ID> complete"
 
 tasks:
-  # Фаза 1: Базовая реализация
-  - id: SAAS-006-00
-    title: Создать контроллер платежей с полной системой ролей
-    branch: "feature/payment/SAAS-006/payment-controller-roles"
-    files_scope:
-      - ".cursor/rules/models/payment.mdc"
-      - "src/infrastructure/controllers/payment/**"
-    steps:
-      - добавить секцию контроллера в payment.mdc
-      - создать PaymentController с импортами RoleGuard и Roles
-      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
-      - реализовать методы с правильными ролями:
-        - создание платежей: CUSTOMER_ROLES
-        - обработка webhook'ов: ADMIN_ROLES
-        - управление провайдерами: MANAGER_ROLES
-        - статистика платежей: MANAGER_ROLES
-    dod:
-      - контроллер создан с полной системой ролей
-      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
-      - тенантская изоляция ролей обеспечена
-    gate:
-      - require: "Одобряю SAAS-006-00"
 
-  - id: SAAS-006-01
-    title: Создать платежный порт с интерфейсом провайдера
-    branch: "feature/payment/SAAS-006/payment-port-interface"
-    files_scope:
-      - "src/infrastructure/common/payment/**"
-      - "src/domain/interfaces/payment/**"
-    steps:
-      - создать интерфейс PaymentProvider
-      - создать PaymentPort для абстракции провайдеров
-      - добавить базовые типы для платежей
-    dod:
-      - интерфейс PaymentProvider создан
-      - PaymentPort реализован
-      - базовые типы определены
-    gate:
-      - require: "Одобряю SAAS-006-01"
+# Фаза 1: Базовая реализация
 
-  - id: SAAS-006-02
-    title: Реализовать базового провайдера платежей
-    branch: "feature/payment/SAAS-006/payment-provider-implementation"
-    files_scope:
-      - "src/infrastructure/services/payment/**"
-      - "src/infrastructure/common/payment/**"
-    steps:
-      - создать базовый провайдер платежей
-      - реализовать методы создания платежей
-      - добавить обработку webhook'ов
-    dod:
-      - базовый провайдер реализован
-      - создание платежей работает
-      - webhook'и обрабатываются
-    gate:
-      - require: "Одобряю SAAS-006-02"
+- id: SAAS-006-00
+  title: Создать контроллер платежей с полной системой ролей
+  branch: "feature/payment/SAAS-006/payment-controller-roles"
+  files_scope:
+    - ".cursor/rules/models/payment.mdc"
+    - "src/infrastructure/controllers/payment/\*\*"
+      steps:
+    - добавить секцию контроллера в payment.mdc
+    - создать PaymentController с импортами RoleGuard и Roles
+    - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+    - реализовать методы с правильными ролями: - создание платежей: CUSTOMER_ROLES - обработка webhook'ов: ADMIN_ROLES - управление провайдерами: MANAGER_ROLES - статистика платежей: MANAGER_ROLES
+      dod:
+    - контроллер создан с полной системой ролей
+    - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+    - тенантская изоляция ролей обеспечена
+      gate:
+    - require: "Одобряю SAAS-006-00"
+      pre_commit_workflow: "inherit_default"
 
-  - id: SAAS-006-03
-    title: Создать DTO классы для платежей
-    branch: "feature/payment/SAAS-006/payment-dto-validation"
-    files_scope:
-      - "src/infrastructure/dto/payment/**"
-      - "src/domain/dto/**"
-    steps:
-      - создать CreatePaymentDto для создания платежей
-      - создать PaymentWebhookDto для webhook'ов
-      - создать PaymentStatusDto для статусов
-      - добавить валидаторы с русскими сообщениями
-    dod:
-      - DTO содержат все необходимые поля
-      - валидация работает с русскими сообщениями
-      - CustomValidationPipe обрабатывает все DTO
-    gate:
-      - require: "Одобряю SAAS-006-03"
+- id: SAAS-006-01
+  title: Создать платежный порт с интерфейсом провайдера
+  branch: "feature/payment/SAAS-006/payment-port-interface"
+  files_scope:
+    - "src/infrastructure/common/payment/\*\*"
+    - "src/domain/interfaces/payment/\*\*"
+      steps:
+    - создать интерфейс PaymentProvider
+    - создать PaymentPort для абстракции провайдеров
+    - добавить базовые типы для платежей
+      dod:
+    - интерфейс PaymentProvider создан
+    - PaymentPort реализован
+    - базовые типы определены
+      gate:
+    - require: "Одобряю SAAS-006-01"
+      pre_commit_workflow: "inherit_default"
 
-  - id: SAAS-006-04
-    title: Создать Response классы с Swagger
-    branch: "feature/payment/SAAS-006/payment-response-swagger"
-    files_scope:
-      - "src/infrastructure/responses/payment/**"
-      - "src/infrastructure/common/decorators/swagger/payment/**"
-    steps:
-      - создать Response классы для платежей
-      - добавить Swagger декораторы
-      - создать Response для списков платежей с пагинацией
-    dod:
-      - Response классы созданы
-      - Swagger схемы корректны
-      - пагинация возвращает { data, meta }
-    gate:
-      - require: "Одобряю SAAS-006-04"
+- id: SAAS-006-02
+  title: Реализовать базового провайдера платежей
+  branch: "feature/payment/SAAS-006/payment-provider-implementation"
+  files_scope:
+    - "src/infrastructure/services/payment/\*\*"
+    - "src/infrastructure/common/payment/\*\*"
+      steps:
+    - создать базовый провайдер платежей
+    - реализовать методы создания платежей
+    - добавить обработку webhook'ов
+      dod:
+    - базовый провайдер реализован
+    - создание платежей работает
+    - webhook'и обрабатываются
+      gate:
+    - require: "Одобряю SAAS-006-02"
+      pre_commit_workflow: "inherit_default"
 
-  - id: SAAS-006-05
-    title: Реализовать сервис платежей
-    branch: "feature/payment/SAAS-006/payment-service-methods"
-    files_scope:
-      - "src/infrastructure/services/payment/**"
-      - "src/domain/services/**"
-    steps:
-      - добавить методы для создания платежей
-      - реализовать обработку статусов платежей
-      - добавить методы для отмены платежей
-      - добавить статистику платежей
-    dod:
-      - все методы сервиса реализованы
-      - создание платежей работает корректно
-      - обработка статусов функциональна
-      - статистика возвращает корректные данные
-    gate:
-      - require: "Одобряю SAAS-006-05"
+- id: SAAS-006-03
+  title: Создать DTO классы для платежей
+  branch: "feature/payment/SAAS-006/payment-dto-validation"
+  files_scope:
+    - "src/infrastructure/dto/payment/\*\*"
+    - "src/domain/dto/\*\*"
+      steps:
+    - создать CreatePaymentDto для создания платежей
+    - создать PaymentWebhookDto для webhook'ов
+    - создать PaymentStatusDto для статусов
+    - добавить валидаторы с русскими сообщениями
+      dod:
+    - DTO содержат все необходимые поля
+    - валидация работает с русскими сообщениями
+    - CustomValidationPipe обрабатывает все DTO
+      gate:
+    - require: "Одобряю SAAS-006-03"
+      pre_commit_workflow: "inherit_default"
 
-  # Фаза 2: API и интеграции
-  - id: SAAS-006-06
-    title: Создать контроллер с API endpoints
-    branch: "feature/payment/SAAS-006/payment-controller-endpoints"
-    files_scope:
-      - "src/infrastructure/controllers/payment/**"
-      - "src/infrastructure/common/decorators/swagger/payment/**"
-    steps:
-      - добавить эндпоинты для создания платежей (POST /payments)
-      - добавить эндпоинты для статусов (GET /payments/:id/status)
-      - добавить эндпоинты для отмены (POST /payments/:id/cancel)
-      - добавить webhook эндпоинты
-    dod:
-      - все эндпоинты работают корректно
-      - Swagger документация обновлена
-      - Guards и роли применены правильно
-    gate:
-      - require: "Одобряю SAAS-006-06"
+- id: SAAS-006-04
+  title: Создать Response классы с Swagger
+  branch: "feature/payment/SAAS-006/payment-response-swagger"
+  files_scope:
+    - "src/infrastructure/responses/payment/\*\*"
+    - "src/infrastructure/common/decorators/swagger/payment/\*\*"
+      steps:
+    - создать Response классы для платежей
+    - добавить Swagger декораторы
+    - создать Response для списков платежей с пагинацией
+      dod:
+    - Response классы созданы
+    - Swagger схемы корректны
+    - пагинация возвращает { data, meta }
+      gate:
+    - require: "Одобряю SAAS-006-04"
+      pre_commit_workflow: "inherit_default"
 
-  - id: SAAS-006-07
-    title: Настроить интеграцию с платежными системами
-    branch: "feature/payment/SAAS-006/payment-external-integration"
-    files_scope:
-      - "src/infrastructure/services/payment/**"
-      - "src/infrastructure/common/integrations/**"
-    steps:
-      - интегрировать с внешними платежными системами
-      - добавить обработку различных типов платежей
-      - настроить webhook'и для уведомлений
-    dod:
-      - интеграция с внешними системами работает
-      - различные типы платежей поддерживаются
-      - webhook'и настроены корректно
-    gate:
-      - require: "Одобряю SAAS-006-07"
+- id: SAAS-006-05
+  title: Реализовать сервис платежей
+  branch: "feature/payment/SAAS-006/payment-service-methods"
+  files_scope:
+    - "src/infrastructure/services/payment/\*\*"
+    - "src/domain/services/\*\*"
+      steps:
+    - добавить методы для создания платежей
+    - реализовать обработку статусов платежей
+    - добавить методы для отмены платежей
+    - добавить статистику платежей
+      dod:
+    - все методы сервиса реализованы
+    - создание платежей работает корректно
+    - обработка статусов функциональна
+    - статистика возвращает корректные данные
+      gate:
+    - require: "Одобряю SAAS-006-05"
+      pre_commit_workflow: "inherit_default"
 
-  - id: SAAS-006-08
-    title: Добавить обработку ошибок и валидацию
-    branch: "feature/payment/SAAS-006/payment-error-handling"
-    files_scope:
-      - "src/infrastructure/common/filters/**"
-      - "src/infrastructure/common/pipes/**"
-    steps:
-      - добавить обработку ошибок для платежей
-      - улучшить валидацию с русскими сообщениями
-      - добавить логирование ошибок
-    dod:
-      - ошибки обрабатываются корректно
-      - сообщения на русском языке
-      - логирование работает
-    gate:
-      - require: "Одобряю SAAS-006-08"
+# Фаза 2: API и интеграции
 
-  - id: SAAS-006-09
-    title: Создать тесты для API платежей
-    branch: "feature/payment/SAAS-006/payment-api-tests"
-    files_scope:
-      - "src/infrastructure/controllers/payment/tests/**"
-      - "src/infrastructure/services/payment/tests/**"
-      - "src/infrastructure/repositories/payment/tests/**"
-    steps:
-      - написать integration тесты для платежей
-      - написать unit тесты для сервисов
-      - добавить негативные тесты
-    dod:
-      - все тесты проходят
-      - покрытие критичных модулей ≥80%
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-006-09"
+- id: SAAS-006-06
+  title: Создать контроллер с API endpoints
+  branch: "feature/payment/SAAS-006/payment-controller-endpoints"
+  files_scope:
+    - "src/infrastructure/controllers/payment/\*\*"
+    - "src/infrastructure/common/decorators/swagger/payment/\*\*"
+      steps:
+    - добавить эндпоинты для создания платежей (POST /payments)
+    - добавить эндпоинты для статусов (GET /payments/:id/status)
+    - добавить эндпоинты для отмены (POST /payments/:id/cancel)
+    - добавить webhook эндпоинты
+      dod:
+    - все эндпоинты работают корректно
+    - Swagger документация обновлена
+    - Guards и роли применены правильно
+      gate:
+    - require: "Одобряю SAAS-006-06"
+      pre_commit_workflow: "inherit_default"
 
-  # Фаза 3: Тестирование и качество
-  - id: SAAS-006-10
-    title: Написать unit тесты для сервисов
-    branch: "feature/payment/SAAS-006/payment-unit-tests"
-    files_scope:
-      - "src/infrastructure/services/payment/tests/**"
-      - "src/infrastructure/repositories/payment/tests/**"
-    steps:
-      - покрыть PaymentService методами
-      - покрыть методы обработки webhook'ов
-      - покрыть методы отмены платежей
-    dod:
-      - unit тесты покрывают все методы
-      - тесты стабильны и быстры
-      - моки настроены корректно
-    gate:
-      - require: "Одобряю SAAS-006-10"
+- id: SAAS-006-07
+  title: Настроить интеграцию с платежными системами
+  branch: "feature/payment/SAAS-006/payment-external-integration"
+  files_scope:
+    - "src/infrastructure/services/payment/\*\*"
+    - "src/infrastructure/common/integrations/\*\*"
+      steps:
+    - интегрировать с внешними платежными системами
+    - добавить обработку различных типов платежей
+    - настроить webhook'и для уведомлений
+      dod:
+    - интеграция с внешними системами работает
+    - различные типы платежей поддерживаются
+    - webhook'и настроены корректно
+      gate:
+    - require: "Одобряю SAAS-006-07"
+      pre_commit_workflow: "inherit_default"
 
-  - id: SAAS-006-11
-    title: Написать integration тесты для API
-    branch: "feature/payment/SAAS-006/payment-integration-tests"
-    files_scope:
-      - "src/infrastructure/controllers/payment/tests/**"
-    steps:
-      - покрыть все эндпоинты платежей
-      - покрыть webhook эндпоинты
-      - покрыть эндпоинты статистики
-    dod:
-      - integration тесты покрывают все эндпоинты
-      - тесты изолированы и детерминированы
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-006-11"
+- id: SAAS-006-08
+  title: Добавить обработку ошибок и валидацию
+  branch: "feature/payment/SAAS-006/payment-error-handling"
+  files_scope:
+    - "src/infrastructure/common/filters/\*\*"
+    - "src/infrastructure/common/pipes/\*\*"
+      steps:
+    - добавить обработку ошибок для платежей
+    - улучшить валидацию с русскими сообщениями
+    - добавить логирование ошибок
+      dod:
+    - ошибки обрабатываются корректно
+    - сообщения на русском языке
+    - логирование работает
+      gate:
+    - require: "Одобряю SAAS-006-08"
+      pre_commit_workflow: "inherit_default"
 
-  - id: SAAS-006-12
-    title: Провести рефакторинг и оптимизацию
-    branch: "feature/payment/SAAS-006/payment-optimization"
-    files_scope:
-      - "src/infrastructure/**"
-      - "src/domain/**"
-    steps:
-      - оптимизировать запросы к БД
-      - рефакторить дублирующийся код
-      - улучшить производительность
-    dod:
-      - код оптимизирован
-      - дублирование устранено
-      - производительность улучшена
-    gate:
-      - require: "Одобряю SAAS-006-12"
+- id: SAAS-006-09
+  title: Создать тесты для API платежей
+  branch: "feature/payment/SAAS-006/payment-api-tests"
+  files_scope:
+    - "src/infrastructure/controllers/payment/tests/\*\*"
+    - "src/infrastructure/services/payment/tests/\*\*"
+    - "src/infrastructure/repositories/payment/tests/\*\*"
+      steps:
+    - написать integration тесты для платежей
+    - написать unit тесты для сервисов
+    - добавить негативные тесты
+      dod:
+    - все тесты проходят
+    - покрытие критичных модулей ≥80%
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-006-09"
+      pre_commit_workflow: "inherit_default"
 
-  # Дополнительные возможности
-  - id: SAAS-006-13
-    title: Поддержка множественных провайдеров
-    branch: "feature/payment/SAAS-006/payment-multiple-providers"
-    files_scope:
-      - "src/infrastructure/services/payment/**"
-      - "src/infrastructure/common/payment/**"
-    steps:
-      - реализовать поддержку множественных провайдеров
-      - добавить выбор провайдера по типу платежа
-      - добавить fallback между провайдерами
-    dod:
-      - множественные провайдеры поддерживаются
-      - выбор провайдера работает корректно
-      - fallback между провайдерами функционален
-    gate:
-      - require: "Одобряю SAAS-006-13"
+# Фаза 3: Тестирование и качество
 
-  - id: SAAS-006-14
-    title: Аналитика платежей
-    branch: "feature/payment/SAAS-006/payment-analytics"
-    files_scope:
-      - "src/infrastructure/controllers/payment/**"
-      - "src/infrastructure/services/payment/**"
-    steps:
-      - создать эндпоинты аналитики платежей
-      - добавить метрики и дашборды
-      - настроить отчеты по платежам
-    dod:
-      - аналитика платежей работает
-      - метрики корректны
-      - отчеты генерируются
-    gate:
-      - require: "Одобряю SAAS-006-14"
+- id: SAAS-006-10
+  title: Написать unit тесты для сервисов
+  branch: "feature/payment/SAAS-006/payment-unit-tests"
+  files_scope:
+    - "src/infrastructure/services/payment/tests/\*\*"
+    - "src/infrastructure/repositories/payment/tests/\*\*"
+      steps:
+    - покрыть PaymentService методами
+    - покрыть методы обработки webhook'ов
+    - покрыть методы отмены платежей
+      dod:
+    - unit тесты покрывают все методы
+    - тесты стабильны и быстры
+    - моки настроены корректно
+      gate:
+    - require: "Одобряю SAAS-006-10"
+      pre_commit_workflow: "inherit_default"
+
+- id: SAAS-006-11
+  title: Написать integration тесты для API
+  branch: "feature/payment/SAAS-006/payment-integration-tests"
+  files_scope:
+    - "src/infrastructure/controllers/payment/tests/\*\*"
+      steps:
+    - покрыть все эндпоинты платежей
+    - покрыть webhook эндпоинты
+    - покрыть эндпоинты статистики
+      dod:
+    - integration тесты покрывают все эндпоинты
+    - тесты изолированы и детерминированы
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-006-11"
+      pre_commit_workflow: "inherit_default"
+
+- id: SAAS-006-12
+  title: Провести рефакторинг и оптимизацию
+  branch: "feature/payment/SAAS-006/payment-optimization"
+  files_scope:
+    - "src/infrastructure/\*\*"
+    - "src/domain/\*\*"
+      steps:
+    - оптимизировать запросы к БД
+    - рефакторить дублирующийся код
+    - улучшить производительность
+      dod:
+    - код оптимизирован
+    - дублирование устранено
+    - производительность улучшена
+      gate:
+    - require: "Одобряю SAAS-006-12"
+      pre_commit_workflow: "inherit_default"
+
+# Дополнительные возможности
+
+- id: SAAS-006-13
+  title: Поддержка множественных провайдеров
+  branch: "feature/payment/SAAS-006/payment-multiple-providers"
+  files_scope:
+    - "src/infrastructure/services/payment/\*\*"
+    - "src/infrastructure/common/payment/\*\*"
+      steps:
+    - реализовать поддержку множественных провайдеров
+    - добавить выбор провайдера по типу платежа
+    - добавить fallback между провайдерами
+      dod:
+    - множественные провайдеры поддерживаются
+    - выбор провайдера работает корректно
+    - fallback между провайдерами функционален
+      gate:
+    - require: "Одобряю SAAS-006-13"
+      pre_commit_workflow: "inherit_default"
+
+- id: SAAS-006-14
+  title: Аналитика платежей
+  branch: "feature/payment/SAAS-006/payment-analytics"
+  files_scope:
+    - "src/infrastructure/controllers/payment/\*\*"
+    - "src/infrastructure/services/payment/\*\*"
+      steps:
+    - создать эндпоинты аналитики платежей
+    - добавить метрики и дашборды
+    - настроить отчеты по платежам
+      dod:
+    - аналитика платежей работает
+    - метрики корректны
+    - отчеты генерируются
+      gate:
+    - require: "Одобряю SAAS-006-14"
+      pre_commit_workflow: "inherit_default"

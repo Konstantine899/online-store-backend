@@ -16,6 +16,14 @@ execution_policy:
 context:
   goal: Return and exchange system with tenant isolation and payment integration
 
+# DEFAULT PRE-COMMIT WORKFLOW
+default_pre_commit_workflow: "СТАНДАРТНЫЙ (business logic: returns)"
+default_pre_commit_steps:
+  - "«Ревью» → return logic, refund calculations"
+  - "«Автофикс» → linter/prettier"
+  - "Тесты: return integration tests"
+  - "«Коммит» → feat(return): <TASK_ID> complete"
+
 tasks:
   # Фаза 1: Базовая реализация
   - id: SAAS-010-00

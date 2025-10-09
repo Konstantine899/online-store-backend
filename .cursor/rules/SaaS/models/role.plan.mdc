@@ -16,6 +16,16 @@ execution_policy:
 context:
   goal: Comprehensive role management system with hierarchy, tenant isolation, and automatic role assignment
 
+# DEFAULT PRE-COMMIT WORKFLOW для всех role задач
+default_pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: RBAC/authorization)"
+default_pre_commit_steps:
+  - "«Ревью» → authorization logic, role hierarchy, permission checks, security"
+  - "«Оптимизируй» → role check performance, DB queries for permissions"
+  - "«Автофикс» → linter/prettier"
+  - "Тесты: RBAC integration tests, permission matrix tests"
+  - "Coverage: role/guard модуль ≥85%"
+  - "«Коммит» → feat(role): <TASK_ID> complete"
+
 tasks:
   # Фаза 1: Базовая инфраструктура ролей
   - id: SAAS-017-00

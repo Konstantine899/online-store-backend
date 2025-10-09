@@ -16,6 +16,14 @@ execution_policy:
 context:
   goal: SaaS billing with plans, subscriptions, and usage limits
 
+# DEFAULT PRE-COMMIT WORKFLOW для всех billing задач
+default_pre_commit_workflow: "СТАНДАРТНЫЙ (business logic: billing/subscriptions)"
+default_pre_commit_steps:
+  - "«Ревью» → billing logic, subscription calculations, pricing"
+  - "«Автофикс» → linter/prettier"
+  - "Тесты: billing integration tests"
+  - "«Коммит» → feat(billing): <TASK_ID> complete"
+
 tasks:
   # Фаза 1: Базовая реализация
   - id: SAAS-007-00
