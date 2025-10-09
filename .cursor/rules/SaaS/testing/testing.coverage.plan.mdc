@@ -23,8 +23,11 @@ tasks:
 # PHASE 1: Fix Current Issues (Week 1-2) - ✅ COMPLETE
 
 # Status: ✅ RESOLVED (2025-10-08) - 95%+ stability achieved
+
 # Achievement: 320-314/335 tests pass (from 79 failures)
+
 # Approach: Fundamental refactoring - all tests use unique isolated users
+
 # Time: ~10 hours (within estimate)
 
 # ============================================================
@@ -43,10 +46,10 @@ tasks:
     - все тесты user-admin проходят (0 failed)
     - нет race conditions при параллельном запуске
     - можно запускать в любом порядке
-  estimate: 3-4 hours
-  gate:
+      estimate: 3-4 hours
+      gate:
     - require: "Одобряю TEST-001"
-  status: ✅ COMPLETE (refactored with unique users)
+      status: ✅ COMPLETE (refactored with unique users)
 
 - id: TEST-002
   title: Исправить 500 errors в user-profile тестах
@@ -62,10 +65,10 @@ tasks:
     - authLoginAs('user') работает стабильно
     - все user-profile тесты проходят
     - логирование показывает детальные ошибки
-  estimate: 2-3 hours
-  gate:
+      estimate: 2-3 hours
+      gate:
     - require: "Одобряю TEST-002"
-  status: ✅ COMPLETE (refactored with unique users)
+      status: ✅ COMPLETE (refactored with unique users)
 
 - id: TEST-003
   title: Исправить user-addresses integration тесты
@@ -80,10 +83,10 @@ tasks:
       dod:
     - все address тесты проходят
     - нет FK constraint violations
-  estimate: 2 hours
-  gate:
+      estimate: 2 hours
+      gate:
     - require: "Одобряю TEST-003"
-  status: ✅ COMPLETE (refactored with unique users)
+      status: ✅ COMPLETE (refactored with unique users)
 
 - id: TEST-004
   title: Исправить rbac и auth-flow тесты
@@ -98,10 +101,10 @@ tasks:
       dod:
     - rbac тесты проходят (permissions checks работают)
     - auth-flow тесты проходят (full flow работает)
-  estimate: 2-3 hours
-  gate:
+      estimate: 2-3 hours
+      gate:
     - require: "Одобряю TEST-004"
-  status: ✅ COMPLETE (all files refactored with unique users)
+      status: ✅ COMPLETE (all files refactored with unique users)
 
 - id: TEST-005
   title: Создать test utilities и helpers
@@ -151,7 +154,7 @@ tasks:
   title: Comprehensive Authentication Flow Tests
   branch: "test/TEST-010/auth-comprehensive"
   files_scope:
-    - "tests/integration/auth/auth-comprehensive.integration.test.ts"
+    - "src/infrastructure/controllers/auth/tests/auth.controller.integration.test.ts"
     - "src/infrastructure/controllers/auth/\*\*"
     - "src/infrastructure/services/auth/\*\*"
       steps:
@@ -167,6 +170,15 @@ tasks:
       estimate: 16-20 hours
       gate:
     - require: "Одобряю TEST-010"
+      pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: auth)"
+      pre_commit_steps:
+    - "«Ревью» → проверить security, best practices, error handling"
+    - "«Оптимизируй» → проверить N+1, async operations"
+    - "«Автофикс» → исправить linter/prettier"
+    - "Запустить тесты: npm test -- auth.controller.integration.test.ts"
+    - "Проверить coverage: должен быть ≥85% для auth модуля"
+    - "«Коммит» → feat(testing): TEST-010 complete"
+      status: ✅ COMPLETE (27/27 tests, 87.5-94.73% coverage, 4h)
 
 - id: TEST-011
   title: Brute Force Protection Tests
@@ -186,6 +198,14 @@ tasks:
       estimate: 8-10 hours
       gate:
     - require: "Одобряю TEST-011"
+      pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: security/guards)"
+      pre_commit_steps:
+    - "«Ревью» → security, DoS protection, error handling"
+    - "«Оптимизируй» → check throttler performance"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: npm test -- brute-force.integration.test.ts"
+    - "Coverage: BruteforceGuard ≥85%"
+    - "«Коммит» → feat(testing): TEST-011 complete"
 
 - id: TEST-012
   title: Input Validation & Sanitization Tests
@@ -206,6 +226,12 @@ tasks:
       estimate: 10-12 hours
       gate:
     - require: "Одобряю TEST-012"
+      pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: security/validation)"
+      pre_commit_steps:
+    - "«Ревью» → security vulnerabilities, edge cases"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: все validation тесты"
+    - "«Коммит» → feat(testing): TEST-012 complete"
 
 # ============================================================
 
@@ -233,6 +259,14 @@ tasks:
       estimate: 14-18 hours
       gate:
     - require: "Одобряю TEST-020"
+      pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: RBAC/guards)"
+      pre_commit_steps:
+    - "«Ревью» → security, authorization logic, edge cases"
+    - "«Оптимизируй» → permission check performance"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: все RBAC тесты + integration"
+    - "Coverage: RoleGuard ≥85%"
+    - "«Коммит» → feat(testing): TEST-020 complete"
 
 # ============================================================
 
@@ -260,6 +294,12 @@ tasks:
       estimate: 16-20 hours
       gate:
     - require: "Одобряю TEST-030"
+      pre_commit_workflow: "СТАНДАРТНЫЙ (бизнес-логика)"
+      pre_commit_steps:
+    - "«Ревью» → business logic, edge cases"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: npm test -- user-management"
+    - "«Коммит» → feat(testing): TEST-030 complete"
 
 - id: TEST-031
   title: Error Handling & Recovery Tests
