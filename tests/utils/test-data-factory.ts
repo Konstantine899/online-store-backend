@@ -129,12 +129,24 @@ export class TestDataFactory {
         const passwordHash = await hash(password, 10);
         const phone = overrides.phone || this.uniquePhone();
 
-        // Находим роль
+        // Находим роль с retry logic (для параллельных тестов)
         const roleName = overrides.role || 'USER';
-        const role = await RoleModel.findOne({ where: { role: roleName } });
+        let role = await RoleModel.findOne({ where: { role: roleName } });
+
+        // Retry до 3 раз с экспоненциальной задержкой (для race conditions в parallel tests)
+        if (!role) {
+            const maxRetries = 3;
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                await new Promise((resolve) =>
+                    setTimeout(resolve, 100 * attempt),
+                );
+                role = await RoleModel.findOne({ where: { role: roleName } });
+                if (role) break;
+            }
+        }
 
         if (!role) {
-            throw new Error(`Role ${roleName} not found in database`);
+            throw new Error(`Role ${roleName} not found in database after ${3} retries`);
         }
 
         // Создаём пользователя через Sequelize Model (безопаснее чем raw SQL)

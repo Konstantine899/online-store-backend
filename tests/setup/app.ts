@@ -10,6 +10,50 @@ import { BruteforceGuard } from '@app/infrastructure/common/guards';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { getConfig } from '@app/infrastructure/config';
+import { Sequelize } from 'sequelize-typescript';
+
+/**
+ * Карта активных приложений для предотвращения утечек
+ * Используется для graceful shutdown всех connection pools
+ */
+const activeApps = new Set<INestApplication>();
+
+/**
+ * Graceful shutdown всех приложений (вызывается в globalTeardown)
+ */
+export async function closeAllApps(): Promise<void> {
+    const apps = Array.from(activeApps);
+    await Promise.all(apps.map((app) => app.close()));
+    activeApps.clear();
+}
+
+/**
+ * Добавляет graceful shutdown для Sequelize connection pool
+ * Предотвращает утечки соединений между test suites
+ */
+function addGracefulShutdown(app: INestApplication): void {
+    const sequelize = app.get(Sequelize);
+    const originalClose = app.close.bind(app);
+
+    app.close = async () => {
+        try {
+            // 1. Закрываем все активные соединения
+            await sequelize.connectionManager.close();
+
+            // 2. Закрываем приложение
+            await originalClose();
+
+            // 3. Удаляем из трекинга
+            activeApps.delete(app);
+        } catch (error) {
+            console.error('Error closing app:', error);
+            throw error;
+        }
+    };
+
+    // Добавляем в трекинг
+    activeApps.add(app);
+}
 
 
 export async function setupTestApp(): Promise<INestApplication> {
@@ -64,6 +108,10 @@ export async function setupTestApp(): Promise<INestApplication> {
     }
 
     await app.init();
+    
+    // Добавляем graceful shutdown для корректного закрытия connection pool
+    addGracefulShutdown(app);
+    
     return app;
 }
 
@@ -89,5 +137,9 @@ export async function setupTestAppWithRateLimit(): Promise<INestApplication> {
     app.setGlobalPrefix('online-store');
 
     await app.init();
+    
+    // Добавляем graceful shutdown для корректного закрытия connection pool
+    addGracefulShutdown(app);
+    
     return app;
 }
