@@ -191,7 +191,8 @@ tasks:
   title: Brute Force Protection Tests
   branch: "test/TEST-011/brute-force-tests"
   files_scope:
-    - "tests/integration/security/brute-force.integration.test.ts"
+    - "src/infrastructure/controllers/auth/tests/auth-bruteforce.integration.test.ts"
+    - "src/infrastructure/common/guards/tests/bruteforce.guard.unit.test.ts"
     - "src/infrastructure/common/guards/bruteforce.guard.ts"
       steps:
     - добавить тесты login rate limiting (5 attempts/15min)

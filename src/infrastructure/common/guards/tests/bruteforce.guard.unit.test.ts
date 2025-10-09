@@ -1,4 +1,4 @@
-import { BruteforceGuard } from '@app/infrastructure/common/guards/bruteforce.guard';
+import { BruteforceGuard, parseWindowToMs } from '@app/infrastructure/common/guards/bruteforce.guard';
 import { ExecutionContext } from '@nestjs/common';
 import { ThrottlerException, ThrottlerModuleOptions, ThrottlerStorage } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
@@ -29,7 +29,10 @@ type PrivateGuard = {
 const asPrivate = (guard: BruteforceGuard): PrivateGuard => guard as unknown as PrivateGuard;
 
 const createMockContextForRequest = (request: TestRequest): ExecutionContext => ({
-    switchToHttp: () => ({ getRequest: () => request }),
+    switchToHttp: () => ({ 
+        getRequest: () => request,
+        getResponse: () => ({ setHeader: jest.fn() })
+    }),
 }) as ExecutionContext;
 
 /**
@@ -54,6 +57,7 @@ describe('BruteforceGuard (unit)', () => {
     let guard: BruteforceGuard;
     let mockContext: ExecutionContext;
     let mockRequest: TestRequest;
+    let mockResponse: { setHeader: jest.Mock };
     let mockStorageService: ThrottlerStorage;
     let mockReflector: Reflector;
     let mockOptions: ThrottlerModuleOptions;
@@ -99,10 +103,16 @@ describe('BruteforceGuard (unit)', () => {
             },
         };
 
+        // Создаём mock response с setHeader
+        mockResponse = {
+            setHeader: jest.fn(),
+        };
+
         // Создаём mock context
         mockContext = {
             switchToHttp: () => ({
                 getRequest: () => mockRequest,
+                getResponse: () => mockResponse,
             }),
         } as ExecutionContext;
     });
@@ -481,6 +491,106 @@ describe('BruteforceGuard (unit)', () => {
             await expect(asPrivate(guard).handleRequest(requestProps)).rejects.toThrow(
                 'Слишком много запросов. Попробуйте позже.',
             );
+        });
+    });
+
+    describe('Config cache TTL', () => {
+        it('должен обновить кэш после истечения TTL (30 секунд)', async () => {
+            // Используем fake timers для контроля времени
+            jest.useFakeTimers();
+
+            // Первый запрос - создаёт кэш
+            mockRequest.url = '/online-store/auth/login';
+            const requestProps = { context: mockContext };
+            
+            await asPrivate(guard).handleRequest(requestProps);
+
+            // Проверяем что кэш создан
+            const firstConfig = (BruteforceGuard as any).cachedConfig;
+            expect(firstConfig).toBeDefined();
+            expect(firstConfig.loginLimit).toBe(3);
+            expect(firstConfig.refreshLimit).toBe(5);
+            expect(firstConfig.regLimit).toBe(2);
+
+            // Ждём 31 секунду (больше TTL = 30 секунд)
+            jest.advanceTimersByTime(31000);
+
+            // Следующий запрос должен обновить кэш
+            delete mockRequest.__bruteforceProcessed;
+            await asPrivate(guard).handleRequest(requestProps);
+
+            // Кэш должен обновиться (новый timestamp)
+            const secondConfig = (BruteforceGuard as any).cachedConfig;
+            expect(secondConfig).toBeDefined();
+
+            jest.useRealTimers();
+        });
+
+        it('должен использовать кэшированную конфигурацию для всех профилей', async () => {
+            // Очищаем кэш
+            (BruteforceGuard as any).cachedConfig = null;
+
+            // Вызываем handleRequest для каждого профиля
+            const loginContext = createMockContextForRequest({ ...mockRequest, url: '/online-store/auth/login' });
+            const refreshContext = createMockContextForRequest({ ...mockRequest, url: '/online-store/auth/refresh' });
+            const regContext = createMockContextForRequest({ ...mockRequest, url: '/online-store/auth/registration' });
+
+            // Первый вызов создаёт кэш
+            await asPrivate(guard).handleRequest({ context: loginContext });
+            const cachedConfig = (BruteforceGuard as any).cachedConfig;
+            expect(cachedConfig).toBeDefined();
+
+            // Следующие вызовы должны использовать кэш (не создавать новый)
+            const timestampAfterFirst = (BruteforceGuard as any).configCacheTime;
+            
+            delete (mockRequest as TestRequest).__bruteforceProcessed;
+            await asPrivate(guard).handleRequest({ context: refreshContext });
+            
+            delete (mockRequest as TestRequest).__bruteforceProcessed;
+            await asPrivate(guard).handleRequest({ context: regContext });
+
+            // Timestamp не должен измениться (кэш используется)
+            expect((BruteforceGuard as any).configCacheTime).toBe(timestampAfterFirst);
+        });
+    });
+
+    describe('parseWindowToMs helper', () => {
+        it('должен парсить секунды (s)', () => {
+            expect(parseWindowToMs('30s', 1000)).toBe(30 * 1000);
+            expect(parseWindowToMs('1s', 5000)).toBe(1000);
+            expect(parseWindowToMs('90s', 1000)).toBe(90 * 1000);
+        });
+
+        it('должен парсить минуты (m)', () => {
+            expect(parseWindowToMs('1m', 1000)).toBe(60 * 1000);
+            expect(parseWindowToMs('15m', 1000)).toBe(15 * 60 * 1000);
+            expect(parseWindowToMs('30m', 1000)).toBe(30 * 60 * 1000);
+        });
+
+        it('должен парсить часы (h)', () => {
+            expect(parseWindowToMs('1h', 1000)).toBe(60 * 60 * 1000);
+            expect(parseWindowToMs('2h', 1000)).toBe(2 * 60 * 60 * 1000);
+            expect(parseWindowToMs('24h', 1000)).toBe(24 * 60 * 60 * 1000);
+        });
+
+        it('должен парсить дни (d)', () => {
+            expect(parseWindowToMs('1d', 1000)).toBe(24 * 60 * 60 * 1000);
+            expect(parseWindowToMs('7d', 1000)).toBe(7 * 24 * 60 * 60 * 1000);
+            expect(parseWindowToMs('30d', 1000)).toBe(30 * 24 * 60 * 60 * 1000);
+        });
+
+        it('должен вернуть fallback для невалидного формата', () => {
+            expect(parseWindowToMs('invalid', 5000)).toBe(5000);
+            expect(parseWindowToMs('10', 5000)).toBe(5000);
+            expect(parseWindowToMs('10x', 5000)).toBe(5000);
+            expect(parseWindowToMs('', 5000)).toBe(5000);
+            expect(parseWindowToMs('10 minutes', 5000)).toBe(5000);
+        });
+
+        it('должен игнорировать пробелы', () => {
+            expect(parseWindowToMs('30 s', 1000)).toBe(30 * 1000);
+            expect(parseWindowToMs('15 m', 1000)).toBe(15 * 60 * 1000);
+            expect(parseWindowToMs('1  h', 1000)).toBe(60 * 60 * 1000);
         });
     });
 });
