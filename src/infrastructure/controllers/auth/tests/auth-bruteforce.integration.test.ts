@@ -190,12 +190,10 @@ describe('BruteforceGuard profiles (integration)', () => {
             .post('/online-store/auth/login')
             .send(LOGIN_BODY);
 
-        const beforeBlock = Date.now();
         const res = await request(app.getHttpServer())
             .post('/online-store/auth/login')
             .send(LOGIN_BODY)
             .expect(429);
-        const afterBlock = Date.now();
 
         const retryAfter = parseInt(res.headers['retry-after'], 10);
 

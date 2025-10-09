@@ -10,5 +10,3 @@ export enum NotificationStatus {
     READ = 'read',
     FAILED = 'failed',
 }
-
-

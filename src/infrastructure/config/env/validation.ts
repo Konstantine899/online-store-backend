@@ -31,12 +31,22 @@ export type ValidatedEnv = {
     JWT_SECRET_VERSION?: string; // версия секрета для отслеживания
 };
 
-function asNumber(value: string | undefined, name: string, opts?: { min?: number; max?: number }): number {
-    if (!value) throw new Error(`Отсутствует обязательная переменная окружения: ${name}`);
+function asNumber(
+    value: string | undefined,
+    name: string,
+    opts?: { min?: number; max?: number },
+): number {
+    if (!value)
+        throw new Error(
+            `Отсутствует обязательная переменная окружения: ${name}`,
+        );
     const n = Number(value);
-    if (!Number.isFinite(n)) throw new Error(`Переменная ${name} должна быть числом`);
-    if (opts?.min !== undefined && n < opts.min) throw new Error(`Переменная ${name} должна быть >= ${opts.min}`);
-    if (opts?.max !== undefined && n > opts.max) throw new Error(`Переменная ${name} должна быть <= ${opts.max}`);
+    if (!Number.isFinite(n))
+        throw new Error(`Переменная ${name} должна быть числом`);
+    if (opts?.min !== undefined && n < opts.min)
+        throw new Error(`Переменная ${name} должна быть >= ${opts.min}`);
+    if (opts?.max !== undefined && n > opts.max)
+        throw new Error(`Переменная ${name} должна быть <= ${opts.max}`);
     return n;
 }
 
@@ -47,7 +57,9 @@ function asBoolean(value: string | undefined, defaultValue = 'false'): boolean {
 
 function requiredString(value: string | undefined, name: string): string {
     if (!value || value.trim().length === 0) {
-        throw new Error(`Переменная ${name} обязательна и не может быть пустой`);
+        throw new Error(
+            `Переменная ${name} обязательна и не может быть пустой`,
+        );
     }
     return value;
 }
@@ -69,7 +81,9 @@ function requiredSecret(
     env: string,
 ): string {
     if (!value || value.trim().length === 0) {
-        throw new Error(`Переменная ${name} обязательна и не может быть пустой`);
+        throw new Error(
+            `Переменная ${name} обязательна и не может быть пустой`,
+        );
     }
     const trimmed = value.trim();
 
@@ -115,9 +129,16 @@ function checkSecretRotation(
 }
 
 export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
-    const NODE_ENV_RAW = requiredString(raw.NODE_ENV || 'development', 'NODE_ENV').toLowerCase();
-    if (!['development', 'test', 'staging', 'production'].includes(NODE_ENV_RAW)) {
-        throw new Error('NODE_ENV должен быть одним из: development, test, staging, production');
+    const NODE_ENV_RAW = requiredString(
+        raw.NODE_ENV || 'development',
+        'NODE_ENV',
+    ).toLowerCase();
+    if (
+        !['development', 'test', 'staging', 'production'].includes(NODE_ENV_RAW)
+    ) {
+        throw new Error(
+            'NODE_ENV должен быть одним из: development, test, staging, production',
+        );
     }
 
     const PORT = asNumber(raw.PORT || '5000', 'PORT', { min: 1, max: 65535 });
@@ -147,18 +168,29 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         NODE_ENV_RAW,
     );
 
-    const JWT_ACCESS_TTL = requiredString(raw.JWT_ACCESS_TTL || '900s', 'JWT_ACCESS_TTL');
-    const JWT_REFRESH_TTL = requiredString(raw.JWT_REFRESH_TTL || '30d', 'JWT_REFRESH_TTL');
+    const JWT_ACCESS_TTL = requiredString(
+        raw.JWT_ACCESS_TTL || '900s',
+        'JWT_ACCESS_TTL',
+    );
+    const JWT_REFRESH_TTL = requiredString(
+        raw.JWT_REFRESH_TTL || '30d',
+        'JWT_REFRESH_TTL',
+    );
 
     const SQL_LOGGING = asBoolean(raw.SQL_LOGGING, 'false');
-    const SECURITY_HELMET_ENABLED = asBoolean(raw.SECURITY_HELMET_ENABLED, 'true');
+    const SECURITY_HELMET_ENABLED = asBoolean(
+        raw.SECURITY_HELMET_ENABLED,
+        'true',
+    );
     const SECURITY_CORS_ENABLED = asBoolean(raw.SECURITY_CORS_ENABLED, 'true');
     const SECURITY_CSP_ENABLED = asBoolean(raw.SECURITY_CSP_ENABLED, 'true');
-    
+
     // Swagger: по умолчанию включён только в dev/test, отключён в staging/production
     const SWAGGER_ENABLED = asBoolean(
         raw.SWAGGER_ENABLED,
-        NODE_ENV_RAW === 'development' || NODE_ENV_RAW === 'test' ? 'true' : 'false'
+        NODE_ENV_RAW === 'development' || NODE_ENV_RAW === 'test'
+            ? 'true'
+            : 'false',
     );
 
     // Rate limiting

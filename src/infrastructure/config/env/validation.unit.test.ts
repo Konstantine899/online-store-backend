@@ -38,5 +38,3 @@ describe('validateEnv', () => {
         ).toThrow('NODE_ENV должен быть одним из');
     });
 });
-
-

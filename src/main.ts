@@ -34,19 +34,20 @@ const rateLimiterLogger = createLogger('RateLimiter');
  * Обработчик необработанных Promise rejection
  * Логирует ошибку и корректно завершает приложение
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-process.on('unhandledRejection', (reason: unknown, _promise: Promise<unknown>) => {
-    processLogger.error(
-        {
-            reason: reason instanceof Error ? reason.message : String(reason),
-            stack: reason instanceof Error ? reason.stack : undefined,
-        },
-        'Необработанное Promise rejection',
-    );
-    
-    // Graceful shutdown после логирования
-    process.exit(1);
-});
+process.on('unhandledRejection', (reason: unknown) => {
+        processLogger.error(
+            {
+                reason:
+                    reason instanceof Error ? reason.message : String(reason),
+                stack: reason instanceof Error ? reason.stack : undefined,
+            },
+            'Необработанное Promise rejection',
+        );
+
+        // Graceful shutdown после логирования
+        process.exit(1);
+    },
+);
 
 /**
  * Обработчик необработанных исключений
@@ -61,7 +62,7 @@ process.on('uncaughtException', (error: Error) => {
         },
         'Необработанное исключение',
     );
-    
+
     // Критичная ошибка - немедленное завершение
     process.exit(1);
 });
@@ -70,7 +71,7 @@ async function bootstrap(): Promise<void> {
     const cfg = getConfig();
     const PORT = cfg.PORT || 5000;
     const logger = createLogger('Application');
-    
+
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
     // Скрываю технологический заголовок Express
     app.getHttpAdapter().getInstance().disable('x-powered-by');
@@ -114,15 +115,18 @@ async function bootstrap(): Promise<void> {
 
     // Глобальный rate limiter (простое in-memory окно 1s и 60s по IP)
     if (cfg.RATE_LIMIT_ENABLED) {
-        const perIpCounters = new Map<string, { s: number; sTs: number; m: number; mTs: number }>();
+        const perIpCounters = new Map<
+            string,
+            { s: number; sTs: number; m: number; mTs: number }
+        >();
         const SEC = 1000;
         const MIN = 60 * 1000;
         const CLEANUP_INTERVAL = 5 * 60 * 1000; // Очистка каждые 5 минут
         let lastCleanup = Date.now();
-        
+
         app.use((req: Request, res: Response, next: NextFunction) => {
             const ts = Date.now();
-            
+
             // Периодическая очистка старых записей для предотвращения утечки памяти
             if (ts - lastCleanup > CLEANUP_INTERVAL) {
                 for (const [ip, ctr] of perIpCounters.entries()) {
@@ -132,8 +136,11 @@ async function bootstrap(): Promise<void> {
                 }
                 lastCleanup = ts;
             }
-            
-            const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown';
+
+            const ip =
+                (req.headers['x-forwarded-for'] as string) ||
+                req.socket.remoteAddress ||
+                'unknown';
             let ctr = perIpCounters.get(ip);
             if (!ctr) {
                 ctr = { s: 0, sTs: ts, m: 0, mTs: ts };
@@ -149,9 +156,19 @@ async function bootstrap(): Promise<void> {
             }
             ctr.s += 1;
             ctr.m += 1;
-            if (ctr.s > cfg.RATE_LIMIT_GLOBAL_RPS || ctr.m > cfg.RATE_LIMIT_GLOBAL_RPM) {
+            if (
+                ctr.s > cfg.RATE_LIMIT_GLOBAL_RPS ||
+                ctr.m > cfg.RATE_LIMIT_GLOBAL_RPM
+            ) {
                 // Используем кэшированный logger для оптимизации
-                rateLimiterLogger.warn({ ip, correlationId: (req as ReqWithCorrelation).correlationId }, 'Rate limit exceeded');
+                rateLimiterLogger.warn(
+                    {
+                        ip,
+                        correlationId: (req as ReqWithCorrelation)
+                            .correlationId,
+                    },
+                    'Rate limit exceeded',
+                );
                 res.status(429).json({
                     statusCode: 429,
                     url: req.url,
@@ -178,7 +195,11 @@ async function bootstrap(): Promise<void> {
             },
             credentials: true,
             allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
-            exposedHeaders: ['Content-Range', 'X-Content-Range', 'x-request-id'],
+            exposedHeaders: [
+                'Content-Range',
+                'X-Content-Range',
+                'x-request-id',
+            ],
             methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
         });
     }
@@ -214,11 +235,7 @@ async function bootstrap(): Promise<void> {
     ] as const;
 
     // Оптимизация: Set для быстрой проверки URL (O(1) вместо множественных сравнений)
-    const IGNORED_LOG_PATHS = new Set([
-        '/health',
-        '/live',
-        '/ready',
-    ]);
+    const IGNORED_LOG_PATHS = new Set(['/health', '/live', '/ready']);
 
     app.use(
         pinoHttp({
@@ -256,7 +273,10 @@ async function bootstrap(): Promise<void> {
     // Swagger документация: управляется через SWAGGER_ENABLED (по умолчанию только dev/test)
     if (cfg.SWAGGER_ENABLED) {
         swaggerConfig(app);
-        logger.info({ port: PORT }, 'Swagger документация доступна на /online-store/docs');
+        logger.info(
+            { port: PORT },
+            'Swagger документация доступна на /online-store/docs',
+        );
     } else {
         logger.info('Swagger документация отключена (SWAGGER_ENABLED=false)');
     }
@@ -265,13 +285,19 @@ async function bootstrap(): Promise<void> {
 
     // корректное завершение по сигналам SIGINT/SIGTERM
     const shutdown = async (signal: string) => {
-        logger.info({ signal }, 'Получен сигнал завершения, graceful shutdown...');
+        logger.info(
+            { signal },
+            'Получен сигнал завершения, graceful shutdown...',
+        );
         try {
             await app.close();
             logger.info('Приложение корректно завершено');
             process.exit(0);
         } catch (e) {
-            logger.error({ error: e instanceof Error ? e.message : String(e) }, 'Ошибка при завершении приложения');
+            logger.error(
+                { error: e instanceof Error ? e.message : String(e) },
+                'Ошибка при завершении приложения',
+            );
             process.exit(1);
         }
     };

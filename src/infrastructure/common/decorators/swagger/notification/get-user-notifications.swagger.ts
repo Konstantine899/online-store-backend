@@ -1,7 +1,19 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { UnauthorizedResponse, ForbiddenResponse, createBadRequestSchema } from './common-responses';
-import { PAGINATION_QUERIES, createPaginatedResponseSchema } from './common-schemas';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiQuery,
+    ApiResponse,
+} from '@nestjs/swagger';
+import {
+    UnauthorizedResponse,
+    ForbiddenResponse,
+    createBadRequestSchema,
+} from './common-responses';
+import {
+    PAGINATION_QUERIES,
+    createPaginatedResponseSchema,
+} from './common-schemas';
 
 // Константы для фильтрации
 const FILTER_QUERIES = [

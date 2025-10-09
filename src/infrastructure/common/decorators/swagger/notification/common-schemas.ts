@@ -71,4 +71,3 @@ export const createIdParam = (resourceName: string) =>
         description: `ID ${resourceName}`,
         example: 1,
     });
-

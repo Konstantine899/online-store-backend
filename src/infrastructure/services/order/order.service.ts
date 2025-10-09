@@ -18,7 +18,10 @@ import {
     GuestCreateOrderResponse,
 } from '@app/infrastructure/responses';
 import { IOrderService } from '@app/domain/services';
-import { createLogger, maskPII } from '@app/infrastructure/common/utils/logging';
+import {
+    createLogger,
+    maskPII,
+} from '@app/infrastructure/common/utils/logging';
 
 @Injectable()
 export class OrderService implements IOrderService {

@@ -101,7 +101,10 @@ export class NotificationTemplateModel
     // --- КЭШИРОВАНИЕ (LRU + TTL) ---
     private static readonly CACHE_TTL_MS = 60_000; // 60 секунд
     private static readonly CACHE_MAX_ENTRIES = 200;
-    private static readonly cache = new Map<string, { value: unknown; ts: number }>();
+    private static readonly cache = new Map<
+        string,
+        { value: unknown; ts: number }
+    >();
 
     private static getCache<T>(key: string): T | undefined {
         const entry = this.cache.get(key);
@@ -118,7 +121,9 @@ export class NotificationTemplateModel
 
     private static setCache<T>(key: string, value: T): void {
         if (this.cache.size >= this.CACHE_MAX_ENTRIES) {
-            const firstKey = this.cache.keys().next().value as string | undefined;
+            const firstKey = this.cache.keys().next().value as
+                | string
+                | undefined;
             if (firstKey !== undefined) {
                 this.cache.delete(firstKey);
             }
@@ -287,7 +292,9 @@ export class NotificationTemplateModel
         name: string,
     ): Promise<NotificationTemplateModel | null> {
         const cacheKey = `byName:${name}`;
-        const cached = this.getCache<NotificationTemplateModel | null>(cacheKey);
+        const cached = this.getCache<NotificationTemplateModel | null>(
+            cacheKey,
+        );
         if (cached !== undefined) {
             return cached;
         }
@@ -300,7 +307,9 @@ export class NotificationTemplateModel
         name: string,
     ): Promise<NotificationTemplateModel | null> {
         const cacheKey = `byName:${name}:active`;
-        const cached = this.getCache<NotificationTemplateModel | null>(cacheKey);
+        const cached = this.getCache<NotificationTemplateModel | null>(
+            cacheKey,
+        );
         if (cached !== undefined) {
             return cached;
         }

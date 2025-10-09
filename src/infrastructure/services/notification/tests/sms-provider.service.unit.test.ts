@@ -7,24 +7,26 @@ describe('SmsProviderService', () => {
     let module: TestingModule;
 
     // Фабричные функции для создания тестовых данных
-    const createSmsMessage = (overrides: Partial<SmsMessage> = {}): SmsMessage => ({
+    const createSmsMessage = (
+        overrides: Partial<SmsMessage> = {},
+    ): SmsMessage => ({
         to: '+79991234567',
         message: 'Test SMS message',
         ...overrides,
     });
 
-    const createBulkSmsMessages = (count: number): SmsMessage[] => 
-        Array.from({ length: count }, (_, i) => 
+    const createBulkSmsMessages = (count: number): SmsMessage[] =>
+        Array.from({ length: count }, (_, i) =>
             createSmsMessage({
                 to: `+7999123456${i}`,
                 message: `Message ${i + 1}`,
-            })
+            }),
         );
 
     const createTestPhoneNumbers = (): string[] => [
         '+79991234567', // Российский номер
-        '79991234567',  // Российский номер без +
-        '89991234567',  // Российский номер с 8
+        '79991234567', // Российский номер без +
+        '89991234567', // Российский номер с 8
         '+12345678901', // Международный номер (11 цифр)
         '+44123456789', // Международный номер (12 цифр)
     ];
@@ -150,7 +152,10 @@ describe('SmsProviderService', () => {
         it('should handle mixed success and failure in bulk SMS', async () => {
             const messages = [
                 createSmsMessage({ to: '+79991234567', message: 'Valid SMS' }),
-                createSmsMessage({ to: 'invalid-phone', message: 'Invalid SMS' }),
+                createSmsMessage({
+                    to: 'invalid-phone',
+                    message: 'Invalid SMS',
+                }),
             ];
 
             const results = await service.sendBulkSms(messages);
@@ -170,26 +175,31 @@ describe('SmsProviderService', () => {
 
     describe('validatePhoneNumber', () => {
         it('should validate correct Russian phone numbers', () => {
-            const validNumbers = ['+79991234567', '79991234567', '89991234567', '+7 (999) 123-45-67'];
-            
-            validNumbers.forEach(number => {
+            const validNumbers = [
+                '+79991234567',
+                '79991234567',
+                '89991234567',
+                '+7 (999) 123-45-67',
+            ];
+
+            validNumbers.forEach((number) => {
                 expect(service.validatePhoneNumber(number)).toBe(true);
             });
         });
 
         it('should validate correct international phone numbers', () => {
             const validNumbers = createTestPhoneNumbers();
-            
-            validNumbers.forEach(number => {
+
+            validNumbers.forEach((number) => {
                 expect(service.validatePhoneNumber(number)).toBe(true);
             });
         });
 
         it('should reject invalid phone numbers', () => {
             const invalidNumbers = createInvalidPhoneNumbers();
-            
+
             // Проверяем каждый номер отдельно для отладки
-            invalidNumbers.forEach(number => {
+            invalidNumbers.forEach((number) => {
                 const result = service.validatePhoneNumber(number);
                 expect(result).toBe(false);
             });
@@ -202,10 +212,10 @@ describe('SmsProviderService', () => {
                 '799912345',
                 '123-456-789',
                 'abc',
-                'not-a-phone'
+                'not-a-phone',
             ];
-            
-            testNumbers.forEach(number => {
+
+            testNumbers.forEach((number) => {
                 const result = service.validatePhoneNumber(number);
                 console.log(`Number: "${number}" -> Result: ${result}`);
                 expect(result).toBe(false);
@@ -238,7 +248,9 @@ describe('SmsProviderService', () => {
                     .mockRejectedValue(new Error('Database error')),
             };
 
-            await expect(mockService.getDeliveryReport('test-id')).rejects.toThrow('Database error');
+            await expect(
+                mockService.getDeliveryReport('test-id'),
+            ).rejects.toThrow('Database error');
 
             consoleSpy.mockRestore();
         });
@@ -459,12 +471,12 @@ describe('SmsProviderService', () => {
             ];
 
             const startTime = Date.now();
-            
+
             // Множественные вызовы валидации
             const results = await Promise.all(
-                testPhones.map(phone => service.validatePhoneNumber(phone))
+                testPhones.map((phone) => service.validatePhoneNumber(phone)),
             );
-            
+
             const endTime = Date.now();
 
             expect(results).toEqual([true, true, true, true, true]); // Все номера должны быть валидными
@@ -473,71 +485,80 @@ describe('SmsProviderService', () => {
 
         it('should handle provider info caching efficiently', async () => {
             const startTime = Date.now();
-            
+
             // Множественные вызовы getProviderInfo
             const results = await Promise.all(
-                Array.from({ length: 50 }, () => service.getProviderInfo())
+                Array.from({ length: 50 }, () => service.getProviderInfo()),
             );
-            
+
             const endTime = Date.now();
 
             expect(results).toHaveLength(50);
-            expect(results.every(info => info.name === 'MockSmsProvider')).toBe(true);
+            expect(
+                results.every((info) => info.name === 'MockSmsProvider'),
+            ).toBe(true);
             expect(endTime - startTime).toBeLessThan(50); // Должно выполниться очень быстро благодаря кэшу
         });
 
         it('should handle supported countries caching efficiently', async () => {
             const startTime = Date.now();
-            
+
             // Множественные вызовы getSupportedCountries
             const results = await Promise.all(
-                Array.from({ length: 20 }, () => service.getSupportedCountries())
+                Array.from({ length: 20 }, () =>
+                    service.getSupportedCountries(),
+                ),
             );
-            
+
             const endTime = Date.now();
 
             expect(results).toHaveLength(20);
-            expect(results.every(countries => countries.length === 4)).toBe(true);
+            expect(results.every((countries) => countries.length === 4)).toBe(
+                true,
+            );
             expect(endTime - startTime).toBeLessThan(100); // Должно выполниться быстро
         });
 
         it('should handle message validation efficiently', async () => {
-            const testMessages = Array.from({ length: 100 }, (_, i) => 
-                `Test message ${i} with valid content`
+            const testMessages = Array.from(
+                { length: 100 },
+                (_, i) => `Test message ${i} with valid content`,
             );
 
             const startTime = Date.now();
-            
+
             // Параллельная валидация сообщений
             const results = await Promise.all(
-                testMessages.map(message => service.validateMessage(message))
+                testMessages.map((message) => service.validateMessage(message)),
             );
-            
+
             const endTime = Date.now();
 
             expect(results).toHaveLength(100);
-            expect(results.every(result => result.valid === true)).toBe(true);
+            expect(results.every((result) => result.valid === true)).toBe(true);
             expect(endTime - startTime).toBeLessThan(500); // Должно выполниться быстро
         });
 
         it('should handle cost calculation efficiently', async () => {
-            const testMessages = Array.from({ length: 50 }, (_, i) => 
+            const testMessages = Array.from({ length: 50 }, (_, i) =>
                 createSmsMessage({
                     message: 'A'.repeat(160 + i), // Разные длины сообщений
-                })
+                }),
             );
 
             const startTime = Date.now();
-            
+
             // Параллельная отправка для расчета стоимости
             const results = await Promise.all(
-                testMessages.map(message => service.sendSms(message))
+                testMessages.map((message) => service.sendSms(message)),
             );
-            
+
             const endTime = Date.now();
 
             expect(results).toHaveLength(50);
-            expect(results.every(result => result.success === true)).toBe(true);
+            expect(results.every((result) => result.success === true)).toBe(
+                true,
+            );
             expect(endTime - startTime).toBeLessThan(2000); // Должно выполниться быстро
         });
     });
@@ -545,10 +566,10 @@ describe('SmsProviderService', () => {
     describe('Caching Tests', () => {
         it('should cache phone validation results', () => {
             const phone = '+79991234567';
-            
+
             // Первый вызов
             const result1 = service.validatePhoneNumber(phone);
-            
+
             // Второй вызов (должен использовать кэш)
             const result2 = service.validatePhoneNumber(phone);
 
@@ -559,7 +580,7 @@ describe('SmsProviderService', () => {
         it('should cache provider info', () => {
             // Первый вызов
             const info1 = service.getProviderInfo();
-            
+
             // Второй вызов (должен использовать кэш)
             const info2 = service.getProviderInfo();
 
@@ -570,7 +591,7 @@ describe('SmsProviderService', () => {
         it('should cache supported countries', async () => {
             // Первый вызов
             const countries1 = await service.getSupportedCountries();
-            
+
             // Второй вызов (должен использовать кэш)
             const countries2 = await service.getSupportedCountries();
 
@@ -580,13 +601,13 @@ describe('SmsProviderService', () => {
 
         it('should handle cache invalidation for phone validation', () => {
             const phone = '+79991234567';
-            
+
             // Первый вызов
             const result1 = service.validatePhoneNumber(phone);
-            
+
             // Очищаем кэш (симулируем)
             // В реальной реализации здесь был бы метод очистки кэша
-            
+
             // Второй вызов
             const result2 = service.validatePhoneNumber(phone);
 
@@ -624,21 +645,23 @@ describe('SmsProviderService', () => {
         });
 
         it('should handle concurrent bulk operations', async () => {
-            const bulkOperations = Array.from({ length: 5 }, () => 
-                createBulkSmsMessages(20)
+            const bulkOperations = Array.from({ length: 5 }, () =>
+                createBulkSmsMessages(20),
             );
 
             const startTime = Date.now();
-            
+
             // Параллельные bulk операции
             const results = await Promise.all(
-                bulkOperations.map(messages => service.sendBulkSms(messages))
+                bulkOperations.map((messages) => service.sendBulkSms(messages)),
             );
-            
+
             const endTime = Date.now();
 
             expect(results).toHaveLength(5);
-            expect(results.every(bulkResult => bulkResult.length === 20)).toBe(true);
+            expect(
+                results.every((bulkResult) => bulkResult.length === 20),
+            ).toBe(true);
             expect(endTime - startTime).toBeLessThan(5000); // Должно выполниться за разумное время
         });
     });

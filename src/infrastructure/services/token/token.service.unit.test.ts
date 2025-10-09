@@ -72,8 +72,10 @@ describe('TokenService', () => {
     beforeAll(() => {
         process.env.NODE_ENV = 'test';
         process.env.COOKIE_PARSER_SECRET_KEY = 'test-secret-please-change';
-        process.env.JWT_ACCESS_SECRET = 'access-secret-please-change-32chars-minimum';
-        process.env.JWT_REFRESH_SECRET = 'refresh-secret-please-change-32chars-minimum';
+        process.env.JWT_ACCESS_SECRET =
+            'access-secret-please-change-32chars-minimum';
+        process.env.JWT_REFRESH_SECRET =
+            'refresh-secret-please-change-32chars-minimum';
         process.env.JWT_ACCESS_TTL = '900s';
         process.env.JWT_REFRESH_TTL = '30d';
     });

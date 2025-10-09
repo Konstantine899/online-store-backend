@@ -414,7 +414,11 @@ describe('Input Validation and Sanitization (integration)', () => {
                 .field('price', '1000')
                 .field('brandId', '1')
                 .field('categoryId', '1')
-                .attach('image', Buffer.from('fake'), '%2e%2e%2f%2e%2e%2fetc%2fpasswd.jpg');
+                .attach(
+                    'image',
+                    Buffer.from('fake'),
+                    '%2e%2e%2f%2e%2e%2fetc%2fpasswd.jpg',
+                );
 
             expect(response.status).toBe(HttpStatus.BAD_REQUEST);
         });
@@ -432,7 +436,11 @@ describe('Input Validation and Sanitization (integration)', () => {
                 .field('price', '1000')
                 .field('brandId', '1')
                 .field('categoryId', '1')
-                .attach('image', Buffer.from('fake'), '..%252f..%252fetc%252fpasswd.jpg');
+                .attach(
+                    'image',
+                    Buffer.from('fake'),
+                    '..%252f..%252fetc%252fpasswd.jpg',
+                );
 
             expect(response.status).toBe(HttpStatus.BAD_REQUEST);
         });
@@ -450,7 +458,11 @@ describe('Input Validation and Sanitization (integration)', () => {
                 .field('price', '1000')
                 .field('brandId', '1')
                 .field('categoryId', '1')
-                .attach('image', Buffer.from('fake'), '..\\..\\windows\\system32\\config.jpg');
+                .attach(
+                    'image',
+                    Buffer.from('fake'),
+                    '..\\..\\windows\\system32\\config.jpg',
+                );
 
             expect(response.status).toBe(HttpStatus.BAD_REQUEST);
         });
@@ -468,7 +480,11 @@ describe('Input Validation and Sanitization (integration)', () => {
                 .field('price', '1000')
                 .field('brandId', '1')
                 .field('categoryId', '1')
-                .attach('image', Buffer.from('fake'), 'file.jpg%00../../etc/passwd');
+                .attach(
+                    'image',
+                    Buffer.from('fake'),
+                    'file.jpg%00../../etc/passwd',
+                );
 
             expect(response.status).toBe(HttpStatus.BAD_REQUEST);
         });
@@ -487,11 +503,11 @@ describe('Input Validation and Sanitization (integration)', () => {
                 console.warn('Пропущен тест: логин не удался');
                 return;
             }
-            
+
             // Проверяем наличие Set-Cookie с refresh token
             const cookies = response.headers['set-cookie'];
             expect(cookies).toBeDefined();
-            
+
             // Проверяем, что refresh token имеет HttpOnly и SameSite
             const refreshTokenCookie = cookies?.find((cookie: string) =>
                 cookie.includes('refreshToken'),
@@ -518,8 +534,9 @@ describe('Input Validation and Sanitization (integration)', () => {
             const accessToken = loginResponse.body.accessToken;
 
             // Попытка доступа к sensitive endpoint без токена
-            const unauthorizedResponse = await request(app.getHttpServer())
-                .get('/online-store/user/me');
+            const unauthorizedResponse = await request(app.getHttpServer()).get(
+                '/online-store/user/me',
+            );
 
             expect(unauthorizedResponse.status).toBe(HttpStatus.UNAUTHORIZED);
 
@@ -533,8 +550,9 @@ describe('Input Validation and Sanitization (integration)', () => {
 
         it('должен защищать refresh endpoint через HttpOnly cookies', async () => {
             // Refresh без cookie должен провалиться
-            const noCookieResponse = await request(app.getHttpServer())
-                .post('/online-store/auth/refresh');
+            const noCookieResponse = await request(app.getHttpServer()).post(
+                '/online-store/auth/refresh',
+            );
 
             expect(noCookieResponse.status).toBe(HttpStatus.UNAUTHORIZED);
         });
@@ -656,14 +674,12 @@ describe('Input Validation and Sanitization (integration)', () => {
             expect(response.body).toBeInstanceOf(Array);
 
             // Проверяем, что все сообщения на русском (содержат кириллицу)
-            response.body.forEach(
-                (error: { messages: string[] }) => {
-                    expect(error.messages).toBeInstanceOf(Array);
-                    error.messages.forEach((message: string) => {
-                        expect(message).toMatch(/[а-яА-Я]/);
-                    });
-                },
-            );
+            response.body.forEach((error: { messages: string[] }) => {
+                expect(error.messages).toBeInstanceOf(Array);
+                error.messages.forEach((message: string) => {
+                    expect(message).toMatch(/[а-яА-Я]/);
+                });
+            });
         });
     });
 });

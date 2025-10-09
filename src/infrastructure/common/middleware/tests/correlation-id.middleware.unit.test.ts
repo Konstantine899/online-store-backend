@@ -13,13 +13,13 @@ const createMockContext = (headers: Record<string, string> = {}) => ({
 
 /**
  * Unit-тесты для CorrelationIdMiddleware
- * 
+ *
  * Цель: покрыть критичные сценарии трассировки запросов
  * - Генерация correlation ID если отсутствует
  * - Пробрасывание существующего correlation ID
  * - Добавление correlation ID в response headers
  * - Корректный вызов next() middleware
- * 
+ *
  * Оптимизации производительности:
  * - createMockContext helper (DRY, ↓65% кода создания моков)
  * - TestRequest type alias (сокращение длинных типов)
@@ -52,7 +52,8 @@ describe('CorrelationIdMiddleware (unit)', () => {
             expect(mockRequest.correlationId).toHaveLength(36); // UUID v4 длина
 
             // Проверяем формат UUID (8-4-4-4-12)
-            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            const uuidRegex =
+                /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
             expect(mockRequest.correlationId).toMatch(uuidRegex);
         });
 
@@ -90,7 +91,9 @@ describe('CorrelationIdMiddleware (unit)', () => {
             ];
 
             testIds.forEach((testId) => {
-                const { req, res, next } = createMockContext({ 'x-request-id': testId });
+                const { req, res, next } = createMockContext({
+                    'x-request-id': testId,
+                });
                 middleware.use(req, res, next);
                 expect(req.correlationId).toBe(testId);
             });
@@ -112,7 +115,10 @@ describe('CorrelationIdMiddleware (unit)', () => {
         it('должен добавить x-request-id в response headers', () => {
             middleware.use(mockRequest, mockResponse, mockNext);
 
-            expect(mockResponse.setHeader).toHaveBeenCalledWith('x-request-id', mockRequest.correlationId);
+            expect(mockResponse.setHeader).toHaveBeenCalledWith(
+                'x-request-id',
+                mockRequest.correlationId,
+            );
             expect(mockResponse.setHeader).toHaveBeenCalledTimes(1);
         });
 
@@ -122,7 +128,10 @@ describe('CorrelationIdMiddleware (unit)', () => {
 
             middleware.use(mockRequest, mockResponse, mockNext);
 
-            expect(mockResponse.setHeader).toHaveBeenCalledWith('x-request-id', existingId);
+            expect(mockResponse.setHeader).toHaveBeenCalledWith(
+                'x-request-id',
+                existingId,
+            );
         });
     });
 
@@ -201,12 +210,16 @@ describe('CorrelationIdMiddleware (unit)', () => {
         });
 
         it('должен обработать x-request-id с пробелами по краям', () => {
-            mockRequest.headers = { 'x-request-id': '  correlation-id-with-spaces  ' };
+            mockRequest.headers = {
+                'x-request-id': '  correlation-id-with-spaces  ',
+            };
 
             middleware.use(mockRequest, mockResponse, mockNext);
 
             // Middleware не делает trim, пробрасывает как есть
-            expect(mockRequest.correlationId).toBe('  correlation-id-with-spaces  ');
+            expect(mockRequest.correlationId).toBe(
+                '  correlation-id-with-spaces  ',
+            );
         });
     });
 
@@ -227,4 +240,3 @@ describe('CorrelationIdMiddleware (unit)', () => {
         });
     });
 });
-

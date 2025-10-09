@@ -15,7 +15,9 @@ describe('Security Headers (integration)', () => {
     });
 
     it('should include security headers on responses', async () => {
-        const res = await request(app.getHttpServer()).get('/online-store/health');
+        const res = await request(app.getHttpServer()).get(
+            '/online-store/health',
+        );
 
         // Базовые заголовки (проверяем наличие)
         expect(res.headers['x-content-type-options']).toBeDefined();
@@ -43,5 +45,3 @@ describe('Security Headers (integration)', () => {
         expect(res.headers['access-control-allow-origin']).toBeUndefined();
     });
 });
-
-

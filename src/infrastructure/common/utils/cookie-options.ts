@@ -68,10 +68,10 @@ function getRefreshMaxAge(): number | undefined {
                 unit === 's'
                     ? amount
                     : unit === 'm'
-                    ? amount * 60
-                    : unit === 'h'
-                    ? amount * 3600
-                    : amount * 86400;
+                      ? amount * 60
+                      : unit === 'h'
+                        ? amount * 3600
+                        : amount * 86400;
             CACHED_REFRESH_MAX_AGE = seconds * 1000;
         }
     }

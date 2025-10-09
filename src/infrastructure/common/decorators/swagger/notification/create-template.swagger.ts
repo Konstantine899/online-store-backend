@@ -1,6 +1,10 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { UnauthorizedResponse, ForbiddenResponse, createBadRequestSchema } from './common-responses';
+import {
+    UnauthorizedResponse,
+    ForbiddenResponse,
+    createBadRequestSchema,
+} from './common-responses';
 
 // Схема шаблона для переиспользования
 const TEMPLATE_SCHEMA = {

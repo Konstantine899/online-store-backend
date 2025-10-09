@@ -5,12 +5,12 @@ import { getConfig } from '@app/infrastructure/config';
 
 /**
  * Интеграционные тесты для проверки управления доступом к Swagger документации
- * 
+ *
  * Swagger документация должна быть доступна только когда SWAGGER_ENABLED=true
  * (по умолчанию только в dev/test окружениях)
- * 
+ *
  * В production/staging Swagger должен быть отключен для безопасности.
- * 
+ *
  * Оптимизировано: конфигурация кэшируется в beforeAll, вызов getConfig() только 1 раз.
  */
 describe('Swagger Access Control (integration)', () => {
@@ -18,8 +18,10 @@ describe('Swagger Access Control (integration)', () => {
     let config: ReturnType<typeof getConfig>; // Кэшируем конфигурацию
 
     // Константы для сообщений (оптимизация: избежание дублирования строк)
-    const MSG_ENABLED_SKIP = '⚠️  Swagger включен (SWAGGER_ENABLED=true), пропускаем тест недоступности';
-    const MSG_DISABLED_SKIP = '⚠️  Swagger отключен (SWAGGER_ENABLED=false), пропускаем тест доступности';
+    const MSG_ENABLED_SKIP =
+        '⚠️  Swagger включен (SWAGGER_ENABLED=true), пропускаем тест недоступности';
+    const MSG_DISABLED_SKIP =
+        '⚠️  Swagger отключен (SWAGGER_ENABLED=false), пропускаем тест доступности';
 
     beforeAll(async () => {
         app = await setupTestApp();
@@ -100,13 +102,19 @@ describe('Swagger Access Control (integration)', () => {
             expect(typeof config.SWAGGER_ENABLED).toBe('boolean');
 
             // В тестовом окружении по умолчанию должен быть включен
-            if (config.NODE_ENV === 'test' || config.NODE_ENV === 'development') {
+            if (
+                config.NODE_ENV === 'test' ||
+                config.NODE_ENV === 'development'
+            ) {
                 // В dev/test по умолчанию true (если не переопределено)
                 expect([true, false]).toContain(config.SWAGGER_ENABLED);
             }
 
             // В production/staging по умолчанию должен быть отключен
-            if (config.NODE_ENV === 'production' || config.NODE_ENV === 'staging') {
+            if (
+                config.NODE_ENV === 'production' ||
+                config.NODE_ENV === 'staging'
+            ) {
                 // В prod/staging по умолчанию false (если не переопределено)
                 expect([true, false]).toContain(config.SWAGGER_ENABLED);
             }

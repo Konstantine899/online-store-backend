@@ -11,11 +11,11 @@ export class EmailProviderService implements IEmailProvider {
     private readonly logger = new Logger(EmailProviderService.name);
     private readonly providerName = 'MockEmailProvider';
     private readonly providerVersion = '1.0.0';
-    
+
     // Кэш для валидации email
     private readonly emailValidationCache = new Map<string, boolean>();
     private readonly maxCacheSize = 1000;
-    
+
     // Кэш для информации о провайдере
     private readonly providerInfoCache = {
         name: this.providerName,
@@ -89,15 +89,19 @@ export class EmailProviderService implements IEmailProvider {
 
         for (let i = 0; i < messages.length; i += batchSize) {
             const batch = messages.slice(i, i + batchSize);
-            
+
             // Параллельная отправка в батче
             const batchPromises = batch.map(async (message) => {
                 try {
                     return await this.sendEmail(message);
                 } catch (error) {
                     const errorMessage =
-                        error instanceof Error ? error.message : 'Unknown error';
-                    this.logger.error(`Failed to send bulk email: ${errorMessage}`);
+                        error instanceof Error
+                            ? error.message
+                            : 'Unknown error';
+                    this.logger.error(
+                        `Failed to send bulk email: ${errorMessage}`,
+                    );
                     return {
                         success: false,
                         error: errorMessage,
@@ -193,12 +197,12 @@ export class EmailProviderService implements IEmailProvider {
         const maxSize = 10 * 1024 * 1024;
 
         // Оптимизированная проверка размера
-        const contentLength = 
-            typeof attachment.content === 'string' 
-                ? attachment.content.length 
-                : Buffer.isBuffer(attachment.content) 
-                    ? attachment.content.length 
-                    : 0;
+        const contentLength =
+            typeof attachment.content === 'string'
+                ? attachment.content.length
+                : Buffer.isBuffer(attachment.content)
+                  ? attachment.content.length
+                  : 0;
 
         return contentLength > 0 && contentLength <= maxSize;
     }

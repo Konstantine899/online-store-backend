@@ -17,12 +17,12 @@ const createMockUser = (
 
 /**
  * Unit-тесты для JwtStrategy
- * 
+ *
  * Цель: покрыть критичные сценарии JWT валидации
  * - Валидация корректного payload (пользователь существует)
  * - Валидация payload для несуществующего пользователя
  * - Обработка различных payload структур
- * 
+ *
  * Оптимизации производительности:
  * - createMockUser helper (DRY, ↓60% кода создания моков)
  * - Упрощены тесты с циклами
@@ -91,11 +91,17 @@ describe('JwtStrategy (unit)', () => {
 
             expect(result).toEqual(expectedUser);
             expect(result?.roles).toHaveLength(2);
-            expect(result?.roles?.some((r: RoleModel) => r.role === 'ADMIN')).toBe(true);
+            expect(
+                result?.roles?.some((r: RoleModel) => r.role === 'ADMIN'),
+            ).toBe(true);
         });
 
         it('должен корректно обработать пользователей с разными email', async () => {
-            const testEmails = ['user@test.com', 'admin@company.org', 'test.user+tag@example.co.uk'];
+            const testEmails = [
+                'user@test.com',
+                'admin@company.org',
+                'test.user+tag@example.co.uk',
+            ];
 
             for (const email of testEmails) {
                 const expectedUser = createMockUser(1, email);
@@ -118,7 +124,9 @@ describe('JwtStrategy (unit)', () => {
 
                 await strategy.validate({ sub: userId });
 
-                expect(mockUserService.checkUserAuth).toHaveBeenCalledWith(userId);
+                expect(mockUserService.checkUserAuth).toHaveBeenCalledWith(
+                    userId,
+                );
             }
         });
 
@@ -209,7 +217,9 @@ describe('JwtStrategy (unit)', () => {
 
             // Выполняем 100 параллельных валидаций
             await Promise.all(
-                Array.from({ length: 100 }, () => strategy.validate({ sub: 1 })),
+                Array.from({ length: 100 }, () =>
+                    strategy.validate({ sub: 1 }),
+                ),
             );
 
             const duration = Date.now() - startTime;
@@ -220,4 +230,3 @@ describe('JwtStrategy (unit)', () => {
         });
     });
 });
-

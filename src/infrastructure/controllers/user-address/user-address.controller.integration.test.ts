@@ -1,8 +1,7 @@
 import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
-import { Sequelize } from 'sequelize-typescript';
 import { setupTestApp } from '../../../../tests/setup/app';
-import { TestCleanup, TestDataFactory } from '../../../../tests/utils';
+import { TestDataFactory } from '../../../../tests/utils';
 
 // Типы для тестов
 interface TestAddressData {
@@ -156,7 +155,10 @@ describe('UserAddressController (integration)', () => {
                 app,
                 'USER',
             );
-            const id = await createTestAddress(token, TEST_DATA.ADDRESSES.DACHA);
+            const id = await createTestAddress(
+                token,
+                TEST_DATA.ADDRESSES.DACHA,
+            );
 
             await request(app.getHttpServer())
                 .patch(`${TEST_DATA.ENDPOINTS.ADDRESSES}/${id}/set-default`)

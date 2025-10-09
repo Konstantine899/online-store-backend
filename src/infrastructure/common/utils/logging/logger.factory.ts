@@ -3,18 +3,18 @@ import { createPinoConfig } from './pino.config';
 
 /**
  * Фабрика для создания структурированных логгеров с автоматическим correlation ID.
- * 
+ *
  * Использование:
  * ```typescript
  * class MyService {
  *     private readonly logger = createLogger('MyService');
- *     
+ *
  *     someMethod() {
  *         this.logger.info({ userId: 123 }, 'User created');
  *     }
  * }
  * ```
- * 
+ *
  * Оптимизировано:
  * - Singleton base logger для переиспользования конфигурации
  * - Child loggers создаются быстро (минимальные аллокации)
@@ -55,7 +55,7 @@ function getBaseLogger(): pino.Logger {
 
 /**
  * Создать child logger для конкретного контекста
- * 
+ *
  * @param context - имя сервиса/контроллера/модуля
  * @param correlationId - опциональный correlation ID для трассировки
  * @returns Настроенный child logger с контекстом
@@ -77,7 +77,7 @@ export function createLogger(
 /**
  * Создать logger с correlation ID из request
  * Используется в контроллерах для трассировки запросов
- * 
+ *
  * @param context - имя контекста
  * @param req - Express request объект с correlationId
  * @returns Logger с correlation ID
@@ -92,29 +92,29 @@ export function createLoggerWithCorrelation(
 /**
  * Маска для PII данных в логах
  * Используется для явного маскирования данных перед логированием
- * 
+ *
  * @param data - данные для маскирования
  * @returns Замаскированная строка
  */
 export function maskPII(data: string | undefined | null): string {
     if (!data) return '[EMPTY]';
     if (data.length <= 4) return '[REDACTED]';
-    
+
     // Для email показываем только первую букву и домен
     if (data.includes('@')) {
         const [local, domain] = data.split('@');
         return `${local[0]}***@${domain}`;
     }
-    
+
     // Для других данных показываем первые 2 и последние 2 символа
     return `${data.substring(0, 2)}***${data.substring(data.length - 2)}`;
 }
 
 /**
  * Безопасное логирование объекта с автоматическим удалением PII полей
- * 
+ *
  * Оптимизировано: PII_FIELDS Set создаётся один раз на уровне модуля
- * 
+ *
  * @param obj - объект для логирования
  * @returns Объект без PII полей
  */

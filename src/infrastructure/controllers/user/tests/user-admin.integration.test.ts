@@ -1,9 +1,8 @@
 import { UpdateUserDto } from '@app/infrastructure/dto';
 import { INestApplication } from '@nestjs/common';
-import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
-import { TestDataFactory, TestCleanup } from '../../../../../tests/utils';
+import { TestDataFactory } from '../../../../../tests/utils';
 
 describe('User Admin Integration Tests', () => {
     let app: INestApplication;

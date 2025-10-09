@@ -1,9 +1,11 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import {
-    UnauthorizedResponse,
-    ForbiddenResponse,
-} from './common-responses';
+    ApiBearerAuth,
+    ApiOperation,
+    ApiQuery,
+    ApiResponse,
+} from '@nestjs/swagger';
+import { UnauthorizedResponse, ForbiddenResponse } from './common-responses';
 
 // Константа для схемы статистики
 const STATISTICS_SCHEMA = {

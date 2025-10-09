@@ -8,5 +8,3 @@ export function getConfig(): ValidatedEnv {
     }
     return cachedEnv;
 }
-
-

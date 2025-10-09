@@ -1,7 +1,7 @@
 /**
  * Константы ролей для системы уведомлений
  * Обеспечивают тенантскую изоляцию и иерархию доступа
- * 
+ *
  * Оптимизировано для производительности:
  * - Использование Set для быстрого поиска O(1)
  * - Кэширование вычислений
@@ -105,7 +105,11 @@ export const NOTIFICATION_ACCESS_SETS = {
     PLATFORM_FULL: new Set(PLATFORM_ROLES),
     TENANT_FULL: new Set(TENANT_ADMIN_ROLES),
     TEMPLATE_MANAGEMENT: new Set([...TENANT_ADMIN_ROLES, ...MANAGER_ROLES]),
-    STATISTICS_VIEW: new Set([...TENANT_ADMIN_ROLES, ...MANAGER_ROLES, ...STAFF_ROLES]),
+    STATISTICS_VIEW: new Set([
+        ...TENANT_ADMIN_ROLES,
+        ...MANAGER_ROLES,
+        ...STAFF_ROLES,
+    ]),
     PERSONAL_MANAGEMENT: new Set(CUSTOMER_ROLES),
     NOTIFICATION_VIEW: new Set([
         ...CUSTOMER_ROLES,
@@ -121,37 +125,46 @@ export const RoleUtils = {
     /**
      * Проверяет, является ли роль платформенной
      */
-    isPlatformRole: (role: string): boolean => PLATFORM_ROLES_SET.has(role as PlatformRole),
+    isPlatformRole: (role: string): boolean =>
+        PLATFORM_ROLES_SET.has(role as PlatformRole),
 
     /**
      * Проверяет, является ли роль тенантской административной
      */
-    isTenantAdminRole: (role: string): boolean => TENANT_ADMIN_ROLES_SET.has(role as TenantAdminRole),
+    isTenantAdminRole: (role: string): boolean =>
+        TENANT_ADMIN_ROLES_SET.has(role as TenantAdminRole),
 
     /**
      * Проверяет, является ли роль менеджерской
      */
-    isManagerRole: (role: string): boolean => MANAGER_ROLES_SET.has(role as ManagerRole),
+    isManagerRole: (role: string): boolean =>
+        MANAGER_ROLES_SET.has(role as ManagerRole),
 
     /**
      * Проверяет, является ли роль персонала
      */
-    isStaffRole: (role: string): boolean => STAFF_ROLES_SET.has(role as StaffRole),
+    isStaffRole: (role: string): boolean =>
+        STAFF_ROLES_SET.has(role as StaffRole),
 
     /**
      * Проверяет, является ли роль клиентской
      */
-    isCustomerRole: (role: string): boolean => CUSTOMER_ROLES_SET.has(role as CustomerRole),
+    isCustomerRole: (role: string): boolean =>
+        CUSTOMER_ROLES_SET.has(role as CustomerRole),
 
     /**
      * Проверяет, является ли роль административной
      */
-    isAdminRole: (role: string): boolean => ADMIN_ROLES_SET.has(role as AdminRole),
+    isAdminRole: (role: string): boolean =>
+        ADMIN_ROLES_SET.has(role as AdminRole),
 
     /**
      * Проверяет, имеет ли роль доступ к определенному уровню
      */
-    hasAccess: (role: string, accessLevel: keyof typeof NOTIFICATION_ACCESS_SETS): boolean => {
+    hasAccess: (
+        role: string,
+        accessLevel: keyof typeof NOTIFICATION_ACCESS_SETS,
+    ): boolean => {
         const accessSet = NOTIFICATION_ACCESS_SETS[accessLevel];
         return (accessSet as Set<string>).has(role);
     },
@@ -160,20 +173,26 @@ export const RoleUtils = {
      * Проверяет, имеет ли пользователь доступ к уведомлениям
      */
     canViewNotifications: (role: string): boolean => {
-        return (NOTIFICATION_ACCESS_SETS.NOTIFICATION_VIEW as Set<string>).has(role);
+        return (NOTIFICATION_ACCESS_SETS.NOTIFICATION_VIEW as Set<string>).has(
+            role,
+        );
     },
 
     /**
      * Проверяет, может ли пользователь управлять шаблонами
      */
     canManageTemplates: (role: string): boolean => {
-        return (NOTIFICATION_ACCESS_SETS.TEMPLATE_MANAGEMENT as Set<string>).has(role);
+        return (
+            NOTIFICATION_ACCESS_SETS.TEMPLATE_MANAGEMENT as Set<string>
+        ).has(role);
     },
 
     /**
      * Проверяет, может ли пользователь просматривать статистику
      */
     canViewStatistics: (role: string): boolean => {
-        return (NOTIFICATION_ACCESS_SETS.STATISTICS_VIEW as Set<string>).has(role);
+        return (NOTIFICATION_ACCESS_SETS.STATISTICS_VIEW as Set<string>).has(
+            role,
+        );
     },
 } as const;

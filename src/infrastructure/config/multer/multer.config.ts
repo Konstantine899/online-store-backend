@@ -24,7 +24,7 @@ const MAX_FILE_SIZE = 256000;
 
 /**
  * Конфигурация Multer для безопасной загрузки файлов
- * 
+ *
  * Защита от:
  * - Path Traversal атак (../../etc/passwd)
  * - MIME type spoofing
@@ -39,7 +39,7 @@ export const multerConfig = {
     ): void => {
         // 1. Санитизация имени файла (защита от path traversal)
         const basename = path.basename(file.originalname);
-        
+
         // Проверка что basename совпадает с originalname (нет пути)
         if (basename !== file.originalname) {
             return cb(
@@ -52,7 +52,11 @@ export const multerConfig = {
         }
 
         // Проверка на попытки path traversal
-        if (basename.includes('..') || basename.includes('/') || basename.includes('\\')) {
+        if (
+            basename.includes('..') ||
+            basename.includes('/') ||
+            basename.includes('\\')
+        ) {
             return cb(
                 new BadRequestException({
                     status: HttpStatus.BAD_REQUEST,
@@ -78,7 +82,8 @@ export const multerConfig = {
             return cb(
                 new BadRequestException({
                     status: HttpStatus.BAD_REQUEST,
-                    message: 'Разрешены только файлы изображений (jpg, jpeg, png, gif)',
+                    message:
+                        'Разрешены только файлы изображений (jpg, jpeg, png, gif)',
                 }),
                 false,
             );
@@ -87,7 +92,7 @@ export const multerConfig = {
         // 4. Все проверки пройдены
         cb(null, true);
     },
-    limits: { 
+    limits: {
         fileSize: MAX_FILE_SIZE,
         files: 1, // Максимум 1 файл за раз
     },

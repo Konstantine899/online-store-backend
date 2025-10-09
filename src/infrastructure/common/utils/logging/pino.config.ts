@@ -3,7 +3,7 @@ import { getConfig } from '@app/infrastructure/config';
 
 /**
  * Конфигурация Pino логгера для структурированного безопасного логирования.
- * 
+ *
  * Оптимизировано для производительности:
  * - Minimal serialization overhead
  * - Conditional pretty printing только в dev
@@ -89,7 +89,7 @@ export function createPinoConfig(): LoggerOptions {
 
     return {
         level: isProduction ? 'info' : 'debug',
-        
+
         // Формат: структурированный JSON в production, pretty в development
         transport: isDevelopment
             ? {

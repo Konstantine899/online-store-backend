@@ -6,7 +6,10 @@ import { AppModule } from '../../../../app.module';
 import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
 import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
 import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
-import { NotificationModel, NotificationTemplateModel } from '@app/domain/models';
+import {
+    NotificationModel,
+    NotificationTemplateModel,
+} from '@app/domain/models';
 import { NotificationType, NotificationStatus } from '@app/domain/models';
 
 // Оптимизированные моки для производительности
@@ -62,7 +65,10 @@ describe('NotificationController (Integration)', () => {
 
         // Полный ресет тестовой БД и применение миграций (Variant A)
         try {
-            execSync('npm run db:reset:test', { stdio: 'pipe', cwd: process.cwd() });
+            execSync('npm run db:reset:test', {
+                stdio: 'pipe',
+                cwd: process.cwd(),
+            });
         } catch {
             // Оставляем тихим: миграции обязательны в Variant A, но не шумим в логах тестов
         }
@@ -77,16 +83,18 @@ describe('NotificationController (Integration)', () => {
             .compile();
 
         app = module.createNestApplication();
-        notificationService = module.get<NotificationService>(NotificationService);
+        notificationService =
+            module.get<NotificationService>(NotificationService);
 
         // Оптимизированный middleware для мокирования пользователя
         app.use((req: unknown, res: unknown, next: unknown) => {
-            (req as { user: ReturnType<typeof createMockUser> }).user = createMockUser();
+            (req as { user: ReturnType<typeof createMockUser> }).user =
+                createMockUser();
             (next as () => void)();
         });
 
         await app.init();
-        
+
         const endTime = Date.now();
         console.log(`Module setup completed in ${endTime - startTime}ms`);
     }, 30000);
@@ -112,15 +120,20 @@ describe('NotificationController (Integration)', () => {
     describe('GET /notifications', () => {
         it('should return user notifications with pagination', async () => {
             const startTime = Date.now();
-            
+
             // Используем фабричную функцию для создания тестовых данных
             const testNotification = await NotificationModel.create(
-                createMockNotification()
+                createMockNotification(),
             );
 
-            const response = await request(app.getHttpServer())
-                .get('/notifications');
-            console.log('GET /notifications status/body:', response.status, response.body);
+            const response = await request(app.getHttpServer()).get(
+                '/notifications',
+            );
+            console.log(
+                'GET /notifications status/body:',
+                response.status,
+                response.body,
+            );
             expect(response.status).toBe(200);
 
             expect(response.body).toHaveProperty('data');
@@ -133,14 +146,16 @@ describe('NotificationController (Integration)', () => {
 
             // Cleanup
             await testNotification.destroy();
-            
+
             const endTime = Date.now();
-            console.log(`GET /notifications test completed in ${endTime - startTime}ms`);
+            console.log(
+                `GET /notifications test completed in ${endTime - startTime}ms`,
+            );
         });
 
         it('should filter notifications by status', async () => {
             const startTime = Date.now();
-            
+
             // Создаем тестовые уведомления с разными статусами
             const sentNotification = await NotificationModel.create(
                 createMockNotification({
@@ -148,7 +163,7 @@ describe('NotificationController (Integration)', () => {
                     message: 'This notification was sent',
                     status: NotificationStatus.SENT,
                     templateName: 'sent_template',
-                })
+                }),
             );
 
             const pendingNotification = await NotificationModel.create(
@@ -157,7 +172,7 @@ describe('NotificationController (Integration)', () => {
                     message: 'This notification is pending',
                     status: NotificationStatus.PENDING,
                     templateName: 'pending_template',
-                })
+                }),
             );
 
             const response = await request(app.getHttpServer())
@@ -172,14 +187,16 @@ describe('NotificationController (Integration)', () => {
                 sentNotification.destroy(),
                 pendingNotification.destroy(),
             ]);
-            
+
             const endTime = Date.now();
-            console.log(`Filter by status test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Filter by status test completed in ${endTime - startTime}ms`,
+            );
         });
 
         it('should filter notifications by type', async () => {
             const startTime = Date.now();
-            
+
             // Создаем тестовые уведомления с разными типами
             const emailNotification = await NotificationModel.create(
                 createMockNotification({
@@ -187,7 +204,7 @@ describe('NotificationController (Integration)', () => {
                     message: 'This is an email notification',
                     type: NotificationType.EMAIL,
                     templateName: 'email_template',
-                })
+                }),
             );
 
             const pushNotification = await NotificationModel.create(
@@ -196,7 +213,7 @@ describe('NotificationController (Integration)', () => {
                     message: 'This is a push notification',
                     type: NotificationType.PUSH,
                     templateName: 'push_template',
-                })
+                }),
             );
 
             const response = await request(app.getHttpServer())
@@ -211,16 +228,18 @@ describe('NotificationController (Integration)', () => {
                 emailNotification.destroy(),
                 pushNotification.destroy(),
             ]);
-            
+
             const endTime = Date.now();
-            console.log(`Filter by type test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Filter by type test completed in ${endTime - startTime}ms`,
+            );
         });
     });
 
     describe('GET /notifications/unread-count', () => {
         it('should return unread count', async () => {
             const startTime = Date.now();
-            
+
             // Создаем тестовые уведомления параллельно для производительности
             const notifications = await Promise.all([
                 NotificationModel.create(
@@ -228,14 +247,14 @@ describe('NotificationController (Integration)', () => {
                         title: 'Unread Notification 1',
                         message: 'This is unread',
                         templateName: 'unread_template_1',
-                    })
+                    }),
                 ),
                 NotificationModel.create(
                     createMockNotification({
                         title: 'Unread Notification 2',
                         message: 'This is also unread',
                         templateName: 'unread_template_2',
-                    })
+                    }),
                 ),
                 NotificationModel.create(
                     createMockNotification({
@@ -243,7 +262,7 @@ describe('NotificationController (Integration)', () => {
                         message: 'This is read',
                         isRead: true,
                         templateName: 'read_template',
-                    })
+                    }),
                 ),
             ]);
 
@@ -253,21 +272,23 @@ describe('NotificationController (Integration)', () => {
 
             expect(response.body).toHaveProperty('count');
             expect(response.body.count).toBeGreaterThanOrEqual(2);
-            
+
             // Cleanup
-            await Promise.all(notifications.map(n => n.destroy()));
-            
+            await Promise.all(notifications.map((n) => n.destroy()));
+
             const endTime = Date.now();
-            console.log(`Unread count test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Unread count test completed in ${endTime - startTime}ms`,
+            );
         });
     });
 
     describe('PUT /notifications/:id/read', () => {
         it('should mark notification as read', async () => {
             const startTime = Date.now();
-            
+
             const testNotification = await NotificationModel.create(
-                createMockNotification()
+                createMockNotification(),
             );
 
             const response = await request(app.getHttpServer())
@@ -287,18 +308,20 @@ describe('NotificationController (Integration)', () => {
 
             // Cleanup
             await testNotification.destroy();
-            
+
             const endTime = Date.now();
-            console.log(`Mark as read test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Mark as read test completed in ${endTime - startTime}ms`,
+            );
         });
 
         it('should return 404 for non-existent notification', async () => {
             const startTime = Date.now();
-            
+
             await request(app.getHttpServer())
                 .put('/notifications/99999/read')
                 .expect(404);
-                
+
             const endTime = Date.now();
             console.log(`404 test completed in ${endTime - startTime}ms`);
         });
@@ -345,11 +368,10 @@ describe('NotificationController (Integration)', () => {
     describe('GET /notifications/templates', () => {
         it('should return notification templates', async () => {
             const startTime = Date.now();
-            
+
             // Используем фабричную функцию для создания тестового шаблона
-            const testTemplate = await NotificationTemplateModel.create(
-                createMockTemplate()
-            );
+            const testTemplate =
+                await NotificationTemplateModel.create(createMockTemplate());
 
             const response = await request(app.getHttpServer())
                 .get('/notifications/templates')
@@ -362,14 +384,16 @@ describe('NotificationController (Integration)', () => {
 
             // Cleanup
             await testTemplate.destroy();
-            
+
             const endTime = Date.now();
-            console.log(`Get templates test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Get templates test completed in ${endTime - startTime}ms`,
+            );
         });
 
         it('should filter templates by type', async () => {
             const startTime = Date.now();
-            
+
             // Создаем тестовые шаблоны с разными типами параллельно
             const templates = await Promise.all([
                 NotificationTemplateModel.create(
@@ -378,7 +402,7 @@ describe('NotificationController (Integration)', () => {
                         title: 'Email Template',
                         message: 'This is an email template',
                         type: NotificationType.EMAIL,
-                    })
+                    }),
                 ),
                 NotificationTemplateModel.create(
                     createMockTemplate({
@@ -386,7 +410,7 @@ describe('NotificationController (Integration)', () => {
                         title: 'Push Template',
                         message: 'This is a push template',
                         type: NotificationType.PUSH,
-                    })
+                    }),
                 ),
             ]);
 
@@ -398,10 +422,12 @@ describe('NotificationController (Integration)', () => {
             expect(response.body.data[0].type).toBe('email');
 
             // Cleanup
-            await Promise.all(templates.map(t => t.destroy()));
-            
+            await Promise.all(templates.map((t) => t.destroy()));
+
             const endTime = Date.now();
-            console.log(`Filter templates by type test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Filter templates by type test completed in ${endTime - startTime}ms`,
+            );
         });
     });
 
@@ -611,15 +637,21 @@ describe('NotificationController (Integration)', () => {
     describe('Tenant isolation', () => {
         it('should prevent access to other users notifications', async () => {
             const startTime = Date.now();
-            
+
             // Создаем уведомления для разных пользователей параллельно
             // Предварительно создаём соответствующие шаблоны, чтобы include ассоциаций не фильтровал результаты
             const [tplOther, tplCurrent] = await Promise.all([
                 NotificationTemplateModel.create(
-                    createMockTemplate({ name: 'other_user_template', isActive: true })
+                    createMockTemplate({
+                        name: 'other_user_template',
+                        isActive: true,
+                    }),
                 ),
                 NotificationTemplateModel.create(
-                    createMockTemplate({ name: 'current_user_template', isActive: true })
+                    createMockTemplate({
+                        name: 'current_user_template',
+                        isActive: true,
+                    }),
                 ),
             ]);
             const notifications = await Promise.all([
@@ -629,7 +661,7 @@ describe('NotificationController (Integration)', () => {
                         title: 'Other User Notification',
                         message: 'This belongs to user 2',
                         templateName: 'other_user_template',
-                    })
+                    }),
                 ),
                 NotificationModel.create(
                     createMockNotification({
@@ -637,7 +669,7 @@ describe('NotificationController (Integration)', () => {
                         title: 'Current User Notification',
                         message: 'This belongs to user 1',
                         templateName: 'current_user_template',
-                    })
+                    }),
                 ),
             ]);
 
@@ -651,16 +683,18 @@ describe('NotificationController (Integration)', () => {
             expect(response.body.data[0].id).toBe(notifications[1].id);
 
             // Cleanup
-            await Promise.all(notifications.map(n => n.destroy()));
+            await Promise.all(notifications.map((n) => n.destroy()));
             await Promise.all([tplOther.destroy(), tplCurrent.destroy()]);
-            
+
             const endTime = Date.now();
-            console.log(`Tenant isolation test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Tenant isolation test completed in ${endTime - startTime}ms`,
+            );
         });
 
         it('should prevent marking other users notifications as read', async () => {
             const startTime = Date.now();
-            
+
             // Создаем уведомление для пользователя 2
             const otherUserNotification = await NotificationModel.create(
                 createMockNotification({
@@ -668,7 +702,7 @@ describe('NotificationController (Integration)', () => {
                     title: 'Other User Notification',
                     message: 'This belongs to user 2',
                     templateName: 'other_user_template',
-                })
+                }),
             );
 
             await request(app.getHttpServer())
@@ -677,28 +711,42 @@ describe('NotificationController (Integration)', () => {
 
             // Cleanup
             await otherUserNotification.destroy();
-            
+
             const endTime = Date.now();
-            console.log(`Prevent marking other user notification test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Prevent marking other user notification test completed in ${endTime - startTime}ms`,
+            );
         });
 
         it('should handle multiple users efficiently', async () => {
             const startTime = Date.now();
-            
+
             // Создаем уведомления для множественных пользователей параллельно
             // Предварительно создаём нужные шаблоны
             const [tplU1T1, tplU1T2, tplU2T1, tplU2T2] = await Promise.all([
                 NotificationTemplateModel.create(
-                    createMockTemplate({ name: 'user1_template_1', isActive: true })
+                    createMockTemplate({
+                        name: 'user1_template_1',
+                        isActive: true,
+                    }),
                 ),
                 NotificationTemplateModel.create(
-                    createMockTemplate({ name: 'user1_template_2', isActive: true })
+                    createMockTemplate({
+                        name: 'user1_template_2',
+                        isActive: true,
+                    }),
                 ),
                 NotificationTemplateModel.create(
-                    createMockTemplate({ name: 'user2_template_1', isActive: true })
+                    createMockTemplate({
+                        name: 'user2_template_1',
+                        isActive: true,
+                    }),
                 ),
                 NotificationTemplateModel.create(
-                    createMockTemplate({ name: 'user2_template_2', isActive: true })
+                    createMockTemplate({
+                        name: 'user2_template_2',
+                        isActive: true,
+                    }),
                 ),
             ]);
             const notifications = await Promise.all([
@@ -708,14 +756,14 @@ describe('NotificationController (Integration)', () => {
                         userId: 1,
                         title: 'User 1 Notification 1',
                         templateName: 'user1_template_1',
-                    })
+                    }),
                 ),
                 NotificationModel.create(
                     createMockNotification({
                         userId: 1,
                         title: 'User 1 Notification 2',
                         templateName: 'user1_template_2',
-                    })
+                    }),
                 ),
                 // Пользователь 2
                 NotificationModel.create(
@@ -723,14 +771,14 @@ describe('NotificationController (Integration)', () => {
                         userId: 2,
                         title: 'User 2 Notification 1',
                         templateName: 'user2_template_1',
-                    })
+                    }),
                 ),
                 NotificationModel.create(
                     createMockNotification({
                         userId: 2,
                         title: 'User 2 Notification 2',
                         templateName: 'user2_template_2',
-                    })
+                    }),
                 ),
             ]);
 
@@ -742,26 +790,32 @@ describe('NotificationController (Integration)', () => {
             // Должны возвращаться только уведомления пользователя 1
             console.log('Multiple users resp:', response.body);
             expect(response.body.data).toHaveLength(2);
-            expect(response.body.data.every((n: { userId: number }) => n.userId === 1)).toBe(true);
+            expect(
+                response.body.data.every(
+                    (n: { userId: number }) => n.userId === 1,
+                ),
+            ).toBe(true);
 
             // Cleanup
-            await Promise.all(notifications.map(n => n.destroy()));
+            await Promise.all(notifications.map((n) => n.destroy()));
             await Promise.all([
                 tplU1T1.destroy(),
                 tplU1T2.destroy(),
                 tplU2T1.destroy(),
                 tplU2T2.destroy(),
             ]);
-            
+
             const endTime = Date.now();
-            console.log(`Multiple users test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Multiple users test completed in ${endTime - startTime}ms`,
+            );
         });
     });
 
     describe('Validation tests', () => {
         it('should validate template creation data', async () => {
             const startTime = Date.now();
-            
+
             const invalidData = {
                 // Missing required fields
                 name: 'test',
@@ -771,16 +825,18 @@ describe('NotificationController (Integration)', () => {
                 .post('/notifications/templates')
                 .send(invalidData)
                 .expect(400);
-            
+
             const endTime = Date.now();
-            console.log(`Template creation validation test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Template creation validation test completed in ${endTime - startTime}ms`,
+            );
         });
 
         it('should validate template update data', async () => {
             const startTime = Date.now();
-            
+
             const testTemplate = await NotificationTemplateModel.create(
-                createMockTemplate({ name: 'validation_template' })
+                createMockTemplate({ name: 'validation_template' }),
             );
 
             const invalidData = {
@@ -794,36 +850,42 @@ describe('NotificationController (Integration)', () => {
 
             // Cleanup
             await testTemplate.destroy();
-            
+
             const endTime = Date.now();
-            console.log(`Template update validation test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Template update validation test completed in ${endTime - startTime}ms`,
+            );
         });
 
         it('should validate pagination limits', async () => {
             const startTime = Date.now();
-            
+
             await request(app.getHttpServer())
                 .get('/notifications?page=0&limit=0')
                 .expect(400);
-            
+
             const endTime = Date.now();
-            console.log(`Pagination limits validation test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Pagination limits validation test completed in ${endTime - startTime}ms`,
+            );
         });
 
         it('should validate statistics period format', async () => {
             const startTime = Date.now();
-            
+
             await request(app.getHttpServer())
                 .get('/notifications/statistics?period=invalid')
                 .expect(400);
-            
+
             const endTime = Date.now();
-            console.log(`Statistics period validation test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Statistics period validation test completed in ${endTime - startTime}ms`,
+            );
         });
 
         it('should validate bulk operations efficiently', async () => {
             const startTime = Date.now();
-            
+
             // Тестируем валидацию множественных операций параллельно
             const invalidRequests = await Promise.allSettled([
                 request(app.getHttpServer())
@@ -832,29 +894,29 @@ describe('NotificationController (Integration)', () => {
                 request(app.getHttpServer())
                     .post('/notifications/templates')
                     .send({ type: 'invalid' }), // Missing required fields
-                request(app.getHttpServer())
-                    .get('/notifications?page=-1'), // Invalid page
-                request(app.getHttpServer())
-                    .get('/notifications?limit=1000'), // Invalid limit
+                request(app.getHttpServer()).get('/notifications?page=-1'), // Invalid page
+                request(app.getHttpServer()).get('/notifications?limit=1000'), // Invalid limit
             ]);
 
             // Все запросы должны завершиться с ошибкой
-            invalidRequests.forEach(result => {
+            invalidRequests.forEach((result) => {
                 expect(result.status).toBe('fulfilled');
                 if (result.status === 'fulfilled') {
                     expect(result.value.status).toBeGreaterThanOrEqual(400);
                 }
             });
-            
+
             const endTime = Date.now();
-            console.log(`Bulk validation test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Bulk validation test completed in ${endTime - startTime}ms`,
+            );
         });
     });
 
     describe('Error handling', () => {
         it('should handle database errors gracefully', async () => {
             const startTime = Date.now();
-            
+
             // Mock database error
             jest.spyOn(NotificationModel, 'findAll').mockRejectedValue(
                 new Error('Database connection failed'),
@@ -866,18 +928,21 @@ describe('NotificationController (Integration)', () => {
 
             // Restore mock
             jest.restoreAllMocks();
-            
+
             const endTime = Date.now();
-            console.log(`Database error handling test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Database error handling test completed in ${endTime - startTime}ms`,
+            );
         });
 
         it('should handle service errors gracefully', async () => {
             const startTime = Date.now();
-            
+
             // Mock service error
-            jest.spyOn(notificationService, 'getNotifications').mockRejectedValue(
-                new Error('Service error'),
-            );
+            jest.spyOn(
+                notificationService,
+                'getNotifications',
+            ).mockRejectedValue(new Error('Service error'));
 
             await request(app.getHttpServer())
                 .get('/notifications')
@@ -885,14 +950,16 @@ describe('NotificationController (Integration)', () => {
 
             // Restore mock
             jest.restoreAllMocks();
-            
+
             const endTime = Date.now();
-            console.log(`Service error handling test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Service error handling test completed in ${endTime - startTime}ms`,
+            );
         });
 
         it('should handle multiple error scenarios efficiently', async () => {
             const startTime = Date.now();
-            
+
             // Тестируем множественные сценарии ошибок параллельно
             const errorScenarios = await Promise.allSettled([
                 // Database error
@@ -908,9 +975,10 @@ describe('NotificationController (Integration)', () => {
                 })(),
                 // Service error
                 (async () => {
-                    jest.spyOn(notificationService, 'getNotifications').mockRejectedValue(
-                        new Error('Service error'),
-                    );
+                    jest.spyOn(
+                        notificationService,
+                        'getNotifications',
+                    ).mockRejectedValue(new Error('Service error'));
                     const result = await request(app.getHttpServer())
                         .get('/notifications')
                         .expect(500);
@@ -919,9 +987,10 @@ describe('NotificationController (Integration)', () => {
                 })(),
                 // Template service error
                 (async () => {
-                    jest.spyOn(notificationService, 'getTemplates').mockRejectedValue(
-                        new Error('Template service error'),
-                    );
+                    jest.spyOn(
+                        notificationService,
+                        'getTemplates',
+                    ).mockRejectedValue(new Error('Template service error'));
                     const result = await request(app.getHttpServer())
                         .get('/notifications/templates')
                         .expect(500);
@@ -931,22 +1000,24 @@ describe('NotificationController (Integration)', () => {
             ]);
 
             // Все сценарии должны завершиться с ошибкой
-            errorScenarios.forEach(result => {
+            errorScenarios.forEach((result) => {
                 expect(result.status).toBe('fulfilled');
                 if (result.status === 'fulfilled') {
                     expect(result.value.status).toBe(500);
                 }
             });
-            
+
             const endTime = Date.now();
-            console.log(`Multiple error scenarios test completed in ${endTime - startTime}ms`);
+            console.log(
+                `Multiple error scenarios test completed in ${endTime - startTime}ms`,
+            );
         });
     });
 
     describe('Performance tests', () => {
         it('should handle large number of notifications efficiently', async () => {
             const startTime = Date.now();
-            
+
             // Создаем множественные уведомления параллельно для производительности
             // Предварительно создаём шаблоны для каждого уведомления
             const templates = await Promise.all(
@@ -957,20 +1028,20 @@ describe('NotificationController (Integration)', () => {
                             title: `Performance Template ${i}`,
                             message: `Performance message ${i}`,
                             isActive: true,
-                        })
-                    )
-                )
+                        }),
+                    ),
+                ),
             );
             const notifications = await Promise.all(
-                Array.from({ length: 50 }, (_, i) => 
+                Array.from({ length: 50 }, (_, i) =>
                     NotificationModel.create(
                         createMockNotification({
                             title: `Notification ${i}`,
                             message: `Message ${i}`,
                             templateName: `performance_template_${i}`,
-                        })
-                    )
-                )
+                        }),
+                    ),
+                ),
             );
 
             const requestStartTime = Date.now();
@@ -985,25 +1056,27 @@ describe('NotificationController (Integration)', () => {
             // Cleanup - удаляем параллельно для производительности
             await Promise.all(notifications.map((n) => n.destroy()));
             await Promise.all(templates.map((t) => t.destroy()));
-            
+
             const endTime = Date.now();
-            console.log(`Large notifications test completed in ${endTime - startTime}ms (request: ${requestEndTime - requestStartTime}ms)`);
+            console.log(
+                `Large notifications test completed in ${endTime - startTime}ms (request: ${requestEndTime - requestStartTime}ms)`,
+            );
         });
 
         it('should handle bulk template operations efficiently', async () => {
             const startTime = Date.now();
-            
+
             // Создаем множественные шаблоны параллельно
             const templates = await Promise.all(
-                Array.from({ length: 20 }, (_, i) => 
+                Array.from({ length: 20 }, (_, i) =>
                     NotificationTemplateModel.create(
                         createMockTemplate({
                             name: `bulk_template_${i}`,
                             title: `Bulk Template ${i}`,
                             message: `Bulk message ${i}`,
-                        })
-                    )
-                )
+                        }),
+                    ),
+                ),
             );
 
             const requestStartTime = Date.now();
@@ -1016,25 +1089,27 @@ describe('NotificationController (Integration)', () => {
             expect(requestEndTime - requestStartTime).toBeLessThan(500); // Должно завершиться менее чем за 500мс
 
             // Cleanup
-            await Promise.all(templates.map(t => t.destroy()));
-            
+            await Promise.all(templates.map((t) => t.destroy()));
+
             const endTime = Date.now();
-            console.log(`Bulk templates test completed in ${endTime - startTime}ms (request: ${requestEndTime - requestStartTime}ms)`);
+            console.log(
+                `Bulk templates test completed in ${endTime - startTime}ms (request: ${requestEndTime - requestStartTime}ms)`,
+            );
         });
 
         it('should handle concurrent requests efficiently', async () => {
             const startTime = Date.now();
-            
+
             // Создаем тестовые данные
             const notifications = await Promise.all(
-                Array.from({ length: 10 }, (_, i) => 
+                Array.from({ length: 10 }, (_, i) =>
                     NotificationModel.create(
                         createMockNotification({
                             title: `Concurrent Notification ${i}`,
                             templateName: `concurrent_template_${i}`,
-                        })
-                    )
-                )
+                        }),
+                    ),
+                ),
             );
 
             // Выполняем множественные запросы параллельно
@@ -1048,28 +1123,30 @@ describe('NotificationController (Integration)', () => {
             const requestEndTime = Date.now();
 
             // Проверяем, что все запросы успешны
-            responses.forEach(response => {
+            responses.forEach((response) => {
                 expect(response.status).toBe(200);
             });
 
             expect(requestEndTime - requestStartTime).toBeLessThan(2000); // Должно завершиться менее чем за 2 секунды
 
             // Cleanup
-            await Promise.all(notifications.map(n => n.destroy()));
-            
+            await Promise.all(notifications.map((n) => n.destroy()));
+
             const endTime = Date.now();
-            console.log(`Concurrent requests test completed in ${endTime - startTime}ms (requests: ${requestEndTime - requestStartTime}ms)`);
+            console.log(
+                `Concurrent requests test completed in ${endTime - startTime}ms (requests: ${requestEndTime - requestStartTime}ms)`,
+            );
         });
 
         it('should handle caching efficiently', async () => {
             const startTime = Date.now();
-            
+
             // Создаем тестовое уведомление
             const testNotification = await NotificationModel.create(
                 createMockNotification({
                     title: 'Cache Test Notification',
                     templateName: 'cache_template',
-                })
+                }),
             );
 
             // Первый запрос (без кэша)
@@ -1092,12 +1169,14 @@ describe('NotificationController (Integration)', () => {
             // Второй запрос должен быть быстрее (благодаря кэшу)
             const firstDuration = firstRequestEnd - firstRequestStart;
             const secondDuration = secondRequestEnd - secondRequestStart;
-            
-            console.log(`First request: ${firstDuration}ms, Second request: ${secondDuration}ms`);
+
+            console.log(
+                `First request: ${firstDuration}ms, Second request: ${secondDuration}ms`,
+            );
 
             // Cleanup
             await testNotification.destroy();
-            
+
             const endTime = Date.now();
             console.log(`Caching test completed in ${endTime - startTime}ms`);
         });

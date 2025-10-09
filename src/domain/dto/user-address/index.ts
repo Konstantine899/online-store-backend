@@ -19,5 +19,3 @@ export interface IUpdateUserAddressDto {
     readonly country?: string;
     readonly is_default?: boolean;
 }
-
-

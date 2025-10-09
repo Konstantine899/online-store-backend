@@ -48,7 +48,7 @@ interface AuthenticatedRequest extends Request {
 
 /**
  * Контроллер уведомлений с полной системой ролей и тенантской изоляцией
- * 
+ *
  * Оптимизировано для производительности:
  * - Кэширование часто запрашиваемых данных
  * - Оптимизированная валидация ролей
@@ -70,7 +70,10 @@ export class NotificationController {
     private readonly logger = new Logger(NotificationController.name);
 
     // Кэш для часто запрашиваемых данных
-    private readonly cache = new Map<string, { data: unknown; timestamp: number }>();
+    private readonly cache = new Map<
+        string,
+        { data: unknown; timestamp: number }
+    >();
     private readonly CACHE_TTL = 5 * 60 * 1000; // 5 минут
 
     constructor(private readonly notificationService: NotificationService) {}
@@ -86,7 +89,7 @@ export class NotificationController {
         const cached = this.cache.get(key);
         const now = Date.now();
 
-        if (cached && (now - cached.timestamp) < ttl) {
+        if (cached && now - cached.timestamp < ttl) {
             return cached.data as T;
         }
 
@@ -162,7 +165,9 @@ export class NotificationController {
         const result = await this.notificationService.getNotifications(filters);
 
         const endTime = Date.now();
-        this.logger.log(`getUserNotifications completed in ${endTime - startTime}ms for user ${req.user.id}`);
+        this.logger.log(
+            `getUserNotifications completed in ${endTime - startTime}ms for user ${req.user.id}`,
+        );
 
         return {
             data: result.data,
@@ -187,16 +192,24 @@ export class NotificationController {
         @Req() req: AuthenticatedRequest,
     ): Promise<{ count: number }> {
         const startTime = Date.now();
-        
+
         // Кэширование для счетчика непрочитанных
         const cacheKey = `unread-count:${req.user.id}`;
-        
-        const count = await this.getCachedData(cacheKey, async () => {
-            return await this.notificationService.getUnreadCount(req.user.id);
-        }, 60 * 1000); // 1 минута TTL для счетчика
+
+        const count = await this.getCachedData(
+            cacheKey,
+            async () => {
+                return await this.notificationService.getUnreadCount(
+                    req.user.id,
+                );
+            },
+            60 * 1000,
+        ); // 1 минута TTL для счетчика
 
         const endTime = Date.now();
-        this.logger.log(`getUnreadCount completed in ${endTime - startTime}ms for user ${req.user.id}`);
+        this.logger.log(
+            `getUnreadCount completed in ${endTime - startTime}ms for user ${req.user.id}`,
+        );
 
         return { count };
     }
@@ -214,15 +227,17 @@ export class NotificationController {
         @Req() req: AuthenticatedRequest,
     ): Promise<{ message: string }> {
         const startTime = Date.now();
-        
+
         await this.notificationService.markAsRead(notificationId, req.user.id);
-        
+
         // Очищаем кэш для пользователя после изменения
         this.clearCache(`notifications:${req.user.id}`);
         this.clearCache(`unread-count:${req.user.id}`);
 
         const endTime = Date.now();
-        this.logger.log(`markAsRead completed in ${endTime - startTime}ms for user ${req.user.id}, notification ${notificationId}`);
+        this.logger.log(
+            `markAsRead completed in ${endTime - startTime}ms for user ${req.user.id}, notification ${notificationId}`,
+        );
 
         return { message: 'Уведомление отмечено как прочитанное' };
     }
@@ -379,10 +394,19 @@ export class NotificationController {
         const startTime = Date.now();
 
         // Валидация входных данных → 400
-        if (!createTemplateDto.name || !createTemplateDto.type || !createTemplateDto.title || !createTemplateDto.message) {
+        if (
+            !createTemplateDto.name ||
+            !createTemplateDto.type ||
+            !createTemplateDto.title ||
+            !createTemplateDto.message
+        ) {
             throw new BadRequestException('Все поля шаблона обязательны');
         }
-        if (!Object.values(NotificationType).includes(createTemplateDto.type as NotificationType)) {
+        if (
+            !Object.values(NotificationType).includes(
+                createTemplateDto.type as NotificationType,
+            )
+        ) {
             throw new BadRequestException('Некорректный тип шаблона');
         }
 
@@ -398,7 +422,9 @@ export class NotificationController {
         this.clearCache('templates');
 
         const endTime = Date.now();
-        this.logger.log(`createTemplate completed in ${endTime - startTime}ms for template ${template.name}`);
+        this.logger.log(
+            `createTemplate completed in ${endTime - startTime}ms for template ${template.name}`,
+        );
 
         return {
             id: template.id,
@@ -443,7 +469,11 @@ export class NotificationController {
         const updateData: Record<string, unknown> = {};
         if (updateTemplateDto.name) updateData.name = updateTemplateDto.name;
         if (updateTemplateDto.type) {
-            if (!Object.values(NotificationType).includes(updateTemplateDto.type as NotificationType)) {
+            if (
+                !Object.values(NotificationType).includes(
+                    updateTemplateDto.type as NotificationType,
+                )
+            ) {
                 throw new BadRequestException('Некорректный тип шаблона');
             }
             updateData.type = updateTemplateDto.type as NotificationType;
@@ -468,7 +498,9 @@ export class NotificationController {
         this.clearCache('templates');
 
         const endTime = Date.now();
-        this.logger.log(`updateTemplate completed in ${endTime - startTime}ms for template ${templateId}`);
+        this.logger.log(
+            `updateTemplate completed in ${endTime - startTime}ms for template ${templateId}`,
+        );
 
         return {
             id: template.id,
@@ -493,14 +525,16 @@ export class NotificationController {
         @Req() _req: AuthenticatedRequest, // eslint-disable-line @typescript-eslint/no-unused-vars
     ): Promise<void> {
         const startTime = Date.now();
-        
+
         await this.notificationService.deleteTemplate(templateId);
-        
+
         // Очищаем кэш шаблонов после удаления
         this.clearCache('templates');
 
         const endTime = Date.now();
-        this.logger.log(`deleteTemplate completed in ${endTime - startTime}ms for template ${templateId}`);
+        this.logger.log(
+            `deleteTemplate completed in ${endTime - startTime}ms for template ${templateId}`,
+        );
     }
 
     /**
@@ -533,20 +567,26 @@ export class NotificationController {
         };
     }> {
         const startTime = Date.now();
-        
+
         // Кэширование для статистики
         const cacheKey = `statistics:${req.user.id}:${period || 'default'}:${type || 'all'}`;
-        
-        const result = await this.getCachedData(cacheKey, async () => {
-            return await this.notificationService.getStatistics(
-                req.user.id,
-                period,
-                type as NotificationType,
-            );
-        }, 10 * 60 * 1000); // 10 минут TTL для статистики
+
+        const result = await this.getCachedData(
+            cacheKey,
+            async () => {
+                return await this.notificationService.getStatistics(
+                    req.user.id,
+                    period,
+                    type as NotificationType,
+                );
+            },
+            10 * 60 * 1000,
+        ); // 10 минут TTL для статистики
 
         const endTime = Date.now();
-        this.logger.log(`getStatistics completed in ${endTime - startTime}ms for user ${req.user.id}`);
+        this.logger.log(
+            `getStatistics completed in ${endTime - startTime}ms for user ${req.user.id}`,
+        );
 
         return result;
     }

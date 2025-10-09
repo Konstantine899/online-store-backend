@@ -9,23 +9,29 @@ import {
 export class TemplateRendererService implements ITemplateRenderer {
     private readonly logger = new Logger(TemplateRendererService.name);
     private readonly supportedSyntax = ['{{variable}}'];
-    
+
     // Кэш для валидации шаблонов
-    private readonly templateValidationCache = new Map<string, { valid: boolean; errors: string[]; variables: string[] }>();
+    private readonly templateValidationCache = new Map<
+        string,
+        { valid: boolean; errors: string[]; variables: string[] }
+    >();
     private readonly maxCacheSize = 500;
-    
+
     // Кэш для извлеченных переменных
     private readonly variablesCache = new Map<string, string[]>();
     private readonly variablesCacheTimeout = 10 * 60 * 1000; // 10 минут
-    
+
     // Предкомпилированные регулярные выражения
     private readonly variablePattern = /\{\{([^}]+)\}\}/g;
     private readonly openBracesPattern = /\{\{/g;
     private readonly closeBracesPattern = /\}\}/g;
     private readonly emptyVariablesPattern = /\{\{\s*\}\}/g;
-    private readonly scriptPattern = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
-    private readonly iframePattern = /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi;
-    private readonly objectPattern = /<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi;
+    private readonly scriptPattern =
+        /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
+    private readonly iframePattern =
+        /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi;
+    private readonly objectPattern =
+        /<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi;
     private readonly embedPattern = /<embed\b[^<]*>/gi;
     private readonly whitespacePattern = /\s+/g;
 
@@ -67,7 +73,11 @@ export class TemplateRendererService implements ITemplateRenderer {
             }
 
             // Оптимизированный рендеринг шаблона
-            const renderedContent = this.renderTemplateOptimized(template, variables, usedVariables);
+            const renderedContent = this.renderTemplateOptimized(
+                template,
+                variables,
+                usedVariables,
+            );
 
             this.logger.debug(
                 `Template rendered successfully with ${usedVariables.length} variables`,
@@ -129,7 +139,12 @@ export class TemplateRendererService implements ITemplateRenderer {
             };
 
             // Кэшируем результат
-            this.setCacheValue(this.templateValidationCache, cacheKey, result, this.maxCacheSize);
+            this.setCacheValue(
+                this.templateValidationCache,
+                cacheKey,
+                result,
+                this.maxCacheSize,
+            );
 
             return result;
         } catch (error) {
@@ -154,7 +169,7 @@ export class TemplateRendererService implements ITemplateRenderer {
 
         const variables: string[] = [];
         const variableSet = new Set<string>(); // Используем Set для быстрой проверки уникальности
-        
+
         // Сбрасываем lastIndex для глобального regex
         this.variablePattern.lastIndex = 0;
         let match;
@@ -168,7 +183,12 @@ export class TemplateRendererService implements ITemplateRenderer {
         }
 
         // Кэшируем результат
-        this.setCacheValue(this.variablesCache, cacheKey, variables, this.maxCacheSize);
+        this.setCacheValue(
+            this.variablesCache,
+            cacheKey,
+            variables,
+            this.maxCacheSize,
+        );
 
         return variables;
     }
@@ -228,8 +248,10 @@ export class TemplateRendererService implements ITemplateRenderer {
         const errors: string[] = [];
 
         // Используем предкомпилированные регулярные выражения
-        const openBraces = (template.match(this.openBracesPattern) || []).length;
-        const closeBraces = (template.match(this.closeBracesPattern) || []).length;
+        const openBraces = (template.match(this.openBracesPattern) || [])
+            .length;
+        const closeBraces = (template.match(this.closeBracesPattern) || [])
+            .length;
 
         if (openBraces !== closeBraces) {
             errors.push('Несбалансированные фигурные скобки в шаблоне');
@@ -248,7 +270,7 @@ export class TemplateRendererService implements ITemplateRenderer {
     private renderTemplateOptimized(
         template: string,
         variables: TemplateVariables,
-        usedVariables: string[]
+        usedVariables: string[],
     ): string {
         let renderedContent = template;
 
@@ -256,9 +278,12 @@ export class TemplateRendererService implements ITemplateRenderer {
         for (const variable of usedVariables) {
             const placeholder = `{{${variable}}}`;
             const stringValue = this.convertToString(variables[variable]);
-            
+
             // Используем предкомпилированный regex для замены
-            const regex = new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+            const regex = new RegExp(
+                placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+                'g',
+            );
             renderedContent = renderedContent.replace(regex, stringValue);
         }
 
@@ -270,18 +295,23 @@ export class TemplateRendererService implements ITemplateRenderer {
         if (!template || typeof template !== 'string') {
             return 'null-template';
         }
-        
+
         // Простой хэш для кэширования (в реальной реализации можно использовать crypto)
         let hash = 0;
         for (let i = 0; i < template.length; i++) {
             const char = template.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
+            hash = (hash << 5) - hash + char;
             hash = hash & hash; // Convert to 32bit integer
         }
         return hash.toString(36);
     }
 
-    private setCacheValue<T>(cache: Map<string, T>, key: string, value: T, maxSize: number): void {
+    private setCacheValue<T>(
+        cache: Map<string, T>,
+        key: string,
+        value: T,
+        maxSize: number,
+    ): void {
         // Очищаем кэш при достижении лимита
         if (cache.size >= maxSize) {
             const firstKey = cache.keys().next().value;

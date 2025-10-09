@@ -7,27 +7,31 @@ describe('EmailProviderService', () => {
     let module: TestingModule;
 
     // Фабричные функции для создания тестовых данных
-    const createEmailMessage = (overrides: Partial<EmailMessage> = {}): EmailMessage => ({
+    const createEmailMessage = (
+        overrides: Partial<EmailMessage> = {},
+    ): EmailMessage => ({
         to: 'test@example.com',
         subject: 'Test Subject',
         text: 'Test message',
         ...overrides,
     });
 
-    const createEmailAttachment = (overrides: Partial<EmailAttachment> = {}): EmailAttachment => ({
+    const createEmailAttachment = (
+        overrides: Partial<EmailAttachment> = {},
+    ): EmailAttachment => ({
         filename: 'test.txt',
         content: 'test content',
         contentType: 'text/plain',
         ...overrides,
     });
 
-    const createBulkEmailMessages = (count: number): EmailMessage[] => 
-        Array.from({ length: count }, (_, i) => 
+    const createBulkEmailMessages = (count: number): EmailMessage[] =>
+        Array.from({ length: count }, (_, i) =>
             createEmailMessage({
                 to: `test${i + 1}@example.com`,
                 subject: `Test ${i + 1}`,
                 text: `Message ${i + 1}`,
-            })
+            }),
         );
 
     beforeEach(async () => {
@@ -109,8 +113,16 @@ describe('EmailProviderService', () => {
 
         it('should handle mixed success and failure in bulk emails', async () => {
             const messages = [
-                createEmailMessage({ to: 'test@example.com', subject: 'Valid Email', text: 'Valid message' }),
-                createEmailMessage({ to: 'invalid-email', subject: 'Invalid Email', text: 'Invalid message' }),
+                createEmailMessage({
+                    to: 'test@example.com',
+                    subject: 'Valid Email',
+                    text: 'Valid message',
+                }),
+                createEmailMessage({
+                    to: 'invalid-email',
+                    subject: 'Invalid Email',
+                    text: 'Invalid message',
+                }),
             ];
 
             const results = await service.sendBulkEmails(messages);
@@ -308,12 +320,12 @@ describe('EmailProviderService', () => {
             ];
 
             const startTime = Date.now();
-            
+
             // Множественные вызовы валидации
             const results = await Promise.all(
-                testEmails.map(email => service.validateEmail(email))
+                testEmails.map((email) => service.validateEmail(email)),
             );
-            
+
             const endTime = Date.now();
 
             expect(results).toEqual([true, true, true, true]);
@@ -322,53 +334,57 @@ describe('EmailProviderService', () => {
 
         it('should handle provider info caching efficiently', async () => {
             const startTime = Date.now();
-            
+
             // Множественные вызовы getProviderInfo
             const results = await Promise.all(
-                Array.from({ length: 50 }, () => service.getProviderInfo())
+                Array.from({ length: 50 }, () => service.getProviderInfo()),
             );
-            
+
             const endTime = Date.now();
 
             expect(results).toHaveLength(50);
-            expect(results.every(info => info.name === 'MockEmailProvider')).toBe(true);
+            expect(
+                results.every((info) => info.name === 'MockEmailProvider'),
+            ).toBe(true);
             expect(endTime - startTime).toBeLessThan(50); // Должно выполниться очень быстро благодаря кэшу
         });
 
         it('should handle quota info caching efficiently', async () => {
             const startTime = Date.now();
-            
+
             // Множественные вызовы getQuotaInfo
             const results = await Promise.all(
-                Array.from({ length: 20 }, () => service.getQuotaInfo())
+                Array.from({ length: 20 }, () => service.getQuotaInfo()),
             );
-            
+
             const endTime = Date.now();
 
             expect(results).toHaveLength(20);
-            expect(results.every(quota => quota.limit === 10000)).toBe(true);
+            expect(results.every((quota) => quota.limit === 10000)).toBe(true);
             expect(endTime - startTime).toBeLessThan(100); // Должно выполниться быстро
         });
 
         it('should handle attachment validation efficiently', async () => {
-            const attachments = Array.from({ length: 100 }, (_, i) => 
+            const attachments = Array.from({ length: 100 }, (_, i) =>
                 createEmailAttachment({
                     filename: `test${i}.txt`,
                     content: `content ${i}`,
-                })
+                }),
             );
 
             const startTime = Date.now();
-            
+
             // Параллельная валидация вложений
             const results = await Promise.all(
-                attachments.map(attachment => service.validateAttachment(attachment))
+                attachments.map((attachment) =>
+                    service.validateAttachment(attachment),
+                ),
             );
-            
+
             const endTime = Date.now();
 
             expect(results).toHaveLength(100);
-            expect(results.every(isValid => isValid === true)).toBe(true);
+            expect(results.every((isValid) => isValid === true)).toBe(true);
             expect(endTime - startTime).toBeLessThan(500); // Должно выполниться быстро
         });
     });
@@ -376,10 +392,10 @@ describe('EmailProviderService', () => {
     describe('Caching Tests', () => {
         it('should cache email validation results', () => {
             const email = 'test@example.com';
-            
+
             // Первый вызов
             const result1 = service.validateEmail(email);
-            
+
             // Второй вызов (должен использовать кэш)
             const result2 = service.validateEmail(email);
 
@@ -390,7 +406,7 @@ describe('EmailProviderService', () => {
         it('should cache provider info', () => {
             // Первый вызов
             const info1 = service.getProviderInfo();
-            
+
             // Второй вызов (должен использовать кэш)
             const info2 = service.getProviderInfo();
 
@@ -400,13 +416,13 @@ describe('EmailProviderService', () => {
 
         it('should handle cache invalidation for email validation', () => {
             const email = 'test@example.com';
-            
+
             // Первый вызов
             const result1 = service.validateEmail(email);
-            
+
             // Очищаем кэш (симулируем)
             // В реальной реализации здесь был бы метод очистки кэша
-            
+
             // Второй вызов
             const result2 = service.validateEmail(email);
 

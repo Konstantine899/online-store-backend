@@ -1,9 +1,4 @@
-import {
-    IsNotEmpty,
-    IsString,
-    MaxLength,
-    MinLength,
-} from 'class-validator';
+import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { ICreateProductPropertyDto } from '@app/domain/dto';

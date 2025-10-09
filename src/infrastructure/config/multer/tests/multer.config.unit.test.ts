@@ -4,7 +4,7 @@ import { Express } from 'express';
 
 /**
  * Unit тесты для multerConfig
- * 
+ *
  * Проверяем:
  * - Санитизацию имён файлов (path traversal protection)
  * - Проверку MIME типов
@@ -304,4 +304,3 @@ describe('multerConfig', () => {
         });
     });
 });
-

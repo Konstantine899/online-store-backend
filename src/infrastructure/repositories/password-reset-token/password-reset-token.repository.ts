@@ -2,7 +2,7 @@ import { PasswordResetTokenModel } from '@app/domain/models';
 import { IPasswordResetTokenRepository } from '@app/domain/repositories';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { Op, WhereOptions } from 'sequelize';
 
 @Injectable()
 export class PasswordResetTokenRepository
@@ -33,7 +33,7 @@ export class PasswordResetTokenRepository
             userAgent: userAgent || null,
             isUsed: false,
             usedAt: null,
-        } as any);
+        });
     }
 
     /**
@@ -44,7 +44,7 @@ export class PasswordResetTokenRepository
         token: string,
         tenantId?: number,
     ): Promise<PasswordResetTokenModel | null> {
-        const where: any = {
+        const where: WhereOptions<PasswordResetTokenModel> = {
             token,
         };
 
@@ -78,7 +78,7 @@ export class PasswordResetTokenRepository
      * Возвращает количество удалённых записей
      */
     async cleanExpiredTokens(tenantId?: number): Promise<number> {
-        const where: any = {
+        const where: WhereOptions<PasswordResetTokenModel> = {
             expiresAt: {
                 [Op.lt]: new Date(),
             },
@@ -97,7 +97,7 @@ export class PasswordResetTokenRepository
      * Используется при смене пароля или logout
      */
     async revokeUserTokens(userId: number, tenantId?: number): Promise<number> {
-        const where: any = {
+        const where: WhereOptions<PasswordResetTokenModel> = {
             userId,
             isUsed: false,
         };

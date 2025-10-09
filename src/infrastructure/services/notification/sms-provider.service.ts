@@ -12,11 +12,11 @@ export class SmsProviderService implements ISmsProvider {
     private readonly providerName = 'MockSmsProvider';
     private readonly providerVersion = '1.0.0';
     private readonly mockBalance = 1000.0; // Mock баланс в рублях
-    
+
     // Кэш для валидации номеров телефонов
     private readonly phoneValidationCache = new Map<string, boolean>();
     private readonly maxCacheSize = 1000;
-    
+
     // Кэш для информации о провайдере
     private readonly providerInfoCache = {
         name: this.providerName,
@@ -31,7 +31,7 @@ export class SmsProviderService implements ISmsProvider {
             'balance_check',
         ],
     };
-    
+
     // Кэш для поддерживаемых стран
     private readonly supportedCountriesCache = [
         { code: 'RU', name: 'Россия', cost: 1.5 },
@@ -39,7 +39,7 @@ export class SmsProviderService implements ISmsProvider {
         { code: 'KZ', name: 'Казахстан', cost: 2.5 },
         { code: 'UA', name: 'Украина', cost: 3.0 },
     ];
-    
+
     // Предкомпилированные регулярные выражения
     private readonly russianPhoneRegex = /^[78]\d{10}$/;
     private readonly internationalPhoneRegex = /^\+\d{10,15}$/;
@@ -114,15 +114,19 @@ export class SmsProviderService implements ISmsProvider {
             // Обрабатываем батчами
             for (let i = 0; i < phoneMessages.length; i += batchSize) {
                 const batch = phoneMessages.slice(i, i + batchSize);
-                
+
                 // Параллельная отправка в батче
                 const batchPromises = batch.map(async (message) => {
                     try {
                         return await this.sendSms(message);
                     } catch (error) {
                         const errorMessage =
-                            error instanceof Error ? error.message : 'Unknown error';
-                        this.logger.error(`Failed to send bulk SMS: ${errorMessage}`);
+                            error instanceof Error
+                                ? error.message
+                                : 'Unknown error';
+                        this.logger.error(
+                            `Failed to send bulk SMS: ${errorMessage}`,
+                        );
                         return {
                             success: false,
                             error: errorMessage,
@@ -171,14 +175,20 @@ export class SmsProviderService implements ISmsProvider {
 
         // Быстрый отсев: если не международный формат (без '+') и не российский по длине 11 — считаем невалидным
         if (!phone.startsWith('+')) {
-            if (!(cleanPhone.length === 11 && (cleanPhone.startsWith('7') || cleanPhone.startsWith('8')))) {
+            if (
+                !(
+                    cleanPhone.length === 11 &&
+                    (cleanPhone.startsWith('7') || cleanPhone.startsWith('8'))
+                )
+            ) {
                 this.phoneValidationCache.set(phone, false);
                 return false;
             }
         }
 
         // Более строгая валидация российских номеров (11 цифр, начинается с 7 или 8)
-        const isValidRussian = cleanPhone.length === 11 && 
+        const isValidRussian =
+            cleanPhone.length === 11 &&
             (cleanPhone.startsWith('7') || cleanPhone.startsWith('8')) &&
             this.russianPhoneRegex.test(cleanPhone);
 
@@ -187,9 +197,15 @@ export class SmsProviderService implements ISmsProvider {
         // - начинается строго с одного '+'
         // - только цифры далее (никаких пробелов, дефисов, скобок, букв)
         // - 10-15 цифр после знака '+'
-        const hasSinglePlus = phone.startsWith('+') && phone.indexOf('+') === 0 && phone.lastIndexOf('+') === 0;
+        const hasSinglePlus =
+            phone.startsWith('+') &&
+            phone.indexOf('+') === 0 &&
+            phone.lastIndexOf('+') === 0;
         const onlyPlusAndDigits = /^\+\d+$/.test(phone);
-        const isValidInternational = hasSinglePlus && onlyPlusAndDigits && this.internationalPhoneRegex.test(phone);
+        const isValidInternational =
+            hasSinglePlus &&
+            onlyPlusAndDigits &&
+            this.internationalPhoneRegex.test(phone);
 
         const isValid = isValidRussian || isValidInternational;
 
@@ -270,16 +286,18 @@ export class SmsProviderService implements ISmsProvider {
     }
 
     // Вспомогательные методы для оптимизации
-    private groupMessagesByPhone(messages: SmsMessage[]): Map<string, SmsMessage[]> {
+    private groupMessagesByPhone(
+        messages: SmsMessage[],
+    ): Map<string, SmsMessage[]> {
         const grouped = new Map<string, SmsMessage[]>();
-        
+
         for (const message of messages) {
             if (!grouped.has(message.to)) {
                 grouped.set(message.to, []);
             }
             grouped.get(message.to)!.push(message);
         }
-        
+
         return grouped;
     }
 

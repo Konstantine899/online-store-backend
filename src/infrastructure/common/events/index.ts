@@ -1,6 +1,6 @@
 /**
  * Экспорт событий и обработчиков уведомлений
- * 
+ *
  * Оптимизировано для производительности:
  * - Баррель-экспорты для быстрого импорта
  * - Группировка связанных модулей
@@ -14,7 +14,7 @@ export * from './notification.events';
 export * from './notification.event-handler';
 
 // Типы для TypeScript
-export type { 
+export type {
     OrderCreatedEvent,
     OrderStatusChangedEvent,
     UserRegisteredEvent,

@@ -65,9 +65,7 @@ describe('IsValidNameConstraint (unit)', () => {
         });
 
         it('должен отклонить HTML-теги', () => {
-            expect(validator.validate('<script>alert(1)</script>')).toBe(
-                false,
-            );
+            expect(validator.validate('<script>alert(1)</script>')).toBe(false);
             expect(validator.validate('Иван<br>Иванов')).toBe(false);
         });
 

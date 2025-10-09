@@ -1,4 +1,3 @@
-
 /**
  * Базовый класс для всех событий уведомлений
  */
@@ -13,20 +12,20 @@ export abstract class NotificationEvent {
  */
 export class OrderCreatedEvent extends NotificationEvent {
     readonly eventName = 'order.created';
-    
+
     constructor(
         public readonly userId: number,
         public readonly orderId: number,
         public readonly orderNumber: string,
         public readonly totalAmount: number,
-        public readonly data: Record<string, unknown> = {}
+        public readonly data: Record<string, unknown> = {},
     ) {
         super();
         this.data = {
             orderId: this.orderId,
             orderNumber: this.orderNumber,
             totalAmount: this.totalAmount,
-            ...this.data
+            ...this.data,
         };
     }
 }
@@ -36,14 +35,14 @@ export class OrderCreatedEvent extends NotificationEvent {
  */
 export class OrderStatusChangedEvent extends NotificationEvent {
     readonly eventName = 'order.status.changed';
-    
+
     constructor(
         public readonly userId: number,
         public readonly orderId: number,
         public readonly orderNumber: string,
         public readonly oldStatus: string,
         public readonly newStatus: string,
-        public readonly data: Record<string, unknown> = {}
+        public readonly data: Record<string, unknown> = {},
     ) {
         super();
         this.data = {
@@ -51,7 +50,7 @@ export class OrderStatusChangedEvent extends NotificationEvent {
             orderNumber: this.orderNumber,
             oldStatus: this.oldStatus,
             newStatus: this.newStatus,
-            ...this.data
+            ...this.data,
         };
     }
 }
@@ -61,18 +60,18 @@ export class OrderStatusChangedEvent extends NotificationEvent {
  */
 export class UserRegisteredEvent extends NotificationEvent {
     readonly eventName = 'user.registered';
-    
+
     constructor(
         public readonly userId: number,
         public readonly email: string,
         public readonly firstName: string,
-        public readonly data: Record<string, unknown> = {}
+        public readonly data: Record<string, unknown> = {},
     ) {
         super();
         this.data = {
             email: this.email,
             firstName: this.firstName,
-            ...this.data
+            ...this.data,
         };
     }
 }
@@ -82,14 +81,14 @@ export class UserRegisteredEvent extends NotificationEvent {
  */
 export class PaymentCompletedEvent extends NotificationEvent {
     readonly eventName = 'payment.completed';
-    
+
     constructor(
         public readonly userId: number,
         public readonly orderId: number,
         public readonly orderNumber: string,
         public readonly amount: number,
         public readonly paymentMethod: string,
-        public readonly data: Record<string, unknown> = {}
+        public readonly data: Record<string, unknown> = {},
     ) {
         super();
         this.data = {
@@ -97,7 +96,7 @@ export class PaymentCompletedEvent extends NotificationEvent {
             orderNumber: this.orderNumber,
             amount: this.amount,
             paymentMethod: this.paymentMethod,
-            ...this.data
+            ...this.data,
         };
     }
 }
@@ -107,14 +106,14 @@ export class PaymentCompletedEvent extends NotificationEvent {
  */
 export class OrderShippedEvent extends NotificationEvent {
     readonly eventName = 'order.shipped';
-    
+
     constructor(
         public readonly userId: number,
         public readonly orderId: number,
         public readonly orderNumber: string,
         public readonly trackingNumber: string,
         public readonly shippingMethod: string,
-        public readonly data: Record<string, unknown> = {}
+        public readonly data: Record<string, unknown> = {},
     ) {
         super();
         this.data = {
@@ -122,7 +121,7 @@ export class OrderShippedEvent extends NotificationEvent {
             orderNumber: this.orderNumber,
             trackingNumber: this.trackingNumber,
             shippingMethod: this.shippingMethod,
-            ...this.data
+            ...this.data,
         };
     }
 }
@@ -132,20 +131,20 @@ export class OrderShippedEvent extends NotificationEvent {
  */
 export class OrderDeliveredEvent extends NotificationEvent {
     readonly eventName = 'order.delivered';
-    
+
     constructor(
         public readonly userId: number,
         public readonly orderId: number,
         public readonly orderNumber: string,
         public readonly deliveryDate: Date,
-        public readonly data: Record<string, unknown> = {}
+        public readonly data: Record<string, unknown> = {},
     ) {
         super();
         this.data = {
             orderId: this.orderId,
             orderNumber: this.orderNumber,
             deliveryDate: this.deliveryDate,
-            ...this.data
+            ...this.data,
         };
     }
 }
@@ -155,20 +154,20 @@ export class OrderDeliveredEvent extends NotificationEvent {
  */
 export class OrderCancelledEvent extends NotificationEvent {
     readonly eventName = 'order.cancelled';
-    
+
     constructor(
         public readonly userId: number,
         public readonly orderId: number,
         public readonly orderNumber: string,
         public readonly reason: string,
-        public readonly data: Record<string, unknown> = {}
+        public readonly data: Record<string, unknown> = {},
     ) {
         super();
         this.data = {
             orderId: this.orderId,
             orderNumber: this.orderNumber,
             reason: this.reason,
-            ...this.data
+            ...this.data,
         };
     }
 }
@@ -178,16 +177,16 @@ export class OrderCancelledEvent extends NotificationEvent {
  */
 export class PasswordChangedEvent extends NotificationEvent {
     readonly eventName = 'password.changed';
-    
+
     constructor(
         public readonly userId: number,
         public readonly email: string,
-        public readonly data: Record<string, unknown> = {}
+        public readonly data: Record<string, unknown> = {},
     ) {
         super();
         this.data = {
             email: this.email,
-            ...this.data
+            ...this.data,
         };
     }
 }
@@ -197,18 +196,18 @@ export class PasswordChangedEvent extends NotificationEvent {
  */
 export class PasswordResetRequestedEvent extends NotificationEvent {
     readonly eventName = 'password.reset.requested';
-    
+
     constructor(
         public readonly userId: number,
         public readonly email: string,
         public readonly resetToken: string,
-        public readonly data: Record<string, unknown> = {}
+        public readonly data: Record<string, unknown> = {},
     ) {
         super();
         this.data = {
             email: this.email,
             resetToken: this.resetToken,
-            ...this.data
+            ...this.data,
         };
     }
 }
@@ -218,18 +217,18 @@ export class PasswordResetRequestedEvent extends NotificationEvent {
  */
 export class EmailVerificationEvent extends NotificationEvent {
     readonly eventName = 'email.verification';
-    
+
     constructor(
         public readonly userId: number,
         public readonly email: string,
         public readonly verificationToken: string,
-        public readonly data: Record<string, unknown> = {}
+        public readonly data: Record<string, unknown> = {},
     ) {
         super();
         this.data = {
             email: this.email,
             verificationToken: this.verificationToken,
-            ...this.data
+            ...this.data,
         };
     }
 }
@@ -239,18 +238,18 @@ export class EmailVerificationEvent extends NotificationEvent {
  */
 export class MarketingCampaignEvent extends NotificationEvent {
     readonly eventName = 'marketing.campaign';
-    
+
     constructor(
         public readonly userId: number,
         public readonly campaignId: number,
         public readonly campaignName: string,
-        public readonly data: Record<string, unknown> = {}
+        public readonly data: Record<string, unknown> = {},
     ) {
         super();
         this.data = {
             campaignId: this.campaignId,
             campaignName: this.campaignName,
-            ...this.data
+            ...this.data,
         };
     }
 }

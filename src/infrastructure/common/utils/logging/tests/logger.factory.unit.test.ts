@@ -133,11 +133,17 @@ describe('Logger Factory (unit)', () => {
 
             expect(sanitized.userId).toBe(123);
             expect(sanitized.user).toBeDefined();
-            expect((sanitized.user as Record<string, unknown>).email).toBe(REDACTED);
-            expect((sanitized.user as Record<string, unknown>).phone).toBe(REDACTED);
+            expect((sanitized.user as Record<string, unknown>).email).toBe(
+                REDACTED,
+            );
+            expect((sanitized.user as Record<string, unknown>).phone).toBe(
+                REDACTED,
+            );
             expect(sanitized.order).toBeDefined();
             expect((sanitized.order as Record<string, unknown>).id).toBe(456);
-            expect((sanitized.order as Record<string, unknown>).amount).toBe(1000);
+            expect((sanitized.order as Record<string, unknown>).amount).toBe(
+                1000,
+            );
         });
 
         it('should handle arrays in objects', () => {
@@ -184,7 +190,11 @@ describe('Logger Factory (unit)', () => {
             const sanitized = sanitizeForLogging(input);
 
             // Оптимизация: группировка схожих проверок
-            [sanitized.accessToken, sanitized.refreshToken, sanitized.apiKey].forEach((value) => {
+            [
+                sanitized.accessToken,
+                sanitized.refreshToken,
+                sanitized.apiKey,
+            ].forEach((value) => {
                 expect(value).toBe(REDACTED);
             });
         });

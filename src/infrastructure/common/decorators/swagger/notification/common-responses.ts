@@ -4,7 +4,7 @@ import { HttpStatus } from '@nestjs/common';
 /**
  * Общие переиспользуемые Swagger ответы для оптимизации производительности.
  * Вынесены в отдельный файл для избежания создания одинаковых объектов.
- * 
+ *
  * Оптимизация: используется мемоизация для кэширования результатов,
  * что уменьшает количество создаваемых объектов при инициализации декораторов.
  */
@@ -13,7 +13,10 @@ import { HttpStatus } from '@nestjs/common';
 let unauthorizedResponseCache: ReturnType<typeof ApiResponse> | null = null;
 let forbiddenResponseCache: ReturnType<typeof ApiResponse> | null = null;
 const notFoundResponseCache = new Map<string, ReturnType<typeof ApiResponse>>();
-const badRequestResponseCache = new Map<string | undefined, ReturnType<typeof ApiResponse>>();
+const badRequestResponseCache = new Map<
+    string | undefined,
+    ReturnType<typeof ApiResponse>
+>();
 
 /**
  * Ответ 401 Unauthorized (мемоизирован)

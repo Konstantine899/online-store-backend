@@ -1,9 +1,4 @@
-import {
-    IsString,
-    MaxLength,
-    IsOptional,
-    IsBoolean,
-} from 'class-validator';
+import { IsString, MaxLength, IsOptional, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsSanitizedString } from '@app/infrastructure/common/validators/sanitize-string.validator';
 import { IUpdateUserAddressDto } from '@app/domain/dto';

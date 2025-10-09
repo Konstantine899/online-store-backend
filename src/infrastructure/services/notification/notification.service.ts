@@ -26,14 +26,20 @@ import { ITemplateRenderer } from '@app/domain/services';
 @Injectable()
 export class NotificationService implements INotificationService {
     private readonly logger = new Logger(NotificationService.name);
-    
+
     // Кэш для статистики
-    private readonly statisticsCache = new Map<string, NotificationStatistics>();
+    private readonly statisticsCache = new Map<
+        string,
+        NotificationStatistics
+    >();
     private readonly cacheTimeout = 5 * 60 * 1000; // 5 минут
     private readonly maxCacheSize = 100;
-    
+
     // Кэш для шаблонов
-    private readonly templatesCache = new Map<string, NotificationTemplateModel[]>();
+    private readonly templatesCache = new Map<
+        string,
+        NotificationTemplateModel[]
+    >();
     private readonly templatesCacheTimeout = 10 * 60 * 1000; // 10 минут
 
     constructor(
@@ -272,7 +278,7 @@ export class NotificationService implements INotificationService {
     ): Promise<NotificationStatistics> {
         // Создаем ключ кэша
         const cacheKey = `${userId || 'all'}_${period || 'all'}_${type || 'all'}`;
-        
+
         // Проверяем кэш
         const cached = this.statisticsCache.get(cacheKey);
         if (cached && this.isCacheValid()) {
@@ -310,7 +316,12 @@ export class NotificationService implements INotificationService {
         const stats = this.calculateStatistics(notifications);
 
         // Кэшируем результат
-        this.setCacheValue(this.statisticsCache, cacheKey, stats, this.maxCacheSize);
+        this.setCacheValue(
+            this.statisticsCache,
+            cacheKey,
+            stats,
+            this.maxCacheSize,
+        );
 
         return stats;
     }
@@ -372,14 +383,16 @@ export class NotificationService implements INotificationService {
             // Обрабатываем батчами
             for (let i = 0; i < typeNotifications.length; i += batchSize) {
                 const batch = typeNotifications.slice(i, i + batchSize);
-                
+
                 // Параллельная обработка батча
                 const batchPromises = batch.map(async (notificationDto) => {
                     try {
                         return await this.sendNotification(notificationDto);
                     } catch (error) {
                         const errorMessage =
-                            error instanceof Error ? error.message : 'Unknown error';
+                            error instanceof Error
+                                ? error.message
+                                : 'Unknown error';
                         this.logger.error(
                             `Failed to send bulk notification: ${errorMessage}`,
                         );
@@ -388,7 +401,12 @@ export class NotificationService implements INotificationService {
                 });
 
                 const batchResults = await Promise.all(batchPromises);
-                results.push(...batchResults.filter((result): result is NotificationModel => result !== null)); // Фильтруем null
+                results.push(
+                    ...batchResults.filter(
+                        (result): result is NotificationModel =>
+                            result !== null,
+                    ),
+                ); // Фильтруем null
             }
         }
 
@@ -401,7 +419,7 @@ export class NotificationService implements INotificationService {
     }): Promise<NotificationTemplateModel[]> {
         // Создаем ключ кэша
         const cacheKey = `${filters?.type || 'all'}_${filters?.isActive ?? 'all'}`;
-        
+
         // Проверяем кэш
         const cached = this.templatesCache.get(cacheKey);
         if (cached && this.isCacheValid()) {
@@ -446,10 +464,10 @@ export class NotificationService implements INotificationService {
             message: createDto.message,
             isActive: createDto.isActive ?? true,
         });
-        
+
         // Инвалидируем кэш шаблонов
         this.invalidateTemplatesCache();
-        
+
         this.logger.log(`Template created: ${template.id}`);
         return template;
     }
@@ -504,10 +522,10 @@ export class NotificationService implements INotificationService {
         if (deletedCount === 0) {
             throw new NotFoundException(`Шаблон с ID ${id} не найден.`);
         }
-        
+
         // Инвалидируем кэш шаблонов
         this.invalidateTemplatesCache();
-        
+
         this.logger.log(`Template deleted: ${id}`);
     }
 
@@ -585,41 +603,53 @@ export class NotificationService implements INotificationService {
     }
 
     // Вспомогательные методы для оптимизации
-    private calculateStatistics(notifications: Array<{ status: string; type: string }>): NotificationStatistics {
+    private calculateStatistics(
+        notifications: Array<{ status: string; type: string }>,
+    ): NotificationStatistics {
         const totalSent = notifications.length;
-        
-        // Оптимизированный подсчет с использованием reduce
-        const counts = notifications.reduce((acc, n) => {
-            // Подсчет доставленных
-            if ([NotificationStatus.DELIVERED, NotificationStatus.READ].includes(n.status as NotificationStatus)) {
-                acc.delivered++;
-            }
-            
-            // Подсчет прочитанных
-            if (n.status === NotificationStatus.READ) {
-                acc.read++;
-            }
-            
-            // Подсчет по типам
-            if (n.type === NotificationType.EMAIL) {
-                acc.byType.email++;
-            } else if (n.type === NotificationType.PUSH) {
-                acc.byType.push++;
-            }
-            
-            // Подсчет по статусам
-            acc.byStatus[n.status] = (acc.byStatus[n.status] || 0) + 1;
-            
-            return acc;
-        }, {
-            delivered: 0,
-            read: 0,
-            byType: { email: 0, push: 0 },
-            byStatus: {} as Record<string, number>
-        });
 
-        const deliveryRate = totalSent > 0 ? (counts.delivered / totalSent) * 100 : 0;
-        const readRate = counts.delivered > 0 ? (counts.read / counts.delivered) * 100 : 0;
+        // Оптимизированный подсчет с использованием reduce
+        const counts = notifications.reduce(
+            (acc, n) => {
+                // Подсчет доставленных
+                if (
+                    [
+                        NotificationStatus.DELIVERED,
+                        NotificationStatus.READ,
+                    ].includes(n.status as NotificationStatus)
+                ) {
+                    acc.delivered++;
+                }
+
+                // Подсчет прочитанных
+                if (n.status === NotificationStatus.READ) {
+                    acc.read++;
+                }
+
+                // Подсчет по типам
+                if (n.type === NotificationType.EMAIL) {
+                    acc.byType.email++;
+                } else if (n.type === NotificationType.PUSH) {
+                    acc.byType.push++;
+                }
+
+                // Подсчет по статусам
+                acc.byStatus[n.status] = (acc.byStatus[n.status] || 0) + 1;
+
+                return acc;
+            },
+            {
+                delivered: 0,
+                read: 0,
+                byType: { email: 0, push: 0 },
+                byStatus: {} as Record<string, number>,
+            },
+        );
+
+        const deliveryRate =
+            totalSent > 0 ? (counts.delivered / totalSent) * 100 : 0;
+        const readRate =
+            counts.delivered > 0 ? (counts.read / counts.delivered) * 100 : 0;
 
         return {
             totalSent,
@@ -637,16 +667,18 @@ export class NotificationService implements INotificationService {
         };
     }
 
-    private groupNotificationsByType(notifications: CreateNotificationDto[]): Map<NotificationType, CreateNotificationDto[]> {
+    private groupNotificationsByType(
+        notifications: CreateNotificationDto[],
+    ): Map<NotificationType, CreateNotificationDto[]> {
         const grouped = new Map<NotificationType, CreateNotificationDto[]>();
-        
+
         for (const notification of notifications) {
             if (!grouped.has(notification.type)) {
                 grouped.set(notification.type, []);
             }
             grouped.get(notification.type)!.push(notification);
         }
-        
+
         return grouped;
     }
 
@@ -656,7 +688,12 @@ export class NotificationService implements INotificationService {
         return true; // Упрощенная реализация
     }
 
-    private setCacheValue<T>(cache: Map<string, T>, key: string, value: T, maxSize: number): void {
+    private setCacheValue<T>(
+        cache: Map<string, T>,
+        key: string,
+        value: T,
+        maxSize: number,
+    ): void {
         // Очищаем кэш при достижении лимита
         if (cache.size >= maxSize) {
             const firstKey = cache.keys().next().value;

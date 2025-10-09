@@ -1,8 +1,7 @@
 import { INestApplication } from '@nestjs/common';
-import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
-import { TestCleanup, TestDataFactory } from '../../../../../tests/utils';
+import { TestDataFactory } from '../../../../../tests/utils';
 
 describe('User Verification Integration Tests', () => {
     let app: INestApplication;

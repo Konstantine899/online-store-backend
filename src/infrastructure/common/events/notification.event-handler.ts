@@ -18,7 +18,7 @@ import {
 
 /**
  * Обработчик событий для автоматической отправки уведомлений
- * 
+ *
  * Оптимизировано для производительности:
  * - Кэширование шаблонов уведомлений
  * - Параллельная обработка событий
@@ -29,14 +29,17 @@ import {
 @Injectable()
 export class NotificationEventHandler {
     private readonly logger = new Logger(NotificationEventHandler.name);
-    
+
     // Кэш для шаблонов уведомлений
-    private readonly templateCache = new Map<string, {
-        templateName: string;
-        title: string;
-        message: string;
-    }>();
-    
+    private readonly templateCache = new Map<
+        string,
+        {
+            templateName: string;
+            title: string;
+            message: string;
+        }
+    >();
+
     // Пул для батчевой обработки
     private readonly notificationQueue: Array<{
         userId: number;
@@ -48,13 +51,13 @@ export class NotificationEventHandler {
         priority: number;
         timestamp: number;
     }> = [];
-    
+
     // Конфигурация производительности
     private readonly BATCH_SIZE = 50;
     private readonly BATCH_TIMEOUT = 1000; // 1 секунда
     private readonly MAX_RETRIES = 3;
     private readonly RETRY_DELAY = 1000; // 1 секунда
-    
+
     // Метрики производительности
     private metrics = {
         eventsProcessed: 0,
@@ -63,7 +66,7 @@ export class NotificationEventHandler {
         averageProcessingTime: 0,
         lastProcessedAt: Date.now(),
     };
-    
+
     private batchTimer: NodeJS.Timeout | null = null;
     private isProcessing = false;
 
@@ -77,21 +80,81 @@ export class NotificationEventHandler {
      */
     private initializeTemplateCache(): void {
         const templates = [
-            { key: 'order.created', templateName: 'order_confirmation', title: 'Заказ подтвержден', message: 'Ваш заказ успешно создан' },
-            { key: 'order.processing', templateName: 'order_processing', title: 'Заказ в обработке', message: 'Ваш заказ принят в обработку' },
-            { key: 'order.shipped', templateName: 'order_shipped', title: 'Заказ отправлен', message: 'Ваш заказ отправлен' },
-            { key: 'order.delivered', templateName: 'order_delivered', title: 'Заказ доставлен', message: 'Ваш заказ успешно доставлен' },
-            { key: 'order.cancelled', templateName: 'order_cancelled', title: 'Заказ отменен', message: 'Ваш заказ был отменен' },
-            { key: 'order.status.update', templateName: 'order_status_update', title: 'Обновление статуса заказа', message: 'Статус вашего заказа обновлен' },
-            { key: 'user.registered', templateName: 'welcome_email', title: 'Добро пожаловать!', message: 'Спасибо за регистрацию в нашем магазине' },
-            { key: 'payment.completed', templateName: 'payment_confirmation', title: 'Оплата подтверждена', message: 'Ваш платеж успешно обработан' },
-            { key: 'password.changed', templateName: 'password_changed', title: 'Пароль изменен', message: 'Ваш пароль был успешно изменен' },
-            { key: 'password.reset.requested', templateName: 'password_reset', title: 'Сброс пароля', message: 'Запрос на сброс пароля' },
-            { key: 'email.verification', templateName: 'email_verification', title: 'Подтверждение email', message: 'Подтвердите ваш email адрес' },
-            { key: 'marketing.campaign', templateName: 'marketing_campaign', title: 'Специальное предложение', message: 'Специальное предложение для вас' },
+            {
+                key: 'order.created',
+                templateName: 'order_confirmation',
+                title: 'Заказ подтвержден',
+                message: 'Ваш заказ успешно создан',
+            },
+            {
+                key: 'order.processing',
+                templateName: 'order_processing',
+                title: 'Заказ в обработке',
+                message: 'Ваш заказ принят в обработку',
+            },
+            {
+                key: 'order.shipped',
+                templateName: 'order_shipped',
+                title: 'Заказ отправлен',
+                message: 'Ваш заказ отправлен',
+            },
+            {
+                key: 'order.delivered',
+                templateName: 'order_delivered',
+                title: 'Заказ доставлен',
+                message: 'Ваш заказ успешно доставлен',
+            },
+            {
+                key: 'order.cancelled',
+                templateName: 'order_cancelled',
+                title: 'Заказ отменен',
+                message: 'Ваш заказ был отменен',
+            },
+            {
+                key: 'order.status.update',
+                templateName: 'order_status_update',
+                title: 'Обновление статуса заказа',
+                message: 'Статус вашего заказа обновлен',
+            },
+            {
+                key: 'user.registered',
+                templateName: 'welcome_email',
+                title: 'Добро пожаловать!',
+                message: 'Спасибо за регистрацию в нашем магазине',
+            },
+            {
+                key: 'payment.completed',
+                templateName: 'payment_confirmation',
+                title: 'Оплата подтверждена',
+                message: 'Ваш платеж успешно обработан',
+            },
+            {
+                key: 'password.changed',
+                templateName: 'password_changed',
+                title: 'Пароль изменен',
+                message: 'Ваш пароль был успешно изменен',
+            },
+            {
+                key: 'password.reset.requested',
+                templateName: 'password_reset',
+                title: 'Сброс пароля',
+                message: 'Запрос на сброс пароля',
+            },
+            {
+                key: 'email.verification',
+                templateName: 'email_verification',
+                title: 'Подтверждение email',
+                message: 'Подтвердите ваш email адрес',
+            },
+            {
+                key: 'marketing.campaign',
+                templateName: 'marketing_campaign',
+                title: 'Специальное предложение',
+                message: 'Специальное предложение для вас',
+            },
         ];
 
-        templates.forEach(template => {
+        templates.forEach((template) => {
             this.templateCache.set(template.key, {
                 templateName: template.templateName,
                 title: template.title,
@@ -131,14 +194,14 @@ export class NotificationEventHandler {
 
             // Берем батч для обработки
             const batch = this.notificationQueue.splice(0, this.BATCH_SIZE);
-            
+
             if (batch.length === 0) {
                 return;
             }
 
             // Параллельная обработка уведомлений
-            const promises = batch.map(notification => 
-                this.sendNotificationWithRetry(notification)
+            const promises = batch.map((notification) =>
+                this.sendNotificationWithRetry(notification),
             );
 
             await Promise.allSettled(promises);
@@ -147,8 +210,9 @@ export class NotificationEventHandler {
             const processingTime = Date.now() - startTime;
             this.updateMetrics(batch.length, processingTime);
 
-            this.logger.log(`Processed batch of ${batch.length} notifications in ${processingTime}ms`);
-
+            this.logger.log(
+                `Processed batch of ${batch.length} notifications in ${processingTime}ms`,
+            );
         } catch (error) {
             this.logger.error('Error processing notification batch:', error);
             this.metrics.errors++;
@@ -160,9 +224,11 @@ export class NotificationEventHandler {
     /**
      * Отправка уведомления с повторными попытками
      */
-    private async sendNotificationWithRetry(notification: typeof this.notificationQueue[0]): Promise<void> {
+    private async sendNotificationWithRetry(
+        notification: (typeof this.notificationQueue)[0],
+    ): Promise<void> {
         let retries = 0;
-        
+
         while (retries < this.MAX_RETRIES) {
             try {
                 await this.notificationService.sendNotification({
@@ -176,19 +242,21 @@ export class NotificationEventHandler {
 
                 this.metrics.notificationsSent++;
                 return;
-
             } catch (error) {
                 retries++;
-                
+
                 if (retries >= this.MAX_RETRIES) {
-                    this.logger.error(`Failed to send notification after ${this.MAX_RETRIES} retries:`, error);
+                    this.logger.error(
+                        `Failed to send notification after ${this.MAX_RETRIES} retries:`,
+                        error,
+                    );
                     this.metrics.errors++;
                     return;
                 }
 
                 // Экспоненциальная задержка
                 const delay = this.RETRY_DELAY * Math.pow(2, retries - 1);
-                await new Promise(resolve => setTimeout(resolve, delay));
+                await new Promise((resolve) => setTimeout(resolve, delay));
             }
         }
     }
@@ -201,7 +269,7 @@ export class NotificationEventHandler {
         type: NotificationType,
         templateKey: string,
         data?: Record<string, unknown>,
-        priority: number = 1
+        priority: number = 1,
     ): void {
         const template = this.templateCache.get(templateKey);
         if (!template) {
@@ -229,14 +297,18 @@ export class NotificationEventHandler {
     /**
      * Обновление метрик производительности
      */
-    private updateMetrics(processedCount: number, processingTime: number): void {
+    private updateMetrics(
+        processedCount: number,
+        processingTime: number,
+    ): void {
         this.metrics.eventsProcessed += processedCount;
         this.metrics.lastProcessedAt = Date.now();
-        
+
         // Скользящее среднее времени обработки
         const alpha = 0.1; // Коэффициент сглаживания
-        this.metrics.averageProcessingTime = 
-            this.metrics.averageProcessingTime * (1 - alpha) + processingTime * alpha;
+        this.metrics.averageProcessingTime =
+            this.metrics.averageProcessingTime * (1 - alpha) +
+            processingTime * alpha;
     }
 
     /**
@@ -257,7 +329,7 @@ export class NotificationEventHandler {
         if (this.batchTimer) {
             clearInterval(this.batchTimer);
         }
-        
+
         // Обрабатываем оставшиеся уведомления
         if (this.notificationQueue.length > 0) {
             this.processBatch();
@@ -270,7 +342,7 @@ export class NotificationEventHandler {
     @OnEvent('order.created')
     async handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
         const startTime = Date.now();
-        
+
         try {
             // Добавляем в очередь с высоким приоритетом
             this.addToQueue(
@@ -278,7 +350,7 @@ export class NotificationEventHandler {
                 NotificationType.EMAIL,
                 'order.created',
                 event.data,
-                10 // Высокий приоритет для заказов
+                10, // Высокий приоритет для заказов
             );
 
             const processingTime = Date.now() - startTime;
@@ -298,9 +370,11 @@ export class NotificationEventHandler {
      * Обработчик события изменения статуса заказа
      */
     @OnEvent('order.status.changed')
-    async handleOrderStatusChanged(event: OrderStatusChangedEvent): Promise<void> {
+    async handleOrderStatusChanged(
+        event: OrderStatusChangedEvent,
+    ): Promise<void> {
         const startTime = Date.now();
-        
+
         try {
             let templateKey: string;
             let priority = 8; // Высокий приоритет для статусов заказов
@@ -329,7 +403,7 @@ export class NotificationEventHandler {
                 NotificationType.EMAIL,
                 templateKey,
                 event.data,
-                priority
+                priority,
             );
 
             const processingTime = Date.now() - startTime;
@@ -351,14 +425,14 @@ export class NotificationEventHandler {
     @OnEvent('user.registered')
     async handleUserRegistered(event: UserRegisteredEvent): Promise<void> {
         const startTime = Date.now();
-        
+
         try {
             this.addToQueue(
                 event.userId,
                 NotificationType.EMAIL,
                 'user.registered',
                 event.data,
-                7 // Средний приоритет для регистрации
+                7, // Средний приоритет для регистрации
             );
 
             const processingTime = Date.now() - startTime;
@@ -380,14 +454,14 @@ export class NotificationEventHandler {
     @OnEvent('payment.completed')
     async handlePaymentCompleted(event: PaymentCompletedEvent): Promise<void> {
         const startTime = Date.now();
-        
+
         try {
             this.addToQueue(
                 event.userId,
                 NotificationType.EMAIL,
                 'payment.completed',
                 event.data,
-                9 // Максимальный приоритет для оплаты
+                9, // Максимальный приоритет для оплаты
             );
 
             const processingTime = Date.now() - startTime;
@@ -409,14 +483,14 @@ export class NotificationEventHandler {
     @OnEvent('order.shipped')
     async handleOrderShipped(event: OrderShippedEvent): Promise<void> {
         const startTime = Date.now();
-        
+
         try {
             this.addToQueue(
                 event.userId,
                 NotificationType.EMAIL,
                 'order.shipped',
                 event.data,
-                8 // Высокий приоритет для отправки
+                8, // Высокий приоритет для отправки
             );
 
             const processingTime = Date.now() - startTime;
@@ -438,14 +512,14 @@ export class NotificationEventHandler {
     @OnEvent('order.delivered')
     async handleOrderDelivered(event: OrderDeliveredEvent): Promise<void> {
         const startTime = Date.now();
-        
+
         try {
             this.addToQueue(
                 event.userId,
                 NotificationType.EMAIL,
                 'order.delivered',
                 event.data,
-                9 // Максимальный приоритет для доставки
+                9, // Максимальный приоритет для доставки
             );
 
             const processingTime = Date.now() - startTime;
@@ -467,14 +541,14 @@ export class NotificationEventHandler {
     @OnEvent('order.cancelled')
     async handleOrderCancelled(event: OrderCancelledEvent): Promise<void> {
         const startTime = Date.now();
-        
+
         try {
             this.addToQueue(
                 event.userId,
                 NotificationType.EMAIL,
                 'order.cancelled',
                 event.data,
-                9 // Максимальный приоритет для отмены
+                9, // Максимальный приоритет для отмены
             );
 
             const processingTime = Date.now() - startTime;
@@ -496,14 +570,14 @@ export class NotificationEventHandler {
     @OnEvent('password.changed')
     async handlePasswordChanged(event: PasswordChangedEvent): Promise<void> {
         const startTime = Date.now();
-        
+
         try {
             this.addToQueue(
                 event.userId,
                 NotificationType.EMAIL,
                 'password.changed',
                 event.data,
-                6 // Средний приоритет для смены пароля
+                6, // Средний приоритет для смены пароля
             );
 
             const processingTime = Date.now() - startTime;
@@ -523,16 +597,18 @@ export class NotificationEventHandler {
      * Обработчик события запроса сброса пароля
      */
     @OnEvent('password.reset.requested')
-    async handlePasswordResetRequested(event: PasswordResetRequestedEvent): Promise<void> {
+    async handlePasswordResetRequested(
+        event: PasswordResetRequestedEvent,
+    ): Promise<void> {
         const startTime = Date.now();
-        
+
         try {
             this.addToQueue(
                 event.userId,
                 NotificationType.EMAIL,
                 'password.reset.requested',
                 event.data,
-                7 // Средний приоритет для сброса пароля
+                7, // Средний приоритет для сброса пароля
             );
 
             const processingTime = Date.now() - startTime;
@@ -552,16 +628,18 @@ export class NotificationEventHandler {
      * Обработчик события верификации email
      */
     @OnEvent('email.verification')
-    async handleEmailVerification(event: EmailVerificationEvent): Promise<void> {
+    async handleEmailVerification(
+        event: EmailVerificationEvent,
+    ): Promise<void> {
         const startTime = Date.now();
-        
+
         try {
             this.addToQueue(
                 event.userId,
                 NotificationType.EMAIL,
                 'email.verification',
                 event.data,
-                5 // Низкий приоритет для верификации
+                5, // Низкий приоритет для верификации
             );
 
             const processingTime = Date.now() - startTime;
@@ -581,17 +659,23 @@ export class NotificationEventHandler {
      * Обработчик события маркетинговой рассылки
      */
     @OnEvent('marketing.campaign')
-    async handleMarketingCampaign(event: MarketingCampaignEvent): Promise<void> {
+    async handleMarketingCampaign(
+        event: MarketingCampaignEvent,
+    ): Promise<void> {
         const startTime = Date.now();
-        
+
         try {
             // Маркетинговые уведомления имеют низкий приоритет
             this.addToQueue(
                 event.userId,
                 NotificationType.EMAIL,
                 'marketing.campaign',
-                { ...event.data, campaignName: event.campaignName, campaignId: event.campaignId },
-                1 // Минимальный приоритет для маркетинга
+                {
+                    ...event.data,
+                    campaignName: event.campaignName,
+                    campaignId: event.campaignId,
+                },
+                1, // Минимальный приоритет для маркетинга
             );
 
             const processingTime = Date.now() - startTime;

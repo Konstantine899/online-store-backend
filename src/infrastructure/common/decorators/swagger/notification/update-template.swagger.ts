@@ -1,6 +1,11 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { UnauthorizedResponse, ForbiddenResponse, NotFoundResponse, createBadRequestSchema } from './common-responses';
+import {
+    UnauthorizedResponse,
+    ForbiddenResponse,
+    NotFoundResponse,
+    createBadRequestSchema,
+} from './common-responses';
 import { createIdParam } from './common-schemas';
 import { TEMPLATE_SCHEMA } from './create-template.swagger';
 

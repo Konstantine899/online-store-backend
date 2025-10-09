@@ -1,7 +1,20 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { UnauthorizedResponse, ForbiddenResponse, BadRequestResponse } from './common-responses';
-import { PAGINATION_QUERIES, createPaginatedResponseSchema, createMetaSchema } from './common-schemas';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiQuery,
+    ApiResponse,
+} from '@nestjs/swagger';
+import {
+    UnauthorizedResponse,
+    ForbiddenResponse,
+    BadRequestResponse,
+} from './common-responses';
+import {
+    PAGINATION_QUERIES,
+    createPaginatedResponseSchema,
+    createMetaSchema,
+} from './common-schemas';
 
 // Схема элемента шаблона для списка
 const TEMPLATE_LIST_ITEM_SCHEMA = {

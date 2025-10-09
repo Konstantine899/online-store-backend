@@ -11,7 +11,6 @@ import { UserModel } from './user.model';
 import { NotificationTemplateModel } from './notification-template.model';
 import { NotificationStatus, NotificationType } from './notification.types';
 
-
 interface INotificationModel {
     id: number;
     userId: number;

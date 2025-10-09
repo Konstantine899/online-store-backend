@@ -76,29 +76,35 @@ describe('NotificationService', () => {
     let module: TestingModule;
 
     // Кэш для переиспользования моков
-    const createMockNotification = (overrides: Partial<NotificationModel> = {}): NotificationModel => ({
-        id: 1,
-        userId: 1,
-        type: NotificationType.EMAIL,
-        templateName: 'test_template',
-        title: 'Test Title',
-        message: 'Test Message',
-        status: NotificationStatus.PENDING,
-        isRead: false,
-        isArchived: false,
-        createdAt: new Date(),
-        ...overrides,
-    } as NotificationModel);
+    const createMockNotification = (
+        overrides: Partial<NotificationModel> = {},
+    ): NotificationModel =>
+        ({
+            id: 1,
+            userId: 1,
+            type: NotificationType.EMAIL,
+            templateName: 'test_template',
+            title: 'Test Title',
+            message: 'Test Message',
+            status: NotificationStatus.PENDING,
+            isRead: false,
+            isArchived: false,
+            createdAt: new Date(),
+            ...overrides,
+        }) as NotificationModel;
 
-    const createMockTemplate = (overrides: Partial<NotificationTemplateModel> = {}): NotificationTemplateModel => ({
-        id: 1,
-        name: 'test_template',
-        type: NotificationType.EMAIL,
-        title: 'Test Template',
-        message: 'Test message with {{variable}}',
-        isActive: true,
-        ...overrides,
-    } as NotificationTemplateModel);
+    const createMockTemplate = (
+        overrides: Partial<NotificationTemplateModel> = {},
+    ): NotificationTemplateModel =>
+        ({
+            id: 1,
+            name: 'test_template',
+            type: NotificationType.EMAIL,
+            title: 'Test Template',
+            message: 'Test message with {{variable}}',
+            isActive: true,
+            ...overrides,
+        }) as NotificationTemplateModel;
 
     const createMockCreateDto = (overrides: Record<string, unknown> = {}) => ({
         userId: 1,
@@ -147,7 +153,9 @@ describe('NotificationService', () => {
             const createDto = createMockCreateDto();
             const mockNotification = createMockNotification();
 
-            (NotificationModel.create as jest.Mock).mockResolvedValue(mockNotification);
+            (NotificationModel.create as jest.Mock).mockResolvedValue(
+                mockNotification,
+            );
 
             const result = await service.createNotification(createDto);
 
@@ -183,7 +191,9 @@ describe('NotificationService', () => {
         it('should return notification for user', async () => {
             const mockNotification = createMockNotification();
 
-            (NotificationModel.findOne as jest.Mock).mockResolvedValue(mockNotification);
+            (NotificationModel.findOne as jest.Mock).mockResolvedValue(
+                mockNotification,
+            );
 
             const result = await service.getNotificationById(1, 1);
 
@@ -198,7 +208,9 @@ describe('NotificationService', () => {
         it('should return notification without user filter for admin', async () => {
             const mockNotification = createMockNotification();
 
-            (NotificationModel.findOne as jest.Mock).mockResolvedValue(mockNotification);
+            (NotificationModel.findOne as jest.Mock).mockResolvedValue(
+                mockNotification,
+            );
 
             const result = await service.getNotificationById(1);
 
@@ -401,15 +413,33 @@ describe('NotificationService', () => {
     describe('getStatistics', () => {
         it('should return notification statistics', async () => {
             const mockNotifications = [
-                { status: NotificationStatus.SENT, type: NotificationType.EMAIL },
-                { status: NotificationStatus.DELIVERED, type: NotificationType.EMAIL },
-                { status: NotificationStatus.READ, type: NotificationType.PUSH },
-                { status: NotificationStatus.FAILED, type: NotificationType.EMAIL },
+                {
+                    status: NotificationStatus.SENT,
+                    type: NotificationType.EMAIL,
+                },
+                {
+                    status: NotificationStatus.DELIVERED,
+                    type: NotificationType.EMAIL,
+                },
+                {
+                    status: NotificationStatus.READ,
+                    type: NotificationType.PUSH,
+                },
+                {
+                    status: NotificationStatus.FAILED,
+                    type: NotificationType.EMAIL,
+                },
             ] as Array<{ status: string; type: string }>;
 
-            (NotificationModel.findAll as jest.Mock).mockResolvedValue(mockNotifications);
+            (NotificationModel.findAll as jest.Mock).mockResolvedValue(
+                mockNotifications,
+            );
 
-            const result = await service.getStatistics(1, '7d', NotificationType.EMAIL);
+            const result = await service.getStatistics(
+                1,
+                '7d',
+                NotificationType.EMAIL,
+            );
 
             expect(NotificationModel.findAll).toHaveBeenCalledWith({
                 where: {
@@ -430,16 +460,29 @@ describe('NotificationService', () => {
 
         it('should use cache for repeated statistics calls', async () => {
             const mockNotifications = [
-                { status: NotificationStatus.SENT, type: NotificationType.EMAIL },
+                {
+                    status: NotificationStatus.SENT,
+                    type: NotificationType.EMAIL,
+                },
             ] as Array<{ status: string; type: string }>;
 
-            (NotificationModel.findAll as jest.Mock).mockResolvedValue(mockNotifications);
+            (NotificationModel.findAll as jest.Mock).mockResolvedValue(
+                mockNotifications,
+            );
 
             // Первый вызов
-            const result1 = await service.getStatistics(1, '7d', NotificationType.EMAIL);
-            
+            const result1 = await service.getStatistics(
+                1,
+                '7d',
+                NotificationType.EMAIL,
+            );
+
             // Второй вызов (должен использовать кэш)
-            const result2 = await service.getStatistics(1, '7d', NotificationType.EMAIL);
+            const result2 = await service.getStatistics(
+                1,
+                '7d',
+                NotificationType.EMAIL,
+            );
 
             // findAll должен быть вызван только один раз благодаря кэшу
             expect(NotificationModel.findAll).toHaveBeenCalledTimes(1);
@@ -530,10 +573,16 @@ describe('NotificationService', () => {
         it('should return templates with filters', async () => {
             const mockTemplates = [
                 createMockTemplate({ id: 1, name: 'template1' }),
-                createMockTemplate({ id: 2, name: 'template2', type: NotificationType.PUSH }),
+                createMockTemplate({
+                    id: 2,
+                    name: 'template2',
+                    type: NotificationType.PUSH,
+                }),
             ];
 
-            (NotificationTemplateModel.findAll as jest.Mock).mockResolvedValue(mockTemplates);
+            (NotificationTemplateModel.findAll as jest.Mock).mockResolvedValue(
+                mockTemplates,
+            );
 
             const result = await service.getTemplates({
                 type: NotificationType.EMAIL,
@@ -554,13 +603,19 @@ describe('NotificationService', () => {
         it('should use cache for repeated template calls', async () => {
             const mockTemplates = [createMockTemplate()];
 
-            (NotificationTemplateModel.findAll as jest.Mock).mockResolvedValue(mockTemplates);
+            (NotificationTemplateModel.findAll as jest.Mock).mockResolvedValue(
+                mockTemplates,
+            );
 
             // Первый вызов
-            const result1 = await service.getTemplates({ type: NotificationType.EMAIL });
-            
+            const result1 = await service.getTemplates({
+                type: NotificationType.EMAIL,
+            });
+
             // Второй вызов (должен использовать кэш)
-            const result2 = await service.getTemplates({ type: NotificationType.EMAIL });
+            const result2 = await service.getTemplates({
+                type: NotificationType.EMAIL,
+            });
 
             // findAll должен быть вызван только один раз благодаря кэшу
             expect(NotificationTemplateModel.findAll).toHaveBeenCalledTimes(1);
@@ -680,13 +735,30 @@ describe('NotificationService', () => {
     describe('sendBulkNotifications', () => {
         it('should send multiple notifications successfully', async () => {
             const notifications = [
-                createMockCreateDto({ userId: 1, title: 'Test 1', message: 'Message 1' }),
-                createMockCreateDto({ userId: 2, type: NotificationType.PUSH, title: 'Test 2', message: 'Message 2' }),
+                createMockCreateDto({
+                    userId: 1,
+                    title: 'Test 1',
+                    message: 'Message 1',
+                }),
+                createMockCreateDto({
+                    userId: 2,
+                    type: NotificationType.PUSH,
+                    title: 'Test 2',
+                    message: 'Message 2',
+                }),
             ];
 
             const mockNotifications = [
-                createMockNotification({ id: 1, ...notifications[0], status: NotificationStatus.SENT }),
-                createMockNotification({ id: 2, ...notifications[1], status: NotificationStatus.SENT }),
+                createMockNotification({
+                    id: 1,
+                    ...notifications[0],
+                    status: NotificationStatus.SENT,
+                }),
+                createMockNotification({
+                    id: 2,
+                    ...notifications[1],
+                    status: NotificationStatus.SENT,
+                }),
             ];
 
             (NotificationModel.create as jest.Mock)
@@ -703,14 +775,22 @@ describe('NotificationService', () => {
 
         it('should handle partial failures in bulk notifications', async () => {
             const notifications = [
-                createMockCreateDto({ userId: 1, title: 'Test 1', message: 'Message 1' }),
-                createMockCreateDto({ userId: 2, title: 'Test 2', message: 'Message 2' }),
+                createMockCreateDto({
+                    userId: 1,
+                    title: 'Test 1',
+                    message: 'Message 1',
+                }),
+                createMockCreateDto({
+                    userId: 2,
+                    title: 'Test 2',
+                    message: 'Message 2',
+                }),
             ];
 
-            const mockNotification = createMockNotification({ 
-                id: 1, 
-                ...notifications[0], 
-                status: NotificationStatus.SENT 
+            const mockNotification = createMockNotification({
+                id: 1,
+                ...notifications[0],
+                status: NotificationStatus.SENT,
             });
 
             (NotificationModel.create as jest.Mock)
@@ -730,7 +810,9 @@ describe('NotificationService', () => {
             const createDto = createMockTemplate();
             const mockTemplate = createMockTemplate();
 
-            (NotificationTemplateModel.create as jest.Mock).mockResolvedValue(mockTemplate);
+            (NotificationTemplateModel.create as jest.Mock).mockResolvedValue(
+                mockTemplate,
+            );
 
             const result = await service.createTemplate(createDto);
 
@@ -741,7 +823,7 @@ describe('NotificationService', () => {
                     title: createDto.title,
                     message: createDto.message,
                     isActive: true,
-                })
+                }),
             );
             expect(result).toEqual(mockTemplate);
         });
@@ -1013,23 +1095,31 @@ describe('NotificationService', () => {
 
     describe('Performance Tests', () => {
         it('should handle large bulk notifications efficiently', async () => {
-            const largeNotificationList = Array.from({ length: 100 }, (_, i) => 
-                createMockCreateDto({ 
-                    userId: i + 1, 
-                    title: `Test ${i + 1}`, 
-                    message: `Message ${i + 1}` 
-                })
+            const largeNotificationList = Array.from({ length: 100 }, (_, i) =>
+                createMockCreateDto({
+                    userId: i + 1,
+                    title: `Test ${i + 1}`,
+                    message: `Message ${i + 1}`,
+                }),
             );
 
             // Создаем моки для тестирования производительности
 
-            (NotificationModel.create as jest.Mock).mockImplementation((dto) => 
-                Promise.resolve(createMockNotification({ id: Math.random(), ...dto, status: NotificationStatus.SENT }))
+            (NotificationModel.create as jest.Mock).mockImplementation((dto) =>
+                Promise.resolve(
+                    createMockNotification({
+                        id: Math.random(),
+                        ...dto,
+                        status: NotificationStatus.SENT,
+                    }),
+                ),
             );
             (NotificationModel.update as jest.Mock).mockResolvedValue([1]);
 
             const startTime = Date.now();
-            const results = await service.sendBulkNotifications(largeNotificationList);
+            const results = await service.sendBulkNotifications(
+                largeNotificationList,
+            );
             const endTime = Date.now();
 
             expect(results).toHaveLength(100);
@@ -1038,19 +1128,27 @@ describe('NotificationService', () => {
 
         it('should cache statistics efficiently', async () => {
             const mockNotifications = [
-                { status: NotificationStatus.SENT, type: NotificationType.EMAIL },
-                { status: NotificationStatus.DELIVERED, type: NotificationType.EMAIL },
+                {
+                    status: NotificationStatus.SENT,
+                    type: NotificationType.EMAIL,
+                },
+                {
+                    status: NotificationStatus.DELIVERED,
+                    type: NotificationType.EMAIL,
+                },
             ] as Array<{ status: string; type: string }>;
 
-            (NotificationModel.findAll as jest.Mock).mockResolvedValue(mockNotifications);
+            (NotificationModel.findAll as jest.Mock).mockResolvedValue(
+                mockNotifications,
+            );
 
             const startTime = Date.now();
-            
+
             // Множественные вызовы с одинаковыми параметрами
-            const promises = Array.from({ length: 10 }, () => 
-                service.getStatistics(1, '7d', NotificationType.EMAIL)
+            const promises = Array.from({ length: 10 }, () =>
+                service.getStatistics(1, '7d', NotificationType.EMAIL),
             );
-            
+
             const results = await Promise.all(promises);
             const endTime = Date.now();
 
@@ -1063,15 +1161,17 @@ describe('NotificationService', () => {
         it('should handle template caching efficiently', async () => {
             const mockTemplates = [createMockTemplate()];
 
-            (NotificationTemplateModel.findAll as jest.Mock).mockResolvedValue(mockTemplates);
+            (NotificationTemplateModel.findAll as jest.Mock).mockResolvedValue(
+                mockTemplates,
+            );
 
             const startTime = Date.now();
-            
+
             // Множественные вызовы с одинаковыми параметрами
-            const promises = Array.from({ length: 20 }, () => 
-                service.getTemplates({ type: NotificationType.EMAIL })
+            const promises = Array.from({ length: 20 }, () =>
+                service.getTemplates({ type: NotificationType.EMAIL }),
             );
-            
+
             const results = await Promise.all(promises);
             const endTime = Date.now();
 
