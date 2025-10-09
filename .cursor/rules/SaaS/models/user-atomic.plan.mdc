@@ -6,354 +6,357 @@ epic_ref: SAAS-016
 version: 1.0
 
 execution_policy:
-  must_follow: true
-  allow_code_changes_only_after: "Одобряю <TASK_ID>"
-  constraints:
-    - no public API changes without explicit approval
-    - operate within files_scope
-    - pass lints/tests and Swagger before DoD complete
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - no public API changes without explicit approval - operate within files_scope - pass lints/tests and Swagger before DoD complete
 
 context:
-  goal: Atomic user system development with incremental functionality
+goal: Atomic user system development with incremental functionality
 
 # DEFAULT PRE-COMMIT WORKFLOW для всех user atomic задач
+
 default_pre_commit_workflow: "МИНИМАЛЬНЫЙ (atomic task: single feature)"
 default_pre_commit_steps:
-  - "«Автофикс» → linter/prettier"
-  - "«Коммит» → feat(user): <TASK_ID> complete"
+
+- "«Автофикс» → linter/prettier"
+- "«Коммит» → feat(user): <TASK_ID> complete"
 
 tasks:
-  # Фаза 1: Базовый профиль пользователя
-  - id: SAAS-016-00
-    title: Обновить систему ролей в атомарном пользовательском модуле
-    branch: "feature/user/SAAS-016/user-atomic-roles-update"
-    files_scope:
-      - ".cursor/rules/models/user-atomic.mdc"
-      - "src/infrastructure/controllers/user/**"
-    steps:
-      - добавить секцию контроллера в user-atomic.mdc
-      - обновить UserController с импортами RoleGuard и Roles
-      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
-      - обновить все атомарные методы с правильными ролями:
-        - управление профилем: CUSTOMER_ROLES
-        - управление адресами: CUSTOMER_ROLES
-        - управление флагами: MANAGER_ROLES
-        - управление предпочтениями: CUSTOMER_ROLES
-    dod:
-      - все атомарные методы используют полную систему ролей
-      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
-      - тенантская изоляция ролей обеспечена
-    gate:
-      - require: "Одобряю SAAS-016-00"
 
-  - id: SAAS-016-01
-    title: Добавить поля имени и фамилии
-    branch: "feature/user/SAAS-016/add-name-fields"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/user.ts"
-      - "src/infrastructure/dto/user/**"
-      - "src/infrastructure/controllers/user/**"
-    steps:
-      - создать миграцию для добавления колонок first_name, last_name
-      - обновить UserModel с новыми полями и валидацией
-      - создать UpdateUserProfileDto с валидацией имени
-      - добавить endpoint PATCH /users/profile для обновления профиля
-      - написать unit и integration тесты
-    dod:
-      - миграция создана и протестирована
-      - модель обновлена с валидацией
-      - API endpoint работает с валидацией
-      - тесты покрывают новую функциональность
-      - Swagger документация обновлена
-    gate:
-      - require: "Одобряю SAAS-016-01"
+# Фаза 1: Базовый профиль пользователя
 
-  - id: SAAS-016-02
-    title: Добавить поле телефона
-    branch: "feature/user/SAAS-016/add-phone-field"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/user.ts"
-      - "src/infrastructure/dto/user/**"
-      - "src/infrastructure/controllers/user/**"
-    steps:
-      - создать миграцию для добавления колонки phone
-      - обновить UserModel с валидацией телефона
-      - обновить DTO с валидацией телефона (@IsValidPhone)
-      - обновить endpoint для работы с телефоном
-      - написать тесты валидации телефона
-    dod:
-      - миграция создана и протестирована
-      - валидация российских номеров работает
-      - API endpoint обновлен
-      - тесты валидации проходят
-      - Swagger документация обновлена
-    gate:
-      - require: "Одобряю SAAS-016-02"
+- id: SAAS-016-00
+  title: Обновить систему ролей в атомарном пользовательском модуле
+  branch: "feature/user/SAAS-016/user-atomic-roles-update"
+  files_scope:
+    - ".cursor/rules/models/user-atomic.mdc"
+    - "src/infrastructure/controllers/user/\*\*"
+      steps:
+    - добавить секцию контроллера в user-atomic.mdc
+    - обновить UserController с импортами RoleGuard и Roles
+    - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+    - обновить все атомарные методы с правильными ролями: - управление профилем: CUSTOMER_ROLES - управление адресами: CUSTOMER_ROLES - управление флагами: MANAGER_ROLES - управление предпочтениями: CUSTOMER_ROLES
+      dod:
+    - все атомарные методы используют полную систему ролей
+    - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+    - тенантская изоляция ролей обеспечена
+      gate:
+    - require: "Одобряю SAAS-016-00"
 
-  - id: SAAS-016-03
-    title: Добавить поле даты рождения
-    branch: "feature/user/SAAS-016/add-birthday-field"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/user.ts"
-      - "src/infrastructure/dto/user/**"
-      - "src/infrastructure/controllers/user/**"
-    steps:
-      - создать миграцию для добавления колонки birthday
-      - обновить UserModel с валидацией даты рождения
-      - обновить DTO с валидацией даты
-      - обновить endpoint для работы с датой рождения
-      - написать тесты валидации даты
-    dod:
-      - миграция создана и протестирована
-      - валидация возраста работает
-      - API endpoint обновлен
-      - тесты валидации проходят
-      - Swagger документация обновлена
-    gate:
-      - require: "Одобряю SAAS-016-03"
+- id: SAAS-016-01
+  title: Добавить поля имени и фамилии
+  branch: "feature/user/SAAS-016/add-name-fields"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/user.ts"
+    - "src/infrastructure/dto/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+      steps:
+    - создать миграцию для добавления колонок first_name, last_name
+    - обновить UserModel с новыми полями и валидацией
+    - создать UpdateUserProfileDto с валидацией имени
+    - добавить endpoint PATCH /users/profile для обновления профиля
+    - написать unit и integration тесты
+      dod:
+    - миграция создана и протестирована
+    - модель обновлена с валидацией
+    - API endpoint работает с валидацией
+    - тесты покрывают новую функциональность
+    - Swagger документация обновлена
+      gate:
+    - require: "Одобряю SAAS-016-01"
 
-  # Фаза 2: Адреса пользователей
-  - id: SAAS-016-04
-    title: Создать систему адресов пользователей
-    branch: "feature/user/SAAS-016/add-user-addresses"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/user-address.ts"
-      - "src/infrastructure/dto/user/**"
-      - "src/infrastructure/controllers/user/**"
-    steps:
-      - создать миграцию для таблицы user_addresses
-      - создать UserAddressModel с валидацией
-      - создать DTO для работы с адресами
-      - добавить CRUD endpoints для адресов
-      - написать unit и integration тесты
-    dod:
-      - миграция создана и протестирована
-      - модель адресов создана с валидацией
-      - CRUD endpoints работают
-      - тесты покрывают функциональность
-      - Swagger документация обновлена
-    gate:
-      - require: "Одобряю SAAS-016-04"
+- id: SAAS-016-02
+  title: Добавить поле телефона
+  branch: "feature/user/SAAS-016/add-phone-field"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/user.ts"
+    - "src/infrastructure/dto/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+      steps:
+    - создать миграцию для добавления колонки phone
+    - обновить UserModel с валидацией телефона
+    - обновить DTO с валидацией телефона (@IsValidPhone)
+    - обновить endpoint для работы с телефоном
+    - написать тесты валидации телефона
+      dod:
+    - миграция создана и протестирована
+    - валидация российских номеров работает
+    - API endpoint обновлен
+    - тесты валидации проходят
+    - Swagger документация обновлена
+      gate:
+    - require: "Одобряю SAAS-016-02"
 
-  - id: SAAS-016-05
-    title: Добавить поддержку множественных адресов
-    branch: "feature/user/SAAS-016/add-multiple-addresses"
-    files_scope:
-      - "src/infrastructure/services/user/**"
-      - "src/infrastructure/controllers/user/**"
-    steps:
-      - добавить методы для работы с множественными адресами
-      - реализовать логику default адреса
-      - добавить валидацию уникальности default адреса
-      - обновить endpoints для множественных адресов
-      - написать тесты для множественных адресов
-    dod:
-      - методы множественных адресов работают
-      - логика default адреса функциональна
-      - валидация уникальности работает
-      - endpoints обновлены
-      - тесты проходят
-    gate:
-      - require: "Одобряю SAAS-016-05"
+- id: SAAS-016-03
+  title: Добавить поле даты рождения
+  branch: "feature/user/SAAS-016/add-birthday-field"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/user.ts"
+    - "src/infrastructure/dto/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+      steps:
+    - создать миграцию для добавления колонки birthday
+    - обновить UserModel с валидацией даты рождения
+    - обновить DTO с валидацией даты
+    - обновить endpoint для работы с датой рождения
+    - написать тесты валидации даты
+      dod:
+    - миграция создана и протестирована
+    - валидация возраста работает
+    - API endpoint обновлен
+    - тесты валидации проходят
+    - Swagger документация обновлена
+      gate:
+    - require: "Одобряю SAAS-016-03"
 
-  # Фаза 3: Предпочтения пользователей
-  - id: SAAS-016-06
-    title: Добавить предпочтения пользователей
-    branch: "feature/user/SAAS-016/add-user-preferences"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/user.ts"
-      - "src/infrastructure/dto/user/**"
-      - "src/infrastructure/controllers/user/**"
-    steps:
-      - создать миграцию для добавления полей предпочтений
-      - обновить UserModel с полями предпочтений
-      - создать DTO для управления предпочтениями
-      - добавить endpoints для предпочтений
-      - написать тесты для предпочтений
-    dod:
-      - миграция создана и протестирована
-      - поля предпочтений добавлены
-      - DTO созданы с валидацией
-      - endpoints работают
-      - тесты проходят
-    gate:
-      - require: "Одобряю SAAS-016-06"
+# Фаза 2: Адреса пользователей
 
-  - id: SAAS-016-07
-    title: Добавить настройки уведомлений
-    branch: "feature/user/SAAS-016/add-notification-settings"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/user.ts"
-      - "src/infrastructure/dto/user/**"
-      - "src/infrastructure/controllers/user/**"
-    steps:
-      - создать миграцию для полей уведомлений
-      - обновить UserModel с настройками уведомлений
-      - создать DTO для управления уведомлениями
-      - добавить endpoints для настроек уведомлений
-      - написать тесты для настроек уведомлений
-    dod:
-      - миграция создана и протестирована
-      - настройки уведомлений добавлены
-      - DTO созданы с валидацией
-      - endpoints работают
-      - тесты проходят
-    gate:
-      - require: "Одобряю SAAS-016-07"
+- id: SAAS-016-04
+  title: Создать систему адресов пользователей
+  branch: "feature/user/SAAS-016/add-user-addresses"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/user-address.ts"
+    - "src/infrastructure/dto/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+      steps:
+    - создать миграцию для таблицы user_addresses
+    - создать UserAddressModel с валидацией
+    - создать DTO для работы с адресами
+    - добавить CRUD endpoints для адресов
+    - написать unit и integration тесты
+      dod:
+    - миграция создана и протестирована
+    - модель адресов создана с валидацией
+    - CRUD endpoints работают
+    - тесты покрывают функциональность
+    - Swagger документация обновлена
+      gate:
+    - require: "Одобряю SAAS-016-04"
 
-  # Фаза 4: Верификация пользователей
-  - id: SAAS-016-08
-    title: Добавить верификацию email
-    branch: "feature/user/SAAS-016/add-email-verification"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/user-verification-code.ts"
-      - "src/infrastructure/services/user/**"
-      - "src/infrastructure/controllers/user/**"
-    steps:
-      - создать миграцию для таблицы user_verification_codes
-      - создать UserVerificationCodeModel
-      - добавить методы для верификации email
-      - добавить endpoints для верификации
-      - написать тесты для верификации
-    dod:
-      - миграция создана и протестирована
-      - модель верификации создана
-      - методы верификации работают
-      - endpoints функциональны
-      - тесты проходят
-    gate:
-      - require: "Одобряю SAAS-016-08"
+- id: SAAS-016-05
+  title: Добавить поддержку множественных адресов
+  branch: "feature/user/SAAS-016/add-multiple-addresses"
+  files_scope:
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+      steps:
+    - добавить методы для работы с множественными адресами
+    - реализовать логику default адреса
+    - добавить валидацию уникальности default адреса
+    - обновить endpoints для множественных адресов
+    - написать тесты для множественных адресов
+      dod:
+    - методы множественных адресов работают
+    - логика default адреса функциональна
+    - валидация уникальности работает
+    - endpoints обновлены
+    - тесты проходят
+      gate:
+    - require: "Одобряю SAAS-016-05"
 
-  - id: SAAS-016-09
-    title: Добавить верификацию телефона
-    branch: "feature/user/SAAS-016/add-phone-verification"
-    files_scope:
-      - "src/infrastructure/services/user/**"
-      - "src/infrastructure/controllers/user/**"
-      - "src/infrastructure/services/notification/**"
-    steps:
-      - добавить методы для верификации телефона
-      - интегрировать с SMS сервисом
-      - добавить endpoints для верификации телефона
-      - написать тесты для верификации телефона
-    dod:
-      - методы верификации телефона работают
-      - интеграция с SMS функциональна
-      - endpoints обновлены
-      - тесты проходят
-    gate:
-      - require: "Одобряю SAAS-016-09"
+# Фаза 3: Предпочтения пользователей
 
-  # Фаза 5: История активности
-  - id: SAAS-016-10
-    title: Добавить историю входа пользователей
-    branch: "feature/user/SAAS-016/add-login-history"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/login-history.ts"
-      - "src/infrastructure/services/user/**"
-      - "src/infrastructure/controllers/user/**"
-    steps:
-      - создать миграцию для таблицы login_history
-      - создать LoginHistoryModel
-      - добавить методы для отслеживания входов
-      - добавить endpoints для истории входов
-      - написать тесты для истории входов
-    dod:
-      - миграция создана и протестирована
-      - модель истории создана
-      - отслеживание входов работает
-      - endpoints функциональны
-      - тесты проходят
-    gate:
-      - require: "Одобряю SAAS-016-10"
+- id: SAAS-016-06
+  title: Добавить предпочтения пользователей
+  branch: "feature/user/SAAS-016/add-user-preferences"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/user.ts"
+    - "src/infrastructure/dto/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+      steps:
+    - создать миграцию для добавления полей предпочтений
+    - обновить UserModel с полями предпочтений
+    - создать DTO для управления предпочтениями
+    - добавить endpoints для предпочтений
+    - написать тесты для предпочтений
+      dod:
+    - миграция создана и протестирована
+    - поля предпочтений добавлены
+    - DTO созданы с валидацией
+    - endpoints работают
+    - тесты проходят
+      gate:
+    - require: "Одобряю SAAS-016-06"
 
-  - id: SAAS-016-11
-    title: Добавить аналитику активности пользователей
-    branch: "feature/user/SAAS-016/add-user-analytics"
-    files_scope:
-      - "src/infrastructure/services/user/**"
-      - "src/infrastructure/controllers/user/**"
-    steps:
-      - добавить методы для аналитики активности
-      - создать endpoints для аналитики
-      - добавить метрики и статистику
-      - написать тесты для аналитики
-    dod:
-      - методы аналитики работают
-      - endpoints созданы
-      - метрики и статистика функциональны
-      - тесты проходят
-    gate:
-      - require: "Одобряю SAAS-016-11"
+- id: SAAS-016-07
+  title: Добавить настройки уведомлений
+  branch: "feature/user/SAAS-016/add-notification-settings"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/user.ts"
+    - "src/infrastructure/dto/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+      steps:
+    - создать миграцию для полей уведомлений
+    - обновить UserModel с настройками уведомлений
+    - создать DTO для управления уведомлениями
+    - добавить endpoints для настроек уведомлений
+    - написать тесты для настроек уведомлений
+      dod:
+    - миграция создана и протестирована
+    - настройки уведомлений добавлены
+    - DTO созданы с валидацией
+    - endpoints работают
+    - тесты проходят
+      gate:
+    - require: "Одобряю SAAS-016-07"
 
-  # Фаза 6: Безопасность
-  - id: SAAS-016-12
-    title: Добавить двухфакторную аутентификацию
-    branch: "feature/user/SAAS-016/add-2fa"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/user.ts"
-      - "src/infrastructure/services/user/**"
-      - "src/infrastructure/controllers/user/**"
-    steps:
-      - создать миграцию для полей 2FA
-      - обновить UserModel с поддержкой 2FA
-      - добавить методы для 2FA
-      - добавить endpoints для 2FA
-      - написать тесты для 2FA
-    dod:
-      - миграция создана и протестирована
-      - поддержка 2FA добавлена
-      - методы 2FA работают
-      - endpoints функциональны
-      - тесты проходят
-    gate:
-      - require: "Одобряю SAAS-016-12"
+# Фаза 4: Верификация пользователей
 
-  - id: SAAS-016-13
-    title: Добавить управление сессиями
-    branch: "feature/user/SAAS-016/add-session-management"
-    files_scope:
-      - "src/infrastructure/services/user/**"
-      - "src/infrastructure/controllers/user/**"
-      - "src/infrastructure/common/guards/**"
-    steps:
-      - добавить методы для управления сессиями
-      - реализовать принудительный выход из всех устройств
-      - добавить endpoints для управления сессиями
-      - написать тесты для управления сессиями
-    dod:
-      - методы управления сессиями работают
-      - принудительный выход функционален
-      - endpoints созданы
-      - тесты проходят
-    gate:
-      - require: "Одобряю SAAS-016-13"
+- id: SAAS-016-08
+  title: Добавить верификацию email
+  branch: "feature/user/SAAS-016/add-email-verification"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/user-verification-code.ts"
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+      steps:
+    - создать миграцию для таблицы user_verification_codes
+    - создать UserVerificationCodeModel
+    - добавить методы для верификации email
+    - добавить endpoints для верификации
+    - написать тесты для верификации
+      dod:
+    - миграция создана и протестирована
+    - модель верификации создана
+    - методы верификации работают
+    - endpoints функциональны
+    - тесты проходят
+      gate:
+    - require: "Одобряю SAAS-016-08"
 
-  # Фаза 7: Оптимизация и тестирование
-  - id: SAAS-016-14
-    title: Провести рефакторинг и оптимизацию
-    branch: "feature/user/SAAS-016/user-optimization"
-    files_scope:
-      - "src/infrastructure/**"
-      - "src/domain/**"
-    steps:
-      - оптимизировать запросы к БД
-      - рефакторить дублирующийся код
-      - улучшить производительность
-      - провести code review
-    dod:
-      - код оптимизирован
-      - дублирование устранено
-      - производительность улучшена
-      - code review пройден
-    gate:
-      - require: "Одобряю SAAS-016-14"
+- id: SAAS-016-09
+  title: Добавить верификацию телефона
+  branch: "feature/user/SAAS-016/add-phone-verification"
+  files_scope:
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+    - "src/infrastructure/services/notification/\*\*"
+      steps:
+    - добавить методы для верификации телефона
+    - интегрировать с SMS сервисом
+    - добавить endpoints для верификации телефона
+    - написать тесты для верификации телефона
+      dod:
+    - методы верификации телефона работают
+    - интеграция с SMS функциональна
+    - endpoints обновлены
+    - тесты проходят
+      gate:
+    - require: "Одобряю SAAS-016-09"
+
+# Фаза 5: История активности
+
+- id: SAAS-016-10
+  title: Добавить историю входа пользователей
+  branch: "feature/user/SAAS-016/add-login-history"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/login-history.ts"
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+      steps:
+    - создать миграцию для таблицы login_history
+    - создать LoginHistoryModel
+    - добавить методы для отслеживания входов
+    - добавить endpoints для истории входов
+    - написать тесты для истории входов
+      dod:
+    - миграция создана и протестирована
+    - модель истории создана
+    - отслеживание входов работает
+    - endpoints функциональны
+    - тесты проходят
+      gate:
+    - require: "Одобряю SAAS-016-10"
+
+- id: SAAS-016-11
+  title: Добавить аналитику активности пользователей
+  branch: "feature/user/SAAS-016/add-user-analytics"
+  files_scope:
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+      steps:
+    - добавить методы для аналитики активности
+    - создать endpoints для аналитики
+    - добавить метрики и статистику
+    - написать тесты для аналитики
+      dod:
+    - методы аналитики работают
+    - endpoints созданы
+    - метрики и статистика функциональны
+    - тесты проходят
+      gate:
+    - require: "Одобряю SAAS-016-11"
+
+# Фаза 6: Безопасность
+
+- id: SAAS-016-12
+  title: Добавить двухфакторную аутентификацию
+  branch: "feature/user/SAAS-016/add-2fa"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/user.ts"
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+      steps:
+    - создать миграцию для полей 2FA
+    - обновить UserModel с поддержкой 2FA
+    - добавить методы для 2FA
+    - добавить endpoints для 2FA
+    - написать тесты для 2FA
+      dod:
+    - миграция создана и протестирована
+    - поддержка 2FA добавлена
+    - методы 2FA работают
+    - endpoints функциональны
+    - тесты проходят
+      gate:
+    - require: "Одобряю SAAS-016-12"
+
+- id: SAAS-016-13
+  title: Добавить управление сессиями
+  branch: "feature/user/SAAS-016/add-session-management"
+  files_scope:
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+    - "src/infrastructure/common/guards/\*\*"
+      steps:
+    - добавить методы для управления сессиями
+    - реализовать принудительный выход из всех устройств
+    - добавить endpoints для управления сессиями
+    - написать тесты для управления сессиями
+      dod:
+    - методы управления сессиями работают
+    - принудительный выход функционален
+    - endpoints созданы
+    - тесты проходят
+      gate:
+    - require: "Одобряю SAAS-016-13"
+
+# Фаза 7: Оптимизация и тестирование
+
+- id: SAAS-016-14
+  title: Провести рефакторинг и оптимизацию
+  branch: "feature/user/SAAS-016/user-optimization"
+  files_scope:
+    - "src/infrastructure/\*\*"
+    - "src/domain/\*\*"
+      steps:
+    - оптимизировать запросы к БД
+    - рефакторить дублирующийся код
+    - улучшить производительность
+    - провести code review
+      dod:
+    - код оптимизирован
+    - дублирование устранено
+    - производительность улучшена
+    - code review пройден
+      gate:
+    - require: "Одобряю SAAS-016-14"

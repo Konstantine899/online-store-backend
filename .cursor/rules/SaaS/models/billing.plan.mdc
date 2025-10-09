@@ -6,290 +6,290 @@ epic_ref: SAAS-007
 version: 1.0
 
 execution_policy:
-  must_follow: true
-  allow_code_changes_only_after: "Одобряю <TASK_ID>"
-  constraints:
-    - no public API changes without explicit approval
-    - operate strictly within files_scope
-    - pass lints/tests and Swagger before DoD complete
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - no public API changes without explicit approval - operate strictly within files_scope - pass lints/tests and Swagger before DoD complete
 
 context:
-  goal: SaaS billing with plans, subscriptions, and usage limits
+goal: SaaS billing with plans, subscriptions, and usage limits
 
 # DEFAULT PRE-COMMIT WORKFLOW для всех billing задач
+
 default_pre_commit_workflow: "СТАНДАРТНЫЙ (business logic: billing/subscriptions)"
 default_pre_commit_steps:
-  - "«Ревью» → billing logic, subscription calculations, pricing"
-  - "«Автофикс» → linter/prettier"
-  - "Тесты: billing integration tests"
-  - "«Коммит» → feat(billing): <TASK_ID> complete"
+
+- "«Ревью» → billing logic, subscription calculations, pricing"
+- "«Автофикс» → linter/prettier"
+- "Тесты: billing integration tests"
+- "«Коммит» → feat(billing): <TASK_ID> complete"
 
 tasks:
-  # Фаза 1: Базовая реализация
-  - id: SAAS-007-00
-    title: Создать контроллер биллинга с полной системой ролей
-    branch: "feature/billing/SAAS-007/billing-controller-roles"
-    files_scope:
-      - ".cursor/rules/models/billing.mdc"
-      - "src/infrastructure/controllers/billing/**"
-    steps:
-      - добавить секцию контроллера в billing.mdc
-      - создать BillingController с импортами RoleGuard и Roles
-      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
-      - реализовать методы с правильными ролями:
-        - управление планами: ADMIN_ROLES
-        - управление подписками: MANAGER_ROLES
-        - просмотр счетов: CUSTOMER_ROLES
-        - статистика биллинга: MANAGER_ROLES
-    dod:
-      - контроллер создан с полной системой ролей
-      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
-      - тенантская изоляция ролей обеспечена
-    gate:
-      - require: "Одобряю SAAS-007-00"
 
-  - id: SAAS-007-01
-    title: Создать таблицы billing plans и subscriptions
-    branch: "feature/billing/SAAS-007/billing-core-tables"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/billing-plan.ts"
-      - "src/domain/models/subscription.ts"
-    steps:
-      - создать таблицы billing_plans и subscriptions с tenant_id
-      - добавить индексы для производительности
-      - создать модели BillingPlanModel и SubscriptionModel
-    dod:
-      - миграция up/down успешна
-      - Billing модели содержат tenant_id
-      - индексы созданы для производительности
-    gate:
-      - require: "Одобряю SAAS-007-01"
+# Фаза 1: Базовая реализация
 
-  - id: SAAS-007-02
-    title: Реализовать модели BillingPlanModel и SubscriptionModel
-    branch: "feature/billing/SAAS-007/billing-core-models"
-    files_scope:
-      - "src/domain/models/billing-plan.ts"
-      - "src/domain/models/subscription.ts"
-    steps:
-      - добавить методы для работы с планами
-      - реализовать методы для управления подписками
-      - добавить методы для расчета стоимости
-    dod:
-      - все методы планов реализованы
-      - методы подписок работают корректно
-      - расчет стоимости функционален
-    gate:
-      - require: "Одобряю SAAS-007-02"
+- id: SAAS-007-00
+  title: Создать контроллер биллинга с полной системой ролей
+  branch: "feature/billing/SAAS-007/billing-controller-roles"
+  files_scope:
+    - ".cursor/rules/models/billing.mdc"
+    - "src/infrastructure/controllers/billing/\*\*"
+      steps:
+    - добавить секцию контроллера в billing.mdc
+    - создать BillingController с импортами RoleGuard и Roles
+    - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+    - реализовать методы с правильными ролями: - управление планами: ADMIN_ROLES - управление подписками: MANAGER_ROLES - просмотр счетов: CUSTOMER_ROLES - статистика биллинга: MANAGER_ROLES
+      dod:
+    - контроллер создан с полной системой ролей
+    - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+    - тенантская изоляция ролей обеспечена
+      gate:
+    - require: "Одобряю SAAS-007-00"
 
-  - id: SAAS-007-03
-    title: Создать DTO классы с валидацией
-    branch: "feature/billing/SAAS-007/billing-dto-validation"
-    files_scope:
-      - "src/infrastructure/dto/billing/**"
-      - "src/domain/dto/**"
-    steps:
-      - создать CreateBillingPlanDto для создания планов
-      - создать SubscribeDto для подписки на планы
-      - создать UpdateSubscriptionDto для изменения подписок
-      - добавить валидаторы с русскими сообщениями
-    dod:
-      - DTO содержат все необходимые поля
-      - валидация работает с русскими сообщениями
-      - CustomValidationPipe обрабатывает все DTO
-    gate:
-      - require: "Одобряю SAAS-007-03"
+- id: SAAS-007-01
+  title: Создать таблицы billing plans и subscriptions
+  branch: "feature/billing/SAAS-007/billing-core-tables"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/billing-plan.ts"
+    - "src/domain/models/subscription.ts"
+      steps:
+    - создать таблицы billing_plans и subscriptions с tenant_id
+    - добавить индексы для производительности
+    - создать модели BillingPlanModel и SubscriptionModel
+      dod:
+    - миграция up/down успешна
+    - Billing модели содержат tenant_id
+    - индексы созданы для производительности
+      gate:
+    - require: "Одобряю SAAS-007-01"
 
-  - id: SAAS-007-04
-    title: Создать Response классы с Swagger
-    branch: "feature/billing/SAAS-007/billing-response-swagger"
-    files_scope:
-      - "src/infrastructure/responses/billing/**"
-      - "src/infrastructure/common/decorators/swagger/billing/**"
-    steps:
-      - создать Response классы для планов и подписок
-      - добавить Swagger декораторы
-      - создать Response для списков с пагинацией
-    dod:
-      - Response классы созданы
-      - Swagger схемы корректны
-      - пагинация возвращает { data, meta }
-    gate:
-      - require: "Одобряю SAAS-007-04"
+- id: SAAS-007-02
+  title: Реализовать модели BillingPlanModel и SubscriptionModel
+  branch: "feature/billing/SAAS-007/billing-core-models"
+  files_scope:
+    - "src/domain/models/billing-plan.ts"
+    - "src/domain/models/subscription.ts"
+      steps:
+    - добавить методы для работы с планами
+    - реализовать методы для управления подписками
+    - добавить методы для расчета стоимости
+      dod:
+    - все методы планов реализованы
+    - методы подписок работают корректно
+    - расчет стоимости функционален
+      gate:
+    - require: "Одобряю SAAS-007-02"
 
-  - id: SAAS-007-05
-    title: Реализовать сервис billing с основной логикой
-    branch: "feature/billing/SAAS-007/billing-service-methods"
-    files_scope:
-      - "src/infrastructure/services/billing/**"
-      - "src/domain/services/**"
-    steps:
-      - добавить методы для управления планами
-      - реализовать логику подписки на планы
-      - добавить методы для расчета стоимости
-      - добавить статистику billing
-    dod:
-      - все методы сервиса реализованы
-      - управление планами работает корректно
-      - подписка на планы функциональна
-      - статистика возвращает корректные данные
-    gate:
-      - require: "Одобряю SAAS-007-05"
+- id: SAAS-007-03
+  title: Создать DTO классы с валидацией
+  branch: "feature/billing/SAAS-007/billing-dto-validation"
+  files_scope:
+    - "src/infrastructure/dto/billing/\*\*"
+    - "src/domain/dto/\*\*"
+      steps:
+    - создать CreateBillingPlanDto для создания планов
+    - создать SubscribeDto для подписки на планы
+    - создать UpdateSubscriptionDto для изменения подписок
+    - добавить валидаторы с русскими сообщениями
+      dod:
+    - DTO содержат все необходимые поля
+    - валидация работает с русскими сообщениями
+    - CustomValidationPipe обрабатывает все DTO
+      gate:
+    - require: "Одобряю SAAS-007-03"
 
-  # Фаза 2: API и интеграции
-  - id: SAAS-007-06
-    title: Создать контроллер с API endpoints
-    branch: "feature/billing/SAAS-007/billing-controller-endpoints"
-    files_scope:
-      - "src/infrastructure/controllers/billing/**"
-      - "src/infrastructure/common/decorators/swagger/billing/**"
-    steps:
-      - добавить эндпоинты для планов (GET /billing/plans, POST /billing/plans)
-      - добавить эндпоинты для подписок (POST /billing/subscribe, GET /billing/subscriptions)
-      - добавить эндпоинты для управления подписками (PATCH /billing/subscriptions/:id)
-      - добавить статистику (GET /admin/billing/stats)
-    dod:
-      - все эндпоинты работают корректно
-      - Swagger документация обновлена
-      - Guards и роли применены правильно
-    gate:
-      - require: "Одобряю SAAS-007-06"
+- id: SAAS-007-04
+  title: Создать Response классы с Swagger
+  branch: "feature/billing/SAAS-007/billing-response-swagger"
+  files_scope:
+    - "src/infrastructure/responses/billing/\*\*"
+    - "src/infrastructure/common/decorators/swagger/billing/\*\*"
+      steps:
+    - создать Response классы для планов и подписок
+    - добавить Swagger декораторы
+    - создать Response для списков с пагинацией
+      dod:
+    - Response классы созданы
+    - Swagger схемы корректны
+    - пагинация возвращает { data, meta }
+      gate:
+    - require: "Одобряю SAAS-007-04"
 
-  - id: SAAS-007-07
-    title: Настроить middleware лимитов
-    branch: "feature/billing/SAAS-007/billing-limits-middleware"
-    files_scope:
-      - "src/infrastructure/common/middleware/**"
-      - "src/infrastructure/common/guards/**"
-    steps:
-      - реализовать middleware для проверки лимитов планов
-      - добавить проверки на количество пользователей, товаров, заказов
-      - добавить блокировку при превышении лимитов
-    dod:
-      - middleware лимитов работает корректно
-      - проверки лимитов функциональны
-      - блокировка при превышении активна
-    gate:
-      - require: "Одобряю SAAS-007-07"
+- id: SAAS-007-05
+  title: Реализовать сервис billing с основной логикой
+  branch: "feature/billing/SAAS-007/billing-service-methods"
+  files_scope:
+    - "src/infrastructure/services/billing/\*\*"
+    - "src/domain/services/\*\*"
+      steps:
+    - добавить методы для управления планами
+    - реализовать логику подписки на планы
+    - добавить методы для расчета стоимости
+    - добавить статистику billing
+      dod:
+    - все методы сервиса реализованы
+    - управление планами работает корректно
+    - подписка на планы функциональна
+    - статистика возвращает корректные данные
+      gate:
+    - require: "Одобряю SAAS-007-05"
 
-  - id: SAAS-007-08
-    title: Добавить обработку ошибок и валидацию
-    branch: "feature/billing/SAAS-007/billing-error-handling"
-    files_scope:
-      - "src/infrastructure/common/filters/**"
-      - "src/infrastructure/common/pipes/**"
-    steps:
-      - добавить обработку ошибок для billing
-      - улучшить валидацию с русскими сообщениями
-      - добавить логирование ошибок
-    dod:
-      - ошибки обрабатываются корректно
-      - сообщения на русском языке
-      - логирование работает
-    gate:
-      - require: "Одобряю SAAS-007-08"
+# Фаза 2: API и интеграции
 
-  - id: SAAS-007-09
-    title: Создать тесты для API billing
-    branch: "feature/billing/SAAS-007/billing-api-tests"
-    files_scope:
-      - "src/infrastructure/controllers/billing/tests/**"
-      - "src/infrastructure/services/billing/tests/**"
-      - "src/infrastructure/repositories/billing/tests/**"
-    steps:
-      - написать integration тесты для billing
-      - написать unit тесты для сервисов
-      - добавить негативные тесты
-    dod:
-      - все тесты проходят
-      - покрытие критичных модулей ≥80%
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-007-09"
+- id: SAAS-007-06
+  title: Создать контроллер с API endpoints
+  branch: "feature/billing/SAAS-007/billing-controller-endpoints"
+  files_scope:
+    - "src/infrastructure/controllers/billing/\*\*"
+    - "src/infrastructure/common/decorators/swagger/billing/\*\*"
+      steps:
+    - добавить эндпоинты для планов (GET /billing/plans, POST /billing/plans)
+    - добавить эндпоинты для подписок (POST /billing/subscribe, GET /billing/subscriptions)
+    - добавить эндпоинты для управления подписками (PATCH /billing/subscriptions/:id)
+    - добавить статистику (GET /admin/billing/stats)
+      dod:
+    - все эндпоинты работают корректно
+    - Swagger документация обновлена
+    - Guards и роли применены правильно
+      gate:
+    - require: "Одобряю SAAS-007-06"
 
-  # Фаза 3: Тестирование и качество
-  - id: SAAS-007-10
-    title: Написать unit тесты для сервисов
-    branch: "feature/billing/SAAS-007/billing-unit-tests"
-    files_scope:
-      - "src/infrastructure/services/billing/tests/**"
-      - "src/infrastructure/repositories/billing/tests/**"
-    steps:
-      - покрыть BillingService методами
-      - покрыть методы расчета стоимости
-      - покрыть методы управления подписками
-    dod:
-      - unit тесты покрывают все методы
-      - тесты стабильны и быстры
-      - моки настроены корректно
-    gate:
-      - require: "Одобряю SAAS-007-10"
+- id: SAAS-007-07
+  title: Настроить middleware лимитов
+  branch: "feature/billing/SAAS-007/billing-limits-middleware"
+  files_scope:
+    - "src/infrastructure/common/middleware/\*\*"
+    - "src/infrastructure/common/guards/\*\*"
+      steps:
+    - реализовать middleware для проверки лимитов планов
+    - добавить проверки на количество пользователей, товаров, заказов
+    - добавить блокировку при превышении лимитов
+      dod:
+    - middleware лимитов работает корректно
+    - проверки лимитов функциональны
+    - блокировка при превышении активна
+      gate:
+    - require: "Одобряю SAAS-007-07"
 
-  - id: SAAS-007-11
-    title: Написать integration тесты для API
-    branch: "feature/billing/SAAS-007/billing-integration-tests"
-    files_scope:
-      - "src/infrastructure/controllers/billing/tests/**"
-    steps:
-      - покрыть все эндпоинты billing
-      - покрыть эндпоинты подписок
-      - покрыть эндпоинты статистики
-    dod:
-      - integration тесты покрывают все эндпоинты
-      - тесты изолированы и детерминированы
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-007-11"
+- id: SAAS-007-08
+  title: Добавить обработку ошибок и валидацию
+  branch: "feature/billing/SAAS-007/billing-error-handling"
+  files_scope:
+    - "src/infrastructure/common/filters/\*\*"
+    - "src/infrastructure/common/pipes/\*\*"
+      steps:
+    - добавить обработку ошибок для billing
+    - улучшить валидацию с русскими сообщениями
+    - добавить логирование ошибок
+      dod:
+    - ошибки обрабатываются корректно
+    - сообщения на русском языке
+    - логирование работает
+      gate:
+    - require: "Одобряю SAAS-007-08"
 
-  - id: SAAS-007-12
-    title: Провести рефакторинг и оптимизацию
-    branch: "feature/billing/SAAS-007/billing-optimization"
-    files_scope:
-      - "src/infrastructure/**"
-      - "src/domain/**"
-    steps:
-      - оптимизировать запросы к БД
-      - рефакторить дублирующийся код
-      - улучшить производительность
-    dod:
-      - код оптимизирован
-      - дублирование устранено
-      - производительность улучшена
-    gate:
-      - require: "Одобряю SAAS-007-12"
+- id: SAAS-007-09
+  title: Создать тесты для API billing
+  branch: "feature/billing/SAAS-007/billing-api-tests"
+  files_scope:
+    - "src/infrastructure/controllers/billing/tests/\*\*"
+    - "src/infrastructure/services/billing/tests/\*\*"
+    - "src/infrastructure/repositories/billing/tests/\*\*"
+      steps:
+    - написать integration тесты для billing
+    - написать unit тесты для сервисов
+    - добавить негативные тесты
+      dod:
+    - все тесты проходят
+    - покрытие критичных модулей ≥80%
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-007-09"
 
-  # Дополнительные возможности
-  - id: SAAS-007-13
-    title: Автоматическое управление подписками
-    branch: "feature/billing/SAAS-007/billing-auto-subscription-management"
-    files_scope:
-      - "src/infrastructure/services/billing/**"
-      - "src/infrastructure/common/events/**"
-    steps:
-      - реализовать автоматическое продление подписок
-      - добавить уведомления о скором окончании подписки
-      - настроить автоматические переходы между планами
-    dod:
-      - автоматическое продление работает
-      - уведомления отправляются
-      - переходы между планами настроены
-    gate:
-      - require: "Одобряю SAAS-007-13"
+# Фаза 3: Тестирование и качество
 
-  - id: SAAS-007-14
-    title: Аналитика billing и подписок
-    branch: "feature/billing/SAAS-007/billing-analytics"
-    files_scope:
-      - "src/infrastructure/controllers/billing/**"
-      - "src/infrastructure/services/billing/**"
-    steps:
-      - создать эндпоинты аналитики billing
-      - добавить метрики и дашборды
-      - настроить отчеты по подпискам и доходам
-    dod:
-      - аналитика billing работает
-      - метрики корректны
-      - отчеты генерируются
-    gate:
-      - require: "Одобряю SAAS-007-14"
+- id: SAAS-007-10
+  title: Написать unit тесты для сервисов
+  branch: "feature/billing/SAAS-007/billing-unit-tests"
+  files_scope:
+    - "src/infrastructure/services/billing/tests/\*\*"
+    - "src/infrastructure/repositories/billing/tests/\*\*"
+      steps:
+    - покрыть BillingService методами
+    - покрыть методы расчета стоимости
+    - покрыть методы управления подписками
+      dod:
+    - unit тесты покрывают все методы
+    - тесты стабильны и быстры
+    - моки настроены корректно
+      gate:
+    - require: "Одобряю SAAS-007-10"
+
+- id: SAAS-007-11
+  title: Написать integration тесты для API
+  branch: "feature/billing/SAAS-007/billing-integration-tests"
+  files_scope:
+    - "src/infrastructure/controllers/billing/tests/\*\*"
+      steps:
+    - покрыть все эндпоинты billing
+    - покрыть эндпоинты подписок
+    - покрыть эндпоинты статистики
+      dod:
+    - integration тесты покрывают все эндпоинты
+    - тесты изолированы и детерминированы
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-007-11"
+
+- id: SAAS-007-12
+  title: Провести рефакторинг и оптимизацию
+  branch: "feature/billing/SAAS-007/billing-optimization"
+  files_scope:
+    - "src/infrastructure/\*\*"
+    - "src/domain/\*\*"
+      steps:
+    - оптимизировать запросы к БД
+    - рефакторить дублирующийся код
+    - улучшить производительность
+      dod:
+    - код оптимизирован
+    - дублирование устранено
+    - производительность улучшена
+      gate:
+    - require: "Одобряю SAAS-007-12"
+
+# Дополнительные возможности
+
+- id: SAAS-007-13
+  title: Автоматическое управление подписками
+  branch: "feature/billing/SAAS-007/billing-auto-subscription-management"
+  files_scope:
+    - "src/infrastructure/services/billing/\*\*"
+    - "src/infrastructure/common/events/\*\*"
+      steps:
+    - реализовать автоматическое продление подписок
+    - добавить уведомления о скором окончании подписки
+    - настроить автоматические переходы между планами
+      dod:
+    - автоматическое продление работает
+    - уведомления отправляются
+    - переходы между планами настроены
+      gate:
+    - require: "Одобряю SAAS-007-13"
+
+- id: SAAS-007-14
+  title: Аналитика billing и подписок
+  branch: "feature/billing/SAAS-007/billing-analytics"
+  files_scope:
+    - "src/infrastructure/controllers/billing/\*\*"
+    - "src/infrastructure/services/billing/\*\*"
+      steps:
+    - создать эндпоинты аналитики billing
+    - добавить метрики и дашборды
+    - настроить отчеты по подпискам и доходам
+      dod:
+    - аналитика billing работает
+    - метрики корректны
+    - отчеты генерируются
+      gate:
+    - require: "Одобряю SAAS-007-14"

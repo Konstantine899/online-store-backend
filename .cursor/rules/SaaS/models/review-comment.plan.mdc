@@ -6,286 +6,286 @@ epic_ref: SAAS-011
 version: 1.0
 
 execution_policy:
-  must_follow: true
-  allow_code_changes_only_after: "Одобряю <TASK_ID>"
-  constraints:
-    - no public API changes without explicit approval
-    - operate within files_scope
-    - pass lints/tests and Swagger before DoD complete
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - no public API changes without explicit approval - operate within files_scope - pass lints/tests and Swagger before DoD complete
 
 context:
-  goal: Review and comment system with tenant isolation and moderation
+goal: Review and comment system with tenant isolation and moderation
 
 # DEFAULT PRE-COMMIT WORKFLOW
+
 default_pre_commit_workflow: "МИНИМАЛЬНЫЙ (вспомогательный модуль)"
 default_pre_commit_steps:
-  - "«Автофикс» → linter/prettier"
-  - "«Коммит» → feat(review): <TASK_ID> complete"
+
+- "«Автофикс» → linter/prettier"
+- "«Коммит» → feat(review): <TASK_ID> complete"
 
 tasks:
-  # Фаза 1: Базовая реализация
-  - id: SAAS-011-00
-    title: Обновить систему ролей в контроллере отзывов
-    branch: "feature/review/SAAS-011/review-roles-update"
-    files_scope:
-      - ".cursor/rules/models/review-comment.mdc"
-    steps:
-      - добавить импорты RoleGuard и Roles в контроллер
-      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
-      - обновить методы с правильными ролями:
-        - создание отзывов/комментариев/лайков: CUSTOMER_ROLES
-        - просмотр отзывов: ALL_ROLES
-        - модерация (одобрить/скрыть): MANAGER_ROLES
-        - админ-списки и статистика: MANAGER_ROLES
-    dod:
-      - все методы контроллера используют полную систему ролей
-      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
-      - тенантская изоляция ролей обеспечена
-    gate:
-      - require: "Одобряю SAAS-011-00"
 
-  - id: SAAS-011-01
-    title: Создать миграции для таблиц reviews, review_comments и review_likes
-    branch: "feature/review/SAAS-011/review-core-tables"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/review.ts"
-      - "src/domain/models/review-comment.ts"
-      - "src/domain/models/review-like.ts"
-    steps:
-      - создать таблицы reviews, review_comments и review_likes с tenant_id
-      - добавить индексы для производительности
-      - создать модели ReviewModel, ReviewCommentModel и ReviewLikeModel
-    dod:
-      - миграция up/down успешна
-      - Review модели содержат tenant_id
-      - индексы созданы для производительности
-    gate:
-      - require: "Одобряю SAAS-011-01"
+# Фаза 1: Базовая реализация
 
-  - id: SAAS-011-02
-    title: Реализовать модели ReviewModel, ReviewCommentModel и ReviewLikeModel
-    branch: "feature/review/SAAS-011/review-core-models"
-    files_scope:
-      - "src/domain/models/review.ts"
-      - "src/domain/models/review-comment.ts"
-      - "src/domain/models/review-like.ts"
-    steps:
-      - добавить методы для работы с отзывами
-      - реализовать методы для комментариев
-      - добавить методы для лайков
-    dod:
-      - все методы отзывов реализованы
-      - методы комментариев работают корректно
-      - методы лайков функциональны
-    gate:
-      - require: "Одобряю SAAS-011-02"
+- id: SAAS-011-00
+  title: Обновить систему ролей в контроллере отзывов
+  branch: "feature/review/SAAS-011/review-roles-update"
+  files_scope:
+    - ".cursor/rules/models/review-comment.mdc"
+      steps:
+    - добавить импорты RoleGuard и Roles в контроллер
+    - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+    - обновить методы с правильными ролями: - создание отзывов/комментариев/лайков: CUSTOMER_ROLES - просмотр отзывов: ALL_ROLES - модерация (одобрить/скрыть): MANAGER_ROLES - админ-списки и статистика: MANAGER_ROLES
+      dod:
+    - все методы контроллера используют полную систему ролей
+    - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+    - тенантская изоляция ролей обеспечена
+      gate:
+    - require: "Одобряю SAAS-011-00"
 
-  - id: SAAS-011-03
-    title: Создать DTO классы с валидацией
-    branch: "feature/review/SAAS-011/review-dto-validation"
-    files_scope:
-      - "src/infrastructure/dto/review/**"
-      - "src/domain/dto/**"
-    steps:
-      - создать CreateReviewDto для создания отзывов
-      - создать CreateCommentDto для создания комментариев
-      - создать UpdateReviewDto для обновления отзывов
-      - добавить валидаторы с русскими сообщениями
-    dod:
-      - DTO содержат все необходимые поля
-      - валидация работает с русскими сообщениями
-      - CustomValidationPipe обрабатывает все DTO
-    gate:
-      - require: "Одобряю SAAS-011-03"
+- id: SAAS-011-01
+  title: Создать миграции для таблиц reviews, review_comments и review_likes
+  branch: "feature/review/SAAS-011/review-core-tables"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/review.ts"
+    - "src/domain/models/review-comment.ts"
+    - "src/domain/models/review-like.ts"
+      steps:
+    - создать таблицы reviews, review_comments и review_likes с tenant_id
+    - добавить индексы для производительности
+    - создать модели ReviewModel, ReviewCommentModel и ReviewLikeModel
+      dod:
+    - миграция up/down успешна
+    - Review модели содержат tenant_id
+    - индексы созданы для производительности
+      gate:
+    - require: "Одобряю SAAS-011-01"
 
-  - id: SAAS-011-04
-    title: Создать Response классы с Swagger
-    branch: "feature/review/SAAS-011/review-response-swagger"
-    files_scope:
-      - "src/infrastructure/responses/review/**"
-      - "src/infrastructure/common/decorators/swagger/review/**"
-    steps:
-      - создать Response классы с явными полями (не extends ReviewModel)
-      - добавить Swagger декораторы для всех полей
-      - создать Response для списков отзывов с пагинацией
-    dod:
-      - Response классы не наследуются от модели
-      - Swagger схемы корректны
-      - пагинация возвращает { data, meta }
-    gate:
-      - require: "Одобряю SAAS-011-04"
+- id: SAAS-011-02
+  title: Реализовать модели ReviewModel, ReviewCommentModel и ReviewLikeModel
+  branch: "feature/review/SAAS-011/review-core-models"
+  files_scope:
+    - "src/domain/models/review.ts"
+    - "src/domain/models/review-comment.ts"
+    - "src/domain/models/review-like.ts"
+      steps:
+    - добавить методы для работы с отзывами
+    - реализовать методы для комментариев
+    - добавить методы для лайков
+      dod:
+    - все методы отзывов реализованы
+    - методы комментариев работают корректно
+    - методы лайков функциональны
+      gate:
+    - require: "Одобряю SAAS-011-02"
 
-  - id: SAAS-011-05
-    title: Реализовать сервис с основной логикой
-    branch: "feature/review/SAAS-011/review-service-methods"
-    files_scope:
-      - "src/infrastructure/services/review/**"
-      - "src/domain/services/**"
-    steps:
-      - добавить методы для создания отзывов
-      - реализовать методы для комментариев
-      - добавить методы для лайков
-      - добавить статистику отзывов
-    dod:
-      - все методы сервиса реализованы
-      - создание отзывов работает корректно
-      - комментарии функциональны
-      - статистика возвращает корректные данные
-    gate:
-      - require: "Одобряю SAAS-011-05"
+- id: SAAS-011-03
+  title: Создать DTO классы с валидацией
+  branch: "feature/review/SAAS-011/review-dto-validation"
+  files_scope:
+    - "src/infrastructure/dto/review/\*\*"
+    - "src/domain/dto/\*\*"
+      steps:
+    - создать CreateReviewDto для создания отзывов
+    - создать CreateCommentDto для создания комментариев
+    - создать UpdateReviewDto для обновления отзывов
+    - добавить валидаторы с русскими сообщениями
+      dod:
+    - DTO содержат все необходимые поля
+    - валидация работает с русскими сообщениями
+    - CustomValidationPipe обрабатывает все DTO
+      gate:
+    - require: "Одобряю SAAS-011-03"
 
-  # Фаза 2: API и интеграции
-  - id: SAAS-011-06
-    title: Создать контроллер с API endpoints
-    branch: "feature/review/SAAS-011/review-controller-endpoints"
-    files_scope:
-      - "src/infrastructure/controllers/review/**"
-      - "src/infrastructure/common/decorators/swagger/review/**"
-    steps:
-      - добавить эндпоинты для отзывов (CRUD)
-      - добавить эндпоинты для комментариев (CRUD)
-      - добавить эндпоинты для лайков (POST/DELETE)
-      - добавить статистику (GET /admin/reviews/stats)
-    dod:
-      - все эндпоинты работают корректно
-      - Swagger документация обновлена
-      - Guards и роли применены правильно
-    gate:
-      - require: "Одобряю SAAS-011-06"
+- id: SAAS-011-04
+  title: Создать Response классы с Swagger
+  branch: "feature/review/SAAS-011/review-response-swagger"
+  files_scope:
+    - "src/infrastructure/responses/review/\*\*"
+    - "src/infrastructure/common/decorators/swagger/review/\*\*"
+      steps:
+    - создать Response классы с явными полями (не extends ReviewModel)
+    - добавить Swagger декораторы для всех полей
+    - создать Response для списков отзывов с пагинацией
+      dod:
+    - Response классы не наследуются от модели
+    - Swagger схемы корректны
+    - пагинация возвращает { data, meta }
+      gate:
+    - require: "Одобряю SAAS-011-04"
 
-  - id: SAAS-011-07
-    title: Настроить модерацию отзывов
-    branch: "feature/review/SAAS-011/review-moderation"
-    files_scope:
-      - "src/infrastructure/services/review/**"
-      - "src/infrastructure/common/moderation/**"
-    steps:
-      - реализовать систему модерации отзывов
-      - добавить автоматическую модерацию
-      - добавить ручную модерацию
-    dod:
-      - система модерации работает корректно
-      - автоматическая модерация функциональна
-      - ручная модерация активна
-    gate:
-      - require: "Одобряю SAAS-011-07"
+- id: SAAS-011-05
+  title: Реализовать сервис с основной логикой
+  branch: "feature/review/SAAS-011/review-service-methods"
+  files_scope:
+    - "src/infrastructure/services/review/\*\*"
+    - "src/domain/services/\*\*"
+      steps:
+    - добавить методы для создания отзывов
+    - реализовать методы для комментариев
+    - добавить методы для лайков
+    - добавить статистику отзывов
+      dod:
+    - все методы сервиса реализованы
+    - создание отзывов работает корректно
+    - комментарии функциональны
+    - статистика возвращает корректные данные
+      gate:
+    - require: "Одобряю SAAS-011-05"
 
-  - id: SAAS-011-08
-    title: Добавить обработку ошибок и валидацию
-    branch: "feature/review/SAAS-011/review-error-handling"
-    files_scope:
-      - "src/infrastructure/common/filters/**"
-      - "src/infrastructure/common/pipes/**"
-    steps:
-      - добавить обработку ошибок для отзывов
-      - улучшить валидацию с русскими сообщениями
-      - добавить логирование ошибок
-    dod:
-      - ошибки обрабатываются корректно
-      - сообщения на русском языке
-      - логирование работает
-    gate:
-      - require: "Одобряю SAAS-011-08"
+# Фаза 2: API и интеграции
 
-  - id: SAAS-011-09
-    title: Создать тесты для API отзывов
-    branch: "feature/review/SAAS-011/review-api-tests"
-    files_scope:
-      - "tests/integration/review/**"
-      - "tests/unit/review/**"
-    steps:
-      - написать integration тесты для отзывов
-      - написать unit тесты для сервисов
-      - добавить негативные тесты
-    dod:
-      - все тесты проходят
-      - покрытие критичных модулей ≥80%
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-011-09"
+- id: SAAS-011-06
+  title: Создать контроллер с API endpoints
+  branch: "feature/review/SAAS-011/review-controller-endpoints"
+  files_scope:
+    - "src/infrastructure/controllers/review/\*\*"
+    - "src/infrastructure/common/decorators/swagger/review/\*\*"
+      steps:
+    - добавить эндпоинты для отзывов (CRUD)
+    - добавить эндпоинты для комментариев (CRUD)
+    - добавить эндпоинты для лайков (POST/DELETE)
+    - добавить статистику (GET /admin/reviews/stats)
+      dod:
+    - все эндпоинты работают корректно
+    - Swagger документация обновлена
+    - Guards и роли применены правильно
+      gate:
+    - require: "Одобряю SAAS-011-06"
 
-  # Фаза 3: Тестирование и качество
-  - id: SAAS-011-10
-    title: Написать unit тесты для сервисов
-    branch: "feature/review/SAAS-011/review-unit-tests"
-    files_scope:
-      - "tests/unit/review/**"
-    steps:
-      - покрыть ReviewService методами
-      - покрыть методы комментариев
-      - покрыть методы лайков
-    dod:
-      - unit тесты покрывают все методы
-      - тесты стабильны и быстры
-      - моки настроены корректно
-    gate:
-      - require: "Одобряю SAAS-011-10"
+- id: SAAS-011-07
+  title: Настроить модерацию отзывов
+  branch: "feature/review/SAAS-011/review-moderation"
+  files_scope:
+    - "src/infrastructure/services/review/\*\*"
+    - "src/infrastructure/common/moderation/\*\*"
+      steps:
+    - реализовать систему модерации отзывов
+    - добавить автоматическую модерацию
+    - добавить ручную модерацию
+      dod:
+    - система модерации работает корректно
+    - автоматическая модерация функциональна
+    - ручная модерация активна
+      gate:
+    - require: "Одобряю SAAS-011-07"
 
-  - id: SAAS-011-11
-    title: Написать integration тесты для API
-    branch: "feature/review/SAAS-011/review-integration-tests"
-    files_scope:
-      - "tests/integration/review/**"
-    steps:
-      - покрыть все эндпоинты отзывов
-      - покрыть эндпоинты комментариев
-      - покрыть эндпоинты статистики
-    dod:
-      - integration тесты покрывают все эндпоинты
-      - тесты изолированы и детерминированы
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-011-11"
+- id: SAAS-011-08
+  title: Добавить обработку ошибок и валидацию
+  branch: "feature/review/SAAS-011/review-error-handling"
+  files_scope:
+    - "src/infrastructure/common/filters/\*\*"
+    - "src/infrastructure/common/pipes/\*\*"
+      steps:
+    - добавить обработку ошибок для отзывов
+    - улучшить валидацию с русскими сообщениями
+    - добавить логирование ошибок
+      dod:
+    - ошибки обрабатываются корректно
+    - сообщения на русском языке
+    - логирование работает
+      gate:
+    - require: "Одобряю SAAS-011-08"
 
-  - id: SAAS-011-12
-    title: Провести рефакторинг и оптимизацию
-    branch: "feature/review/SAAS-011/review-optimization"
-    files_scope:
-      - "src/infrastructure/**"
-      - "src/domain/**"
-    steps:
-      - оптимизировать запросы к БД
-      - рефакторить дублирующийся код
-      - улучшить производительность
-    dod:
-      - код оптимизирован
-      - дублирование устранено
-      - производительность улучшена
-    gate:
-      - require: "Одобряю SAAS-011-12"
+- id: SAAS-011-09
+  title: Создать тесты для API отзывов
+  branch: "feature/review/SAAS-011/review-api-tests"
+  files_scope:
+    - "tests/integration/review/\*\*"
+    - "tests/unit/review/\*\*"
+      steps:
+    - написать integration тесты для отзывов
+    - написать unit тесты для сервисов
+    - добавить негативные тесты
+      dod:
+    - все тесты проходят
+    - покрытие критичных модулей ≥80%
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-011-09"
 
-  # Дополнительные возможности
-  - id: SAAS-011-13
-    title: Система рейтингов товаров
-    branch: "feature/review/SAAS-011/review-rating-system"
-    files_scope:
-      - "src/infrastructure/services/review/**"
-      - "src/infrastructure/services/product/**"
-    steps:
-      - реализовать систему рейтингов товаров
-      - добавить автоматический пересчет рейтингов
-      - добавить агрегацию рейтингов
-    dod:
-      - система рейтингов работает
-      - автоматический пересчет функционален
-      - агрегация рейтингов корректна
-    gate:
-      - require: "Одобряю SAAS-011-13"
+# Фаза 3: Тестирование и качество
 
-  - id: SAAS-011-14
-    title: Аналитика отзывов
-    branch: "feature/review/SAAS-011/review-analytics"
-    files_scope:
-      - "src/infrastructure/controllers/review/**"
-      - "src/infrastructure/services/review/**"
-    steps:
-      - создать эндпоинты аналитики отзывов
-      - добавить метрики и дашборды
-      - настроить отчеты по отзывам
-    dod:
-      - аналитика отзывов работает
-      - метрики корректны
-      - отчеты генерируются
-    gate:
-      - require: "Одобряю SAAS-011-14"
+- id: SAAS-011-10
+  title: Написать unit тесты для сервисов
+  branch: "feature/review/SAAS-011/review-unit-tests"
+  files_scope:
+    - "tests/unit/review/\*\*"
+      steps:
+    - покрыть ReviewService методами
+    - покрыть методы комментариев
+    - покрыть методы лайков
+      dod:
+    - unit тесты покрывают все методы
+    - тесты стабильны и быстры
+    - моки настроены корректно
+      gate:
+    - require: "Одобряю SAAS-011-10"
+
+- id: SAAS-011-11
+  title: Написать integration тесты для API
+  branch: "feature/review/SAAS-011/review-integration-tests"
+  files_scope:
+    - "tests/integration/review/\*\*"
+      steps:
+    - покрыть все эндпоинты отзывов
+    - покрыть эндпоинты комментариев
+    - покрыть эндпоинты статистики
+      dod:
+    - integration тесты покрывают все эндпоинты
+    - тесты изолированы и детерминированы
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-011-11"
+
+- id: SAAS-011-12
+  title: Провести рефакторинг и оптимизацию
+  branch: "feature/review/SAAS-011/review-optimization"
+  files_scope:
+    - "src/infrastructure/\*\*"
+    - "src/domain/\*\*"
+      steps:
+    - оптимизировать запросы к БД
+    - рефакторить дублирующийся код
+    - улучшить производительность
+      dod:
+    - код оптимизирован
+    - дублирование устранено
+    - производительность улучшена
+      gate:
+    - require: "Одобряю SAAS-011-12"
+
+# Дополнительные возможности
+
+- id: SAAS-011-13
+  title: Система рейтингов товаров
+  branch: "feature/review/SAAS-011/review-rating-system"
+  files_scope:
+    - "src/infrastructure/services/review/\*\*"
+    - "src/infrastructure/services/product/\*\*"
+      steps:
+    - реализовать систему рейтингов товаров
+    - добавить автоматический пересчет рейтингов
+    - добавить агрегацию рейтингов
+      dod:
+    - система рейтингов работает
+    - автоматический пересчет функционален
+    - агрегация рейтингов корректна
+      gate:
+    - require: "Одобряю SAAS-011-13"
+
+- id: SAAS-011-14
+  title: Аналитика отзывов
+  branch: "feature/review/SAAS-011/review-analytics"
+  files_scope:
+    - "src/infrastructure/controllers/review/\*\*"
+    - "src/infrastructure/services/review/\*\*"
+      steps:
+    - создать эндпоинты аналитики отзывов
+    - добавить метрики и дашборды
+    - настроить отчеты по отзывам
+      dod:
+    - аналитика отзывов работает
+    - метрики корректны
+    - отчеты генерируются
+      gate:
+    - require: "Одобряю SAAS-011-14"

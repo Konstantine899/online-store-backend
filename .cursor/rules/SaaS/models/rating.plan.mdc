@@ -6,168 +6,166 @@ epic_ref: SAAS-008
 version: 1.0
 
 execution_policy:
-  must_follow: true
-  allow_code_changes_only_after: "Одобряю <TASK_ID>"
-  constraints:
-    - no public API changes without explicit approval
-    - operate strictly within files_scope
-    - pass lints/tests and Swagger before DoD complete
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - no public API changes without explicit approval - operate strictly within files_scope - pass lints/tests and Swagger before DoD complete
 
 context:
-  goal: Product ratings with tenant isolation
+goal: Product ratings with tenant isolation
 
 # DEFAULT PRE-COMMIT WORKFLOW
+
 default_pre_commit_workflow: "МИНИМАЛЬНЫЙ (вспомогательный модуль)"
 default_pre_commit_steps:
-  - "«Автофикс» → linter/prettier"
-  - "«Коммит» → feat(rating): <TASK_ID> complete"
+
+- "«Автофикс» → linter/prettier"
+- "«Коммит» → feat(rating): <TASK_ID> complete"
 
 tasks:
-  - id: SAAS-008-00
-    title: Создать контроллер рейтингов с полной системой ролей
-    branch: "feature/rating/SAAS-008/rating-controller-roles"
-    files_scope:
-      - ".cursor/rules/models/rating.mdc"
-      - "src/infrastructure/controllers/rating/**"
-    steps:
-      - добавить секцию контроллера в rating.mdc
-      - создать RatingController с импортами RoleGuard и Roles
-      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
-      - реализовать методы с правильными ролями:
-        - создание/обновление рейтингов: CUSTOMER_ROLES
-        - просмотр рейтингов: ALL_ROLES
-        - управление рейтингами: MANAGER_ROLES
-        - статистика рейтингов: MANAGER_ROLES
-    dod:
-      - контроллер создан с полной системой ролей
-      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
-      - тенантская изоляция ролей обеспечена
-    gate:
-      - require: "Одобряю SAAS-008-00"
 
-  - id: SAAS-008-01
-    title: Add tenant_id to ratings table
-    branch: "feature/rating/SAAS-008/rating-tenant-isolation"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/rating.ts"
-    steps:
-      - add tenant_id column to ratings table
-      - add indexes: (tenant_id, product_id), (tenant_id, user_id)
-      - update RatingModel with tenant_id field
-    dod:
-      - migration up/down succeeds
-      - RatingModel has tenant_id field
-      - indexes created for performance
-    gate:
-      - require: "Одобряю SAAS-008-01"
+- id: SAAS-008-00
+  title: Создать контроллер рейтингов с полной системой ролей
+  branch: "feature/rating/SAAS-008/rating-controller-roles"
+  files_scope:
+    - ".cursor/rules/models/rating.mdc"
+    - "src/infrastructure/controllers/rating/\*\*"
+      steps:
+    - добавить секцию контроллера в rating.mdc
+    - создать RatingController с импортами RoleGuard и Roles
+    - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+    - реализовать методы с правильными ролями: - создание/обновление рейтингов: CUSTOMER_ROLES - просмотр рейтингов: ALL_ROLES - управление рейтингами: MANAGER_ROLES - статистика рейтингов: MANAGER_ROLES
+      dod:
+    - контроллер создан с полной системой ролей
+    - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+    - тенантская изоляция ролей обеспечена
+      gate:
+    - require: "Одобряю SAAS-008-00"
 
-  - id: SAAS-008-02
-    title: Rating repository tenant filtering
-    branch: "feature/rating/SAAS-008/rating-tenant-isolation"
-    files_scope:
-      - "src/infrastructure/repositories/rating/**"
-      - "src/domain/repositories/rating/**"
-    steps:
-      - add tenant filtering to all rating queries
-      - implement rating aggregation methods
-      - add pagination for rating lists
-    dod:
-      - all rating queries filtered by tenant_id
-      - rating aggregation works within tenant
-      - unit tests for repository methods pass
-    gate:
-      - require: "Одобряю SAAS-008-02"
+- id: SAAS-008-01
+  title: Add tenant_id to ratings table
+  branch: "feature/rating/SAAS-008/rating-tenant-isolation"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/rating.ts"
+      steps:
+    - add tenant_id column to ratings table
+    - add indexes: (tenant_id, product_id), (tenant_id, user_id)
+    - update RatingModel with tenant_id field
+      dod:
+    - migration up/down succeeds
+    - RatingModel has tenant_id field
+    - indexes created for performance
+      gate:
+    - require: "Одобряю SAAS-008-01"
 
-  - id: SAAS-008-03
-    title: Rating controller tenant isolation
-    branch: "feature/rating/SAAS-008/rating-tenant-isolation"
-    files_scope:
-      - "src/infrastructure/controllers/rating/**"
-      - "src/infrastructure/services/rating/**"
-    steps:
-      - ensure all endpoints respect tenant isolation
-      - add proper Swagger documentation
-      - implement rating CRUD operations
-    dod:
-      - rating endpoints isolated by tenant
-      - Swagger documentation complete
-      - integration tests pass (success + error cases)
-    gate:
-      - require: "Одобряю SAAS-008-03"
+- id: SAAS-008-02
+  title: Rating repository tenant filtering
+  branch: "feature/rating/SAAS-008/rating-tenant-isolation"
+  files_scope:
+    - "src/infrastructure/repositories/rating/\*\*"
+    - "src/domain/repositories/rating/\*\*"
+      steps:
+    - add tenant filtering to all rating queries
+    - implement rating aggregation methods
+    - add pagination for rating lists
+      dod:
+    - all rating queries filtered by tenant_id
+    - rating aggregation works within tenant
+    - unit tests for repository methods pass
+      gate:
+    - require: "Одобряю SAAS-008-02"
 
-  # Фаза 2: Тестирование и качество
-  - id: SAAS-008-04
-    title: Создать тесты для API рейтингов
-    branch: "feature/rating/SAAS-008/rating-api-tests"
-    files_scope:
-      - "src/infrastructure/controllers/rating/tests/**"
-      - "src/infrastructure/services/rating/tests/**"
-      - "src/infrastructure/repositories/rating/tests/**"
-    steps:
-      - написать integration тесты для рейтингов
-      - написать unit тесты для сервисов
-      - добавить негативные тесты
-    dod:
-      - все тесты проходят
-      - покрытие критичных модулей ≥80%
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-008-04"
+- id: SAAS-008-03
+  title: Rating controller tenant isolation
+  branch: "feature/rating/SAAS-008/rating-tenant-isolation"
+  files_scope:
+    - "src/infrastructure/controllers/rating/\*\*"
+    - "src/infrastructure/services/rating/\*\*"
+      steps:
+    - ensure all endpoints respect tenant isolation
+    - add proper Swagger documentation
+    - implement rating CRUD operations
+      dod:
+    - rating endpoints isolated by tenant
+    - Swagger documentation complete
+    - integration tests pass (success + error cases)
+      gate:
+    - require: "Одобряю SAAS-008-03"
 
-  - id: SAAS-008-05
-    title: Написать unit тесты для сервисов
-    branch: "feature/rating/SAAS-008/rating-unit-tests"
-    files_scope:
-      - "src/infrastructure/services/rating/tests/**"
-      - "src/infrastructure/repositories/rating/tests/**"
-    steps:
-      - покрыть RatingService методами
-      - покрыть методы агрегации
-      - покрыть методы фильтрации
-    dod:
-      - unit тесты покрывают все методы
-      - тесты стабильны и быстры
-      - моки настроены корректно
-    gate:
-      - require: "Одобряю SAAS-008-05"
+# Фаза 2: Тестирование и качество
 
-  - id: SAAS-008-06
-    title: Написать integration тесты для API
-    branch: "feature/rating/SAAS-008/rating-integration-tests"
-    files_scope:
-      - "src/infrastructure/controllers/rating/tests/**"
-    steps:
-      - покрыть все эндпоинты рейтингов
-      - покрыть эндпоинты агрегации
-      - покрыть тенантскую изоляцию
-    dod:
-      - integration тесты покрывают все эндпоинты
-      - тесты изолированы и детерминированы
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-008-06"
+- id: SAAS-008-04
+  title: Создать тесты для API рейтингов
+  branch: "feature/rating/SAAS-008/rating-api-tests"
+  files_scope:
+    - "src/infrastructure/controllers/rating/tests/\*\*"
+    - "src/infrastructure/services/rating/tests/\*\*"
+    - "src/infrastructure/repositories/rating/tests/\*\*"
+      steps:
+    - написать integration тесты для рейтингов
+    - написать unit тесты для сервисов
+    - добавить негативные тесты
+      dod:
+    - все тесты проходят
+    - покрытие критичных модулей ≥80%
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-008-04"
 
-  # Unit тесты для RatingRepository
-  - id: SAAS-008-07
-    title: Unit тесты для RatingRepository
-    branch: "test/rating/SAAS-008/rating-repository-unit-tests"
-    files_scope:
-      - "tests/unit/repositories/rating.repository.unit.test.ts"
-      - "src/infrastructure/repositories/rating/rating.repository.ts"
-    steps:
-      - создать файл tests/unit/repositories/rating.repository.unit.test.ts
-      - настроить моки для RatingModel
-      - написать тесты для CRUD операций
-      - написать тесты для расчета среднего рейтинга
-      - написать тесты для фильтрации рейтингов
-      - добавить тесты обработки ошибок
-    dod:
-      - покрытие branches ≥ 75%
-      - покрытие functions ≥ 75%
-      - покрытие lines ≥ 75%
-      - все тесты проходят
-      - линтеры проходят без ошибок
-    estimated_time: 2-3 часа
-    gate:
-      - require: "Одобряю SAAS-008-07"
+- id: SAAS-008-05
+  title: Написать unit тесты для сервисов
+  branch: "feature/rating/SAAS-008/rating-unit-tests"
+  files_scope:
+    - "src/infrastructure/services/rating/tests/\*\*"
+    - "src/infrastructure/repositories/rating/tests/\*\*"
+      steps:
+    - покрыть RatingService методами
+    - покрыть методы агрегации
+    - покрыть методы фильтрации
+      dod:
+    - unit тесты покрывают все методы
+    - тесты стабильны и быстры
+    - моки настроены корректно
+      gate:
+    - require: "Одобряю SAAS-008-05"
+
+- id: SAAS-008-06
+  title: Написать integration тесты для API
+  branch: "feature/rating/SAAS-008/rating-integration-tests"
+  files_scope:
+    - "src/infrastructure/controllers/rating/tests/\*\*"
+      steps:
+    - покрыть все эндпоинты рейтингов
+    - покрыть эндпоинты агрегации
+    - покрыть тенантскую изоляцию
+      dod:
+    - integration тесты покрывают все эндпоинты
+    - тесты изолированы и детерминированы
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-008-06"
+
+# Unit тесты для RatingRepository
+
+- id: SAAS-008-07
+  title: Unit тесты для RatingRepository
+  branch: "test/rating/SAAS-008/rating-repository-unit-tests"
+  files_scope:
+    - "tests/unit/repositories/rating.repository.unit.test.ts"
+    - "src/infrastructure/repositories/rating/rating.repository.ts"
+      steps:
+    - создать файл tests/unit/repositories/rating.repository.unit.test.ts
+    - настроить моки для RatingModel
+    - написать тесты для CRUD операций
+    - написать тесты для расчета среднего рейтинга
+    - написать тесты для фильтрации рейтингов
+    - добавить тесты обработки ошибок
+      dod:
+    - покрытие branches ≥ 75%
+    - покрытие functions ≥ 75%
+    - покрытие lines ≥ 75%
+    - все тесты проходят
+    - линтеры проходят без ошибок
+      estimated_time: 2-3 часа
+      gate:
+    - require: "Одобряю SAAS-008-07"

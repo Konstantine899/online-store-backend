@@ -6,442 +6,444 @@ epic_ref: SAAS-017
 version: 1.0
 
 execution_policy:
-  must_follow: true
-  allow_code_changes_only_after: "Одобряю <TASK_ID>"
-  constraints:
-    - no public API changes without explicit approval
-    - operate strictly within files_scope
-    - pass lints/tests and Swagger before DoD complete
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - no public API changes without explicit approval - operate strictly within files_scope - pass lints/tests and Swagger before DoD complete
 
 context:
-  goal: Comprehensive role management system with hierarchy, tenant isolation, and automatic role assignment
+goal: Comprehensive role management system with hierarchy, tenant isolation, and automatic role assignment
 
 # DEFAULT PRE-COMMIT WORKFLOW для всех role задач
+
 default_pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: RBAC/authorization)"
 default_pre_commit_steps:
-  - "«Ревью» → authorization logic, role hierarchy, permission checks, security"
-  - "«Оптимизируй» → role check performance, DB queries for permissions"
-  - "«Автофикс» → linter/prettier"
-  - "Тесты: RBAC integration tests, permission matrix tests"
-  - "Coverage: role/guard модуль ≥85%"
-  - "«Коммит» → feat(role): <TASK_ID> complete"
+
+- "«Ревью» → authorization logic, role hierarchy, permission checks, security"
+- "«Оптимизируй» → role check performance, DB queries for permissions"
+- "«Автофикс» → linter/prettier"
+- "Тесты: RBAC integration tests, permission matrix tests"
+- "Coverage: role/guard модуль ≥85%"
+- "«Коммит» → feat(role): <TASK_ID> complete"
 
 tasks:
-  # Фаза 1: Базовая инфраструктура ролей
-  - id: SAAS-017-00
-    title: Создать контроллер ролей с полной системой ролей
-    branch: "feature/role/SAAS-017/role-controller-roles"
-    files_scope:
-      - ".cursor/rules/models/role.mdc"
-      - "src/infrastructure/controllers/role/**"
-    steps:
-      - добавить секцию контроллера в role.mdc
-      - создать RoleController с импортами RoleGuard и Roles
-      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
-      - реализовать методы с правильными ролями:
-        - управление ролями: ADMIN_ROLES
-        - управление разрешениями: ADMIN_ROLES
-        - назначение ролей пользователям: MANAGER_ROLES
-        - просмотр ролей и разрешений: MANAGER_ROLES
-    dod:
-      - контроллер создан с полной системой ролей
-      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
-      - тенантская изоляция ролей обеспечена
-    gate:
-      - require: "Одобряю SAAS-017-00"
 
-  - id: SAAS-017-01
-    title: Создать миграции для таблиц roles, user_roles, role_permissions
-    branch: "feature/role/SAAS-017/role-core-tables"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/role.ts"
-      - "src/domain/models/user-role.ts"
-      - "src/domain/models/role-permission.ts"
-    steps:
-      - создать таблицу roles с полями role, description, level, permissions, is_system_role, tenant_id
-      - создать расширенную таблицу user_roles с полями user_id, role_id, tenant_id, granted_by, expires_at, metadata
-      - создать таблицу role_permissions для детального управления разрешениями
-      - добавить индексы для производительности
-      - обновить соответствующие модели
-    dod:
-      - миграции up/down успешны
-      - все модели содержат необходимые поля
-      - индексы созданы для производительности
-      - ассоциации между моделями настроены
-    gate:
-      - require: "Одобряю SAAS-017-01"
+# Фаза 1: Базовая инфраструктура ролей
 
-  - id: SAAS-017-02
-    title: Реализовать модели RoleModel, UserRoleModel, RolePermissionModel
-    branch: "feature/role/SAAS-017/role-core-models"
-    files_scope:
-      - "src/domain/models/role.ts"
-      - "src/domain/models/user-role.ts"
-      - "src/domain/models/role-permission.ts"
-    steps:
-      - добавить методы для работы с иерархией ролей (hasPermission, canAccessLevel)
-      - реализовать методы для проверки истечения ролей (isExpired, isValid)
-      - добавить методы для получения эффективных разрешений
-      - реализовать scopes для фильтрации ролей
-    dod:
-      - все методы моделей реализованы
-      - логика иерархии ролей работает корректно
-      - методы проверки разрешений функциональны
-      - scopes работают правильно
-    gate:
-      - require: "Одобряю SAAS-017-02"
+- id: SAAS-017-00
+  title: Создать контроллер ролей с полной системой ролей
+  branch: "feature/role/SAAS-017/role-controller-roles"
+  files_scope:
+    - ".cursor/rules/models/role.mdc"
+    - "src/infrastructure/controllers/role/\*\*"
+      steps:
+    - добавить секцию контроллера в role.mdc
+    - создать RoleController с импортами RoleGuard и Roles
+    - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+    - реализовать методы с правильными ролями: - управление ролями: ADMIN_ROLES - управление разрешениями: ADMIN_ROLES - назначение ролей пользователям: MANAGER_ROLES - просмотр ролей и разрешений: MANAGER_ROLES
+      dod:
+    - контроллер создан с полной системой ролей
+    - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+    - тенантская изоляция ролей обеспечена
+      gate:
+    - require: "Одобряю SAAS-017-00"
 
-  - id: SAAS-017-03
-    title: Создать сиды с системными и тенантскими ролями
-    branch: "feature/role/SAAS-017/role-seeds"
-    files_scope:
-      - "db/seeders/**"
-    steps:
-      - создать сиды для системных ролей (SUPER_ADMIN, PLATFORM_ADMIN, SUPPORT, BILLING_ADMIN)
-      - создать сиды для тенантских ролей (TENANT_OWNER, TENANT_ADMIN, MANAGER, CONTENT_MANAGER, CUSTOMER_SERVICE)
-      - создать сиды для пользовательских ролей (VIP_CUSTOMER, WHOLESALE, CUSTOMER, AFFILIATE, GUEST)
-      - добавить базовые разрешения для каждой роли
-    dod:
-      - все роли созданы с правильными уровнями
-      - разрешения для ролей настроены
-      - сиды работают корректно
-      - роли соответствуют иерархии
-    gate:
-      - require: "Одобряю SAAS-017-03"
+- id: SAAS-017-01
+  title: Создать миграции для таблиц roles, user_roles, role_permissions
+  branch: "feature/role/SAAS-017/role-core-tables"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/role.ts"
+    - "src/domain/models/user-role.ts"
+    - "src/domain/models/role-permission.ts"
+      steps:
+    - создать таблицу roles с полями role, description, level, permissions, is_system_role, tenant_id
+    - создать расширенную таблицу user_roles с полями user_id, role_id, tenant_id, granted_by, expires_at, metadata
+    - создать таблицу role_permissions для детального управления разрешениями
+    - добавить индексы для производительности
+    - обновить соответствующие модели
+      dod:
+    - миграции up/down успешны
+    - все модели содержат необходимые поля
+    - индексы созданы для производительности
+    - ассоциации между моделями настроены
+      gate:
+    - require: "Одобряю SAAS-017-01"
 
-  - id: SAAS-017-04
-    title: Создать DTO классы с валидацией ролей
-    branch: "feature/role/SAAS-017/role-dto-validation"
-    files_scope:
-      - "src/infrastructure/dto/role/**"
-      - "src/domain/dto/**"
-    steps:
-      - создать CreateRoleDto для создания ролей
-      - создать UpdateRoleDto для обновления ролей
-      - создать AssignRoleDto для назначения ролей пользователям
-      - создать RemoveRoleDto для удаления ролей
-      - добавить валидаторы с русскими сообщениями
-    dod:
-      - DTO содержат все необходимые поля
-      - валидация работает с русскими сообщениями
-      - CustomValidationPipe обрабатывает все DTO
-      - валидация иерархии ролей работает
-    gate:
-      - require: "Одобряю SAAS-017-04"
+- id: SAAS-017-02
+  title: Реализовать модели RoleModel, UserRoleModel, RolePermissionModel
+  branch: "feature/role/SAAS-017/role-core-models"
+  files_scope:
+    - "src/domain/models/role.ts"
+    - "src/domain/models/user-role.ts"
+    - "src/domain/models/role-permission.ts"
+      steps:
+    - добавить методы для работы с иерархией ролей (hasPermission, canAccessLevel)
+    - реализовать методы для проверки истечения ролей (isExpired, isValid)
+    - добавить методы для получения эффективных разрешений
+    - реализовать scopes для фильтрации ролей
+      dod:
+    - все методы моделей реализованы
+    - логика иерархии ролей работает корректно
+    - методы проверки разрешений функциональны
+    - scopes работают правильно
+      gate:
+    - require: "Одобряю SAAS-017-02"
 
-  - id: SAAS-017-05
-    title: Создать Response классы с Swagger
-    branch: "feature/role/SAAS-017/role-response-swagger"
-    files_scope:
-      - "src/infrastructure/responses/role/**"
-      - "src/infrastructure/common/decorators/swagger/role/**"
-    steps:
-      - создать Response классы для ролей
-      - создать Response для списков ролей с пагинацией
-      - создать Response для пользовательских ролей
-      - добавить Swagger декораторы
-    dod:
-      - Response классы созданы
-      - Swagger схемы корректны
-      - пагинация возвращает { data, meta }
-      - Swagger документация обновлена
-    gate:
-      - require: "Одобряю SAAS-017-05"
+- id: SAAS-017-03
+  title: Создать сиды с системными и тенантскими ролями
+  branch: "feature/role/SAAS-017/role-seeds"
+  files_scope:
+    - "db/seeders/\*\*"
+      steps:
+    - создать сиды для системных ролей (SUPER_ADMIN, PLATFORM_ADMIN, SUPPORT, BILLING_ADMIN)
+    - создать сиды для тенантских ролей (TENANT_OWNER, TENANT_ADMIN, MANAGER, CONTENT_MANAGER, CUSTOMER_SERVICE)
+    - создать сиды для пользовательских ролей (VIP_CUSTOMER, WHOLESALE, CUSTOMER, AFFILIATE, GUEST)
+    - добавить базовые разрешения для каждой роли
+      dod:
+    - все роли созданы с правильными уровнями
+    - разрешения для ролей настроены
+    - сиды работают корректно
+    - роли соответствуют иерархии
+      gate:
+    - require: "Одобряю SAAS-017-03"
 
-  # Фаза 2: Сервисы и бизнес-логика
-  - id: SAAS-017-06
-    title: Реализовать RoleService с основной логикой
-    branch: "feature/role/SAAS-017/role-service-methods"
-    files_scope:
-      - "src/infrastructure/services/role/**"
-      - "src/domain/services/**"
-    steps:
-      - добавить методы CRUD для ролей
-      - реализовать методы назначения/удаления ролей
-      - добавить методы управления разрешениями
-      - реализовать логику иерархии ролей
-      - добавить методы автоматического назначения ролей
-    dod:
-      - все методы сервиса реализованы
-      - CRUD операции работают корректно
-      - управление разрешениями функционально
-      - логика иерархии работает
-      - автоматическое назначение ролей реализовано
-    gate:
-      - require: "Одобряю SAAS-017-06"
+- id: SAAS-017-04
+  title: Создать DTO классы с валидацией ролей
+  branch: "feature/role/SAAS-017/role-dto-validation"
+  files_scope:
+    - "src/infrastructure/dto/role/\*\*"
+    - "src/domain/dto/\*\*"
+      steps:
+    - создать CreateRoleDto для создания ролей
+    - создать UpdateRoleDto для обновления ролей
+    - создать AssignRoleDto для назначения ролей пользователям
+    - создать RemoveRoleDto для удаления ролей
+    - добавить валидаторы с русскими сообщениями
+      dod:
+    - DTO содержат все необходимые поля
+    - валидация работает с русскими сообщениями
+    - CustomValidationPipe обрабатывает все DTO
+    - валидация иерархии ролей работает
+      gate:
+    - require: "Одобряю SAAS-017-04"
 
-  - id: SAAS-017-07
-    title: Реализовать автоматическое назначение ролей
-    branch: "feature/role/SAAS-017/role-auto-assignment"
-    files_scope:
-      - "src/infrastructure/services/role/**"
-      - "src/infrastructure/services/user/**"
-      - "src/infrastructure/services/order/**"
-    steps:
-      - реализовать автоматическое назначение VIP роли по сумме покупок
-      - реализовать автоматическое назначение оптовой роли по количеству заказов
-      - добавить логику повышения ролей
-      - интегрировать с сервисами заказов и пользователей
-    dod:
-      - автоматическое назначение VIP работает
-      - автоматическое назначение оптовой роли функционально
-      - логика повышения ролей реализована
-      - интеграция с другими сервисами работает
-    gate:
-      - require: "Одобряю SAAS-017-07"
+- id: SAAS-017-05
+  title: Создать Response классы с Swagger
+  branch: "feature/role/SAAS-017/role-response-swagger"
+  files_scope:
+    - "src/infrastructure/responses/role/\*\*"
+    - "src/infrastructure/common/decorators/swagger/role/\*\*"
+      steps:
+    - создать Response классы для ролей
+    - создать Response для списков ролей с пагинацией
+    - создать Response для пользовательских ролей
+    - добавить Swagger декораторы
+      dod:
+    - Response классы созданы
+    - Swagger схемы корректны
+    - пагинация возвращает { data, meta }
+    - Swagger документация обновлена
+      gate:
+    - require: "Одобряю SAAS-017-05"
 
-  - id: SAAS-017-08
-    title: Создать Guards для проверки ролей и иерархии
-    branch: "feature/role/SAAS-017/role-guards"
-    files_scope:
-      - "src/infrastructure/common/guards/**"
-      - "src/infrastructure/common/decorators/**"
-    steps:
-      - создать RoleHierarchyGuard для проверки иерархии
-      - создать TenantRoleGuard для тенантской изоляции
-      - создать PermissionGuard для проверки разрешений
-      - добавить декораторы для уровней доступа
-    dod:
-      - RoleHierarchyGuard работает корректно
-      - TenantRoleGuard функционален
-      - PermissionGuard проверяет разрешения
-      - декораторы работают правильно
-    gate:
-      - require: "Одобряю SAAS-017-08"
+# Фаза 2: Сервисы и бизнес-логика
 
-  - id: SAAS-017-09
-    title: Добавить обработку ошибок и валидацию
-    branch: "feature/role/SAAS-017/role-error-handling"
-    files_scope:
-      - "src/infrastructure/common/filters/**"
-      - "src/infrastructure/common/pipes/**"
-    steps:
-      - добавить обработку ошибок для ролей
-      - улучшить валидацию с русскими сообщениями
-      - добавить логирование ошибок
-      - создать специфичные исключения для ролей
-    dod:
-      - ошибки обрабатываются корректно
-      - сообщения на русском языке
-      - логирование работает
-      - специфичные исключения созданы
-    gate:
-      - require: "Одобряю SAAS-017-09"
+- id: SAAS-017-06
+  title: Реализовать RoleService с основной логикой
+  branch: "feature/role/SAAS-017/role-service-methods"
+  files_scope:
+    - "src/infrastructure/services/role/\*\*"
+    - "src/domain/services/\*\*"
+      steps:
+    - добавить методы CRUD для ролей
+    - реализовать методы назначения/удаления ролей
+    - добавить методы управления разрешениями
+    - реализовать логику иерархии ролей
+    - добавить методы автоматического назначения ролей
+      dod:
+    - все методы сервиса реализованы
+    - CRUD операции работают корректно
+    - управление разрешениями функционально
+    - логика иерархии работает
+    - автоматическое назначение ролей реализовано
+      gate:
+    - require: "Одобряю SAAS-017-06"
 
-  # Фаза 3: API и контроллеры
-  - id: SAAS-017-10
-    title: Создать контроллер с API endpoints
-    branch: "feature/role/SAAS-017/role-controller-endpoints"
-    files_scope:
-      - "src/infrastructure/controllers/role/**"
-      - "src/infrastructure/common/decorators/swagger/role/**"
-    steps:
-      - добавить эндпоинты для CRUD ролей (POST /roles, GET /roles, PATCH /roles/:id, DELETE /roles/:id)
-      - добавить эндпоинты для управления ролями пользователей (POST /roles/assign, DELETE /roles/remove)
-      - добавить эндпоинты для получения ролей пользователя (GET /roles/user/:userId)
-      - добавить эндпоинты для иерархии ролей (GET /roles/hierarchy)
-    dod:
-      - все эндпоинты работают корректно
-      - Swagger документация обновлена
-      - Guards и роли применены правильно
-      - API соответствует спецификации
-    gate:
-      - require: "Одобряю SAAS-017-10"
+- id: SAAS-017-07
+  title: Реализовать автоматическое назначение ролей
+  branch: "feature/role/SAAS-017/role-auto-assignment"
+  files_scope:
+    - "src/infrastructure/services/role/\*\*"
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/services/order/\*\*"
+      steps:
+    - реализовать автоматическое назначение VIP роли по сумме покупок
+    - реализовать автоматическое назначение оптовой роли по количеству заказов
+    - добавить логику повышения ролей
+    - интегрировать с сервисами заказов и пользователей
+      dod:
+    - автоматическое назначение VIP работает
+    - автоматическое назначение оптовой роли функционально
+    - логика повышения ролей реализована
+    - интеграция с другими сервисами работает
+      gate:
+    - require: "Одобряю SAAS-017-07"
 
-  - id: SAAS-017-11
-    title: Настроить тенантскую изоляцию ролей
-    branch: "feature/role/SAAS-017/role-tenant-isolation"
-    files_scope:
-      - "src/infrastructure/common/middleware/**"
-      - "src/infrastructure/services/role/**"
-    steps:
-      - реализовать middleware для тенантской изоляции ролей
-      - добавить проверку доступа к ролям в контексте тенанта
-      - настроить фильтрацию ролей по тенанту
-      - добавить логирование доступа к ролям
-    dod:
-      - тенантская изоляция работает корректно
-      - проверка доступа функциональна
-      - фильтрация ролей работает
-      - логирование доступа активно
-    gate:
-      - require: "Одобряю SAAS-017-11"
+- id: SAAS-017-08
+  title: Создать Guards для проверки ролей и иерархии
+  branch: "feature/role/SAAS-017/role-guards"
+  files_scope:
+    - "src/infrastructure/common/guards/\*\*"
+    - "src/infrastructure/common/decorators/\*\*"
+      steps:
+    - создать RoleHierarchyGuard для проверки иерархии
+    - создать TenantRoleGuard для тенантской изоляции
+    - создать PermissionGuard для проверки разрешений
+    - добавить декораторы для уровней доступа
+      dod:
+    - RoleHierarchyGuard работает корректно
+    - TenantRoleGuard функционален
+    - PermissionGuard проверяет разрешения
+    - декораторы работают правильно
+      gate:
+    - require: "Одобряю SAAS-017-08"
 
-  - id: SAAS-017-12
-    title: Создать тесты для API ролей
-    branch: "feature/role/SAAS-017/role-api-tests"
-    files_scope:
-      - "src/infrastructure/controllers/role/tests/**"
-      - "src/infrastructure/services/role/tests/**"
-      - "src/infrastructure/repositories/role/tests/**"
-    steps:
-      - написать integration тесты для ролей
-      - написать unit тесты для сервисов
-      - добавить негативные тесты
-      - покрыть тестами автоматическое назначение ролей
-    dod:
-      - все тесты проходят
-      - покрытие критичных модулей ≥80%
-      - негативные сценарии покрыты
-      - тесты автоматического назначения работают
-    gate:
-      - require: "Одобряю SAAS-017-12"
+- id: SAAS-017-09
+  title: Добавить обработку ошибок и валидацию
+  branch: "feature/role/SAAS-017/role-error-handling"
+  files_scope:
+    - "src/infrastructure/common/filters/\*\*"
+    - "src/infrastructure/common/pipes/\*\*"
+      steps:
+    - добавить обработку ошибок для ролей
+    - улучшить валидацию с русскими сообщениями
+    - добавить логирование ошибок
+    - создать специфичные исключения для ролей
+      dod:
+    - ошибки обрабатываются корректно
+    - сообщения на русском языке
+    - логирование работает
+    - специфичные исключения созданы
+      gate:
+    - require: "Одобряю SAAS-017-09"
 
-  # Фаза 4: Тестирование и качество
-  - id: SAAS-017-13
-    title: Написать unit тесты для сервисов
-    branch: "feature/role/SAAS-017/role-unit-tests"
-    files_scope:
-      - "src/infrastructure/services/role/tests/**"
-      - "src/infrastructure/repositories/role/tests/**"
-    steps:
-      - покрыть RoleService методами
-      - покрыть методы иерархии ролей
-      - покрыть методы автоматического назначения
-      - покрыть методы управления разрешениями
-    dod:
-      - unit тесты покрывают все методы
-      - тесты стабильны и быстры
-      - моки настроены корректно
-      - тесты иерархии работают
-    gate:
-      - require: "Одобряю SAAS-017-13"
+# Фаза 3: API и контроллеры
 
-  - id: SAAS-017-14
-    title: Написать integration тесты для API
-    branch: "feature/role/SAAS-017/role-integration-tests"
-    files_scope:
-      - "src/infrastructure/controllers/role/tests/**"
-    steps:
-      - покрыть все эндпоинты ролей
-      - покрыть эндпоинты управления ролями пользователей
-      - покрыть эндпоинты иерархии ролей
-      - покрыть тенантскую изоляцию
-    dod:
-      - integration тесты покрывают все эндпоинты
-      - тесты изолированы и детерминированы
-      - негативные сценарии покрыты
-      - тесты тенантской изоляции работают
-    gate:
-      - require: "Одобряю SAAS-017-14"
+- id: SAAS-017-10
+  title: Создать контроллер с API endpoints
+  branch: "feature/role/SAAS-017/role-controller-endpoints"
+  files_scope:
+    - "src/infrastructure/controllers/role/\*\*"
+    - "src/infrastructure/common/decorators/swagger/role/\*\*"
+      steps:
+    - добавить эндпоинты для CRUD ролей (POST /roles, GET /roles, PATCH /roles/:id, DELETE /roles/:id)
+    - добавить эндпоинты для управления ролями пользователей (POST /roles/assign, DELETE /roles/remove)
+    - добавить эндпоинты для получения ролей пользователя (GET /roles/user/:userId)
+    - добавить эндпоинты для иерархии ролей (GET /roles/hierarchy)
+      dod:
+    - все эндпоинты работают корректно
+    - Swagger документация обновлена
+    - Guards и роли применены правильно
+    - API соответствует спецификации
+      gate:
+    - require: "Одобряю SAAS-017-10"
 
-  - id: SAAS-017-15
-    title: Провести рефакторинг и оптимизацию
-    branch: "feature/role/SAAS-017/role-optimization"
-    files_scope:
-      - "src/infrastructure/**"
-      - "src/domain/**"
-    steps:
-      - оптимизировать запросы к БД
-      - рефакторить дублирующийся код
-      - улучшить производительность
-      - добавить кэширование ролей
-    dod:
-      - код оптимизирован
-      - дублирование устранено
-      - производительность улучшена
-      - кэширование ролей работает
-    gate:
-      - require: "Одобряю SAAS-017-15"
+- id: SAAS-017-11
+  title: Настроить тенантскую изоляцию ролей
+  branch: "feature/role/SAAS-017/role-tenant-isolation"
+  files_scope:
+    - "src/infrastructure/common/middleware/\*\*"
+    - "src/infrastructure/services/role/\*\*"
+      steps:
+    - реализовать middleware для тенантской изоляции ролей
+    - добавить проверку доступа к ролям в контексте тенанта
+    - настроить фильтрацию ролей по тенанту
+    - добавить логирование доступа к ролям
+      dod:
+    - тенантская изоляция работает корректно
+    - проверка доступа функциональна
+    - фильтрация ролей работает
+    - логирование доступа активно
+      gate:
+    - require: "Одобряю SAAS-017-11"
 
-  # Дополнительные возможности
-  - id: SAAS-017-16
-    title: Аудит изменений ролей
-    branch: "feature/role/SAAS-017/role-audit"
-    files_scope:
-      - "src/infrastructure/services/role/**"
-      - "src/infrastructure/services/audit/**"
-    steps:
-      - реализовать аудит назначения/удаления ролей
-      - добавить логирование изменений разрешений
-      - создать отчеты по изменениям ролей
-      - интегрировать с системой аудита
-    dod:
-      - аудит ролей работает
-      - логирование изменений активно
-      - отчеты генерируются
-      - интеграция с аудитом функциональна
-    gate:
-      - require: "Одобряю SAAS-017-16"
+- id: SAAS-017-12
+  title: Создать тесты для API ролей
+  branch: "feature/role/SAAS-017/role-api-tests"
+  files_scope:
+    - "src/infrastructure/controllers/role/tests/\*\*"
+    - "src/infrastructure/services/role/tests/\*\*"
+    - "src/infrastructure/repositories/role/tests/\*\*"
+      steps:
+    - написать integration тесты для ролей
+    - написать unit тесты для сервисов
+    - добавить негативные тесты
+    - покрыть тестами автоматическое назначение ролей
+      dod:
+    - все тесты проходят
+    - покрытие критичных модулей ≥80%
+    - негативные сценарии покрыты
+    - тесты автоматического назначения работают
+      gate:
+    - require: "Одобряю SAAS-017-12"
 
-  - id: SAAS-017-17
-    title: Временные роли и истечение
-    branch: "feature/role/SAAS-017/role-expiration"
-    files_scope:
-      - "src/infrastructure/services/role/**"
-      - "src/infrastructure/common/jobs/**"
-    steps:
-      - реализовать логику истечения ролей
-      - создать job для очистки истекших ролей
-      - добавить уведомления об истечении ролей
-      - настроить автоматическое продление ролей
-    dod:
-      - логика истечения ролей работает
-      - job очистки функционален
-      - уведомления отправляются
-      - автоматическое продление настроено
-    gate:
-      - require: "Одобряю SAAS-017-17"
+# Фаза 4: Тестирование и качество
 
-  - id: SAAS-017-18
-    title: Аналитика ролей и разрешений
-    branch: "feature/role/SAAS-017/role-analytics"
-    files_scope:
-      - "src/infrastructure/controllers/role/**"
-      - "src/infrastructure/services/role/**"
-    steps:
-      - создать эндпоинты аналитики ролей
-      - добавить метрики использования ролей
-      - настроить отчеты по разрешениям
-      - создать дашборды для ролей
-    dod:
-      - аналитика ролей работает
-      - метрики корректны
-      - отчеты генерируются
-      - дашборды функциональны
-    gate:
-      - require: "Одобряю SAAS-017-18"
+- id: SAAS-017-13
+  title: Написать unit тесты для сервисов
+  branch: "feature/role/SAAS-017/role-unit-tests"
+  files_scope:
+    - "src/infrastructure/services/role/tests/\*\*"
+    - "src/infrastructure/repositories/role/tests/\*\*"
+      steps:
+    - покрыть RoleService методами
+    - покрыть методы иерархии ролей
+    - покрыть методы автоматического назначения
+    - покрыть методы управления разрешениями
+      dod:
+    - unit тесты покрывают все методы
+    - тесты стабильны и быстры
+    - моки настроены корректно
+    - тесты иерархии работают
+      gate:
+    - require: "Одобряю SAAS-017-13"
 
-  - id: SAAS-017-19
-    title: Интеграция с внешними системами
-    branch: "feature/role/SAAS-017/role-external-integration"
-    files_scope:
-      - "src/infrastructure/services/role/**"
-      - "src/infrastructure/common/integrations/**"
-    steps:
-      - создать интерфейс для внешних систем управления ролями
-      - реализовать синхронизацию ролей с LDAP/AD
-      - добавить интеграцию с SSO провайдерами
-      - настроить маппинг ролей между системами
-    dod:
-      - интерфейс для внешних систем создан
-      - синхронизация с LDAP/AD работает
-      - интеграция с SSO функциональна
-      - маппинг ролей настроен
-    gate:
-      - require: "Одобряю SAAS-017-19"
+- id: SAAS-017-14
+  title: Написать integration тесты для API
+  branch: "feature/role/SAAS-017/role-integration-tests"
+  files_scope:
+    - "src/infrastructure/controllers/role/tests/\*\*"
+      steps:
+    - покрыть все эндпоинты ролей
+    - покрыть эндпоинты управления ролями пользователей
+    - покрыть эндпоинты иерархии ролей
+    - покрыть тенантскую изоляцию
+      dod:
+    - integration тесты покрывают все эндпоинты
+    - тесты изолированы и детерминированы
+    - негативные сценарии покрыты
+    - тесты тенантской изоляции работают
+      gate:
+    - require: "Одобряю SAAS-017-14"
 
-  # Unit тесты для RoleRepository
-  - id: SAAS-017-20
-    title: Unit тесты для RoleRepository
-    branch: "test/role/SAAS-017/role-repository-unit-tests"
-    files_scope:
-      - "tests/unit/repositories/role.repository.unit.test.ts"
-      - "src/infrastructure/repositories/role/role.repository.ts"
-    steps:
-      - создать файл tests/unit/repositories/role.repository.unit.test.ts
-      - настроить моки для RoleModel
-      - написать тесты для CRUD операций - create, findById, findAll, update, delete
-      - написать тесты для поиска ролей по названию
-      - написать тесты для работы с пользовательскими ролями
-      - добавить тесты обработки ошибок для всех методов
-    dod:
-      - покрытие branches ≥ 80%
-      - покрытие functions ≥ 80%
-      - покрытие lines ≥ 80%
-      - все тесты проходят
-      - линтеры проходят без ошибок
-    estimated_time: 3-4 часа
-    gate:
-      - require: "Одобряю SAAS-017-20"
+- id: SAAS-017-15
+  title: Провести рефакторинг и оптимизацию
+  branch: "feature/role/SAAS-017/role-optimization"
+  files_scope:
+    - "src/infrastructure/\*\*"
+    - "src/domain/\*\*"
+      steps:
+    - оптимизировать запросы к БД
+    - рефакторить дублирующийся код
+    - улучшить производительность
+    - добавить кэширование ролей
+      dod:
+    - код оптимизирован
+    - дублирование устранено
+    - производительность улучшена
+    - кэширование ролей работает
+      gate:
+    - require: "Одобряю SAAS-017-15"
+
+# Дополнительные возможности
+
+- id: SAAS-017-16
+  title: Аудит изменений ролей
+  branch: "feature/role/SAAS-017/role-audit"
+  files_scope:
+    - "src/infrastructure/services/role/\*\*"
+    - "src/infrastructure/services/audit/\*\*"
+      steps:
+    - реализовать аудит назначения/удаления ролей
+    - добавить логирование изменений разрешений
+    - создать отчеты по изменениям ролей
+    - интегрировать с системой аудита
+      dod:
+    - аудит ролей работает
+    - логирование изменений активно
+    - отчеты генерируются
+    - интеграция с аудитом функциональна
+      gate:
+    - require: "Одобряю SAAS-017-16"
+
+- id: SAAS-017-17
+  title: Временные роли и истечение
+  branch: "feature/role/SAAS-017/role-expiration"
+  files_scope:
+    - "src/infrastructure/services/role/\*\*"
+    - "src/infrastructure/common/jobs/\*\*"
+      steps:
+    - реализовать логику истечения ролей
+    - создать job для очистки истекших ролей
+    - добавить уведомления об истечении ролей
+    - настроить автоматическое продление ролей
+      dod:
+    - логика истечения ролей работает
+    - job очистки функционален
+    - уведомления отправляются
+    - автоматическое продление настроено
+      gate:
+    - require: "Одобряю SAAS-017-17"
+
+- id: SAAS-017-18
+  title: Аналитика ролей и разрешений
+  branch: "feature/role/SAAS-017/role-analytics"
+  files_scope:
+    - "src/infrastructure/controllers/role/\*\*"
+    - "src/infrastructure/services/role/\*\*"
+      steps:
+    - создать эндпоинты аналитики ролей
+    - добавить метрики использования ролей
+    - настроить отчеты по разрешениям
+    - создать дашборды для ролей
+      dod:
+    - аналитика ролей работает
+    - метрики корректны
+    - отчеты генерируются
+    - дашборды функциональны
+      gate:
+    - require: "Одобряю SAAS-017-18"
+
+- id: SAAS-017-19
+  title: Интеграция с внешними системами
+  branch: "feature/role/SAAS-017/role-external-integration"
+  files_scope:
+    - "src/infrastructure/services/role/\*\*"
+    - "src/infrastructure/common/integrations/\*\*"
+      steps:
+    - создать интерфейс для внешних систем управления ролями
+    - реализовать синхронизацию ролей с LDAP/AD
+    - добавить интеграцию с SSO провайдерами
+    - настроить маппинг ролей между системами
+      dod:
+    - интерфейс для внешних систем создан
+    - синхронизация с LDAP/AD работает
+    - интеграция с SSO функциональна
+    - маппинг ролей настроен
+      gate:
+    - require: "Одобряю SAAS-017-19"
+
+# Unit тесты для RoleRepository
+
+- id: SAAS-017-20
+  title: Unit тесты для RoleRepository
+  branch: "test/role/SAAS-017/role-repository-unit-tests"
+  files_scope:
+    - "tests/unit/repositories/role.repository.unit.test.ts"
+    - "src/infrastructure/repositories/role/role.repository.ts"
+      steps:
+    - создать файл tests/unit/repositories/role.repository.unit.test.ts
+    - настроить моки для RoleModel
+    - написать тесты для CRUD операций - create, findById, findAll, update, delete
+    - написать тесты для поиска ролей по названию
+    - написать тесты для работы с пользовательскими ролями
+    - добавить тесты обработки ошибок для всех методов
+      dod:
+    - покрытие branches ≥ 80%
+    - покрытие functions ≥ 80%
+    - покрытие lines ≥ 80%
+    - все тесты проходят
+    - линтеры проходят без ошибок
+      estimated_time: 3-4 часа
+      gate:
+    - require: "Одобряю SAAS-017-20"

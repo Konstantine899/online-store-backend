@@ -6,352 +6,354 @@ epic_ref: SAAS-004
 version: 1.0
 
 execution_policy:
-  must_follow: true
-  allow_code_changes_only_after: "Одобряю <TASK_ID>"
-  constraints:
-    - no public API changes without explicit approval
-    - operate strictly within files_scope
-    - pass lints/tests and Swagger before DoD complete
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - no public API changes without explicit approval - operate strictly within files_scope - pass lints/tests and Swagger before DoD complete
 
 context:
-  goal: Shopping cart with tenant isolation and guest support
+goal: Shopping cart with tenant isolation and guest support
 
 # DEFAULT PRE-COMMIT WORKFLOW для всех cart задач
+
 default_pre_commit_workflow: "СТАНДАРТНЫЙ (business logic: cart/checkout)"
 default_pre_commit_steps:
-  - "«Ревью» → cart logic, pricing calculations, concurrency handling"
-  - "«Автофикс» → linter/prettier"
-  - "Тесты: cart integration tests, race condition tests"
-  - "«Коммит» → feat(cart): <TASK_ID> complete"
+
+- "«Ревью» → cart logic, pricing calculations, concurrency handling"
+- "«Автофикс» → linter/prettier"
+- "Тесты: cart integration tests, race condition tests"
+- "«Коммит» → feat(cart): <TASK_ID> complete"
 
 tasks:
-  # Фаза 1: Базовая реализация
-  - id: SAAS-004-00
-    title: Создать контроллер корзины с полной системой ролей
-    branch: "feature/cart/SAAS-004/cart-controller-roles"
-    files_scope:
-      - ".cursor/rules/models/cart-simple.mdc"
-      - "src/infrastructure/controllers/cart/**"
-    steps:
-      - добавить секцию контроллера в cart-simple.mdc
-      - создать CartController с импортами RoleGuard и Roles
-      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
-      - реализовать методы с правильными ролями:
-        - управление корзиной: CUSTOMER_ROLES
-        - просмотр корзин пользователей: STAFF_ROLES
-        - аналитика корзин: MANAGER_ROLES
-        - управление промокодами: MANAGER_ROLES
-    dod:
-      - контроллер создан с полной системой ролей
-      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
-      - тенантская изоляция ролей обеспечена
-    gate:
-      - require: "Одобряю SAAS-004-00"
 
-  - id: SAAS-004-01
-    title: Создать миграции для таблиц carts и cart_items
-    branch: "feature/cart/SAAS-004/cart-core-implementation"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/cart.ts"
-      - "src/domain/models/cart-product.ts"
-    steps:
-      - создать таблицы carts и cart_items с tenant_id
-      - добавить индексы для производительности
-      - обновить CartModel и CartProductModel с tenant_id
-    dod:
-      - миграция up/down успешна
-      - Cart модели содержат tenant_id
-      - индексы созданы для производительности
-    gate:
-      - require: "Одобряю SAAS-004-01"
+# Фаза 1: Базовая реализация
 
-  - id: SAAS-004-02
-    title: Реализовать модели CartModel и CartProductModel
-    branch: "feature/cart/SAAS-004/cart-core-implementation"
-    files_scope:
-      - "src/domain/models/cart.ts"
-      - "src/domain/models/cart-product.ts"
-    steps:
-      - добавить методы для работы с корзиной
-      - реализовать автоматический пересчет сумм
-      - добавить методы для управления товарами в корзине
-    dod:
-      - все методы корзины реализованы
-      - пересчет сумм работает корректно
-      - управление товарами функционально
-    gate:
-      - require: "Одобряю SAAS-004-02"
+- id: SAAS-004-00
+  title: Создать контроллер корзины с полной системой ролей
+  branch: "feature/cart/SAAS-004/cart-controller-roles"
+  files_scope:
+    - ".cursor/rules/models/cart-simple.mdc"
+    - "src/infrastructure/controllers/cart/\*\*"
+      steps:
+    - добавить секцию контроллера в cart-simple.mdc
+    - создать CartController с импортами RoleGuard и Roles
+    - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+    - реализовать методы с правильными ролями: - управление корзиной: CUSTOMER_ROLES - просмотр корзин пользователей: STAFF_ROLES - аналитика корзин: MANAGER_ROLES - управление промокодами: MANAGER_ROLES
+      dod:
+    - контроллер создан с полной системой ролей
+    - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+    - тенантская изоляция ролей обеспечена
+      gate:
+    - require: "Одобряю SAAS-004-00"
 
-  - id: SAAS-004-03
-    title: Создать CartService с основными методами
-    branch: "feature/cart/SAAS-004/cart-service-methods"
-    files_scope:
-      - "src/infrastructure/services/cart/**"
-      - "src/domain/services/**"
-    steps:
-      - добавить методы для добавления/удаления товаров
-      - реализовать поддержку гостевых сессий
-      - добавить методы для применения промокодов
-      - добавить методы для очистки корзины
-    dod:
-      - все методы сервиса реализованы
-      - гостевая корзина работает
-      - применение промокодов функционально
-    gate:
-      - require: "Одобряю SAAS-004-03"
+- id: SAAS-004-01
+  title: Создать миграции для таблиц carts и cart_items
+  branch: "feature/cart/SAAS-004/cart-core-implementation"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/cart.ts"
+    - "src/domain/models/cart-product.ts"
+      steps:
+    - создать таблицы carts и cart_items с tenant_id
+    - добавить индексы для производительности
+    - обновить CartModel и CartProductModel с tenant_id
+      dod:
+    - миграция up/down успешна
+    - Cart модели содержат tenant_id
+    - индексы созданы для производительности
+      gate:
+    - require: "Одобряю SAAS-004-01"
 
-  - id: SAAS-004-04
-    title: Добавить DTO классы с валидацией
-    branch: "feature/cart/SAAS-004/cart-dto-validation"
-    files_scope:
-      - "src/infrastructure/dto/cart/**"
-      - "src/domain/dto/**"
-    steps:
-      - создать AddToCartDto для добавления товаров
-      - создать UpdateCartItemDto для обновления количества
-      - создать ApplyCouponDto для применения промокодов
-      - добавить валидаторы с русскими сообщениями
-    dod:
-      - DTO содержат все необходимые поля
-      - валидация работает с русскими сообщениями
-      - CustomValidationPipe обрабатывает все DTO
-    gate:
-      - require: "Одобряю SAAS-004-04"
+- id: SAAS-004-02
+  title: Реализовать модели CartModel и CartProductModel
+  branch: "feature/cart/SAAS-004/cart-core-implementation"
+  files_scope:
+    - "src/domain/models/cart.ts"
+    - "src/domain/models/cart-product.ts"
+      steps:
+    - добавить методы для работы с корзиной
+    - реализовать автоматический пересчет сумм
+    - добавить методы для управления товарами в корзине
+      dod:
+    - все методы корзины реализованы
+    - пересчет сумм работает корректно
+    - управление товарами функционально
+      gate:
+    - require: "Одобряю SAAS-004-02"
 
-  # Фаза 2: API и интеграции
-  - id: SAAS-004-05
-    title: Создать CartController с API endpoints
-    branch: "feature/cart/SAAS-004/cart-controller-endpoints"
-    files_scope:
-      - "src/infrastructure/controllers/cart/**"
-      - "src/infrastructure/common/decorators/swagger/cart/**"
-    steps:
-      - добавить эндпоинты для управления корзиной (GET, POST, PUT, DELETE)
-      - добавить эндпоинты для применения промокодов
-      - добавить эндпоинты для очистки корзины
-      - добавить Swagger документацию
-    dod:
-      - все эндпоинты работают корректно
-      - Swagger документация обновлена
-      - Guards и роли применены правильно
-    gate:
-      - require: "Одобряю SAAS-004-05"
+- id: SAAS-004-03
+  title: Создать CartService с основными методами
+  branch: "feature/cart/SAAS-004/cart-service-methods"
+  files_scope:
+    - "src/infrastructure/services/cart/\*\*"
+    - "src/domain/services/\*\*"
+      steps:
+    - добавить методы для добавления/удаления товаров
+    - реализовать поддержку гостевых сессий
+    - добавить методы для применения промокодов
+    - добавить методы для очистки корзины
+      dod:
+    - все методы сервиса реализованы
+    - гостевая корзина работает
+    - применение промокодов функционально
+      gate:
+    - require: "Одобряю SAAS-004-03"
 
-  - id: SAAS-004-06
-    title: Интегрировать с промокодами (базовая версия)
-    branch: "feature/cart/SAAS-004/cart-coupon-integration"
-    files_scope:
-      - "src/infrastructure/services/cart/**"
-      - "src/infrastructure/services/coupon/**"
-    steps:
-      - реализовать базовое применение промокодов
-      - добавить валидацию промокодов
-      - добавить пересчет сумм с учетом скидок
-    dod:
-      - применение промокодов работает
-      - валидация промокодов корректна
-      - пересчет сумм с скидками функционален
-    gate:
-      - require: "Одобряю SAAS-004-06"
+- id: SAAS-004-04
+  title: Добавить DTO классы с валидацией
+  branch: "feature/cart/SAAS-004/cart-dto-validation"
+  files_scope:
+    - "src/infrastructure/dto/cart/\*\*"
+    - "src/domain/dto/\*\*"
+      steps:
+    - создать AddToCartDto для добавления товаров
+    - создать UpdateCartItemDto для обновления количества
+    - создать ApplyCouponDto для применения промокодов
+    - добавить валидаторы с русскими сообщениями
+      dod:
+    - DTO содержат все необходимые поля
+    - валидация работает с русскими сообщениями
+    - CustomValidationPipe обрабатывает все DTO
+      gate:
+    - require: "Одобряю SAAS-004-04"
 
-  - id: SAAS-004-07
-    title: Добавить обработку ошибок и валидацию
-    branch: "feature/cart/SAAS-004/cart-error-handling"
-    files_scope:
-      - "src/infrastructure/common/filters/**"
-      - "src/infrastructure/common/pipes/**"
-    steps:
-      - добавить обработку ошибок для корзины
-      - улучшить валидацию с русскими сообщениями
-      - добавить логирование ошибок
-    dod:
-      - ошибки обрабатываются корректно
-      - сообщения на русском языке
-      - логирование работает
-    gate:
-      - require: "Одобряю SAAS-004-07"
+# Фаза 2: API и интеграции
 
-  - id: SAAS-004-08
-    title: Создать тесты для API корзины
-    branch: "feature/cart/SAAS-004/cart-api-tests"
-    files_scope:
-      - "src/infrastructure/controllers/cart/tests/**"
-      - "src/infrastructure/services/cart/tests/**"
-      - "src/infrastructure/repositories/cart/tests/**"
-    steps:
-      - написать integration тесты для корзины
-      - написать unit тесты для сервисов
-      - добавить негативные тесты
-    dod:
-      - все тесты проходят
-      - покрытие критичных модулей ≥80%
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-004-08"
+- id: SAAS-004-05
+  title: Создать CartController с API endpoints
+  branch: "feature/cart/SAAS-004/cart-controller-endpoints"
+  files_scope:
+    - "src/infrastructure/controllers/cart/\*\*"
+    - "src/infrastructure/common/decorators/swagger/cart/\*\*"
+      steps:
+    - добавить эндпоинты для управления корзиной (GET, POST, PUT, DELETE)
+    - добавить эндпоинты для применения промокодов
+    - добавить эндпоинты для очистки корзины
+    - добавить Swagger документацию
+      dod:
+    - все эндпоинты работают корректно
+    - Swagger документация обновлена
+    - Guards и роли применены правильно
+      gate:
+    - require: "Одобряю SAAS-004-05"
 
-  # Фаза 3: Тестирование и качество
-  - id: SAAS-004-09
-    title: Написать unit тесты для сервисов
-    branch: "feature/cart/SAAS-004/cart-unit-tests"
-    files_scope:
-      - "src/infrastructure/services/cart/tests/**"
-      - "src/infrastructure/repositories/cart/tests/**"
-    steps:
-      - покрыть CartService методами
-      - покрыть методы управления товарами
-      - покрыть методы применения промокодов
-    dod:
-      - unit тесты покрывают все методы
-      - тесты стабильны и быстры
-      - моки настроены корректно
-    gate:
-      - require: "Одобряю SAAS-004-09"
+- id: SAAS-004-06
+  title: Интегрировать с промокодами (базовая версия)
+  branch: "feature/cart/SAAS-004/cart-coupon-integration"
+  files_scope:
+    - "src/infrastructure/services/cart/\*\*"
+    - "src/infrastructure/services/coupon/\*\*"
+      steps:
+    - реализовать базовое применение промокодов
+    - добавить валидацию промокодов
+    - добавить пересчет сумм с учетом скидок
+      dod:
+    - применение промокодов работает
+    - валидация промокодов корректна
+    - пересчет сумм с скидками функционален
+      gate:
+    - require: "Одобряю SAAS-004-06"
 
-  - id: SAAS-004-10
-    title: Написать integration тесты для API
-    branch: "feature/cart/SAAS-004/cart-integration-tests"
-    files_scope:
-      - "src/infrastructure/controllers/cart/tests/**"
-    steps:
-      - покрыть все эндпоинты корзины
-      - покрыть эндпоинты промокодов
-      - покрыть тенантскую изоляцию
-    dod:
-      - integration тесты покрывают все эндпоинты
-      - тесты изолированы и детерминированы
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-004-10"
+- id: SAAS-004-07
+  title: Добавить обработку ошибок и валидацию
+  branch: "feature/cart/SAAS-004/cart-error-handling"
+  files_scope:
+    - "src/infrastructure/common/filters/\*\*"
+    - "src/infrastructure/common/pipes/\*\*"
+      steps:
+    - добавить обработку ошибок для корзины
+    - улучшить валидацию с русскими сообщениями
+    - добавить логирование ошибок
+      dod:
+    - ошибки обрабатываются корректно
+    - сообщения на русском языке
+    - логирование работает
+      gate:
+    - require: "Одобряю SAAS-004-07"
 
-  # Фаза 4: Оптимизация
-  - id: SAAS-004-11
-    title: Добавить кэширование корзин
-    branch: "feature/cart/SAAS-004/cart-caching"
-    files_scope:
-      - "src/infrastructure/services/cart/**"
-      - "src/infrastructure/common/cache/**"
-    steps:
-      - реализовать кэширование корзин в Redis
-      - добавить инвалидацию кэша при изменениях
-      - оптимизировать производительность
-    dod:
-      - кэширование работает корректно
-      - инвалидация кэша функциональна
-      - производительность улучшена
-    gate:
-      - require: "Одобряю SAAS-004-11"
+- id: SAAS-004-08
+  title: Создать тесты для API корзины
+  branch: "feature/cart/SAAS-004/cart-api-tests"
+  files_scope:
+    - "src/infrastructure/controllers/cart/tests/\*\*"
+    - "src/infrastructure/services/cart/tests/\*\*"
+    - "src/infrastructure/repositories/cart/tests/\*\*"
+      steps:
+    - написать integration тесты для корзины
+    - написать unit тесты для сервисов
+    - добавить негативные тесты
+      dod:
+    - все тесты проходят
+    - покрытие критичных модулей ≥80%
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-004-08"
 
-  - id: SAAS-004-12
-    title: Реализовать rate limiting
-    branch: "feature/cart/SAAS-004/cart-rate-limiting"
-    files_scope:
-      - "src/infrastructure/common/guards/**"
-      - "src/infrastructure/controllers/cart/**"
-    steps:
-      - добавить BruteforceGuard для корзины
-      - настроить лимиты для разных операций
-      - добавить логирование блокировок
-    dod:
-      - rate limiting работает
-      - лимиты настроены корректно
-      - логирование блокировок активно
-    gate:
-      - require: "Одобряю SAAS-004-12"
+# Фаза 3: Тестирование и качество
 
-  - id: SAAS-004-13
-    title: Добавить аналитику корзины
-    branch: "feature/cart/SAAS-004/cart-analytics"
-    files_scope:
-      - "src/infrastructure/controllers/cart/**"
-      - "src/infrastructure/services/cart/**"
-    steps:
-      - создать эндпоинты аналитики корзины
-      - добавить метрики и дашборды
-      - настроить отчеты по корзинам
-    dod:
-      - аналитика корзины работает
-      - метрики корректны
-      - отчеты генерируются
-    gate:
-      - require: "Одобряю SAAS-004-13"
+- id: SAAS-004-09
+  title: Написать unit тесты для сервисов
+  branch: "feature/cart/SAAS-004/cart-unit-tests"
+  files_scope:
+    - "src/infrastructure/services/cart/tests/\*\*"
+    - "src/infrastructure/repositories/cart/tests/\*\*"
+      steps:
+    - покрыть CartService методами
+    - покрыть методы управления товарами
+    - покрыть методы применения промокодов
+      dod:
+    - unit тесты покрывают все методы
+    - тесты стабильны и быстры
+    - моки настроены корректно
+      gate:
+    - require: "Одобряю SAAS-004-09"
 
-  - id: SAAS-004-14
-    title: Оптимизировать производительность
-    branch: "feature/cart/SAAS-004/cart-performance"
-    files_scope:
-      - "src/infrastructure/**"
-      - "src/domain/**"
-    steps:
-      - оптимизировать запросы к БД
-      - рефакторить дублирующийся код
-      - улучшить производительность
-    dod:
-      - код оптимизирован
-      - дублирование устранено
-      - производительность улучшена
-    gate:
-      - require: "Одобряю SAAS-004-14"
+- id: SAAS-004-10
+  title: Написать integration тесты для API
+  branch: "feature/cart/SAAS-004/cart-integration-tests"
+  files_scope:
+    - "src/infrastructure/controllers/cart/tests/\*\*"
+      steps:
+    - покрыть все эндпоинты корзины
+    - покрыть эндпоинты промокодов
+    - покрыть тенантскую изоляцию
+      dod:
+    - integration тесты покрывают все эндпоинты
+    - тесты изолированы и детерминированы
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-004-10"
 
-  # Дополнительные возможности
-  - id: SAAS-004-15
-    title: Уведомления о брошенных корзинах
-    branch: "feature/cart/SAAS-004/cart-abandoned-notifications"
-    files_scope:
-      - "src/infrastructure/services/cart/**"
-      - "src/infrastructure/services/notification/**"
-    steps:
-      - реализовать определение брошенных корзин
-      - добавить уведомления о брошенных корзинах
-      - настроить автоматическую отправку напоминаний
-    dod:
-      - определение брошенных корзин работает
-      - уведомления отправляются
-      - автоматические напоминания активны
-    gate:
-      - require: "Одобряю SAAS-004-15"
+# Фаза 4: Оптимизация
 
-  - id: SAAS-004-16
-    title: Интеграция с системой промокодов
-    branch: "feature/cart/SAAS-004/cart-coupon-system"
-    files_scope:
-      - "src/infrastructure/services/cart/**"
-      - "src/infrastructure/services/coupon/**"
-    steps:
-      - расширить интеграцию с промокодами
-      - добавить сложные правила применения
-      - добавить валидацию совместимости промокодов
-    dod:
-      - расширенная интеграция работает
-      - сложные правила применяются
-      - валидация совместимости корректна
-    gate:
-      - require: "Одобряю SAAS-004-16"
+- id: SAAS-004-11
+  title: Добавить кэширование корзин
+  branch: "feature/cart/SAAS-004/cart-caching"
+  files_scope:
+    - "src/infrastructure/services/cart/\*\*"
+    - "src/infrastructure/common/cache/\*\*"
+      steps:
+    - реализовать кэширование корзин в Redis
+    - добавить инвалидацию кэша при изменениях
+    - оптимизировать производительность
+      dod:
+    - кэширование работает корректно
+    - инвалидация кэша функциональна
+    - производительность улучшена
+      gate:
+    - require: "Одобряю SAAS-004-11"
 
-  # Unit тесты для CartRepository
-  - id: SAAS-004-17
-    title: Unit тесты для CartRepository
-    branch: "test/cart/SAAS-004/cart-repository-unit-tests"
-    files_scope:
-      - "tests/unit/repositories/cart.repository.unit.test.ts"
-      - "src/infrastructure/repositories/cart/cart.repository.ts"
-    steps:
-      - создать файл tests/unit/repositories/cart.repository.unit.test.ts
-      - настроить моки для CartModel и CartProductModel
-      - написать тесты для findCart() - успешный поиск и несуществующая корзина
-      - написать тесты для createCart() - создание новой корзины
-      - написать тесты для appendToCart() - добавление товара, создание корзины, увеличение количества
-      - написать тесты для increment() - увеличение количества товара
-      - написать тесты для decrement() - уменьшение количества, удаление при quantity=0
-      - написать тесты для removeProductFromCart() - удаление товара
-      - написать тесты для clearCart() - очистка корзины
-      - добавить тесты обработки ошибок для всех методов
-    dod:
-      - покрытие branches ≥ 90%
-      - покрытие functions ≥ 90%
-      - покрытие lines ≥ 90%
-      - все тесты проходят
-      - линтеры проходят без ошибок
-    estimated_time: 4-6 часов
-    gate:
-      - require: "Одобряю SAAS-004-17"
+- id: SAAS-004-12
+  title: Реализовать rate limiting
+  branch: "feature/cart/SAAS-004/cart-rate-limiting"
+  files_scope:
+    - "src/infrastructure/common/guards/\*\*"
+    - "src/infrastructure/controllers/cart/\*\*"
+      steps:
+    - добавить BruteforceGuard для корзины
+    - настроить лимиты для разных операций
+    - добавить логирование блокировок
+      dod:
+    - rate limiting работает
+    - лимиты настроены корректно
+    - логирование блокировок активно
+      gate:
+    - require: "Одобряю SAAS-004-12"
+
+- id: SAAS-004-13
+  title: Добавить аналитику корзины
+  branch: "feature/cart/SAAS-004/cart-analytics"
+  files_scope:
+    - "src/infrastructure/controllers/cart/\*\*"
+    - "src/infrastructure/services/cart/\*\*"
+      steps:
+    - создать эндпоинты аналитики корзины
+    - добавить метрики и дашборды
+    - настроить отчеты по корзинам
+      dod:
+    - аналитика корзины работает
+    - метрики корректны
+    - отчеты генерируются
+      gate:
+    - require: "Одобряю SAAS-004-13"
+
+- id: SAAS-004-14
+  title: Оптимизировать производительность
+  branch: "feature/cart/SAAS-004/cart-performance"
+  files_scope:
+    - "src/infrastructure/\*\*"
+    - "src/domain/\*\*"
+      steps:
+    - оптимизировать запросы к БД
+    - рефакторить дублирующийся код
+    - улучшить производительность
+      dod:
+    - код оптимизирован
+    - дублирование устранено
+    - производительность улучшена
+      gate:
+    - require: "Одобряю SAAS-004-14"
+
+# Дополнительные возможности
+
+- id: SAAS-004-15
+  title: Уведомления о брошенных корзинах
+  branch: "feature/cart/SAAS-004/cart-abandoned-notifications"
+  files_scope:
+    - "src/infrastructure/services/cart/\*\*"
+    - "src/infrastructure/services/notification/\*\*"
+      steps:
+    - реализовать определение брошенных корзин
+    - добавить уведомления о брошенных корзинах
+    - настроить автоматическую отправку напоминаний
+      dod:
+    - определение брошенных корзин работает
+    - уведомления отправляются
+    - автоматические напоминания активны
+      gate:
+    - require: "Одобряю SAAS-004-15"
+
+- id: SAAS-004-16
+  title: Интеграция с системой промокодов
+  branch: "feature/cart/SAAS-004/cart-coupon-system"
+  files_scope:
+    - "src/infrastructure/services/cart/\*\*"
+    - "src/infrastructure/services/coupon/\*\*"
+      steps:
+    - расширить интеграцию с промокодами
+    - добавить сложные правила применения
+    - добавить валидацию совместимости промокодов
+      dod:
+    - расширенная интеграция работает
+    - сложные правила применяются
+    - валидация совместимости корректна
+      gate:
+    - require: "Одобряю SAAS-004-16"
+
+# Unit тесты для CartRepository
+
+- id: SAAS-004-17
+  title: Unit тесты для CartRepository
+  branch: "test/cart/SAAS-004/cart-repository-unit-tests"
+  files_scope:
+    - "tests/unit/repositories/cart.repository.unit.test.ts"
+    - "src/infrastructure/repositories/cart/cart.repository.ts"
+      steps:
+    - создать файл tests/unit/repositories/cart.repository.unit.test.ts
+    - настроить моки для CartModel и CartProductModel
+    - написать тесты для findCart() - успешный поиск и несуществующая корзина
+    - написать тесты для createCart() - создание новой корзины
+    - написать тесты для appendToCart() - добавление товара, создание корзины, увеличение количества
+    - написать тесты для increment() - увеличение количества товара
+    - написать тесты для decrement() - уменьшение количества, удаление при quantity=0
+    - написать тесты для removeProductFromCart() - удаление товара
+    - написать тесты для clearCart() - очистка корзины
+    - добавить тесты обработки ошибок для всех методов
+      dod:
+    - покрытие branches ≥ 90%
+    - покрытие functions ≥ 90%
+    - покрытие lines ≥ 90%
+    - все тесты проходят
+    - линтеры проходят без ошибок
+      estimated_time: 4-6 часов
+      gate:
+    - require: "Одобряю SAAS-004-17"

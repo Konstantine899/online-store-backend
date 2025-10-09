@@ -6,148 +6,145 @@ epic_ref: SAAS-009
 version: 1.0
 
 execution_policy:
-  must_follow: true
-  allow_code_changes_only_after: "Одобряю <TASK_ID>"
-  constraints:
-    - no public API changes without explicit approval
-    - operate strictly within files_scope
-    - pass lints/tests and Swagger before DoD complete
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - no public API changes without explicit approval - operate strictly within files_scope - pass lints/tests and Swagger before DoD complete
 
 context:
-  goal: Notification system with tenant isolation and multiple channels
+goal: Notification system with tenant isolation and multiple channels
 
 # DEFAULT PRE-COMMIT WORKFLOW для всех notification задач
+
 default_pre_commit_workflow: "СТАНДАРТНЫЙ (business logic: notifications)"
 default_pre_commit_steps:
-  - "«Ревью» → notification logic, template rendering, delivery"
-  - "«Автофикс» → linter/prettier"
-  - "Тесты: notification integration tests"
-  - "«Коммит» → feat(notification): <TASK_ID> complete"
+
+- "«Ревью» → notification logic, template rendering, delivery"
+- "«Автофикс» → linter/prettier"
+- "Тесты: notification integration tests"
+- "«Коммит» → feat(notification): <TASK_ID> complete"
 
 tasks:
-  - id: SAAS-009-00
-    title: Создать контроллер уведомлений с полной системой ролей
-    branch: "feature/notification/SAAS-009/notification-controller-roles"
-    files_scope:
-      - ".cursor/rules/models/notification.mdc"
-      - "src/infrastructure/controllers/notification/**"
-    steps:
-      - добавить секцию контроллера в notification.mdc
-      - создать NotificationController с импортами RoleGuard и Roles
-      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
-      - реализовать методы с правильными ролями:
-        - управление уведомлениями: CUSTOMER_ROLES
-        - управление шаблонами: MANAGER_ROLES
-        - просмотр уведомлений: CUSTOMER_ROLES
-        - статистика уведомлений: MANAGER_ROLES
-    dod:
-      - контроллер создан с полной системой ролей
-      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
-      - тенантская изоляция ролей обеспечена
-    gate:
-      - require: "Одобряю SAAS-009-00"
 
-  - id: SAAS-009-01
-    title: Create notification tables and models
-    branch: "feature/notification/SAAS-009/notification-core"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/notification.ts"
-      - "src/domain/models/notification-template.ts"
-    steps:
-      - create notifications table with tenant_id
-      - create notification_templates table
-      - add indexes: (tenant_id, user_id), (tenant_id, type), (status)
-      - create NotificationModel and NotificationTemplateModel
-    dod:
-      - migration up/down succeeds
-      - notification models created with proper fields
-      - indexes created for performance
-    gate:
-      - require: "Одобряю SAAS-009-01"
+- id: SAAS-009-00
+  title: Создать контроллер уведомлений с полной системой ролей
+  branch: "feature/notification/SAAS-009/notification-controller-roles"
+  files_scope:
+    - ".cursor/rules/models/notification.mdc"
+    - "src/infrastructure/controllers/notification/\*\*"
+      steps:
+    - добавить секцию контроллера в notification.mdc
+    - создать NotificationController с импортами RoleGuard и Roles
+    - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+    - реализовать методы с правильными ролями: - управление уведомлениями: CUSTOMER_ROLES - управление шаблонами: MANAGER_ROLES - просмотр уведомлений: CUSTOMER_ROLES - статистика уведомлений: MANAGER_ROLES
+      dod:
+    - контроллер создан с полной системой ролей
+    - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+    - тенантская изоляция ролей обеспечена
+      gate:
+    - require: "Одобряю SAAS-009-00"
 
-  - id: SAAS-009-02
-    title: Notification service and providers
-    branch: "feature/notification/SAAS-009/notification-core"
-    files_scope:
-      - "src/infrastructure/services/notification/**"
-      - "src/domain/services/notification/**"
-    steps:
-      - implement notification service with tenant scope
-      - create email and SMS providers (mock for dev)
-      - add template rendering functionality
-    dod:
-      - notification service works with tenant isolation
-      - email/SMS providers functional (mock)
-      - unit tests for notification service pass
-    gate:
-      - require: "Одобряю SAAS-009-02"
+- id: SAAS-009-01
+  title: Create notification tables and models
+  branch: "feature/notification/SAAS-009/notification-core"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/notification.ts"
+    - "src/domain/models/notification-template.ts"
+      steps:
+    - create notifications table with tenant_id
+    - create notification_templates table
+    - add indexes: (tenant_id, user_id), (tenant_id, type), (status)
+    - create NotificationModel and NotificationTemplateModel
+      dod:
+    - migration up/down succeeds
+    - notification models created with proper fields
+    - indexes created for performance
+      gate:
+    - require: "Одобряю SAAS-009-01"
 
-  - id: SAAS-009-03
-    title: Notification controller and events
-    branch: "feature/notification/SAAS-009/notification-core"
-    files_scope:
-      - "src/infrastructure/controllers/notification/**"
-      - "src/infrastructure/common/events/**"
-    steps:
-      - implement notification management endpoints
-      - add event-driven notification triggers
-      - add proper Swagger documentation
-    dod:
-      - notification endpoints isolated by tenant
-      - event triggers work correctly
-      - integration tests pass (success + error cases)
-    gate:
-      - require: "Одобряю SAAS-009-03"
+- id: SAAS-009-02
+  title: Notification service and providers
+  branch: "feature/notification/SAAS-009/notification-core"
+  files_scope:
+    - "src/infrastructure/services/notification/\*\*"
+    - "src/domain/services/notification/\*\*"
+      steps:
+    - implement notification service with tenant scope
+    - create email and SMS providers (mock for dev)
+    - add template rendering functionality
+      dod:
+    - notification service works with tenant isolation
+    - email/SMS providers functional (mock)
+    - unit tests for notification service pass
+      gate:
+    - require: "Одобряю SAAS-009-02"
 
-  # Фаза 2: Тестирование и качество
-  - id: SAAS-009-04
-    title: Создать тесты для API уведомлений
-    branch: "feature/notification/SAAS-009/notification-api-tests"
-    files_scope:
-      - "src/infrastructure/controllers/notification/tests/**"
-      - "src/infrastructure/services/notification/tests/**"
-      - "src/infrastructure/repositories/notification/tests/**"
-    steps:
-      - написать integration тесты для уведомлений
-      - написать unit тесты для сервисов
-      - добавить негативные тесты
-    dod:
-      - все тесты проходят
-      - покрытие критичных модулей ≥80%
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-009-04"
+- id: SAAS-009-03
+  title: Notification controller and events
+  branch: "feature/notification/SAAS-009/notification-core"
+  files_scope:
+    - "src/infrastructure/controllers/notification/\*\*"
+    - "src/infrastructure/common/events/\*\*"
+      steps:
+    - implement notification management endpoints
+    - add event-driven notification triggers
+    - add proper Swagger documentation
+      dod:
+    - notification endpoints isolated by tenant
+    - event triggers work correctly
+    - integration tests pass (success + error cases)
+      gate:
+    - require: "Одобряю SAAS-009-03"
 
-  - id: SAAS-009-05
-    title: Написать unit тесты для сервисов
-    branch: "feature/notification/SAAS-009/notification-unit-tests"
-    files_scope:
-      - "src/infrastructure/services/notification/tests/**"
-      - "src/infrastructure/repositories/notification/tests/**"
-    steps:
-      - покрыть NotificationService методами
-      - покрыть методы шаблонов
-      - покрыть методы провайдеров
-    dod:
-      - unit тесты покрывают все методы
-      - тесты стабильны и быстры
-      - моки настроены корректно
-    gate:
-      - require: "Одобряю SAAS-009-05"
+# Фаза 2: Тестирование и качество
 
-  - id: SAAS-009-06
-    title: Написать integration тесты для API
-    branch: "feature/notification/SAAS-009/notification-integration-tests"
-    files_scope:
-      - "src/infrastructure/controllers/notification/tests/**"
-    steps:
-      - покрыть все эндпоинты уведомлений
-      - покрыть эндпоинты шаблонов
-      - покрыть тенантскую изоляцию
-    dod:
-      - integration тесты покрывают все эндпоинты
-      - тесты изолированы и детерминированы
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-009-06"
+- id: SAAS-009-04
+  title: Создать тесты для API уведомлений
+  branch: "feature/notification/SAAS-009/notification-api-tests"
+  files_scope:
+    - "src/infrastructure/controllers/notification/tests/\*\*"
+    - "src/infrastructure/services/notification/tests/\*\*"
+    - "src/infrastructure/repositories/notification/tests/\*\*"
+      steps:
+    - написать integration тесты для уведомлений
+    - написать unit тесты для сервисов
+    - добавить негативные тесты
+      dod:
+    - все тесты проходят
+    - покрытие критичных модулей ≥80%
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-009-04"
+
+- id: SAAS-009-05
+  title: Написать unit тесты для сервисов
+  branch: "feature/notification/SAAS-009/notification-unit-tests"
+  files_scope:
+    - "src/infrastructure/services/notification/tests/\*\*"
+    - "src/infrastructure/repositories/notification/tests/\*\*"
+      steps:
+    - покрыть NotificationService методами
+    - покрыть методы шаблонов
+    - покрыть методы провайдеров
+      dod:
+    - unit тесты покрывают все методы
+    - тесты стабильны и быстры
+    - моки настроены корректно
+      gate:
+    - require: "Одобряю SAAS-009-05"
+
+- id: SAAS-009-06
+  title: Написать integration тесты для API
+  branch: "feature/notification/SAAS-009/notification-integration-tests"
+  files_scope:
+    - "src/infrastructure/controllers/notification/tests/\*\*"
+      steps:
+    - покрыть все эндпоинты уведомлений
+    - покрыть эндпоинты шаблонов
+    - покрыть тенантскую изоляцию
+      dod:
+    - integration тесты покрывают все эндпоинты
+    - тесты изолированы и детерминированы
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-009-06"

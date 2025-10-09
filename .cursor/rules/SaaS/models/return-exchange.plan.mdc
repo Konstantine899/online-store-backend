@@ -6,286 +6,286 @@ epic_ref: SAAS-010
 version: 1.0
 
 execution_policy:
-  must_follow: true
-  allow_code_changes_only_after: "Одобряю <TASK_ID>"
-  constraints:
-    - no public API changes without explicit approval
-    - operate within files_scope
-    - pass lints/tests and Swagger before DoD complete
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - no public API changes without explicit approval - operate within files_scope - pass lints/tests and Swagger before DoD complete
 
 context:
-  goal: Return and exchange system with tenant isolation and payment integration
+goal: Return and exchange system with tenant isolation and payment integration
 
 # DEFAULT PRE-COMMIT WORKFLOW
+
 default_pre_commit_workflow: "СТАНДАРТНЫЙ (business logic: returns)"
 default_pre_commit_steps:
-  - "«Ревью» → return logic, refund calculations"
-  - "«Автофикс» → linter/prettier"
-  - "Тесты: return integration tests"
-  - "«Коммит» → feat(return): <TASK_ID> complete"
+
+- "«Ревью» → return logic, refund calculations"
+- "«Автофикс» → linter/prettier"
+- "Тесты: return integration tests"
+- "«Коммит» → feat(return): <TASK_ID> complete"
 
 tasks:
-  # Фаза 1: Базовая реализация
-  - id: SAAS-010-00
-    title: Обновить систему ролей в контроллере возвратов
-    branch: "feature/return/SAAS-010/return-roles-update"
-    files_scope:
-      - ".cursor/rules/models/return-exchange.mdc"
-    steps:
-      - добавить импорты RoleGuard и Roles в контроллер
-      - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
-      - обновить методы с правильными ролями:
-        - создание/список пользователя: CUSTOMER_ROLES
-        - просмотр по ID: STAFF_ROLES
-        - модерация: MANAGER_ROLES
-        - админ-списки: MANAGER_ROLES
-    dod:
-      - все методы контроллера используют полную систему ролей
-      - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
-      - тенантская изоляция ролей обеспечена
-    gate:
-      - require: "Одобряю SAAS-010-00"
 
-  - id: SAAS-010-01
-    title: Создать миграции для таблиц returns и return_items
-    branch: "feature/return/SAAS-010/return-core-tables"
-    files_scope:
-      - "db/migrations/**"
-      - "src/domain/models/return.ts"
-      - "src/domain/models/return-item.ts"
-    steps:
-      - создать таблицы returns и return_items с tenant_id
-      - добавить индексы для производительности
-      - создать модели ReturnModel и ReturnItemModel
-    dod:
-      - миграция up/down успешна
-      - Return модели содержат tenant_id
-      - индексы созданы для производительности
-    gate:
-      - require: "Одобряю SAAS-010-01"
+# Фаза 1: Базовая реализация
 
-  - id: SAAS-010-02
-    title: Реализовать модели ReturnModel и ReturnItemModel
-    branch: "feature/return/SAAS-010/return-core-models"
-    files_scope:
-      - "src/domain/models/return.ts"
-      - "src/domain/models/return-item.ts"
-    steps:
-      - добавить методы для работы с возвратами
-      - реализовать логику изменения статусов
-      - добавить методы для расчета суммы возврата
-    dod:
-      - все методы возвратов реализованы
-      - логика статусов работает корректно
-      - расчет суммы возврата функционален
-    gate:
-      - require: "Одобряю SAAS-010-02"
+- id: SAAS-010-00
+  title: Обновить систему ролей в контроллере возвратов
+  branch: "feature/return/SAAS-010/return-roles-update"
+  files_scope:
+    - ".cursor/rules/models/return-exchange.mdc"
+      steps:
+    - добавить импорты RoleGuard и Roles в контроллер
+    - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
+    - обновить методы с правильными ролями: - создание/список пользователя: CUSTOMER_ROLES - просмотр по ID: STAFF_ROLES - модерация: MANAGER_ROLES - админ-списки: MANAGER_ROLES
+      dod:
+    - все методы контроллера используют полную систему ролей
+    - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
+    - тенантская изоляция ролей обеспечена
+      gate:
+    - require: "Одобряю SAAS-010-00"
 
-  - id: SAAS-010-03
-    title: Создать DTO классы с валидацией
-    branch: "feature/return/SAAS-010/return-dto-validation"
-    files_scope:
-      - "src/infrastructure/dto/return/**"
-      - "src/domain/dto/**"
-    steps:
-      - создать CreateReturnDto для создания возвратов
-      - создать UpdateReturnStatusDto для изменения статусов
-      - создать ReturnItemDto для товаров в возврате
-      - добавить валидаторы с русскими сообщениями
-    dod:
-      - DTO содержат все необходимые поля
-      - валидация работает с русскими сообщениями
-      - CustomValidationPipe обрабатывает все DTO
-    gate:
-      - require: "Одобряю SAAS-010-03"
+- id: SAAS-010-01
+  title: Создать миграции для таблиц returns и return_items
+  branch: "feature/return/SAAS-010/return-core-tables"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/return.ts"
+    - "src/domain/models/return-item.ts"
+      steps:
+    - создать таблицы returns и return_items с tenant_id
+    - добавить индексы для производительности
+    - создать модели ReturnModel и ReturnItemModel
+      dod:
+    - миграция up/down успешна
+    - Return модели содержат tenant_id
+    - индексы созданы для производительности
+      gate:
+    - require: "Одобряю SAAS-010-01"
 
-  - id: SAAS-010-04
-    title: Создать Response классы с Swagger
-    branch: "feature/return/SAAS-010/return-response-swagger"
-    files_scope:
-      - "src/infrastructure/responses/return/**"
-      - "src/infrastructure/common/decorators/swagger/return/**"
-    steps:
-      - создать Response классы с явными полями (не extends ReturnModel)
-      - добавить Swagger декораторы для всех статусов
-      - создать Response для списков возвратов с пагинацией
-    dod:
-      - Response классы не наследуются от модели
-      - Swagger схемы корректны
-      - пагинация возвращает { data, meta }
-    gate:
-      - require: "Одобряю SAAS-010-04"
+- id: SAAS-010-02
+  title: Реализовать модели ReturnModel и ReturnItemModel
+  branch: "feature/return/SAAS-010/return-core-models"
+  files_scope:
+    - "src/domain/models/return.ts"
+    - "src/domain/models/return-item.ts"
+      steps:
+    - добавить методы для работы с возвратами
+    - реализовать логику изменения статусов
+    - добавить методы для расчета суммы возврата
+      dod:
+    - все методы возвратов реализованы
+    - логика статусов работает корректно
+    - расчет суммы возврата функционален
+      gate:
+    - require: "Одобряю SAAS-010-02"
 
-  - id: SAAS-010-05
-    title: Реализовать сервис с основной логикой
-    branch: "feature/return/SAAS-010/return-service-methods"
-    files_scope:
-      - "src/infrastructure/services/return/**"
-      - "src/domain/services/**"
-    steps:
-      - добавить методы для создания возвратов
-      - реализовать логику изменения статусов
-      - добавить методы для расчета суммы возврата
-      - добавить статистику возвратов
-    dod:
-      - все методы сервиса реализованы
-      - создание возвратов работает корректно
-      - изменение статусов функционально
-      - статистика возвращает корректные данные
-    gate:
-      - require: "Одобряю SAAS-010-05"
+- id: SAAS-010-03
+  title: Создать DTO классы с валидацией
+  branch: "feature/return/SAAS-010/return-dto-validation"
+  files_scope:
+    - "src/infrastructure/dto/return/\*\*"
+    - "src/domain/dto/\*\*"
+      steps:
+    - создать CreateReturnDto для создания возвратов
+    - создать UpdateReturnStatusDto для изменения статусов
+    - создать ReturnItemDto для товаров в возврате
+    - добавить валидаторы с русскими сообщениями
+      dod:
+    - DTO содержат все необходимые поля
+    - валидация работает с русскими сообщениями
+    - CustomValidationPipe обрабатывает все DTO
+      gate:
+    - require: "Одобряю SAAS-010-03"
 
-  # Фаза 2: API и интеграции
-  - id: SAAS-010-06
-    title: Создать контроллер с API endpoints
-    branch: "feature/return/SAAS-010/return-controller-endpoints"
-    files_scope:
-      - "src/infrastructure/controllers/return/**"
-      - "src/infrastructure/common/decorators/swagger/return/**"
-    steps:
-      - добавить эндпоинты для создания возвратов (POST /returns)
-      - добавить эндпоинты для управления статусами (PATCH /returns/:id/status)
-      - добавить эндпоинты для просмотра возвратов (GET /returns, GET /returns/:id)
-      - добавить статистику (GET /admin/returns/stats)
-    dod:
-      - все эндпоинты работают корректно
-      - Swagger документация обновлена
-      - Guards и роли применены правильно
-    gate:
-      - require: "Одобряю SAAS-010-06"
+- id: SAAS-010-04
+  title: Создать Response классы с Swagger
+  branch: "feature/return/SAAS-010/return-response-swagger"
+  files_scope:
+    - "src/infrastructure/responses/return/\*\*"
+    - "src/infrastructure/common/decorators/swagger/return/\*\*"
+      steps:
+    - создать Response классы с явными полями (не extends ReturnModel)
+    - добавить Swagger декораторы для всех статусов
+    - создать Response для списков возвратов с пагинацией
+      dod:
+    - Response классы не наследуются от модели
+    - Swagger схемы корректны
+    - пагинация возвращает { data, meta }
+      gate:
+    - require: "Одобряю SAAS-010-04"
 
-  - id: SAAS-010-07
-    title: Настроить интеграцию с платежной системой
-    branch: "feature/return/SAAS-010/return-payment-integration"
-    files_scope:
-      - "src/infrastructure/services/return/**"
-      - "src/infrastructure/services/payment/**"
-    steps:
-      - интегрировать с платежной системой для возвратов
-      - добавить обработку возвратных платежей
-      - добавить автоматическое обновление статусов при возврате
-    dod:
-      - интеграция с платежной системой работает
-      - возвратные платежи обрабатываются корректно
-      - автоматическое обновление статусов активно
-    gate:
-      - require: "Одобряю SAAS-010-07"
+- id: SAAS-010-05
+  title: Реализовать сервис с основной логикой
+  branch: "feature/return/SAAS-010/return-service-methods"
+  files_scope:
+    - "src/infrastructure/services/return/\*\*"
+    - "src/domain/services/\*\*"
+      steps:
+    - добавить методы для создания возвратов
+    - реализовать логику изменения статусов
+    - добавить методы для расчета суммы возврата
+    - добавить статистику возвратов
+      dod:
+    - все методы сервиса реализованы
+    - создание возвратов работает корректно
+    - изменение статусов функционально
+    - статистика возвращает корректные данные
+      gate:
+    - require: "Одобряю SAAS-010-05"
 
-  - id: SAAS-010-08
-    title: Добавить обработку ошибок и валидацию
-    branch: "feature/return/SAAS-010/return-error-handling"
-    files_scope:
-      - "src/infrastructure/common/filters/**"
-      - "src/infrastructure/common/pipes/**"
-    steps:
-      - добавить обработку ошибок для возвратов
-      - улучшить валидацию с русскими сообщениями
-      - добавить логирование ошибок
-    dod:
-      - ошибки обрабатываются корректно
-      - сообщения на русском языке
-      - логирование работает
-    gate:
-      - require: "Одобряю SAAS-010-08"
+# Фаза 2: API и интеграции
 
-  - id: SAAS-010-09
-    title: Создать тесты для API возвратов
-    branch: "feature/return/SAAS-010/return-api-tests"
-    files_scope:
-      - "tests/integration/return/**"
-      - "tests/unit/return/**"
-    steps:
-      - написать integration тесты для возвратов
-      - написать unit тесты для сервисов
-      - добавить негативные тесты
-    dod:
-      - все тесты проходят
-      - покрытие критичных модулей ≥80%
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-010-09"
+- id: SAAS-010-06
+  title: Создать контроллер с API endpoints
+  branch: "feature/return/SAAS-010/return-controller-endpoints"
+  files_scope:
+    - "src/infrastructure/controllers/return/\*\*"
+    - "src/infrastructure/common/decorators/swagger/return/\*\*"
+      steps:
+    - добавить эндпоинты для создания возвратов (POST /returns)
+    - добавить эндпоинты для управления статусами (PATCH /returns/:id/status)
+    - добавить эндпоинты для просмотра возвратов (GET /returns, GET /returns/:id)
+    - добавить статистику (GET /admin/returns/stats)
+      dod:
+    - все эндпоинты работают корректно
+    - Swagger документация обновлена
+    - Guards и роли применены правильно
+      gate:
+    - require: "Одобряю SAAS-010-06"
 
-  # Фаза 3: Тестирование и качество
-  - id: SAAS-010-10
-    title: Написать unit тесты для сервисов
-    branch: "feature/return/SAAS-010/return-unit-tests"
-    files_scope:
-      - "tests/unit/return/**"
-    steps:
-      - покрыть ReturnService методами
-      - покрыть методы изменения статусов
-      - покрыть методы расчета суммы возврата
-    dod:
-      - unit тесты покрывают все методы
-      - тесты стабильны и быстры
-      - моки настроены корректно
-    gate:
-      - require: "Одобряю SAAS-010-10"
+- id: SAAS-010-07
+  title: Настроить интеграцию с платежной системой
+  branch: "feature/return/SAAS-010/return-payment-integration"
+  files_scope:
+    - "src/infrastructure/services/return/\*\*"
+    - "src/infrastructure/services/payment/\*\*"
+      steps:
+    - интегрировать с платежной системой для возвратов
+    - добавить обработку возвратных платежей
+    - добавить автоматическое обновление статусов при возврате
+      dod:
+    - интеграция с платежной системой работает
+    - возвратные платежи обрабатываются корректно
+    - автоматическое обновление статусов активно
+      gate:
+    - require: "Одобряю SAAS-010-07"
 
-  - id: SAAS-010-11
-    title: Написать integration тесты для API
-    branch: "feature/return/SAAS-010/return-integration-tests"
-    files_scope:
-      - "tests/integration/return/**"
-    steps:
-      - покрыть все эндпоинты возвратов
-      - покрыть эндпоинты изменения статусов
-      - покрыть эндпоинты статистики
-    dod:
-      - integration тесты покрывают все эндпоинты
-      - тесты изолированы и детерминированы
-      - негативные сценарии покрыты
-    gate:
-      - require: "Одобряю SAAS-010-11"
+- id: SAAS-010-08
+  title: Добавить обработку ошибок и валидацию
+  branch: "feature/return/SAAS-010/return-error-handling"
+  files_scope:
+    - "src/infrastructure/common/filters/\*\*"
+    - "src/infrastructure/common/pipes/\*\*"
+      steps:
+    - добавить обработку ошибок для возвратов
+    - улучшить валидацию с русскими сообщениями
+    - добавить логирование ошибок
+      dod:
+    - ошибки обрабатываются корректно
+    - сообщения на русском языке
+    - логирование работает
+      gate:
+    - require: "Одобряю SAAS-010-08"
 
-  - id: SAAS-010-12
-    title: Провести рефакторинг и оптимизацию
-    branch: "feature/return/SAAS-010/return-optimization"
-    files_scope:
-      - "src/infrastructure/**"
-      - "src/domain/**"
-    steps:
-      - оптимизировать запросы к БД
-      - рефакторить дублирующийся код
-      - улучшить производительность
-    dod:
-      - код оптимизирован
-      - дублирование устранено
-      - производительность улучшена
-    gate:
-      - require: "Одобряю SAAS-010-12"
+- id: SAAS-010-09
+  title: Создать тесты для API возвратов
+  branch: "feature/return/SAAS-010/return-api-tests"
+  files_scope:
+    - "tests/integration/return/\*\*"
+    - "tests/unit/return/\*\*"
+      steps:
+    - написать integration тесты для возвратов
+    - написать unit тесты для сервисов
+    - добавить негативные тесты
+      dod:
+    - все тесты проходят
+    - покрытие критичных модулей ≥80%
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-010-09"
 
-  # Дополнительные возможности
-  - id: SAAS-010-13
-    title: Система обменов товаров
-    branch: "feature/return/SAAS-010/return-exchange-system"
-    files_scope:
-      - "src/infrastructure/services/return/**"
-      - "src/infrastructure/services/order/**"
-    steps:
-      - реализовать систему обменов товаров
-      - добавить логику выбора товаров для обмена
-      - добавить обработку обменных заказов
-    dod:
-      - система обменов работает
-      - выбор товаров для обмена функционален
-      - обработка обменных заказов корректна
-    gate:
-      - require: "Одобряю SAAS-010-13"
+# Фаза 3: Тестирование и качество
 
-  - id: SAAS-010-14
-    title: Аналитика возвратов
-    branch: "feature/return/SAAS-010/return-analytics"
-    files_scope:
-      - "src/infrastructure/controllers/return/**"
-      - "src/infrastructure/services/return/**"
-    steps:
-      - создать эндпоинты аналитики возвратов
-      - добавить метрики и дашборды
-      - настроить отчеты по возвратам
-    dod:
-      - аналитика возвратов работает
-      - метрики корректны
-      - отчеты генерируются
-    gate:
-      - require: "Одобряю SAAS-010-14"
+- id: SAAS-010-10
+  title: Написать unit тесты для сервисов
+  branch: "feature/return/SAAS-010/return-unit-tests"
+  files_scope:
+    - "tests/unit/return/\*\*"
+      steps:
+    - покрыть ReturnService методами
+    - покрыть методы изменения статусов
+    - покрыть методы расчета суммы возврата
+      dod:
+    - unit тесты покрывают все методы
+    - тесты стабильны и быстры
+    - моки настроены корректно
+      gate:
+    - require: "Одобряю SAAS-010-10"
+
+- id: SAAS-010-11
+  title: Написать integration тесты для API
+  branch: "feature/return/SAAS-010/return-integration-tests"
+  files_scope:
+    - "tests/integration/return/\*\*"
+      steps:
+    - покрыть все эндпоинты возвратов
+    - покрыть эндпоинты изменения статусов
+    - покрыть эндпоинты статистики
+      dod:
+    - integration тесты покрывают все эндпоинты
+    - тесты изолированы и детерминированы
+    - негативные сценарии покрыты
+      gate:
+    - require: "Одобряю SAAS-010-11"
+
+- id: SAAS-010-12
+  title: Провести рефакторинг и оптимизацию
+  branch: "feature/return/SAAS-010/return-optimization"
+  files_scope:
+    - "src/infrastructure/\*\*"
+    - "src/domain/\*\*"
+      steps:
+    - оптимизировать запросы к БД
+    - рефакторить дублирующийся код
+    - улучшить производительность
+      dod:
+    - код оптимизирован
+    - дублирование устранено
+    - производительность улучшена
+      gate:
+    - require: "Одобряю SAAS-010-12"
+
+# Дополнительные возможности
+
+- id: SAAS-010-13
+  title: Система обменов товаров
+  branch: "feature/return/SAAS-010/return-exchange-system"
+  files_scope:
+    - "src/infrastructure/services/return/\*\*"
+    - "src/infrastructure/services/order/\*\*"
+      steps:
+    - реализовать систему обменов товаров
+    - добавить логику выбора товаров для обмена
+    - добавить обработку обменных заказов
+      dod:
+    - система обменов работает
+    - выбор товаров для обмена функционален
+    - обработка обменных заказов корректна
+      gate:
+    - require: "Одобряю SAAS-010-13"
+
+- id: SAAS-010-14
+  title: Аналитика возвратов
+  branch: "feature/return/SAAS-010/return-analytics"
+  files_scope:
+    - "src/infrastructure/controllers/return/\*\*"
+    - "src/infrastructure/services/return/\*\*"
+      steps:
+    - создать эндпоинты аналитики возвратов
+    - добавить метрики и дашборды
+    - настроить отчеты по возвратам
+      dod:
+    - аналитика возвратов работает
+    - метрики корректны
+    - отчеты генерируются
+      gate:
+    - require: "Одобряю SAAS-010-14"
