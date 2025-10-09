@@ -1,4 +1,16 @@
 import {
+    CheckUserAuthSwaggerDecorator,
+    LoginSwaggerDecorator,
+    LogoutSwaggerDecorator,
+    RegistrationSwaggerDecorator,
+    UpdateAccessTokenSwaggerDecorator,
+} from '@app/infrastructure/common/decorators';
+import { LoginDto, RegistrationDto } from '@app/infrastructure/dto';
+import { ForgotPasswordDto } from '@app/infrastructure/dto/auth/forgot-password.dto';
+import { ResetPasswordDto } from '@app/infrastructure/dto/auth/reset-password.dto';
+import { AuthService, UserService } from '@app/infrastructure/services';
+import {
+    BadRequestException,
     Body,
     Controller,
     Delete,
@@ -8,37 +20,27 @@ import {
     Post,
     Req,
     Res,
-    UseGuards,
     UnauthorizedException,
     UnprocessableEntityException,
-    BadRequestException,
+    UseGuards,
 } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { AuthService, UserService } from '@app/infrastructure/services';
-import { RegistrationDto, LoginDto } from '@app/infrastructure/dto';
-import { ApiTags } from '@nestjs/swagger';
-import {
-    RegistrationSwaggerDecorator,
-    LogoutSwaggerDecorator,
-    LoginSwaggerDecorator,
-    CheckUserAuthSwaggerDecorator,
-    UpdateAccessTokenSwaggerDecorator,
-} from '@app/infrastructure/common/decorators';
 
 import {
+    CheckResponse,
     LoginResponse,
+    LogoutResponse,
     RegistrationResponse,
     UpdateAccessTokenResponse,
-    CheckResponse,
-    LogoutResponse,
 } from '@app/infrastructure/responses';
 
+import { IDecodedAccessToken } from '@app/domain/jwt';
 import { AuthGuard } from '@app/infrastructure/common/guards';
 import { BruteforceGuard } from '@app/infrastructure/common/guards/bruteforce.guard';
-import { IDecodedAccessToken } from '@app/domain/jwt';
 import {
-    getRefreshCookieName,
     buildRefreshCookieOptions,
+    getRefreshCookieName,
 } from '@app/infrastructure/common/utils/cookie-options';
 
 @ApiTags('Аутентификация')
@@ -61,7 +63,11 @@ export class AuthController {
         const result = await this.authService.registration(dto);
 
         const cookieName = getRefreshCookieName();
-        res.cookie(cookieName, result.refreshToken, buildRefreshCookieOptions());
+        res.cookie(
+            cookieName,
+            result.refreshToken,
+            buildRefreshCookieOptions(),
+        );
 
         return {
             type: result.type,
@@ -81,7 +87,11 @@ export class AuthController {
         const result = await this.authService.login(dto, req);
         // ставим refresh в HttpOnly cookie
         const cookieName = getRefreshCookieName();
-        res.cookie(cookieName, result.refreshToken, buildRefreshCookieOptions());
+        res.cookie(
+            cookieName,
+            result.refreshToken,
+            buildRefreshCookieOptions(),
+        );
 
         // Возвращаем только поля, определённые в LoginResponse, без refreshToken в теле
         return { type: result.type, accessToken: result.accessToken };
@@ -112,7 +122,11 @@ export class AuthController {
                 await this.authService.updateAccessToken(refreshFromCookie);
             // Если получили новый refresh токен - обновляем cookie
             if (result.refreshToken) {
-                res.cookie(cookieName, result.refreshToken, buildRefreshCookieOptions());
+                res.cookie(
+                    cookieName,
+                    result.refreshToken,
+                    buildRefreshCookieOptions(),
+                );
             }
             // Возвращаем только access токен в теле ответа
             return {
@@ -150,7 +164,9 @@ export class AuthController {
     ): Promise<CheckResponse> {
         const { id } = request.user as IDecodedAccessToken;
         if (id === undefined) {
-            throw new BadRequestException('Идентификатор пользователя обязателен');
+            throw new BadRequestException(
+                'Идентификатор пользователя обязателен',
+            );
         }
         return this.userService.checkUserAuth(id);
     }
@@ -186,5 +202,107 @@ export class AuthController {
         });
 
         return { status: 200, message: 'success' } as LogoutResponse;
+    }
+
+    // ============================================================
+    // PASSWORD RESET ENDPOINTS
+    // ============================================================
+
+    @ApiOperation({
+        summary: 'Запрос сброса пароля',
+        description:
+            'Генерирует токен сброса пароля и отправляет ссылку на email (mock для MVP)',
+    })
+    @ApiResponse({
+        status: 200,
+        description:
+            'Инструкции отправлены (всегда возвращается success для security)',
+        schema: {
+            properties: {
+                message: {
+                    type: 'string',
+                    example: 'Инструкции по сбросу пароля отправлены на email',
+                },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Некорректный формат email',
+    })
+    @ApiResponse({
+        status: 429,
+        description: 'Превышен лимит запросов (3 попытки/час)',
+    })
+    @HttpCode(200)
+    @UseGuards(BruteforceGuard)
+    @Post('/forgot-password')
+    async forgotPassword(
+        @Body() dto: ForgotPasswordDto,
+        @Req() req: Request,
+    ): Promise<{ message: string }> {
+        const tenantId = undefined; // TODO: получить из TenantMiddleware когда будет реализовано
+        const ipAddress = req.ip;
+        const userAgent = req.get('User-Agent');
+
+        await this.authService.forgotPassword(
+            dto.email,
+            tenantId,
+            ipAddress,
+            userAgent,
+        );
+
+        // Всегда возвращаем success (security: не раскрываем есть ли email)
+        return {
+            message: 'Инструкции по сбросу пароля отправлены на email',
+        };
+    }
+
+    @ApiOperation({
+        summary: 'Сброс пароля по токену',
+        description:
+            'Сбрасывает пароль пользователя и завершает все активные сессии',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Пароль успешно изменён',
+        schema: {
+            properties: {
+                message: {
+                    type: 'string',
+                    example: 'Пароль успешно изменён',
+                },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Некорректный формат токена или слабый пароль',
+    })
+    @ApiResponse({
+        status: 401,
+        description: 'Токен некорректен, истёк или уже использован',
+    })
+    @ApiResponse({
+        status: 429,
+        description: 'Превышен лимит запросов (5 попыток/час)',
+    })
+    @HttpCode(200)
+    @UseGuards(BruteforceGuard)
+    @Post('/reset-password')
+    async resetPassword(
+        @Body() dto: ResetPasswordDto,
+    ): Promise<{ message: string }> {
+        const tenantId = undefined; // TODO: получить из TenantMiddleware
+
+        await this.authService.resetPassword(
+            dto.token,
+            dto.newPassword,
+            tenantId,
+        );
+
+        return {
+            message: 'Пароль успешно изменён',
+        };
     }
 }

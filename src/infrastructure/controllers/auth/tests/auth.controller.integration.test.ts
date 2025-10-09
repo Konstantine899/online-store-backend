@@ -9,18 +9,20 @@ import { TestDataFactory } from '../../../../../tests/utils';
  * Цель: достичь 85%+ coverage для auth модуля
  *
  * Покрытие:
- * - Registration flow (11 tests) - добавлен DoS prevention test
- * - Login flow (8 tests)
- * - Refresh token flow (4 tests)
- * - Logout flow (2 tests)
- * - Auth check (3 tests)
+ * - Registration flow (11 tests) - DoS prevention, cookie security
+ * - Login flow (8 tests) - credentials, XSS, SQL injection
+ * - Password Reset flow (12 tests) - NEW: forgot-password + reset-password
+ * - Refresh token flow (4 tests) - token rotation, theft detection
+ * - Logout flow (2 tests) - cookie invalidation
+ * - Auth check (3 tests) - token validation
  *
- * Total: 28 tests
+ * Total: 40 tests (28 existing + 12 password reset)
  *
  * Security improvements:
  * - Cookie security flags validation (HttpOnly, Path)
  * - DoS prevention для extremely long passwords
  * - Case-sensitive email handling
+ * - Password reset with XSS/validation tests
  */
 
 describe('AuthController Comprehensive Tests', () => {
@@ -433,6 +435,185 @@ describe('AuthController Comprehensive Tests', () => {
                 .expect(HttpStatus.UNAUTHORIZED);
 
             expect(response.body.message).toContain('Отсутствует');
+        });
+    });
+
+    // ============================================================
+    // PASSWORD RESET FLOW TESTS (12 tests)
+    // ============================================================
+
+    describe('POST /auth/forgot-password', () => {
+        it('200: successful password reset request for existing email', async () => {
+            const email = TestDataFactory.uniqueEmail();
+            const password = 'StrongPass123!';
+
+            // Создаём пользователя
+            await request(app.getHttpServer())
+                .post('/online-store/auth/registration')
+                .send({ email, password })
+                .expect(HttpStatus.CREATED);
+
+            // Запрашиваем сброс пароля
+            const response = await request(app.getHttpServer())
+                .post('/online-store/auth/forgot-password')
+                .send({ email })
+                .expect(HttpStatus.OK);
+
+            expect(response.body).toHaveProperty('message');
+            expect(response.body.message).toContain('Инструкции');
+        });
+
+        it('200: returns success for non-existent email (security)', async () => {
+            // Security: не раскрываем что email не существует
+            const response = await request(app.getHttpServer())
+                .post('/online-store/auth/forgot-password')
+                .send({ email: 'nonexistent@test.com' })
+                .expect(HttpStatus.OK);
+
+            expect(response.body.message).toContain('Инструкции');
+        });
+
+        it('400: invalid email format', async () => {
+            await request(app.getHttpServer())
+                .post('/online-store/auth/forgot-password')
+                .send({ email: 'invalid-email' })
+                .expect(HttpStatus.BAD_REQUEST);
+        });
+
+        it('400: empty email field', async () => {
+            await request(app.getHttpServer())
+                .post('/online-store/auth/forgot-password')
+                .send({ email: '' })
+                .expect(HttpStatus.BAD_REQUEST);
+        });
+
+        it('400: XSS attempt in email', async () => {
+            await request(app.getHttpServer())
+                .post('/online-store/auth/forgot-password')
+                .send({ email: '<script>alert("xss")</script>@test.com' })
+                .expect(HttpStatus.BAD_REQUEST);
+        });
+    });
+
+    describe('POST /auth/reset-password', () => {
+        it('200: successful password reset with valid token', async () => {
+            // Создаём пользователя + валидный токен
+            const {
+                email,
+                password: oldPassword,
+                token,
+            } = await TestDataFactory.createUserWithPasswordResetToken(app);
+
+            const newPassword = 'NewStrongPass456!';
+
+            // Сбрасываем пароль
+            const response = await request(app.getHttpServer())
+                .post('/online-store/auth/reset-password')
+                .send({ token, newPassword })
+                .expect(HttpStatus.OK);
+
+            expect(response.body).toHaveProperty('message');
+            expect(response.body.message).toContain('успешно');
+
+            // Проверяем что старый пароль больше не работает
+            await request(app.getHttpServer())
+                .post('/online-store/auth/login')
+                .send({ email, password: oldPassword })
+                .expect(HttpStatus.UNAUTHORIZED);
+
+            // Проверяем что новый пароль работает
+            await request(app.getHttpServer())
+                .post('/online-store/auth/login')
+                .send({ email, password: newPassword })
+                .expect(HttpStatus.OK);
+        });
+
+        it('400: invalid token format (too short)', async () => {
+            await request(app.getHttpServer())
+                .post('/online-store/auth/reset-password')
+                .send({
+                    token: 'short-token',
+                    newPassword: 'NewStrongPass123!',
+                })
+                .expect(HttpStatus.BAD_REQUEST);
+        });
+
+        it('401: reset with expired token', async () => {
+            const { Sequelize } = await import('sequelize-typescript');
+            const sequelize = app.get(Sequelize);
+            const { userId } = await TestDataFactory.createUserInDB(
+                sequelize,
+                {},
+            );
+
+            // Создаём просроченный токен (expired: true)
+            const { token } = await TestDataFactory.createPasswordResetToken(
+                sequelize,
+                userId,
+                { expired: true },
+            );
+
+            await request(app.getHttpServer())
+                .post('/online-store/auth/reset-password')
+                .send({ token, newPassword: 'NewPass123!' })
+                .expect(HttpStatus.UNAUTHORIZED);
+        });
+
+        it('401: reset with already used token', async () => {
+            const { Sequelize } = await import('sequelize-typescript');
+            const sequelize = app.get(Sequelize);
+            const { userId } = await TestDataFactory.createUserInDB(
+                sequelize,
+                {},
+            );
+
+            // Создаём уже использованный токен (used: true)
+            const { token } = await TestDataFactory.createPasswordResetToken(
+                sequelize,
+                userId,
+                { used: true },
+            );
+
+            await request(app.getHttpServer())
+                .post('/online-store/auth/reset-password')
+                .send({ token, newPassword: 'NewPass123!' })
+                .expect(HttpStatus.UNAUTHORIZED);
+        });
+
+        it('400: weak new password (no uppercase)', async () => {
+            const validToken = 'a'.repeat(64); // валидный формат
+
+            await request(app.getHttpServer())
+                .post('/online-store/auth/reset-password')
+                .send({
+                    token: validToken,
+                    newPassword: 'weakpass123!',
+                })
+                .expect(HttpStatus.BAD_REQUEST);
+        });
+
+        it('400: weak new password (too short)', async () => {
+            const validToken = 'a'.repeat(64);
+
+            await request(app.getHttpServer())
+                .post('/online-store/auth/reset-password')
+                .send({
+                    token: validToken,
+                    newPassword: 'Short1!',
+                })
+                .expect(HttpStatus.BAD_REQUEST);
+        });
+
+        it('400: empty new password', async () => {
+            const validToken = 'a'.repeat(64);
+
+            await request(app.getHttpServer())
+                .post('/online-store/auth/reset-password')
+                .send({
+                    token: validToken,
+                    newPassword: '',
+                })
+                .expect(HttpStatus.BAD_REQUEST);
         });
     });
 

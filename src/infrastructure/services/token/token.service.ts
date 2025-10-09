@@ -1,3 +1,16 @@
+import { IDecodedAccessToken } from '@app/domain/jwt';
+import { RefreshTokenModel, UserModel } from '@app/domain/models';
+import {
+    IAccessTokenPayload,
+    IRefreshTokenPayload,
+    ITokenService,
+} from '@app/domain/services';
+import { getConfig } from '@app/infrastructure/config';
+import { JwtSettings } from '@app/infrastructure/config/jwt';
+import {
+    RefreshTokenRepository,
+    UserRepository,
+} from '@app/infrastructure/repositories';
 import {
     HttpStatus,
     Injectable,
@@ -5,22 +18,9 @@ import {
     UnprocessableEntityException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { SignOptions, TokenExpiredError } from 'jsonwebtoken';
 import * as bcrypt from 'bcrypt';
-import {
-    RefreshTokenRepository,
-    UserRepository,
-} from '@app/infrastructure/repositories';
-import { RefreshTokenModel, UserModel } from '@app/domain/models';
-import {
-    IAccessTokenPayload,
-    IRefreshTokenPayload,
-    ITokenService,
-} from '@app/domain/services';
-import { IDecodedAccessToken } from '@app/domain/jwt';
-import { JwtSettings } from '@app/infrastructure/config/jwt';
 import { Request } from 'express';
-import { getConfig } from '@app/infrastructure/config';
+import { SignOptions, TokenExpiredError } from 'jsonwebtoken';
 
 // Ленивая инициализация конфигурации/секретов — чтобы не требовать env при импорте
 let CACHED_ACCESS_SECRET: string | undefined;
@@ -46,10 +46,10 @@ function getRefreshTtlSeconds(): number {
                 unit === 's'
                     ? amount
                     : unit === 'm'
-                    ? amount * 60
-                    : unit === 'h'
-                    ? amount * 60 * 60
-                    : amount * 60 * 60 * 24;
+                      ? amount * 60
+                      : unit === 'h'
+                        ? amount * 60 * 60
+                        : amount * 60 * 60 * 24;
         }
     }
     return CACHED_REFRESH_TTL_SECONDS;
@@ -204,6 +204,14 @@ export class TokenService implements ITokenService {
             return new Date(decoded.exp * 1000);
         }
         return undefined;
+    }
+
+    /**
+     * Отзывает (удаляет) все refresh токены пользователя
+     * Используется при password reset для force logout
+     */
+    public async revokeAllUserTokens(userId: number): Promise<number> {
+        return this.refreshTokenRepository.removeListRefreshTokens(userId);
     }
 
     public async removeRefreshToken(

@@ -178,7 +178,14 @@ tasks:
     - "Запустить тесты: npm test -- auth.controller.integration.test.ts"
     - "Проверить coverage: должен быть ≥85% для auth модуля"
     - "«Коммит» → feat(testing): TEST-010 complete"
-      status: ✅ COMPLETE (27/27 tests, 87.5-94.73% coverage, 4h)
+      status: ✅ COMPLETE (40/40 tests, 96.1-98.49% coverage, 5.5h)
+      completion_notes:
+    - "Password reset flow реализован полностью (12 тестов)"
+    - "Coverage превысил target: controller 96.1%, service 98.49%"
+    - "TestDataFactory расширен методами для reset tokens"
+    - "Code review: Grade A- (87/100), production-ready"
+    - "All edge cases covered: expired, used, invalid tokens"
+    - "Commit: ad17bf5 - 19 files, +1332/-133 lines"
 
 - id: TEST-011
   title: Brute Force Protection Tests

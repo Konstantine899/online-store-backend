@@ -1,23 +1,24 @@
-import { Sequelize } from 'sequelize';
 import * as process from 'process';
+import { Sequelize } from 'sequelize';
 import config from '../config/database';
 
 // Import all models
-import User from './user';
-import Role from './role';
-import Category from './category';
 import Brand from './brand';
-import Product from './product';
-import Rating from './rating';
-import ProductProperty from './product-property';
-import Order from './order';
-import OrderItem from './order-item';
 import Cart from './cart';
 import CartProduct from './cart-product';
-import UserRole from './user-role';
-import RefreshToken from './refresh-token';
-import UserAddress from './user-address';
+import Category from './category';
 import LoginHistory from './login-history';
+import Order from './order';
+import OrderItem from './order-item';
+import PasswordResetToken from './password-reset-token';
+import Product from './product';
+import ProductProperty from './product-property';
+import Rating from './rating';
+import RefreshToken from './refresh-token';
+import Role from './role';
+import User from './user';
+import UserAddress from './user-address';
+import UserRole from './user-role';
 
 const env = process.env.NODE_ENV || 'development';
 const dbConfig = config[env as keyof typeof config];
@@ -40,6 +41,7 @@ interface Database {
     refreshToken: ReturnType<typeof RefreshToken>;
     userAddress: ReturnType<typeof UserAddress>;
     loginHistory: ReturnType<typeof LoginHistory>;
+    passwordResetToken: ReturnType<typeof PasswordResetToken>;
 }
 
 const db: Database = {} as Database;
@@ -75,6 +77,7 @@ db.userRole = UserRole(sequelize);
 db.refreshToken = RefreshToken(sequelize);
 db.userAddress = UserAddress(sequelize);
 db.loginHistory = LoginHistory(sequelize);
+db.passwordResetToken = PasswordResetToken(sequelize);
 
 // Set up associations
 Object.keys(db).forEach((modelName) => {

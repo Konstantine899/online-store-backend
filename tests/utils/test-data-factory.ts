@@ -2,6 +2,7 @@ import { RoleModel, UserModel } from '@app/domain/models';
 import { CreateUserDto } from '@app/infrastructure/dto';
 import { INestApplication } from '@nestjs/common';
 import { hash } from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 
@@ -262,5 +263,96 @@ export class TestDataFactory {
             token,
             user: { userId, email },
         };
+    }
+
+    /**
+     * Создаёт токен сброса пароля в БД
+     * Используется для тестирования password reset flow
+     *
+     * @param sequelize - Sequelize instance
+     * @param userId - ID пользователя
+     * @param options - опции токена (expired, used)
+     * @returns { token, tokenId }
+     */
+    static async createPasswordResetToken(
+        sequelize: Sequelize,
+        userId: number,
+        options: {
+            expired?: boolean;
+            used?: boolean;
+            tenantId?: number;
+            ipAddress?: string;
+            userAgent?: string;
+        } = {},
+    ): Promise<{ token: string; tokenId: number }> {
+        const token = randomBytes(32).toString('hex'); // 64 hex chars
+        const now = new Date();
+
+        // Expired: expiresAt в прошлом
+        const expiresAt = options.expired
+            ? new Date(now.getTime() - 60 * 60 * 1000) // 1 час назад
+            : new Date(now.getTime() + 15 * 60 * 1000); // +15 минут
+
+        // Used: isUsed = true, usedAt = now
+        const isUsed = options.used || false;
+        const usedAt = options.used ? now : null;
+
+        const [result] = await sequelize.query(
+            `INSERT INTO password_reset_tokens
+            (user_id, tenant_id, token, expires_at, is_used, used_at, ip_address, user_agent, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+            {
+                replacements: [
+                    userId,
+                    options.tenantId || null,
+                    token,
+                    expiresAt.toISOString().slice(0, 19).replace('T', ' '), // MySQL datetime format
+                    isUsed,
+                    usedAt
+                        ? usedAt.toISOString().slice(0, 19).replace('T', ' ')
+                        : null,
+                    options.ipAddress || '127.0.0.1',
+                    options.userAgent || 'test-agent',
+                ],
+            },
+        );
+
+        // MySQL возвращает insertId в result
+        const tokenId = (result as any).insertId || (result as any);
+
+        return { token, tokenId };
+    }
+
+    /**
+     * Создаёт пользователя и валидный токен сброса пароля
+     * Helper для тестов password reset flow
+     *
+     * @param app - NestJS application
+     * @returns { userId, email, password, token }
+     */
+    static async createUserWithPasswordResetToken(
+        app: INestApplication,
+    ): Promise<{
+        userId: number;
+        email: string;
+        password: string;
+        token: string;
+    }> {
+        const sequelize = app.get(Sequelize);
+
+        // Создаём пользователя
+        const { userId, email, password } = await this.createUserInDB(
+            sequelize,
+            {},
+        );
+
+        // Создаём валидный токен
+        const { token } = await this.createPasswordResetToken(
+            sequelize,
+            userId,
+            {},
+        );
+
+        return { userId, email, password, token };
     }
 }
