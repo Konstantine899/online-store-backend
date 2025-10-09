@@ -82,19 +82,15 @@ export default {
             name: 'idx_password_reset_tenant_id',
         });
 
-        await queryInterface.addIndex('password_reset_tokens', ['expires_at'], {
+        await queryInterface.addIndex('password_reset_tokens', {
+            fields: ['expires_at'],
             name: 'idx_password_reset_expires_at',
-            comment: 'For cleanup job - find expired tokens',
         });
 
-        await queryInterface.addIndex(
-            'password_reset_tokens',
-            ['user_id', 'is_used', 'expires_at'],
-            {
-                name: 'idx_password_reset_valid_tokens',
-                comment: 'Composite index for finding valid tokens',
-            },
-        );
+        await queryInterface.addIndex('password_reset_tokens', {
+            fields: ['user_id', 'is_used', 'expires_at'],
+            name: 'idx_password_reset_valid_tokens',
+        });
     },
 
     down: async (queryInterface: QueryInterface): Promise<void> => {

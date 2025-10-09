@@ -1,5 +1,6 @@
 import { UpdateUserDto } from '@app/infrastructure/dto';
 import { INestApplication } from '@nestjs/common';
+import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { TestDataFactory } from '../../../../../tests/utils';

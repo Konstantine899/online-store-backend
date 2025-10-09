@@ -278,6 +278,7 @@ export class AuthService implements IAuthService {
             this.unauthorized(
                 'Токен сброса пароля некорректен или истёк. Запросите новый.',
             );
+            return; // TypeScript flow control
         }
 
         // Хэшируем новый пароль

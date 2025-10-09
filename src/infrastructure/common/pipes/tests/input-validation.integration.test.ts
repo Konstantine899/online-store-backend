@@ -508,8 +508,11 @@ describe('Input Validation and Sanitization (integration)', () => {
             const cookies = response.headers['set-cookie'];
             expect(cookies).toBeDefined();
 
+            // Приводим к массиву (может быть string или string[])
+            const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
+
             // Проверяем, что refresh token имеет HttpOnly и SameSite
-            const refreshTokenCookie = cookies?.find((cookie: string) =>
+            const refreshTokenCookie = cookieArray.find((cookie: string) =>
                 cookie.includes('refreshToken'),
             );
             expect(refreshTokenCookie).toBeDefined();
