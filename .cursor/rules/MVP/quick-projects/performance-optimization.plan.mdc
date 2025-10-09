@@ -16,6 +16,16 @@ timeline: Неделя 7 (10-14 часов)
 current: N+1 queries, missing indexes, no pagination limits
 target: 1 query per list, proper indexes, enforced limits
 
+# DEFAULT PRE-COMMIT WORKFLOW
+default_pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный: performance/optimization)"
+default_pre_commit_steps:
+  - "«Ревью» → performance impact, DB queries, caching strategy"
+  - "«Оптимизируй» → N+1, indexes, query optimization"
+  - "«Автофикс» → linter/prettier"
+  - "Тесты: performance tests, load tests"
+  - "Проверка: benchmark before/after"
+  - "«Коммит» → perf: <TASK_ID> complete"
+
 tasks:
 
 # PROD-030: N+1 Queries

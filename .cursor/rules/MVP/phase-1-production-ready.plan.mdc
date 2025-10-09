@@ -16,6 +16,14 @@ current_state: 13 моделей, 47% coverage, базовая security, раб�
 target_state: 75%+ coverage, security hardening, production deploy, полная документация
 result: Strong middle-level проект для портфолио
 
+# DEFAULT PRE-COMMIT WORKFLOW для всех MVP production-ready задач
+default_pre_commit_workflow: "СТАНДАРТНЫЙ (mixed: depends on task type)"
+default_pre_commit_steps:
+  - "«Ревью» → check task-specific concerns"
+  - "«Автофикс» → linter/prettier"
+  - "Тесты: relevant tests for the task"
+  - "«Коммит» → feat/fix/docs: <TASK_ID> complete"
+
 ---
 
 ## 🎯 Общая стратегия

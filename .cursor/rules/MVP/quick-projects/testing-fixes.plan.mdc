@@ -16,6 +16,15 @@ timeline: Неделя 1-2 (14-20 часов)
 current_issues: race conditions, 500 errors, FK constraints, SQL logging
 target: 0 failed tests, stable and deterministic tests
 
+# DEFAULT PRE-COMMIT WORKFLOW
+default_pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: testing/stability)"
+default_pre_commit_steps:
+  - "«Ревью» → test stability, isolation, determinism"
+  - "«Автофикс» → linter/prettier"
+  - "Тесты: run all tests multiple times to check stability"
+  - "Coverage: ensure no regression"
+  - "«Коммит» → test: <TASK_ID> complete"
+
 tasks:
 
 # PROD-001: Race Conditions

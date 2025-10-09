@@ -16,6 +16,16 @@ timeline: Неделя 3-4 (20-24 часа)
 current: базовый JWT, минимальная валидация
 target: Helmet, CORS whitelist, JWT rotation, Rate Limiting, Input sanitization
 
+# DEFAULT PRE-COMMIT WORKFLOW
+default_pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: security)"
+default_pre_commit_steps:
+  - "«Ревью» → security vulnerabilities, auth logic, input validation"
+  - "«Оптимизируй» → security checks performance impact"
+  - "«Автофикс» → linter/prettier"
+  - "Тесты: security tests, negative scenarios"
+  - "Проверка: security scan (если доступен)"
+  - "«Коммит» → feat(security): <TASK_ID> complete"
+
 tasks:
 
 # PROD-010: Environment Validation

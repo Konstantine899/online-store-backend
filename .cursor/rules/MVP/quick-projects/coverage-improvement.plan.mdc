@@ -16,6 +16,15 @@ timeline: Неделя 5-6 (32-40 часов)
 current_coverage: 47% functions, 50% lines
 target_coverage: 75% global, 85%+ critical modules
 
+# DEFAULT PRE-COMMIT WORKFLOW
+default_pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: testing/coverage)"
+default_pre_commit_steps:
+  - "«Ревью» → test coverage, edge cases, negative scenarios"
+  - "«Автофикс» → linter/prettier"
+  - "Тесты: run new tests, ensure they pass"
+  - "Coverage: check coverage increase"
+  - "«Коммит» → test: <TASK_ID> complete"
+
 tasks:
 
 # PROD-020: Auth Comprehensive Tests

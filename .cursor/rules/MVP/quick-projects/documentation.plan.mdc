@@ -16,6 +16,12 @@ timeline: Неделя 9 (12-16 часов)
 current: базовый README, неполный Swagger
 target: Professional README, ADR, 100% Swagger, optimized GitHub
 
+# DEFAULT PRE-COMMIT WORKFLOW
+default_pre_commit_workflow: "МИНИМАЛЬНЫЙ (documentation)"
+default_pre_commit_steps:
+  - "«Автофикс» → linter/prettier (markdown)"
+  - "«Коммит» → docs: <TASK_ID> complete"
+
 tasks:
 
 # PROD-050: Professional README

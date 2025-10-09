@@ -16,6 +16,14 @@ timeline: Неделя 8 (12-16 часов)
 platforms: GitHub Actions, Railway, PostgreSQL
 target: live production API с automated checks
 
+# DEFAULT PRE-COMMIT WORKFLOW
+default_pre_commit_workflow: "СТАНДАРТНЫЙ (infrastructure/devops)"
+default_pre_commit_steps:
+  - "«Ревью» → Docker/CI config, security, secrets handling"
+  - "«Автофикс» → linter/prettier (YAML)"
+  - "Проверка: локальный запуск/сборка"
+  - "«Коммит» → ci/chore: <TASK_ID> complete"
+
 tasks:
 
 # PROD-040: CI/CD Pipeline

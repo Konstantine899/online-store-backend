@@ -14,6 +14,12 @@ goal: Получить оффер Middle NestJS разработчика за 2-
 prerequisites: Production-ready проект online-store-backend (Фаза 1 завершена)
 result: Работа Middle Backend Developer
 
+# DEFAULT PRE-COMMIT WORKFLOW для job-search задач
+default_pre_commit_workflow: "МИНИМАЛЬНЫЙ (documentation/content creation)"
+default_pre_commit_steps:
+  - "«Автофикс» → linter/prettier (для markdown)"
+  - "«Коммит» → docs(job-search): <TASK_ID> complete"
+
 ---
 
 ## 🎯 Общая стратегия
