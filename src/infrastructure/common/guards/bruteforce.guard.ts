@@ -41,8 +41,46 @@ export class BruteforceGuard extends ThrottlerGuard {
     private static configCacheTime = 0;
     private static readonly CONFIG_CACHE_TTL = 30000; // 30 секунд
 
+    // Cleanup для предотвращения memory leak
+    private static lastCleanupTime = 0;
+    private static readonly CLEANUP_INTERVAL = 60000; // 1 минута
+
     public static resetCounters(): void {
         BruteforceGuard.counters.clear();
+    }
+
+    /**
+     * Очищает истёкшие счётчики для предотвращения memory leak
+     * Вызывается автоматически раз в минуту
+     */
+    private cleanExpiredCounters(): void {
+        const now = Date.now();
+
+        // Проверяем нужно ли запускать cleanup
+        if (
+            now - BruteforceGuard.lastCleanupTime <
+            BruteforceGuard.CLEANUP_INTERVAL
+        ) {
+            return;
+        }
+
+        BruteforceGuard.lastCleanupTime = now;
+
+        // Удаляем истёкшие записи
+        let deletedCount = 0;
+        for (const [key, node] of BruteforceGuard.counters.entries()) {
+            if (now >= node.resetAt) {
+                BruteforceGuard.counters.delete(key);
+                deletedCount++;
+            }
+        }
+
+        // Логируем только если что-то удалили (избегаем шума)
+        if (deletedCount > 0) {
+            this.logger.debug(
+                `Cleaned ${deletedCount} expired rate limit counters`,
+            );
+        }
     }
 
     protected async handleRequest(
@@ -66,6 +104,9 @@ export class BruteforceGuard extends ThrottlerGuard {
             return true;
         }
         request.__bruteforceProcessed = true;
+
+        // Периодический cleanup истёкших счётчиков (предотвращение memory leak)
+        this.cleanExpiredCounters();
 
         // Специальная логика для auth роутов с кэшированной конфигурацией
         const config = this.getCachedConfig();

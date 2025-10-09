@@ -554,6 +554,69 @@ describe('BruteforceGuard (unit)', () => {
         });
     });
 
+    describe('Automatic cleanup (memory leak prevention)', () => {
+        it('должен автоматически удалять истёкшие счётчики', async () => {
+            jest.useFakeTimers();
+
+            mockRequest.url = '/online-store/auth/login';
+            const requestProps = { context: mockContext };
+
+            // Создаём первый счётчик
+            await asPrivate(guard).handleRequest(requestProps);
+            
+            // Создаём второй счётчик для другого IP
+            const request2 = { ...mockRequest, socket: { remoteAddress: '10.0.0.1' } };
+            const context2 = createMockContextForRequest(request2);
+            delete (request2 as TestRequest).__bruteforceProcessed;
+            await asPrivate(guard).handleRequest({ context: context2 });
+            
+            expect(BruteforceGuard['counters'].size).toBe(2);
+
+            // Ждём пока счётчики истекут (1 минута + 1 секунда)
+            jest.advanceTimersByTime(61000);
+
+            // Ждём cleanup interval (1 минута)
+            jest.advanceTimersByTime(60000);
+
+            // Следующий запрос должен вызвать cleanup и удалить оба истёкших счётчика
+            delete mockRequest.__bruteforceProcessed;
+            await asPrivate(guard).handleRequest(requestProps);
+
+            // Старые счётчики удалены, создан только 1 новый
+            expect(BruteforceGuard['counters'].size).toBe(1);
+
+            jest.useRealTimers();
+        });
+
+        it('cleanup должен удалять только истёкшие записи', () => {
+            // Создаём актуальный счётчик
+            const now = Date.now();
+            BruteforceGuard['counters'].set('login:192.168.1.1', { 
+                count: 1, 
+                resetAt: now + 10000  // Истекает через 10 секунд
+            });
+
+            // Создаём истёкший счётчик
+            BruteforceGuard['counters'].set('login:192.168.1.2', { 
+                count: 2, 
+                resetAt: now - 1000  // Уже истёк
+            });
+
+            expect(BruteforceGuard['counters'].size).toBe(2);
+
+            // Устанавливаем lastCleanupTime в прошлое для запуска cleanup
+            BruteforceGuard['lastCleanupTime'] = now - 61000;
+
+            // Вызываем cleanup напрямую
+            (guard as any).cleanExpiredCounters();
+
+            // Должен остаться только актуальный счётчик
+            expect(BruteforceGuard['counters'].size).toBe(1);
+            expect(BruteforceGuard['counters'].has('login:192.168.1.1')).toBe(true);
+            expect(BruteforceGuard['counters'].has('login:192.168.1.2')).toBe(false);
+        });
+    });
+
     describe('parseWindowToMs helper', () => {
         it('должен парсить секунды (s)', () => {
             expect(parseWindowToMs('30s', 1000)).toBe(30 * 1000);
