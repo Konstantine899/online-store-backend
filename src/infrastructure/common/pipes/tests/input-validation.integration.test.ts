@@ -4,6 +4,7 @@ import { setupTestApp } from '../../../../../tests/setup/app';
 
 describe('Input Validation and Sanitization (integration)', () => {
     let app: INestApplication;
+    let requestCounter = 0;
 
     beforeAll(async () => {
         app = await setupTestApp();
@@ -13,10 +14,20 @@ describe('Input Validation and Sanitization (integration)', () => {
         await app?.close();
     });
 
+    // Генерируем уникальный IP для каждого запроса, чтобы обойти rate limiting
+    const getUniqueHeaders = () => {
+        requestCounter++;
+        return {
+            'x-forwarded-for': `10.0.${Math.floor(requestCounter / 255)}.${requestCounter % 255}`,
+            'x-real-ip': `10.0.${Math.floor(requestCounter / 255)}.${requestCounter % 255}`,
+        };
+    };
+
     describe('XSS защита в регистрации', () => {
         it('должен отклонить email с XSS скриптом', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: '<script>alert("xss")</script>@mail.com',
                     password: 'SecurePass123!',
@@ -38,6 +49,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить email с javascript: протоколом', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'javascript:alert(1)@mail.com',
                     password: 'SecurePass123!',
@@ -54,6 +66,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить email с HTML тегами', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: '<div>test@mail.com</div>',
                     password: 'SecurePass123!',
@@ -65,6 +78,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить слабый пароль', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'test@mail.com',
                     password: 'weak',
@@ -81,6 +95,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить запрос с лишними полями', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'test@mail.com',
                     password: 'SecurePass123!',
@@ -97,6 +112,7 @@ describe('Input Validation and Sanitization (integration)', () => {
             const longEmail = 'a'.repeat(300) + '@mail.com';
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: longEmail,
                     password: 'SecurePass123!',
@@ -113,6 +129,7 @@ describe('Input Validation and Sanitization (integration)', () => {
             // Получаем токен админа для тестов
             const loginResponse = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'admin@test.com',
                     password: 'Admin123!',
@@ -131,6 +148,7 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/user')
+                .set(getUniqueHeaders())
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
                     email: 'newuser@test.com',
@@ -161,6 +179,7 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/user')
+                .set(getUniqueHeaders())
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
                     email: 'newuser@test.com',
@@ -179,6 +198,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         beforeAll(async () => {
             const loginResponse = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'admin@test.com',
                     password: 'Admin123!',
@@ -197,6 +217,7 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/product')
+                .set(getUniqueHeaders())
                 .set('Authorization', `Bearer ${adminToken}`)
                 .field('name', '<script>alert("xss")</script>')
                 .field('price', '1000')
@@ -225,6 +246,7 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/product')
+                .set(getUniqueHeaders())
                 .set('Authorization', `Bearer ${adminToken}`)
                 .field('name', 'javascript:alert(1)')
                 .field('price', '1000')
@@ -239,6 +261,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить некорректный тип для числового поля', async () => {
             const loginResponse = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'admin@test.com',
                     password: 'Admin123!',
@@ -253,6 +276,7 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/product')
+                .set(getUniqueHeaders())
                 .set('Authorization', `Bearer ${adminToken}`)
                 .field('name', 'Test Product')
                 .field('price', 'not-a-number')
@@ -267,6 +291,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить SQL injection в email field (basic)', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: "admin'-- ",
                     password: 'SecurePass123!',
@@ -283,6 +308,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить UNION-based SQL injection', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: "' UNION SELECT * FROM users-- ",
                     password: 'SecurePass123!',
@@ -294,6 +320,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить blind SQL injection', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: "admin' AND '1'='1",
                     password: 'SecurePass123!',
@@ -305,6 +332,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить time-based SQL injection', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: "'; WAITFOR DELAY '00:00:05'--",
                     password: 'SecurePass123!',
@@ -316,6 +344,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить SQL injection в search query', async () => {
             const loginResponse = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'admin@test.com',
                     password: 'Admin123!',
@@ -343,6 +372,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен защитить numeric fields от SQL injection', async () => {
             const loginResponse = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'admin@test.com',
                     password: 'Admin123!',
@@ -357,6 +387,7 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/product')
+                .set(getUniqueHeaders())
                 .set('Authorization', `Bearer ${adminToken}`)
                 .field('name', 'Test Product')
                 .field('price', '1 OR 1=1')
@@ -373,6 +404,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         beforeAll(async () => {
             const loginResponse = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'admin@test.com',
                     password: 'Admin123!',
@@ -391,6 +423,7 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/product')
+                .set(getUniqueHeaders())
                 .set('Authorization', `Bearer ${adminToken}`)
                 .field('name', 'Test Product')
                 .field('price', '1000')
@@ -409,6 +442,7 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/product')
+                .set(getUniqueHeaders())
                 .set('Authorization', `Bearer ${adminToken}`)
                 .field('name', 'Test Product')
                 .field('price', '1000')
@@ -431,6 +465,7 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/product')
+                .set(getUniqueHeaders())
                 .set('Authorization', `Bearer ${adminToken}`)
                 .field('name', 'Test Product')
                 .field('price', '1000')
@@ -453,6 +488,7 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/product')
+                .set(getUniqueHeaders())
                 .set('Authorization', `Bearer ${adminToken}`)
                 .field('name', 'Test Product')
                 .field('price', '1000')
@@ -475,6 +511,7 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/product')
+                .set(getUniqueHeaders())
                 .set('Authorization', `Bearer ${adminToken}`)
                 .field('name', 'Test Product')
                 .field('price', '1000')
@@ -494,6 +531,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен использовать SameSite cookies для защиты от CSRF', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'admin@test.com',
                     password: 'Admin123!',
@@ -524,6 +562,7 @@ describe('Input Validation and Sanitization (integration)', () => {
             // Используем существующего админа из seeds
             const loginResponse = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'admin@test.com',
                     password: 'Admin123!',
@@ -565,6 +604,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить event handlers (onload, onerror)', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'test@mail.com',
                     password: 'SecurePass123!',
@@ -581,6 +621,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить data: URIs', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'data:text/html,<script>alert(1)</script>@mail.com',
                     password: 'SecurePass123!',
@@ -592,6 +633,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить SVG injection', async () => {
             const loginResponse = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'admin@test.com',
                     password: 'Admin123!',
@@ -606,6 +648,7 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/product')
+                .set(getUniqueHeaders())
                 .set('Authorization', `Bearer ${adminToken}`)
                 .field('name', '<svg onload=alert(1)>')
                 .field('price', '1000')
@@ -618,6 +661,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить iframe injection', async () => {
             const loginResponse = await request(app.getHttpServer())
                 .post('/online-store/auth/login')
+                .set(getUniqueHeaders())
                 .send({
                     email: 'admin@test.com',
                     password: 'Admin123!',
@@ -632,6 +676,7 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .post('/online-store/product')
+                .set(getUniqueHeaders())
                 .set('Authorization', `Bearer ${adminToken}`)
                 .field('name', '<iframe src=javascript:alert(1)>')
                 .field('price', '1000')
@@ -644,6 +689,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить URL-encoded XSS', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: '%3Cscript%3Ealert(1)%3C%2Fscript%3E@mail.com',
                     password: 'SecurePass123!',
@@ -655,6 +701,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен отклонить Unicode bypass попытки', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: '\u003cscript\u003ealert(1)\u003c/script\u003e@mail.com',
                     password: 'SecurePass123!',
@@ -668,6 +715,7 @@ describe('Input Validation and Sanitization (integration)', () => {
         it('должен возвращать сообщения об ошибках на русском языке', async () => {
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/registration')
+                .set(getUniqueHeaders())
                 .send({
                     email: '',
                     password: '',
