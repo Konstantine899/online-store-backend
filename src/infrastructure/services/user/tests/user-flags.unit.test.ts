@@ -1,12 +1,15 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
-import { UserService } from '@app/infrastructure/services/user/user.service';
-import { UserRepository } from '@app/infrastructure/repositories/user/user.repository';
-import { RoleService } from '@app/infrastructure/services/role/role.service';
-import { LoginHistoryService } from '@app/infrastructure/services/login-history/login-history.service';
 import { UserModel } from '@app/domain/models';
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
+import {
+    RefreshTokenRepository,
+    UserRepository,
+} from '@app/infrastructure/repositories';
+import { NotFoundException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { LoginHistoryService } from '@app/infrastructure/services/login-history/login-history.service';
+import { RoleService } from '@app/infrastructure/services/role/role.service';
+import { UserService } from '@app/infrastructure/services/user/user.service';
 
 describe('UserService - Flags and Preferences', () => {
     let service: UserService;
@@ -74,6 +77,16 @@ describe('UserService - Flags and Preferences', () => {
                 {
                     provide: LoginHistoryService,
                     useValue: mockLoginHistoryService,
+                },
+                {
+                    provide: RefreshTokenRepository,
+                    useValue: {
+                        removeListRefreshTokens: jest.fn().mockResolvedValue(0),
+                        createRefreshToken: jest.fn(),
+                        findRefreshTokenById: jest.fn(),
+                        findListRefreshTokens: jest.fn(),
+                        removeRefreshToken: jest.fn(),
+                    },
                 },
             ],
         }).compile();

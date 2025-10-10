@@ -34,9 +34,12 @@ describe('SEC-001-1: Password Update Invalidation (Integration)', () => {
                 .expect(HttpStatus.OK);
 
             // Извлекаем refresh token из cookies
-            const setCookieHeader = loginResponse.headers['set-cookie'];
-            const refreshTokenCookie = setCookieHeader
-                .find((cookie: string) => cookie.startsWith('refreshToken='));
+            const setCookieHeader = loginResponse.headers[
+                'set-cookie'
+            ] as unknown as string[];
+            const refreshTokenCookie = setCookieHeader.find((cookie: string) =>
+                cookie.startsWith('refreshToken='),
+            )!;
             expect(refreshTokenCookie).toBeDefined();
 
             // 2. Проверяем, что refresh токен работает ДО смены пароля
@@ -77,12 +80,12 @@ describe('SEC-001-1: Password Update Invalidation (Integration)', () => {
                 .send({ email: user.email, password: user.password })
                 .expect(HttpStatus.OK);
 
-            const session1Cookie = login1.headers['set-cookie'].find((c: string) =>
-                c.startsWith('refreshToken='),
-            );
-            const session2Cookie = login2.headers['set-cookie'].find((c: string) =>
-                c.startsWith('refreshToken='),
-            );
+            const session1Cookie = (
+                login1.headers['set-cookie'] as unknown as string[]
+            ).find((c: string) => c.startsWith('refreshToken='))!;
+            const session2Cookie = (
+                login2.headers['set-cookie'] as unknown as string[]
+            ).find((c: string) => c.startsWith('refreshToken='))!;
 
             // Проверяем, что оба токена работают ДО смены пароля
             await request(app.getHttpServer())
@@ -118,4 +121,3 @@ describe('SEC-001-1: Password Update Invalidation (Integration)', () => {
         });
     });
 });
-

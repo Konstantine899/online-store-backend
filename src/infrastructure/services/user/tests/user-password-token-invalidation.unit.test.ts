@@ -3,23 +3,23 @@
  * CRITICAL SECURITY: Verify all refresh tokens are invalidated on password update
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { getModelToken } from '@nestjs/sequelize';
-import { NotFoundException } from '@nestjs/common';
 import { UserModel } from '@app/domain/models';
-import { UserService } from '../user.service';
 import {
-    UserRepository,
     RefreshTokenRepository,
+    UserRepository,
 } from '@app/infrastructure/repositories';
-import { RoleService } from '../../role/role.service';
+import { NotFoundException } from '@nestjs/common';
+import { getModelToken } from '@nestjs/sequelize';
+import { Test, TestingModule } from '@nestjs/testing';
 import { LoginHistoryService } from '../../login-history/login-history.service';
+import { RoleService } from '../../role/role.service';
+import { UserService } from '../user.service';
 
 describe('SEC-001-1: Password Update Token Invalidation', () => {
     let service: UserService;
     let userRepository: jest.Mocked<UserRepository>;
     let refreshTokenRepository: jest.Mocked<RefreshTokenRepository>;
-    let userModel: any;
+    let userModel: { update: jest.Mock };
 
     const mockUser = {
         id: 1,
@@ -87,12 +87,12 @@ describe('SEC-001-1: Password Update Token Invalidation', () => {
             await service.updatePassword(1, 'new-hash');
 
             // Assert
-            expect(refreshTokenRepository.removeListRefreshTokens).toHaveBeenCalledWith(
-                1,
-            );
-            expect(refreshTokenRepository.removeListRefreshTokens).toHaveBeenCalledTimes(
-                1,
-            );
+            expect(
+                refreshTokenRepository.removeListRefreshTokens,
+            ).toHaveBeenCalledWith(1);
+            expect(
+                refreshTokenRepository.removeListRefreshTokens,
+            ).toHaveBeenCalledTimes(1);
         });
 
         it('✅ SECURITY: должен инвалидировать токены ПЕРЕД очисткой кэша (атомарность)', async () => {
@@ -134,14 +134,16 @@ describe('SEC-001-1: Password Update Token Invalidation', () => {
             await service.updatePassword(1, 'new-hash');
 
             // Assert: проверяем, что метод был вызван с правильным userId
-            expect(refreshTokenRepository.removeListRefreshTokens).toHaveBeenCalledWith(
-                1,
-            );
+            expect(
+                refreshTokenRepository.removeListRefreshTokens,
+            ).toHaveBeenCalledWith(1);
         });
 
         it('❌ должен бросить NotFoundException если пользователь не найден', async () => {
             // Arrange
-            userRepository.findUserByPkId.mockResolvedValue(undefined);
+            userRepository.findUserByPkId.mockResolvedValue(
+                null as unknown as UserModel,
+            );
 
             // Act & Assert
             await expect(
@@ -164,9 +166,9 @@ describe('SEC-001-1: Password Update Token Invalidation', () => {
             await service.updatePassword(1, 'new-hash');
 
             // Assert
-            expect(refreshTokenRepository.removeListRefreshTokens).toHaveBeenCalledWith(
-                1,
-            );
+            expect(
+                refreshTokenRepository.removeListRefreshTokens,
+            ).toHaveBeenCalledWith(1);
             expect(userModel.update).toHaveBeenCalledWith(
                 { password: 'new-hash' },
                 { where: { id: 1 } },
@@ -195,4 +197,3 @@ describe('SEC-001-1: Password Update Token Invalidation', () => {
         });
     });
 });
-
