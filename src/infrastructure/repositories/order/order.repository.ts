@@ -14,6 +14,14 @@ import { IOrderRepository } from '@app/domain/repositories';
 import { Sequelize } from 'sequelize-typescript';
 import { Transaction, Op } from 'sequelize';
 
+/**
+ * TEST-032: Extended interface for order items with productId
+ * Needed for inventory checking and stock management
+ */
+interface OrderItemWithProduct extends OrderItemModel {
+    productId: number;
+}
+
 @Injectable()
 export class OrderRepository implements IOrderRepository {
     constructor(
@@ -180,8 +188,11 @@ export class OrderRepository implements IOrderRepository {
                 isolationLevel: Transaction.ISOLATION_LEVELS.READ_COMMITTED,
             },
             async (transaction: Transaction) => {
+                // Cast items to include productId (TEST-032 requirement)
+                const itemsWithProduct = dto.items as unknown as OrderItemWithProduct[];
+
                 // 1. Extract product IDs from order items
-                const productIds = dto.items.map((item: any) => item.productId);
+                const productIds = itemsWithProduct.map((item) => item.productId);
 
                 // 2. Lock products FOR UPDATE (pessimistic locking)
                 const products = await this.productModel.findAll({
@@ -195,18 +206,16 @@ export class OrderRepository implements IOrderRepository {
                 });
 
                 // 3. Check stock availability for each item
-                for (const item of dto.items) {
-                    const product = products.find(
-                        (p) => p.id === (item as any).productId,
-                    );
+                for (const item of itemsWithProduct) {
+                    const product = products.find((p) => p.id === item.productId);
 
                     if (!product) {
                         throw new ConflictException(
-                            `Товар с ID ${(item as any).productId} не найден`,
+                            `Товар с ID ${item.productId} не найден`,
                         );
                     }
 
-                    const requestedQuantity = (item as any).quantity || 1;
+                    const requestedQuantity = item.quantity || 1;
 
                     if (product.stock < requestedQuantity) {
                         throw new ConflictException(
@@ -217,15 +226,15 @@ export class OrderRepository implements IOrderRepository {
                 }
 
                 // 4. Decrement stock atomically
-                for (const item of dto.items) {
-                    const requestedQuantity = (item as any).quantity || 1;
+                for (const item of itemsWithProduct) {
+                    const requestedQuantity = item.quantity || 1;
 
                     await this.productModel.decrement(
                         'stock',
                         {
                             by: requestedQuantity,
                             where: {
-                                id: (item as any).productId,
+                                id: item.productId,
                             },
                             transaction,
                         },
