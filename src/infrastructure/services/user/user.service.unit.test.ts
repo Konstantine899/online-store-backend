@@ -5,7 +5,10 @@ import {
     RemoveRoleDto,
     UpdateUserDto,
 } from '@app/infrastructure/dto';
-import { UserRepository } from '@app/infrastructure/repositories';
+import {
+    RefreshTokenRepository,
+    UserRepository,
+} from '@app/infrastructure/repositories';
 import {
     GetUserResponse,
     UpdateUserResponse,
@@ -90,6 +93,7 @@ describe('UserService', () => {
     let service: UserService;
     let userRepository: jest.Mocked<UserRepository>;
     let roleService: jest.Mocked<RoleService>;
+    let refreshTokenRepository: any;
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -157,6 +161,16 @@ describe('UserService', () => {
                     },
                 },
                 {
+                    provide: RefreshTokenRepository,
+                    useValue: {
+                        removeListRefreshTokens: jest.fn().mockResolvedValue(0),
+                        createRefreshToken: jest.fn(),
+                        findRefreshTokenById: jest.fn(),
+                        findListRefreshTokens: jest.fn(),
+                        removeRefreshToken: jest.fn(),
+                    },
+                },
+                {
                     provide: getModelToken(UserModel),
                     useValue: {
                         findByPk: jest.fn(),
@@ -169,6 +183,7 @@ describe('UserService', () => {
         service = module.get<UserService>(UserService);
         userRepository = module.get(UserRepository);
         roleService = module.get(RoleService);
+        refreshTokenRepository = module.get(RefreshTokenRepository);
     });
 
     describe('createUser', () => {

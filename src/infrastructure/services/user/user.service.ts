@@ -13,7 +13,10 @@ import {
 } from '@app/infrastructure/dto';
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
-import { UserRepository } from '@app/infrastructure/repositories';
+import {
+    RefreshTokenRepository,
+    UserRepository,
+} from '@app/infrastructure/repositories';
 import {
     AddRoleResponse,
     CheckResponse,
@@ -69,6 +72,7 @@ export class UserService implements IUserService {
         private roleService: RoleService,
         @InjectModel(UserModel) private readonly userModel: typeof UserModel,
         private readonly loginHistoryService: LoginHistoryService,
+        private readonly refreshTokenRepository: RefreshTokenRepository,
     ) {}
 
     // Оптимизированные методы кэширования
@@ -447,8 +451,24 @@ export class UserService implements IUserService {
             { where: { id: userId } },
         );
 
+        // SEC-001: CRITICAL FIX - Invalidate all refresh tokens on admin password update
+        // Prevents session hijacking: attacker can't use old refresh tokens after password reset
+        const deletedTokensCount =
+            await this.refreshTokenRepository.removeListRefreshTokens(userId);
+
         // Инвалидируем кэш пользователя
         this.invalidateUserCache(userId);
+
+        // SEC-001: Audit logging для admin security actions
+        this.logger.warn(
+            {
+                userId,
+                action: 'admin_password_update',
+                tokensInvalidated: deletedTokensCount,
+                timestamp: new Date().toISOString(),
+            },
+            'Admin force password update - all user sessions terminated',
+        );
     }
 
     public async updateFlags(
