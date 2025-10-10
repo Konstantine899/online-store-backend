@@ -35,19 +35,17 @@ const rateLimiterLogger = createLogger('RateLimiter');
  * Логирует ошибку и корректно завершает приложение
  */
 process.on('unhandledRejection', (reason: unknown) => {
-        processLogger.error(
-            {
-                reason:
-                    reason instanceof Error ? reason.message : String(reason),
-                stack: reason instanceof Error ? reason.stack : undefined,
-            },
-            'Необработанное Promise rejection',
-        );
+    processLogger.error(
+        {
+            reason: reason instanceof Error ? reason.message : String(reason),
+            stack: reason instanceof Error ? reason.stack : undefined,
+        },
+        'Необработанное Promise rejection',
+    );
 
-        // Graceful shutdown после логирования
-        process.exit(1);
-    },
-);
+    // Graceful shutdown после логирования
+    process.exit(1);
+});
 
 /**
  * Обработчик необработанных исключений

@@ -4,7 +4,7 @@ import { dbToken } from '@app/infrastructure/config/sequelize/db-token';
 
 /**
  * Получение конфигурации connection pool в зависимости от окружения
- * 
+ *
  * Стратегия:
  * - CI (parallel): 30 max для 4 workers
  * - Test (sequential): 10 max для стабильности

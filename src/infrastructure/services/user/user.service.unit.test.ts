@@ -1,27 +1,27 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getModelToken } from '@nestjs/sequelize';
+import { RoleModel, UserModel } from '@app/domain/models';
 import {
-    BadRequestException,
-    ConflictException,
-    NotFoundException,
-    HttpStatus,
-} from '@nestjs/common';
-import { UserService } from './user.service';
-import { UserRepository } from '@app/infrastructure/repositories';
-import { RoleService } from '../role/role.service';
-import {
-    CreateUserDto,
     AddRoleDto,
+    CreateUserDto,
     RemoveRoleDto,
     UpdateUserDto,
 } from '@app/infrastructure/dto';
-import { UserModel, RoleModel } from '@app/domain/models';
+import { UserRepository } from '@app/infrastructure/repositories';
 import {
     GetUserResponse,
     UpdateUserResponse,
 } from '@app/infrastructure/responses';
+import {
+    BadRequestException,
+    ConflictException,
+    HttpStatus,
+    NotFoundException,
+} from '@nestjs/common';
+import { getModelToken } from '@nestjs/sequelize';
+import { Test, TestingModule } from '@nestjs/testing';
 import { compare } from 'bcrypt';
 import { LoginHistoryService } from '../login-history/login-history.service';
+import { RoleService } from '../role/role.service';
+import { UserService } from './user.service';
 
 jest.mock('bcrypt', () => ({
     compare: jest.fn(),
@@ -975,15 +975,22 @@ describe('UserService', () => {
                 '$setMethod: успешно устанавливает $flag ($description)',
                 async ({ setMethod, flag }) => {
                     const updatedUser = { ...mockUser, [flag]: true };
-                    (userRepository as any)[setMethod].mockResolvedValue(
-                        updatedUser,
-                    );
+                    (userRepository as unknown as Record<string, jest.Mock>)[
+                        setMethod
+                    ].mockResolvedValue(updatedUser);
 
-                    const result = await (service as any)[setMethod](1);
+                    const result = await (
+                        service as unknown as Record<string, jest.Mock>
+                    )[setMethod](1);
 
-                    expect((userRepository as any)[setMethod]).toHaveBeenCalledWith(
-                        1,
-                    );
+                    expect(
+                        (
+                            userRepository as unknown as Record<
+                                string,
+                                jest.Mock
+                            >
+                        )[setMethod],
+                    ).toHaveBeenCalledWith(1);
                     expect(result).toEqual(updatedUser);
                     expect(result[flag]).toBe(true);
                 },
@@ -992,10 +999,14 @@ describe('UserService', () => {
             test.each(businessFlagOperations)(
                 '$setMethod: 404 если пользователь не найден',
                 async ({ setMethod }) => {
-                    (userRepository as any)[setMethod].mockResolvedValue(null);
+                    (userRepository as unknown as Record<string, jest.Mock>)[
+                        setMethod
+                    ].mockResolvedValue(null);
 
                     await expect(
-                        (service as any)[setMethod](999),
+                        (service as unknown as Record<string, jest.Mock>)[
+                            setMethod
+                        ](999),
                     ).rejects.toThrow(NotFoundException);
                 },
             );
@@ -1006,14 +1017,21 @@ describe('UserService', () => {
                 '$unsetMethod: успешно снимает $flag ($description)',
                 async ({ unsetMethod, flag }) => {
                     const updatedUser = { ...mockUser, [flag]: false };
-                    (userRepository as any)[unsetMethod].mockResolvedValue(
-                        updatedUser,
-                    );
+                    (userRepository as unknown as Record<string, jest.Mock>)[
+                        unsetMethod
+                    ].mockResolvedValue(updatedUser);
 
-                    const result = await (service as any)[unsetMethod](1);
+                    const result = await (
+                        service as unknown as Record<string, jest.Mock>
+                    )[unsetMethod](1);
 
                     expect(
-                        (userRepository as any)[unsetMethod],
+                        (
+                            userRepository as unknown as Record<
+                                string,
+                                jest.Mock
+                            >
+                        )[unsetMethod],
                     ).toHaveBeenCalledWith(1);
                     expect(result).toEqual(updatedUser);
                     expect(result[flag]).toBe(false);
@@ -1023,10 +1041,14 @@ describe('UserService', () => {
             test.each(businessFlagOperations)(
                 '$unsetMethod: 404 если пользователь не найден',
                 async ({ unsetMethod }) => {
-                    (userRepository as any)[unsetMethod].mockResolvedValue(null);
+                    (userRepository as unknown as Record<string, jest.Mock>)[
+                        unsetMethod
+                    ].mockResolvedValue(null);
 
                     await expect(
-                        (service as any)[unsetMethod](999),
+                        (service as unknown as Record<string, jest.Mock>)[
+                            unsetMethod
+                        ](999),
                     ).rejects.toThrow(NotFoundException);
                 },
             );
@@ -1049,7 +1071,9 @@ describe('UserService', () => {
         });
 
         it('404: пользователь не найден', async () => {
-            userRepository.findUserByPkId.mockResolvedValue(null);
+            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue(
+                null,
+            );
 
             await expect(
                 service.updatePassword(999, 'hashed:NewPass'),
@@ -1104,7 +1128,7 @@ describe('UserService', () => {
         });
 
         it('getUserStats: TTL кэша (10 минут) работает независимо от getUser', async () => {
-            const mockStats = { totalUsers: 50, activeUsers: 40 } as any;
+            const mockStats = { totalUsers: 50, activeUsers: 40 };
             userRepository.getUserStats = jest
                 .fn()
                 .mockResolvedValue(mockStats);
@@ -1165,7 +1189,7 @@ describe('UserService', () => {
         });
 
         it('должен кэшировать статистику на 10 минут (STATS_CACHE_TTL)', async () => {
-            const mockStats = { totalUsers: 100, activeUsers: 80 } as any;
+            const mockStats = { totalUsers: 100, activeUsers: 80 };
             userRepository.getUserStats = jest
                 .fn()
                 .mockResolvedValue(mockStats);

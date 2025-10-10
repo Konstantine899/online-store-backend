@@ -353,9 +353,11 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             // Sequelize защищает от SQL injection, запрос может вернуть пустой результат (200)
             // или быть отклонен валидацией (400). Главное - не 500 (ошибка БД)
-            expect([HttpStatus.OK, HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND]).toContain(
-                response.status,
-            );
+            expect([
+                HttpStatus.OK,
+                HttpStatus.BAD_REQUEST,
+                HttpStatus.NOT_FOUND,
+            ]).toContain(response.status);
         });
 
         it('должен защитить numeric fields от SQL injection', async () => {
@@ -404,7 +406,7 @@ describe('Input Validation and Sanitization (integration)', () => {
             // Эти сценарии ПОЛНОСТЬЮ ПОКРЫТЫ unit тестами multer config
             // (src/infrastructure/config/multer/tests/multer.config.unit.test.ts)
             // Здесь проверяем что FileService НЕ падает с некорректным путем (graceful degradation)
-            
+
             if (!adminToken) {
                 console.warn('Пропущен тест: админ токен недоступен');
                 return;
@@ -422,9 +424,10 @@ describe('Input Validation and Sanitization (integration)', () => {
 
             // FileService получает null для UPLOAD_PATH в некоторых окружениях
             // или multer нормализует filename - ожидаем 400/500
-            expect([HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR]).toContain(
-                response.status,
-            );
+            expect([
+                HttpStatus.BAD_REQUEST,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            ]).toContain(response.status);
         });
 
         it('должен отклонить URL-encoded path traversal', async () => {
@@ -448,9 +451,10 @@ describe('Input Validation and Sanitization (integration)', () => {
                 );
 
             // Covered by multer unit tests - supertest нормализует filename
-            expect([HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR]).toContain(
-                response.status,
-            );
+            expect([
+                HttpStatus.BAD_REQUEST,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            ]).toContain(response.status);
         });
 
         it('должен отклонить double-encoded path traversal', async () => {
@@ -474,9 +478,10 @@ describe('Input Validation and Sanitization (integration)', () => {
                 );
 
             // Covered by multer unit tests
-            expect([HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR]).toContain(
-                response.status,
-            );
+            expect([
+                HttpStatus.BAD_REQUEST,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            ]).toContain(response.status);
         });
 
         it('должен отклонить Windows-style path traversal', async () => {
@@ -500,9 +505,10 @@ describe('Input Validation and Sanitization (integration)', () => {
                 );
 
             // Covered by multer unit tests
-            expect([HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR]).toContain(
-                response.status,
-            );
+            expect([
+                HttpStatus.BAD_REQUEST,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            ]).toContain(response.status);
         });
 
         it('должен отклонить null byte injection в filename', async () => {
