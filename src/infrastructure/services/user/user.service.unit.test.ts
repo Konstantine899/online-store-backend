@@ -5,7 +5,10 @@ import {
     RemoveRoleDto,
     UpdateUserDto,
 } from '@app/infrastructure/dto';
-import { UserRepository } from '@app/infrastructure/repositories';
+import {
+    RefreshTokenRepository,
+    UserRepository,
+} from '@app/infrastructure/repositories';
 import {
     GetUserResponse,
     UpdateUserResponse,
@@ -154,6 +157,16 @@ describe('UserService', () => {
                         getRole: jest.fn(),
                         createRole: jest.fn(),
                         getOneRoleByName: jest.fn(),
+                    },
+                },
+                {
+                    provide: RefreshTokenRepository,
+                    useValue: {
+                        removeListRefreshTokens: jest.fn().mockResolvedValue(0),
+                        createRefreshToken: jest.fn(),
+                        findRefreshTokenById: jest.fn(),
+                        findListRefreshTokens: jest.fn(),
+                        removeRefreshToken: jest.fn(),
                     },
                 },
                 {
