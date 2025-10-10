@@ -153,6 +153,7 @@ describe('UserService', () => {
                     useValue: {
                         getRole: jest.fn(),
                         createRole: jest.fn(),
+                        getOneRoleByName: jest.fn(),
                     },
                 },
                 {
@@ -873,6 +874,316 @@ describe('UserService', () => {
                     message: 'Неверный или просроченный код подтверждения',
                 }),
             );
+        });
+    });
+
+    // ============================================================
+    // TEST-030.1: CRUD Operations - Delete & Restore
+    // ============================================================
+    describe('softDeleteUser / restoreUser', () => {
+        it('softDeleteUser: успешно помечает пользователя удалённым', async () => {
+            const deletedUser = { ...mockUser, isDeleted: true };
+            userRepository.softDeleteUser.mockResolvedValue(
+                deletedUser as UserModel,
+            );
+
+            const result = await service.softDeleteUser(1);
+
+            expect(userRepository.softDeleteUser).toHaveBeenCalledWith(1);
+            expect(result).toEqual(deletedUser);
+        });
+
+        it('softDeleteUser: 404 если пользователь не найден', async () => {
+            userRepository.softDeleteUser.mockResolvedValue(null);
+
+            await expect(service.softDeleteUser(999)).rejects.toThrow(
+                NotFoundException,
+            );
+        });
+
+        it('restoreUser: успешно восстанавливает удалённого пользователя', async () => {
+            const restoredUser = { ...mockUser, isDeleted: false };
+            userRepository.restoreUser.mockResolvedValue(
+                restoredUser as UserModel,
+            );
+
+            const result = await service.restoreUser(1);
+
+            expect(userRepository.restoreUser).toHaveBeenCalledWith(1);
+            expect(result).toEqual(restoredUser);
+        });
+
+        it('restoreUser: 404 если пользователь не найден', async () => {
+            userRepository.restoreUser.mockResolvedValue(null);
+
+            await expect(service.restoreUser(999)).rejects.toThrow(
+                NotFoundException,
+            );
+        });
+    });
+
+    // ============================================================
+    // TEST-030.3: Business Flags - Parameterized Tests
+    // ============================================================
+    describe('Business Flags Operations (Parameterized)', () => {
+        const businessFlagOperations: Array<{
+            setMethod: string;
+            unsetMethod: string;
+            flag: string;
+            description: string;
+        }> = [
+            {
+                setMethod: 'upgradePremium',
+                unsetMethod: 'downgradePremium',
+                flag: 'isPremium',
+                description: 'Premium subscription',
+            },
+            {
+                setMethod: 'setEmployee',
+                unsetMethod: 'unsetEmployee',
+                flag: 'isEmployee',
+                description: 'Employee flag',
+            },
+            {
+                setMethod: 'setVip',
+                unsetMethod: 'unsetVip',
+                flag: 'isVip',
+                description: 'VIP customer',
+            },
+            {
+                setMethod: 'setHighValue',
+                unsetMethod: 'unsetHighValue',
+                flag: 'isHighValue',
+                description: 'High value customer',
+            },
+            {
+                setMethod: 'setWholesale',
+                unsetMethod: 'unsetWholesale',
+                flag: 'isWholesale',
+                description: 'Wholesale customer',
+            },
+            {
+                setMethod: 'setAffiliate',
+                unsetMethod: 'unsetAffiliate',
+                flag: 'isAffiliate',
+                description: 'Affiliate partner',
+            },
+        ];
+
+        describe('Set operations', () => {
+            test.each(businessFlagOperations)(
+                '$setMethod: успешно устанавливает $flag ($description)',
+                async ({ setMethod, flag }) => {
+                    const updatedUser = { ...mockUser, [flag]: true };
+                    (userRepository as any)[setMethod].mockResolvedValue(
+                        updatedUser,
+                    );
+
+                    const result = await (service as any)[setMethod](1);
+
+                    expect((userRepository as any)[setMethod]).toHaveBeenCalledWith(
+                        1,
+                    );
+                    expect(result).toEqual(updatedUser);
+                    expect(result[flag]).toBe(true);
+                },
+            );
+
+            test.each(businessFlagOperations)(
+                '$setMethod: 404 если пользователь не найден',
+                async ({ setMethod }) => {
+                    (userRepository as any)[setMethod].mockResolvedValue(null);
+
+                    await expect(
+                        (service as any)[setMethod](999),
+                    ).rejects.toThrow(NotFoundException);
+                },
+            );
+        });
+
+        describe('Unset operations', () => {
+            test.each(businessFlagOperations)(
+                '$unsetMethod: успешно снимает $flag ($description)',
+                async ({ unsetMethod, flag }) => {
+                    const updatedUser = { ...mockUser, [flag]: false };
+                    (userRepository as any)[unsetMethod].mockResolvedValue(
+                        updatedUser,
+                    );
+
+                    const result = await (service as any)[unsetMethod](1);
+
+                    expect(
+                        (userRepository as any)[unsetMethod],
+                    ).toHaveBeenCalledWith(1);
+                    expect(result).toEqual(updatedUser);
+                    expect(result[flag]).toBe(false);
+                },
+            );
+
+            test.each(businessFlagOperations)(
+                '$unsetMethod: 404 если пользователь не найден',
+                async ({ unsetMethod }) => {
+                    (userRepository as any)[unsetMethod].mockResolvedValue(null);
+
+                    await expect(
+                        (service as any)[unsetMethod](999),
+                    ).rejects.toThrow(NotFoundException);
+                },
+            );
+        });
+    });
+
+    // ============================================================
+    // TEST-030.4: Password Management - Admin Force Update
+    // ============================================================
+    describe('updatePassword (admin force update)', () => {
+        it('успешно обновляет пароль пользователя (admin)', async () => {
+            userRepository.findUserByPkId.mockResolvedValue(
+                mockUser as UserModel,
+            );
+
+            await service.updatePassword(1, 'hashed:NewSecurePass123!');
+
+            expect(userRepository.findUserByPkId).toHaveBeenCalledWith(1);
+            // updatePassword uses userModel.update, not repository
+        });
+
+        it('404: пользователь не найден', async () => {
+            userRepository.findUserByPkId.mockResolvedValue(null);
+
+            await expect(
+                service.updatePassword(999, 'hashed:NewPass'),
+            ).rejects.toThrow(NotFoundException);
+        });
+    });
+
+    // ============================================================
+    // TEST-030.6: Cache Management Tests
+    // ============================================================
+    describe('Cache Management', () => {
+        beforeEach(() => {
+            jest.useFakeTimers();
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        it('getUser: должен вернуть из кэша если данные свежие', async () => {
+            const cachedUser = { ...mockUser };
+            userRepository.findUser.mockResolvedValue(
+                cachedUser as GetUserResponse,
+            );
+
+            // Первый вызов - промах кэша
+            const result1 = await service.getUser(1);
+            expect(userRepository.findUser).toHaveBeenCalledTimes(1);
+
+            // Второй вызов - попадание в кэш (до истечения TTL)
+            const result2 = await service.getUser(1);
+            expect(userRepository.findUser).toHaveBeenCalledTimes(1); // Не вызывается повторно
+            expect(result2).toEqual(result1);
+        });
+
+        it('getUser: должен обновить кэш после истечения TTL (5 минут)', async () => {
+            const cachedUser = { ...mockUser };
+            userRepository.findUser.mockResolvedValue(
+                cachedUser as GetUserResponse,
+            );
+
+            // Первый вызов
+            await service.getUser(1);
+            expect(userRepository.findUser).toHaveBeenCalledTimes(1);
+
+            // Продвигаем время на 6 минут (TTL = 5 минут)
+            jest.advanceTimersByTime(6 * 60 * 1000);
+
+            // Второй вызов - кэш истёк, должен вызвать repository
+            await service.getUser(1);
+            expect(userRepository.findUser).toHaveBeenCalledTimes(2);
+        });
+
+        it('getUserStats: TTL кэша (10 минут) работает независимо от getUser', async () => {
+            const mockStats = { totalUsers: 50, activeUsers: 40 } as any;
+            userRepository.getUserStats = jest
+                .fn()
+                .mockResolvedValue(mockStats);
+
+            // Получаем stats (кэш на 10 минут)
+            await service.getUserStats();
+
+            // Продвигаем время на 6 минут (< 10 минут TTL)
+            jest.advanceTimersByTime(6 * 60 * 1000);
+
+            // Повторный вызов - из кэша
+            await service.getUserStats();
+            expect(userRepository.getUserStats).toHaveBeenCalledTimes(1);
+
+            // Продвигаем время ещё на 5 минут (всего 11 минут)
+            jest.advanceTimersByTime(5 * 60 * 1000);
+
+            // Теперь кэш истёк
+            await service.getUserStats();
+            expect(userRepository.getUserStats).toHaveBeenCalledTimes(2);
+        });
+    });
+
+    // ============================================================
+    // TEST-030.7: getUserStats with Cache
+    // ============================================================
+    describe('getUserStats', () => {
+        beforeEach(() => {
+            jest.useFakeTimers();
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        it('успешно возвращает статистику пользователей', async () => {
+            const mockStats = {
+                totalUsers: 100,
+                activeUsers: 80,
+                blockedUsers: 5,
+                vipUsers: 10,
+                newsletterSubscribers: 60,
+                premiumUsers: 15,
+                employees: 8,
+                affiliates: 12,
+                wholesaleUsers: 5,
+                highValueUsers: 20,
+            };
+
+            userRepository.getUserStats = jest
+                .fn()
+                .mockResolvedValue(mockStats);
+
+            const result = await service.getUserStats();
+
+            expect(userRepository.getUserStats).toHaveBeenCalled();
+            expect(result).toEqual(mockStats);
+        });
+
+        it('должен кэшировать статистику на 10 минут (STATS_CACHE_TTL)', async () => {
+            const mockStats = { totalUsers: 100, activeUsers: 80 } as any;
+            userRepository.getUserStats = jest
+                .fn()
+                .mockResolvedValue(mockStats);
+
+            // Первый вызов
+            await service.getUserStats();
+            expect(userRepository.getUserStats).toHaveBeenCalledTimes(1);
+
+            // Второй вызов до истечения TTL - из кэша
+            await service.getUserStats();
+            expect(userRepository.getUserStats).toHaveBeenCalledTimes(1);
+
+            // Продвигаем время на 11 минут
+            jest.advanceTimersByTime(11 * 60 * 1000);
+
+            // Третий вызов - кэш истёк
+            await service.getUserStats();
+            expect(userRepository.getUserStats).toHaveBeenCalledTimes(2);
         });
     });
 });
