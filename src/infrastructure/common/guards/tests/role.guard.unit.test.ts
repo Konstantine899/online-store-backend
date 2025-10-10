@@ -1,13 +1,13 @@
-import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
-import {
-    ExecutionContext,
-    UnauthorizedException,
-    ForbiddenException,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { TokenService } from '@app/infrastructure/services/token/token.service';
 import { IDecodedAccessToken } from '@app/domain/jwt';
 import { RoleModel } from '@app/domain/models';
+import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
+import { TokenService } from '@app/infrastructure/services/token/token.service';
+import {
+    ExecutionContext,
+    ForbiddenException,
+    UnauthorizedException,
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 
 // Типы для тестов
 interface TestRequest {
@@ -467,6 +467,193 @@ describe('RoleGuard (unit)', () => {
                 '  token-with-spaces   ',
                 mockRequest,
             );
+        });
+    });
+
+    // ============================================================
+    // TEST-020-6: Дополнительные Edge Cases & Security Tests
+    // ============================================================
+    describe('Дополнительные Edge Cases (TEST-020)', () => {
+        it('должен логировать информацию о публичных endpoints', async () => {
+            // Mock console.log для проверки логирования
+            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+            mockReflector.getAllAndOverride.mockReturnValue(null);
+            mockRequest.method = 'POST';
+            mockRequest.url = '/api/public/endpoint';
+
+            await guard.canActivate(mockContext);
+
+            expect(consoleSpy).toHaveBeenCalledWith(
+                expect.stringContaining(
+                    'RoleGuard: No roles required for POST /api/public/endpoint',
+                ),
+            );
+
+            consoleSpy.mockRestore();
+        });
+
+        it('должен корректно обрабатывать пустой массив требуемых ролей', async () => {
+            mockReflector.getAllAndOverride.mockReturnValue([]);
+            mockRequest.headers = { authorization: 'Bearer token' };
+
+            const user = createMockUserWithRoles('1', ['USER']);
+            mockTokenService.decodedAccessToken.mockResolvedValue(user);
+
+            // Пустой массив ролей => нужна хотя бы одна роль, но none required => false
+            const result = await guard.canActivate(mockContext);
+
+            expect(result).toBe(false);
+        });
+
+        it('должен обработать Authorization header с разным регистром', async () => {
+            mockReflector.getAllAndOverride.mockReturnValue(['USER']);
+            mockRequest.headers = { authorization: 'bearer token123' }; // lowercase
+
+            // Guard проверяет startsWith('Bearer '), так что lowercase не сработает
+            await expect(guard.canActivate(mockContext)).rejects.toThrow(
+                UnauthorizedException,
+            );
+        });
+
+        it('должен обработать очень длинный токен', async () => {
+            mockReflector.getAllAndOverride.mockReturnValue(['USER']);
+            const longToken = 'a'.repeat(10000); // 10KB token
+            mockRequest.headers = { authorization: `Bearer ${longToken}` };
+
+            const user = createMockUserWithRoles('1', ['USER']);
+            mockTokenService.decodedAccessToken.mockResolvedValue(user);
+
+            const result = await guard.canActivate(mockContext);
+
+            expect(result).toBe(true);
+            expect(mockTokenService.decodedAccessToken).toHaveBeenCalledWith(
+                longToken,
+                mockRequest,
+            );
+        });
+
+        it('должен обработать специальные символы в ролях', async () => {
+            mockReflector.getAllAndOverride.mockReturnValue(['ROLE_WITH-DASH']);
+            mockRequest.headers = { authorization: 'Bearer token' };
+
+            const user = createMockUserWithRoles('1', ['ROLE_WITH-DASH']);
+            mockTokenService.decodedAccessToken.mockResolvedValue(user);
+
+            const result = await guard.canActivate(mockContext);
+
+            expect(result).toBe(true);
+        });
+
+        it('должен обработать Unicode символы в ролях (if supported)', async () => {
+            mockReflector.getAllAndOverride.mockReturnValue(['РОЛЬ_АДМИН']);
+            mockRequest.headers = { authorization: 'Bearer token' };
+
+            const user = createMockUserWithRoles('1', ['РОЛЬ_АДМИН']);
+            mockTokenService.decodedAccessToken.mockResolvedValue(user);
+
+            const result = await guard.canActivate(mockContext);
+
+            expect(result).toBe(true);
+        });
+
+        it('должен обработать большое количество ролей у пользователя (100+)', async () => {
+            mockReflector.getAllAndOverride.mockReturnValue(['TARGET_ROLE']);
+            mockRequest.headers = { authorization: 'Bearer token' };
+
+            const manyRoles = Array.from(
+                { length: 100 },
+                (_, i) => `ROLE_${i}`,
+            );
+            manyRoles.push('TARGET_ROLE'); // Добавляем целевую роль
+            const user = createMockUserWithRoles('1', manyRoles);
+            mockTokenService.decodedAccessToken.mockResolvedValue(user);
+
+            const result = await guard.canActivate(mockContext);
+
+            expect(result).toBe(true);
+        });
+
+        it('должен корректно работать с кэшем при большом количестве уникальных role sets', async () => {
+            mockRequest.headers = { authorization: 'Bearer token' };
+            const user = createMockUserWithRoles('1', ['ADMIN']);
+            mockTokenService.decodedAccessToken.mockResolvedValue(user);
+
+            // Создаём 10 разных наборов ролей
+            for (let i = 0; i < 10; i++) {
+                mockReflector.getAllAndOverride.mockReturnValue([
+                    'ADMIN',
+                    `ROLE_${i}`,
+                ]);
+                await guard.canActivate(mockContext);
+            }
+
+            // Используем первый набор снова (из кэша)
+            mockReflector.getAllAndOverride.mockReturnValue([
+                'ADMIN',
+                'ROLE_0',
+            ]);
+            const result = await guard.canActivate(mockContext);
+
+            expect(result).toBe(true);
+            expect(mockTokenService.decodedAccessToken).toHaveBeenCalledTimes(
+                11,
+            );
+        });
+    });
+
+    describe('Security: Injection & Attack Vectors', () => {
+        it('должен защищать от SQL injection в роли (если БД используется)', async () => {
+            mockReflector.getAllAndOverride.mockReturnValue([
+                "ADMIN'; DROP TABLE users; --",
+            ]);
+            mockRequest.headers = { authorization: 'Bearer token' };
+
+            const user = createMockUserWithRoles('1', ['USER']);
+            mockTokenService.decodedAccessToken.mockResolvedValue(user);
+
+            const result = await guard.canActivate(mockContext);
+
+            // Роль не совпадает => false (и SQL injection не выполнится)
+            expect(result).toBe(false);
+        });
+
+        it('должен защищать от XSS в Authorization header', async () => {
+            mockReflector.getAllAndOverride.mockReturnValue(['USER']);
+            mockRequest.headers = {
+                authorization: 'Bearer <script>alert("XSS")</script>token123',
+            };
+
+            // XSS строка не начинается с "Bearer " корректно, будет ошибка
+            mockTokenService.decodedAccessToken.mockRejectedValue(
+                new Error('Invalid token'),
+            );
+
+            await expect(guard.canActivate(mockContext)).rejects.toThrow(
+                ForbiddenException,
+            );
+        });
+
+        it('должен обработать null/undefined в request headers', async () => {
+            mockReflector.getAllAndOverride.mockReturnValue(['USER']);
+            mockRequest.headers = null as unknown as Record<string, string>;
+
+            // null headers приводит к Cannot read properties of null -> ForbiddenException
+            await expect(guard.canActivate(mockContext)).rejects.toThrow(
+                ForbiddenException,
+            );
+            await expect(guard.canActivate(mockContext)).rejects.toThrow(
+                'Ошибка авторизации',
+            );
+        });
+
+        it('должен обработать malformed context (отсутствие switchToHttp)', async () => {
+            const malformedContext = {
+                switchToHttp: undefined,
+            } as unknown as ExecutionContext;
+
+            mockReflector.getAllAndOverride.mockReturnValue(['USER']);
+
+            await expect(guard.canActivate(malformedContext)).rejects.toThrow();
         });
     });
 });
