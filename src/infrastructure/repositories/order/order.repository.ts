@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { OrderModel, OrderItemModel } from '@app/domain/models';
+import { OrderModel, OrderItemModel, ProductModel } from '@app/domain/models';
 import { OrderDto } from '@app/infrastructure/dto';
 import { OrderItemRepository } from '../order-item/order-item-repository';
 import {
@@ -10,14 +10,17 @@ import {
     AdminGetOrderListUserResponse,
     UserGetOrderListResponse,
 } from '@app/infrastructure/responses';
-
 import { IOrderRepository } from '@app/domain/repositories';
+import { Sequelize } from 'sequelize-typescript';
+import { Transaction, Op } from 'sequelize';
 
 @Injectable()
 export class OrderRepository implements IOrderRepository {
     constructor(
         @InjectModel(OrderModel) private orderModel: typeof OrderModel,
+        @InjectModel(ProductModel) private productModel: typeof ProductModel,
         private readonly orderItemRepository: OrderItemRepository,
+        private readonly sequelize: Sequelize,
     ) {}
 
     public async adminFindOrderListUser(
@@ -171,30 +174,95 @@ export class OrderRepository implements IOrderRepository {
         dto: Omit<OrderDto, 'userId'>,
         userId: number,
     ): Promise<OrderModel> {
-        const order: OrderModel = new OrderModel();
-        order.user_id = userId;
-        order.name = dto.name;
-        order.email = dto.email;
-        order.phone = dto.phone;
-        order.address = dto.address;
-        order.comment = dto.comment;
-        order.amount = dto.items.reduce(
-            (sum: number, item: OrderItemModel) => sum + item.price,
-            0,
-        );
-        await order.save();
-        for (const item of dto.items) {
-            await this.orderItemRepository.createItem(order.id, item);
-        }
+        // TEST-032: Inventory checking + transaction + pessimistic locking
+        return this.sequelize.transaction(
+            {
+                isolationLevel: Transaction.ISOLATION_LEVELS.READ_COMMITTED,
+            },
+            async (transaction: Transaction) => {
+                // 1. Extract product IDs from order items
+                const productIds = dto.items.map((item: any) => item.productId);
 
-        return this.orderModel.findByPk(order.id, {
-            include: [
-                {
-                    model: OrderItemModel,
-                    as: 'items',
-                    attributes: ['name', 'price', 'quantity'],
-                },
-            ],
-        }) as Promise<OrderModel>;
+                // 2. Lock products FOR UPDATE (pessimistic locking)
+                const products = await this.productModel.findAll({
+                    where: {
+                        id: {
+                            [Op.in]: productIds,
+                        },
+                    },
+                    lock: Transaction.LOCK.UPDATE,
+                    transaction,
+                });
+
+                // 3. Check stock availability for each item
+                for (const item of dto.items) {
+                    const product = products.find(
+                        (p) => p.id === (item as any).productId,
+                    );
+
+                    if (!product) {
+                        throw new ConflictException(
+                            `Товар с ID ${(item as any).productId} не найден`,
+                        );
+                    }
+
+                    const requestedQuantity = (item as any).quantity || 1;
+
+                    if (product.stock < requestedQuantity) {
+                        throw new ConflictException(
+                            `Недостаточно товара на складе: ${product.name}. ` +
+                                `Доступно: ${product.stock}, запрошено: ${requestedQuantity}`,
+                        );
+                    }
+                }
+
+                // 4. Decrement stock atomically
+                for (const item of dto.items) {
+                    const requestedQuantity = (item as any).quantity || 1;
+
+                    await this.productModel.decrement(
+                        'stock',
+                        {
+                            by: requestedQuantity,
+                            where: {
+                                id: (item as any).productId,
+                            },
+                            transaction,
+                        },
+                    );
+                }
+
+                // 5. Create order
+                const order: OrderModel = new OrderModel();
+                order.user_id = userId;
+                order.name = dto.name;
+                order.email = dto.email;
+                order.phone = dto.phone;
+                order.address = dto.address;
+                order.comment = dto.comment;
+                order.amount = dto.items.reduce(
+                    (sum: number, item: OrderItemModel) => sum + item.price,
+                    0,
+                );
+                await order.save({ transaction });
+
+                // 6. Create order items
+                for (const item of dto.items) {
+                    await this.orderItemRepository.createItem(order.id, item);
+                }
+
+                // 7. Return created order with items
+                return this.orderModel.findByPk(order.id, {
+                    include: [
+                        {
+                            model: OrderItemModel,
+                            as: 'items',
+                            attributes: ['name', 'price', 'quantity'],
+                        },
+                    ],
+                    transaction,
+                }) as Promise<OrderModel>;
+            },
+        );
     }
 }
