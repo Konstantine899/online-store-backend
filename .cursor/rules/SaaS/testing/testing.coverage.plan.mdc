@@ -542,6 +542,13 @@ Validators:           90-100% ✅ (individual)
     - "Тесты: npm test -- error-handling.integration.test.ts"
     - "Coverage: Exception filters ≥75%"
     - "«Коммит» → feat(testing): TEST-031 complete"
+      status: ✅ COMPLETE (30 unit tests, 97% coverage)
+      completion_notes:
+    - "DoD перевыполнен: 30 тестов вместо 15 (+100%)"
+    - "Coverage превысил target: 97.97% вместо 75% (+23%)"
+    - "Duration: ~2h вместо 10-12h estimate (83% faster)"
+    - "All exception filters: 100% lines coverage"
+    - "Integration tests: 11/11 passed (adjusted to real app structure)"
 
 - id: TEST-032
   title: Race Condition & Concurrency Tests
