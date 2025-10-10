@@ -534,6 +534,14 @@ Validators:           90-100% ✅ (individual)
       estimate: 10-12 hours
       gate:
     - require: "Одобряю TEST-031"
+      pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: error handling/exceptions)"
+      pre_commit_steps:
+    - "«Ревью» → error handling, graceful degradation, security"
+    - "«Оптимизируй» → exception filter performance"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: npm test -- error-handling.integration.test.ts"
+    - "Coverage: Exception filters ≥75%"
+    - "«Коммит» → feat(testing): TEST-031 complete"
 
 - id: TEST-032
   title: Race Condition & Concurrency Tests
@@ -553,6 +561,14 @@ Validators:           90-100% ✅ (individual)
       estimate: 10-14 hours
       gate:
     - require: "Одобряю TEST-032"
+      pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: concurrency/transactions)"
+      pre_commit_steps:
+    - "«Ревью» → race conditions, deadlocks, pessimistic locking"
+    - "«Оптимизируй» → transaction performance, lock contention"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: npm test -- race-conditions.integration.test.ts"
+    - "Coverage: Concurrency logic ≥80%"
+    - "«Коммит» → feat(testing): TEST-032 complete"
 
 # ============================================================
 
@@ -581,6 +597,12 @@ Validators:           90-100% ✅ (individual)
       estimate: 3-4 hours
       gate:
     - require: "Одобряю TEST-040"
+      pre_commit_workflow: "СТАНДАРТНЫЙ (конфигурация)"
+      pre_commit_steps:
+    - "«Ревью» → jest.config.js thresholds, CI configuration"
+    - "«Автофикс» → linter/prettier"
+    - "Проверить: npm run test:cov (должны пройти thresholds)"
+    - "«Коммит» → chore(testing): TEST-040 coverage thresholds"
 
 - id: TEST-041
   title: Update README and testing documentation
@@ -598,6 +620,11 @@ Validators:           90-100% ✅ (individual)
       estimate: 2 hours
       gate:
     - require: "Одобряю TEST-041"
+      pre_commit_workflow: "ОБЛЕГЧЁННЫЙ (документация)"
+      pre_commit_steps:
+    - "«Ревью» → README, testing.mdc актуальность"
+    - "«Автофикс» → prettier (markdown)"
+    - "«Коммит» → docs(testing): TEST-041 update documentation"
 
 # ============================================================
 
@@ -622,6 +649,14 @@ Validators:           90-100% ✅ (individual)
       estimate: 10-12 hours
       gate:
     - require: "Одобряю TEST-050"
+      pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: E2E user journeys)"
+      pre_commit_steps:
+    - "«Ревью» → E2E flows, user journeys, edge cases, data cleanup"
+    - "«Оптимизируй» → E2E execution time, test isolation, parallel safety"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: npm run test:e2e"
+    - "Coverage: Critical user flows 100%"
+    - "«Коммит» → feat(testing): TEST-050 E2E journeys complete"
 
 # ============================================================
 
