@@ -1,18 +1,18 @@
-import { Injectable, ConflictException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { OrderModel, OrderItemModel, ProductModel } from '@app/domain/models';
+import { OrderItemModel, OrderModel, ProductModel } from '@app/domain/models';
+import { IOrderRepository } from '@app/domain/repositories';
 import { OrderDto } from '@app/infrastructure/dto';
-import { OrderItemRepository } from '../order-item/order-item-repository';
 import {
-    AdminGetStoreOrderListResponse,
     AdminCreateOrderResponse,
-    AdminGetOrderUserResponse,
     AdminGetOrderListUserResponse,
+    AdminGetOrderUserResponse,
+    AdminGetStoreOrderListResponse,
     UserGetOrderListResponse,
 } from '@app/infrastructure/responses';
-import { IOrderRepository } from '@app/domain/repositories';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { Op, Transaction } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
-import { Transaction, Op } from 'sequelize';
+import { OrderItemRepository } from '../order-item/order-item-repository';
 
 /**
  * TEST-032: Extended interface for order items with productId
@@ -189,10 +189,13 @@ export class OrderRepository implements IOrderRepository {
             },
             async (transaction: Transaction) => {
                 // Cast items to include productId (TEST-032 requirement)
-                const itemsWithProduct = dto.items as unknown as OrderItemWithProduct[];
+                const itemsWithProduct =
+                    dto.items as unknown as OrderItemWithProduct[];
 
                 // 1. Extract product IDs from order items
-                const productIds = itemsWithProduct.map((item) => item.productId);
+                const productIds = itemsWithProduct.map(
+                    (item) => item.productId,
+                );
 
                 // 2. Lock products FOR UPDATE (pessimistic locking)
                 const products = await this.productModel.findAll({
@@ -207,7 +210,9 @@ export class OrderRepository implements IOrderRepository {
 
                 // 3. Check stock availability for each item
                 for (const item of itemsWithProduct) {
-                    const product = products.find((p) => p.id === item.productId);
+                    const product = products.find(
+                        (p) => p.id === item.productId,
+                    );
 
                     if (!product) {
                         throw new ConflictException(
@@ -229,16 +234,13 @@ export class OrderRepository implements IOrderRepository {
                 for (const item of itemsWithProduct) {
                     const requestedQuantity = item.quantity || 1;
 
-                    await this.productModel.decrement(
-                        'stock',
-                        {
-                            by: requestedQuantity,
-                            where: {
-                                id: item.productId,
-                            },
-                            transaction,
+                    await this.productModel.decrement('stock', {
+                        by: requestedQuantity,
+                        where: {
+                            id: item.productId,
                         },
-                    );
+                        transaction,
+                    });
                 }
 
                 // 5. Create order
