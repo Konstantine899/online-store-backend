@@ -53,7 +53,9 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
     describe('Timeout Errors', () => {
         it('должен вернуть 400 с русским сообщением для TimeoutError', () => {
             const exception = new TimeoutError(
-                new Error('Query execution exceeded timeout'),
+                Object.assign(new Error('Query execution exceeded timeout'), {
+                    sql: '',
+                }),
             );
 
             filter.catch(exception, mockArgumentsHost);
@@ -72,7 +74,9 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
         });
 
         it('должен включать timestamp для TimeoutError', () => {
-            const exception = new TimeoutError(new Error('timeout'));
+            const exception = new TimeoutError(
+                Object.assign(new Error('timeout'), { sql: '' }),
+            );
 
             filter.catch(exception, mockArgumentsHost);
 
@@ -86,9 +90,12 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
 
     describe('Connection Errors', () => {
         it('должен вернуть русское сообщение для ConnectionRefusedError', () => {
-            const exception = new ConnectionRefusedError(
-                new Error('ECONNREFUSED'),
-            );
+            const exception = Object.assign(
+                new ConnectionRefusedError(
+                    Object.assign(new Error('ECONNREFUSED'), { sql: '' }),
+                ),
+                { sql: '', parameters: {} },
+            ) as DatabaseError;
 
             filter.catch(exception, mockArgumentsHost);
 
@@ -102,7 +109,12 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
         });
 
         it('должен вернуть русское сообщение для AccessDeniedError', () => {
-            const exception = new AccessDeniedError(new Error('Access denied'));
+            const exception = Object.assign(
+                new AccessDeniedError(
+                    Object.assign(new Error('Access denied'), { sql: '' }),
+                ),
+                { sql: '', parameters: {} },
+            ) as DatabaseError;
 
             filter.catch(exception, mockArgumentsHost);
 
@@ -116,9 +128,12 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
         });
 
         it('должен вернуть русское сообщение для ConnectionError', () => {
-            const exception = new ConnectionError(
-                new Error('Connection failed'),
-            );
+            const exception = Object.assign(
+                new ConnectionError(
+                    Object.assign(new Error('Connection failed'), { sql: '' }),
+                ),
+                { sql: '', parameters: {} },
+            ) as DatabaseError;
 
             filter.catch(exception, mockArgumentsHost);
 
@@ -134,9 +149,14 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
 
     describe('Constraint Errors', () => {
         it('должен вернуть русское сообщение для ForeignKeyConstraintError', () => {
-            const exception = new ForeignKeyConstraintError({
-                message: 'FK constraint failed',
-            } as unknown as ForeignKeyConstraintError);
+            const exception = Object.assign(
+                new ForeignKeyConstraintError(
+                    Object.assign(new Error('FK constraint failed'), {
+                        sql: '',
+                    }),
+                ),
+                { sql: '', parameters: {} },
+            ) as DatabaseError;
 
             filter.catch(exception, mockArgumentsHost);
 
@@ -150,7 +170,10 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
         });
 
         it('должен вернуть русское сообщение для ValidationError', () => {
-            const exception = new ValidationError('Validation failed', []);
+            const exception = Object.assign(
+                new ValidationError('Validation failed', []),
+                { sql: '', parameters: {} },
+            ) as unknown as DatabaseError;
 
             filter.catch(exception, mockArgumentsHost);
 
@@ -165,7 +188,7 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
     describe('Generic Database Error', () => {
         it('должен вернуть generic сообщение для неизвестной ошибки', () => {
             const exception = new DatabaseError(
-                new Error('Unknown database error'),
+                Object.assign(new Error('Unknown database error'), { sql: '' }),
             );
 
             filter.catch(exception, mockArgumentsHost);
@@ -178,7 +201,9 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
         });
 
         it('должен включать url и path в response', () => {
-            const exception = new DatabaseError(new Error('DB Error'));
+            const exception = new DatabaseError(
+                Object.assign(new Error('DB Error'), { sql: '' }),
+            );
 
             filter.catch(exception, mockArgumentsHost);
 
@@ -191,7 +216,9 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
         });
 
         it('должен включать type и name в response', () => {
-            const exception = new DatabaseError(new Error('Test error'));
+            const exception = new DatabaseError(
+                Object.assign(new Error('Test error'), { sql: '' }),
+            );
 
             filter.catch(exception, mockArgumentsHost);
 
@@ -204,7 +231,9 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
         });
 
         it('должен включать timestamp', () => {
-            const exception = new DatabaseError(new Error('Error'));
+            const exception = new DatabaseError(
+                Object.assign(new Error('Error'), { sql: '' }),
+            );
 
             filter.catch(exception, mockArgumentsHost);
 
@@ -216,7 +245,9 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
 
     describe('Logging', () => {
         it('должен обрабатывать ошибку и возвращать response', () => {
-            const exception = new DatabaseError(new Error('Test'));
+            const exception = new DatabaseError(
+                Object.assign(new Error('Test'), { sql: '' }),
+            );
 
             filter.catch(exception, mockArgumentsHost);
 
@@ -228,7 +259,9 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
         });
 
         it('должен обрабатывать TimeoutError корректно', () => {
-            const exception = new TimeoutError(new Error('Timeout occurred'));
+            const exception = new TimeoutError(
+                Object.assign(new Error('Timeout occurred'), { sql: '' }),
+            );
 
             filter.catch(exception, mockArgumentsHost);
 
@@ -248,7 +281,9 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
 
     describe('Response Structure', () => {
         it('должен возвращать корректную структуру response', () => {
-            const exception = new DatabaseError(new Error('Test'));
+            const exception = new DatabaseError(
+                Object.assign(new Error('Test'), { sql: '' }),
+            );
 
             filter.catch(exception, mockArgumentsHost);
 
@@ -264,10 +299,22 @@ describe('SequelizeDatabaseErrorExceptionFilter', () => {
         });
 
         it('должен всегда возвращать 400 status code', () => {
-            const exceptions = [
-                new TimeoutError(new Error('timeout')),
-                new ConnectionError(new Error('connection')),
-                new DatabaseError(new Error('generic')),
+            const exceptions: DatabaseError[] = [
+                Object.assign(
+                    new TimeoutError(
+                        Object.assign(new Error('timeout'), { sql: '' }),
+                    ),
+                    { sql: '', parameters: {} },
+                ) as DatabaseError,
+                Object.assign(
+                    new ConnectionError(
+                        Object.assign(new Error('connection'), { sql: '' }),
+                    ),
+                    { sql: '', parameters: {} },
+                ) as DatabaseError,
+                new DatabaseError(
+                    Object.assign(new Error('generic'), { sql: '' }),
+                ),
             ];
 
             exceptions.forEach((exception) => {

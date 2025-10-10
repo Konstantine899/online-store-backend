@@ -120,7 +120,7 @@ describe('SequelizeUniqueConstraintExceptionFilter', () => {
                 {
                     path: undefined,
                     value: 'test',
-                } as ValidationErrorItem,
+                } as unknown as ValidationErrorItem,
             ],
         } as unknown as UniqueConstraintError);
 
