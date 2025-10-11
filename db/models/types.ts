@@ -1,5 +1,25 @@
 import { Model, Optional } from 'sequelize';
 
+// Tenant types
+export interface TenantAttributes {
+    id: number;
+    name: string;
+    subdomain: string | null;
+    status: 'active' | 'suspended' | 'deleted';
+    plan: 'free' | 'starter' | 'professional' | 'enterprise';
+    created_at: Date;
+    updated_at: Date;
+}
+
+export type TenantCreationAttributes = Optional<
+    TenantAttributes,
+    'id' | 'subdomain' | 'status' | 'plan' | 'created_at' | 'updated_at'
+>;
+
+export interface TenantModel
+    extends Model<TenantAttributes, TenantCreationAttributes>,
+        TenantAttributes {}
+
 // User types
 export interface UserAttributes {
     id: number;

@@ -1,10 +1,15 @@
-import { Module } from '@nestjs/common';
+import {
+    MiddlewareConsumer,
+    Module,
+    NestModule,
+} from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BruteforceGuard } from './infrastructure/common/guards';
 import { TenantContext } from './infrastructure/common/context';
+import { TenantMiddleware } from './infrastructure/common/middleware';
 import { APP_GUARD } from '@nestjs/core';
 
 import * as process from 'process';
@@ -140,4 +145,19 @@ import { HealthModule } from './infrastructure/controllers/health/health.module'
     ],
     exports: [TenantContext], // Экспортируем для использования в других модулях
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+    configure(consumer: MiddlewareConsumer): void {
+        // TODO: Apply TenantMiddleware when multi-tenancy is fully ready
+        // For now, keeping it disabled to avoid breaking existing functionality
+        //
+        // consumer
+        //     .apply(TenantMiddleware)
+        //     .exclude(
+        //         '/health',
+        //         '/online-store/health',
+        //         '/online-store/docs(.*)',
+        //         '/online-store/static(.*)',
+        //     )
+        //     .forRoutes('*');
+    }
+}

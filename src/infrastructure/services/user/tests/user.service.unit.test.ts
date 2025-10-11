@@ -1,6 +1,9 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { UserService } from '@app/infrastructure/services/user/user.service';
-import { UserRepository } from '@app/infrastructure/repositories';
+import {
+    RefreshTokenRepository,
+    UserRepository,
+} from '@app/infrastructure/repositories';
 import { UserModel } from '@app/domain/models';
 import { RoleService } from '@app/infrastructure/services/role/role.service';
 import { LoginHistoryService } from '@app/infrastructure/services/login-history/login-history.service';
@@ -29,11 +32,16 @@ describe('UserService', () => {
 
         const loginHistoryServiceDummy = {} as unknown as LoginHistoryService;
 
+        const refreshTokenRepositoryDummy = {
+            removeListRefreshTokens: jest.fn(),
+        } as unknown as RefreshTokenRepository;
+
         service = new UserService(
             userRepository,
             roleServiceDummy,
             userModelMock,
             loginHistoryServiceDummy,
+            refreshTokenRepositoryDummy,
         );
     });
 
