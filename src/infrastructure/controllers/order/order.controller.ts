@@ -1,3 +1,34 @@
+import { IOrderController } from '@app/domain/controllers';
+import {
+    AdminCreateOrderSwaggerDecorator,
+    AdminGetOrderListUsersSwaggerDecorator,
+    AdminGetOrderUserSwaggerDecorator,
+    AdminGetStoreOrderListSwaggerDecorator,
+    AdminRemoveOrderSwaggerDecorator,
+    GuestCreateOrderSwaggerDecorator,
+    Roles,
+    UserCreateOrderSwaggerDecorator,
+    UserGetOrderListSwaggerDecorator,
+    UserGetOrderSwaggerDecorator,
+} from '@app/infrastructure/common/decorators';
+import { AuthGuard, RoleGuard } from '@app/infrastructure/common/guards';
+import {
+    OrderDto,
+    SignedCookiesDto,
+    UserOrderDto,
+} from '@app/infrastructure/dto';
+import {
+    AdminCreateOrderResponse,
+    AdminGetOrderListUserResponse,
+    AdminGetOrderUserResponse,
+    AdminGetStoreOrderListResponse,
+    AdminRemoveOrderResponse,
+    GuestCreateOrderResponse,
+    UserCreateOrderResponse,
+    UserGetOrderListResponse,
+    UserGetOrderResponse,
+} from '@app/infrastructure/responses';
+import { OrderService } from '@app/infrastructure/services';
 import {
     Body,
     Controller,
@@ -10,39 +41,8 @@ import {
     Req,
     UseGuards,
 } from '@nestjs/common';
-import { OrderService } from '@app/infrastructure/services';
-import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
-import {
-    Roles,
-    AdminGetStoreOrderListSwaggerDecorator,
-    AdminGetOrderListUsersSwaggerDecorator,
-    AdminGetOrderUserSwaggerDecorator,
-    AdminCreateOrderSwaggerDecorator,
-    AdminRemoveOrderSwaggerDecorator,
-    UserCreateOrderSwaggerDecorator,
-    UserGetOrderSwaggerDecorator,
-    UserGetOrderListSwaggerDecorator,
-    GuestCreateOrderSwaggerDecorator,
-} from '@app/infrastructure/common/decorators';
-import {
-    OrderDto,
-    UserOrderDto,
-    SignedCookiesDto,
-} from '@app/infrastructure/dto';
-import { Request } from 'express';
 import { ApiTags } from '@nestjs/swagger';
-import {
-    AdminGetStoreOrderListResponse,
-    AdminGetOrderListUserResponse,
-    AdminCreateOrderResponse,
-    AdminGetOrderUserResponse,
-    AdminRemoveOrderResponse,
-    UserGetOrderResponse,
-    UserCreateOrderResponse,
-    GuestCreateOrderResponse,
-    UserGetOrderListResponse,
-} from '@app/infrastructure/responses';
-import { IOrderController } from '@app/domain/controllers';
+import { Request } from 'express';
 
 @ApiTags('Заказы')
 @Controller('order')
@@ -116,7 +116,7 @@ export class OrderController implements IOrderController {
     /*Получение списка заказов пользователя*/
     @UserGetOrderListSwaggerDecorator()
     @HttpCode(200)
-    @Roles('USER')
+    @Roles('USER', 'CUSTOMER')
     @UseGuards(AuthGuard, RoleGuard)
     @Get('/user/get-all-order')
     public async userGetOrderList(
@@ -129,7 +129,7 @@ export class OrderController implements IOrderController {
     /*Получение одного заказа пользователя*/
     @UserGetOrderSwaggerDecorator()
     @HttpCode(200)
-    @Roles('USER')
+    @Roles('USER', 'CUSTOMER')
     @UseGuards(AuthGuard, RoleGuard)
     @Get('/user/get-order/:orderId')
     public async userGetOrder(
@@ -142,7 +142,7 @@ export class OrderController implements IOrderController {
 
     @UserCreateOrderSwaggerDecorator()
     @HttpCode(201)
-    @Roles('USER')
+    @Roles('USER', 'CUSTOMER')
     @UseGuards(AuthGuard, RoleGuard)
     @Post('/user/create-order')
     public async userCreateOrder(

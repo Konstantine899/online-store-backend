@@ -35,15 +35,47 @@ export class TestCleanup {
      * - refresh_token (refresh токены)
      * - login_history (история входов)
      * - user_address (адреса пользователей)
-     * - user (сами пользователи)
+     * - user (сами пользователей)
+     *
+     * @param sequelize - Sequelize instance
+     * @param userIds - Опционально: конкретные user IDs для удаления
      */
-    static async cleanUsers(sequelize: Sequelize): Promise<void> {
-        // Порядок критичен - сначала зависимые таблицы, потом родительская
-        await sequelize.query(`DELETE FROM user_role WHERE user_id > 14`);
-        await sequelize.query(`DELETE FROM refresh_token WHERE user_id > 14`);
-        await sequelize.query(`DELETE FROM login_history WHERE user_id > 14`);
-        await sequelize.query(`DELETE FROM user_address WHERE user_id > 14`);
-        await sequelize.query(`DELETE FROM user WHERE id > 14`);
+    static async cleanUsers(
+        sequelize: Sequelize,
+        userIds?: number[],
+    ): Promise<void> {
+        if (userIds && userIds.length > 0) {
+            // Cleanup конкретных пользователей
+            const idsString = userIds.join(',');
+            await sequelize.query(
+                `DELETE FROM user_role WHERE user_id IN (${idsString})`,
+            );
+            await sequelize.query(
+                `DELETE FROM refresh_token WHERE user_id IN (${idsString})`,
+            );
+            await sequelize.query(
+                `DELETE FROM login_history WHERE user_id IN (${idsString})`,
+            );
+            await sequelize.query(
+                `DELETE FROM user_address WHERE user_id IN (${idsString})`,
+            );
+            await sequelize.query(
+                `DELETE FROM user WHERE id IN (${idsString})`,
+            );
+        } else {
+            // Cleanup всех временных пользователей (id > 14)
+            await sequelize.query(`DELETE FROM user_role WHERE user_id > 14`);
+            await sequelize.query(
+                `DELETE FROM refresh_token WHERE user_id > 14`,
+            );
+            await sequelize.query(
+                `DELETE FROM login_history WHERE user_id > 14`,
+            );
+            await sequelize.query(
+                `DELETE FROM user_address WHERE user_id > 14`,
+            );
+            await sequelize.query(`DELETE FROM user WHERE id > 14`);
+        }
     }
 
     /**
@@ -98,8 +130,19 @@ export class TestCleanup {
      * Очищает корзины и связанные данные
      */
     static async cleanCarts(sequelize: Sequelize): Promise<void> {
-        await sequelize.query(`DELETE FROM cart_product WHERE cart_id > 0`);
-        await sequelize.query(`DELETE FROM cart WHERE id > 0`);
+        try {
+            await sequelize.query(`DELETE FROM cart_product WHERE cart_id > 0`);
+            await sequelize.query(`DELETE FROM cart WHERE id > 0`);
+        } catch (error) {
+            // Таблицы могут не существовать в некоторых test environments
+            // Игнорируем ошибку "table doesn't exist"
+            if (
+                error instanceof Error &&
+                !error.message.includes("doesn't exist")
+            ) {
+                throw error;
+            }
+        }
     }
 
     /**

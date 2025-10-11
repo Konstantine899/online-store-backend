@@ -28,7 +28,7 @@
     "test:html:open": "npm run test && start test-reports/test-report.html",
     "test:ci": "cross-env CI=true NODE_ENV=test jest",
     "test:debug": "jest --detectOpenHandles --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e": "cross-env NODE_ENV=test jest --config ./jest.e2e.config.js",
     "test:setup": "node scripts/test-db-setup.js",
     "test:reset": "npm run db:drop:test && npm run test:setup",
     "pretest:integration": "npm run test:setup --if-present",
