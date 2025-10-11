@@ -8,6 +8,10 @@ version: 2.0
 execution_policy:
 must_follow: true
 focus: Middle резюме → Middle отклики → Middle собеседования → Middle оффер
+commit_approval_required: true
+pre_commit_steps_strict: true
+show_file_links_before_commit: true
+workflow_reference: "См. .cursor/rules/WORKFLOW-RULES.mdc"
 
 context:
 goal: Получить оффер Middle NestJS разработчика за 2-3 месяца
@@ -15,10 +19,12 @@ prerequisites: Production-ready проект online-store-backend (Фаза 1 з
 result: Работа Middle Backend Developer
 
 # DEFAULT PRE-COMMIT WORKFLOW для job-search задач
+
 default_pre_commit_workflow: "МИНИМАЛЬНЫЙ (documentation/content creation)"
 default_pre_commit_steps:
-  - "«Автофикс» → linter/prettier (для markdown)"
-  - "«Коммит» → docs(job-search): <TASK_ID> complete"
+
+- "«Автофикс» → linter/prettier (для markdown)"
+- "«Коммит» → docs(job-search): <TASK_ID> complete"
 
 ---
 

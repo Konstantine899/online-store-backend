@@ -8,6 +8,10 @@ version: 1.0
 execution_policy:
 must_follow: true
 allow_code_changes_only_after: "Одобряю <TASK_ID>"
+commit_approval_required: true
+pre_commit_steps_strict: true
+show_file_links_before_commit: true
+workflow_reference: "См. .cursor/rules/WORKFLOW-RULES.mdc"
 constraints: - каждая задача = один коммит - production-ready deployment - CI/CD best practices
 
 context:
@@ -17,12 +21,14 @@ platforms: GitHub Actions, Railway, PostgreSQL
 target: live production API с automated checks
 
 # DEFAULT PRE-COMMIT WORKFLOW
+
 default_pre_commit_workflow: "СТАНДАРТНЫЙ (infrastructure/devops)"
 default_pre_commit_steps:
-  - "«Ревью» → Docker/CI config, security, secrets handling"
-  - "«Автофикс» → linter/prettier (YAML)"
-  - "Проверка: локальный запуск/сборка"
-  - "«Коммит» → ci/chore: <TASK_ID> complete"
+
+- "«Ревью» → Docker/CI config, security, secrets handling"
+- "«Автофикс» → linter/prettier (YAML)"
+- "Проверка: локальный запуск/сборка"
+- "«Коммит» → ci/chore: <TASK_ID> complete"
 
 tasks:
 

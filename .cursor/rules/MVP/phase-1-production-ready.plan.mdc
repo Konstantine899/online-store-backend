@@ -8,6 +8,10 @@ version: 1.0
 execution_policy:
 must_follow: true
 allow_code_changes_only_after: "Одобряю <TASK_ID>"
+commit_approval_required: true
+pre_commit_steps_strict: true
+show_file_links_before_commit: true
+workflow_reference: "См. .cursor/rules/WORKFLOW-RULES.mdc"
 constraints: - работаем с ТЕКУЩИМ проектом (online-store-backend) - каждая задача = один коммит - тесты обязательны - production качество
 
 context:
@@ -17,12 +21,14 @@ target_state: 75%+ coverage, security hardening, production deploy, полная
 result: Strong middle-level проект для портфолио
 
 # DEFAULT PRE-COMMIT WORKFLOW для всех MVP production-ready задач
+
 default_pre_commit_workflow: "СТАНДАРТНЫЙ (mixed: depends on task type)"
 default_pre_commit_steps:
-  - "«Ревью» → check task-specific concerns"
-  - "«Автофикс» → linter/prettier"
-  - "Тесты: relevant tests for the task"
-  - "«Коммит» → feat/fix/docs: <TASK_ID> complete"
+
+- "«Ревью» → check task-specific concerns"
+- "«Автофикс» → linter/prettier"
+- "Тесты: relevant tests for the task"
+- "«Коммит» → feat/fix/docs: <TASK_ID> complete"
 
 ---
 

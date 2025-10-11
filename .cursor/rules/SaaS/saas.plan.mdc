@@ -7,6 +7,10 @@ version: 1.0
 execution_policy:
 must_follow: true
 allow_code_changes_only_after: "Одобряю <TASK_ID>"
+commit_approval_required: true
+pre_commit_steps_strict: true
+show_file_links_before_commit: true
+workflow_reference: "См. .cursor/rules/WORKFLOW-RULES.mdc"
 triggers: - "Планируй": update this file only - "Покажи код <TASK_ID>": show diffs/commands, no changes - "Одобряю <TASK_ID>": implement exactly that task - "Коммит <TASK_ID>": commit & prepare PR notes
 constraints: - no public API changes without explicit approval - changes only within task files_scope - pass lints/tests before marking DoD done
 

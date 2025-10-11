@@ -8,6 +8,10 @@ version: 1.0
 execution_policy:
 must_follow: true
 allow_code_changes_only_after: "Одобряю <TASK_ID>"
+commit_approval_required: true
+pre_commit_steps_strict: true
+show_file_links_before_commit: true
+workflow_reference: "См. .cursor/rules/WORKFLOW-RULES.mdc"
 constraints: - каждая задача = один коммит - минимум 5 тестов на задачу - comprehensive coverage (success + failure cases)
 
 context:
@@ -17,13 +21,15 @@ current_coverage: 47% functions, 50% lines
 target_coverage: 75% global, 85%+ critical modules
 
 # DEFAULT PRE-COMMIT WORKFLOW
+
 default_pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: testing/coverage)"
 default_pre_commit_steps:
-  - "«Ревью» → test coverage, edge cases, negative scenarios"
-  - "«Автофикс» → linter/prettier"
-  - "Тесты: run new tests, ensure they pass"
-  - "Coverage: check coverage increase"
-  - "«Коммит» → test: <TASK_ID> complete"
+
+- "«Ревью» → test coverage, edge cases, negative scenarios"
+- "«Автофикс» → linter/prettier"
+- "Тесты: run new tests, ensure they pass"
+- "Coverage: check coverage increase"
+- "«Коммит» → test: <TASK_ID> complete"
 
 tasks:
 

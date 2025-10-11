@@ -8,6 +8,10 @@ version: 1.0
 execution_policy:
 must_follow: true
 allow_code_changes_only_after: "Одобряю <TASK_ID>"
+commit_approval_required: true
+pre_commit_steps_strict: true
+show_file_links_before_commit: true
+workflow_reference: "См. .cursor/rules/WORKFLOW-RULES.mdc"
 constraints: - каждая задача = один коммит - measure before/after для каждой оптимизации - verify с EXPLAIN ANALYZE
 
 context:
@@ -17,14 +21,16 @@ current: N+1 queries, missing indexes, no pagination limits
 target: 1 query per list, proper indexes, enforced limits
 
 # DEFAULT PRE-COMMIT WORKFLOW
+
 default_pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный: performance/optimization)"
 default_pre_commit_steps:
-  - "«Ревью» → performance impact, DB queries, caching strategy"
-  - "«Оптимизируй» → N+1, indexes, query optimization"
-  - "«Автофикс» → linter/prettier"
-  - "Тесты: performance tests, load tests"
-  - "Проверка: benchmark before/after"
-  - "«Коммит» → perf: <TASK_ID> complete"
+
+- "«Ревью» → performance impact, DB queries, caching strategy"
+- "«Оптимизируй» → N+1, indexes, query optimization"
+- "«Автофикс» → linter/prettier"
+- "Тесты: performance tests, load tests"
+- "Проверка: benchmark before/after"
+- "«Коммит» → perf: <TASK_ID> complete"
 
 tasks:
 
