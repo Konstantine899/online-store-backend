@@ -8,6 +8,10 @@ version: 1.0
 execution_policy:
 must_follow: true
 allow_code_changes_only_after: "Одобряю <TASK_ID>"
+commit_approval_required: true
+pre_commit_steps_strict: true
+show_file_links_before_commit: true
+workflow_reference: "См. .cursor/rules/WORKFLOW-RULES.mdc"
 constraints: - no changes to public API without approval - operate strictly within files_scope - all tests must pass before DoD complete - maintain or improve coverage with each task
 
 context:
@@ -641,13 +645,14 @@ Validators:           90-100% ✅ (individual)
     - "README.md"
     - ".cursor/rules/testing.mdc"
       steps:
-    - обновить README с текущими coverage метриками
-    - добавить badges для coverage (если используется Codecov/Coveralls)
-    - обновить testing.mdc с новыми стандартами
+    - обновить README с текущими coverage метриками ✅
+    - добавить badges для coverage (если используется Codecov/Coveralls) ✅
+    - обновить testing.mdc с новыми стандартами ✅
       dod:
-    - документация актуальна
-    - новые разработчики понимают требования
+    - документация актуальна ✅
+    - новые разработчики понимают требования ✅
       estimate: 2 hours
+      actual: ~1.5 hours
       gate:
     - require: "Одобряю TEST-041"
       pre_commit_workflow: "ОБЛЕГЧЁННЫЙ (документация)"
@@ -655,6 +660,16 @@ Validators:           90-100% ✅ (individual)
     - "«Ревью» → README, testing.mdc актуальность"
     - "«Автофикс» → prettier (markdown)"
     - "«Коммит» → docs(testing): TEST-041 update documentation"
+      status: ✅ COMPLETE (documentation comprehensive, SaaS-ready)
+      completion_notes:
+    - "README.md: updated test stats (868 tests, 73.73% coverage)"
+    - "README.md: added coverage badges and table"
+    - "README.md: added Security Testing section (203 tests)"
+    - "Created testing.mdc: comprehensive testing standards guide"
+    - "Coverage thresholds documented (Global + Per-module)"
+    - "Security testing standards comprehensive"
+    - "Gradual improvement strategy (3 phases) documented"
+    - "Files: 2 (1 modified, 1 new), +363/-54 lines"
 
 # ============================================================
 

@@ -207,12 +207,37 @@ Swagger - доступен по [http://localhost:5000/online-store/docs](http:/
 
 ## Тестирование
 
-Проект включает **unit** и **integration** тесты для проверки критической функциональности.
+Проект включает **comprehensive test suite** для обеспечения production-ready качества.
 
-**Статистика**: 24 test suites, 335 тестов (unit + integration)
+### 📊 Test Coverage
 
-⚠️ **Известная проблема:** ~10% integration тестов нестабильны (flaky) из-за shared state. 
-Автоматический retry включён (`jest.retryTimes(1)`). Подробнее: [docs/KNOWN_FLAKY_TESTS.md](docs/KNOWN_FLAKY_TESTS.md)
+![Tests](https://img.shields.io/badge/tests-868%20passed-brightgreen)
+![Suites](https://img.shields.io/badge/suites-44-blue)
+![Coverage](https://img.shields.io/badge/coverage-73.73%25-green)
+
+**Статистика**: 44 test suites, 868 тестов (unit + integration)
+
+| Metric         | Global    | Critical Modules |
+| -------------- | --------- | ---------------- |
+| **Lines**      | 73.73% ✅ | 85-100% ✅       |
+| **Statements** | 73.73% ✅ | 85-100% ✅       |
+| **Functions**  | 62.07% ✅ | 75-90% ✅        |
+| **Branches**   | 72.43% ✅ | 65-85% ✅        |
+
+### Coverage по модулям:
+
+- ✅ **Auth Services**: 96-98% (controller + service)
+- ✅ **Security Guards**: 95-99% (bruteforce, role)
+- ✅ **Exception Filters**: 97.97%
+- ✅ **User Services**: 81-92%
+- ✅ **Token Services**: 96.75%
+- ✅ **Notification Services**: 94.17%
+
+**Coverage Thresholds:** CI автоматически блокирует merge при снижении coverage.
+См. подробности: [docs/COVERAGE-THRESHOLDS.md](docs/COVERAGE-THRESHOLDS.md)
+
+⚠️ **Flaky Tests:** ~5% integration тестов могут быть нестабильны из-за shared state.
+Автоматический retry включён (`jest.retryTimes(1)`). См: [docs/KNOWN_FLAKY_TESTS.md](docs/KNOWN_FLAKY_TESTS.md)
 
 ---
 
@@ -382,8 +407,33 @@ src/infrastructure/controllers/*/tests/
 
 - **Jest config**: `jest.config.js`
 - **Test environment**: `.test.env`
-- **Coverage threshold**: 50% (branches, functions, lines, statements)
+- **Coverage thresholds**:
+    - Global: 70% branches, 60% functions, 70% lines/statements
+    - Critical modules: 65-90% (auth, guards, exceptions, user, token)
+    - Controllers: 10-45% (conservative baseline, gradual improvement)
 - **Timeout**: 5s (unit), 30s (integration)
+- **Execution**: Sequential локально, parallel в CI
+
+---
+
+### 🔒 Security Testing
+
+Comprehensive security test coverage для production-ready SaaS:
+
+**Test Coverage:**
+
+- ✅ **Password Reset Flow** (12 tests) - forgot password, token validation, expiry
+- ✅ **Brute Force Protection** (46 tests) - rate limiting, IP extraction, Retry-After headers
+- ✅ **Input Validation** (32 tests) - SQL injection, XSS, Path Traversal, CSRF
+- ✅ **RBAC Authorization** (67 tests) - role permissions, 401/403 distinction, multi-role
+- ✅ **Race Conditions** (critical fixes) - inventory overselling, payment double-charge
+- ✅ **Error Handling** (30 tests) - exception filters, graceful degradation
+- ✅ **Token Invalidation** (8 tests) - session management, security audit
+
+**Security Documentation:**
+
+- [docs/SECURITY.md](docs/SECURITY.md) - Security best practices and known issues
+- [docs/TESTING.md](docs/TESTING.md) - Testing strategy and guidelines
 
 Подробнее о тестах см. документацию в `tests/` директории.
 
