@@ -1,56 +1,63 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = defineRefreshToken;
+exports.default = defineUserVerificationCode;
 const sequelize_1 = require("sequelize");
 const consts_1 = require("../consts");
-class RefreshToken extends sequelize_1.Model {
+class UserVerificationCode extends sequelize_1.Model {
     static associate(models) {
         this.belongsTo(models.user, {
-            as: consts_1.TABLE_NAMES.USER,
             foreignKey: 'user_id',
+            as: consts_1.TABLE_NAMES.USER,
+            onDelete: 'CASCADE',
+            onUpdate: 'CASCADE',
         });
     }
 }
-function defineRefreshToken(sequelize) {
-    const attributes = {
+function defineUserVerificationCode(sequelize) {
+    UserVerificationCode.init({
         id: {
             type: sequelize_1.DataTypes.INTEGER,
             primaryKey: true,
             autoIncrement: true,
             allowNull: false,
         },
-        is_revoked: {
-            type: sequelize_1.DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: false,
-        },
-        expires: {
-            type: sequelize_1.DataTypes.DATE,
-            allowNull: false,
-        },
         user_id: {
             type: sequelize_1.DataTypes.INTEGER,
             allowNull: false,
-            references: {
-                model: consts_1.TABLE_NAMES.USER,
-                key: 'id',
-            },
+        },
+        channel: {
+            type: sequelize_1.DataTypes.STRING(16),
+            allowNull: false,
+        },
+        code_hash: {
+            type: sequelize_1.DataTypes.STRING(255),
+            allowNull: false,
+        },
+        expires_at: {
+            type: sequelize_1.DataTypes.DATE,
+            allowNull: false,
+        },
+        attempts: {
+            type: sequelize_1.DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
         },
         created_at: {
             type: sequelize_1.DataTypes.DATE,
             allowNull: false,
+            defaultValue: sequelize_1.DataTypes.NOW,
         },
         updated_at: {
             type: sequelize_1.DataTypes.DATE,
             allowNull: false,
+            defaultValue: sequelize_1.DataTypes.NOW,
         },
-    };
-    RefreshToken.init(attributes, {
+    }, {
         sequelize,
-        modelName: consts_1.TABLE_NAMES.REFRESH_TOKEN,
-        tableName: consts_1.TABLE_NAMES.REFRESH_TOKEN,
+        modelName: 'userVerificationCode',
+        tableName: 'user_verification_code',
         timestamps: true,
-        underscored: false,
+        underscored: true,
     });
-    return RefreshToken;
+    return UserVerificationCode;
 }
