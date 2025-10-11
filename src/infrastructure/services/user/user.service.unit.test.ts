@@ -93,7 +93,6 @@ describe('UserService', () => {
     let service: UserService;
     let userRepository: jest.Mocked<UserRepository>;
     let roleService: jest.Mocked<RoleService>;
-    let refreshTokenRepository: any;
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -183,7 +182,6 @@ describe('UserService', () => {
         service = module.get<UserService>(UserService);
         userRepository = module.get(UserRepository);
         roleService = module.get(RoleService);
-        refreshTokenRepository = module.get(RefreshTokenRepository);
     });
 
     describe('createUser', () => {
