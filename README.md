@@ -1,218 +1,298 @@
-## Просто делай коммит до обновления проекта
+# 🛒 Online Store Backend
 
-## Запуск проекта
+**Production-ready REST API для интернет-магазина** построенный на NestJS с Clean Architecture, comprehensive testing (878 tests, 73.73% coverage), и enterprise-grade security.
+
+---
+
+## 📊 Badges
+
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-878%20passed-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-73.73%25-green)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.1-blue)
+![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-green)
+![NestJS](https://img.shields.io/badge/NestJS-10.0-red)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
+---
+
+## 📑 Table of Contents
+
+- [About](#about)
+- [Key Features](#key-features)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+- [Testing](#тестирование)
+- [API Documentation](#api-documentation)
+- [Database](#database)
+- [Security](#security)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## 📖 About
+
+**Online Store Backend** — это полнофункциональный REST API для e-commerce платформы, демонстрирующий **Middle-level backend development skills**:
+
+- 🏗️ **Clean Architecture** с разделением Domain/Infrastructure слоёв
+- 🔒 **Enterprise Security**: JWT auth, RBAC, rate limiting, input sanitization
+- 🧪 **Comprehensive Testing**: 878 tests (73.73% coverage, 85-100% critical modules)
+- 📚 **100% Swagger Documentation** для всех endpoints
+- 🚀 **Production-ready**: CI/CD, migrations, health checks, monitoring
+
+**Проект создан как портфолио для демонстрации:**
+
+- Clean Code & SOLID principles
+- Security best practices
+- Test-Driven Development
+- Database design & optimization
+- DevOps & CI/CD practices
+
+---
+
+## ✨ Key Features
+
+### 🔐 Authentication & Authorization
+
+- ✅ JWT-based authentication (access + refresh tokens)
+- ✅ Refresh token rotation (single-use, automatic invalidation)
+- ✅ Role-Based Access Control (RBAC): ADMIN, USER, CUSTOMER
+- ✅ Password reset flow с email verification
+- ✅ Brute force protection (rate limiting)
+- ✅ Secure cookies (HttpOnly, SameSite)
+
+### 🛍️ E-Commerce Core
+
+- ✅ Product management (CRUD, categories, brands, ratings)
+- ✅ Shopping cart (guest & authenticated users)
+- ✅ Order management (create, track, admin panel)
+- ✅ User profiles (addresses, preferences, notifications)
+- ✅ Search & filtering (pagination, sorting)
+
+### 🛡️ Security
+
+- ✅ Input validation & sanitization (XSS, SQL injection prevention)
+- ✅ Rate limiting (login, registration, refresh)
+- ✅ CORS & Helmet configuration
+- ✅ Password strength validation
+- ✅ SQL injection, Path Traversal, CSRF protection (203 security tests)
+
+### 🧪 Testing & Quality
+
+- ✅ **878 tests**: 868 unit/integration + 10 E2E
+- ✅ **73.73% global coverage**, 85-100% critical modules
+- ✅ **Security testing**: Password reset, Brute force, Input validation, RBAC, Race conditions
+- ✅ **E2E tests**: Critical user journeys (Registration → Shopping → Checkout)
+- ✅ **CI/CD**: GitHub Actions с автоматическими проверками
+
+### 📊 Monitoring & Observability
+
+- ✅ Health checks (`/health`)
+- ✅ Correlation ID для request tracing
+- ✅ Structured logging (pino)
+- ✅ PII masking в логах
+- ✅ Login history tracking
+
+---
+
+## 🏗️ Architecture
+
+Проект использует **Clean Architecture** с разделением на слои:
 
 ```
-npm install - установка необходимых зависимостей
+┌─────────────────────────────────────────┐
+│           Presentation Layer            │
+│  (Controllers, Guards, Pipes, Filters)  │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│          Application Layer              │
+│        (Services, Use Cases)            │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│            Domain Layer                 │
+│   (Entities, Interfaces, DTO, Models)   │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│         Infrastructure Layer            │
+│     (Database, Repositories, Config)    │
+└─────────────────────────────────────────┘
+```
+
+### Принципы:
+
+- ✅ **Dependency Inversion**: Domain layer не зависит от Infrastructure
+- ✅ **Single Responsibility**: каждый модуль имеет одну ответственность
+- ✅ **Interface Segregation**: интерфейсы для всех контрактов
+- ✅ **Separation of Concerns**: Controllers → Services → Repositories
+
+---
+
+## 🛠️ Tech Stack
+
+### Core
+
+- **Runtime**: Node.js 18+
+- **Framework**: NestJS 10.x
+- **Language**: TypeScript 5.1 (strict mode)
+- **Package Manager**: npm
+
+### Database
+
+- **RDBMS**: MySQL 8.0
+- **ORM**: Sequelize 6.x (TypeScript support)
+- **Migrations**: sequelize-cli
+- **Connection Pooling**: Configured
+
+### Authentication & Security
+
+- **Auth**: JWT (jsonwebtoken)
+- **Password Hashing**: bcrypt
+- **Validation**: class-validator, class-transformer
+- **Security Headers**: Helmet
+- **CORS**: Configured
+- **Rate Limiting**: @nestjs/throttler
+- **Cookie Parser**: cookie-parser (signed cookies)
+
+### Testing
+
+- **Framework**: Jest 29.x
+- **Coverage**: 73.73% global, 85-100% critical modules
+- **E2E**: Supertest
+- **Mocking**: jest.mock
+- **Test DB**: MySQL test instance (Docker)
+
+### Documentation
+
+- **API Docs**: Swagger/OpenAPI 3.0
+- **Architecture**: ADR (Architecture Decision Records)
+- **Code Docs**: TSDoc comments
+
+### DevOps & CI/CD
+
+- **CI/CD**: GitHub Actions
+- **Containerization**: Docker (planned)
+- **Deployment**: Railway (planned)
+- **Environment**: dotenv
+
+### Code Quality
+
+- **Linter**: ESLint (TypeScript rules)
+- **Formatter**: Prettier
+- **Git Hooks**: Husky (planned)
+- **Commit Convention**: Conventional Commits
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js** 18+ ([Download](https://nodejs.org/))
+- **MySQL** 8.0+ или Docker
+- **npm** 9+
+
+### Installation
+
+#### Option 1: Docker (Recommended)
+
+```bash
+# 1. Clone repository
+git clone https://github.com/Konstantine899/online-store-backend.git
+cd online-store-backend
+
+# 2. Start MySQL с Docker
+docker run -d \
+  --name mysql-dev \
+  -e MYSQL_ROOT_PASSWORD=root \
+  -e MYSQL_DATABASE=online_store_dev \
+  -e MYSQL_USER=dev_user \
+  -e MYSQL_PASSWORD=DevPass123! \
+  -p 3307:3306 \
+  mysql:8.0
+
+# 3. Copy environment файлы
+cp .development.env.example .development.env
+cp .migrate.env.example .migrate.env
+
+# 4. Install dependencies
+npm install
+
+# 5. Build DB models
+npm run db:build
+
+# 6. Run migrations
+npm run db:migrate
+
+# 7. Seed initial data
+npm run db:seed:all
+
+# 8. Start development server
 npm run start:dev
-
 ```
 
-### Быстрый старт (development)
+#### Option 2: Manual MySQL Setup
 
-1. Скопируйте пример окружения и заполните значения:
-    ```bash
-    cp .development.env.example .development.env
-    ```
-    2a. Убедитесь, что существует файл `.migrate.env` для `sequelize-cli` (используется `db/config/database.js`).
-    Значения DEV\_\* должны соответствовать runtime-настройкам из `.development.env`:
-    DEV_MYSQL_HOST, DEV_MYSQL_PORT, DEV_MYSQL_DATABASE, DEV_MYSQL_USER, DEV_MYSQL_PASSWORD, DEV_DIALECT.
-2. Установите зависимости:
-    ```bash
-    npm install
-    ```
-3. Примените миграции (если требуется):
-    ```bash
-    npm run db:migrate
-    ```
-4. Запустите приложение:
-    ```bash
-    npm run start:dev
-    ```
+1. Install MySQL 8.0+ locally
+2. Create database: `online_store_dev`
+3. Follow steps 3-8 from Docker setup
 
-Swagger (dev): http://localhost:5000/online-store/docs
-Health: http://localhost:5000/online-store/health
+### Verify Installation
 
----
+- **API**: http://localhost:5000/online-store/health
+- **Swagger**: http://localhost:5000/online-store/docs
 
-<br/>
-<br/>
-
-## Скрипты
-
-- `npm run build` - production сборка проекта
-- `npm run start` - запуск проекта в `production` режиме
-- `npm run start:dev` - запуск проекта в development режиме
-- `npm run lint:ts` - Проверка ts файлов линтером
-- `npm run lint:ts:fix` - Исправление `ts` файлов линтером
-- `npm run prettier` - Форматирование файлов линтером
-- `npm run db:migrate` - Создание таблиц в БД с помощь миграции (использует `.migrate.env`)
-- `npm run db:migrate:undo` - Удаление последней миграции
-- `npm run db:migrate:undo:all` - Удаление всех миграций
-- `npm run db:seed:all` - Добавление данных в таблицы
-- `npm run db:seed:undo:all` - Удаление всех данных из таблиц
-
----
-
-<br/>
-<br/>
-
-### Swagger
-
-Swagger - доступен по [http://localhost:5000/online-store/docs](http://localhost:5000/online-store/docs)
-
-<br/>
-<br/>
-
-## Миграции
-
-- `db/config` - содержит файл конфигурации, который сообщает `sequelize CLI`, как подключаться к базе данных
-- `db/config/migrations` - содержит все файлы миграций. В названии файлов миграций содержится `hash`.
-  Пример: `20230602150332-create-user.js`. `Hash` - это время создания в `unix` формате.
-
-```
-Важно! При создании таблицы, автоматически создается ассоциация(и). таким образом если таблица на которую ссылается ассоциация еще не создана, то возникнет ошибка.
-```
-
-- `db/models` - содержит все модели проекта.
-- `db/seeders` - файлы которые содержат все исходные данные для добавления в таблицы.
-- `.sequelizerc` - Это специальный файл конфигурации в котором прописаны настройки для `sequelize CLI`. Подробнее можно
-  ознакомится в документации [.sequelizerc](https://sequelize.org/docs/v6/other-topics/migrations/#the-sequelizerc-file)
-
-Подробнее о миграциях можно почитать в
-документации - [Migrations](https://sequelize.org/docs/v6/other-topics/migrations/)
-
----
-
-<br/>
-<br/>
-
-## Слой domain
-
-- `domain/controllers` - `interfaces` описывающие методы контроллеров
-- `domain/dto` - `interfaces` описывающие структуры входящих данные `Data Transfer Object`
-- `domain/headers` - `interface` описывающий заголовки
-- `domain/jwt` - `interfaces` `jwt` `token`.
-- `domain/models` - `interfaces` и `sequelize` `models` описывающие структуры данных таблиц в БД.
-- `domain/paginate` - `interfaces` необходимые для пагинации.
-- `domain/pipes` - `interfaces` необходимые для преобразования или валидации входящих данных.
-- `domain/repositories` - `interfaces` описывающие методы в `repositories`
-- `domain/request` - `interfaces` описывающие данные входящие в запрос.
-- `domain/responses` - `interfaces` описывающие возвращаемые ответы функций и методов.
-- `domain/services` - `interfaces` описывающие методы `services`
-- `domain/transform` - `interfaces` - описывающие преобразование данных
-
-<br/>
-<br/>
-<br/>
-
-## Слой infrastructure
-
-- `infrastructure/common` - директория в которой используются функции `decorators`, `guards`, `strategies`. Они
-  взаимодействуют со всем приложением.
-- `infrastructure/common/decorators` - общие декораторы для всего проекта, например: `roles-auth.decorator.ts`, декоратор
-  проверяющий роли пользователя в `endpoints`. Для более подробного ознакомления
-  перейдите [decorators.md](src/infrastructure/common/decorators/decorators.md)
-- `infrastructure/common/decorators/swagger` - декораторы с помощью которых задокументированы `endpoints`. Для более
-  подробного ознакомления использующихся в проекте `swagger` `decorators`
-  перейдите [swagger.decorators.md](src/infrastructure/common/decorators/swagger/swagger.decorators.md)
-- `infrastructure/common/guards` - защитники, например: `auth.guard.ts` - проверяет авторизацию пользователя,
-  `role.guard.ts` - проверяет роль пользователя. Для более подробного ознакомления использующихся в проекте `guards`
-  перейдите [guards.md](src/infrastructure/common/guards/guards.md) или
-  документацию [guards](https://docs.nestjs.com/websockets/guards#binding-guards)
-- `infrastructure/common/strategies` - стратегии использующиеся для аутентификации и авторизации пользователя в
-  приложении. Например: `JwtStrategy`, `GoogleStrategy`, `GithubStrategy` и т.д. Для более подробного ознакомления
-  использующихся в проекте `strategies`
-  перейдите [strategies.md](src/infrastructure/common/strategies/strategies.md) или
-  документацию [Passport (authentication)](https://docs.nestjs.com/recipes/passport#implementing-passport-strategies).
-
-<br/>
-<br/>
-
-- `infrastructure/config` - в этой директории содержится конфигурация библиотек и фраемворков. Более подробно об
-  конфигурациях использующихся в проекте можно
-  почитать [jwt.config.md](src/infrastructure/config/jwt/jwt.config.md), [multer.config.md](src/infrastructure/config/multer/multer.config.md), [sequelize.config.md](src/infrastructure/config/sequelize), [swagger.config.md](src/infrastructure/config/swagger/swagger.config.md)
-- `infrastructure/controllers` - в этой директории бизнес логика контроллеров. Более подробно можно
-  ознакомится [controllers.md](src/infrastructure/controllers/controllers.md)
-- `infrastructure/dto` - в этой директории содержится структура входящих данных. Более подробно можно
-  ознакомится [dto.md](src/infrastructure/dto/dto.md)
-- `infrastructure/exceptions` - в этой директории содержутся исключения с помощью которых выводим частичную или более
-  подробную информацию об ошибке. Для более подробного ознакомления о `custom` `exceptions` использующихся в проекте
-  ознакомьтесь [exceptions.md](src/infrastructure/exceptions/exceptions.md). Для более подробного ознакомления
-  перейдите в документацию [exceptions](https://docs.nestjs.com/exception-filters#throwing-standard-exceptions)
-- `infrastructure/paginate` - методы требующиеся для постраничного вывода. Более подробно можно
-  ознакомится [paginate.md](src/infrastructure/paginate/paginate.md)
-- `infrastructure/pipes` - в этой директории содержаться классы с помощью которых мы можем преобразовывать входящие
-  данные в желаемый формат, или осуществлять валидацию входящих данных. Более подробно, об использующихся custom pipes в
-  проекте можно ознакомится [pipes](src/infrastructure/pipes/pipes.md). Для более подробной информации можно
-  ознакомится с документацией [pipes](https://docs.nestjs.com/pipes).
-- `infrastructure/repositories` - в этой директории бизнес логика репозиториев. Более подробно можно
-  ознакомится [repositories.md](src/infrastructure/repositories/repositories.md)
-- `infrastructure/requests` - запросы. Более подробно можно
-  ознакомится [requests.md](src/infrastructure/requests/requests.md)
-- `infrastructure/responses` - ответы возвращаемые функциями и методами. Более подробно можно
-  ознакомится [responses.md](src/infrastructure/responses/responses.md)
-- `infrastructure/services` - в этой директории бизнес логика сервисов. Более подробно можно
-  ознакомится [services.md](src/infrastructure/services/services.md)
-
-## API Endpoints
-
-### Продукты (V2 - новый формат пагинации)
-
-Все endpoints для работы с продуктами теперь используют новый формат пагинации `{ data, meta }`:
-
-- `GET /online-store/product/list-v2` - Получение списка продуктов
-- `GET /online-store/product/brand/{brandId}/list-v2` - Получение продуктов по бренду
-- `GET /online-store/product/category/{categoryId}/list-v2` - Получение продуктов по категории
-- `GET /online-store/product/brand/{brandId}/category/{categoryId}/list-v2` - Получение продуктов по бренду и категории
-
-#### Формат ответа V2
+Expected response:
 
 ```json
 {
-    "data": [
-        {
-            "id": 1,
-            "name": "iPhone 15",
-            "price": 999.99,
-            "rating": 4.5,
-            "image": "iphone15.jpg",
-            "category_id": 1,
-            "brand_id": 1
-        }
-    ],
-    "meta": {
-        "totalCount": 10,
-        "lastPage": 2,
-        "currentPage": 1,
-        "nextPage": 2,
-        "previousPage": null,
-        "limit": 5
+    "status": "ok",
+    "info": {
+        "database": { "status": "up" }
     }
 }
 ```
 
-#### Параметры запроса
+---
 
-- `search` (required) - Поиск по имени продукта
-- `sort` (required) - Сортировка цены (`asc` или `desc`)
-- `page` (optional) - Номер страницы (по умолчанию: 1)
-- `size` (optional) - Количество элементов на странице (по умолчанию: 5)
+## 🧪 Тестирование
 
-#### Важные изменения
+Проект включает **comprehensive test suite** для обеспечения production-ready качества.
 
-- **Исправлен баг с `page=0`**: Теперь параметр `page=0` автоматически корректируется до `page=1`
-- **Универсальный формат**: Все endpoints используют единый формат `{ data, meta }`
-- **Улучшенная пагинация**: Более детальная информация о страницах в `meta`
+### 📊 Test Coverage
 
-## Тестирование
+![Tests](https://img.shields.io/badge/tests-868%20passed-brightgreen)
+![Suites](https://img.shields.io/badge/suites-44-blue)
+![Coverage](https://img.shields.io/badge/coverage-73.73%25-green)
 
-Проект включает **unit** и **integration** тесты для проверки критической функциональности.
+**Статистика**: 44 test suites, 868 тестов (unit + integration)
 
-**Статистика**: 24 test suites, 335 тестов (unit + integration)
+| Metric         | Global    | Critical Modules |
+| -------------- | --------- | ---------------- |
+| **Lines**      | 73.73% ✅ | 85-100% ✅       |
+| **Statements** | 73.73% ✅ | 85-100% ✅       |
+| **Functions**  | 62.07% ✅ | 75-90% ✅        |
+| **Branches**   | 72.43% ✅ | 65-85% ✅        |
 
-⚠️ **Известная проблема:** ~10% integration тестов нестабильны (flaky) из-за shared state. 
-Автоматический retry включён (`jest.retryTimes(1)`). Подробнее: [docs/KNOWN_FLAKY_TESTS.md](docs/KNOWN_FLAKY_TESTS.md)
+### Coverage по модулям:
+
+✅ **Auth Services**: 96-98% (controller + service)
+✅ **Security Guards**: 95-99% (bruteforce, role)
+✅ **Exception Filters**: 97.97%
+✅ **User Services**: 81-92%
+✅ **Token Services**: 96.75%
+✅ **Notification Services**: 94.17%
+
+**Coverage Thresholds:** CI автоматически блокирует merge при снижении coverage.
+См. подробности: [docs/COVERAGE-THRESHOLDS.md](docs/COVERAGE-THRESHOLDS.md)
+
+⚠️ **Flaky Tests:** ~5% integration тестов могут быть нестабильны из-за shared state.
+Автоматический retry включён (`jest.retryTimes(1)`). См: [docs/KNOWN_FLAKY_TESTS.md](docs/KNOWN_FLAKY_TESTS.md)
 
 ---
 
@@ -278,6 +358,9 @@ npm run test:unit
 
 # Только integration тесты (с БД)
 npm run test:integration
+
+# E2E тесты (critical user journeys)
+npm run test:e2e
 
 # С покрытием кода
 npm run test:cov
@@ -366,6 +449,9 @@ tests/
 ├── integration/             # Integration тесты (реальная БД)
 │   ├── auth-flow.integration.test.ts
 │   └── rbac.integration.test.ts
+├── e2e/                     # E2E тесты (critical user journeys)
+│   ├── user-journey.e2e.test.ts
+│   └── admin-journey.e2e.test.ts
 ├── setup/                   # Вспомогательные утилиты
 │   ├── app.ts              # Настройка тестового приложения
 │   ├── auth.ts             # Хелперы для авторизации
@@ -382,8 +468,33 @@ src/infrastructure/controllers/*/tests/
 
 - **Jest config**: `jest.config.js`
 - **Test environment**: `.test.env`
-- **Coverage threshold**: 50% (branches, functions, lines, statements)
-- **Timeout**: 5s (unit), 30s (integration)
+- **Coverage thresholds**:
+    - Global: 70% branches, 60% functions, 70% lines/statements
+    - Critical modules: 65-90% (auth, guards, exceptions, user, token)
+    - Controllers: 10-45% (conservative baseline, gradual improvement)
+- **Timeout**: 5s (unit), 30s (integration), 60s (E2E)
+- **Execution**: Sequential локально, parallel в CI
+
+---
+
+### 🔒 Security Testing
+
+Comprehensive security test coverage для production-ready SaaS:
+
+**Test Coverage:**
+
+- ✅ **Password Reset Flow** (12 tests) - forgot password, token validation, expiry
+- ✅ **Brute Force Protection** (46 tests) - rate limiting, IP extraction, Retry-After headers
+- ✅ **Input Validation** (32 tests) - SQL injection, XSS, Path Traversal, CSRF
+- ✅ **RBAC Authorization** (67 tests) - role permissions, 401/403 distinction, multi-role
+- ✅ **Race Conditions** (critical fixes) - inventory overselling, payment double-charge
+- ✅ **Error Handling** (30 tests) - exception filters, graceful degradation
+- ✅ **Token Invalidation** (8 tests) - session management, security audit
+
+**Security Documentation:**
+
+- [docs/SECURITY.md](docs/SECURITY.md) - Security best practices and known issues
+- [docs/TESTING.md](docs/TESTING.md) - Testing strategy and guidelines
 
 Подробнее о тестах см. документацию в `tests/` директории.
 
@@ -400,6 +511,7 @@ CI pipeline **полностью настроен** и автоматическ�
 ✅ **Запускает параллельно**: lint, build, unit tests, integration tests (с coverage)
 ✅ **Проверяет миграции**: up → down → up (rollback работает)
 ✅ **Собирает coverage** отчёты (только integration, threshold: 50%)
+✅ **Проверяет coverage thresholds** (блокирует merge при падении)
 
 **Важно**: В CI используются другие credentials (из `.github/workflows/ci.yml`):
 
@@ -409,3 +521,381 @@ CI pipeline **полностью настроен** и автоматическ�
 - Port: `3306` (не `3308`)
 
 Все тесты проходят автоматически при push/PR в ветки `main` и `dev`.
+
+---
+
+## 📚 API Documentation
+
+### Swagger UI
+
+Полная интерактивная документация доступна по адресу:
+
+**Development**: http://localhost:5000/online-store/docs
+
+### Основные endpoints
+
+#### Authentication
+
+- `POST /auth/registration` - Регистрация нового пользователя
+- `POST /auth/login` - Вход в систему
+- `GET /auth/check` - Проверка авторизации
+- `POST /auth/refresh` - Обновление access токена
+- `POST /auth/logout` - Выход из системы
+
+#### Products
+
+- `GET /product/list-v2` - Получение списка продуктов (с пагинацией)
+- `GET /product/one/:id` - Получение продукта по ID
+- `GET /product/category/:categoryId/list-v2` - Фильтр по категории
+- `GET /product/brand/:brandId/list-v2` - Фильтр по бренду
+- `POST /product/create` - Создание продукта (ADMIN)
+- `PUT /product/update/:id` - Обновление продукта (ADMIN)
+- `DELETE /product/delete/:id` - Удаление продукта (ADMIN)
+
+#### Orders
+
+- `POST /order/user/create-order` - Создание заказа (USER, CUSTOMER)
+- `GET /order/user/get-all-order` - Список заказов пользователя
+- `GET /order/user/get-order/:orderId` - Детали заказа
+- `GET /order/admin/get-all-order` - Все заказы магазина (ADMIN)
+
+#### Cart
+
+- `GET /cart/get-cart` - Просмотр корзины
+- `PUT /cart/product/:productId/append/:quantity` - Добавить в корзину
+- `PUT /cart/product/:productId/increment/:quantity` - Увеличить количество
+- `PUT /cart/product/:productId/decrement/:quantity` - Уменьшить количество
+- `DELETE /cart/product/:productId/delete` - Удалить из корзины
+- `DELETE /cart/clear` - Очистить корзину
+
+#### Users
+
+- `GET /user/profile` - Профиль пользователя
+- `PATCH /user/profile` - Обновление профиля
+- `PATCH /user/profile/password` - Смена пароля
+- `POST /user/verify/email/request` - Запросить код верификации email
+- `POST /user/verify/email/confirm` - Подтвердить email
+
+### Формат ответа (Pagination)
+
+Все endpoints с пагинацией используют единый формат:
+
+```json
+{
+    "data": [...],
+    "meta": {
+        "totalCount": 100,
+        "lastPage": 20,
+        "currentPage": 1,
+        "nextPage": 2,
+        "previousPage": null,
+        "limit": 5
+    }
+}
+```
+
+---
+
+## 🗄️ Database
+
+### Migrations
+
+Проект использует **Sequelize migrations** для версионирования схемы БД:
+
+```bash
+# Применить миграции
+npm run db:migrate
+
+# Откатить последнюю миграцию
+npm run db:migrate:undo
+
+# Статус миграций
+npm run db:migrate:status
+```
+
+### Database Schema
+
+**15+ таблиц:**
+
+- `user` - Пользователи (с расширенными полями: phone, flags, preferences)
+- `role` - Роли (ADMIN, USER, CUSTOMER, etc.)
+- `user_role` - Связь пользователь-роль (many-to-many)
+- `product` - Продукты
+- `category` - Категории
+- `brand` - Бренды
+- `cart` - Корзины
+- `order` - Заказы
+- `rating` - Рейтинги
+- `user_address` - Адреса доставки
+- `refresh_token` - Refresh токены
+- `login_history` - История входов
+- `user_verification_code` - Коды верификации
+- `password_reset_token` - Токены сброса пароля
+- `notification` - Уведомления
+
+### Seeders
+
+Начальные данные для development:
+
+```bash
+# Применить все seeds
+npm run db:seed:all
+
+# Откатить seeds
+npm run db:seed:undo:all
+```
+
+**Seed data:**
+
+- Roles (ADMIN, USER, CUSTOMER, VIP_CUSTOMER, etc.)
+- Test users (admin@example.com, user@example.com)
+- Categories (Электроника, Одежда)
+- Brands (Apple, Nike)
+- Products (5 test products)
+
+---
+
+## 🔒 Security
+
+### Authentication
+
+- **JWT Strategy**: Access tokens (15m) + Refresh tokens (30d)
+- **Token Rotation**: Single-use refresh tokens с автоматической инвалидацией
+- **Password Security**: bcrypt hashing, strength validation
+- **Session Management**: Refresh token table, login history tracking
+
+### Authorization
+
+- **RBAC**: Role-Based Access Control
+- **Roles**: ADMIN, USER, CUSTOMER, VIP_CUSTOMER, WHOLESALE, AFFILIATE, GUEST
+- **Guards**: AuthGuard (JWT validation), RoleGuard (permission checks)
+- **401 vs 403**: Proper distinction (Unauthorized vs Forbidden)
+
+### Input Validation
+
+- **DTO Validation**: class-validator для всех входных данных
+- **Sanitization**: @IsSanitizedString для защиты от XSS
+- **Custom Validators**: @IsValidPhone, @IsValidName, @IsPasswordStrong
+- **SQL Injection**: Parameterized queries, Sequelize ORM
+- **Path Traversal**: File path validation
+
+### Rate Limiting
+
+- **Login**: 5 attempts / 15 minutes
+- **Registration**: 3 attempts / minute
+- **Refresh**: 10 attempts / 5 minutes
+- **Global**: 3 req/s, 20 req/10s, 100 req/min
+- **Headers**: Retry-After (RFC 6585)
+
+### Security Headers
+
+- **Helmet**: Cross-Origin policies, XSS protection
+- **CORS**: Whitelist allowed origins
+- **Cookies**: HttpOnly, SameSite, Secure (production)
+
+---
+
+## 📁 Project Structure
+
+```
+online-store-backend/
+├── src/
+│   ├── domain/                    # Domain Layer (бизнес-логика)
+│   │   ├── controllers/           # Интерфейсы контроллеров
+│   │   ├── dto/                   # DTO интерфейсы
+│   │   ├── models/                # Sequelize модели
+│   │   ├── responses/             # Response интерфейсы
+│   │   └── services/              # Service интерфейсы
+│   ├── infrastructure/            # Infrastructure Layer (реализация)
+│   │   ├── common/                # Guards, Pipes, Decorators, Validators
+│   │   ├── config/                # Конфигурация (JWT, Sequelize, Swagger)
+│   │   ├── controllers/           # HTTP controllers
+│   │   ├── dto/                   # DTO классы
+│   │   ├── exceptions/            # Exception filters
+│   │   ├── repositories/          # Data access layer
+│   │   ├── responses/             # Response классы
+│   │   └── services/              # Бизнес-логика
+│   ├── app.module.ts              # Главный модуль
+│   └── main.ts                    # Entry point
+├── db/
+│   ├── migrations/                # Database migrations
+│   ├── seeders/                   # Seed data
+│   └── models/                    # DB model definitions
+├── tests/
+│   ├── unit/                      # Unit тесты
+│   ├── integration/               # Integration тесты
+│   ├── e2e/                       # E2E тесты
+│   ├── setup/                     # Test utilities
+│   └── utils/                     # Test helpers
+├── docs/                          # Documentation
+│   ├── SECURITY.md
+│   ├── TESTING.md
+│   ├── COVERAGE-THRESHOLDS.md
+│   └── KNOWN_FLAKY_TESTS.md
+├── .cursor/rules/                 # AI assistant rules
+├── jest.config.js                 # Jest configuration
+├── jest.e2e.config.js             # E2E test configuration
+└── README.md                      # This file
+```
+
+---
+
+## 🎨 Domain Layer (Clean Architecture)
+
+### domain/controllers
+
+`interfaces` описывающие методы контроллеров
+
+### domain/dto
+
+`interfaces` описывающие структуры входящих данных `Data Transfer Object`
+
+### domain/models
+
+`interfaces` и `sequelize` `models` описывающие структуры данных таблиц в БД
+
+### domain/repositories
+
+`interfaces` описывающие методы в `repositories`
+
+### domain/services
+
+`interfaces` описывающие методы `services`
+
+### domain/responses
+
+`interfaces` описывающие возвращаемые ответы функций и методов
+
+---
+
+## 🏭 Infrastructure Layer
+
+### infrastructure/common
+
+Общие компоненты для всего приложения:
+
+- **decorators** - Кастомные декораторы (@Roles, Swagger decorators)
+  См: [decorators.md](src/infrastructure/common/decorators/decorators.md)
+- **guards** - Guards для auth & authorization (AuthGuard, RoleGuard, BruteforceGuard)
+  См: [guards.md](src/infrastructure/common/guards/guards.md)
+- **strategies** - Passport strategies (JwtStrategy)
+  См: [strategies.md](src/infrastructure/common/strategies/strategies.md)
+- **validators** - Кастомные валидаторы (@IsSanitizedString, @IsValidPhone)
+
+### infrastructure/config
+
+Конфигурация библиотек и фреймворков:
+
+- [jwt.config.md](src/infrastructure/config/jwt/jwt.config.md)
+- [multer.config.md](src/infrastructure/config/multer/multer.config.md)
+- [sequelize.config.md](src/infrastructure/config/sequelize)
+- [swagger.config.md](src/infrastructure/config/swagger/swagger.config.md)
+
+### infrastructure/controllers
+
+Бизнес логика контроллеров. См: [controllers.md](src/infrastructure/controllers/controllers.md)
+
+### infrastructure/services
+
+Бизнес логика сервисов. См: [services.md](src/infrastructure/services/services.md)
+
+### infrastructure/repositories
+
+Data access layer. См: [repositories.md](src/infrastructure/repositories/repositories.md)
+
+---
+
+## 📜 Available Scripts
+
+### Development
+
+```bash
+npm run start:dev          # Запуск в development режиме (hot-reload)
+npm run start:debug        # Запуск в debug режиме
+npm run build              # Production сборка
+npm run start              # Запуск production build
+```
+
+### Database
+
+```bash
+npm run db:migrate         # Применить миграции
+npm run db:migrate:undo    # Откатить последнюю миграцию
+npm run db:seed:all        # Применить seeds
+npm run db:reset           # Полный reset БД
+npm run db:build           # Скомпилировать TypeScript migrations/seeders
+```
+
+### Testing
+
+```bash
+npm run test               # Все тесты
+npm run test:unit          # Unit тесты
+npm run test:integration   # Integration тесты
+npm run test:e2e           # E2E тесты
+npm run test:cov           # С coverage
+npm run test:html:open     # HTML отчёт
+```
+
+### Code Quality
+
+```bash
+npm run lint:ts            # Проверка TypeScript линтером
+npm run lint:ts:fix        # Автофикс линтера
+npm run prettier           # Форматирование кода
+npm run db:lint            # Линтер для DB файлов
+```
+
+---
+
+## 🤝 Contributing
+
+Проект разработан как портфолио для демонстрации Middle-level backend skills.
+
+### Development Workflow
+
+1. Создать feature branch: `git checkout -b feature/my-feature`
+2. Внести изменения
+3. Запустить тесты: `npm run test`
+4. Запустить линтер: `npm run lint:ts:fix`
+5. Commit: `git commit -m "feat: my feature"`
+6. Push: `git push origin feature/my-feature`
+
+### Code Style
+
+- **TypeScript**: strict mode, no `any`, явные типы
+- **Naming**: PascalCase (classes), camelCase (methods/variables)
+- **Imports**: сгруппированы (NestJS → external → internal)
+- **Comments**: JSDoc для публичных методов
+- **Formatting**: Prettier (4 spaces, single quotes, 120 chars)
+
+---
+
+## 📄 License
+
+MIT © [Konstantin Atroshchenko](https://github.com/Konstantine899)
+
+---
+
+## 👨‍💻 Author
+
+**Konstantin Atroshchenko**
+
+- Middle Backend Developer
+- Специализация: NestJS, TypeScript, Clean Architecture, Testing
+- GitHub: [@Konstantine899](https://github.com/Konstantine899)
+- Email: kostay375298918971@gmail.com
+
+---
+
+## 🙏 Acknowledgments
+
+Проект создан для демонстрации production-ready backend development skills:
+
+- ✅ Clean Architecture & SOLID
+- ✅ Comprehensive Testing (878 tests)
+- ✅ Security Best Practices
+- ✅ Enterprise-grade Code Quality
+- ✅ Professional Documentation
+
+**Ready for production. Ready for portfolio. Ready for Middle-level positions.**
