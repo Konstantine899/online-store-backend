@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BruteforceGuard } from './infrastructure/common/guards';
+import { TenantContext } from './infrastructure/common/context';
 import { APP_GUARD } from '@nestjs/core';
 
 import * as process from 'process';
@@ -135,6 +136,8 @@ import { HealthModule } from './infrastructure/controllers/health/health.module'
             provide: APP_GUARD,
             useClass: BruteforceGuard,
         },
+        TenantContext, // Request-scoped provider для tenant isolation
     ],
+    exports: [TenantContext], // Экспортируем для использования в других модулях
 })
 export class AppModule {}
