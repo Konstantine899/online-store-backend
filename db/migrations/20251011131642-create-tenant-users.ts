@@ -1,7 +1,10 @@
-import { QueryInterface, DataTypes } from 'sequelize';
+import { DataTypes, QueryInterface } from 'sequelize';
 
 interface Migration {
-    up(queryInterface: QueryInterface, Sequelize: typeof DataTypes): Promise<void>;
+    up(
+        queryInterface: QueryInterface,
+        Sequelize: typeof DataTypes,
+    ): Promise<void>;
 
     down(queryInterface: QueryInterface): Promise<void>;
 }
@@ -80,4 +83,3 @@ const migration: Migration = {
 };
 
 export default migration;
-
