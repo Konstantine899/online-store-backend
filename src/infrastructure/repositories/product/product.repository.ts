@@ -10,7 +10,7 @@ import {
 } from '@app/infrastructure/responses';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { Op, WhereOptions } from 'sequelize';
 
 @Injectable()
 export class ProductRepository implements IProductRepository {
@@ -63,7 +63,7 @@ export class ProductRepository implements IProductRepository {
         offset: number,
     ): Promise<{ count: number; rows: ProductInfo[] }> {
         const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
-        const where: any = { tenant_id: tenantId };
+        const where: WhereOptions<ProductModel> = { tenant_id: tenantId };
         if (search) {
             where.name = { [Op.like]: `%${search}%` };
         }
