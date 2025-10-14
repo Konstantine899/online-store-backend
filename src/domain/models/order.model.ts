@@ -1,15 +1,15 @@
+import { Op } from 'sequelize';
 import {
     BelongsTo,
     Column,
+    CreatedAt,
     DataType,
     ForeignKey,
     HasMany,
     Model,
     Table,
-    CreatedAt,
     UpdatedAt,
 } from 'sequelize-typescript';
-import { Op } from 'sequelize';
 import { OrderItemModel } from './order-item.model';
 import { UserModel } from './user.model';
 
@@ -25,6 +25,7 @@ interface IOrderModel {
     items: OrderItemModel[];
     user_id: number;
     user: UserModel;
+    tenant_id?: number;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -38,6 +39,7 @@ interface IOrderCreationAttributes {
     status?: number;
     comment?: string;
     user_id: number;
+    tenant_id?: number;
 }
 
 @Table({
@@ -158,6 +160,9 @@ export class OrderModel
 
     @BelongsTo(() => UserModel)
     user!: UserModel;
+
+    @Column({ type: DataType.INTEGER, allowNull: true, field: 'tenant_id' })
+    tenant_id?: number;
 
     @CreatedAt
     @Column({

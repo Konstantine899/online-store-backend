@@ -5,13 +5,14 @@ import {
     Model,
     Table,
 } from 'sequelize-typescript';
-import { UserModel } from './user.model';
 import { ProductModel } from './product.model';
+import { UserModel } from './user.model';
 
 interface IRatingModel {
     rating: number;
     user_id: number;
     product_id: number;
+    tenant_id?: number;
 }
 
 @Table({
@@ -35,4 +36,7 @@ export class RatingModel extends Model<RatingModel> implements IRatingModel {
     @ForeignKey(() => ProductModel)
     @Column({ type: DataType.INTEGER })
     product_id!: number;
+
+    @Column({ type: DataType.INTEGER, allowNull: true, field: 'tenant_id' })
+    tenant_id?: number;
 }

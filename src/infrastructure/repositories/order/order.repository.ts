@@ -1,5 +1,6 @@
 import { OrderItemModel, OrderModel, ProductModel } from '@app/domain/models';
 import { IOrderRepository } from '@app/domain/repositories';
+import { TenantContext } from '@app/infrastructure/common/context';
 import { OrderDto } from '@app/infrastructure/dto';
 import {
     AdminCreateOrderResponse,
@@ -29,6 +30,7 @@ export class OrderRepository implements IOrderRepository {
         @InjectModel(ProductModel) private productModel: typeof ProductModel,
         private readonly orderItemRepository: OrderItemRepository,
         private readonly sequelize: Sequelize,
+        private readonly tenantContext: TenantContext,
     ) {}
 
     public async adminFindOrderListUser(
@@ -36,10 +38,11 @@ export class OrderRepository implements IOrderRepository {
     ): Promise<
         AdminGetStoreOrderListResponse[] | AdminGetOrderListUserResponse[]
     > {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
         let orders: OrderModel[];
         if (user_id) {
             orders = await this.orderModel.findAll({
-                where: { user_id },
+                where: { user_id, tenant_id: tenantId },
                 include: [
                     {
                         model: OrderItemModel,
@@ -50,6 +53,7 @@ export class OrderRepository implements IOrderRepository {
             });
         } else {
             orders = await this.orderModel.findAll({
+                where: { tenant_id: tenantId },
                 include: [
                     {
                         model: OrderItemModel,
@@ -67,12 +71,14 @@ export class OrderRepository implements IOrderRepository {
         id: number,
         user_id?: number,
     ): Promise<AdminGetOrderUserResponse> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
         let order: OrderModel;
         if (user_id) {
             order = (await this.orderModel.findOne({
                 where: {
                     id,
                     user_id,
+                    tenant_id: tenantId,
                 },
                 include: [
                     {
@@ -84,7 +90,8 @@ export class OrderRepository implements IOrderRepository {
             })) as AdminGetOrderUserResponse;
             return order;
         }
-        order = (await this.orderModel.findByPk(id, {
+        order = (await this.orderModel.findOne({
+            where: { id, tenant_id: tenantId },
             include: [
                 {
                     model: OrderItemModel,
@@ -99,8 +106,9 @@ export class OrderRepository implements IOrderRepository {
     public async findUserAndHisOrders(
         user_id: number,
     ): Promise<AdminCreateOrderResponse> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
         return (await this.orderModel.findOne({
-            where: { user_id },
+            where: { user_id, tenant_id: tenantId },
             include: [
                 {
                     model: OrderItemModel,
@@ -122,7 +130,9 @@ export class OrderRepository implements IOrderRepository {
     }
 
     public async findOrder(orderId: number): Promise<OrderModel> {
-        return this.orderModel.findByPk(orderId, {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        return this.orderModel.findOne({
+            where: { id: orderId, tenant_id: tenantId },
             include: [
                 {
                     model: OrderItemModel,
@@ -134,16 +144,18 @@ export class OrderRepository implements IOrderRepository {
     }
 
     public async removeOrder(id: number): Promise<number> {
-        return this.orderModel.destroy({ where: { id } });
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        return this.orderModel.destroy({ where: { id, tenant_id: tenantId } });
     }
 
     public async userFindOrderList(
         user_id: number,
     ): Promise<UserGetOrderListResponse[]> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
         let orders: OrderModel[];
         if (user_id) {
             orders = await this.orderModel.findAll({
-                where: { user_id },
+                where: { user_id, tenant_id: tenantId },
                 include: [
                     {
                         model: OrderItemModel,
@@ -153,7 +165,9 @@ export class OrderRepository implements IOrderRepository {
                 ],
             });
         } else {
-            orders = await this.orderModel.findAll();
+            orders = await this.orderModel.findAll({
+                where: { tenant_id: tenantId },
+            });
         }
 
         return orders;
@@ -163,10 +177,12 @@ export class OrderRepository implements IOrderRepository {
         order_id: number,
         user_id?: number,
     ): Promise<OrderModel> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
         return this.orderModel.findOne({
             where: {
                 user_id,
                 id: order_id,
+                tenant_id: tenantId,
             },
             include: [
                 {
@@ -255,6 +271,8 @@ export class OrderRepository implements IOrderRepository {
                     (sum: number, item: OrderItemModel) => sum + item.price,
                     0,
                 );
+                (order as any).tenant_id =
+                    this.tenantContext.getTenantIdOrNull() || 1;
                 await order.save({ transaction });
 
                 // 6. Create order items
@@ -263,7 +281,9 @@ export class OrderRepository implements IOrderRepository {
                 }
 
                 // 7. Return created order with items
-                return this.orderModel.findByPk(order.id, {
+                const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+                return this.orderModel.findOne({
+                    where: { id: order.id, tenant_id: tenantId },
                     include: [
                         {
                             model: OrderItemModel,
