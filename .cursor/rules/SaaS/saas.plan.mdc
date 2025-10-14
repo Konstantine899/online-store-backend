@@ -43,25 +43,25 @@ tasks:
     - "Тесты: tenant isolation tests, integration tests"
     - "Coverage: SaaS core ≥80%"
     - "«Коммит» → feat(saas): <TASK_ID> complete"
-      files_scope:
+  files_scope:
     - "db/migrations/\*\*"
     - "src/infrastructure/common/middleware/\*\*"
     - "src/infrastructure/repositories/\*\*"
     - "src/main.ts"
     - "src/infrastructure/common/swagger/\*\*"
-      steps:
+  steps:
     - create tenants and tenant_users migrations with indexes
     - add tenant_id to core tables + indexes + backfill
     - tenant middleware resolve by x-tenant-id or subdomain
     - enforce tenant filter in repositories via helper/scope
     - document global x-tenant-id header in Swagger
-      dod:
+  dod:
     - migrations up/down succeed transactionally
     - deterministic backfill to default tenant
     - missing x-tenant-id -> 400; with header -> isolated data
     - integration tests green for isolation
     - Swagger documents x-tenant-id as global header
-      gate:
+  gate:
     - require: "Одобряю SAAS-001"
 
 - id: SAAS-002
