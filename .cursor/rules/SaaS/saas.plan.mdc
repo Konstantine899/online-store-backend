@@ -35,7 +35,15 @@ tasks:
 - id: SAAS-001
   title: Enable multi-tenant core (DB + Middleware + Scope)
   branch: "feature/infra/SAAS-001/enable-multi-tenant-core"
-  files_scope:
+  pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: SaaS core/multi-tenancy)"
+  pre_commit_steps:
+    - "«Ревью» → tenant isolation, multi-tenancy logic, security"
+    - "«Оптимизируй» → DB queries, tenant scoping performance"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: tenant isolation tests, integration tests"
+    - "Coverage: SaaS core ≥80%"
+    - "«Коммит» → feat(saas): <TASK_ID> complete"
+      files_scope:
     - "db/migrations/\*\*"
     - "src/infrastructure/common/middleware/\*\*"
     - "src/infrastructure/repositories/\*\*"
@@ -59,7 +67,13 @@ tasks:
 - id: SAAS-002
   title: User module MVP cleanup (strict API)
   branch: "feature/user/SAAS-002/user-mvp-cleanup"
-  files_scope:
+  pre_commit_workflow: "ОБЫЧНЫЙ (User API refactoring)"
+  pre_commit_steps:
+    - "«Ревью» → API contracts, breaking changes check"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: unit + integration tests"
+    - "«Коммит» → feat(user): <TASK_ID> complete"
+      files_scope:
     - "src/infrastructure/controllers/user/\*\*"
     - "src/infrastructure/services/user/\*\*"
     - "src/infrastructure/dto/user/\*\*"
@@ -80,7 +94,14 @@ tasks:
 - id: SAAS-003
   title: Catalog tenant filters and pagination
   branch: "feature/catalog/SAAS-003/tenant-pagination"
-  files_scope:
+  pre_commit_workflow: "ОБЫЧНЫЙ (Catalog refactoring)"
+  pre_commit_steps:
+    - "«Ревью» → pagination contracts, tenant filters"
+    - "«Оптимизируй» → DB queries, indexes"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: integration tests for pagination"
+    - "«Коммит» → feat(catalog): <TASK_ID> complete"
+      files_scope:
     - "src/infrastructure/controllers/product/\*\*"
     - "src/infrastructure/repositories/product/\*\*"
     - "src/infrastructure/services/product/\*\*"
