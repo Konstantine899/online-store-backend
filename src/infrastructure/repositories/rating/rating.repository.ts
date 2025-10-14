@@ -21,8 +21,7 @@ export class RatingRepository implements IRatingRepository {
         productRating.user_id = userId;
         productRating.product_id = productId;
         productRating.rating = rating;
-        (productRating as any).tenant_id =
-            this.tenantContext.getTenantIdOrNull() || 1;
+        productRating.tenant_id = this.tenantContext.getTenantIdOrNull() || 1;
         return productRating.save();
     }
 

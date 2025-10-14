@@ -24,7 +24,7 @@ export class BrandRepository implements IBrandRepository {
         const brand = new BrandModel();
         brand.name = dto.name;
         brand.category_id = dto.category_id;
-        (brand as any).tenant_id = tenantId;
+        brand.tenant_id = tenantId;
         await brand.save();
         return brand;
     }

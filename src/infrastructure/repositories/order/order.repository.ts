@@ -271,8 +271,7 @@ export class OrderRepository implements IOrderRepository {
                     (sum: number, item: OrderItemModel) => sum + item.price,
                     0,
                 );
-                (order as any).tenant_id =
-                    this.tenantContext.getTenantIdOrNull() || 1;
+                order.tenant_id = this.tenantContext.getTenantIdOrNull() || 1;
                 await order.save({ transaction });
 
                 // 6. Create order items

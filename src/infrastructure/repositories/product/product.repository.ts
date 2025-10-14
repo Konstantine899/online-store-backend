@@ -30,8 +30,7 @@ export class ProductRepository implements IProductRepository {
         product.category_id = dto.categoryId;
         product.image = imageName;
         // Multi-tenant: автоматически устанавливаем tenant_id
-        (product as any).tenant_id =
-            this.tenantContext.getTenantIdOrNull() || 1;
+        product.tenant_id = this.tenantContext.getTenantIdOrNull() || 1;
         return product.save();
     }
 
