@@ -12,7 +12,7 @@ class ProductProperty extends sequelize_1.Model {
     }
 }
 function defineProductProperty(sequelize) {
-    ProductProperty.init({
+    const attributes = {
         id: {
             type: sequelize_1.DataTypes.INTEGER,
             primaryKey: true,
@@ -43,7 +43,8 @@ function defineProductProperty(sequelize) {
             type: sequelize_1.DataTypes.DATE,
             allowNull: false,
         },
-    }, {
+    };
+    ProductProperty.init(attributes, {
         sequelize,
         modelName: consts_1.TABLE_NAMES.PRODUCT_PROPERTY,
         tableName: consts_1.TABLE_NAMES.PRODUCT_PROPERTY,

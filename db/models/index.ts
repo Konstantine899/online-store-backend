@@ -16,6 +16,7 @@ import ProductProperty from './product-property';
 import Rating from './rating';
 import RefreshToken from './refresh-token';
 import Role from './role';
+import Tenant from './tenant';
 import User from './user';
 import UserAddress from './user-address';
 import UserRole from './user-role';
@@ -26,6 +27,7 @@ const dbConfig = config[env as keyof typeof config];
 interface Database {
     sequelize: Sequelize;
     Sequelize: typeof Sequelize;
+    tenant: ReturnType<typeof Tenant>;
     user: ReturnType<typeof User>;
     role: ReturnType<typeof Role>;
     category: ReturnType<typeof Category>;
@@ -62,6 +64,7 @@ if (dbConfig.use_env_variable) {
 }
 
 // Initialize all models
+db.tenant = Tenant(sequelize);
 db.user = User(sequelize);
 db.role = Role(sequelize);
 db.category = Category(sequelize);

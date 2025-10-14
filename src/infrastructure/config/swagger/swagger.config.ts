@@ -23,6 +23,17 @@ export function swaggerConfig(app: INestApplication): void {
             in: 'header',
             scheme: 'bearer',
         })
+        // SAAS-001-12: Global header for multi-tenant isolation
+        .addApiKey(
+            {
+                type: 'apiKey',
+                name: 'x-tenant-id',
+                in: 'header',
+                description:
+                    'Tenant ID for multi-tenant data isolation. Required for production. Defaults to 1 if not provided.',
+            },
+            'tenant-header',
+        )
         .build();
 
     const document = SwaggerModule.createDocument(app, config);

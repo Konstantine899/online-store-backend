@@ -12,7 +12,7 @@ class OrderItem extends sequelize_1.Model {
     }
 }
 function defineOrderItem(sequelize) {
-    OrderItem.init({
+    const attributes = {
         id: {
             type: sequelize_1.DataTypes.INTEGER,
             primaryKey: true,
@@ -47,7 +47,8 @@ function defineOrderItem(sequelize) {
             type: sequelize_1.DataTypes.DATE,
             allowNull: false,
         },
-    }, {
+    };
+    OrderItem.init(attributes, {
         sequelize,
         modelName: consts_1.TABLE_NAMES.ORDER_ITEM,
         tableName: consts_1.TABLE_NAMES.ORDER_ITEM,

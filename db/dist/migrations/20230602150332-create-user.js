@@ -18,6 +18,14 @@ const migration = {
                 type: Sequelize.STRING(255),
                 allowNull: false,
             },
+            first_name: {
+                type: Sequelize.STRING(100),
+                allowNull: true,
+            },
+            last_name: {
+                type: Sequelize.STRING(100),
+                allowNull: true,
+            },
             created_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
@@ -36,14 +44,14 @@ const migration = {
             }),
             queryInterface.addIndex('user', ['id'], {
                 name: 'idx_user_id_performance',
-            })
+            }),
         ]);
     },
     async down(queryInterface) {
         await Promise.all([
             queryInterface.removeIndex('user', 'idx_user_email'),
             queryInterface.removeIndex('user', 'idx_user_email_id'),
-            queryInterface.removeIndex('user', 'idx_user_id_performance')
+            queryInterface.removeIndex('user', 'idx_user_id_performance'),
         ]);
         await queryInterface.dropTable('user');
     },

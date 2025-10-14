@@ -12,14 +12,14 @@ import { CartProductModel } from './cart-product.model';
 
 interface ICartModel {
     id: number;
+    tenant_id: number;
     products: ProductModel[];
     createdAt: Date;
     updatedAt: Date;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface ICartCreationAttributes {
-    // Пустой интерфейс - корзина создается без дополнительных полей
+    tenant_id?: number;
 }
 
 @Table({
@@ -53,6 +53,13 @@ export class CartModel
         autoIncrement: true,
     })
     declare id: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        comment: 'Tenant ID for multi-tenant isolation',
+    })
+    tenant_id!: number;
 
     @BelongsToMany(() => ProductModel, {
         through: () => CartProductModel,

@@ -36,22 +36,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const sequelize_1 = require("sequelize");
 const process = __importStar(require("process"));
+const sequelize_1 = require("sequelize");
 const database_1 = __importDefault(require("../config/database"));
-const user_1 = __importDefault(require("./user"));
-const role_1 = __importDefault(require("./role"));
-const category_1 = __importDefault(require("./category"));
 const brand_1 = __importDefault(require("./brand"));
-const product_1 = __importDefault(require("./product"));
-const rating_1 = __importDefault(require("./rating"));
-const product_property_1 = __importDefault(require("./product-property"));
-const order_1 = __importDefault(require("./order"));
-const order_item_1 = __importDefault(require("./order-item"));
 const cart_1 = __importDefault(require("./cart"));
 const cart_product_1 = __importDefault(require("./cart-product"));
-const user_role_1 = __importDefault(require("./user-role"));
+const category_1 = __importDefault(require("./category"));
+const login_history_1 = __importDefault(require("./login-history"));
+const order_1 = __importDefault(require("./order"));
+const order_item_1 = __importDefault(require("./order-item"));
+const password_reset_token_1 = __importDefault(require("./password-reset-token"));
+const product_1 = __importDefault(require("./product"));
+const product_property_1 = __importDefault(require("./product-property"));
+const rating_1 = __importDefault(require("./rating"));
 const refresh_token_1 = __importDefault(require("./refresh-token"));
+const role_1 = __importDefault(require("./role"));
+const user_1 = __importDefault(require("./user"));
+const user_address_1 = __importDefault(require("./user-address"));
+const user_role_1 = __importDefault(require("./user-role"));
 const env = process.env.NODE_ENV || 'development';
 const dbConfig = database_1.default[env];
 const db = {};
@@ -75,6 +78,9 @@ db.cart = (0, cart_1.default)(sequelize);
 db.cartProduct = (0, cart_product_1.default)(sequelize);
 db.userRole = (0, user_role_1.default)(sequelize);
 db.refreshToken = (0, refresh_token_1.default)(sequelize);
+db.userAddress = (0, user_address_1.default)(sequelize);
+db.loginHistory = (0, login_history_1.default)(sequelize);
+db.passwordResetToken = (0, password_reset_token_1.default)(sequelize);
 Object.keys(db).forEach((modelName) => {
     if (db[modelName] &&
         typeof db[modelName] === 'function') {

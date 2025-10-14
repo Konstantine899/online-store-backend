@@ -18,6 +18,7 @@ interface IUserAddressCreationAttributes {
     postal_code?: string;
     country?: string;
     is_default?: boolean;
+    tenant_id?: number;
 }
 
 @Table({
@@ -103,6 +104,14 @@ export class UserAddressModel extends Model<
         defaultValue: false,
     })
     declare is_default: boolean;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'tenant_id',
+        comment: 'Tenant ID for multi-tenant isolation',
+    })
+    declare tenant_id?: number;
 
     @BelongsTo(() => UserModel)
     declare user: UserModel;

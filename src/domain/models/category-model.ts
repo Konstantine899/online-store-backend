@@ -1,10 +1,10 @@
 import {
     Column,
+    CreatedAt,
     DataType,
     HasMany,
     Model,
     Table,
-    CreatedAt,
     UpdatedAt,
 } from 'sequelize-typescript';
 import { ProductModel } from './product.model';
@@ -16,6 +16,7 @@ interface ICategoryModel {
     slug: string;
     description?: string;
     isActive: boolean;
+    tenant_id: number;
     products: ProductModel[];
     createdAt: Date; // НОВОЕ
     updatedAt: Date; // НОВОЕ
@@ -24,6 +25,7 @@ interface ICategoryModel {
 interface ICategoryCreationAttributes {
     name: string;
     image: string;
+    tenant_id?: number;
     slug?: string;
     description?: string;
     isActive?: boolean;
@@ -137,6 +139,13 @@ export class CategoryModel
         defaultValue: true,
     })
     isActive!: boolean;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        comment: 'Tenant ID for multi-tenant isolation',
+    })
+    tenant_id!: number;
 
     @HasMany(() => ProductModel, {
         foreignKey: 'category_id',

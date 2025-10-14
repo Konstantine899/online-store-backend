@@ -12,6 +12,7 @@ import {
     RatingModel,
     RefreshTokenModel,
     RoleModel,
+    TenantModel,
     UserAddressModel,
     UserModel,
     UserRoleModel,
@@ -36,6 +37,7 @@ import { UserRepository } from './user/user.repository';
 @Module({
     imports: [
         SequelizeModule.forFeature([
+            TenantModel,
             ProductModel,
             CartModel,
             CartProductModel,

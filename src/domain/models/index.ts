@@ -2,6 +2,7 @@ export { BrandModel } from './brand.model';
 export { CartProductModel } from './cart-product.model';
 export { CartModel } from './cart.model';
 export { CategoryModel } from './category-model';
+export { TenantModel } from './tenant.model';
 export {
     ILoginHistoryCreationAttributes,
     LoginHistoryModel,

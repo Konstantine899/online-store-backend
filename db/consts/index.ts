@@ -2,6 +2,7 @@
  * Database table names constants
  */
 export const TABLE_NAMES = {
+    TENANT: 'tenant',
     PRODUCT: 'product',
     PRODUCT_PROPERTY: 'product-property',
     RATING: 'rating',
@@ -34,6 +35,7 @@ export const FOREIGN_KEYS = {
 
 // Backward compatibility exports
 export const {
+    TENANT,
     PRODUCT,
     PRODUCT_PROPERTY,
     RATING,

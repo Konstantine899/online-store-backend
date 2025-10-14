@@ -12,7 +12,7 @@ class RefreshToken extends sequelize_1.Model {
     }
 }
 function defineRefreshToken(sequelize) {
-    RefreshToken.init({
+    const attributes = {
         id: {
             type: sequelize_1.DataTypes.INTEGER,
             primaryKey: true,
@@ -44,7 +44,8 @@ function defineRefreshToken(sequelize) {
             type: sequelize_1.DataTypes.DATE,
             allowNull: false,
         },
-    }, {
+    };
+    RefreshToken.init(attributes, {
         sequelize,
         modelName: consts_1.TABLE_NAMES.REFRESH_TOKEN,
         tableName: consts_1.TABLE_NAMES.REFRESH_TOKEN,

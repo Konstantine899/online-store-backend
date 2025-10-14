@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import {
     BelongsTo,
     BelongsToMany,
@@ -8,14 +9,13 @@ import {
     Model,
     Table,
 } from 'sequelize-typescript';
-import { Op } from 'sequelize';
-import { CategoryModel } from './category-model';
 import { BrandModel } from './brand.model';
-import { ProductPropertyModel } from './product-property.model';
 import { CartProductModel } from './cart-product.model';
 import { CartModel } from './cart.model';
-import { UserModel } from './user.model';
+import { CategoryModel } from './category-model';
+import { ProductPropertyModel } from './product-property.model';
 import { RatingModel } from './rating.model';
+import { UserModel } from './user.model';
 
 interface IProductCreationAttributes {
     name: string;
@@ -23,6 +23,7 @@ interface IProductCreationAttributes {
     image: string;
     category_id: number;
     brand_id: number;
+    tenant_id?: number;
     slug?: string;
     description?: string;
     isActive?: boolean;
@@ -43,6 +44,7 @@ interface IProduct {
     category: CategoryModel;
     brand_id: number;
     brand: BrandModel;
+    tenant_id: number;
     properties: ProductPropertyModel[];
     baskets: CartModel[];
     users: UserModel[];
@@ -211,6 +213,13 @@ export class ProductModel
         },
     })
     stock!: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        comment: 'Tenant ID for multi-tenant isolation',
+    })
+    tenant_id!: number;
 
     @ForeignKey(() => CategoryModel)
     @Column({
