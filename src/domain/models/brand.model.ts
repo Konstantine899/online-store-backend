@@ -1,3 +1,4 @@
+import { CategoryModel } from '@app/domain/models/category-model';
 import {
     BelongsTo,
     Column,
@@ -8,11 +9,11 @@ import {
     Table,
 } from 'sequelize-typescript';
 import { ProductModel } from './product.model';
-import { CategoryModel } from '@app/domain/models/category-model';
 
 interface ICreateBrandAttributes {
     name: string;
     category_id: number;
+    tenant_id?: number;
     slug?: string;
     description?: string;
     isActive?: boolean;
@@ -27,6 +28,7 @@ interface IBrandModel {
     isActive: boolean;
     logo?: string;
     category_id: number;
+    tenant_id: number;
     category: CategoryModel;
     products: ProductModel[];
     productsCount?: number;
@@ -165,6 +167,13 @@ export class BrandModel
         },
     })
     logo?: string;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        comment: 'Tenant ID for multi-tenant isolation',
+    })
+    tenant_id!: number;
 
     @HasMany(() => ProductModel, {
         foreignKey: 'brand_id',
