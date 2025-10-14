@@ -1,6 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
 import { UserAddressModel } from '@app/domain/models';
+import { TenantContext } from '@app/infrastructure/common/context';
 import {
     CreateUserAddressDto,
     UpdateUserAddressDto,
@@ -10,6 +9,8 @@ import {
     GetUserAddressResponse,
     UpdateUserAddressResponse,
 } from '@app/infrastructure/responses';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 import { Transaction } from 'sequelize';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class UserAddressRepository {
     constructor(
         @InjectModel(UserAddressModel)
         private readonly userAddressModel: typeof UserAddressModel,
+        private readonly tenantContext: TenantContext,
     ) {}
 
     private pickAllowedFromCreate(dto: CreateUserAddressDto) {
@@ -73,6 +75,7 @@ export class UserAddressRepository {
         dto: CreateUserAddressDto,
         trx?: Transaction,
     ): Promise<CreateUserAddressResponse> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
         const allowed = this.pickAllowedFromCreate(dto);
         const address = await this.userAddressModel.create(
             {
@@ -80,6 +83,7 @@ export class UserAddressRepository {
                 ...allowed,
                 // Используем дефолтное значение, если country не передано
                 country: allowed.country || 'Россия',
+                tenant_id: tenantId,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             { transaction: trx },
         );
@@ -90,6 +94,7 @@ export class UserAddressRepository {
         userId: number,
         trx?: Transaction,
     ): Promise<GetUserAddressResponse[]> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
         return this.userAddressModel.findAll({
             attributes: [
                 'id',
@@ -103,7 +108,7 @@ export class UserAddressRepository {
                 'country',
                 'is_default',
             ],
-            where: { user_id: userId },
+            where: { user_id: userId, tenant_id: tenantId },
             order: [
                 ['is_default', 'DESC'],
                 ['created_at', 'ASC'],
@@ -117,6 +122,8 @@ export class UserAddressRepository {
         id: number,
         trx?: Transaction,
     ): Promise<GetUserAddressResponse | null> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+
         return this.userAddressModel.findOne({
             attributes: [
                 'id',
@@ -130,7 +137,7 @@ export class UserAddressRepository {
                 'country',
                 'is_default',
             ],
-            where: { id, user_id: userId },
+            where: { id, user_id: userId, tenant_id: tenantId },
             transaction: trx,
         }) as Promise<GetUserAddressResponse | null>;
     }
@@ -141,11 +148,12 @@ export class UserAddressRepository {
         dto: UpdateUserAddressDto,
         trx?: Transaction,
     ): Promise<UpdateUserAddressResponse | null> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
         const allowed = this.pickAllowedFromUpdate(
             dto,
         ) as Partial<UserAddressModel>;
         const [affected] = await this.userAddressModel.update(allowed, {
-            where: { id, user_id: userId },
+            where: { id, user_id: userId, tenant_id: tenantId },
             limit: 1,
             transaction: trx,
         });
@@ -161,9 +169,13 @@ export class UserAddressRepository {
         userId: number,
         trx?: Transaction,
     ): Promise<void> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
         await this.userAddressModel.update(
             { is_default: false },
-            { where: { user_id: userId }, transaction: trx },
+            {
+                where: { user_id: userId, tenant_id: tenantId },
+                transaction: trx,
+            },
         );
     }
 
@@ -172,9 +184,15 @@ export class UserAddressRepository {
         id: number,
         trx?: Transaction,
     ): Promise<UpdateUserAddressResponse | null> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+
         const [marked] = await this.userAddressModel.update(
             { is_default: true },
-            { where: { id, user_id: userId }, limit: 1, transaction: trx },
+            {
+                where: { id, user_id: userId, tenant_id: tenantId },
+                limit: 1,
+                transaction: trx,
+            },
         );
         if (!marked) return null;
         return (await this.findOne(
@@ -198,8 +216,10 @@ export class UserAddressRepository {
         id: number,
         trx?: Transaction,
     ): Promise<number> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+
         return this.userAddressModel.destroy({
-            where: { id, user_id: userId },
+            where: { id, user_id: userId, tenant_id: tenantId },
             transaction: trx,
         });
     }

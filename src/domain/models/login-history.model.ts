@@ -1,10 +1,10 @@
 import {
-    Table,
+    BelongsTo,
     Column,
-    Model,
     DataType,
     ForeignKey,
-    BelongsTo,
+    Model,
+    Table,
 } from 'sequelize-typescript';
 import { UserModel } from './user.model';
 
@@ -16,6 +16,7 @@ export interface ILoginHistoryModel {
     success: boolean;
     failureReason: string | null;
     loginAt: Date;
+    tenant_id?: number;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -27,6 +28,7 @@ export interface ILoginHistoryCreationAttributes {
     success?: boolean;
     failureReason?: string | null;
     loginAt?: Date;
+    tenant_id?: number;
 }
 
 @Table({
@@ -89,6 +91,14 @@ export class LoginHistoryModel
         field: 'login_at',
     })
     declare loginAt: Date;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'tenant_id',
+        comment: 'Tenant ID for multi-tenant isolation',
+    })
+    declare tenant_id?: number;
 
     @Column({
         type: DataType.DATE,
