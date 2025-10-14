@@ -3,17 +3,17 @@
  * CRITICAL: Multi-tenant data isolation verification
  */
 
-import { INestApplication } from '@nestjs/common';
-import { setupTestApp } from '../../setup/app';
 import { TenantContext } from '@app/infrastructure/common/context';
-import { ProductRepository } from '@app/infrastructure/repositories/product/product.repository';
-import { CategoryRepository } from '@app/infrastructure/repositories/category/category.repository';
 import { BrandRepository } from '@app/infrastructure/repositories/brand/brand.repository';
-import { OrderRepository } from '@app/infrastructure/repositories/order/order.repository';
 import { CartRepository } from '@app/infrastructure/repositories/cart/cart.repository';
+import { CategoryRepository } from '@app/infrastructure/repositories/category/category.repository';
+import { LoginHistoryRepository } from '@app/infrastructure/repositories/login-history/login-history.repository';
+import { OrderRepository } from '@app/infrastructure/repositories/order/order.repository';
+import { ProductRepository } from '@app/infrastructure/repositories/product/product.repository';
 import { RatingRepository } from '@app/infrastructure/repositories/rating/rating.repository';
 import { UserAddressRepository } from '@app/infrastructure/repositories/user-address/user-address.repository';
-import { LoginHistoryRepository } from '@app/infrastructure/repositories/login-history/login-history.repository';
+import { INestApplication } from '@nestjs/common';
+import { setupTestApp } from '../../setup/app';
 
 describe('SAAS-001-13: Tenant Isolation (Integration)', () => {
     let app: INestApplication;
@@ -292,4 +292,3 @@ describe('SAAS-001-13: Tenant Isolation (Integration)', () => {
         });
     });
 });
-

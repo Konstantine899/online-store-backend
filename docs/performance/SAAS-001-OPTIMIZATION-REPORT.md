@@ -1,7 +1,7 @@
 # SAAS-001: Performance Optimization Report
 
-**Date:** 2025-10-14  
-**Status:** ✅ Complete (95%)  
+**Date:** 2025-10-14
+**Status:** ✅ Complete (95%)
 **Author:** AI Assistant
 
 ---
@@ -18,16 +18,17 @@
 
 **Migration:** `db/migrations/20251014180000-add-performance-indexes-tenant.ts`
 
-| Индекс | Таблица | Колонки | Назначение | Ожидаемый Impact |
-|--------|---------|---------|------------|------------------|
-| `idx_login_history_tenant_id_ip_login_at` | `login_history` | `tenant_id, ip_address, login_at` | Security: recent logins by IP | **95% faster** |
-| `idx_login_history_tenant_id_success_login_at` | `login_history` | `tenant_id, success, login_at` | Brute-force detection | **90% faster** |
-| `idx_product_tenant_id_name` | `product` | `tenant_id, name` | Product sorting by name | **60% faster** |
-| `idx_order_tenant_id_created_at` | `order` | `tenant_id, created_at` | Order date filtering | **70% faster** |
+| Индекс                                         | Таблица         | Колонки                           | Назначение                    | Ожидаемый Impact |
+| ---------------------------------------------- | --------------- | --------------------------------- | ----------------------------- | ---------------- |
+| `idx_login_history_tenant_id_ip_login_at`      | `login_history` | `tenant_id, ip_address, login_at` | Security: recent logins by IP | **95% faster**   |
+| `idx_login_history_tenant_id_success_login_at` | `login_history` | `tenant_id, success, login_at`    | Brute-force detection         | **90% faster**   |
+| `idx_product_tenant_id_name`                   | `product`       | `tenant_id, name`                 | Product sorting by name       | **60% faster**   |
+| `idx_order_tenant_id_created_at`               | `order`         | `tenant_id, created_at`           | Order date filtering          | **70% faster**   |
 
 ### 1.2. Существующие индексы (из предыдущих миграций)
 
 **Catalog tables:**
+
 - `idx_product_tenant_id` - базовая tenant изоляция
 - `idx_product_tenant_id_id` - поиск по ID + tenant
 - `idx_product_tenant_id_category_id` - фильтрация по категории
@@ -36,20 +37,23 @@
 - `idx_brand_tenant_id`, `idx_brand_tenant_id_id`, `idx_brand_tenant_id_category_id`
 
 **Order tables:**
+
 - `idx_cart_tenant_id`, `idx_cart_tenant_id_user_id`
 - `idx_order_tenant_id`, `idx_order_tenant_id_user_id`, `idx_order_tenant_id_status`
 - `idx_rating_tenant_id`, `idx_rating_tenant_id_product_id`, `idx_rating_tenant_id_user_id`
 
 **User tables:**
+
 - `idx_user_address_tenant_id`, `idx_user_address_tenant_id_user_id`
 - `idx_login_history_tenant_id`, `idx_login_history_tenant_id_user_id`
 
 ### 1.3. Impact Assessment
 
 **Before:**
+
 ```sql
-EXPLAIN SELECT * FROM login_history 
-WHERE tenant_id = 1 AND ip_address = '192.168.1.1' 
+EXPLAIN SELECT * FROM login_history
+WHERE tenant_id = 1 AND ip_address = '192.168.1.1'
 AND login_at > NOW() - INTERVAL 1 HOUR;
 
 -- type: ALL (full table scan)
@@ -58,9 +62,10 @@ AND login_at > NOW() - INTERVAL 1 HOUR;
 ```
 
 **After:**
+
 ```sql
-EXPLAIN SELECT * FROM login_history 
-WHERE tenant_id = 1 AND ip_address = '192.168.1.1' 
+EXPLAIN SELECT * FROM login_history
+WHERE tenant_id = 1 AND ip_address = '192.168.1.1'
 AND login_at > NOW() - INTERVAL 1 HOUR;
 
 -- type: range
@@ -76,27 +81,32 @@ AND login_at > NOW() - INTERVAL 1 HOUR;
 ### 2.1. Analyzed Repositories
 
 **✅ OrderRepository:** No issues found
+
 - All methods use proper eager loading with `include: [OrderItemModel]`
 - Methods: `adminFindOrderListUser`, `adminFindOrderUser`, `findUserAndHisOrders`, `findOrder`, `userFindOrderList`, `userFindOrder`, `createOrder`
 
 **⚠️ ProductRepository:** Optimization applied
+
 - **Issue:** List methods loaded ALL fields (including unnecessary `description`, `stock`, `created_at`, `updated_at`)
 - **Solution:** Added `attributes` array to limit fields to only required ones
 - **Impact:** ~40% reduction in data transfer, faster serialization
 
 **✅ CartRepository:** No issues found
+
 - All methods use proper eager loading with `include: [ProductModel]`
 - Attribute limiting already in place for cart operations
 
 ### 2.2. ProductRepository Optimization
 
 **Optimized Methods:**
+
 1. `findListProduct` (line 60)
 2. `findListProductByBrandId` (line 89)
 3. `findListProductByCategoryId` (line 118)
 4. `findAllByBrandIdAndCategoryId` (line 147)
 
 **Before:**
+
 ```typescript
 return this.productModel.findAndCountAll({
     where: { tenant_id: tenantId },
@@ -105,18 +115,25 @@ return this.productModel.findAndCountAll({
 ```
 
 **After:**
+
 ```typescript
 return this.productModel.findAndCountAll({
     where: { tenant_id: tenantId },
     // SAAS-001-C2: Limit fields for performance
     attributes: [
-        'id', 'name', 'price', 'category_id', 
-        'brand_id', 'image', 'tenant_id'
+        'id',
+        'name',
+        'price',
+        'category_id',
+        'brand_id',
+        'image',
+        'tenant_id',
     ],
 });
 ```
 
 **Impact:**
+
 - Data transfer: **-40%** (7 fields instead of ~15)
 - JSON serialization: **faster** (fewer fields to process)
 - Client-side parsing: **faster**
@@ -130,15 +147,17 @@ return this.productModel.findAndCountAll({
 ### 3.1. Planned Queries for Analysis
 
 **Product filtering (tenant + category):**
+
 ```sql
-EXPLAIN SELECT * FROM product 
-WHERE tenant_id = 1 AND category_id = 5 
+EXPLAIN SELECT * FROM product
+WHERE tenant_id = 1 AND category_id = 5
 LIMIT 10;
 
 -- Expected: type=ref, key=idx_product_tenant_id_category_id, rows < 50
 ```
 
 **Order listing (tenant + status + date):**
+
 ```sql
 EXPLAIN SELECT o.* FROM `order` o
 WHERE o.tenant_id = 1 AND o.status = 'pending'
@@ -148,6 +167,7 @@ ORDER BY o.created_at DESC LIMIT 10;
 ```
 
 **Security query (recent logins by IP):**
+
 ```sql
 EXPLAIN SELECT * FROM login_history
 WHERE tenant_id = 1 AND ip_address = '192.168.1.1'
@@ -160,11 +180,13 @@ ORDER BY login_at DESC;
 ### 3.2. EXPLAIN Interpretation Guide
 
 **GOOD indicators:**
+
 - ✅ `type: const, eq_ref, ref` - efficient index usage
 - ✅ `rows: < 100` - small result set
 - ✅ `key: idx_...` - index is being used
 
 **BAD indicators:**
+
 - ❌ `type: ALL` - full table scan (add index!)
 - ❌ `rows: > 10000` - too many rows scanned
 - ❌ `key: NULL` - no index used
@@ -175,12 +197,12 @@ ORDER BY login_at DESC;
 
 ### 4.1. Expected Improvements
 
-| Operation | Before | After | Improvement |
-|-----------|--------|-------|-------------|
-| LoginHistory security queries | ~500ms | ~25ms | **95% faster** |
-| Product list pagination | ~150ms | ~60ms | **60% faster** |
-| Order date filtering | ~200ms | ~60ms | **70% faster** |
-| Product data transfer | 100% | 60% | **-40% bandwidth** |
+| Operation                     | Before | After | Improvement        |
+| ----------------------------- | ------ | ----- | ------------------ |
+| LoginHistory security queries | ~500ms | ~25ms | **95% faster**     |
+| Product list pagination       | ~150ms | ~60ms | **60% faster**     |
+| Order date filtering          | ~200ms | ~60ms | **70% faster**     |
+| Product data transfer         | 100%   | 60%   | **-40% bandwidth** |
 
 ### 4.2. Test Coverage
 
@@ -235,6 +257,7 @@ git revert <commit-hash>
 ### 6.3. Monitoring Queries
 
 **Check index usage:**
+
 ```sql
 SHOW INDEX FROM product WHERE Key_name LIKE 'idx_product_tenant_id%';
 SHOW INDEX FROM login_history WHERE Key_name LIKE 'idx_login_history_tenant_id%';
@@ -242,14 +265,15 @@ SHOW INDEX FROM `order` WHERE Key_name LIKE 'idx_order_tenant_id%';
 ```
 
 **Check slow queries:**
+
 ```sql
 -- Enable slow query log
 SET GLOBAL slow_query_log = 'ON';
 SET GLOBAL long_query_time = 0.1; -- 100ms threshold
 
 -- Analyze slow queries
-SELECT * FROM mysql.slow_log 
-ORDER BY start_time DESC 
+SELECT * FROM mysql.slow_log
+ORDER BY start_time DESC
 LIMIT 10;
 ```
 
@@ -268,10 +292,10 @@ LIMIT 10;
 ---
 
 **Next Steps:**
+
 1. Deploy to staging environment
 2. Run performance tests with realistic dataset
 3. Monitor slow query log for 2 weeks
 4. Adjust indexes if needed
 
 **SAAS-001: COMPLETE** 🎉
-

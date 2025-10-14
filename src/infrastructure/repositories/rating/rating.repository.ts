@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
 import { RatingModel } from '@app/domain/models';
-import { RatingResponse } from '@app/infrastructure/responses';
 import { IRatingRepository } from '@app/domain/repositories';
 import { TenantContext } from '@app/infrastructure/common/context';
+import { RatingResponse } from '@app/infrastructure/responses';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 
 @Injectable()
 export class RatingRepository implements IRatingRepository {
