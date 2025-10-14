@@ -90,7 +90,7 @@ const migration: Migration = {
                 console.log(
                     `Created index ${index.name} on ${index.table}(${index.columns.join(',')})`,
                 );
-            } catch (error) {
+            } catch {
                 console.log(
                     `Index ${index.name} already exists on ${index.table} - skipping`,
                 );
