@@ -1,27 +1,23 @@
-import {
-    MiddlewareConsumer,
-    Module,
-    NestModule,
-} from '@nestjs/common';
-import { SequelizeModule } from '@nestjs/sequelize';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
-import { EventEmitterModule } from '@nestjs/event-emitter';
-import { BruteforceGuard } from './infrastructure/common/guards';
-import { TenantContext } from './infrastructure/common/context';
-import { TenantMiddleware } from './infrastructure/common/middleware';
 import { APP_GUARD } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { TenantContext } from './infrastructure/common/context';
+import { BruteforceGuard } from './infrastructure/common/guards';
+import { TenantMiddleware } from './infrastructure/common/middleware';
 
-import * as process from 'process';
-import * as Joi from 'joi';
 import {
     SequelizeConfigService,
     databaseConfig,
 } from '@app/infrastructure/config/sequelize';
+import * as Joi from 'joi';
+import * as process from 'process';
 import { ControllersModule } from './infrastructure/controllers/controllers.module';
-import { ServicesModule } from './infrastructure/services/services.module';
-import { RepositoriesModule } from './infrastructure/repositories/repositories.module';
 import { HealthModule } from './infrastructure/controllers/health/health.module';
+import { RepositoriesModule } from './infrastructure/repositories/repositories.module';
+import { ServicesModule } from './infrastructure/services/services.module';
 
 @Module({
     imports: [
@@ -147,17 +143,17 @@ import { HealthModule } from './infrastructure/controllers/health/health.module'
 })
 export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer): void {
-        // TODO: Apply TenantMiddleware when multi-tenancy is fully ready
-        // For now, keeping it disabled to avoid breaking existing functionality
-        //
-        // consumer
-        //     .apply(TenantMiddleware)
-        //     .exclude(
-        //         '/health',
-        //         '/online-store/health',
-        //         '/online-store/docs(.*)',
-        //         '/online-store/static(.*)',
-        //     )
-        //     .forRoutes('*');
+        // SAAS-001: Multi-tenancy middleware for tenant isolation
+        // Extracts tenant_id from x-tenant-id header or subdomain
+        // Excluded paths: health checks, API docs, static assets
+        consumer
+            .apply(TenantMiddleware)
+            .exclude(
+                '/health',
+                '/online-store/health',
+                '/online-store/docs(.*)',
+                '/online-store/static(.*)',
+            )
+            .forRoutes('*');
     }
 }
