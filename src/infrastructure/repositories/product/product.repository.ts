@@ -70,6 +70,16 @@ export class ProductRepository implements IProductRepository {
         }
         return this.productModel.findAndCountAll({
             where,
+            // SAAS-001-C2: Ограничиваем поля для оптимизации
+            attributes: [
+                'id',
+                'name',
+                'price',
+                'category_id',
+                'brand_id',
+                'image',
+                'tenant_id',
+            ],
             order: sort ? [['price', sort.toUpperCase()]] : undefined,
             limit: limit ? limit : 5,
             offset,
@@ -89,6 +99,16 @@ export class ProductRepository implements IProductRepository {
                 brand_id: brandId,
                 tenant_id: tenantId,
             },
+            // SAAS-001-C2: Ограничиваем поля для оптимизации
+            attributes: [
+                'id',
+                'name',
+                'price',
+                'category_id',
+                'brand_id',
+                'image',
+                'tenant_id',
+            ],
             order: sort ? [['price', sort.toUpperCase()]] : undefined,
             limit: limit ? limit : 5,
             offset,
@@ -108,6 +128,16 @@ export class ProductRepository implements IProductRepository {
                 category_id: categoryId,
                 tenant_id: tenantId,
             },
+            // SAAS-001-C2: Ограничиваем поля для оптимизации
+            attributes: [
+                'id',
+                'name',
+                'price',
+                'category_id',
+                'brand_id',
+                'image',
+                'tenant_id',
+            ],
             order: sort ? [['price', sort.toUpperCase()]] : undefined,
             limit: limit ? limit : 5,
             offset,
@@ -129,6 +159,16 @@ export class ProductRepository implements IProductRepository {
                 category_id: categoryId,
                 tenant_id: tenantId,
             },
+            // SAAS-001-C2: Ограничиваем поля для оптимизации
+            attributes: [
+                'id',
+                'name',
+                'price',
+                'category_id',
+                'brand_id',
+                'image',
+                'tenant_id',
+            ],
             order: sort ? [['price', sort.toUpperCase()]] : undefined,
             limit: limit ? limit : 5,
             offset,
