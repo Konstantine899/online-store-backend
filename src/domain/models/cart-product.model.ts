@@ -1,12 +1,12 @@
 import {
     BelongsTo,
     Column,
+    CreatedAt,
     DataType,
     ForeignKey,
     Model,
     PrimaryKey,
     Table,
-    CreatedAt,
     UpdatedAt,
 } from 'sequelize-typescript';
 import { CartModel } from './cart.model';
@@ -15,6 +15,7 @@ import { ProductModel } from './product.model';
 interface ICartProductModel {
     id: number;
     quantity: number;
+    price: number;
     cart_id: number;
     product_id: number;
     cart: CartModel;
@@ -25,6 +26,7 @@ interface ICartProductModel {
 
 interface ICartProductCreationAttributes {
     quantity: number;
+    price: number;
     cart_id: number;
     product_id: number;
 }
@@ -72,6 +74,14 @@ export class CartProductModel extends Model<
         defaultValue: 1,
     })
     quantity!: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+        comment: 'Product price snapshot at the time of adding to cart',
+    })
+    price!: number;
 
     @ForeignKey(() => CartModel)
     @Column({

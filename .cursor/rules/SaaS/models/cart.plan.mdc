@@ -13,15 +13,13 @@ constraints: - no public API changes without explicit approval - operate strictl
 context:
 goal: Shopping cart with tenant isolation and guest support
 
-# DEFAULT PRE-COMMIT WORKFLOW для всех cart задач
-
-default_pre_commit_workflow: "СТАНДАРТНЫЙ (business logic: cart/checkout)"
-default_pre_commit_steps:
-
-- "«Ревью» → cart logic, pricing calculations, concurrency handling"
-- "«Автофикс» → linter/prettier"
-- "Тесты: cart integration tests, race condition tests"
-- "«Коммит» → feat(cart): <TASK_ID> complete"
+# PRE-COMMIT WORKFLOW POLICY
+#
+# Каждая задача ДОЛЖНА иметь явные pre_commit_workflow и pre_commit_steps.
+# Workflow классифицируется по критичности:
+# - КРИТИЧНЫЙ: auth, security, payments, guards, промокоды (деньги)
+# - ОБЫЧНЫЙ: business logic, CRUD, API endpoints
+# - УПРОЩЕННЫЙ: рефакторинг, документация, мелкие изменения
 
 tasks:
 
@@ -32,35 +30,47 @@ tasks:
   branch: "feature/cart/SAAS-004/cart-controller-roles"
   files_scope:
     - ".cursor/rules/models/cart-simple.mdc"
-    - "src/infrastructure/controllers/cart/\*\*"
-      steps:
+    - "src/infrastructure/controllers/cart/**"
+  steps:
     - добавить секцию контроллера в cart-simple.mdc
     - создать CartController с импортами RoleGuard и Roles
     - ввести константы ролей (ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES)
     - реализовать методы с правильными ролями: - управление корзиной: CUSTOMER_ROLES - просмотр корзин пользователей: STAFF_ROLES - аналитика корзин: MANAGER_ROLES - управление промокодами: MANAGER_ROLES
-      dod:
+  dod:
     - контроллер создан с полной системой ролей
     - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
     - тенантская изоляция ролей обеспечена
-      gate:
+  pre_commit_workflow: "КРИТИЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → RBAC logic, role hierarchy, tenant isolation"
+    - "«Автофикс» → linter/prettier"
+    - "Проверка: no existing tests broken"
+    - "«Коммит» → feat(cart): SAAS-004-00 complete"
+  gate:
     - require: "Одобряю SAAS-004-00"
 
 - id: SAAS-004-01
   title: Создать миграции для таблиц carts и cart_items
   branch: "feature/cart/SAAS-004/cart-core-implementation"
   files_scope:
-    - "db/migrations/\*\*"
+    - "db/migrations/**"
     - "src/domain/models/cart.ts"
     - "src/domain/models/cart-product.ts"
-      steps:
+  steps:
     - создать таблицы carts и cart_items с tenant_id
     - добавить индексы для производительности
     - обновить CartModel и CartProductModel с tenant_id
-      dod:
+  dod:
     - миграция up/down успешна
     - Cart модели содержат tenant_id
     - индексы созданы для производительности
-      gate:
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → migration safety, rollback correctness"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: db:migrate && db:migrate:undo"
+    - "«Коммит» → feat(cart): SAAS-004-01 complete"
+  gate:
     - require: "Одобряю SAAS-004-01"
 
 - id: SAAS-004-02
@@ -69,51 +79,68 @@ tasks:
   files_scope:
     - "src/domain/models/cart.ts"
     - "src/domain/models/cart-product.ts"
-      steps:
+  steps:
     - добавить методы для работы с корзиной
     - реализовать автоматический пересчет сумм
     - добавить методы для управления товарами в корзине
-      dod:
+  dod:
     - все методы корзины реализованы
     - пересчет сумм работает корректно
     - управление товарами функционально
-      gate:
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → model methods, price calculations"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: model unit tests"
+    - "«Коммит» → feat(cart): SAAS-004-02 complete"
+  gate:
     - require: "Одобряю SAAS-004-02"
 
 - id: SAAS-004-03
   title: Создать CartService с основными методами
   branch: "feature/cart/SAAS-004/cart-service-methods"
   files_scope:
-    - "src/infrastructure/services/cart/\*\*"
-    - "src/domain/services/\*\*"
-      steps:
+    - "src/infrastructure/services/cart/**"
+    - "src/domain/services/**"
+  steps:
     - добавить методы для добавления/удаления товаров
     - реализовать поддержку гостевых сессий
     - добавить методы для применения промокодов
     - добавить методы для очистки корзины
-      dod:
+  dod:
     - все методы сервиса реализованы
     - гостевая корзина работает
     - применение промокодов функционально
-      gate:
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → business logic, guest sessions, race conditions"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: service unit tests"
+    - "«Коммит» → feat(cart): SAAS-004-03 complete"
+  gate:
     - require: "Одобряю SAAS-004-03"
 
 - id: SAAS-004-04
   title: Добавить DTO классы с валидацией
   branch: "feature/cart/SAAS-004/cart-dto-validation"
   files_scope:
-    - "src/infrastructure/dto/cart/\*\*"
-    - "src/domain/dto/\*\*"
-      steps:
+    - "src/infrastructure/dto/cart/**"
+    - "src/domain/dto/**"
+  steps:
     - создать AddToCartDto для добавления товаров
     - создать UpdateCartItemDto для обновления количества
     - создать ApplyCouponDto для применения промокодов
     - добавить валидаторы с русскими сообщениями
-      dod:
+  dod:
     - DTO содержат все необходимые поля
     - валидация работает с русскими сообщениями
     - CustomValidationPipe обрабатывает все DTO
-      gate:
+  pre_commit_workflow: "УПРОЩЕННЫЙ"
+  pre_commit_steps:
+    - "«Автофикс» → linter/prettier"
+    - "Проверка: validation messages in Russian"
+    - "«Коммит» → feat(cart): SAAS-004-04 complete"
+  gate:
     - require: "Одобряю SAAS-004-04"
 
 # Фаза 2: API и интеграции
@@ -122,70 +149,93 @@ tasks:
   title: Создать CartController с API endpoints
   branch: "feature/cart/SAAS-004/cart-controller-endpoints"
   files_scope:
-    - "src/infrastructure/controllers/cart/\*\*"
-    - "src/infrastructure/common/decorators/swagger/cart/\*\*"
-      steps:
+    - "src/infrastructure/controllers/cart/**"
+    - "src/infrastructure/common/decorators/swagger/cart/**"
+  steps:
     - добавить эндпоинты для управления корзиной (GET, POST, PUT, DELETE)
     - добавить эндпоинты для применения промокодов
     - добавить эндпоинты для очистки корзины
     - добавить Swagger документацию
-      dod:
+  dod:
     - все эндпоинты работают корректно
     - Swagger документация обновлена
     - Guards и роли применены правильно
-      gate:
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → API contracts, Swagger docs, guards"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: controller integration tests"
+    - "«Коммит» → feat(cart): SAAS-004-05 complete"
+  gate:
     - require: "Одобряю SAAS-004-05"
 
 - id: SAAS-004-06
   title: Интегрировать с промокодами (базовая версия)
   branch: "feature/cart/SAAS-004/cart-coupon-integration"
   files_scope:
-    - "src/infrastructure/services/cart/\*\*"
-    - "src/infrastructure/services/coupon/\*\*"
-      steps:
+    - "src/infrastructure/services/cart/**"
+    - "src/infrastructure/services/coupon/**"
+  steps:
     - реализовать базовое применение промокодов
     - добавить валидацию промокодов
     - добавить пересчет сумм с учетом скидок
-      dod:
+  dod:
     - применение промокодов работает
     - валидация промокодов корректна
     - пересчет сумм с скидками функционален
-      gate:
+  pre_commit_workflow: "КРИТИЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → promo logic, price calculations, fraud prevention"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: promo integration tests, edge cases"
+    - "«Коммит» → feat(cart): SAAS-004-06 complete"
+  gate:
     - require: "Одобряю SAAS-004-06"
 
 - id: SAAS-004-07
   title: Добавить обработку ошибок и валидацию
   branch: "feature/cart/SAAS-004/cart-error-handling"
   files_scope:
-    - "src/infrastructure/common/filters/\*\*"
-    - "src/infrastructure/common/pipes/\*\*"
-      steps:
+    - "src/infrastructure/common/filters/**"
+    - "src/infrastructure/common/pipes/**"
+  steps:
     - добавить обработку ошибок для корзины
     - улучшить валидацию с русскими сообщениями
     - добавить логирование ошибок
-      dod:
+  dod:
     - ошибки обрабатываются корректно
     - сообщения на русском языке
     - логирование работает
-      gate:
+  pre_commit_workflow: "УПРОЩЕННЫЙ"
+  pre_commit_steps:
+    - "«Автофикс» → linter/prettier"
+    - "Проверка: error messages in Russian"
+    - "«Коммит» → feat(cart): SAAS-004-07 complete"
+  gate:
     - require: "Одобряю SAAS-004-07"
 
 - id: SAAS-004-08
   title: Создать тесты для API корзины
   branch: "feature/cart/SAAS-004/cart-api-tests"
   files_scope:
-    - "src/infrastructure/controllers/cart/tests/\*\*"
-    - "src/infrastructure/services/cart/tests/\*\*"
-    - "src/infrastructure/repositories/cart/tests/\*\*"
-      steps:
+    - "src/infrastructure/controllers/cart/tests/**"
+    - "src/infrastructure/services/cart/tests/**"
+    - "src/infrastructure/repositories/cart/tests/**"
+  steps:
     - написать integration тесты для корзины
     - написать unit тесты для сервисов
     - добавить негативные тесты
-      dod:
+  dod:
     - все тесты проходят
     - покрытие критичных модулей ≥80%
     - негативные сценарии покрыты
-      gate:
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → test coverage, edge cases"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: npm run test"
+    - "«Коммит» → test(cart): SAAS-004-08 complete"
+  gate:
     - require: "Одобряю SAAS-004-08"
 
 # Фаза 3: Тестирование и качество
@@ -194,33 +244,44 @@ tasks:
   title: Написать unit тесты для сервисов
   branch: "feature/cart/SAAS-004/cart-unit-tests"
   files_scope:
-    - "src/infrastructure/services/cart/tests/\*\*"
-    - "src/infrastructure/repositories/cart/tests/\*\*"
-      steps:
+    - "src/infrastructure/services/cart/tests/**"
+    - "src/infrastructure/repositories/cart/tests/**"
+  steps:
     - покрыть CartService методами
     - покрыть методы управления товарами
     - покрыть методы применения промокодов
-      dod:
+  dod:
     - unit тесты покрывают все методы
     - тесты стабильны и быстры
     - моки настроены корректно
-      gate:
+  pre_commit_workflow: "УПРОЩЕННЫЙ"
+  pre_commit_steps:
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: npm run test:unit"
+    - "«Коммит» → test(cart): SAAS-004-09 complete"
+  gate:
     - require: "Одобряю SAAS-004-09"
 
 - id: SAAS-004-10
   title: Написать integration тесты для API
   branch: "feature/cart/SAAS-004/cart-integration-tests"
   files_scope:
-    - "src/infrastructure/controllers/cart/tests/\*\*"
-      steps:
+    - "src/infrastructure/controllers/cart/tests/**"
+  steps:
     - покрыть все эндпоинты корзины
     - покрыть эндпоинты промокодов
     - покрыть тенантскую изоляцию
-      dod:
+  dod:
     - integration тесты покрывают все эндпоинты
     - тесты изолированы и детерминированы
     - негативные сценарии покрыты
-      gate:
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → test isolation, tenant isolation tests"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: npm run test:integration"
+    - "«Коммит» → test(cart): SAAS-004-10 complete"
+  gate:
     - require: "Одобряю SAAS-004-10"
 
 # Фаза 4: Оптимизация
@@ -229,68 +290,91 @@ tasks:
   title: Добавить кэширование корзин
   branch: "feature/cart/SAAS-004/cart-caching"
   files_scope:
-    - "src/infrastructure/services/cart/\*\*"
-    - "src/infrastructure/common/cache/\*\*"
-      steps:
+    - "src/infrastructure/services/cart/**"
+    - "src/infrastructure/common/cache/**"
+  steps:
     - реализовать кэширование корзин в Redis
     - добавить инвалидацию кэша при изменениях
     - оптимизировать производительность
-      dod:
+  dod:
     - кэширование работает корректно
     - инвалидация кэша функциональна
     - производительность улучшена
-      gate:
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → cache strategy, invalidation logic"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: cache integration tests"
+    - "«Коммит» → perf(cart): SAAS-004-11 complete"
+  gate:
     - require: "Одобряю SAAS-004-11"
 
 - id: SAAS-004-12
   title: Реализовать rate limiting
   branch: "feature/cart/SAAS-004/cart-rate-limiting"
   files_scope:
-    - "src/infrastructure/common/guards/\*\*"
-    - "src/infrastructure/controllers/cart/\*\*"
-      steps:
+    - "src/infrastructure/common/guards/**"
+    - "src/infrastructure/controllers/cart/**"
+  steps:
     - добавить BruteforceGuard для корзины
     - настроить лимиты для разных операций
     - добавить логирование блокировок
-      dod:
+  dod:
     - rate limiting работает
     - лимиты настроены корректно
     - логирование блокировок активно
-      gate:
+  pre_commit_workflow: "КРИТИЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → rate limits, security implications"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: rate limiting tests, brute-force scenarios"
+    - "«Коммит» → feat(cart): SAAS-004-12 complete"
+  gate:
     - require: "Одобряю SAAS-004-12"
 
 - id: SAAS-004-13
   title: Добавить аналитику корзины
   branch: "feature/cart/SAAS-004/cart-analytics"
   files_scope:
-    - "src/infrastructure/controllers/cart/\*\*"
-    - "src/infrastructure/services/cart/\*\*"
-      steps:
+    - "src/infrastructure/controllers/cart/**"
+    - "src/infrastructure/services/cart/**"
+  steps:
     - создать эндпоинты аналитики корзины
     - добавить метрики и дашборды
     - настроить отчеты по корзинам
-      dod:
+  dod:
     - аналитика корзины работает
     - метрики корректны
     - отчеты генерируются
-      gate:
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → analytics queries, performance"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: analytics endpoints tests"
+    - "«Коммит» → feat(cart): SAAS-004-13 complete"
+  gate:
     - require: "Одобряю SAAS-004-13"
 
 - id: SAAS-004-14
   title: Оптимизировать производительность
   branch: "feature/cart/SAAS-004/cart-performance"
   files_scope:
-    - "src/infrastructure/\*\*"
-    - "src/domain/\*\*"
-      steps:
+    - "src/infrastructure/**"
+    - "src/domain/**"
+  steps:
     - оптимизировать запросы к БД
     - рефакторить дублирующийся код
     - улучшить производительность
-      dod:
+  dod:
     - код оптимизирован
     - дублирование устранено
     - производительность улучшена
-      gate:
+  pre_commit_workflow: "УПРОЩЕННЫЙ"
+  pre_commit_steps:
+    - "«Автофикс» → linter/prettier"
+    - "Проверка: performance benchmarks"
+    - "«Коммит» → refactor(cart): SAAS-004-14 complete"
+  gate:
     - require: "Одобряю SAAS-004-14"
 
 # Дополнительные возможности
@@ -299,34 +383,46 @@ tasks:
   title: Уведомления о брошенных корзинах
   branch: "feature/cart/SAAS-004/cart-abandoned-notifications"
   files_scope:
-    - "src/infrastructure/services/cart/\*\*"
-    - "src/infrastructure/services/notification/\*\*"
-      steps:
+    - "src/infrastructure/services/cart/**"
+    - "src/infrastructure/services/notification/**"
+  steps:
     - реализовать определение брошенных корзин
     - добавить уведомления о брошенных корзинах
     - настроить автоматическую отправку напоминаний
-      dod:
+  dod:
     - определение брошенных корзин работает
     - уведомления отправляются
     - автоматические напоминания активны
-      gate:
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → abandoned cart logic, notification scheduling"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: notification integration tests"
+    - "«Коммит» → feat(cart): SAAS-004-15 complete"
+  gate:
     - require: "Одобряю SAAS-004-15"
 
 - id: SAAS-004-16
   title: Интеграция с системой промокодов
   branch: "feature/cart/SAAS-004/cart-coupon-system"
   files_scope:
-    - "src/infrastructure/services/cart/\*\*"
-    - "src/infrastructure/services/coupon/\*\*"
-      steps:
+    - "src/infrastructure/services/cart/**"
+    - "src/infrastructure/services/coupon/**"
+  steps:
     - расширить интеграцию с промокодами
     - добавить сложные правила применения
     - добавить валидацию совместимости промокодов
-      dod:
+  dod:
     - расширенная интеграция работает
     - сложные правила применяются
     - валидация совместимости корректна
-      gate:
+  pre_commit_workflow: "КРИТИЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → promo rules, stacking logic, fraud scenarios"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: complex promo scenarios, edge cases"
+    - "«Коммит» → feat(cart): SAAS-004-16 complete"
+  gate:
     - require: "Одобряю SAAS-004-16"
 
 # Unit тесты для CartRepository
@@ -337,7 +433,7 @@ tasks:
   files_scope:
     - "tests/unit/repositories/cart.repository.unit.test.ts"
     - "src/infrastructure/repositories/cart/cart.repository.ts"
-      steps:
+  steps:
     - создать файл tests/unit/repositories/cart.repository.unit.test.ts
     - настроить моки для CartModel и CartProductModel
     - написать тесты для findCart() - успешный поиск и несуществующая корзина
@@ -348,12 +444,17 @@ tasks:
     - написать тесты для removeProductFromCart() - удаление товара
     - написать тесты для clearCart() - очистка корзины
     - добавить тесты обработки ошибок для всех методов
-      dod:
+  dod:
     - покрытие branches ≥ 90%
     - покрытие functions ≥ 90%
     - покрытие lines ≥ 90%
     - все тесты проходят
     - линтеры проходят без ошибок
-      estimated_time: 4-6 часов
-      gate:
+  estimated_time: 4-6 часов
+  pre_commit_workflow: "УПРОЩЕННЫЙ"
+  pre_commit_steps:
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: npm run test:unit -- cart.repository"
+    - "«Коммит» → test(cart): SAAS-004-17 complete"
+  gate:
     - require: "Одобряю SAAS-004-17"
