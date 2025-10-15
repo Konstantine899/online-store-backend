@@ -6,12 +6,12 @@ import {
     Model,
     Table,
 } from 'sequelize-typescript';
-import { UserRoleModel } from './user-role.model';
-import { RoleModel } from './role.model';
-import { RefreshTokenModel } from './refresh-token.model';
-import { RatingModel } from './rating.model';
-import { ProductModel } from './product.model';
 import { OrderModel } from './order.model';
+import { ProductModel } from './product.model';
+import { RatingModel } from './rating.model';
+import { RefreshTokenModel } from './refresh-token.model';
+import { RoleModel } from './role.model';
+import { UserRoleModel } from './user-role.model';
 
 interface IUserCreationAttributes {
     email: string;
