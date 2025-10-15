@@ -1,42 +1,36 @@
-import {
-    Injectable,
-    BadRequestException,
-    NotFoundException,
-    ConflictException,
-} from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
 import { UserModel } from '@app/domain/models';
+import { IUserRepository } from '@app/domain/repositories';
 import {
     CreateUserDto,
     UpdateUserDto,
     UpdateUserProfileDto,
 } from '@app/infrastructure/dto';
-import { hash } from 'bcrypt';
+import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
+import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
+import { MetaData } from '@app/infrastructure/paginate';
 import {
     CreateUserResponse,
     GetListUsersResponse,
+    GetPaginatedUsersResponse,
     GetUserResponse,
     UpdateUserResponse,
-    GetPaginatedUsersResponse,
 } from '@app/infrastructure/responses';
-import { IUserRepository } from '@app/domain/repositories';
-import { MetaData } from '@app/infrastructure/paginate';
-import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
-import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
-import { randomBytes, createHash } from 'crypto';
+import {
+    BadRequestException,
+    ConflictException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { hash } from 'bcrypt';
+import { createHash, randomBytes } from 'crypto';
 
 // Типы для статистики пользователей
 export type UserStats = {
     totalUsers: number;
     activeUsers: number;
     blockedUsers: number;
-    vipUsers: number;
     newsletterSubscribers: number;
-    premiumUsers: number;
-    employees: number;
-    affiliates: number;
-    wholesaleUsers: number;
-    highValueUsers: number;
 };
 
 @Injectable()
@@ -154,7 +148,7 @@ export class UserRepository implements IUserRepository {
 
             updateValues.push(...userIds);
             const query = `
-                UPDATE \`user\` 
+                UPDATE \`user\`
                 SET ${updateFields.join(', ')}, \`updated_at\` = ?
                 WHERE \`id\` IN (${userIds.map(() => '?').join(',')})
             `;
@@ -216,7 +210,7 @@ export class UserRepository implements IUserRepository {
 
             updateValues.push(...userIds);
             const query = `
-                UPDATE \`user\` 
+                UPDATE \`user\`
                 SET ${updateFields.join(', ')}, \`updated_at\` = ?
                 WHERE \`id\` IN (${userIds.map(() => '?').join(',')})
             `;
@@ -503,14 +497,9 @@ export class UserRepository implements IUserRepository {
                 updates.isCookieConsent = dto.isCookieConsent;
             if (dto.isProfileCompleted !== undefined)
                 updates.isProfileCompleted = dto.isProfileCompleted;
-            if (dto.isVipCustomer !== undefined)
-                updates.isVipCustomer = dto.isVipCustomer;
-            if (dto.isBetaTester !== undefined)
-                updates.isBetaTester = dto.isBetaTester;
             if (dto.isBlocked !== undefined) updates.isBlocked = dto.isBlocked;
             if (dto.isVerified !== undefined)
                 updates.isVerified = dto.isVerified;
-            if (dto.isPremium !== undefined) updates.isPremium = dto.isPremium;
             if (dto.isEmailVerified !== undefined)
                 updates.isEmailVerified = dto.isEmailVerified;
             if (dto.isPhoneVerified !== undefined)
@@ -664,102 +653,6 @@ export class UserRepository implements IUserRepository {
         );
     }
 
-    public async upgradePremium(userId: number): Promise<UserModel | null> {
-        return this.performAdminAction(
-            userId,
-            { isPremium: true },
-            'повышение до премиум',
-        );
-    }
-
-    public async downgradePremium(userId: number): Promise<UserModel | null> {
-        return this.performAdminAction(
-            userId,
-            { isPremium: false },
-            'понижение с премиум',
-        );
-    }
-
-    public async setEmployee(userId: number): Promise<UserModel | null> {
-        return this.performAdminAction(
-            userId,
-            { isEmployee: true },
-            'назначение сотрудником',
-        );
-    }
-
-    public async unsetEmployee(userId: number): Promise<UserModel | null> {
-        return this.performAdminAction(
-            userId,
-            { isEmployee: false },
-            'снятие статуса сотрудника',
-        );
-    }
-
-    public async setVip(userId: number): Promise<UserModel | null> {
-        return this.performAdminAction(
-            userId,
-            { isVipCustomer: true },
-            'назначение VIP клиентом',
-        );
-    }
-
-    public async unsetVip(userId: number): Promise<UserModel | null> {
-        return this.performAdminAction(
-            userId,
-            { isVipCustomer: false },
-            'снятие статуса VIP клиента',
-        );
-    }
-
-    public async setHighValue(userId: number): Promise<UserModel | null> {
-        return this.performAdminAction(
-            userId,
-            { isHighValue: true },
-            'назначение высокоценным клиентом',
-        );
-    }
-
-    public async unsetHighValue(userId: number): Promise<UserModel | null> {
-        return this.performAdminAction(
-            userId,
-            { isHighValue: false },
-            'снятие статуса высокоценного клиента',
-        );
-    }
-
-    public async setWholesale(userId: number): Promise<UserModel | null> {
-        return this.performAdminAction(
-            userId,
-            { isWholesale: true },
-            'назначение оптовым клиентом',
-        );
-    }
-
-    public async unsetWholesale(userId: number): Promise<UserModel | null> {
-        return this.performAdminAction(
-            userId,
-            { isWholesale: false },
-            'снятие статуса оптового клиента',
-        );
-    }
-
-    public async setAffiliate(userId: number): Promise<UserModel | null> {
-        return this.performAdminAction(
-            userId,
-            { isAffiliate: true },
-            'назначение партнером',
-        );
-    }
-
-    public async unsetAffiliate(userId: number): Promise<UserModel | null> {
-        return this.performAdminAction(
-            userId,
-            { isAffiliate: false },
-            'снятие статуса партнера',
-        );
-    }
-
     // ===== Verification codes =====
     private hashCode(code: string): string {
         return createHash('sha256').update(code).digest('hex');
@@ -863,19 +756,13 @@ export class UserRepository implements IUserRepository {
             const startTime = Date.now();
             console.log('Запрос статистики пользователей...');
 
-            // Оптимизированный запрос: один запрос вместо 10 отдельных
+            // Оптимизированный запрос: универсальные метрики для любого типа бизнеса
             const [results] = await sequelize.query(`
-                SELECT 
+                SELECT
                     COUNT(*) as totalUsers,
                     SUM(CASE WHEN is_active = 1 AND is_blocked = 0 AND is_deleted = 0 THEN 1 ELSE 0 END) as activeUsers,
                     SUM(CASE WHEN is_blocked = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as blockedUsers,
-                    SUM(CASE WHEN is_vip_customer = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as vipUsers,
-                    SUM(CASE WHEN is_newsletter_subscribed = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as newsletterSubscribers,
-                    SUM(CASE WHEN is_premium = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as premiumUsers,
-                    SUM(CASE WHEN is_employee = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as employees,
-                    SUM(CASE WHEN is_affiliate = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as affiliates,
-                    SUM(CASE WHEN is_wholesale = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as wholesaleUsers,
-                    SUM(CASE WHEN is_high_value = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as highValueUsers
+                    SUM(CASE WHEN is_newsletter_subscribed = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as newsletterSubscribers
                 FROM user
                 WHERE is_deleted = 0
             `);
@@ -890,13 +777,7 @@ export class UserRepository implements IUserRepository {
                     totalUsers: number;
                     activeUsers: number;
                     blockedUsers: number;
-                    vipUsers: number;
                     newsletterSubscribers: number;
-                    premiumUsers: number;
-                    employees: number;
-                    affiliates: number;
-                    wholesaleUsers: number;
-                    highValueUsers: number;
                 }>
             )[0];
 
@@ -904,13 +785,7 @@ export class UserRepository implements IUserRepository {
                 totalUsers: Number(stats.totalUsers) || 0,
                 activeUsers: Number(stats.activeUsers) || 0,
                 blockedUsers: Number(stats.blockedUsers) || 0,
-                vipUsers: Number(stats.vipUsers) || 0,
                 newsletterSubscribers: Number(stats.newsletterSubscribers) || 0,
-                premiumUsers: Number(stats.premiumUsers) || 0,
-                employees: Number(stats.employees) || 0,
-                affiliates: Number(stats.affiliates) || 0,
-                wholesaleUsers: Number(stats.wholesaleUsers) || 0,
-                highValueUsers: Number(stats.highValueUsers) || 0,
             };
         } catch (error: unknown) {
             console.error(

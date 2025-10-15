@@ -590,126 +590,6 @@ export class UserService implements IUserService {
         return user as UserModel;
     }
 
-    public async upgradePremium(userId: number): Promise<UserModel> {
-        const user = await this.userRepository.upgradePremium(userId);
-        if (!user) this.notFound('Пользователь не найден в БД');
-
-        // Инвалидируем кэш пользователя
-        this.invalidateUserCache(userId);
-
-        return user as UserModel;
-    }
-
-    public async downgradePremium(userId: number): Promise<UserModel> {
-        const user = await this.userRepository.downgradePremium(userId);
-        if (!user) this.notFound('Пользователь не найден в БД');
-
-        // Инвалидируем кэш пользователя
-        this.invalidateUserCache(userId);
-
-        return user as UserModel;
-    }
-
-    public async setEmployee(userId: number): Promise<UserModel> {
-        const user = await this.userRepository.setEmployee(userId);
-        if (!user) this.notFound('Пользователь не найден в БД');
-
-        // Инвалидируем кэш пользователя
-        this.invalidateUserCache(userId);
-
-        return user as UserModel;
-    }
-
-    public async unsetEmployee(userId: number): Promise<UserModel> {
-        const user = await this.userRepository.unsetEmployee(userId);
-        if (!user) this.notFound('Пользователь не найден в БД');
-
-        // Инвалидируем кэш пользователя
-        this.invalidateUserCache(userId);
-
-        return user as UserModel;
-    }
-
-    public async setVip(userId: number): Promise<UserModel> {
-        const user = await this.userRepository.setVip(userId);
-        if (!user) this.notFound('Пользователь не найден в БД');
-
-        // Инвалидируем кэш пользователя
-        this.invalidateUserCache(userId);
-
-        return user as UserModel;
-    }
-
-    public async unsetVip(userId: number): Promise<UserModel> {
-        const user = await this.userRepository.unsetVip(userId);
-        if (!user) this.notFound('Пользователь не найден в БД');
-
-        // Инвалидируем кэш пользователя
-        this.invalidateUserCache(userId);
-
-        return user as UserModel;
-    }
-
-    public async setHighValue(userId: number): Promise<UserModel> {
-        const user = await this.userRepository.setHighValue(userId);
-        if (!user) this.notFound('Пользователь не найден в БД');
-
-        // Инвалидируем кэш пользователя
-        this.invalidateUserCache(userId);
-
-        return user as UserModel;
-    }
-
-    public async unsetHighValue(userId: number): Promise<UserModel> {
-        const user = await this.userRepository.unsetHighValue(userId);
-        if (!user) this.notFound('Пользователь не найден в БД');
-
-        // Инвалидируем кэш пользователя
-        this.invalidateUserCache(userId);
-
-        return user as UserModel;
-    }
-
-    public async setWholesale(userId: number): Promise<UserModel> {
-        const user = await this.userRepository.setWholesale(userId);
-        if (!user) this.notFound('Пользователь не найден в БД');
-
-        // Инвалидируем кэш пользователя
-        this.invalidateUserCache(userId);
-
-        return user as UserModel;
-    }
-
-    public async unsetWholesale(userId: number): Promise<UserModel> {
-        const user = await this.userRepository.unsetWholesale(userId);
-        if (!user) this.notFound('Пользователь не найден в БД');
-
-        // Инвалидируем кэш пользователя
-        this.invalidateUserCache(userId);
-
-        return user as UserModel;
-    }
-
-    public async setAffiliate(userId: number): Promise<UserModel> {
-        const user = await this.userRepository.setAffiliate(userId);
-        if (!user) this.notFound('Пользователь не найден в БД');
-
-        // Инвалидируем кэш пользователя
-        this.invalidateUserCache(userId);
-
-        return user as UserModel;
-    }
-
-    public async unsetAffiliate(userId: number): Promise<UserModel> {
-        const user = await this.userRepository.unsetAffiliate(userId);
-        if (!user) this.notFound('Пользователь не найден в БД');
-
-        // Инвалидируем кэш пользователя
-        this.invalidateUserCache(userId);
-
-        return user as UserModel;
-    }
-
     // ===== Self-service verification =====
     public async requestVerificationCode(
         userId: number,
@@ -958,13 +838,7 @@ export class UserService implements IUserService {
         totalUsers: number;
         activeUsers: number;
         blockedUsers: number;
-        vipUsers: number;
         newsletterSubscribers: number;
-        premiumUsers: number;
-        employees: number;
-        affiliates: number;
-        wholesaleUsers: number;
-        highValueUsers: number;
     }> {
         const cacheKey = 'user_stats';
 
@@ -973,13 +847,7 @@ export class UserService implements IUserService {
             totalUsers: number;
             activeUsers: number;
             blockedUsers: number;
-            vipUsers: number;
             newsletterSubscribers: number;
-            premiumUsers: number;
-            employees: number;
-            affiliates: number;
-            wholesaleUsers: number;
-            highValueUsers: number;
         }>(cacheKey);
 
         if (cached) {

@@ -22,8 +22,6 @@ describe('UserService - Flags and Preferences', () => {
         isNewsletterSubscribed: false,
         isMarketingConsent: false,
         isCookieConsent: false,
-        isVipCustomer: false,
-        isBetaTester: false,
         preferredLanguage: 'ru',
         timezone: 'Europe/Moscow',
         themePreference: 'light',
@@ -102,8 +100,6 @@ describe('UserService - Flags and Preferences', () => {
                 isNewsletterSubscribed: true,
                 isMarketingConsent: true,
                 isCookieConsent: true,
-                isVipCustomer: true,
-                isBetaTester: true,
             };
 
             const updatedUser = { ...mockUser, ...flagsDto };
@@ -354,11 +350,8 @@ describe('UserService - Flags and Preferences', () => {
                 isMarketingConsent: true,
                 isCookieConsent: true,
                 isProfileCompleted: true,
-                isVipCustomer: true,
-                isBetaTester: true,
                 isBlocked: false,
                 isVerified: true,
-                isPremium: true,
                 isEmailVerified: true,
                 isPhoneVerified: true,
                 isTermsAccepted: true,

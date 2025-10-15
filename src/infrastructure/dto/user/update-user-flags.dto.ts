@@ -35,16 +35,6 @@ export class UpdateUserFlagsDto {
     })
     declare readonly isProfileCompleted?: boolean;
 
-    @ApiPropertyOptional({ description: 'VIP клиент' })
-    @IsOptional()
-    @IsBoolean({ message: 'Поле isVipCustomer должно быть булевым значением' })
-    declare readonly isVipCustomer?: boolean;
-
-    @ApiPropertyOptional({ description: 'Бета-тестер' })
-    @IsOptional()
-    @IsBoolean({ message: 'Поле isBetaTester должно быть булевым значением' })
-    declare readonly isBetaTester?: boolean;
-
     @ApiPropertyOptional({ description: 'Заблокирован' })
     @IsOptional()
     @IsBoolean({ message: 'Поле isBlocked должно быть булевым значением' })
@@ -54,11 +44,6 @@ export class UpdateUserFlagsDto {
     @IsOptional()
     @IsBoolean({ message: 'Поле isVerified должно быть булевым значением' })
     declare readonly isVerified?: boolean;
-
-    @ApiPropertyOptional({ description: 'Премиум' })
-    @IsOptional()
-    @IsBoolean({ message: 'Поле isPremium должно быть булевым значением' })
-    declare readonly isPremium?: boolean;
 
     @ApiPropertyOptional({ description: 'Email верифицирован' })
     @IsOptional()

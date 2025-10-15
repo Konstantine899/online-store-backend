@@ -95,6 +95,8 @@ describe('User Admin Integration Tests', () => {
             targetUserId = targetUser.id;
         });
 
+        // SAAS-002: Removed business-specific endpoints (VIP/Premium/Employee/Wholesale/Affiliate/HighValue)
+        // Only universal lifecycle management endpoints remain
         const getAdminCases = (userId: number) => [
             { path: `/online-store/user/admin/block/${userId}` },
             { path: `/online-store/user/admin/unblock/${userId}` },
@@ -102,18 +104,6 @@ describe('User Admin Integration Tests', () => {
             { path: `/online-store/user/admin/unsuspend/${userId}` },
             { path: `/online-store/user/admin/delete/${userId}` },
             { path: `/online-store/user/admin/restore/${userId}` },
-            { path: `/online-store/user/admin/premium/upgrade/${userId}` },
-            { path: `/online-store/user/admin/premium/downgrade/${userId}` },
-            { path: `/online-store/user/admin/employee/set/${userId}` },
-            { path: `/online-store/user/admin/employee/unset/${userId}` },
-            { path: `/online-store/user/admin/vip/set/${userId}` },
-            { path: `/online-store/user/admin/vip/unset/${userId}` },
-            { path: `/online-store/user/admin/highvalue/set/${userId}` },
-            { path: `/online-store/user/admin/highvalue/unset/${userId}` },
-            { path: `/online-store/user/admin/wholesale/set/${userId}` },
-            { path: `/online-store/user/admin/wholesale/unset/${userId}` },
-            { path: `/online-store/user/admin/affiliate/set/${userId}` },
-            { path: `/online-store/user/admin/affiliate/unset/${userId}` },
         ];
 
         it.each(getAdminCases(0))('ADMIN 200 -> %s', async ({ path }) => {

@@ -52,12 +52,6 @@ export interface IUserRepository {
         totalUsers: number;
         activeUsers: number;
         blockedUsers: number;
-        vipUsers: number;
         newsletterSubscribers: number;
-        premiumUsers: number;
-        employees: number;
-        affiliates: number;
-        wholesaleUsers: number;
-        highValueUsers: number;
     }>;
 }
