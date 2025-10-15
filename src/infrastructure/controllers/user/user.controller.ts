@@ -36,7 +36,11 @@ import {
     UpdateUserSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
 import { ChangePasswordSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/change-password.swagger';
-import { AuthGuard, RoleGuard } from '@app/infrastructure/common/guards';
+import {
+    AuthGuard,
+    BruteforceGuard,
+    RoleGuard,
+} from '@app/infrastructure/common/guards';
 import { ApiTags } from '@nestjs/swagger';
 
 import { UpdateUserFlagsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-flags.swagger';
@@ -299,7 +303,7 @@ export class UserController implements IUserController {
 
     // Self-service verification (USER)
     @Roles(...USER_ROLES)
-    @UserGuards()
+    @UseGuards(AuthGuard, RoleGuard, BruteforceGuard)
     @Post('verify/email/request')
     @HttpCode(HttpStatus.OK)
     async requestEmailCode(@Req() req: AuthenticatedRequest) {
@@ -309,7 +313,7 @@ export class UserController implements IUserController {
     }
 
     @Roles(...USER_ROLES)
-    @UserGuards()
+    @UseGuards(AuthGuard, RoleGuard, BruteforceGuard)
     @Post('verify/email/confirm')
     @HttpCode(HttpStatus.OK)
     async confirmEmailCode(
@@ -326,7 +330,7 @@ export class UserController implements IUserController {
     }
 
     @Roles(...USER_ROLES)
-    @UserGuards()
+    @UseGuards(AuthGuard, RoleGuard, BruteforceGuard)
     @Post('verify/phone/request')
     @HttpCode(HttpStatus.OK)
     async requestPhoneCode(@Req() req: AuthenticatedRequest) {
@@ -336,7 +340,7 @@ export class UserController implements IUserController {
     }
 
     @Roles(...USER_ROLES)
-    @UserGuards()
+    @UseGuards(AuthGuard, RoleGuard, BruteforceGuard)
     @Post('verify/phone/confirm')
     @HttpCode(HttpStatus.OK)
     async confirmPhoneCode(
@@ -404,114 +408,6 @@ export class UserController implements IUserController {
     @HttpCode(HttpStatus.OK)
     async restore(@Param('id', ParseIntPipe) id: number) {
         const user = await this.userService.restoreUser(id);
-        return this.createResponse(user);
-    }
-
-    @Roles(...ADMIN_ROLES)
-    @AdminGuards()
-    @Patch('admin/premium/upgrade/:id')
-    @HttpCode(HttpStatus.OK)
-    async upgradePremium(@Param('id', ParseIntPipe) id: number) {
-        const user = await this.userService.upgradePremium(id);
-        return this.createResponse(user);
-    }
-
-    @Roles(...ADMIN_ROLES)
-    @AdminGuards()
-    @Patch('admin/premium/downgrade/:id')
-    @HttpCode(HttpStatus.OK)
-    async downgradePremium(@Param('id', ParseIntPipe) id: number) {
-        const user = await this.userService.downgradePremium(id);
-        return this.createResponse(user);
-    }
-
-    @Roles(...ADMIN_ROLES)
-    @AdminGuards()
-    @Patch('admin/employee/set/:id')
-    @HttpCode(HttpStatus.OK)
-    async setEmployee(@Param('id', ParseIntPipe) id: number) {
-        const user = await this.userService.setEmployee(id);
-        return this.createResponse(user);
-    }
-
-    @Roles(...ADMIN_ROLES)
-    @AdminGuards()
-    @Patch('admin/employee/unset/:id')
-    @HttpCode(HttpStatus.OK)
-    async unsetEmployee(@Param('id', ParseIntPipe) id: number) {
-        const user = await this.userService.unsetEmployee(id);
-        return this.createResponse(user);
-    }
-
-    @Roles(...ADMIN_ROLES)
-    @AdminGuards()
-    @Patch('admin/vip/set/:id')
-    @HttpCode(HttpStatus.OK)
-    async setVip(@Param('id', ParseIntPipe) id: number) {
-        const user = await this.userService.setVip(id);
-        return this.createResponse(user);
-    }
-
-    @Roles(...ADMIN_ROLES)
-    @AdminGuards()
-    @Patch('admin/vip/unset/:id')
-    @HttpCode(HttpStatus.OK)
-    async unsetVip(@Param('id', ParseIntPipe) id: number) {
-        const user = await this.userService.unsetVip(id);
-        return this.createResponse(user);
-    }
-
-    @Roles(...ADMIN_ROLES)
-    @AdminGuards()
-    @Patch('admin/highvalue/set/:id')
-    @HttpCode(HttpStatus.OK)
-    async setHighValue(@Param('id', ParseIntPipe) id: number) {
-        const user = await this.userService.setHighValue(id);
-        return this.createResponse(user);
-    }
-
-    @Roles(...ADMIN_ROLES)
-    @AdminGuards()
-    @Patch('admin/highvalue/unset/:id')
-    @HttpCode(HttpStatus.OK)
-    async unsetHighValue(@Param('id', ParseIntPipe) id: number) {
-        const user = await this.userService.unsetHighValue(id);
-        return this.createResponse(user);
-    }
-
-    @Roles(...ADMIN_ROLES)
-    @AdminGuards()
-    @Patch('admin/wholesale/set/:id')
-    @HttpCode(HttpStatus.OK)
-    async setWholesale(@Param('id', ParseIntPipe) id: number) {
-        const user = await this.userService.setWholesale(id);
-        return this.createResponse(user);
-    }
-
-    @Roles(...ADMIN_ROLES)
-    @AdminGuards()
-    @Patch('admin/wholesale/unset/:id')
-    @HttpCode(HttpStatus.OK)
-    async unsetWholesale(@Param('id', ParseIntPipe) id: number) {
-        const user = await this.userService.unsetWholesale(id);
-        return this.createResponse(user);
-    }
-
-    @Roles(...ADMIN_ROLES)
-    @AdminGuards()
-    @Patch('admin/affiliate/set/:id')
-    @HttpCode(HttpStatus.OK)
-    async setAffiliate(@Param('id', ParseIntPipe) id: number) {
-        const user = await this.userService.setAffiliate(id);
-        return this.createResponse(user);
-    }
-
-    @Roles(...ADMIN_ROLES)
-    @AdminGuards()
-    @Patch('admin/affiliate/unset/:id')
-    @HttpCode(HttpStatus.OK)
-    async unsetAffiliate(@Param('id', ParseIntPipe) id: number) {
-        const user = await this.userService.unsetAffiliate(id);
         return this.createResponse(user);
     }
 

@@ -6,12 +6,12 @@ import {
     Model,
     Table,
 } from 'sequelize-typescript';
-import { UserRoleModel } from './user-role.model';
-import { RoleModel } from './role.model';
-import { RefreshTokenModel } from './refresh-token.model';
-import { RatingModel } from './rating.model';
-import { ProductModel } from './product.model';
 import { OrderModel } from './order.model';
+import { ProductModel } from './product.model';
+import { RatingModel } from './rating.model';
+import { RefreshTokenModel } from './refresh-token.model';
+import { RoleModel } from './role.model';
+import { UserRoleModel } from './user-role.model';
 
 interface IUserCreationAttributes {
     email: string;
@@ -39,11 +39,9 @@ interface IUserModel {
     isMarketingConsent?: boolean;
     isCookieConsent?: boolean;
     isProfileCompleted?: boolean;
-    isVipCustomer?: boolean;
     isBetaTester?: boolean;
     isBlocked?: boolean;
     isVerified?: boolean;
-    isPremium?: boolean;
     isEmailVerified?: boolean;
     isPhoneVerified?: boolean;
     isTermsAccepted?: boolean;
@@ -52,10 +50,6 @@ interface IUserModel {
     isTwoFactorEnabled?: boolean;
     isDeleted?: boolean;
     isSuspended?: boolean;
-    isAffiliate?: boolean;
-    isEmployee?: boolean;
-    isHighValue?: boolean;
-    isWholesale?: boolean;
     // preferences
     preferredLanguage?: string;
     timezone?: string;
@@ -183,9 +177,6 @@ export class UserModel
     declare isProfileCompleted?: boolean;
 
     @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
-    declare isVipCustomer?: boolean;
-
-    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
     declare isBetaTester?: boolean;
 
     @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
@@ -193,9 +184,6 @@ export class UserModel
 
     @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
     declare isVerified?: boolean;
-
-    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
-    declare isPremium?: boolean;
 
     @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
     declare isEmailVerified?: boolean;
@@ -220,18 +208,6 @@ export class UserModel
 
     @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
     declare isSuspended?: boolean;
-
-    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
-    declare isAffiliate?: boolean;
-
-    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
-    declare isEmployee?: boolean;
-
-    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
-    declare isHighValue?: boolean;
-
-    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
-    declare isWholesale?: boolean;
 
     // Предпочтения
     @Column({ type: DataType.STRING(10), allowNull: false, defaultValue: 'ru' })

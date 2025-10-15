@@ -1,13 +1,13 @@
-import { CreateUserDto } from '@app/infrastructure/dto';
 import { UserModel } from '@app/domain/models';
-import {
-    UpdateUserResponse,
-    GetUserResponse,
-    CreateUserResponse,
-    GetPaginatedUsersResponse,
-} from '@app/infrastructure/responses';
+import { CreateUserDto } from '@app/infrastructure/dto';
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
+import {
+    CreateUserResponse,
+    GetPaginatedUsersResponse,
+    GetUserResponse,
+    UpdateUserResponse,
+} from '@app/infrastructure/responses';
 
 export interface IUserRepository {
     createUser(dto: CreateUserDto): Promise<UserModel>;
@@ -52,12 +52,6 @@ export interface IUserRepository {
         totalUsers: number;
         activeUsers: number;
         blockedUsers: number;
-        vipUsers: number;
         newsletterSubscribers: number;
-        premiumUsers: number;
-        employees: number;
-        affiliates: number;
-        wholesaleUsers: number;
-        highValueUsers: number;
     }>;
 }
