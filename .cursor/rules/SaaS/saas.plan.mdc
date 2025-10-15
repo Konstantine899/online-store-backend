@@ -746,15 +746,15 @@ tasks:
   status: pending
   branch: "feature/role/SAAS-017/role-complete"
   workflow:
-    start_trigger: "Планируй SAAS-017"
-    detailed_plan: "models/role.plan.mdc"
-    atomic_tasks: "SAAS-017-00 до SAAS-017-20 (21 задача)"
-    work_in: "models/role.plan.mdc"
-    update_here: "После завершения всех 21 атомарной задачи"
+  start_trigger: "Планируй SAAS-017"
+  detailed_plan: "models/role.plan.mdc"
+  atomic_tasks: "SAAS-017-00 до SAAS-017-20 (21 задача)"
+  work_in: "models/role.plan.mdc"
+  update_here: "После завершения всех 21 атомарной задачи"
   progress:
-    completed: 0
-    total: 21
-    current_task: null
+  completed: 0
+  total: 21
+  current_task: null
   goals:
     - Custom roles per tenant
     - Permission assignment and management
@@ -762,8 +762,8 @@ tasks:
     - Permission checks in guards
     - Tenant-scoped RBAC
     - Resource-based permissions
-  pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (Security/RBAC)"
-  pre_commit_steps:
+      pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (Security/RBAC)"
+      pre_commit_steps:
     - "«Ревью» → permission model, role hierarchy"
     - "«Автофикс» → linter/prettier"
     - "Тесты: RBAC tests"
@@ -791,15 +791,15 @@ tasks:
   priority: CRITICAL
   branch: "feature/admin/SAAS-018/admin-dashboard"
   workflow:
-    start_trigger: "Планируй SAAS-018"
-    detailed_plan: "TBD - создать models/admin-dashboard.plan.mdc"
-    atomic_tasks: "TBD (~20-25 задач)"
-    work_in: "models/admin-dashboard.plan.mdc"
-    update_here: "После завершения всех атомарных задач"
+  start_trigger: "Планируй SAAS-018"
+  detailed_plan: "TBD - создать models/admin-dashboard.plan.mdc"
+  atomic_tasks: "TBD (~20-25 задач)"
+  work_in: "models/admin-dashboard.plan.mdc"
+  update_here: "После завершения всех атомарных задач"
   progress:
-    completed: 0
-    total: 0
-    current_task: null
+  completed: 0
+  total: 0
+  current_task: null
   goals:
     - Unified admin panel для Platform/Tenant admins
     - Real-time dashboards (orders, revenue, users, products)
@@ -807,8 +807,8 @@ tasks:
     - Custom reports builder (CSV, PDF, Excel export)
     - Role-based dashboard visibility
     - Analytics widgets (charts, graphs, KPIs)
-  pre_commit_workflow: "ОБЫЧНЫЙ (Admin UI/Analytics)"
-  pre_commit_steps:
+      pre_commit_workflow: "ОБЫЧНЫЙ (Admin UI/Analytics)"
+      pre_commit_steps:
     - "«Ревью» → dashboard logic, data aggregation, permissions"
     - "«Автофикс» → linter/prettier"
     - "Тесты: dashboard tests, export tests"
@@ -839,15 +839,15 @@ tasks:
   priority: CRITICAL
   branch: "feature/search/SAAS-019/search-engine"
   workflow:
-    start_trigger: "Планируй SAAS-019"
-    detailed_plan: "TBD - создать models/search-engine.plan.mdc"
-    atomic_tasks: "TBD (~15-20 задач)"
-    work_in: "models/search-engine.plan.mdc"
-    update_here: "После завершения всех атомарных задач"
+  start_trigger: "Планируй SAAS-019"
+  detailed_plan: "TBD - создать models/search-engine.plan.mdc"
+  atomic_tasks: "TBD (~15-20 задач)"
+  work_in: "models/search-engine.plan.mdc"
+  update_here: "После завершения всех атомарных задач"
   progress:
-    completed: 0
-    total: 0
-    current_task: null
+  completed: 0
+  total: 0
+  current_task: null
   goals:
     - Elasticsearch/OpenSearch integration
     - Full-text search across products, orders, users
@@ -855,8 +855,8 @@ tasks:
     - Autocomplete and search suggestions
     - Tenant-isolated search indexes
     - Search analytics and popular queries tracking
-  pre_commit_workflow: "ОБЫЧНЫЙ (Search integration)"
-  pre_commit_steps:
+      pre_commit_workflow: "ОБЫЧНЫЙ (Search integration)"
+      pre_commit_steps:
     - "«Ревью» → search logic, indexing strategy, performance"
     - "«Автофикс» → linter/prettier"
     - "Тесты: search tests, relevance tests"
@@ -888,15 +888,15 @@ tasks:
   priority: CRITICAL
   branch: "feature/media/SAAS-020/media-management"
   workflow:
-    start_trigger: "Планируй SAAS-020"
-    detailed_plan: "TBD - создать models/media-management.plan.mdc"
-    atomic_tasks: "TBD (~18-22 задачи)"
-    work_in: "models/media-management.plan.mdc"
-    update_here: "После завершения всех атомарных задач"
+  start_trigger: "Планируй SAAS-020"
+  detailed_plan: "TBD - создать models/media-management.plan.mdc"
+  atomic_tasks: "TBD (~18-22 задачи)"
+  work_in: "models/media-management.plan.mdc"
+  update_here: "После завершения всех атомарных задач"
   progress:
-    completed: 0
-    total: 0
-    current_task: null
+  completed: 0
+  total: 0
+  current_task: null
   goals:
     - Centralized file storage (S3/MinIO/local)
     - Image processing (resize, crop, watermark, thumbnails)
@@ -904,8 +904,8 @@ tasks:
     - Video/audio upload and streaming
     - Tenant-isolated file storage
     - File versioning and metadata
-  pre_commit_workflow: "ОБЫЧНЫЙ (File/media handling)"
-  pre_commit_steps:
+      pre_commit_workflow: "ОБЫЧНЫЙ (File/media handling)"
+      pre_commit_steps:
     - "«Ревью» → storage strategy, CDN config, security"
     - "«Автофикс» → linter/prettier"
     - "Тесты: upload tests, processing tests"
@@ -938,15 +938,15 @@ tasks:
   priority: CRITICAL
   branch: "feature/i18n/SAAS-021/internationalization"
   workflow:
-    start_trigger: "Планируй SAAS-021"
-    detailed_plan: "TBD - создать models/i18n.plan.mdc"
-    atomic_tasks: "TBD (~12-15 задач)"
-    work_in: "models/i18n.plan.mdc"
-    update_here: "После завершения всех атомарных задач"
+  start_trigger: "Планируй SAAS-021"
+  detailed_plan: "TBD - создать models/i18n.plan.mdc"
+  atomic_tasks: "TBD (~12-15 задач)"
+  work_in: "models/i18n.plan.mdc"
+  update_here: "После завершения всех атомарных задач"
   progress:
-    completed: 0
-    total: 0
-    current_task: null
+  completed: 0
+  total: 0
+  current_task: null
   goals:
     - Multi-language support (English, Russian, Spanish, etc)
     - Dynamic content translation
@@ -954,8 +954,8 @@ tasks:
     - Tenant-specific language preferences
     - Translation management system
     - RTL language support (Arabic, Hebrew)
-  pre_commit_workflow: "ОБЫЧНЫЙ (i18n implementation)"
-  pre_commit_steps:
+      pre_commit_workflow: "ОБЫЧНЫЙ (i18n implementation)"
+      pre_commit_steps:
     - "«Ревью» → i18n strategy, translation keys, locale handling"
     - "«Автофикс» → linter/prettier"
     - "Тесты: i18n tests, locale tests"
