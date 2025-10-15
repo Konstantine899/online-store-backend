@@ -1,5 +1,5 @@
-import { QueryInterface, QueryTypes } from 'sequelize';
 import * as bcrypt from 'bcrypt';
+import { QueryInterface, QueryTypes } from 'sequelize';
 
 interface Seeder {
     up(queryInterface: QueryInterface): Promise<void>;
@@ -19,11 +19,8 @@ const seeder: Seeder = {
             is_marketing_consent: false,
             is_cookie_consent: false,
             is_profile_completed: false,
-            is_vip_customer: false,
-            is_beta_tester: false,
             is_blocked: false,
             is_verified: false,
-            is_premium: false,
             is_email_verified: false,
             is_phone_verified: false,
             is_terms_accepted: false,
@@ -32,10 +29,6 @@ const seeder: Seeder = {
             is_two_factor_enabled: false,
             is_deleted: false,
             is_suspended: false,
-            is_affiliate: false,
-            is_employee: false,
-            is_high_value: false,
-            is_wholesale: false,
             preferred_language: 'ru',
             timezone: 'Europe/Moscow',
             notification_preferences: '{}',
@@ -134,14 +127,13 @@ const seeder: Seeder = {
                 updated_at: new Date(),
             },
 
-            // Клиентские роли
+            // Клиентские роли (SAAS-002: бизнес-специфичные флаги удалены)
             {
                 email: 'vip.customer@example.com',
                 password: passwordHash,
                 phone: '+79990000008',
                 first_name: 'VIP',
                 last_name: 'Customer',
-                is_vip_customer: true,
                 is_newsletter_subscribed: true,
                 is_verified: true,
                 is_email_verified: true,
@@ -155,7 +147,6 @@ const seeder: Seeder = {
                 phone: '+79990000009',
                 first_name: 'Wholesale',
                 last_name: 'Buyer',
-                is_wholesale: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,
@@ -180,7 +171,6 @@ const seeder: Seeder = {
                 phone: '+79990000011',
                 first_name: 'Affiliate',
                 last_name: 'Partner',
-                is_affiliate: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,

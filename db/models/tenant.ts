@@ -104,4 +104,3 @@ export default function defineTenant(sequelize: Sequelize): typeof Tenant {
 
     return Tenant;
 }
-

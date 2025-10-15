@@ -68,7 +68,7 @@ describe('User Verification Integration Tests', () => {
             );
 
             await request(app.getHttpServer())
-                .post('/online-store/user/verify/email')
+                .post('/online-store/user/verify/email/confirm')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ code: 'invalid-code' })
                 .expect(400);
@@ -83,13 +83,13 @@ describe('User Verification Integration Tests', () => {
 
             // Admin верифицирует email пользователя
             await request(app.getHttpServer())
-                .patch(`/online-store/user/admin/verify/${user.userId}/email`)
+                .patch(`/online-store/user/verify/email/${user.userId}`)
                 .set('Authorization', `Bearer ${admin.token}`)
                 .expect(200);
 
             // Admin верифицирует phone пользователя
             await request(app.getHttpServer())
-                .patch(`/online-store/user/admin/verify/${user.userId}/phone`)
+                .patch(`/online-store/user/verify/phone/${user.userId}`)
                 .set('Authorization', `Bearer ${admin.token}`)
                 .expect(200);
         });
@@ -101,7 +101,7 @@ describe('User Verification Integration Tests', () => {
             );
 
             await request(app.getHttpServer())
-                .patch('/online-store/user/admin/verify/999999/email')
+                .patch('/online-store/user/verify/email/999999')
                 .set('Authorization', `Bearer ${token}`)
                 .expect(404);
         });

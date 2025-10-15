@@ -935,6 +935,12 @@ describe('UserService', () => {
         });
     });
 
+    // ============================================================
+    // SAAS-002: Business Flags Operations removed (e-commerce specific)
+    // Removed: upgradePremium/downgradePremium, setEmployee/unsetEmployee,
+    //          setVip/unsetVip, setHighValue/unsetHighValue,
+    //          setWholesale/unsetWholesale, setAffiliate/unsetAffiliate
+    // ============================================================
 
     // ============================================================
     // TEST-030.4: Password Management - Admin Force Update
@@ -1050,13 +1056,7 @@ describe('UserService', () => {
                 totalUsers: 100,
                 activeUsers: 80,
                 blockedUsers: 5,
-                vipUsers: 10,
                 newsletterSubscribers: 60,
-                premiumUsers: 15,
-                employees: 8,
-                affiliates: 12,
-                wholesaleUsers: 5,
-                highValueUsers: 20,
             };
 
             userRepository.getUserStats = jest

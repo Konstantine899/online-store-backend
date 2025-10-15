@@ -43,13 +43,7 @@ describe('User Admin Integration Tests', () => {
             expect(response.body.data).toHaveProperty('totalUsers');
             expect(response.body.data).toHaveProperty('activeUsers');
             expect(response.body.data).toHaveProperty('blockedUsers');
-            expect(response.body.data).toHaveProperty('vipUsers');
             expect(response.body.data).toHaveProperty('newsletterSubscribers');
-            expect(response.body.data).toHaveProperty('premiumUsers');
-            expect(response.body.data).toHaveProperty('employees');
-            expect(response.body.data).toHaveProperty('affiliates');
-            expect(response.body.data).toHaveProperty('wholesaleUsers');
-            expect(response.body.data).toHaveProperty('highValueUsers');
 
             // Проверяем, что все значения - числа
             Object.values(response.body.data).forEach((value) => {

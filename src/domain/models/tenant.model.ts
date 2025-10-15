@@ -165,4 +165,3 @@ export class TenantModel
         return this.scope('active').findByPk(id);
     }
 }
-

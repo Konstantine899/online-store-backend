@@ -39,7 +39,6 @@ interface IUserModel {
     isMarketingConsent?: boolean;
     isCookieConsent?: boolean;
     isProfileCompleted?: boolean;
-    isBetaTester?: boolean;
     isBlocked?: boolean;
     isVerified?: boolean;
     isEmailVerified?: boolean;
@@ -175,9 +174,6 @@ export class UserModel
 
     @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
     declare isProfileCompleted?: boolean;
-
-    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
-    declare isBetaTester?: boolean;
 
     @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
     declare isBlocked?: boolean;

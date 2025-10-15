@@ -1,7 +1,10 @@
 import { QueryInterface, DataTypes } from 'sequelize';
 
 interface Migration {
-    up(queryInterface: QueryInterface, Sequelize: typeof DataTypes): Promise<void>;
+    up(
+        queryInterface: QueryInterface,
+        Sequelize: typeof DataTypes,
+    ): Promise<void>;
 
     down(queryInterface: QueryInterface): Promise<void>;
 }
@@ -28,7 +31,8 @@ const migration: Migration = {
                 type: Sequelize.STRING(100),
                 allowNull: true,
                 unique: true,
-                comment: 'Custom subdomain for tenant (e.g., "nike" for nike.mystore.com)',
+                comment:
+                    'Custom subdomain for tenant (e.g., "nike" for nike.mystore.com)',
             },
             status: {
                 type: Sequelize.ENUM('active', 'suspended', 'deleted'),
@@ -37,7 +41,12 @@ const migration: Migration = {
                 comment: 'Tenant status',
             },
             plan: {
-                type: Sequelize.ENUM('free', 'starter', 'professional', 'enterprise'),
+                type: Sequelize.ENUM(
+                    'free',
+                    'starter',
+                    'professional',
+                    'enterprise',
+                ),
                 allowNull: false,
                 defaultValue: 'free',
                 comment: 'Subscription plan',
@@ -94,4 +103,3 @@ const migration: Migration = {
 };
 
 export default migration;
-
