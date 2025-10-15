@@ -198,9 +198,9 @@ tasks:
   work_in: "models/cart.plan.mdc"
   update_here: "После завершения всех 18 атомарных задач"
   progress:
-  completed: 1
+  completed: 2
   total: 18
-  current_task: "SAAS-004-00 (completed, merged to dev)"
+  current_task: "SAAS-004-01 (completed, merged to dev)"
   goals:
     - Cart operations with tenant isolation
     - Guest cart support (session-based)
