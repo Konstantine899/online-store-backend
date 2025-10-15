@@ -746,15 +746,15 @@ tasks:
   status: pending
   branch: "feature/role/SAAS-017/role-complete"
   workflow:
-  start_trigger: "Планируй SAAS-017"
-  detailed_plan: "models/role.plan.mdc"
-  atomic_tasks: "SAAS-017-00 до SAAS-017-20 (21 задача)"
-  work_in: "models/role.plan.mdc"
-  update_here: "После завершения всех 21 атомарной задачи"
+    start_trigger: "Планируй SAAS-017"
+    detailed_plan: "models/role.plan.mdc"
+    atomic_tasks: "SAAS-017-00 до SAAS-017-20 (21 задача)"
+    work_in: "models/role.plan.mdc"
+    update_here: "После завершения всех 21 атомарной задачи"
   progress:
-  completed: 0
-  total: 21
-  current_task: null
+    completed: 0
+    total: 21
+    current_task: null
   goals:
     - Custom roles per tenant
     - Permission assignment and management
@@ -762,8 +762,8 @@ tasks:
     - Permission checks in guards
     - Tenant-scoped RBAC
     - Resource-based permissions
-      pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (Security/RBAC)"
-      pre_commit_steps:
+  pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (Security/RBAC)"
+  pre_commit_steps:
     - "«Ревью» → permission model, role hierarchy"
     - "«Автофикс» → linter/prettier"
     - "Тесты: RBAC tests"
@@ -783,7 +783,207 @@ tasks:
       gate:
     - require: "Одобряю SAAS-017"
 
+# CRITICAL MODULES для Production SaaS (обязательные)
+
+- id: SAAS-018
+  title: Admin Dashboard & Reports (Platform Analytics)
+  status: pending
+  priority: CRITICAL
+  branch: "feature/admin/SAAS-018/admin-dashboard"
+  workflow:
+    start_trigger: "Планируй SAAS-018"
+    detailed_plan: "TBD - создать models/admin-dashboard.plan.mdc"
+    atomic_tasks: "TBD (~20-25 задач)"
+    work_in: "models/admin-dashboard.plan.mdc"
+    update_here: "После завершения всех атомарных задач"
+  progress:
+    completed: 0
+    total: 0
+    current_task: null
+  goals:
+    - Unified admin panel для Platform/Tenant admins
+    - Real-time dashboards (orders, revenue, users, products)
+    - Multi-tenant metrics aggregation
+    - Custom reports builder (CSV, PDF, Excel export)
+    - Role-based dashboard visibility
+    - Analytics widgets (charts, graphs, KPIs)
+  pre_commit_workflow: "ОБЫЧНЫЙ (Admin UI/Analytics)"
+  pre_commit_steps:
+    - "«Ревью» → dashboard logic, data aggregation, permissions"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: dashboard tests, export tests"
+    - "«Коммит» → feat(admin): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/controllers/admin/\*\*"
+    - "src/infrastructure/services/admin/\*\*"
+    - "src/infrastructure/services/analytics/\*\*"
+      steps:
+    - create AdminDashboardController with RBAC
+    - implement metrics aggregation per tenant
+    - build real-time analytics endpoints
+    - create custom reports builder
+    - add export functionality (CSV/PDF/Excel)
+    - implement dashboard widgets system
+      dod:
+    - admin dashboard functional for Platform and Tenant admins
+    - real-time metrics update correctly
+    - reports export works (CSV, PDF, Excel)
+    - role-based dashboard access enforced
+    - performance optimized for large datasets
+      gate:
+    - require: "Одобряю SAAS-018"
+
+- id: SAAS-019
+  title: Search & Filtering Engine (Elasticsearch/OpenSearch)
+  status: pending
+  priority: CRITICAL
+  branch: "feature/search/SAAS-019/search-engine"
+  workflow:
+    start_trigger: "Планируй SAAS-019"
+    detailed_plan: "TBD - создать models/search-engine.plan.mdc"
+    atomic_tasks: "TBD (~15-20 задач)"
+    work_in: "models/search-engine.plan.mdc"
+    update_here: "После завершения всех атомарных задач"
+  progress:
+    completed: 0
+    total: 0
+    current_task: null
+  goals:
+    - Elasticsearch/OpenSearch integration
+    - Full-text search across products, orders, users
+    - Faceted filtering (categories, prices, brands, attributes)
+    - Autocomplete and search suggestions
+    - Tenant-isolated search indexes
+    - Search analytics and popular queries tracking
+  pre_commit_workflow: "ОБЫЧНЫЙ (Search integration)"
+  pre_commit_steps:
+    - "«Ревью» → search logic, indexing strategy, performance"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: search tests, relevance tests"
+    - "«Коммит» → feat(search): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/services/search/\*\*"
+    - "src/infrastructure/controllers/search/\*\*"
+    - "db/migrations/\*\*search\*\*"
+      steps:
+    - integrate Elasticsearch/OpenSearch client
+    - create search indexes for products, orders, users
+    - implement full-text search with relevance scoring
+    - add faceted filtering (multi-select filters)
+    - implement autocomplete with fuzzy matching
+    - add search analytics tracking
+    - ensure tenant isolation in search indexes
+      dod:
+    - search works across products, orders, users
+    - faceted filtering functional
+    - autocomplete fast and accurate
+    - tenant isolation enforced in indexes
+    - search performance <100ms for 10k+ products
+      gate:
+    - require: "Одобряю SAAS-019"
+
+- id: SAAS-020
+  title: File & Media Management (Storage + CDN)
+  status: pending
+  priority: CRITICAL
+  branch: "feature/media/SAAS-020/media-management"
+  workflow:
+    start_trigger: "Планируй SAAS-020"
+    detailed_plan: "TBD - создать models/media-management.plan.mdc"
+    atomic_tasks: "TBD (~18-22 задачи)"
+    work_in: "models/media-management.plan.mdc"
+    update_here: "После завершения всех атомарных задач"
+  progress:
+    completed: 0
+    total: 0
+    current_task: null
+  goals:
+    - Centralized file storage (S3/MinIO/local)
+    - Image processing (resize, crop, watermark, thumbnails)
+    - CDN integration (CloudFront, Cloudflare)
+    - Video/audio upload and streaming
+    - Tenant-isolated file storage
+    - File versioning and metadata
+  pre_commit_workflow: "ОБЫЧНЫЙ (File/media handling)"
+  pre_commit_steps:
+    - "«Ревью» → storage strategy, CDN config, security"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: upload tests, processing tests"
+    - "«Коммит» → feat(media): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/services/media/\*\*"
+    - "src/infrastructure/controllers/media/\*\*"
+    - "src/infrastructure/common/storage/\*\*"
+      steps:
+    - integrate S3-compatible storage (AWS S3, MinIO, etc)
+    - implement image processing pipeline (Sharp, ImageMagick)
+    - add CDN integration for static assets
+    - create file upload endpoints with validation
+    - implement video/audio upload and streaming
+    - add file metadata and versioning
+    - ensure tenant isolation in storage buckets
+      dod:
+    - file upload works (images, videos, audio, docs)
+    - image processing functional (resize, crop, watermark)
+    - CDN serves static files efficiently
+    - tenant-isolated storage buckets
+    - file versioning works
+    - upload validation prevents malicious files
+      gate:
+    - require: "Одобряю SAAS-020"
+
+- id: SAAS-021
+  title: Multi-language & Localization (i18n/l10n)
+  status: pending
+  priority: CRITICAL
+  branch: "feature/i18n/SAAS-021/internationalization"
+  workflow:
+    start_trigger: "Планируй SAAS-021"
+    detailed_plan: "TBD - создать models/i18n.plan.mdc"
+    atomic_tasks: "TBD (~12-15 задач)"
+    work_in: "models/i18n.plan.mdc"
+    update_here: "После завершения всех атомарных задач"
+  progress:
+    completed: 0
+    total: 0
+    current_task: null
+  goals:
+    - Multi-language support (English, Russian, Spanish, etc)
+    - Dynamic content translation
+    - Locale-specific formatting (dates, currencies, numbers)
+    - Tenant-specific language preferences
+    - Translation management system
+    - RTL language support (Arabic, Hebrew)
+  pre_commit_workflow: "ОБЫЧНЫЙ (i18n implementation)"
+  pre_commit_steps:
+    - "«Ревью» → i18n strategy, translation keys, locale handling"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: i18n tests, locale tests"
+    - "«Коммит» → feat(i18n): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/common/i18n/\*\*"
+    - "src/infrastructure/services/translation/\*\*"
+    - "db/migrations/\*\*translation\*\*"
+      steps:
+    - integrate i18n library (i18next, nestjs-i18n)
+    - create translation files for supported languages
+    - implement dynamic content translation (products, categories, etc)
+    - add locale-specific formatters (dates, currencies)
+    - create translation management endpoints
+    - add RTL language support
+    - ensure tenant-specific language preferences
+      dod:
+    - multi-language support works (at least 3 languages)
+    - dynamic content translations functional
+    - locale formatting correct (dates, currencies)
+    - tenant language preferences enforced
+    - translation management UI accessible
+    - RTL languages render correctly
+      gate:
+    - require: "Одобряю SAAS-021"
+
 notes:
 
 - Any change to this plan must be requested via trigger "Планируй" and approved.
 - For detailed atomic tasks, see models/\*.plan.mdc files (reference only, not binding)
+- CRITICAL modules (SAAS-018...021) are mandatory for production SaaS deployment
