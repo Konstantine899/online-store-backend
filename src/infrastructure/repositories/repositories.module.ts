@@ -17,6 +17,7 @@ import {
     UserModel,
     UserRoleModel,
 } from '@app/domain/models';
+import { TenantContext } from '@app/infrastructure/common/context';
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { BrandRepository } from './brand/brand.repository';
@@ -57,6 +58,7 @@ import { UserRepository } from './user/user.repository';
         ]),
     ],
     providers: [
+        TenantContext,
         BrandRepository,
         CartRepository,
         CategoryRepository,

@@ -936,137 +936,11 @@ describe('UserService', () => {
     });
 
     // ============================================================
-    // TEST-030.3: Business Flags - Parameterized Tests
+    // SAAS-002: Business Flags Operations removed (e-commerce specific)
+    // Removed: upgradePremium/downgradePremium, setEmployee/unsetEmployee,
+    //          setVip/unsetVip, setHighValue/unsetHighValue,
+    //          setWholesale/unsetWholesale, setAffiliate/unsetAffiliate
     // ============================================================
-    describe('Business Flags Operations (Parameterized)', () => {
-        const businessFlagOperations: Array<{
-            setMethod: string;
-            unsetMethod: string;
-            flag: string;
-            description: string;
-        }> = [
-            {
-                setMethod: 'upgradePremium',
-                unsetMethod: 'downgradePremium',
-                flag: 'isPremium',
-                description: 'Premium subscription',
-            },
-            {
-                setMethod: 'setEmployee',
-                unsetMethod: 'unsetEmployee',
-                flag: 'isEmployee',
-                description: 'Employee flag',
-            },
-            {
-                setMethod: 'setVip',
-                unsetMethod: 'unsetVip',
-                flag: 'isVip',
-                description: 'VIP customer',
-            },
-            {
-                setMethod: 'setHighValue',
-                unsetMethod: 'unsetHighValue',
-                flag: 'isHighValue',
-                description: 'High value customer',
-            },
-            {
-                setMethod: 'setWholesale',
-                unsetMethod: 'unsetWholesale',
-                flag: 'isWholesale',
-                description: 'Wholesale customer',
-            },
-            {
-                setMethod: 'setAffiliate',
-                unsetMethod: 'unsetAffiliate',
-                flag: 'isAffiliate',
-                description: 'Affiliate partner',
-            },
-        ];
-
-        describe('Set operations', () => {
-            test.each(businessFlagOperations)(
-                '$setMethod: успешно устанавливает $flag ($description)',
-                async ({ setMethod, flag }) => {
-                    const updatedUser = { ...mockUser, [flag]: true };
-                    (userRepository as unknown as Record<string, jest.Mock>)[
-                        setMethod
-                    ].mockResolvedValue(updatedUser);
-
-                    const result = await (
-                        service as unknown as Record<string, jest.Mock>
-                    )[setMethod](1);
-
-                    expect(
-                        (
-                            userRepository as unknown as Record<
-                                string,
-                                jest.Mock
-                            >
-                        )[setMethod],
-                    ).toHaveBeenCalledWith(1);
-                    expect(result).toEqual(updatedUser);
-                    expect(result[flag]).toBe(true);
-                },
-            );
-
-            test.each(businessFlagOperations)(
-                '$setMethod: 404 если пользователь не найден',
-                async ({ setMethod }) => {
-                    (userRepository as unknown as Record<string, jest.Mock>)[
-                        setMethod
-                    ].mockResolvedValue(null);
-
-                    await expect(
-                        (service as unknown as Record<string, jest.Mock>)[
-                            setMethod
-                        ](999),
-                    ).rejects.toThrow(NotFoundException);
-                },
-            );
-        });
-
-        describe('Unset operations', () => {
-            test.each(businessFlagOperations)(
-                '$unsetMethod: успешно снимает $flag ($description)',
-                async ({ unsetMethod, flag }) => {
-                    const updatedUser = { ...mockUser, [flag]: false };
-                    (userRepository as unknown as Record<string, jest.Mock>)[
-                        unsetMethod
-                    ].mockResolvedValue(updatedUser);
-
-                    const result = await (
-                        service as unknown as Record<string, jest.Mock>
-                    )[unsetMethod](1);
-
-                    expect(
-                        (
-                            userRepository as unknown as Record<
-                                string,
-                                jest.Mock
-                            >
-                        )[unsetMethod],
-                    ).toHaveBeenCalledWith(1);
-                    expect(result).toEqual(updatedUser);
-                    expect(result[flag]).toBe(false);
-                },
-            );
-
-            test.each(businessFlagOperations)(
-                '$unsetMethod: 404 если пользователь не найден',
-                async ({ unsetMethod }) => {
-                    (userRepository as unknown as Record<string, jest.Mock>)[
-                        unsetMethod
-                    ].mockResolvedValue(null);
-
-                    await expect(
-                        (service as unknown as Record<string, jest.Mock>)[
-                            unsetMethod
-                        ](999),
-                    ).rejects.toThrow(NotFoundException);
-                },
-            );
-        });
-    });
 
     // ============================================================
     // TEST-030.4: Password Management - Admin Force Update
@@ -1182,13 +1056,7 @@ describe('UserService', () => {
                 totalUsers: 100,
                 activeUsers: 80,
                 blockedUsers: 5,
-                vipUsers: 10,
                 newsletterSubscribers: 60,
-                premiumUsers: 15,
-                employees: 8,
-                affiliates: 12,
-                wholesaleUsers: 5,
-                highValueUsers: 20,
             };
 
             userRepository.getUserStats = jest

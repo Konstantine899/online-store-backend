@@ -5,11 +5,11 @@ import {
     RefreshTokenRepository,
     UserRepository,
 } from '@app/infrastructure/repositories';
-import { NotFoundException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
 import { LoginHistoryService } from '@app/infrastructure/services/login-history/login-history.service';
 import { RoleService } from '@app/infrastructure/services/role/role.service';
 import { UserService } from '@app/infrastructure/services/user/user.service';
+import { NotFoundException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 
 describe('UserService - Flags and Preferences', () => {
     let service: UserService;
@@ -261,13 +261,7 @@ describe('UserService - Flags and Preferences', () => {
                 totalUsers: 100,
                 activeUsers: 80,
                 blockedUsers: 5,
-                vipUsers: 10,
                 newsletterSubscribers: 60,
-                premiumUsers: 15,
-                employees: 3,
-                affiliates: 2,
-                wholesaleUsers: 8,
-                highValueUsers: 12,
             };
 
             userRepository.getUserStats.mockResolvedValue(mockStats);
@@ -283,13 +277,7 @@ describe('UserService - Flags and Preferences', () => {
                 totalUsers: 0,
                 activeUsers: 0,
                 blockedUsers: 0,
-                vipUsers: 0,
                 newsletterSubscribers: 0,
-                premiumUsers: 0,
-                employees: 0,
-                affiliates: 0,
-                wholesaleUsers: 0,
-                highValueUsers: 0,
             };
 
             userRepository.getUserStats.mockResolvedValue(mockStats);

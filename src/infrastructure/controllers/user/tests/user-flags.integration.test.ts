@@ -37,8 +37,6 @@ describe('User Flags Integration Tests', () => {
                 isNewsletterSubscribed: true,
                 isMarketingConsent: false,
                 isCookieConsent: true,
-                isVipCustomer: false,
-                isBetaTester: true,
             };
 
             const response = await request(app.getHttpServer())
@@ -58,7 +56,7 @@ describe('User Flags Integration Tests', () => {
             );
             const flagsData = {
                 isActive: false,
-                isVipCustomer: true,
+                isNewsletterSubscribed: true,
             };
 
             const response = await request(app.getHttpServer())
@@ -68,7 +66,7 @@ describe('User Flags Integration Tests', () => {
                 .expect(200);
 
             expect(response.body.data.isActive).toBe(false);
-            expect(response.body.data.isVipCustomer).toBe(true);
+            expect(response.body.data.isNewsletterSubscribed).toBe(true);
         });
 
         it('400: invalid data types', async () => {
@@ -78,7 +76,7 @@ describe('User Flags Integration Tests', () => {
             );
             const invalidData = {
                 isActive: 'invalid_boolean',
-                isVipCustomer: 123,
+                isNewsletterSubscribed: 'not_a_boolean',
             };
 
             const response = await request(app.getHttpServer())
@@ -122,7 +120,7 @@ describe('User Flags Integration Tests', () => {
             );
             const flagsData = {
                 isActive: null,
-                isVipCustomer: undefined,
+                isNewsletterSubscribed: undefined,
             };
 
             const response = await request(app.getHttpServer())
