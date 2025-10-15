@@ -34,9 +34,24 @@ tasks:
 
 - id: SAAS-001
   title: Enable multi-tenant core (DB + Middleware + Scope)
+  status: completed
   branch: "feature/infra/SAAS-001/enable-multi-tenant-core"
-  pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: SaaS core/multi-tenancy)"
-  pre_commit_steps:
+  workflow:
+  start_trigger: "Планируй SAAS-001"
+  detailed_plan: "N/A (single epic, no atomic tasks)"
+  work_in: "saas.plan.mdc"
+  update_here: "After implementation complete"
+  progress:
+  completed: 1
+  total: 1
+  current_task: null
+  goals:
+    - Multi-tenant DB schema with tenant_id isolation
+    - Tenant middleware with x-tenant-id header support
+    - Repository-level tenant scoping enforcement
+    - Swagger documentation for global tenant header
+      pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (критичный модуль: SaaS core/multi-tenancy)"
+      pre_commit_steps:
     - "«Ревью» → tenant isolation, multi-tenancy logic, security"
     - "«Оптимизируй» → DB queries, tenant scoping performance"
     - "«Автофикс» → linter/prettier"
@@ -66,13 +81,28 @@ tasks:
 
 - id: SAAS-002
   title: User module MVP cleanup (remove e-commerce hardcoded roles)
+  status: completed
   branch: "feature/user/SAAS-002/user-mvp-cleanup"
-  context: |
-  ЦЕЛЬ: Превратить User модуль из e-commerce специфичного в универсальный SaaS компонент.
-  УДАЛЯЕМ: Хардкод бизнес-ролей (VIP, Premium, Wholesale, Employee, Affiliate, HighValue, Beta)
-  ОСТАВЛЯЕМ: Lifecycle флаги (active/blocked/suspended/deleted, email/phone verified)
-  pre_commit_workflow: "ОБЫЧНЫЙ (User API refactoring)"
-  pre_commit_steps:
+  workflow:
+  start_trigger: "Планируй SAAS-002"
+  detailed_plan: "N/A (single epic, no atomic tasks)"
+  work_in: "saas.plan.mdc"
+  update_here: "After implementation complete"
+  progress:
+  completed: 1
+  total: 1
+  current_task: null
+  goals:
+    - Remove e-commerce specific business flags from User model
+    - Keep universal lifecycle flags (active/blocked/verified)
+    - Clean up endpoints and tests for removed features
+    - Update Swagger documentation
+      context: |
+      ЦЕЛЬ: Превратить User модуль из e-commerce специфичного в универсальный SaaS компонент.
+      УДАЛЯЕМ: Хардкод бизнес-ролей (VIP, Premium, Wholesale, Employee, Affiliate, HighValue, Beta)
+      ОСТАВЛЯЕМ: Lifecycle флаги (active/blocked/suspended/deleted, email/phone verified)
+      pre_commit_workflow: "ОБЫЧНЫЙ (User API refactoring)"
+      pre_commit_steps:
     - "«Ревью» → API contracts, breaking changes check"
     - "«Автофикс» → linter/prettier"
     - "Тесты: unit + integration tests"
@@ -114,9 +144,24 @@ tasks:
 
 - id: SAAS-003
   title: Catalog tenant filters and pagination
+  status: completed
   branch: "feature/catalog/SAAS-003/tenant-pagination"
-  pre_commit_workflow: "ОБЫЧНЫЙ (Catalog refactoring)"
-  pre_commit_steps:
+  workflow:
+  start_trigger: "Планируй SAAS-003"
+  detailed_plan: "N/A (single epic, Category + Brand done inline)"
+  work_in: "saas.plan.mdc"
+  update_here: "After implementation complete"
+  progress:
+  completed: 1
+  total: 1
+  current_task: null
+  goals:
+    - Add tenant_id filters to Category and Brand repositories
+    - Implement pagination with { data, meta } contract
+    - Add composite indexes (tenant_id, name) for performance
+    - Validate pagination inputs using PaginationValidator
+      pre_commit_workflow: "ОБЫЧНЫЙ (Catalog refactoring)"
+      pre_commit_steps:
     - "«Ревью» → pagination contracts, tenant filters"
     - "«Оптимизируй» → DB queries, indexes"
     - "«Автофикс» → linter/prettier"
@@ -137,6 +182,608 @@ tasks:
       gate:
     - require: "Одобряю SAAS-003"
 
+- id: SAAS-004
+  title: Cart module (tenant isolation + guest support)
+  status: pending
+  branch: "feature/cart/SAAS-004/cart-complete"
+  workflow:
+  start_trigger: "Планируй SAAS-004"
+  detailed_plan: "models/cart.plan.mdc"
+  atomic_tasks: "SAAS-004-00 до SAAS-004-17 (18 задач)"
+  work_in: "models/cart.plan.mdc"
+  update_here: "После завершения всех 18 атомарных задач"
+  progress:
+  completed: 0
+  total: 18
+  current_task: null
+  goals:
+    - Cart operations with tenant isolation
+    - Guest cart support (session-based)
+    - Authenticated user cart persistence
+    - Cart expiration logic (30 days inactive)
+    - Promo code application
+    - Cart CRUD operations (add/remove/update/clear)
+      pre_commit_workflow: "ОБЫЧНЫЙ (Cart/checkout logic)"
+      pre_commit_steps:
+    - "«Ревью» → cart logic, pricing, race conditions"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: cart integration + unit tests"
+    - "«Коммит» → feat(cart): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/controllers/cart/\*\*"
+    - "src/infrastructure/services/cart/\*\*"
+    - "src/infrastructure/repositories/cart/\*\*"
+    - "db/migrations/\*\*cart\*\*"
+      steps:
+    - create CartController with RBAC (CUSTOMER, STAFF roles)
+    - migrations for carts + cart_items with tenant_id
+    - CartService with add/remove/update/clear operations
+    - guest cart support (session-based)
+    - cart expiration logic (30 days inactive)
+    - promo code application
+      dod:
+    - cart operations tenant-isolated
+    - guest + authenticated carts work
+    - unit + integration tests pass
+    - Swagger documentation complete
+      gate:
+    - require: "Одобряю SAAS-004"
+
+- id: SAAS-005
+  title: Order management (tenant isolation + status tracking)
+  status: pending
+  branch: "feature/order/SAAS-005/order-complete"
+  workflow:
+  start_trigger: "Планируй SAAS-005"
+  detailed_plan: "models/order.plan.mdc"
+  atomic_tasks: "SAAS-005-00 до SAAS-005-18 (19 задач)"
+  work_in: "models/order.plan.mdc"
+  update_here: "После завершения всех 19 атомарных задач"
+  progress:
+  completed: 0
+  total: 19
+  current_task: null
+  goals:
+    - Order state machine (pending → paid → processing → shipped → delivered)
+    - Tenant-isolated order management
+    - Order cancellation and refund logic
+    - Order status history tracking
+    - Admin order management
+    - Order statistics per tenant
+      pre_commit_workflow: "ОБЫЧНЫЙ (Order/checkout logic)"
+      pre_commit_steps:
+    - "«Ревью» → order state machine, payment integration"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: order workflow tests"
+    - "«Коммит» → feat(order): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/controllers/order/\*\*"
+    - "src/infrastructure/services/order/\*\*"
+    - "src/infrastructure/repositories/order/\*\*"
+    - "db/migrations/\*\*order\*\*"
+      steps:
+    - OrderController with RBAC
+    - migrations for orders + order_items + order_status_history with tenant_id
+    - order state machine (pending → paid → processing → shipped → delivered)
+    - order cancellation logic
+    - order stats per tenant
+      dod:
+    - orders tenant-isolated
+    - status transitions validated
+    - integration tests for full order flow
+    - admin can manage all tenant orders
+      gate:
+    - require: "Одобряю SAAS-005"
+
+- id: SAAS-006
+  title: Payment integration (Stripe/PayPal + tenant config)
+  status: pending
+  branch: "feature/payment/SAAS-006/payment-complete"
+  workflow:
+  start_trigger: "Планируй SAAS-006"
+  detailed_plan: "models/payment.plan.mdc"
+  atomic_tasks: "SAAS-006-00 до SAAS-006-14 (15 задач)"
+  work_in: "models/payment.plan.mdc"
+  update_here: "После завершения всех 15 атомарных задач"
+  progress:
+  completed: 0
+  total: 15
+  current_task: null
+  goals:
+    - Multi-gateway support (Stripe, PayPal)
+    - Tenant-specific payment configs (API keys per tenant)
+    - Payment webhooks handling
+    - Refund and chargeback processing
+    - Payment transaction history
+    - Idempotency guarantees
+      pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (Payment/финансы)"
+      pre_commit_steps:
+    - "«Ревью» → payment security, idempotency, webhooks"
+    - "«Оптимизируй» → payment gateway retry logic"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: payment mocks + integration"
+    - "«Коммит» → feat(payment): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/services/payment/\*\*"
+    - "src/infrastructure/controllers/payment/\*\*"
+    - "db/migrations/\*\*payment\*\*"
+      steps:
+    - payment gateway abstraction (Stripe, PayPal)
+    - tenant-specific payment config (API keys per tenant)
+    - payment webhooks handling
+    - refund logic
+    - payment transaction history
+      dod:
+    - payments work with Stripe/PayPal
+    - tenant-scoped payment configs
+    - webhooks processed correctly
+    - refunds work
+    - idempotency guaranteed
+      gate:
+    - require: "Одобряю SAAS-006"
+
+- id: SAAS-007
+  title: Billing & Subscriptions (SaaS monetization)
+  status: pending
+  branch: "feature/billing/SAAS-007/billing-complete"
+  workflow:
+  start_trigger: "Планируй SAAS-007"
+  detailed_plan: "models/billing.plan.mdc"
+  atomic_tasks: "SAAS-007-00 до SAAS-007-14 (15 задач)"
+  work_in: "models/billing.plan.mdc"
+  update_here: "После завершения всех 15 атомарных задач"
+  progress:
+  completed: 0
+  total: 15
+  current_task: null
+  goals:
+    - Subscription plans (Free, Pro, Enterprise)
+    - Tenant subscription management
+    - Usage tracking (API calls, storage, users)
+    - Invoicing and receipts generation
+    - Upgrade/downgrade flow
+    - Stripe Billing integration
+      pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (Billing/revenue)"
+      pre_commit_steps:
+    - "«Ревью» → subscription logic, billing cycles, invoices"
+    - "«Оптимизируй» → billing calculations"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: billing workflow tests"
+    - "«Коммит» → feat(billing): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/controllers/billing/\*\*"
+    - "src/infrastructure/services/billing/\*\*"
+    - "db/migrations/\*\*billing\*\*"
+      steps:
+    - subscription plans (Free, Pro, Enterprise)
+    - tenant subscription management
+    - usage tracking (API calls, storage, users)
+    - invoicing + receipts
+    - upgrade/downgrade flow
+      dod:
+    - subscription plans active
+    - usage limits enforced
+    - invoices generated
+    - stripe billing integration
+      gate:
+    - require: "Одобряю SAAS-007"
+
+- id: SAAS-008
+  title: Rating & Review system (tenant isolation)
+  status: pending
+  branch: "feature/rating/SAAS-008/rating-complete"
+  workflow:
+  start_trigger: "Планируй SAAS-008"
+  detailed_plan: "models/rating.plan.mdc"
+  atomic_tasks: "SAAS-008-00 до SAAS-008-07 (8 задач)"
+  work_in: "models/rating.plan.mdc"
+  update_here: "После завершения всех 8 атомарных задач"
+  progress:
+  completed: 0
+  total: 8
+  current_task: null
+  goals:
+    - Tenant-isolated product ratings
+    - Rating validation (1-5 stars)
+    - Verified purchase badges
+    - Average rating calculation
+    - Moderation workflow (approve/reject)
+      pre_commit_workflow: "ОБЫЧНЫЙ (Rating/review logic)"
+      pre_commit_steps:
+    - "«Ревью» → rating validation, moderation"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: rating integration tests"
+    - "«Коммит» → feat(rating): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/controllers/rating/\*\*"
+    - "src/infrastructure/services/rating/\*\*"
+    - "src/infrastructure/repositories/rating/\*\*"
+      steps:
+    - tenant_id filters in RatingRepository
+    - rating CRUD with validation (1-5 stars)
+    - verified purchase badges
+    - moderation workflow (approve/reject)
+      dod:
+    - ratings tenant-isolated
+    - average rating calculation correct
+    - moderation works
+      gate:
+    - require: "Одобряю SAAS-008"
+
+- id: SAAS-009
+  title: Notification system (email/SMS/push)
+  status: pending
+  branch: "feature/notification/SAAS-009/notification-complete"
+  workflow:
+  start_trigger: "Планируй SAAS-009"
+  detailed_plan: "models/notification.plan.mdc"
+  atomic_tasks: "SAAS-009-00 до SAAS-009-06 (7 задач)"
+  work_in: "models/notification.plan.mdc"
+  update_here: "После завершения всех 7 атомарных задач"
+  progress:
+  completed: 0
+  total: 7
+  current_task: null
+  goals:
+    - Multi-channel notifications (email, SMS, push)
+    - Tenant-specific notification templates
+    - Event-based triggers (order placed, payment received)
+    - Notification history and delivery status
+    - Unsubscribe management
+      pre_commit_workflow: "ОБЫЧНЫЙ (Notification service)"
+      pre_commit_steps:
+    - "«Ревью» → notification templates, delivery"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: notification delivery tests"
+    - "«Коммит» → feat(notification): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/services/notification/\*\*"
+    - "src/infrastructure/controllers/notification/\*\*"
+    - "db/migrations/\*\*notification\*\*"
+      steps:
+    - notification channels (email, SMS, push)
+    - notification templates per tenant
+    - event-based triggers (order placed, payment received)
+    - notification history
+    - unsubscribe logic
+      dod:
+    - email/SMS notifications work
+    - templates customizable per tenant
+    - delivery status tracked
+      gate:
+    - require: "Одобряю SAAS-009"
+
+- id: SAAS-010
+  title: Return & Exchange management
+  status: pending
+  branch: "feature/return/SAAS-010/return-complete"
+  workflow:
+  start_trigger: "Планируй SAAS-010"
+  detailed_plan: "models/return-exchange.plan.mdc"
+  atomic_tasks: "SAAS-010-00 до SAAS-010-14 (15 задач)"
+  work_in: "models/return-exchange.plan.mdc"
+  update_here: "После завершения всех 15 атомарных задач"
+  progress:
+  completed: 0
+  total: 15
+  current_task: null
+  goals:
+    - Return request creation and tracking
+    - Return approval workflow
+    - Refund processing integration
+    - Exchange item management
+    - Tenant-specific return policies
+      pre_commit_workflow: "ОБЫЧНЫЙ (Return logic)"
+      pre_commit_steps:
+    - "«Ревью» → return policies, refund integration"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: return workflow tests"
+    - "«Коммит» → feat(return): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/controllers/return/\*\*"
+    - "src/infrastructure/services/return/\*\*"
+    - "db/migrations/\*\*return\*\*"
+      steps:
+    - return request creation
+    - return approval workflow
+    - refund processing
+    - exchange management
+      dod:
+    - returns tenant-isolated
+    - refunds work
+    - exchange flow complete
+      gate:
+    - require: "Одобряю SAAS-010"
+
+- id: SAAS-011
+  title: Review & Comment system
+  status: pending
+  branch: "feature/review/SAAS-011/review-complete"
+  workflow:
+  start_trigger: "Планируй SAAS-011"
+  detailed_plan: "models/review-comment.plan.mdc"
+  atomic_tasks: "SAAS-011-00 до SAAS-011-14 (15 задач)"
+  work_in: "models/review-comment.plan.mdc"
+  update_here: "После завершения всех 15 атомарных задач"
+  progress:
+  completed: 0
+  total: 15
+  current_task: null
+  goals:
+    - Product reviews with text and rating
+    - Review comments and replies
+    - Review helpfulness voting
+    - Spam detection and moderation flags
+    - Tenant-isolated reviews
+      pre_commit_workflow: "ОБЫЧНЫЙ (Review/comment logic)"
+      pre_commit_steps:
+    - "«Ревью» → review moderation, spam detection"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: review tests"
+    - "«Коммит» → feat(review): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/controllers/review/\*\*"
+    - "src/infrastructure/services/review/\*\*"
+      steps:
+    - product reviews with text + rating
+    - review comments (replies)
+    - review helpfulness votes
+    - spam/moderation flags
+      dod:
+    - reviews tenant-isolated
+    - comments work
+    - moderation functional
+      gate:
+    - require: "Одобряю SAAS-011"
+
+- id: SAAS-012
+  title: Shipping & Delivery management
+  status: pending
+  branch: "feature/shipping/SAAS-012/shipping-complete"
+  workflow:
+  start_trigger: "Планируй SAAS-012"
+  detailed_plan: "models/shipping.plan.mdc"
+  atomic_tasks: "SAAS-012-00 до SAAS-012-14 (15 задач)"
+  work_in: "models/shipping.plan.mdc"
+  update_here: "После завершения всех 15 атомарных задач"
+  progress:
+  completed: 0
+  total: 15
+  current_task: null
+  goals:
+    - Shipping zones configuration
+    - Dynamic shipping rate calculation
+    - Carrier integration (UPS, FedEx, DHL)
+    - Tracking number management
+    - Tenant-specific carrier settings
+      pre_commit_workflow: "ОБЫЧНЫЙ (Shipping logic)"
+      pre_commit_steps:
+    - "«Ревью» → shipping calculations, carrier integration"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: shipping tests"
+    - "«Коммит» → feat(shipping): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/services/shipping/\*\*"
+    - "db/migrations/\*\*shipping\*\*"
+      steps:
+    - shipping zones configuration
+    - shipping rate calculation
+    - carrier integration (UPS, FedEx, etc)
+    - tracking number management
+      dod:
+    - shipping rates calculated correctly
+    - tracking works
+    - tenant-specific carriers
+      gate:
+    - require: "Одобряю SAAS-012"
+
+- id: SAAS-013
+  title: Store/Tenant management API
+  status: pending
+  branch: "feature/store/SAAS-013/store-complete"
+  workflow:
+  start_trigger: "Планируй SAAS-013"
+  detailed_plan: "models/store.plan.mdc"
+  atomic_tasks: "SAAS-013-00 до SAAS-013-14 (15 задач)"
+  work_in: "models/store.plan.mdc"
+  update_here: "После завершения всех 15 атомарных задач"
+  progress:
+  completed: 0
+  total: 15
+  current_task: null
+  goals:
+    - Tenant CRUD operations
+    - Tenant settings (branding, logo, domain)
+    - Tenant onboarding flow
+    - Feature flags per tenant
+    - Custom domain support
+      pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (Tenant management)"
+      pre_commit_steps:
+    - "«Ревью» → tenant provisioning, settings isolation"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: tenant management tests"
+    - "«Коммит» → feat(store): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/controllers/store/\*\*"
+    - "src/infrastructure/services/store/\*\*"
+      steps:
+    - tenant CRUD operations
+    - tenant settings (branding, logo, domain)
+    - tenant onboarding flow
+    - feature flags per tenant
+      dod:
+    - tenant self-service works
+    - custom domains supported
+    - settings isolated per tenant
+      gate:
+    - require: "Одобряю SAAS-013"
+
+- id: SAAS-014
+  title: Wishlist functionality
+  status: pending
+  branch: "feature/wishlist/SAAS-014/wishlist-complete"
+  workflow:
+  start_trigger: "Планируй SAAS-014"
+  detailed_plan: "models/wishlist.plan.mdc"
+  atomic_tasks: "SAAS-014-00 до SAAS-014-14 (15 задач)"
+  work_in: "models/wishlist.plan.mdc"
+  update_here: "После завершения всех 15 атомарных задач"
+  progress:
+  completed: 0
+  total: 15
+  current_task: null
+  goals:
+    - Wishlist CRUD operations
+    - Add/remove products from wishlist
+    - Wishlist sharing functionality
+    - Multiple wishlists per user
+    - Tenant-isolated wishlists
+      pre_commit_workflow: "ОБЫЧНЫЙ (Wishlist logic)"
+      pre_commit_steps:
+    - "«Ревью» → wishlist operations"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: wishlist tests"
+    - "«Коммит» → feat(wishlist): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/controllers/wishlist/\*\*"
+    - "src/infrastructure/services/wishlist/\*\*"
+      steps:
+    - wishlist CRUD operations
+    - add/remove products
+    - wishlist sharing
+      dod:
+    - wishlist tenant-isolated
+    - sharing works
+    - tests pass
+      gate:
+    - require: "Одобряю SAAS-014"
+
+- id: SAAS-015
+  title: Technical models (audit, logs, analytics)
+  status: pending
+  branch: "feature/technical/SAAS-015/technical-complete"
+  workflow:
+  start_trigger: "Планируй SAAS-015"
+  detailed_plan: "models/technical-models.plan.mdc"
+  atomic_tasks: "SAAS-015-00 до SAAS-015-19 (20 задач)"
+  work_in: "models/technical-models.plan.mdc"
+  update_here: "После завершения всех 20 атомарных задач"
+  progress:
+  completed: 0
+  total: 20
+  current_task: null
+  goals:
+    - Audit trail for sensitive operations
+    - Activity logs per tenant
+    - Analytics dashboard data collection
+    - Performance metrics tracking
+    - Tenant-scoped logging
+      pre_commit_workflow: "ОБЫЧНЫЙ (Technical infrastructure)"
+      pre_commit_steps:
+    - "«Ревью» → audit logging, analytics"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: audit tests"
+    - "«Коммит» → feat(technical): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/services/audit/\*\*"
+    - "src/infrastructure/services/analytics/\*\*"
+      steps:
+    - audit trail for sensitive operations
+    - activity logs per tenant
+    - analytics dashboard data
+    - performance metrics
+      dod:
+    - audit logs work
+    - analytics queryable
+    - tenant-scoped
+      gate:
+    - require: "Одобряю SAAS-015"
+
+- id: SAAS-016
+  title: Product module (advanced catalog features)
+  status: pending
+  branch: "feature/product/SAAS-016/product-complete"
+  workflow:
+  start_trigger: "Планируй SAAS-016"
+  detailed_plan: "models/product.plan.mdc"
+  atomic_tasks: "SAAS-016-00 до SAAS-016-22 (23 задачи)"
+  work_in: "models/product.plan.mdc"
+  update_here: "После завершения всех 23 атомарных задач"
+  progress:
+  completed: 0
+  total: 23
+  current_task: null
+  goals:
+    - Product variants (size, color, etc)
+    - Product properties and attributes
+    - Inventory management and tracking
+    - Advanced search and filters
+    - Product import/export
+    - Tenant-isolated products
+      pre_commit_workflow: "ОБЫЧНЫЙ (Product catalog)"
+      pre_commit_steps:
+    - "«Ревью» → product variants, inventory"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: product tests"
+    - "«Коммит» → feat(product): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/controllers/product/\*\*"
+    - "src/infrastructure/services/product/\*\*"
+      steps:
+    - product variants (size, color)
+    - product properties/attributes
+    - inventory management
+    - product search/filters
+      dod:
+    - variants work
+    - inventory tracked
+    - search functional
+      gate:
+    - require: "Одобряю SAAS-016"
+
+- id: SAAS-017
+  title: Role & Permission management (advanced RBAC)
+  status: pending
+  branch: "feature/role/SAAS-017/role-complete"
+  workflow:
+  start_trigger: "Планируй SAAS-017"
+  detailed_plan: "models/role.plan.mdc"
+  atomic_tasks: "SAAS-017-00 до SAAS-017-20 (21 задача)"
+  work_in: "models/role.plan.mdc"
+  update_here: "После завершения всех 21 атомарной задачи"
+  progress:
+  completed: 0
+  total: 21
+  current_task: null
+  goals:
+    - Custom roles per tenant
+    - Permission assignment and management
+    - Role hierarchy support
+    - Permission checks in guards
+    - Tenant-scoped RBAC
+    - Resource-based permissions
+      pre_commit_workflow: "ТЩАТЕЛЬНЫЙ (Security/RBAC)"
+      pre_commit_steps:
+    - "«Ревью» → permission model, role hierarchy"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: RBAC tests"
+    - "«Коммит» → feat(role): <TASK_ID> complete"
+      files_scope:
+    - "src/infrastructure/services/role/\*\*"
+    - "src/infrastructure/controllers/role/\*\*"
+      steps:
+    - custom roles per tenant
+    - permission assignment
+    - role hierarchy
+    - permission checks in guards
+      dod:
+    - custom roles work
+    - permissions enforced
+    - tenant-scoped roles
+      gate:
+    - require: "Одобряю SAAS-017"
+
 notes:
 
 - Any change to this plan must be requested via trigger "Планируй" and approved.
+- For detailed atomic tasks, see models/\*.plan.mdc files (reference only, not binding)
