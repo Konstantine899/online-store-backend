@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { CartModel, ProductModel, CartProductModel } from '@app/domain/models';
+import { CartModel, CartProductModel, ProductModel } from '@app/domain/models';
 import { ICartRepository } from '@app/domain/repositories';
 import { TenantContext } from '@app/infrastructure/common/context';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 
 @Injectable()
 export class CartRepository implements ICartRepository {
@@ -19,7 +19,7 @@ export class CartRepository implements ICartRepository {
             where: {
                 id: cartId,
                 tenant_id: tenantId,
-            } as any,
+            },
             attributes: ['id'],
             include: [
                 {
@@ -32,7 +32,7 @@ export class CartRepository implements ICartRepository {
 
     public async createCart(): Promise<CartModel> {
         const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
-        return this.cartModel.create({ tenant_id: tenantId } as any);
+        return this.cartModel.create({ tenant_id: tenantId });
     }
 
     public async appendToCart(
@@ -45,7 +45,7 @@ export class CartRepository implements ICartRepository {
             where: {
                 id: cart_id,
                 tenant_id: tenantId,
-            } as any,
+            },
             attributes: ['id'],
             include: [
                 {
@@ -56,7 +56,7 @@ export class CartRepository implements ICartRepository {
         });
 
         if (!cart) {
-            cart = await this.cartModel.create({ tenant_id: tenantId } as any);
+            cart = await this.cartModel.create({ tenant_id: tenantId });
         }
 
         const cart_product = await this.cartProductModel.findOne({
@@ -73,7 +73,8 @@ export class CartRepository implements ICartRepository {
             cart_id,
             product_id,
             quantity,
-        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+            price: 0, // Will be updated by service layer
+        });
         await cart.reload();
         return cart;
     }
@@ -88,7 +89,7 @@ export class CartRepository implements ICartRepository {
             where: {
                 id: cart_id,
                 tenant_id: tenantId,
-            } as any,
+            },
             include: [
                 {
                     model: ProductModel,
@@ -97,7 +98,7 @@ export class CartRepository implements ICartRepository {
             ],
         });
         if (!cart) {
-            cart = await this.cartModel.create({ tenant_id: tenantId } as any);
+            cart = await this.cartModel.create({ tenant_id: tenantId });
         }
 
         const cart_product = await this.cartProductModel.findOne({
@@ -123,14 +124,14 @@ export class CartRepository implements ICartRepository {
             where: {
                 id: cart_id,
                 tenant_id: tenantId,
-            } as any,
+            },
             include: {
                 model: ProductModel,
                 as: 'products',
             },
         });
         if (!cart) {
-            cart = await this.cartModel.create({ tenant_id: tenantId } as any);
+            cart = await this.cartModel.create({ tenant_id: tenantId });
         }
 
         const cart_product = await this.cartProductModel.findOne({
@@ -162,7 +163,7 @@ export class CartRepository implements ICartRepository {
             where: {
                 id: cart_id,
                 tenant_id: tenantId,
-            } as any,
+            },
             include: [
                 {
                     model: ProductModel,
@@ -171,7 +172,7 @@ export class CartRepository implements ICartRepository {
             ],
         });
         if (!cart) {
-            return await this.cartModel.create({ tenant_id: tenantId } as any);
+            return await this.cartModel.create({ tenant_id: tenantId });
         }
         const cart_product = await this.cartProductModel.findOne({
             where: {
@@ -192,7 +193,7 @@ export class CartRepository implements ICartRepository {
             where: {
                 id: cart_id,
                 tenant_id: tenantId,
-            } as any,
+            },
             include: [
                 {
                     model: ProductModel,
@@ -201,7 +202,7 @@ export class CartRepository implements ICartRepository {
             ],
         });
         if (!cart) {
-            cart = await this.cartModel.create({ tenant_id: tenantId } as any);
+            cart = await this.cartModel.create({ tenant_id: tenantId });
         }
         await this.cartProductModel.destroy({ where: { cart_id } });
         await cart.reload();
