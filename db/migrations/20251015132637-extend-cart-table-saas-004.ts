@@ -51,7 +51,8 @@ const migration = {
                     type: DataTypes.STRING(20),
                     allowNull: false,
                     defaultValue: 'active',
-                    comment: 'Cart status: active, abandoned, converted, expired',
+                    comment:
+                        'Cart status: active, abandoned, converted, expired',
                 },
             },
             {
@@ -93,10 +94,16 @@ const migration = {
         // Добавляем каждую колонку с проверкой
         for (const column of columnsToAdd) {
             try {
-                await queryInterface.addColumn('cart', column.name, column.definition);
+                await queryInterface.addColumn(
+                    'cart',
+                    column.name,
+                    column.definition,
+                );
                 console.log(`✅ Added column: ${column.name} to cart table`);
             } catch {
-                console.log(`⚠️  Column ${column.name} already exists - skipping`);
+                console.log(
+                    `⚠️  Column ${column.name} already exists - skipping`,
+                );
             }
         }
 
@@ -105,7 +112,8 @@ const migration = {
             {
                 name: 'idx_cart_tenant_user',
                 columns: ['tenant_id', 'user_id'],
-                description: 'быстрый поиск корзины авторизованного пользователя',
+                description:
+                    'быстрый поиск корзины авторизованного пользователя',
             },
             {
                 name: 'idx_cart_tenant_session',
@@ -134,9 +142,13 @@ const migration = {
                 await queryInterface.addIndex('cart', index.columns, {
                     name: index.name,
                 });
-                console.log(`✅ Added index: ${index.name} (${index.description})`);
+                console.log(
+                    `✅ Added index: ${index.name} (${index.description})`,
+                );
             } catch {
-                console.log(`⚠️  Index ${index.name} already exists - skipping`);
+                console.log(
+                    `⚠️  Index ${index.name} already exists - skipping`,
+                );
             }
         }
 
