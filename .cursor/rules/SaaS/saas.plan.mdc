@@ -189,7 +189,7 @@ tasks:
 
 - id: SAAS-004
   title: Cart module (tenant isolation + guest support)
-  status: pending
+  status: in_progress
   branch: "feature/cart/SAAS-004/cart-complete"
   workflow:
   start_trigger: "Планируй SAAS-004"
@@ -198,9 +198,9 @@ tasks:
   work_in: "models/cart.plan.mdc"
   update_here: "После завершения всех 18 атомарных задач"
   progress:
-  completed: 0
+  completed: 1
   total: 18
-  current_task: null
+  current_task: "SAAS-004-00 (completed, merged to dev)"
   goals:
     - Cart operations with tenant isolation
     - Guest cart support (session-based)
