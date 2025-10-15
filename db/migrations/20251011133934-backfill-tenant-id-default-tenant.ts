@@ -70,7 +70,9 @@ const migration: Migration = {
             console.log(`${table}.tenant_id is now NOT NULL`);
         }
 
-        console.log('Backfill complete: all records assigned to default tenant');
+        console.log(
+            'Backfill complete: all records assigned to default tenant',
+        );
     },
 
     async down(queryInterface: QueryInterface): Promise<void> {
@@ -109,9 +111,10 @@ const migration: Migration = {
         // Step 3: Delete default tenant
         await queryInterface.bulkDelete('tenants', { id: 1 });
 
-        console.log('Backfill rolled back: tenant_id nullable, default tenant deleted');
+        console.log(
+            'Backfill rolled back: tenant_id nullable, default tenant deleted',
+        );
     },
 };
 
 export default migration;
-
