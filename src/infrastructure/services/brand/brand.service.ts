@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { BrandDto } from '@app/infrastructure/dto';
+import { BrandDto, SearchDto, SortingDto } from '@app/infrastructure/dto';
 import { BrandRepository } from '@app/infrastructure/repositories';
 import {
     CreateBrandResponse,
@@ -8,8 +8,11 @@ import {
     UpdateBrandResponse,
     RemoveBrandResponse,
 } from '@app/infrastructure/responses';
-import { IBrandService } from '@app/domain/services';
+import { GetListBrandsV2Response } from '@app/infrastructure/responses/brand/get-list-brands-v2.response';
 import { ListAllBrandsByCategoryResponse } from '@app/infrastructure/responses/brand/ListAllBrandsByCategoryResponse';
+import { MetaData } from '@app/infrastructure/paginate';
+import { SortingEnum } from '@app/domain/dto';
+import { IBrandService } from '@app/domain/services';
 
 @Injectable()
 export class BrandService implements IBrandService {
@@ -24,12 +27,66 @@ export class BrandService implements IBrandService {
         return brands;
     }
 
+    // SAAS-003: V2 with pagination support (all brands)
+    public async getListBrandsV2(
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
+        page: number,
+        size: number,
+    ): Promise<GetListBrandsV2Response> {
+        const { search } = searchQuery;
+        const { sort = SortingEnum.DESC } = sortQuery;
+        const { limit, offset } = this.getPaginate(page, size);
+
+        const brands = await this.brandRepository.findListAllBrandsV2(
+            search,
+            sort,
+            limit,
+            offset,
+        );
+
+        const metaData = this.getMetadata(brands.count, page, limit);
+
+        return {
+            data: brands.rows,
+            meta: metaData,
+        };
+    }
+
     public async getListAllBrandsByCategory(
         categoryId: number,
     ): Promise<ListAllBrandsByCategoryResponse[]> {
         const brands =
             await this.brandRepository.findListAllBrandsByCategory(categoryId);
         return brands;
+    }
+
+    // SAAS-003: V2 with pagination support (brands by category)
+    public async getListBrandsByCategoryV2(
+        categoryId: number,
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
+        page: number,
+        size: number,
+    ): Promise<GetListBrandsV2Response> {
+        const { search } = searchQuery;
+        const { sort = SortingEnum.DESC } = sortQuery;
+        const { limit, offset } = this.getPaginate(page, size);
+
+        const brands = await this.brandRepository.findListAllBrandsByCategoryV2(
+            categoryId,
+            search,
+            sort,
+            limit,
+            offset,
+        );
+
+        const metaData = this.getMetadata(brands.count, page, limit);
+
+        return {
+            data: brands.rows,
+            meta: metaData,
+        };
     }
 
     public async getBrand(id: number): Promise<BrandResponse> {
@@ -54,6 +111,34 @@ export class BrandService implements IBrandService {
         return {
             status: HttpStatus.OK,
             message: 'success',
+        };
+    }
+
+    // SAAS-003: Pagination helper methods
+    private getPaginate(
+        page: number,
+        size: number,
+    ): {
+        limit: number;
+        offset: number;
+    } {
+        const limit = size;
+        const correctedPage = Math.max(1, page);
+        const offset = (correctedPage - 1) * limit;
+        return {
+            limit,
+            offset,
+        };
+    }
+
+    private getMetadata(count: number, page: number, limit: number): MetaData {
+        return {
+            totalCount: count,
+            lastPage: Math.ceil(count / limit),
+            currentPage: page,
+            nextPage: page + 1,
+            previousPage: page - 1,
+            limit,
         };
     }
 

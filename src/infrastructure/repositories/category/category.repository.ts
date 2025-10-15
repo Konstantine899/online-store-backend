@@ -8,8 +8,10 @@ import {
     ListAllCategoriesResponse,
     UpdateCategoryResponse,
 } from '@app/infrastructure/responses';
+import { CategoryInfo } from '@app/infrastructure/paginate';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op, WhereOptions } from 'sequelize';
 
 @Injectable()
 export class CategoryRepository implements ICategoryRepository {
@@ -49,6 +51,37 @@ export class CategoryRepository implements ICategoryRepository {
             where: { tenant_id: tenantId },
         });
         return list.map((c) => this.mapCategory(c));
+    }
+
+    // SAAS-003: V2 with pagination support
+    public async findListAllCategoriesV2(
+        search: string,
+        sort: string,
+        limit: number,
+        offset: number,
+    ): Promise<{ count: number; rows: CategoryInfo[] }> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const where: WhereOptions<CategoryModel> = { tenant_id: tenantId };
+        
+        if (search) {
+            where.name = { [Op.like]: `%${search}%` };
+        }
+        
+        return this.categoryModel.findAndCountAll({
+            where,
+            attributes: [
+                'id',
+                'name',
+                'image',
+                'slug',
+                'description',
+                'isActive',
+                'tenant_id',
+            ],
+            order: [['id', sort]],
+            limit,
+            offset,
+        });
     }
 
     public async findCategory(id: number): Promise<CategoryResponse> {

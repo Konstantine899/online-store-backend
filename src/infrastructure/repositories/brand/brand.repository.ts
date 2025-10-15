@@ -9,8 +9,10 @@ import {
     UpdateBrandResponse,
 } from '@app/infrastructure/responses';
 import { ListAllBrandsByCategoryResponse } from '@app/infrastructure/responses/brand/ListAllBrandsByCategoryResponse';
+import { BrandInfo } from '@app/infrastructure/paginate';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op, WhereOptions } from 'sequelize';
 
 @Injectable()
 export class BrandRepository implements IBrandRepository {
@@ -36,6 +38,38 @@ export class BrandRepository implements IBrandRepository {
         });
     }
 
+    // SAAS-003: V2 with pagination support (all brands)
+    public async findListAllBrandsV2(
+        search: string,
+        sort: string,
+        limit: number,
+        offset: number,
+    ): Promise<{ count: number; rows: BrandInfo[] }> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const where: WhereOptions<BrandModel> = { tenant_id: tenantId };
+        
+        if (search) {
+            where.name = { [Op.like]: `%${search}%` };
+        }
+        
+        return this.brandModel.findAndCountAll({
+            where,
+            attributes: [
+                'id',
+                'name',
+                'slug',
+                'description',
+                'isActive',
+                'logo',
+                'category_id',
+                'tenant_id',
+            ],
+            order: [['id', sort]],
+            limit,
+            offset,
+        });
+    }
+
     public async findListAllBrandsByCategory(
         categoryId: number,
     ): Promise<ListAllBrandsByCategoryResponse[]> {
@@ -45,6 +79,42 @@ export class BrandRepository implements IBrandRepository {
                 category_id: categoryId,
                 tenant_id: tenantId,
             },
+        });
+    }
+
+    // SAAS-003: V2 with pagination support (brands by category)
+    public async findListAllBrandsByCategoryV2(
+        categoryId: number,
+        search: string,
+        sort: string,
+        limit: number,
+        offset: number,
+    ): Promise<{ count: number; rows: BrandInfo[] }> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const where: WhereOptions<BrandModel> = {
+            category_id: categoryId,
+            tenant_id: tenantId,
+        };
+        
+        if (search) {
+            where.name = { [Op.like]: `%${search}%` };
+        }
+        
+        return this.brandModel.findAndCountAll({
+            where,
+            attributes: [
+                'id',
+                'name',
+                'slug',
+                'description',
+                'isActive',
+                'logo',
+                'category_id',
+                'tenant_id',
+            ],
+            order: [['id', sort]],
+            limit,
+            offset,
         });
     }
 

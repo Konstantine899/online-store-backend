@@ -4,7 +4,7 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
-import { CreateCategoryDto } from '@app/infrastructure/dto';
+import { CreateCategoryDto, SearchDto, SortingDto } from '@app/infrastructure/dto';
 import { CategoryRepository } from '@app/infrastructure/repositories';
 import {
     CreateCategoryResponse,
@@ -13,6 +13,9 @@ import {
     UpdateCategoryResponse,
     RemoveCategoryResponse,
 } from '@app/infrastructure/responses';
+import { GetListCategoriesV2Response } from '@app/infrastructure/responses/category/get-list-categories-v2.response';
+import { MetaData } from '@app/infrastructure/paginate';
+import { SortingEnum } from '@app/domain/dto';
 import { ICategoryService } from '@app/domain/services';
 import { FileService } from '@app/infrastructure/services/file/file.service';
 import { CategoryModel } from '@app/domain/models';
@@ -36,6 +39,32 @@ export class CategoryService implements ICategoryService {
         const categories =
             await this.categoryRepository.findListAllCategories();
         return categories; // Всегда возвращаем массив, даже пустой
+    }
+
+    // SAAS-003: V2 with pagination support
+    public async getListCategoriesV2(
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
+        page: number,
+        size: number,
+    ): Promise<GetListCategoriesV2Response> {
+        const { search } = searchQuery;
+        const { sort = SortingEnum.DESC } = sortQuery;
+        const { limit, offset } = this.getPaginate(page, size);
+
+        const categories = await this.categoryRepository.findListAllCategoriesV2(
+            search,
+            sort,
+            limit,
+            offset,
+        );
+
+        const metaData = this.getMetadata(categories.count, page, limit);
+
+        return {
+            data: categories.rows,
+            meta: metaData,
+        };
     }
 
     public async getCategory(id: number): Promise<CategoryResponse> {
@@ -90,6 +119,35 @@ export class CategoryService implements ICategoryService {
         return {
             status: HttpStatus.OK,
             message: 'success',
+        };
+    }
+
+    // SAAS-003: Pagination helper methods
+    private getPaginate(
+        page: number,
+        size: number,
+    ): {
+        limit: number;
+        offset: number;
+    } {
+        const limit = size;
+        // Исправляем page=0 на page=1 для корректного offset
+        const correctedPage = Math.max(1, page);
+        const offset = (correctedPage - 1) * limit;
+        return {
+            limit,
+            offset,
+        };
+    }
+
+    private getMetadata(count: number, page: number, limit: number): MetaData {
+        return {
+            totalCount: count,
+            lastPage: Math.ceil(count / limit),
+            currentPage: page,
+            nextPage: page + 1,
+            previousPage: page - 1,
+            limit,
         };
     }
 

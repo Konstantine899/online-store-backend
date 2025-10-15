@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    DefaultValuePipe,
     Delete,
     Get,
     HttpCode,
@@ -8,12 +9,13 @@ import {
     ParseIntPipe,
     Post,
     Put,
+    Query,
     UploadedFile,
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
 import { CategoryService } from '@app/infrastructure/services';
-import { CreateCategoryDto } from '@app/infrastructure/dto';
+import { CreateCategoryDto, SearchDto, SortingDto } from '@app/infrastructure/dto';
 import {
     Roles,
     CreateCategorySwaggerDecorator,
@@ -22,6 +24,7 @@ import {
     UpdateCategorySwaggerDecorator,
     RemoveCategorySwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
+import { GetListCategoriesV2SwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/category/get-list-categories-v2-swagger-decorator';
 import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
 import { ApiTags } from '@nestjs/swagger';
 import {
@@ -31,6 +34,7 @@ import {
     UpdateCategoryResponse,
     RemoveCategoryResponse,
 } from '@app/infrastructure/responses';
+import { GetListCategoriesV2Response } from '@app/infrastructure/responses/category/get-list-categories-v2.response';
 import { ICategoryController } from '@app/domain/controllers';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerConfig } from '@app/infrastructure/config/multer';
@@ -58,6 +62,24 @@ export class CategoryController implements ICategoryController {
     @Get('/categories')
     public async getListAllCategories(): Promise<ListAllCategoriesResponse[]> {
         return this.categoryService.getListAllCategories();
+    }
+
+    // SAAS-003: V2 endpoint with pagination
+    @GetListCategoriesV2SwaggerDecorator()
+    @HttpCode(200)
+    @Get('/list-v2')
+    public async getListCategoriesV2(
+        @Query() searchQuery: SearchDto,
+        @Query() sortQuery: SortingDto,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
+    ): Promise<GetListCategoriesV2Response> {
+        return this.categoryService.getListCategoriesV2(
+            searchQuery,
+            sortQuery,
+            page,
+            size,
+        );
     }
 
     @GetCategorySwaggerDecorator()
