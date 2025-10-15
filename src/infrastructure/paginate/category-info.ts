@@ -45,4 +45,3 @@ export class CategoryInfo extends CategoryModel {
     })
     declare tenant_id: number;
 }
-

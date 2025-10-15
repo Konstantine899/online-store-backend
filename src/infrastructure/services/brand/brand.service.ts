@@ -1,18 +1,18 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { BrandDto, SearchDto, SortingDto } from '@app/infrastructure/dto';
-import { BrandRepository } from '@app/infrastructure/repositories';
-import {
-    CreateBrandResponse,
-    ListAllBrandsResponse,
-    BrandResponse,
-    UpdateBrandResponse,
-    RemoveBrandResponse,
-} from '@app/infrastructure/responses';
-import { GetListBrandsV2Response } from '@app/infrastructure/responses/brand/get-list-brands-v2.response';
-import { ListAllBrandsByCategoryResponse } from '@app/infrastructure/responses/brand/ListAllBrandsByCategoryResponse';
-import { MetaData } from '@app/infrastructure/paginate';
 import { SortingEnum } from '@app/domain/dto';
 import { IBrandService } from '@app/domain/services';
+import { BrandDto, SearchDto, SortingDto } from '@app/infrastructure/dto';
+import { MetaData } from '@app/infrastructure/paginate';
+import { BrandRepository } from '@app/infrastructure/repositories';
+import {
+    BrandResponse,
+    CreateBrandResponse,
+    ListAllBrandsResponse,
+    RemoveBrandResponse,
+    UpdateBrandResponse,
+} from '@app/infrastructure/responses';
+import { ListAllBrandsByCategoryResponse } from '@app/infrastructure/responses/brand/ListAllBrandsByCategoryResponse';
+import { GetListBrandsV2Response } from '@app/infrastructure/responses/brand/get-list-brands-v2.response';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 
 @Injectable()
 export class BrandService implements IBrandService {

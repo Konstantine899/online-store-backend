@@ -1,24 +1,28 @@
+import { SortingEnum } from '@app/domain/dto';
+import { CategoryModel } from '@app/domain/models';
+import { ICategoryService } from '@app/domain/services';
+import {
+    CreateCategoryDto,
+    SearchDto,
+    SortingDto,
+} from '@app/infrastructure/dto';
+import { MetaData } from '@app/infrastructure/paginate';
+import { CategoryRepository } from '@app/infrastructure/repositories';
+import {
+    CategoryResponse,
+    CreateCategoryResponse,
+    ListAllCategoriesResponse,
+    RemoveCategoryResponse,
+    UpdateCategoryResponse,
+} from '@app/infrastructure/responses';
+import { GetListCategoriesV2Response } from '@app/infrastructure/responses/category/get-list-categories-v2.response';
+import { FileService } from '@app/infrastructure/services/file/file.service';
 import {
     ConflictException,
     HttpStatus,
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
-import { CreateCategoryDto, SearchDto, SortingDto } from '@app/infrastructure/dto';
-import { CategoryRepository } from '@app/infrastructure/repositories';
-import {
-    CreateCategoryResponse,
-    ListAllCategoriesResponse,
-    CategoryResponse,
-    UpdateCategoryResponse,
-    RemoveCategoryResponse,
-} from '@app/infrastructure/responses';
-import { GetListCategoriesV2Response } from '@app/infrastructure/responses/category/get-list-categories-v2.response';
-import { MetaData } from '@app/infrastructure/paginate';
-import { SortingEnum } from '@app/domain/dto';
-import { ICategoryService } from '@app/domain/services';
-import { FileService } from '@app/infrastructure/services/file/file.service';
-import { CategoryModel } from '@app/domain/models';
 
 @Injectable()
 export class CategoryService implements ICategoryService {
@@ -52,12 +56,13 @@ export class CategoryService implements ICategoryService {
         const { sort = SortingEnum.DESC } = sortQuery;
         const { limit, offset } = this.getPaginate(page, size);
 
-        const categories = await this.categoryRepository.findListAllCategoriesV2(
-            search,
-            sort,
-            limit,
-            offset,
-        );
+        const categories =
+            await this.categoryRepository.findListAllCategoriesV2(
+                search,
+                sort,
+                limit,
+                offset,
+            );
 
         const metaData = this.getMetadata(categories.count, page, limit);
 

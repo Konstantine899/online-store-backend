@@ -1,14 +1,15 @@
 import { CategoryModel } from '@app/domain/models';
 import { ICategoryRepository } from '@app/domain/repositories';
 import { TenantContext } from '@app/infrastructure/common/context';
+import { PaginationValidator } from '@app/infrastructure/common/utils/pagination-validator';
 import { CreateCategoryDto } from '@app/infrastructure/dto';
+import { CategoryInfo } from '@app/infrastructure/paginate';
 import {
     CategoryResponse,
     CreateCategoryResponse,
     ListAllCategoriesResponse,
     UpdateCategoryResponse,
 } from '@app/infrastructure/responses';
-import { CategoryInfo } from '@app/infrastructure/paginate';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, WhereOptions } from 'sequelize';
@@ -41,7 +42,7 @@ export class CategoryRepository implements ICategoryRepository {
             name: dto.name,
             image: imageName,
             tenant_id: tenantId,
-        } as any);
+        });
         return this.mapCategory(category);
     }
 
@@ -62,11 +63,16 @@ export class CategoryRepository implements ICategoryRepository {
     ): Promise<{ count: number; rows: CategoryInfo[] }> {
         const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
         const where: WhereOptions<CategoryModel> = { tenant_id: tenantId };
-        
+
         if (search) {
             where.name = { [Op.like]: `%${search}%` };
         }
-        
+
+        // SAAS-003: Validate and sanitize inputs using PaginationValidator (DRY)
+        const validSort = PaginationValidator.validateSort(sort);
+        const safeLimit = PaginationValidator.validateLimit(limit);
+        const safeOffset = PaginationValidator.validateOffset(offset);
+
         return this.categoryModel.findAndCountAll({
             where,
             attributes: [
@@ -78,9 +84,9 @@ export class CategoryRepository implements ICategoryRepository {
                 'isActive',
                 'tenant_id',
             ],
-            order: [['id', sort]],
-            limit,
-            offset,
+            order: [['name', validSort]], // SAAS-003: Sort by name for alphabetical order
+            limit: safeLimit,
+            offset: safeOffset,
         });
     }
 

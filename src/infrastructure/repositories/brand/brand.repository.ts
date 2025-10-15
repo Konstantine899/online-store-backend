@@ -1,7 +1,9 @@
 import { BrandModel } from '@app/domain/models';
 import { IBrandRepository } from '@app/domain/repositories';
 import { TenantContext } from '@app/infrastructure/common/context';
+import { PaginationValidator } from '@app/infrastructure/common/utils/pagination-validator';
 import { BrandDto } from '@app/infrastructure/dto';
+import { BrandInfo } from '@app/infrastructure/paginate';
 import {
     BrandResponse,
     CreateBrandResponse,
@@ -9,7 +11,6 @@ import {
     UpdateBrandResponse,
 } from '@app/infrastructure/responses';
 import { ListAllBrandsByCategoryResponse } from '@app/infrastructure/responses/brand/ListAllBrandsByCategoryResponse';
-import { BrandInfo } from '@app/infrastructure/paginate';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, WhereOptions } from 'sequelize';
@@ -47,11 +48,16 @@ export class BrandRepository implements IBrandRepository {
     ): Promise<{ count: number; rows: BrandInfo[] }> {
         const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
         const where: WhereOptions<BrandModel> = { tenant_id: tenantId };
-        
+
         if (search) {
             where.name = { [Op.like]: `%${search}%` };
         }
-        
+
+        // SAAS-003: Validate and sanitize inputs using PaginationValidator (DRY)
+        const validSort = PaginationValidator.validateSort(sort);
+        const safeLimit = PaginationValidator.validateLimit(limit);
+        const safeOffset = PaginationValidator.validateOffset(offset);
+
         return this.brandModel.findAndCountAll({
             where,
             attributes: [
@@ -64,9 +70,9 @@ export class BrandRepository implements IBrandRepository {
                 'category_id',
                 'tenant_id',
             ],
-            order: [['id', sort]],
-            limit,
-            offset,
+            order: [['name', validSort]], // SAAS-003: Sort by name for alphabetical order
+            limit: safeLimit,
+            offset: safeOffset,
         });
     }
 
@@ -95,11 +101,16 @@ export class BrandRepository implements IBrandRepository {
             category_id: categoryId,
             tenant_id: tenantId,
         };
-        
+
         if (search) {
             where.name = { [Op.like]: `%${search}%` };
         }
-        
+
+        // SAAS-003: Validate and sanitize inputs using PaginationValidator (DRY)
+        const validSort = PaginationValidator.validateSort(sort);
+        const safeLimit = PaginationValidator.validateLimit(limit);
+        const safeOffset = PaginationValidator.validateOffset(offset);
+
         return this.brandModel.findAndCountAll({
             where,
             attributes: [
@@ -112,9 +123,9 @@ export class BrandRepository implements IBrandRepository {
                 'category_id',
                 'tenant_id',
             ],
-            order: [['id', sort]],
-            limit,
-            offset,
+            order: [['name', validSort]], // SAAS-003: Sort by name for alphabetical order
+            limit: safeLimit,
+            offset: safeOffset,
         });
     }
 
