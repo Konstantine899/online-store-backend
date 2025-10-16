@@ -1,4 +1,5 @@
 export { BrandDto } from './brand/brand.dto';
+export { AddToCartDto, UpdateCartItemDto, ApplyCouponDto } from './cart';
 export { CreateUserDto } from './user/create-user.dto';
 export { AddRoleDto } from './user/add-role.dto';
 export { RemoveRoleDto } from './user/remove-role.dto';
