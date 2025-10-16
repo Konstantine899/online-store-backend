@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import {
     Column,
     CreatedAt,
@@ -54,10 +55,10 @@ interface IPromoCodeCreationAttributes {
             return {
                 where: {
                     is_active: true,
-                    valid_from: { $lte: now },
-                    $or: [
+                    valid_from: { [Op.lte]: now },
+                    [Op.or]: [
                         { valid_until: null },
-                        { valid_until: { $gte: now } },
+                        { valid_until: { [Op.gte]: now } },
                     ],
                 },
             };
@@ -71,7 +72,7 @@ interface IPromoCodeCreationAttributes {
         // Промокоды с ограничением использования
         limited: {
             where: {
-                usage_limit: { $ne: null },
+                usage_limit: { [Op.ne]: null },
             },
         },
     },

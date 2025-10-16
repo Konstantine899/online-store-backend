@@ -1,5 +1,5 @@
+import { PromoCodeModel } from '@app/domain/models';
 import { IPromoCodeRepository } from '@app/domain/repositories';
-import { PromoCodeModel } from '@app/infrastructure/common/database-access';
 import { Injectable } from '@nestjs/common';
 import { Op } from 'sequelize';
 

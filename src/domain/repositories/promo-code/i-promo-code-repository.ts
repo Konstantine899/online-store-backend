@@ -1,4 +1,4 @@
-import { PromoCodeModel } from '@app/infrastructure/common/database-access';
+import { PromoCodeModel } from '@app/domain/models';
 
 /**
  * Интерфейс репозитория промокодов

@@ -1,4 +1,4 @@
-import { DataTypes, Model, Sequelize } from 'sequelize';
+import { DataTypes, Model, Op, Sequelize } from 'sequelize';
 import { PromoCodeCreationAttributes, PromoCodeModel } from './types';
 
 class PromoCode
@@ -170,13 +170,13 @@ export default function definePromoCode(
                     where: {
                         is_active: true,
                         valid_from: {
-                            [sequelize.Sequelize.Op.lte]: new Date(),
+                            [Op.lte]: new Date(),
                         },
-                        [sequelize.Sequelize.Op.or]: [
+                        [Op.or]: [
                             { valid_until: null },
                             {
                                 valid_until: {
-                                    [sequelize.Sequelize.Op.gte]: new Date(),
+                                    [Op.gte]: new Date(),
                                 },
                             },
                         ],
