@@ -10,7 +10,7 @@
  * Использование:
  * ```typescript
  * import { PerformanceTesting } from '../utils/performance-testing';
- * 
+ *
  * await PerformanceTesting.benchmark('cart-operation', async () => {
  *     await cartService.addToCart(productId, quantity);
  * });
@@ -89,14 +89,14 @@ export class PerformanceTesting {
     static async benchmark<T>(
         name: string,
         operation: () => Promise<T>,
-        config: BenchmarkConfig = {}
+        config: BenchmarkConfig = {},
     ): Promise<BenchmarkResult> {
         const {
             iterations = 100,
             warmupIterations = 10,
             timeout = 30000,
             memoryTracking = false,
-            threshold = {}
+            threshold = {},
         } = config;
 
         this.logger.log(`Starting benchmark: ${name}`);
@@ -120,13 +120,13 @@ export class PerformanceTesting {
         // Основные итерации
         for (let i = 0; i < iterations; i++) {
             const iterationStart = process.hrtime.bigint();
-            
+
             try {
                 await Promise.race([
                     operation(),
-                    new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('Timeout')), timeout)
-                    )
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Timeout')), timeout),
+                    ),
                 ]);
             } catch (error) {
                 this.logger.error(`Benchmark iteration ${i} failed:`, error);
@@ -145,7 +145,8 @@ export class PerformanceTesting {
             name,
             duration: totalDuration,
             iterations,
-            averageDuration: durations.reduce((a, b) => a + b, 0) / durations.length,
+            averageDuration:
+                durations.reduce((a, b) => a + b, 0) / durations.length,
             minDuration: Math.min(...durations),
             maxDuration: Math.max(...durations),
             throughput: (iterations / totalDuration) * 1000, // операций в секунду
@@ -154,23 +155,29 @@ export class PerformanceTesting {
         };
 
         // Проверка пороговых значений
-        if (threshold.maxAverageDuration && result.averageDuration > threshold.maxAverageDuration) {
+        if (
+            threshold.maxAverageDuration &&
+            result.averageDuration > threshold.maxAverageDuration
+        ) {
             this.logger.warn(
-                `Benchmark ${name}: average duration ${result.averageDuration}ms exceeds threshold ${threshold.maxAverageDuration}ms`
+                `Benchmark ${name}: average duration ${result.averageDuration}ms exceeds threshold ${threshold.maxAverageDuration}ms`,
             );
         }
 
         if (threshold.maxMemoryUsage && memoryBefore && result.memoryUsage) {
-            const memoryIncrease = result.memoryUsage.heapUsed - memoryBefore.heapUsed;
+            const memoryIncrease =
+                result.memoryUsage.heapUsed - memoryBefore.heapUsed;
             if (memoryIncrease > threshold.maxMemoryUsage) {
                 this.logger.warn(
-                    `Benchmark ${name}: memory increase ${memoryIncrease} bytes exceeds threshold ${threshold.maxMemoryUsage} bytes`
+                    `Benchmark ${name}: memory increase ${memoryIncrease} bytes exceeds threshold ${threshold.maxMemoryUsage} bytes`,
                 );
             }
         }
 
         this.results.push(result);
-        this.logger.log(`Benchmark ${name} completed: ${result.averageDuration.toFixed(2)}ms average`);
+        this.logger.log(
+            `Benchmark ${name} completed: ${result.averageDuration.toFixed(2)}ms average`,
+        );
 
         return result;
     }
@@ -181,16 +188,18 @@ export class PerformanceTesting {
     static async loadTest<T>(
         name: string,
         request: () => Promise<T>,
-        config: LoadTestConfig
+        config: LoadTestConfig,
     ): Promise<LoadTestResult> {
         const {
             concurrentUsers,
             duration,
             rampUpTime = 0,
-            timeout = 10000
+            timeout = 10000,
         } = config;
 
-        this.logger.log(`Starting load test: ${name} with ${concurrentUsers} concurrent users`);
+        this.logger.log(
+            `Starting load test: ${name} with ${concurrentUsers} concurrent users`,
+        );
 
         const startTime = Date.now();
         const results: Array<{ success: boolean; duration: number }> = [];
@@ -202,9 +211,12 @@ export class PerformanceTesting {
             try {
                 await Promise.race([
                     request(),
-                    new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('Request timeout')), timeout)
-                    )
+                    new Promise((_, reject) =>
+                        setTimeout(
+                            () => reject(new Error('Request timeout')),
+                            timeout,
+                        ),
+                    ),
                 ]);
                 const requestDuration = Date.now() - requestStart;
                 results.push({ success: true, duration: requestDuration });
@@ -220,7 +232,9 @@ export class PerformanceTesting {
             while (Date.now() - startTime < duration) {
                 await executeRequest();
                 // Небольшая задержка между запросами
-                await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
+                await new Promise((resolve) =>
+                    setTimeout(resolve, Math.random() * 100),
+                );
             }
             activeUsers--;
         };
@@ -233,21 +247,24 @@ export class PerformanceTesting {
             }
         } else {
             // Мгновенный старт всех пользователей
-            const promises = Array(concurrentUsers).fill(null).map(() => userLoop());
+            const promises = Array(concurrentUsers)
+                .fill(null)
+                .map(() => userLoop());
             await Promise.all(promises);
         }
 
         const totalDuration = Date.now() - startTime;
-        const successfulRequests = results.filter(r => r.success).length;
+        const successfulRequests = results.filter((r) => r.success).length;
         const failedRequests = results.length - successfulRequests;
-        const durations = results.map(r => r.duration);
+        const durations = results.map((r) => r.duration);
 
         const result: LoadTestResult = {
             name,
             totalRequests: results.length,
             successfulRequests,
             failedRequests,
-            averageResponseTime: durations.reduce((a, b) => a + b, 0) / durations.length,
+            averageResponseTime:
+                durations.reduce((a, b) => a + b, 0) / durations.length,
             minResponseTime: Math.min(...durations),
             maxResponseTime: Math.max(...durations),
             requestsPerSecond: (results.length / totalDuration) * 1000,
@@ -258,7 +275,7 @@ export class PerformanceTesting {
 
         this.loadTestResults.push(result);
         this.logger.log(
-            `Load test ${name} completed: ${result.requestsPerSecond.toFixed(2)} req/s, ${result.errorRate.toFixed(2)}% errors`
+            `Load test ${name} completed: ${result.requestsPerSecond.toFixed(2)} req/s, ${result.errorRate.toFixed(2)}% errors`,
         );
 
         return result;
@@ -298,10 +315,12 @@ export class PerformanceTesting {
 
         if (benchmarkResults.length > 0) {
             report += '## Benchmark Results\n\n';
-            report += '| Name | Average (ms) | Min (ms) | Max (ms) | Throughput (ops/s) |\n';
-            report += '|------|--------------|----------|----------|-------------------|\n';
+            report +=
+                '| Name | Average (ms) | Min (ms) | Max (ms) | Throughput (ops/s) |\n';
+            report +=
+                '|------|--------------|----------|----------|-------------------|\n';
 
-            benchmarkResults.forEach(result => {
+            benchmarkResults.forEach((result) => {
                 report += `| ${result.name} | ${result.averageDuration.toFixed(2)} | ${result.minDuration.toFixed(2)} | ${result.maxDuration.toFixed(2)} | ${result.throughput.toFixed(2)} |\n`;
             });
             report += '\n';
@@ -309,10 +328,12 @@ export class PerformanceTesting {
 
         if (loadTestResults.length > 0) {
             report += '## Load Test Results\n\n';
-            report += '| Name | RPS | Avg Response (ms) | Error Rate (%) | Total Requests |\n';
-            report += '|------|-----|-------------------|----------------|----------------|\n';
+            report +=
+                '| Name | RPS | Avg Response (ms) | Error Rate (%) | Total Requests |\n';
+            report +=
+                '|------|-----|-------------------|----------------|----------------|\n';
 
-            loadTestResults.forEach(result => {
+            loadTestResults.forEach((result) => {
                 report += `| ${result.name} | ${result.requestsPerSecond.toFixed(2)} | ${result.averageResponseTime.toFixed(2)} | ${result.errorRate.toFixed(2)} | ${result.totalRequests} |\n`;
             });
             report += '\n';
@@ -327,23 +348,31 @@ export class PerformanceTesting {
     static compareWithBaseline(baselineResults: BenchmarkResult[]): void {
         const currentResults = this.getBenchmarkResults();
 
-        baselineResults.forEach(baseline => {
-            const current = currentResults.find(r => r.name === baseline.name);
+        baselineResults.forEach((baseline) => {
+            const current = currentResults.find(
+                (r) => r.name === baseline.name,
+            );
             if (!current) {
-                this.logger.warn(`No current result found for baseline: ${baseline.name}`);
+                this.logger.warn(
+                    `No current result found for baseline: ${baseline.name}`,
+                );
                 return;
             }
 
-            const performanceChange = ((current.averageDuration - baseline.averageDuration) / baseline.averageDuration) * 100;
+            const performanceChange =
+                ((current.averageDuration - baseline.averageDuration) /
+                    baseline.averageDuration) *
+                100;
 
-            if (Math.abs(performanceChange) > 10) { // 10% изменение
+            if (Math.abs(performanceChange) > 10) {
+                // 10% изменение
                 if (performanceChange > 0) {
                     this.logger.error(
-                        `Performance regression in ${baseline.name}: ${performanceChange.toFixed(2)}% slower`
+                        `Performance regression in ${baseline.name}: ${performanceChange.toFixed(2)}% slower`,
                     );
                 } else {
                     this.logger.log(
-                        `Performance improvement in ${baseline.name}: ${Math.abs(performanceChange).toFixed(2)}% faster`
+                        `Performance improvement in ${baseline.name}: ${Math.abs(performanceChange).toFixed(2)}% faster`,
                     );
                 }
             }
@@ -355,15 +384,20 @@ export class PerformanceTesting {
  * Декоратор для автоматического бенчмарка методов
  */
 export function Benchmark(name?: string, config?: BenchmarkConfig) {
-    return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+    return function (
+        target: any,
+        propertyName: string,
+        descriptor: PropertyDescriptor,
+    ) {
         const method = descriptor.value;
-        const benchmarkName = name || `${target.constructor.name}.${propertyName}`;
+        const benchmarkName =
+            name || `${target.constructor.name}.${propertyName}`;
 
         descriptor.value = async function (...args: any[]) {
             const result = await PerformanceTesting.benchmark(
                 benchmarkName,
                 () => method.apply(this, args),
-                config
+                config,
             );
             return result;
         };
@@ -378,20 +412,26 @@ export class LoadTestDataFactory {
      * Создает массив пользователей для нагрузочного тестирования
      */
     static createUsers(count: number): Array<{ email: string; phone: string }> {
-        return Array(count).fill(null).map((_, index) => ({
-            email: `loadtest${index}@example.com`,
-            phone: `+7999${String(index).padStart(7, '0')}`,
-        }));
+        return Array(count)
+            .fill(null)
+            .map((_, index) => ({
+                email: `loadtest${index}@example.com`,
+                phone: `+7999${String(index).padStart(7, '0')}`,
+            }));
     }
 
     /**
      * Создает массив товаров для нагрузочного тестирования
      */
-    static createProducts(count: number): Array<{ name: string; price: number }> {
-        return Array(count).fill(null).map((_, index) => ({
-            name: `Load Test Product ${index}`,
-            price: Math.floor(Math.random() * 10000) + 100,
-        }));
+    static createProducts(
+        count: number,
+    ): Array<{ name: string; price: number }> {
+        return Array(count)
+            .fill(null)
+            .map((_, index) => ({
+                name: `Load Test Product ${index}`,
+                price: Math.floor(Math.random() * 10000) + 100,
+            }));
     }
 
     /**

@@ -10,7 +10,7 @@
  * Использование:
  * ```typescript
  * import { TestDataBuilders } from '../utils/test-data-builders';
- * 
+ *
  * const user = TestDataBuilders.user()
  *     .withEmail('test@example.com')
  *     .withRole('ADMIN')
@@ -19,12 +19,12 @@
  * ```
  */
 
-import { 
-    UserModel, 
-    ProductModel, 
-    CartModel, 
+import {
+    CartModel,
     OrderModel,
-    PromoCodeModel 
+    ProductModel,
+    PromoCodeModel,
+    UserModel,
 } from '@app/domain/models';
 import { CART_STATUS } from '@app/domain/models/constants/cart.constants';
 
@@ -499,7 +499,7 @@ export class TestDataBuilders {
             .withActiveStatus()
             .withValidityPeriod(
                 new Date(Date.now() - 86400000), // Вчера
-                new Date(Date.now() + 86400000)  // Завтра
+                new Date(Date.now() + 86400000), // Завтра
             )
             .build();
     }

@@ -255,13 +255,15 @@ import { PerformanceTesting, Benchmark } from '../utils';
 const result = await PerformanceTesting.benchmark(
     'cart-operation',
     async () => await cartService.addToCart(1, 1),
-    { iterations: 100, threshold: { maxAverageDuration: 50 } }
+    { iterations: 100, threshold: { maxAverageDuration: 50 } },
 );
 
 // Декоратор
 class MyService {
     @Benchmark('my-operation')
-    async performOperation() { /* ... */ }
+    async performOperation() {
+        /* ... */
+    }
 }
 ```
 

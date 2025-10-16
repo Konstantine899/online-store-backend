@@ -10,13 +10,18 @@
  * Использование:
  * ```typescript
  * import { MockFactories } from '../utils/mock-factories';
- * 
+ *
  * const mockCartRepository = MockFactories.createCartRepository();
  * const mockProductRepository = MockFactories.createProductRepository();
  * ```
  */
 
-import { CartModel, ProductModel, UserModel, OrderModel } from '@app/domain/models';
+import {
+    CartModel,
+    OrderModel,
+    ProductModel,
+    UserModel,
+} from '@app/domain/models';
 import { CART_STATUS } from '@app/domain/models/constants/cart.constants';
 
 /**
@@ -24,7 +29,7 @@ import { CART_STATUS } from '@app/domain/models/constants/cart.constants';
  */
 export class MockFactories {
     // ==================== CART MODULE ====================
-    
+
     /**
      * Создает мок CartRepository с базовыми методами
      */
@@ -43,7 +48,9 @@ export class MockFactories {
     /**
      * Создает мок CartModel с базовыми методами и свойствами
      */
-    static createCartModel(overrides: Partial<CartModel> = {}): Partial<CartModel> {
+    static createCartModel(
+        overrides: Partial<CartModel> = {},
+    ): Partial<CartModel> {
         const defaultCart = {
             id: 1,
             tenant_id: 1,
@@ -86,7 +93,9 @@ export class MockFactories {
     /**
      * Создает мок ProductModel с базовыми свойствами
      */
-    static createProductModel(overrides: Partial<ProductModel> = {}): Partial<ProductModel> {
+    static createProductModel(
+        overrides: Partial<ProductModel> = {},
+    ): Partial<ProductModel> {
         const defaultProduct = {
             id: 1,
             name: 'Test Product',
@@ -124,7 +133,9 @@ export class MockFactories {
     /**
      * Создает мок UserModel с базовыми свойствами
      */
-    static createUserModel(overrides: Partial<UserModel> = {}): Partial<UserModel> {
+    static createUserModel(
+        overrides: Partial<UserModel> = {},
+    ): Partial<UserModel> {
         const defaultUser = {
             id: 1,
             email: 'test@example.com',
@@ -162,7 +173,9 @@ export class MockFactories {
     /**
      * Создает мок OrderModel с базовыми свойствами
      */
-    static createOrderModel(overrides: Partial<OrderModel> = {}): Partial<OrderModel> {
+    static createOrderModel(
+        overrides: Partial<OrderModel> = {},
+    ): Partial<OrderModel> {
         const defaultOrder = {
             id: 1,
             user_id: 1,
@@ -262,12 +275,14 @@ export class MockFactories {
     /**
      * Создает полный набор провайдеров для CartService тестов
      */
-    static createCartServiceProviders(config: {
-        tenantId?: number;
-        mockCart?: Partial<CartModel>;
-        mockProduct?: Partial<ProductModel>;
-        mockPromoCodeService?: unknown;
-    } = {}) {
+    static createCartServiceProviders(
+        config: {
+            tenantId?: number;
+            mockCart?: Partial<CartModel>;
+            mockProduct?: Partial<ProductModel>;
+            mockPromoCodeService?: unknown;
+        } = {},
+    ) {
         const {
             tenantId = 1,
             mockPromoCodeService = this.createPromoCodeService(),
@@ -300,10 +315,12 @@ export class MockFactories {
     /**
      * Создает полный набор провайдеров для UserService тестов
      */
-    static createUserServiceProviders(config: {
-        tenantId?: number;
-        mockUser?: Partial<UserModel>;
-    } = {}) {
+    static createUserServiceProviders(
+        config: {
+            tenantId?: number;
+            mockUser?: Partial<UserModel>;
+        } = {},
+    ) {
         const { tenantId = 1 } = config;
 
         return [
@@ -321,11 +338,13 @@ export class MockFactories {
     /**
      * Создает полный набор провайдеров для OrderService тестов
      */
-    static createOrderServiceProviders(config: {
-        tenantId?: number;
-        mockOrder?: Partial<OrderModel>;
-        mockUser?: Partial<UserModel>;
-    } = {}) {
+    static createOrderServiceProviders(
+        config: {
+            tenantId?: number;
+            mockOrder?: Partial<OrderModel>;
+            mockUser?: Partial<UserModel>;
+        } = {},
+    ) {
         const { tenantId = 1 } = config;
 
         return [
@@ -361,7 +380,7 @@ export const TEST_CONSTANTS = {
         PROMO_DISCOUNT: 100,
         LARGE_QUANTITY: 1000,
     },
-    
+
     // User constants
     USER: {
         ID: 1,
@@ -370,7 +389,7 @@ export const TEST_CONSTANTS = {
         FIRST_NAME: 'Test',
         LAST_NAME: 'User',
     },
-    
+
     // Product constants
     PRODUCT: {
         ID: 1,
@@ -380,7 +399,7 @@ export const TEST_CONSTANTS = {
         CATEGORY_ID: 1,
         BRAND_ID: 1,
     },
-    
+
     // Order constants
     ORDER: {
         ID: 1,
@@ -388,7 +407,7 @@ export const TEST_CONSTANTS = {
         TOTAL_AMOUNT: 1000,
         PAYMENT_METHOD: 'card',
     },
-    
+
     // Common constants
     COMMON: {
         TENANT_ID: 1,

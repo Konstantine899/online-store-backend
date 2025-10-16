@@ -1,6 +1,6 @@
 /**
  * Comprehensive Test Example - демонстрация использования всех новых утилит
- * 
+ *
  * Этот файл показывает как использовать:
  * - MockFactories для создания моков
  * - TestDataBuilders для создания тестовых данных
@@ -8,15 +8,15 @@
  * - TEST_CONSTANTS для констант
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { 
-    MockFactories, 
-    TestDataBuilders, 
-    PerformanceTesting, 
-    TEST_CONSTANTS 
-} from '../utils';
 import { CartService } from '@app/infrastructure/services/cart/cart.service';
 import { UserService } from '@app/infrastructure/services/user/user.service';
+import { Test, TestingModule } from '@nestjs/testing';
+import {
+    MockFactories,
+    PerformanceTesting,
+    TEST_CONSTANTS,
+    TestDataBuilders,
+} from '../utils';
 
 describe('Comprehensive Test Example', () => {
     let cartService: CartService;
@@ -56,7 +56,10 @@ describe('Comprehensive Test Example', () => {
             const user = TestDataBuilders.user()
                 .withEmail(TEST_CONSTANTS.USER.EMAIL)
                 .withPhone(TEST_CONSTANTS.USER.PHONE)
-                .withName(TEST_CONSTANTS.USER.FIRST_NAME, TEST_CONSTANTS.USER.LAST_NAME)
+                .withName(
+                    TEST_CONSTANTS.USER.FIRST_NAME,
+                    TEST_CONSTANTS.USER.LAST_NAME,
+                )
                 .withActiveStatus()
                 .withLastLogin(new Date())
                 .build();
@@ -99,7 +102,8 @@ describe('Comprehensive Test Example', () => {
             const standardProduct = TestDataBuilders.createStandardProduct();
             const standardCart = TestDataBuilders.createStandardCart();
             const standardOrder = TestDataBuilders.createStandardOrder();
-            const standardPromoCode = TestDataBuilders.createStandardPromoCode();
+            const standardPromoCode =
+                TestDataBuilders.createStandardPromoCode();
 
             expect(standardUser.email).toBe('test@example.com');
             expect(adminUser.email).toBe('admin@example.com');
@@ -130,9 +134,11 @@ describe('Comprehensive Test Example', () => {
                 async () => {
                     await cartService.getCart(
                         MockFactories.createMockRequest({
-                            signedCookies: { cartId: TEST_CONSTANTS.CART.CART_ID }
+                            signedCookies: {
+                                cartId: TEST_CONSTANTS.CART.CART_ID,
+                            },
                         }) as any,
-                        MockFactories.createMockResponse() as any
+                        MockFactories.createMockResponse() as any,
                     );
                 },
                 {
@@ -140,8 +146,8 @@ describe('Comprehensive Test Example', () => {
                     warmupIterations: 10,
                     threshold: {
                         maxAverageDuration: 50, // 50ms максимум
-                    }
-                }
+                    },
+                },
             );
 
             expect(result.name).toBe('cart-get-operation');
@@ -157,7 +163,9 @@ describe('Comprehensive Test Example', () => {
                 email: TEST_CONSTANTS.USER.EMAIL,
             });
 
-            jest.spyOn(userService, 'createUser').mockResolvedValue(mockUser as any);
+            jest.spyOn(userService, 'createUser').mockResolvedValue(
+                mockUser as any,
+            );
 
             // Выполняем нагрузочный тест
             const result = await PerformanceTesting.loadTest(
@@ -174,7 +182,7 @@ describe('Comprehensive Test Example', () => {
                     concurrentUsers: 10,
                     duration: 5000, // 5 секунд
                     rampUpTime: 1000, // 1 секунда наращивания
-                }
+                },
             );
 
             expect(result.name).toBe('user-creation-load-test');
@@ -186,11 +194,11 @@ describe('Comprehensive Test Example', () => {
         it('should generate performance report', async () => {
             // Выполняем несколько бенчмарков
             await PerformanceTesting.benchmark('test-1', async () => {
-                await new Promise(resolve => setTimeout(resolve, 10));
+                await new Promise((resolve) => setTimeout(resolve, 10));
             });
 
             await PerformanceTesting.benchmark('test-2', async () => {
-                await new Promise(resolve => setTimeout(resolve, 20));
+                await new Promise((resolve) => setTimeout(resolve, 20));
             });
 
             // Генерируем отчет
@@ -207,7 +215,7 @@ describe('Comprehensive Test Example', () => {
         it('should create user service providers', () => {
             const providers = MockFactories.createUserServiceProviders({
                 tenantId: 2,
-                mockUser: { id: 5, email: 'custom@example.com' }
+                mockUser: { id: 5, email: 'custom@example.com' },
             });
 
             expect(providers).toHaveLength(2);
@@ -219,7 +227,7 @@ describe('Comprehensive Test Example', () => {
             const providers = MockFactories.createOrderServiceProviders({
                 tenantId: 3,
                 mockOrder: { id: 10, status: 'completed' },
-                mockUser: { id: 15, email: 'order@example.com' }
+                mockUser: { id: 15, email: 'order@example.com' },
             });
 
             expect(providers).toHaveLength(3);
@@ -298,13 +306,19 @@ describe('Comprehensive Test Example', () => {
                 'complete-workflow-test',
                 async () => {
                     // Имитируем работу с данными
-                    const foundCart = await cartRepo.findCart({} as any, {} as any, {} as any);
-                    const foundProduct = await productRepo.fidProductByPkId(TEST_CONSTANTS.PRODUCT.ID);
-                    
+                    const foundCart = await cartRepo.findCart(
+                        {} as any,
+                        {} as any,
+                        {} as any,
+                    );
+                    const foundProduct = await productRepo.fidProductByPkId(
+                        TEST_CONSTANTS.PRODUCT.ID,
+                    );
+
                     expect(foundCart).toBeDefined();
                     expect(foundProduct).toBeDefined();
                 },
-                { iterations: 50 }
+                { iterations: 50 },
             );
 
             expect(benchmarkResult.name).toBe('complete-workflow-test');
@@ -320,31 +334,31 @@ class ExampleService {
     @Benchmark('example-service-operation')
     async performOperation(): Promise<void> {
         // Имитируем работу
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 10));
+        await new Promise((resolve) => setTimeout(resolve, Math.random() * 10));
     }
 }
 
 /**
  * Преимущества использования новых утилит:
- * 
+ *
  * 1. **MockFactories**:
  *    - Стандартизированные моки для всех модулей
  *    - Типобезопасность
  *    - Легкое переопределение через overrides
  *    - Готовые провайдеры для тестовых модулей
- * 
+ *
  * 2. **TestDataBuilders**:
  *    - Читаемые и понятные тесты
  *    - Переиспользование логики создания данных
  *    - Предустановленные сценарии
  *    - Флюентный API
- * 
+ *
  * 3. **PerformanceTesting**:
  *    - Автоматические бенчмарки
  *    - Нагрузочное тестирование
  *    - Мониторинг регрессий
  *    - Генерация отчетов
- * 
+ *
  * 4. **TEST_CONSTANTS**:
  *    - Централизованные константы
  *    - Типобезопасность
