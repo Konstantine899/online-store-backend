@@ -193,6 +193,99 @@ const providers = MockFactories.createCartServiceProviders({
 const { PRODUCT_PRICE, CART_ID } = CART_TEST_CONSTANTS;
 ```
 
+### TestDataBuilders
+
+Паттерн Builder для создания сложных тестовых объектов.
+
+**Методы:**
+
+- `UserBuilder.user()` - создание пользователей
+- `ProductBuilder.product()` - создание товаров
+- `CartBuilder.cart()` - создание корзин
+- `OrderBuilder.order()` - создание заказов
+- `PromoCodeBuilder.promoCode()` - создание промокодов
+
+**Предустановленные сценарии:**
+
+- `createStandardUser()` - стандартный пользователь
+- `createAdminUser()` - администратор
+- `createStandardProduct()` - стандартный товар
+- `createStandardCart()` - стандартная корзина
+- `createStandardOrder()` - стандартный заказ
+- `createStandardPromoCode()` - стандартный промокод
+
+**Пример:**
+
+```typescript
+import { TestDataBuilders } from '../utils';
+
+// Создание сложного объекта
+const user = TestDataBuilders.user()
+    .withEmail('test@example.com')
+    .withPhone('+79991234567')
+    .withName('Test', 'User')
+    .withActiveStatus()
+    .build();
+
+// Использование предустановленных сценариев
+const standardUser = TestDataBuilders.createStandardUser();
+```
+
+### PerformanceTesting
+
+Инструменты для тестирования производительности.
+
+**Методы:**
+
+- `benchmark(name, operation, config)` - бенчмарк операции
+- `loadTest(name, request, config)` - нагрузочный тест
+- `generateReport()` - генерация отчета
+- `clearResults()` - очистка результатов
+
+**Декоратор:**
+
+- `@Benchmark(name?, config?)` - автоматический бенчмарк методов
+
+**Пример:**
+
+```typescript
+import { PerformanceTesting, Benchmark } from '../utils';
+
+// Бенчмарк операции
+const result = await PerformanceTesting.benchmark(
+    'cart-operation',
+    async () => await cartService.addToCart(1, 1),
+    { iterations: 100, threshold: { maxAverageDuration: 50 } }
+);
+
+// Декоратор
+class MyService {
+    @Benchmark('my-operation')
+    async performOperation() { /* ... */ }
+}
+```
+
+### TEST_CONSTANTS
+
+Централизованные константы для всех модулей.
+
+**Структура:**
+
+- `TEST_CONSTANTS.CART` - константы корзины
+- `TEST_CONSTANTS.USER` - константы пользователей
+- `TEST_CONSTANTS.PRODUCT` - константы товаров
+- `TEST_CONSTANTS.ORDER` - константы заказов
+- `TEST_CONSTANTS.COMMON` - общие константы
+
+**Пример:**
+
+```typescript
+import { TEST_CONSTANTS } from '../utils';
+
+expect(user.email).toBe(TEST_CONSTANTS.USER.EMAIL);
+expect(product.price).toBe(TEST_CONSTANTS.PRODUCT.PRICE);
+```
+
 ---
 
 ## Структура utilities
