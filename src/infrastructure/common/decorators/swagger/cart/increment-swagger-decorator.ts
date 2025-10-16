@@ -3,54 +3,63 @@ import {
     ApiCookieAuth,
     ApiNotFoundResponse,
     ApiOperation,
-    ApiParam,
+    ApiBody,
     ApiResponse,
+    ApiBadRequestResponse,
 } from '@nestjs/swagger';
 import { IncrementResponse } from '@app/infrastructure/responses';
+import { UpdateCartItemDto } from '@app/infrastructure/dto';
 
 export function IncrementSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Увеличение количества товара в корзине' }),
         ApiCookieAuth(),
-        ApiParam({
-            name: 'productId',
-            type: String,
-            description: 'Идентификатор продукта',
-            required: true,
-        }),
-        ApiParam({
-            name: 'quantity',
-            type: String,
-            description: 'Количество продуктов',
-            required: true,
+        ApiBody({
+            type: UpdateCartItemDto,
+            description: 'Данные для увеличения количества товара (amount > 0)',
         }),
         ApiResponse({
-            description: 'increment quantity',
+            description: 'Количество товара успешно увеличено',
             status: HttpStatus.OK,
             type: IncrementResponse,
         }),
+        ApiBadRequestResponse({
+            description: 'Ошибка валидации входных данных',
+            schema: {
+                example: {
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    url: '/online-store/cart/items/increment',
+                    path: '/online-store/cart/items/increment',
+                    name: 'BadRequestException',
+                    message: [
+                        'Укажите ID товара',
+                        'Укажите изменение количества',
+                    ],
+                },
+            },
+        }),
         ApiNotFoundResponse({
-            description: 'Not found',
+            description: 'Корзина или продукт не найдены',
             schema: {
                 anyOf: [
                     {
                         title: 'Корзина не найдена в БД',
                         example: {
                             statusCode: HttpStatus.NOT_FOUND,
-                            url: '/online-store/cart/product/55/increment/1',
-                            path: '/online-store/cart/product/55/increment/1',
+                            url: '/online-store/cart/items/increment',
+                            path: '/online-store/cart/items/increment',
                             name: 'NotFoundException',
                             message: 'Корзина с id:26 не найдена в БД',
                         },
                     },
                     {
-                        title: 'Продукт не найден в БД',
+                        title: 'Продукт не найден в корзине',
                         example: {
                             statusCode: HttpStatus.NOT_FOUND,
-                            url: '/online-store/cart/product/56/increment/1',
-                            path: '/online-store/cart/product/56/increment/1',
+                            url: '/online-store/cart/items/increment',
+                            path: '/online-store/cart/items/increment',
                             name: 'NotFoundException',
-                            message: 'Продукт с id:56 не найден в БД',
+                            message: 'Товар с id:56 не найден в корзине',
                         },
                     },
                 ],

@@ -344,18 +344,14 @@ export class CartService implements ICartService {
         request: Request,
         response: Response,
         code: string,
-        discount: number,
     ): Promise<CartResponse> {
         const cart = await this.getOrCreateCart(request, response);
 
         this.validateCartStatus(cart);
 
-        if (discount < 0) {
-            throw new BadRequestException({
-                statusCode: HttpStatus.BAD_REQUEST,
-                message: 'Скидка не может быть отрицательной',
-            });
-        }
+        // TODO: SAAS-004-11 - получить discount из таблицы promo_codes
+        // Пока используем mock-логику для валидации API
+        const discount = 10; // Mock: 10% скидка
 
         // Применяем промокод
         await cart.applyPromoCode(code, discount);
@@ -864,8 +860,11 @@ export class CartService implements ICartService {
 
         if (cart.products) {
             data.products = cart.products.map(
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (item: any): ICartProductItem => {
+                (
+                    item: ProductModel & {
+                        CartProductModel?: { price: number; quantity: number };
+                    },
+                ): ICartProductItem => {
                     // Используем price snapshot из CartProductModel
                     const unitPrice = Number(
                         item.CartProductModel?.price || item.price,

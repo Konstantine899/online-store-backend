@@ -6,7 +6,9 @@ export { GetListAllBrandsSwaggerDecorator } from './swagger/brand/get-list-all-b
 export { GetCartSwaggerDecorator } from './swagger/cart/get-cart-swagger-decorator';
 export { IncrementSwaggerDecorator } from './swagger/cart/increment-swagger-decorator';
 export { AppendToCartSwaggerDecorator } from './swagger/cart/append-to-cart-swagger-decorator';
+export { ApplyPromoCodeSwaggerDecorator } from './swagger/cart/apply-promo-code-swagger-decorator';
 export { RemoveProductFromCartSwaggerDecorator } from './swagger/cart/remove-product-from-cart-swagger-decorator';
+export { RemovePromoCodeSwaggerDecorator } from './swagger/cart/remove-promo-code-swagger-decorator';
 export { ClearCartSwaggerDecorator } from './swagger/cart/clear-cart-swagger-decorator';
 export { DecrementSwaggerDecorator } from './swagger/cart/decrement-swagger-decorator';
 export { GetRatingSwaggerDecorator } from './swagger/rating/get-rating-swagger-decorator';
