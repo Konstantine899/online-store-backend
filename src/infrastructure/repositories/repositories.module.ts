@@ -9,6 +9,7 @@ import {
     PasswordResetTokenModel,
     ProductModel,
     ProductPropertyModel,
+    PromoCodeModel,
     RatingModel,
     RefreshTokenModel,
     RoleModel,
@@ -29,6 +30,7 @@ import { OrderRepository } from './order/order.repository';
 import { PasswordResetTokenRepository } from './password-reset-token/password-reset-token.repository';
 import { ProductPropertyRepository } from './product-property/product-property.repository';
 import { ProductRepository } from './product/product.repository';
+import { PromoCodeRepository } from './promo-code/promo-code.repository';
 import { RatingRepository } from './rating/rating.repository';
 import { RefreshTokenRepository } from './refresh-token/refresh-token.repository';
 import { RoleRepository } from './role/role.repository';
@@ -45,6 +47,7 @@ import { UserRepository } from './user/user.repository';
             CategoryModel,
             BrandModel,
             ProductPropertyModel,
+            PromoCodeModel,
             RatingModel,
             OrderModel,
             OrderItemModel,
@@ -64,6 +67,7 @@ import { UserRepository } from './user/user.repository';
         CategoryRepository,
         ProductRepository,
         ProductPropertyRepository,
+        PromoCodeRepository,
         OrderRepository,
         OrderItemRepository,
         RatingRepository,
@@ -80,6 +84,7 @@ import { UserRepository } from './user/user.repository';
         CategoryRepository,
         ProductRepository,
         ProductPropertyRepository,
+        PromoCodeRepository,
         OrderRepository,
         OrderItemRepository,
         RatingRepository,

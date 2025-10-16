@@ -279,6 +279,36 @@ export type LoginHistoryCreationAttributes = Optional<
     'id' | 'created_at' | 'updated_at'
 >;
 
+// Promo Code types
+export interface PromoCodeAttributes {
+    id: number;
+    code: string;
+    discount_type: 'PERCENT' | 'FIXED';
+    discount_value: number;
+    valid_from: Date;
+    valid_until: Date | null;
+    usage_limit: number | null;
+    usage_count: number;
+    min_purchase_amount: number | null;
+    is_active: boolean;
+    created_at: Date;
+    updated_at: Date;
+}
+
+export type PromoCodeCreationAttributes = Optional<
+    PromoCodeAttributes,
+    | 'id'
+    | 'discount_type'
+    | 'valid_from'
+    | 'valid_until'
+    | 'usage_limit'
+    | 'usage_count'
+    | 'min_purchase_amount'
+    | 'is_active'
+    | 'created_at'
+    | 'updated_at'
+>;
+
 // Model interfaces
 export interface UserModel
     extends Model<UserAttributes, UserCreationAttributes>,
@@ -322,3 +352,6 @@ export interface RefreshTokenModel
 export interface LoginHistoryModel
     extends Model<LoginHistoryAttributes, LoginHistoryCreationAttributes>,
         LoginHistoryAttributes {}
+export interface PromoCodeModel
+    extends Model<PromoCodeAttributes, PromoCodeCreationAttributes>,
+        PromoCodeAttributes {}

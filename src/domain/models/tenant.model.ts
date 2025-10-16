@@ -80,7 +80,7 @@ export class TenantModel
         unique: true,
         validate: {
             len: [1, 100],
-            is: /^[a-z0-9\-]+$/i, // Only alphanumeric and hyphens
+            is: /^[a-z0-9-]+$/i, // Only alphanumeric and hyphens
         },
     })
     subdomain!: string | null;

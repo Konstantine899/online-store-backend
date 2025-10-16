@@ -3,6 +3,7 @@ import {
     CartRepository,
     ProductRepository,
 } from '@app/infrastructure/repositories';
+import { PromoCodeService } from '@app/infrastructure/services';
 import {
     BadRequestException,
     HttpStatus,
@@ -47,6 +48,7 @@ export class CartService implements ICartService {
     constructor(
         private readonly cartRepository: CartRepository,
         private readonly productRepository: ProductRepository,
+        private readonly promoCodeService: PromoCodeService,
         private readonly tenantContext: TenantContext,
     ) {}
 
@@ -349,12 +351,26 @@ export class CartService implements ICartService {
 
         this.validateCartStatus(cart);
 
-        // TODO: SAAS-004-11 - получить discount из таблицы promo_codes
-        // Пока используем mock-логику для валидации API
-        const discount = 10; // Mock: 10% скидка
+        // Получаем subtotal корзины для валидации
+        const subtotal = await cart.getSubtotal();
 
-        // Применяем промокод
-        await cart.applyPromoCode(code, discount);
+        // Валидация промокода через PromoCodeService
+        const validationResult = await this.promoCodeService.validatePromoCode(
+            code,
+            subtotal,
+        );
+
+        if (!validationResult.isValid) {
+            throw new BadRequestException(
+                validationResult.errorMessage || 'Промокод недействителен',
+            );
+        }
+
+        // Применяем промокод с рассчитанной скидкой
+        await cart.applyPromoCode(code, validationResult.discount);
+
+        // Инкремент счётчика использований промокода
+        await this.promoCodeService.applyPromoCode(code);
 
         this.setCartCookie(response, cart.id);
 

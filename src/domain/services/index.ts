@@ -31,6 +31,7 @@ export { IOrderService } from './order/i-order-service';
 export { IPaymentService } from './payment/i-payment-service';
 export { IProductPropertyService } from './product-property/i-product-property-service';
 export { IProductService } from './product/i-product-service';
+export { IPromoCodeService } from './promo-code/i-promo-code-service';
 export { IRatingService } from './rating/i-rating-service';
 export { IRoleService } from './role/i-role-service';
 export {

@@ -13,6 +13,7 @@ import OrderItem from './order-item';
 import PasswordResetToken from './password-reset-token';
 import Product from './product';
 import ProductProperty from './product-property';
+import PromoCode from './promo-code';
 import Rating from './rating';
 import RefreshToken from './refresh-token';
 import Role from './role';
@@ -44,6 +45,7 @@ interface Database {
     userAddress: ReturnType<typeof UserAddress>;
     loginHistory: ReturnType<typeof LoginHistory>;
     passwordResetToken: ReturnType<typeof PasswordResetToken>;
+    promoCode: ReturnType<typeof PromoCode>;
 }
 
 const db: Database = {} as Database;
@@ -81,6 +83,7 @@ db.refreshToken = RefreshToken(sequelize);
 db.userAddress = UserAddress(sequelize);
 db.loginHistory = LoginHistory(sequelize);
 db.passwordResetToken = PasswordResetToken(sequelize);
+db.promoCode = PromoCode(sequelize);
 
 // Set up associations
 Object.keys(db).forEach((modelName) => {
