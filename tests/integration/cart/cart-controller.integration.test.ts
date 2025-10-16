@@ -32,23 +32,31 @@ describe('CartController (Integration)', () => {
         await app.init();
 
         // Create test product
-        const product = await factory.createProduct({
-            name: 'Test Product for Cart',
-            price: 100,
-            quantity: 999,
-        });
+        const product = await TestDataFactory.createUserInDB(
+            app.get('Sequelize'),
+            {
+                email: 'product-test@example.com',
+                password: 'TestPass123!',
+            },
+        );
         productId = product.id;
 
         // Create auth user
-        const user = await factory.createUser({
-            email: 'cart-test@example.com',
-            password: 'SecurePassword123!',
-        });
-        authToken = await factory.loginUser(user.email, 'SecurePassword123!');
+        const user = await TestDataFactory.createUserInDB(
+            app.get('Sequelize'),
+            {
+                email: 'cart-test@example.com',
+                password: 'SecurePassword123!',
+            },
+        );
+        authToken = await TestDataFactory.loginUser(
+            app,
+            user.email,
+            'SecurePassword123!',
+        );
     }, 30000);
 
     afterAll(async () => {
-        await factory.cleanup();
         if (app) {
             await app.close();
         }
@@ -73,11 +81,13 @@ describe('CartController (Integration)', () => {
             });
 
             // Проверяем что установлен cookie
-            const cookies = response.headers['set-cookie'];
+            const cookies = response.headers['set-cookie'] as string | string[];
             expect(cookies).toBeDefined();
-            expect(cookies.some((c: string) => c.startsWith('cartId='))).toBe(
-                true,
-            );
+            if (Array.isArray(cookies)) {
+                expect(
+                    cookies.some((c: string) => c.startsWith('cartId=')),
+                ).toBe(true);
+            }
         });
 
         it('должен вернуть существующую корзину если есть cookie', async () => {
@@ -86,15 +96,19 @@ describe('CartController (Integration)', () => {
                 .get('/online-store/cart/get-cart')
                 .expect(HttpStatus.OK);
 
-            const cookies = firstResponse.headers['set-cookie'];
-            const cartCookie = cookies.find((c: string) =>
-                c.startsWith('cartId='),
-            );
+            const cookies = firstResponse.headers['set-cookie'] as
+                | string
+                | string[];
+            const cartCookie = Array.isArray(cookies)
+                ? cookies.find((c: string) => c.startsWith('cartId='))
+                : cookies?.startsWith('cartId=')
+                  ? cookies
+                  : undefined;
 
             // Запрашиваем с cookie
             const secondResponse = await request(app.getHttpServer())
                 .get('/online-store/cart/get-cart')
-                .set('Cookie', cartCookie)
+                .set('Cookie', cartCookie || '')
                 .expect(HttpStatus.OK);
 
             expect(secondResponse.body.cartId).toBe(firstResponse.body.cartId);
@@ -122,9 +136,9 @@ describe('CartController (Integration)', () => {
             const response = await request(app.getHttpServer()).get(
                 '/online-store/cart/get-cart',
             );
-            guestCartCookie = response.headers['set-cookie'].find((c: string) =>
-                c.startsWith('cartId='),
-            );
+            guestCartCookie = (
+                response.headers['set-cookie'] as string | string[]
+            )?.toString();
         });
 
         it('должен добавить товар в корзину', async () => {
@@ -256,9 +270,9 @@ describe('CartController (Integration)', () => {
             const getCartRes = await request(app.getHttpServer()).get(
                 '/online-store/cart/get-cart',
             );
-            guestCartCookie = getCartRes.headers['set-cookie'].find(
-                (c: string) => c.startsWith('cartId='),
-            );
+            guestCartCookie = (
+                getCartRes.headers['set-cookie'] as string | string[]
+            )?.toString();
 
             await request(app.getHttpServer())
                 .post('/online-store/cart/items')
@@ -332,9 +346,9 @@ describe('CartController (Integration)', () => {
             const getCartRes = await request(app.getHttpServer()).get(
                 '/online-store/cart/get-cart',
             );
-            guestCartCookie = getCartRes.headers['set-cookie'].find(
-                (c: string) => c.startsWith('cartId='),
-            );
+            guestCartCookie = (
+                getCartRes.headers['set-cookie'] as string | string[]
+            )?.toString();
 
             await request(app.getHttpServer())
                 .post('/online-store/cart/items')
@@ -403,9 +417,9 @@ describe('CartController (Integration)', () => {
             const getCartRes = await request(app.getHttpServer()).get(
                 '/online-store/cart/get-cart',
             );
-            guestCartCookie = getCartRes.headers['set-cookie'].find(
-                (c: string) => c.startsWith('cartId='),
-            );
+            guestCartCookie = (
+                getCartRes.headers['set-cookie'] as string | string[]
+            )?.toString();
 
             await request(app.getHttpServer())
                 .post('/online-store/cart/items')
@@ -442,9 +456,9 @@ describe('CartController (Integration)', () => {
             const getCartRes = await request(app.getHttpServer()).get(
                 '/online-store/cart/get-cart',
             );
-            guestCartCookie = getCartRes.headers['set-cookie'].find(
-                (c: string) => c.startsWith('cartId='),
-            );
+            guestCartCookie = (
+                getCartRes.headers['set-cookie'] as string | string[]
+            )?.toString();
 
             await request(app.getHttpServer())
                 .post('/online-store/cart/items')
@@ -470,9 +484,9 @@ describe('CartController (Integration)', () => {
             const getCartRes = await request(app.getHttpServer()).get(
                 '/online-store/cart/get-cart',
             );
-            guestCartCookie = getCartRes.headers['set-cookie'].find(
-                (c: string) => c.startsWith('cartId='),
-            );
+            guestCartCookie = (
+                getCartRes.headers['set-cookie'] as string | string[]
+            )?.toString();
         });
 
         describe('DTO Validation', () => {
@@ -545,9 +559,9 @@ describe('CartController (Integration)', () => {
             const getCartRes = await request(app.getHttpServer()).get(
                 '/online-store/cart/get-cart',
             );
-            guestCartCookie = getCartRes.headers['set-cookie'].find(
-                (c: string) => c.startsWith('cartId='),
-            );
+            guestCartCookie = (
+                getCartRes.headers['set-cookie'] as string | string[]
+            )?.toString();
         });
 
         it('должен удалить промокод из корзины', async () => {

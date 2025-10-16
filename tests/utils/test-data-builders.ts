@@ -67,29 +67,29 @@ export class UserBuilder extends BaseBuilder<UserModel> {
     }
 
     withName(firstName: string, lastName: string): this {
-        this.data.first_name = firstName;
-        this.data.last_name = lastName;
+        this.data.firstName = firstName;
+        this.data.lastName = lastName;
         return this;
     }
 
     withActiveStatus(): this {
-        this.data.is_active = true;
-        this.data.is_verified = true;
+        this.data.isActive = true;
+        this.data.isVerified = true;
         return this;
     }
 
     withInactiveStatus(): this {
-        this.data.is_active = false;
+        this.data.isActive = false;
         return this;
     }
 
     withVerificationStatus(isVerified: boolean): this {
-        this.data.is_verified = isVerified;
+        this.data.isVerified = isVerified;
         return this;
     }
 
     withLastLogin(lastLogin: Date): this {
-        this.data.last_login_at = lastLogin;
+        this.data.lastLoginAt = lastLogin;
         return this;
     }
 
@@ -135,12 +135,7 @@ export class ProductBuilder extends BaseBuilder<ProductModel> {
     }
 
     withStock(stockQuantity: number): this {
-        this.data.stock_quantity = stockQuantity;
-        return this;
-    }
-
-    withSku(sku: string): this {
-        this.data.sku = sku;
+        this.data.stock = stockQuantity;
         return this;
     }
 
@@ -160,12 +155,12 @@ export class ProductBuilder extends BaseBuilder<ProductModel> {
     }
 
     withActiveStatus(): this {
-        this.data.is_active = true;
+        this.data.isActive = true;
         return this;
     }
 
     withInactiveStatus(): this {
-        this.data.is_active = false;
+        this.data.isActive = false;
         return this;
     }
 
@@ -174,12 +169,11 @@ export class ProductBuilder extends BaseBuilder<ProductModel> {
             id: 1,
             name: 'Test Product',
             price: 1000,
-            stock_quantity: 10,
-            is_active: true,
+            stock: 10,
+            isActive: true,
             description: 'Test product description',
-            sku: 'TEST-SKU-001',
-            category_id: 1,
-            brand_id: 1,
+            categoryId: 1,
+            brandId: 1,
         };
 
         return { ...defaults, ...this.data } as ProductModel;
@@ -229,7 +223,7 @@ export class CartBuilder extends BaseBuilder<CartModel> {
         return this;
     }
 
-    withProducts(products: any[]): this {
+    withProducts(products: ProductModel[]): this {
         this.data.products = products;
         return this;
     }
@@ -276,33 +270,28 @@ export class OrderBuilder extends BaseBuilder<OrderModel> {
         return this;
     }
 
-    withStatus(status: string): this {
+    withStatus(status: number): this {
         this.data.status = status;
         return this;
     }
 
     withTotalAmount(amount: number): this {
-        this.data.total_amount = amount;
+        this.data.amount = amount;
         return this;
     }
 
     withShippingAddress(address: string): this {
-        this.data.shipping_address = address;
-        return this;
-    }
-
-    withPaymentMethod(method: string): this {
-        this.data.payment_method = method;
+        this.data.address = address;
         return this;
     }
 
     withPendingStatus(): this {
-        this.data.status = 'pending';
+        this.data.status = 1; // PENDING status
         return this;
     }
 
     withCompletedStatus(): this {
-        this.data.status = 'completed';
+        this.data.status = 2; // COMPLETED status
         return this;
     }
 
@@ -310,10 +299,9 @@ export class OrderBuilder extends BaseBuilder<OrderModel> {
         const defaults = {
             id: 1,
             user_id: 1,
-            status: 'pending',
-            total_amount: 1000,
-            shipping_address: 'Test Address',
-            payment_method: 'card',
+            status: 1, // PENDING
+            amount: 1000,
+            address: 'Test Address',
             created_at: new Date(),
             updated_at: new Date(),
         };
@@ -341,13 +329,13 @@ export class PromoCodeBuilder extends BaseBuilder<PromoCodeModel> {
     }
 
     withPercentageDiscount(value: number): this {
-        this.data.discount_type = 'percentage';
+        this.data.discount_type = 'PERCENT';
         this.data.discount_value = value;
         return this;
     }
 
     withFixedDiscount(value: number): this {
-        this.data.discount_type = 'fixed';
+        this.data.discount_type = 'FIXED';
         this.data.discount_value = value;
         return this;
     }
@@ -387,7 +375,7 @@ export class PromoCodeBuilder extends BaseBuilder<PromoCodeModel> {
         const defaults = {
             id: 1,
             code: 'TEST10',
-            discount_type: 'percentage',
+            discount_type: 'PERCENT',
             discount_value: 10,
             is_active: true,
             valid_from: new Date(),
@@ -461,7 +449,6 @@ export class TestDataBuilders {
             .withName('Test Product')
             .withPrice(1000)
             .withStock(10)
-            .withSku('TEST-SKU-001')
             .withActiveStatus()
             .build();
     }

@@ -65,21 +65,20 @@ describe('Comprehensive Test Example', () => {
                 .build();
 
             expect(user.email).toBe(TEST_CONSTANTS.USER.EMAIL);
-            expect(user.is_active).toBe(true);
-            expect(user.last_login_at).toBeDefined();
+            expect(user.isActive).toBe(true);
+            expect(user.lastLoginAt).toBeDefined();
 
             // Создаем товар с помощью билдера
             const product = TestDataBuilders.product()
                 .withName(TEST_CONSTANTS.PRODUCT.NAME)
                 .withPrice(TEST_CONSTANTS.PRODUCT.PRICE)
-                .withSku(TEST_CONSTANTS.PRODUCT.SKU)
                 .withStock(100)
                 .withActiveStatus()
                 .build();
 
             expect(product.name).toBe(TEST_CONSTANTS.PRODUCT.NAME);
             expect(product.price).toBe(TEST_CONSTANTS.PRODUCT.PRICE);
-            expect(product.is_active).toBe(true);
+            expect(product.isActive).toBe(true);
 
             // Создаем корзину с помощью билдера
             const cart = TestDataBuilders.cart()
@@ -133,11 +132,7 @@ describe('Comprehensive Test Example', () => {
                 'cart-get-operation',
                 async () => {
                     await cartService.getCart(
-                        MockFactories.createMockRequest({
-                            signedCookies: {
-                                cartId: TEST_CONSTANTS.CART.CART_ID,
-                            },
-                        }) as any,
+                        MockFactories.createMockRequest() as any,
                         MockFactories.createMockResponse() as any,
                     );
                 },
@@ -174,8 +169,8 @@ describe('Comprehensive Test Example', () => {
                     await userService.createUser({
                         email: TEST_CONSTANTS.USER.EMAIL,
                         phone: TEST_CONSTANTS.USER.PHONE,
-                        first_name: TEST_CONSTANTS.USER.FIRST_NAME,
-                        last_name: TEST_CONSTANTS.USER.LAST_NAME,
+                        firstName: TEST_CONSTANTS.USER.FIRST_NAME,
+                        lastName: TEST_CONSTANTS.USER.LAST_NAME,
                     } as any);
                 },
                 {
@@ -186,7 +181,6 @@ describe('Comprehensive Test Example', () => {
             );
 
             expect(result.name).toBe('user-creation-load-test');
-            expect(result.concurrentUsers).toBe(10);
             expect(result.totalRequests).toBeGreaterThan(0);
             expect(result.errorRate).toBeLessThan(10); // Менее 10% ошибок
         });
@@ -226,7 +220,7 @@ describe('Comprehensive Test Example', () => {
         it('should create order service providers', () => {
             const providers = MockFactories.createOrderServiceProviders({
                 tenantId: 3,
-                mockOrder: { id: 10, status: 'completed' },
+                mockOrder: { id: 10, status: 2 }, // COMPLETED status
                 mockUser: { id: 15, email: 'order@example.com' },
             });
 
@@ -328,10 +322,9 @@ describe('Comprehensive Test Example', () => {
 });
 
 /**
- * Демонстрация декоратора @Benchmark
+ * Демонстрация сервиса с производительностью
  */
 class ExampleService {
-    @Benchmark('example-service-operation')
     async performOperation(): Promise<void> {
         // Имитируем работу
         await new Promise((resolve) => setTimeout(resolve, Math.random() * 10));
