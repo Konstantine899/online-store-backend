@@ -9,6 +9,7 @@ import {
     HttpStatus,
     Inject,
     Injectable,
+    Logger,
     NotFoundException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
@@ -29,7 +30,7 @@ import {
     IncrementResponse,
     RemoveProductFromCartResponse,
 } from '@app/infrastructure/responses';
-import { Op } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
 
 /**
  * CartService — сервис для работы с корзинами (SaaS-ready)
@@ -46,6 +47,8 @@ import { Op } from 'sequelize';
  */
 @Injectable()
 export class CartService implements ICartService {
+    private readonly logger = new Logger(CartService.name);
+
     constructor(
         private readonly cartRepository: CartRepository,
         private readonly productRepository: ProductRepository,
@@ -68,7 +71,29 @@ export class CartService implements ICartService {
         request: Request,
         response: Response,
     ): Promise<CartResponse> {
+        const startTime = Date.now();
+        const correlationId =
+            (request.headers?.['x-request-id'] as string) || 'unknown';
+        const tenantId = this.tenantContext.getTenantIdOrNull();
+
+        this.logger.log(`Starting getCart operation`, {
+            tenantId,
+            correlationId,
+            action: 'get-cart',
+        });
+
         const cart = await this.getOrCreateCart(request, response);
+
+        const duration = Date.now() - startTime;
+        this.logger.log(`Successfully retrieved cart`, {
+            cartId: cart.id,
+            tenantId,
+            correlationId,
+            action: 'get-cart',
+            duration: `${duration}ms`,
+            success: true,
+        });
+
         return this.transformData(cart);
     }
 
@@ -82,6 +107,19 @@ export class CartService implements ICartService {
         productId: number,
         quantity: number,
     ): Promise<AppendToCartResponse> {
+        const startTime = Date.now();
+        const correlationId =
+            (request.headers?.['x-request-id'] as string) || 'unknown';
+        const tenantId = this.tenantContext.getTenantIdOrNull();
+
+        this.logger.log(`Starting appendToCart operation`, {
+            productId,
+            quantity,
+            tenantId,
+            correlationId,
+            action: 'append-to-cart',
+        });
+
         this.validateQuantity(quantity);
         const product = await this.findProduct(productId);
         const cart = await this.getOrCreateCart(request, response);
@@ -89,50 +127,69 @@ export class CartService implements ICartService {
         // Проверка статуса корзины
         this.validateCartStatus(cart);
 
-        // Используем транзакцию для атомарности операций
-        const transaction = await CartModel.sequelize!.transaction();
-
-        try {
-            // Проверяем, есть ли уже товар в корзине
-            const existingItem = await CartProductModel.findOne({
-                where: {
-                    cart_id: cart.id,
-                    product_id: product.id,
-                },
-                transaction,
-            });
-
-            if (existingItem) {
-                // Увеличиваем количество существующего товара
-                const newQuantity = existingItem.quantity + quantity;
-                this.validateQuantity(newQuantity);
-                existingItem.quantity = newQuantity;
-                await existingItem.save({ transaction });
-            } else {
-                // Добавляем новый товар с price snapshot
-                await CartProductModel.create(
-                    {
+        // Используем улучшенную обработку транзакций
+        await this.executeWithTransaction(
+            async (transaction) => {
+                // Проверяем, есть ли уже товар в корзине
+                const existingItem = await CartProductModel.findOne({
+                    where: {
                         cart_id: cart.id,
                         product_id: product.id,
-                        quantity,
-                        price: product.price, // Price snapshot!
                     },
-                    { transaction },
-                );
-            }
+                    transaction,
+                });
 
-            // Автоматический пересчёт корзины
-            await cart.recalculateTotal(transaction);
+                if (existingItem) {
+                    // Увеличиваем количество существующего товара
+                    const newQuantity = existingItem.quantity + quantity;
+                    this.validateQuantity(newQuantity);
+                    existingItem.quantity = newQuantity;
+                    await existingItem.save({ transaction });
+                } else {
+                    // Добавляем новый товар с price snapshot
+                    await CartProductModel.create(
+                        {
+                            cart_id: cart.id,
+                            product_id: product.id,
+                            quantity,
+                            price: product.price, // Price snapshot!
+                        },
+                        { transaction },
+                    );
+                }
 
-            // Обновляем expiration date при активности
-            cart.setExpirationDate();
-            await cart.save({ transaction });
+                // Автоматический пересчёт корзины
+                await cart.recalculateTotal(transaction);
 
-            await transaction.commit();
-        } catch (error) {
-            await transaction.rollback();
-            throw error;
-        }
+                // Обновляем expiration date при активности
+                cart.setExpirationDate();
+                await cart.save({ transaction });
+
+                return null; // Результат не нужен, операция выполнена
+            },
+            {
+                action: 'append-to-cart',
+                correlationId,
+                tenantId,
+                additionalData: {
+                    cartId: cart.id,
+                    productId,
+                    quantity,
+                },
+            },
+        );
+
+        const duration = Date.now() - startTime;
+        this.logger.log(`Successfully appended product to cart`, {
+            cartId: cart.id,
+            productId,
+            quantity,
+            tenantId,
+            correlationId,
+            action: 'append-to-cart',
+            duration: `${duration}ms`,
+            success: true,
+        });
 
         await cart.reload();
         this.setCartCookie(response, cart.id);
@@ -349,6 +406,18 @@ export class CartService implements ICartService {
         response: Response,
         code: string,
     ): Promise<CartResponse> {
+        const startTime = Date.now();
+        const correlationId =
+            (request.headers?.['x-request-id'] as string) || 'unknown';
+        const tenantId = this.tenantContext.getTenantIdOrNull();
+
+        this.logger.log(`Starting applyPromoCode operation`, {
+            code,
+            tenantId,
+            correlationId,
+            action: 'apply-promo-code',
+        });
+
         const cart = await this.getOrCreateCart(request, response);
 
         this.validateCartStatus(cart);
@@ -363,6 +432,18 @@ export class CartService implements ICartService {
         );
 
         if (!validationResult.isValid) {
+            const duration = Date.now() - startTime;
+            this.logger.warn(`Invalid promo code applied`, {
+                code,
+                cartId: cart.id,
+                tenantId,
+                correlationId,
+                action: 'apply-promo-code',
+                duration: `${duration}ms`,
+                error: validationResult.errorMessage,
+                success: false,
+            });
+
             throw new BadRequestException(
                 validationResult.errorMessage || 'Промокод недействителен',
             );
@@ -373,6 +454,19 @@ export class CartService implements ICartService {
 
         // Инкремент счётчика использований промокода
         await this.promoCodeService.applyPromoCode(code);
+
+        const duration = Date.now() - startTime;
+        this.logger.log(`Successfully applied promo code`, {
+            code,
+            cartId: cart.id,
+            discount: validationResult.discount,
+            subtotal,
+            tenantId,
+            correlationId,
+            action: 'apply-promo-code',
+            duration: `${duration}ms`,
+            success: true,
+        });
 
         this.setCartCookie(response, cart.id);
 
@@ -790,14 +884,26 @@ export class CartService implements ICartService {
         if (quantity < CART_CONSTANTS.MIN_ITEM_QUANTITY) {
             throw new BadRequestException({
                 statusCode: HttpStatus.BAD_REQUEST,
-                message: `Количество товара должно быть не меньше ${CART_CONSTANTS.MIN_ITEM_QUANTITY}`,
+                message: `Количество товара слишком мало. Минимальное количество: ${CART_CONSTANTS.MIN_ITEM_QUANTITY} шт.`,
+                error: 'QUANTITY_TOO_LOW',
+                details: {
+                    provided: quantity,
+                    minimum: CART_CONSTANTS.MIN_ITEM_QUANTITY,
+                    suggestion: 'Увеличьте количество товара до минимума',
+                },
             });
         }
 
         if (quantity > CART_CONSTANTS.MAX_ITEM_QUANTITY) {
             throw new BadRequestException({
                 statusCode: HttpStatus.BAD_REQUEST,
-                message: `Количество товара не может превышать ${CART_CONSTANTS.MAX_ITEM_QUANTITY}`,
+                message: `Превышено максимальное количество товара. Максимальное количество: ${CART_CONSTANTS.MAX_ITEM_QUANTITY} шт.`,
+                error: 'QUANTITY_LIMIT_EXCEEDED',
+                details: {
+                    provided: quantity,
+                    maximum: CART_CONSTANTS.MAX_ITEM_QUANTITY,
+                    suggestion: 'Уменьшите количество товара до максимума',
+                },
             });
         }
 
@@ -805,6 +911,12 @@ export class CartService implements ICartService {
             throw new BadRequestException({
                 statusCode: HttpStatus.BAD_REQUEST,
                 message: 'Количество товара должно быть целым числом',
+                error: 'INVALID_QUANTITY_TYPE',
+                details: {
+                    provided: quantity,
+                    expected: 'integer',
+                    suggestion: 'Введите целое число для количества',
+                },
             });
         }
     }
@@ -819,6 +931,12 @@ export class CartService implements ICartService {
                 statusCode: HttpStatus.BAD_REQUEST,
                 message:
                     'Корзина уже конвертирована в заказ и не может быть изменена',
+                error: 'CART_CONVERTED',
+                details: {
+                    cartId: cart.id,
+                    status: CART_STATUS.CONVERTED,
+                    suggestion: 'Создайте новую корзину для добавления товаров',
+                },
             });
         }
 
@@ -826,6 +944,13 @@ export class CartService implements ICartService {
             throw new BadRequestException({
                 statusCode: HttpStatus.BAD_REQUEST,
                 message: 'Корзина истекла и не может быть изменена',
+                error: 'CART_EXPIRED',
+                details: {
+                    cartId: cart.id,
+                    status: CART_STATUS.EXPIRED,
+                    suggestion:
+                        'Создайте новую корзину или восстановите активную',
+                },
             });
         }
     }
@@ -868,6 +993,104 @@ export class CartService implements ICartService {
     }
 
     /**
+     * Безопасное выполнение операции с транзакцией
+     * Включает логирование ошибок и retry логику
+     */
+    private async executeWithTransaction<T>(
+        operation: (transaction: Transaction) => Promise<T>,
+        context: {
+            action: string;
+            correlationId: string;
+            tenantId: number | null;
+            additionalData?: Record<string, unknown>;
+        },
+    ): Promise<T> {
+        const {
+            action,
+            correlationId,
+            tenantId,
+            additionalData = {},
+        } = context;
+        let lastError: Error | null = null;
+        const maxRetries = 3;
+        const retryDelay = 100; // ms
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            const transaction = await CartModel.sequelize!.transaction();
+
+            try {
+                const result = await operation(transaction);
+                await transaction.commit();
+
+                if (attempt > 1) {
+                    this.logger.log(`Transaction succeeded on retry`, {
+                        action,
+                        tenantId,
+                        correlationId,
+                        attempt,
+                        ...additionalData,
+                        success: true,
+                    });
+                }
+
+                return result;
+            } catch (error) {
+                lastError = error as Error;
+                await transaction.rollback();
+
+                const errorMessage =
+                    error instanceof Error ? error.message : 'Unknown error';
+                const errorStack =
+                    error instanceof Error ? error.stack : undefined;
+
+                this.logger.error(`Transaction failed`, {
+                    action,
+                    tenantId,
+                    correlationId,
+                    attempt,
+                    maxRetries,
+                    error: errorMessage,
+                    stack: errorStack,
+                    ...additionalData,
+                    success: false,
+                });
+
+                // Retry для определенных типов ошибок
+                if (attempt < maxRetries && this.shouldRetry(error)) {
+                    await new Promise((resolve) =>
+                        setTimeout(resolve, retryDelay * attempt),
+                    );
+                    continue;
+                }
+
+                throw error;
+            }
+        }
+
+        throw lastError;
+    }
+
+    /**
+     * Определяет, стоит ли повторить операцию при ошибке
+     */
+    private shouldRetry(error: unknown): boolean {
+        // Retry для временных ошибок БД
+        const retryableErrors = [
+            'SequelizeConnectionError',
+            'SequelizeTimeoutError',
+            'SequelizeConnectionRefusedError',
+            'ETIMEDOUT',
+            'ECONNREFUSED',
+        ];
+
+        return retryableErrors.some(
+            (errorType) =>
+                (error as Error).name?.includes(errorType) ||
+                (error as Error).message?.includes(errorType),
+        );
+    }
+
+    /**
      * Трансформация данных корзины в response DTO
      */
     private transformData(cart: CartModel): ICartTransformData {
@@ -907,7 +1130,16 @@ export class CartService implements ICartService {
     private async findProduct(id: number): Promise<ProductModel> {
         const product = await this.productRepository.fidProductByPkId(id);
         if (!product) {
-            this.notFound(`Продукт с id:${id} не найден в БД`);
+            throw new NotFoundException({
+                status: HttpStatus.NOT_FOUND,
+                message: `Товар с ID ${id} не найден или недоступен`,
+                error: 'PRODUCT_NOT_FOUND',
+                details: {
+                    productId: id,
+                    suggestion:
+                        'Проверьте правильность ID товара или выберите другой товар',
+                },
+            });
         }
         return product;
     }
