@@ -1,7 +1,7 @@
-import { IsInt, IsNotEmpty, Max, Min } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 import { IAddToCartDto } from '@app/domain/dto';
 import { CART_CONSTANTS } from '@app/domain/models/constants/cart.constants';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsInt, IsNotEmpty, Max, Min } from 'class-validator';
 
 /**
  * DTO для добавления товара в корзину

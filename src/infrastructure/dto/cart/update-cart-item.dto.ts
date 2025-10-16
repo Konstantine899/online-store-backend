@@ -1,6 +1,6 @@
-import { IsInt, IsNotEmpty, Min } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 import { IUpdateCartItemDto } from '@app/domain/dto';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsInt, IsNotEmpty, Min } from 'class-validator';
 
 /**
  * DTO для обновления количества товара в корзине

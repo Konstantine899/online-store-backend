@@ -1,7 +1,7 @@
-import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 import { IApplyCouponDto } from '@app/domain/dto';
 import { IsSanitizedString } from '@app/infrastructure/common/validators';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
 /**
  * DTO для применения промокода к корзине
