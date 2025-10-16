@@ -1,6 +1,7 @@
 export { TLogin, TRegistration } from './auth/I-auth-dto';
 export { IRefreshDto } from './auth/i-refresh-dto';
 export { ICreateBrand } from './brand/i-create-brand-dto';
+export { IAddToCartDto, IUpdateCartItemDto, IApplyCouponDto } from './cart';
 export { ICreateCategory } from './category/i-create-category-dto';
 export { IOrderDto } from './order/i-order-dto';
 export { IUserOrderDto } from './order/i-user-order-dto';
