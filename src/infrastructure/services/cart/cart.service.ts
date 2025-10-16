@@ -7,6 +7,7 @@ import { PromoCodeService } from '@app/infrastructure/services';
 import {
     BadRequestException,
     HttpStatus,
+    Inject,
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
@@ -48,6 +49,7 @@ export class CartService implements ICartService {
     constructor(
         private readonly cartRepository: CartRepository,
         private readonly productRepository: ProductRepository,
+        @Inject('PromoCodeService')
         private readonly promoCodeService: PromoCodeService,
         private readonly tenantContext: TenantContext,
     ) {}
