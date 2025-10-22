@@ -23,4 +23,5 @@ export {
 export { TestCleanup } from './test-cleanup';
 export { TestDataBuilders } from './test-data-builders';
 export { TestDataFactory } from './test-data-factory';
+export { TestDatabaseSetup } from './test-database-setup';
 export { TestTransaction } from './test-transaction';

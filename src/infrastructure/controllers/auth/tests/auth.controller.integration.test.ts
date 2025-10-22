@@ -1,7 +1,7 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
-import { TestDataFactory } from '../../../../../tests/utils';
+import { TestDataFactory, TestDatabaseSetup } from '../../../../../tests/utils';
 
 /**
  * Comprehensive Authentication Controller Integration Tests
@@ -32,6 +32,10 @@ describe('AuthController Comprehensive Tests', () => {
         // Environment переменные загружаются из .test.env через jest-setup.ts
         // Не нужно дублировать здесь
         app = await setupTestApp();
+        
+        // Применяем миграции и seeds для тестовой БД
+        await TestDatabaseSetup.setupDatabase('test');
+        
         await app.init();
     }, 30000);
 
