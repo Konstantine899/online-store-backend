@@ -4,6 +4,11 @@ import request from 'supertest';
 import { setupTestApp } from '../../setup/app';
 import { TestDataFactory, TestDatabaseSetup } from '../../utils';
 
+// Хелпер для создания запросов с tenant-id заголовком
+const createRequest = (app: INestApplication) => {
+    return request(app.getHttpServer()).set('x-tenant-id', '1');
+};
+
 /**
  * SAAS-004-05: CartController Integration Tests
  *
@@ -81,7 +86,7 @@ describe('CartController (Integration)', () => {
     // ============================================================
     describe('GET /cart/get-cart', () => {
         it('должен создать новую гостевую корзину если нет cookie', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/online-store/cart/get-cart')
                 .expect(HttpStatus.OK);
 
@@ -102,7 +107,7 @@ describe('CartController (Integration)', () => {
 
         it('должен вернуть существующую корзину если есть cookie', async () => {
             // Создаём корзину
-            const firstResponse = await request(app.getHttpServer())
+            const firstResponse = await createRequest(app)
                 .get('/online-store/cart/get-cart')
                 .expect(HttpStatus.OK);
 
@@ -116,7 +121,7 @@ describe('CartController (Integration)', () => {
                   : undefined;
 
             // Запрашиваем с cookie
-            const secondResponse = await request(app.getHttpServer())
+            const secondResponse = await createRequest(app)
                 .get('/online-store/cart/get-cart')
                 .set('Cookie', cartCookie || '')
                 .expect(HttpStatus.OK);
@@ -125,7 +130,7 @@ describe('CartController (Integration)', () => {
         });
 
         it('должен вернуть корзину авторизованного пользователя', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/online-store/cart/get-cart')
                 .set('Authorization', `Bearer ${authToken}`)
                 .expect(HttpStatus.OK);
@@ -143,7 +148,7 @@ describe('CartController (Integration)', () => {
     describe('POST /cart/items', () => {
         beforeEach(async () => {
             // Получаем гостевую корзину для тестов
-            const response = await request(app.getHttpServer()).get(
+            const response = await createRequest(app).get(
                 '/online-store/cart/get-cart',
             );
             guestCartCookie = (
@@ -152,7 +157,7 @@ describe('CartController (Integration)', () => {
         });
 
         it('должен добавить товар в корзину', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .post('/online-store/cart/items')
                 .set('Cookie', guestCartCookie)
                 .send({
@@ -174,7 +179,7 @@ describe('CartController (Integration)', () => {
 
         describe('DTO Validation', () => {
             it('должен вернуть 400 если нет productId', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/cart/items')
                     .set('Cookie', guestCartCookie)
                     .send({
@@ -190,7 +195,7 @@ describe('CartController (Integration)', () => {
             });
 
             it('должен вернуть 400 если нет quantity', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/cart/items')
                     .set('Cookie', guestCartCookie)
                     .send({
@@ -206,7 +211,7 @@ describe('CartController (Integration)', () => {
             });
 
             it('должен вернуть 400 если productId <= 0', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/cart/items')
                     .set('Cookie', guestCartCookie)
                     .send({
@@ -225,7 +230,7 @@ describe('CartController (Integration)', () => {
             });
 
             it('должен вернуть 400 если quantity < 1', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/cart/items')
                     .set('Cookie', guestCartCookie)
                     .send({
@@ -242,7 +247,7 @@ describe('CartController (Integration)', () => {
             });
 
             it('должен вернуть 400 если quantity > 999', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/cart/items')
                     .set('Cookie', guestCartCookie)
                     .send({
@@ -260,7 +265,7 @@ describe('CartController (Integration)', () => {
         });
 
         it('должен вернуть 404 если товар не найден', async () => {
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post('/online-store/cart/items')
                 .set('Cookie', guestCartCookie)
                 .send({
@@ -277,21 +282,21 @@ describe('CartController (Integration)', () => {
     describe('PATCH /cart/items/increment', () => {
         beforeEach(async () => {
             // Создаём корзину с товаром
-            const getCartRes = await request(app.getHttpServer()).get(
+            const getCartRes = await createRequest(app).get(
                 '/online-store/cart/get-cart',
             );
             guestCartCookie = (
                 getCartRes.headers['set-cookie'] as string | string[]
             )?.toString();
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post('/online-store/cart/items')
                 .set('Cookie', guestCartCookie)
                 .send({ productId, quantity: 2 });
         });
 
         it('должен увеличить количество товара', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .patch('/online-store/cart/items/increment')
                 .set('Cookie', guestCartCookie)
                 .send({
@@ -308,7 +313,7 @@ describe('CartController (Integration)', () => {
 
         describe('DTO Validation', () => {
             it('должен вернуть 400 если нет productId', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .patch('/online-store/cart/items/increment')
                     .set('Cookie', guestCartCookie)
                     .send({ amount: 1 })
@@ -322,7 +327,7 @@ describe('CartController (Integration)', () => {
             });
 
             it('должен вернуть 400 если нет amount', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .patch('/online-store/cart/items/increment')
                     .set('Cookie', guestCartCookie)
                     .send({ productId })
@@ -337,7 +342,7 @@ describe('CartController (Integration)', () => {
         });
 
         it('должен вернуть 404 если товар не найден в корзине', async () => {
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .patch('/online-store/cart/items/increment')
                 .set('Cookie', guestCartCookie)
                 .send({
@@ -353,21 +358,21 @@ describe('CartController (Integration)', () => {
     // ============================================================
     describe('PATCH /cart/items/decrement', () => {
         beforeEach(async () => {
-            const getCartRes = await request(app.getHttpServer()).get(
+            const getCartRes = await createRequest(app).get(
                 '/online-store/cart/get-cart',
             );
             guestCartCookie = (
                 getCartRes.headers['set-cookie'] as string | string[]
             )?.toString();
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post('/online-store/cart/items')
                 .set('Cookie', guestCartCookie)
                 .send({ productId, quantity: 5 });
         });
 
         it('должен уменьшить количество товара', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .patch('/online-store/cart/items/decrement')
                 .set('Cookie', guestCartCookie)
                 .send({
@@ -383,7 +388,7 @@ describe('CartController (Integration)', () => {
         });
 
         it('должен удалить товар если количество = 0', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .patch('/online-store/cart/items/decrement')
                 .set('Cookie', guestCartCookie)
                 .send({
@@ -401,7 +406,7 @@ describe('CartController (Integration)', () => {
 
         describe('DTO Validation', () => {
             it('должен вернуть 400 если amount не целое число', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .patch('/online-store/cart/items/decrement')
                     .set('Cookie', guestCartCookie)
                     .send({
@@ -424,21 +429,21 @@ describe('CartController (Integration)', () => {
     // ============================================================
     describe('DELETE /cart/items/:productId', () => {
         beforeEach(async () => {
-            const getCartRes = await request(app.getHttpServer()).get(
+            const getCartRes = await createRequest(app).get(
                 '/online-store/cart/get-cart',
             );
             guestCartCookie = (
                 getCartRes.headers['set-cookie'] as string | string[]
             )?.toString();
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post('/online-store/cart/items')
                 .set('Cookie', guestCartCookie)
                 .send({ productId, quantity: 3 });
         });
 
         it('должен удалить товар из корзины', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .delete(`/online-store/cart/items/${productId}`)
                 .set('Cookie', guestCartCookie)
                 .expect(HttpStatus.OK);
@@ -451,7 +456,7 @@ describe('CartController (Integration)', () => {
         });
 
         it('должен вернуть 404 если товар не найден в корзине', async () => {
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .delete('/online-store/cart/items/999999')
                 .set('Cookie', guestCartCookie)
                 .expect(HttpStatus.NOT_FOUND);
@@ -463,21 +468,21 @@ describe('CartController (Integration)', () => {
     // ============================================================
     describe('DELETE /cart', () => {
         beforeEach(async () => {
-            const getCartRes = await request(app.getHttpServer()).get(
+            const getCartRes = await createRequest(app).get(
                 '/online-store/cart/get-cart',
             );
             guestCartCookie = (
                 getCartRes.headers['set-cookie'] as string | string[]
             )?.toString();
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post('/online-store/cart/items')
                 .set('Cookie', guestCartCookie)
                 .send({ productId, quantity: 5 });
         });
 
         it('должен очистить корзину', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .delete('/online-store/cart')
                 .set('Cookie', guestCartCookie)
                 .expect(HttpStatus.OK);
@@ -491,7 +496,7 @@ describe('CartController (Integration)', () => {
     // ============================================================
     describe('POST /cart/promo-code', () => {
         beforeEach(async () => {
-            const getCartRes = await request(app.getHttpServer()).get(
+            const getCartRes = await createRequest(app).get(
                 '/online-store/cart/get-cart',
             );
             guestCartCookie = (
@@ -501,7 +506,7 @@ describe('CartController (Integration)', () => {
 
         describe('DTO Validation', () => {
             it('должен вернуть 400 если нет code', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/cart/promo-code')
                     .set('Cookie', guestCartCookie)
                     .send({})
@@ -515,7 +520,7 @@ describe('CartController (Integration)', () => {
             });
 
             it('должен вернуть 400 если code < 3 символов', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/cart/promo-code')
                     .set('Cookie', guestCartCookie)
                     .send({ code: 'AB' })
@@ -529,7 +534,7 @@ describe('CartController (Integration)', () => {
             });
 
             it('должен вернуть 400 если code > 50 символов', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/cart/promo-code')
                     .set('Cookie', guestCartCookie)
                     .send({ code: 'A'.repeat(51) })
@@ -543,7 +548,7 @@ describe('CartController (Integration)', () => {
             });
 
             it('должен очистить XSS в коде промокода', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/cart/promo-code')
                     .set('Cookie', guestCartCookie)
                     .send({ code: '<script>alert("xss")</script>' })
@@ -566,7 +571,7 @@ describe('CartController (Integration)', () => {
     // ============================================================
     describe('DELETE /cart/promo-code', () => {
         beforeEach(async () => {
-            const getCartRes = await request(app.getHttpServer()).get(
+            const getCartRes = await createRequest(app).get(
                 '/online-store/cart/get-cart',
             );
             guestCartCookie = (
@@ -575,7 +580,7 @@ describe('CartController (Integration)', () => {
         });
 
         it('должен удалить промокод из корзины', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .delete('/online-store/cart/promo-code')
                 .set('Cookie', guestCartCookie)
                 .expect(HttpStatus.OK);
