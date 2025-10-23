@@ -254,7 +254,7 @@ describe('TenantMiddleware', () => {
             );
 
             expect(console.warn).toHaveBeenCalledWith(
-                '[TenantMiddleware] x-tenant-id header отсутствует. Используется default tenant_id=1 (dev mode)',
+                '[TenantMiddleware] x-tenant-id header отсутствует. Используется default tenant_id=1 (development mode)',
             );
             expect(mockTenantContext.setTenantId).toHaveBeenCalledWith(1);
             expect(mockNext).toHaveBeenCalled();
