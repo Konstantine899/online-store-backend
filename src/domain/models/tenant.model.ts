@@ -1,9 +1,9 @@
 import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
-import { ProductModel } from './product.model';
-import { CategoryModel } from './category-model';
 import { BrandModel } from './brand.model';
 import { CartModel } from './cart.model';
+import { CategoryModel } from './category-model';
 import { OrderModel } from './order.model';
+import { ProductModel } from './product.model';
 
 interface ICreateTenantAttributes {
     name: string;
@@ -27,9 +27,9 @@ interface ITenantModel {
     underscored: true,
     timestamps: true,
     paranoid: false,
-    defaultScope: {
-        attributes: { exclude: ['updatedAt', 'createdAt'] },
-    },
+    // defaultScope: {
+    //     attributes: { exclude: ['updated_at', 'created_at'] },
+    // },
     scopes: {
         active: {
             where: { status: 'active' },
@@ -72,7 +72,7 @@ export class TenantModel
             notEmpty: true,
         },
     })
-    name!: string;
+    declare name: string;
 
     @Column({
         type: DataType.STRING(100),
@@ -83,35 +83,35 @@ export class TenantModel
             is: /^[a-z0-9-]+$/i, // Only alphanumeric and hyphens
         },
     })
-    subdomain!: string | null;
+    declare subdomain: string | null;
 
     @Column({
         type: DataType.ENUM('active', 'suspended', 'deleted'),
         allowNull: false,
         defaultValue: 'active',
     })
-    status!: 'active' | 'suspended' | 'deleted';
+    declare status: 'active' | 'suspended' | 'deleted';
 
     @Column({
         type: DataType.ENUM('free', 'starter', 'professional', 'enterprise'),
         allowNull: false,
         defaultValue: 'free',
     })
-    plan!: 'free' | 'starter' | 'professional' | 'enterprise';
+    declare plan: 'free' | 'starter' | 'professional' | 'enterprise';
 
     @Column({
         type: DataType.DATE,
         allowNull: false,
         defaultValue: DataType.NOW,
     })
-    created_at!: Date;
+    declare created_at: Date;
 
     @Column({
         type: DataType.DATE,
         allowNull: false,
         defaultValue: DataType.NOW,
     })
-    updated_at!: Date;
+    declare updated_at: Date;
 
     // Relationships
     @HasMany(() => ProductModel, {

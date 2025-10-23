@@ -1,7 +1,8 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
+import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../setup/app';
-import { TestDataFactory } from '../../utils/test-data-factory';
+import { TestDataFactory, TestDatabaseSetup } from '../../utils';
 
 /**
  * SAAS-004-05: CartController Integration Tests
@@ -21,34 +22,26 @@ import { TestDataFactory } from '../../utils/test-data-factory';
 
 describe('CartController (Integration)', () => {
     let app: INestApplication;
-    let factory: TestDataFactory;
     let authToken: string;
     let productId: number;
     let guestCartCookie: string;
 
     beforeAll(async () => {
         app = await setupTestApp();
-        factory = new TestDataFactory();
+
+        // Применяем миграции и seeds для тестовой БД
+        await TestDatabaseSetup.setupDatabase('test');
+
         await app.init();
 
-        // Create test product
-        const product = await TestDataFactory.createUserInDB(
-            app.get('Sequelize'),
-            {
-                email: 'product-test@example.com',
-                password: 'TestPass123!',
-            },
-        );
-        productId = product.id;
+        // Используем продукт из seeds (id: 1 - iPhone 15)
+        productId = 1;
 
         // Create auth user
-        const user = await TestDataFactory.createUserInDB(
-            app.get('Sequelize'),
-            {
-                email: 'cart-test@example.com',
-                password: 'SecurePassword123!',
-            },
-        );
+        const user = await TestDataFactory.createUserInDB(app.get(Sequelize), {
+            email: 'cart-test@example.com',
+            password: 'SecurePassword123!',
+        });
         authToken = await TestDataFactory.loginUser(
             app,
             user.email,

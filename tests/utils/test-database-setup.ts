@@ -2,7 +2,7 @@ import { execSync } from 'child_process';
 
 /**
  * TestDatabaseSetup - настройка БД для интеграционных тестов
- * 
+ *
  * Применяет миграции и seeds для тестовой БД перед запуском тестов.
  * Обеспечивает наличие всех необходимых таблиц и данных.
  */
@@ -13,9 +13,9 @@ export class TestDatabaseSetup {
      */
     static async applyMigrations(env: string = 'test'): Promise<void> {
         try {
-            execSync(`npx sequelize-cli db:migrate --env ${env}`, { 
+            execSync(`npx sequelize-cli db:migrate --env ${env}`, {
                 stdio: 'pipe',
-                cwd: process.cwd()
+                cwd: process.cwd(),
             });
             console.log(`✅ Migrations applied for ${env} environment`);
         } catch (error) {
@@ -30,9 +30,9 @@ export class TestDatabaseSetup {
      */
     static async applySeeds(env: string = 'test'): Promise<void> {
         try {
-            execSync(`npx sequelize-cli db:seed:all --env ${env}`, { 
+            execSync(`npx sequelize-cli db:seed:all --env ${env}`, {
                 stdio: 'pipe',
-                cwd: process.cwd()
+                cwd: process.cwd(),
             });
             console.log(`✅ Seeds applied for ${env} environment`);
         } catch (error) {
@@ -57,9 +57,9 @@ export class TestDatabaseSetup {
     static async resetDatabase(env: string = 'test'): Promise<void> {
         try {
             // Удаляем все таблицы
-            execSync(`npx sequelize-cli db:drop --env ${env}`, { 
+            execSync(`npx sequelize-cli db:drop --env ${env}`, {
                 stdio: 'pipe',
-                cwd: process.cwd()
+                cwd: process.cwd(),
             });
         } catch (error) {
             console.warn(`⚠️  Drop warning for ${env}:`, error.message);
@@ -67,9 +67,9 @@ export class TestDatabaseSetup {
 
         try {
             // Создаем БД заново
-            execSync(`npx sequelize-cli db:create --env ${env}`, { 
+            execSync(`npx sequelize-cli db:create --env ${env}`, {
                 stdio: 'pipe',
-                cwd: process.cwd()
+                cwd: process.cwd(),
             });
         } catch (error) {
             console.warn(`⚠️  Create warning for ${env}:`, error.message);
@@ -79,3 +79,4 @@ export class TestDatabaseSetup {
         await this.setupDatabase(env);
     }
 }
+

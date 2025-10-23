@@ -79,6 +79,7 @@ import { UserRepository } from './user/user.repository';
         PasswordResetTokenRepository,
     ],
     exports: [
+        TenantContext,
         BrandRepository,
         CartRepository,
         CategoryRepository,

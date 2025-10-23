@@ -1,16 +1,20 @@
-import { Module } from '@nestjs/common';
-import { ThrottlerModule } from '@nestjs/throttler';
-import { SequelizeModule } from '@nestjs/sequelize';
-import { ConfigModule } from '@nestjs/config';
-import { SequelizeConfigService, databaseConfig } from '@app/infrastructure/config/sequelize';
+import { TenantModel } from '@app/domain/models';
+import { TenantContext } from '@app/infrastructure/common/context';
+import { TenantMiddleware } from '@app/infrastructure/common/middleware';
+import {
+    SequelizeConfigService,
+    databaseConfig,
+} from '@app/infrastructure/config/sequelize';
 import { ControllersModule } from '@app/infrastructure/controllers/controllers.module';
-import { ServicesModule } from '@app/infrastructure/services/services.module';
-import { RepositoriesModule } from '@app/infrastructure/repositories/repositories.module';
 import { HealthModule } from '@app/infrastructure/controllers/health/health.module';
-import { BruteforceGuard } from '@app/infrastructure/common/guards';
-import { APP_GUARD } from '@nestjs/core';
-import * as process from 'process';
+import { RepositoriesModule } from '@app/infrastructure/repositories/repositories.module';
+import { ServicesModule } from '@app/infrastructure/services/services.module';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { ThrottlerModule } from '@nestjs/throttler';
 import * as Joi from 'joi';
+import * as process from 'process';
 
 @Module({
     imports: [
@@ -22,7 +26,7 @@ import * as Joi from 'joi';
                 limit: 3, // 3 запроса в секунду
             },
             {
-                name: 'medium', 
+                name: 'medium',
                 ttl: 10000, // 10 секунд
                 limit: 20, // 20 запросов в 10 секунд
             },
@@ -45,12 +49,13 @@ import * as Joi from 'joi';
                 name: 'registration',
                 ttl: 60 * 1000, // 1 минута
                 limit: 3, // 3 попытки регистрации в минуту
-            }
+            },
         ]),
         SequelizeModule.forRootAsync({
             imports: [ConfigModule],
             useClass: SequelizeConfigService,
         }),
+        SequelizeModule.forFeature([TenantModel]), // Добавляем TenantModel для TenantMiddleware
         ConfigModule.forRoot({
             envFilePath: `.${process.env.NODE_ENV}.env`,
             load: [databaseConfig],
@@ -118,6 +123,23 @@ import * as Joi from 'joi';
     providers: [
         // НЕ применяем BruteforceGuard глобально в тестах
         // Он будет применяться только к auth endpoints через @UseGuards
+        TenantContext, // Request-scoped provider для tenant isolation
     ],
+    exports: [TenantContext], // Экспортируем для использования в других модулях
 })
-export class TestAppModule {}
+export class TestAppModule implements NestModule {
+    configure(consumer: MiddlewareConsumer): void {
+        // SAAS-001: Multi-tenancy middleware for tenant isolation
+        // Extracts tenant_id from x-tenant-id header or subdomain
+        // Excluded paths: health checks, API docs, static assets
+        consumer
+            .apply(TenantMiddleware)
+            .exclude(
+                '/health',
+                '/online-store/health',
+                '/online-store/docs*path',
+                '/online-store/static*path',
+            )
+            .forRoutes('*');
+    }
+}

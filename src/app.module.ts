@@ -8,6 +8,7 @@ import { TenantContext } from './infrastructure/common/context';
 import { BruteforceGuard } from './infrastructure/common/guards';
 import { TenantMiddleware } from './infrastructure/common/middleware';
 
+import { TenantModel } from '@app/domain/models';
 import {
     SequelizeConfigService,
     databaseConfig,
@@ -25,6 +26,7 @@ import { ServicesModule } from './infrastructure/services/services.module';
             imports: [ConfigModule],
             useClass: SequelizeConfigService,
         }),
+        SequelizeModule.forFeature([TenantModel]),
         ConfigModule.forRoot({
             envFilePath: `.${process.env.NODE_ENV}.env`,
             load: [databaseConfig],
@@ -151,8 +153,8 @@ export class AppModule implements NestModule {
             .exclude(
                 '/health',
                 '/online-store/health',
-                '/online-store/docs(.*)',
-                '/online-store/static(.*)',
+                '/online-store/docs*path',
+                '/online-store/static*path',
             )
             .forRoutes('*');
     }

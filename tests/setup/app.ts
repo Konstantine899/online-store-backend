@@ -55,7 +55,6 @@ function addGracefulShutdown(app: INestApplication): void {
     activeApps.add(app);
 }
 
-
 export async function setupTestApp(): Promise<INestApplication> {
     process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 
@@ -67,13 +66,17 @@ export async function setupTestApp(): Promise<INestApplication> {
     builder.overrideProvider(getModelToken(UserModel)).useValue(UserModel);
 
     // Подмена BruteforceGuard на заглушку для тестов (не требуем ThrottlerModule)
-    builder.overrideProvider(BruteforceGuard).useValue({ canActivate: () => true });
+    builder
+        .overrideProvider(BruteforceGuard)
+        .useValue({ canActivate: () => true });
 
     const moduleRef = await builder.compile();
     const app = moduleRef.createNestApplication();
 
     // Настройка cookieParser для тестов
-    app.use(cookieParser(process.env.COOKIE_PARSER_SECRET_KEY || 'test-secret'));
+    app.use(
+        cookieParser(process.env.COOKIE_PARSER_SECRET_KEY || 'test-secret'),
+    );
 
     // Включаем базовый Helmet для тестов (минимальный набор заголовков)
     app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
@@ -89,7 +92,9 @@ export async function setupTestApp(): Promise<INestApplication> {
     if (cfg.SWAGGER_ENABLED) {
         const config = new DocumentBuilder()
             .setTitle('Online Store API (Test)')
-            .setDescription('REST API для интернет-магазина (тестовое окружение)')
+            .setDescription(
+                'REST API для интернет-магазина (тестовое окружение)',
+            )
             .setVersion('1.0')
             .addBearerAuth(
                 {
@@ -108,10 +113,10 @@ export async function setupTestApp(): Promise<INestApplication> {
     }
 
     await app.init();
-    
+
     // Добавляем graceful shutdown для корректного закрытия connection pool
     addGracefulShutdown(app);
-    
+
     return app;
 }
 
@@ -130,16 +135,18 @@ export async function setupTestAppWithRateLimit(): Promise<INestApplication> {
     const moduleRef = await builder.compile();
     const app = moduleRef.createNestApplication();
 
-    app.use(cookieParser(process.env.COOKIE_PARSER_SECRET_KEY || 'test-secret'));
+    app.use(
+        cookieParser(process.env.COOKIE_PARSER_SECRET_KEY || 'test-secret'),
+    );
     app.useGlobalPipes(new CustomValidationPipe());
 
     // Установка глобального префикса для тестов
     app.setGlobalPrefix('online-store');
 
     await app.init();
-    
+
     // Добавляем graceful shutdown для корректного закрытия connection pool
     addGracefulShutdown(app);
-    
+
     return app;
 }

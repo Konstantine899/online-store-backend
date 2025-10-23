@@ -1,6 +1,6 @@
 import {
-    RatingResponse,
     GetRatingResponse,
+    RatingResponse,
 } from '@app/infrastructure/responses';
 
 export interface IRatingService {
@@ -11,4 +11,6 @@ export interface IRatingService {
     ): Promise<RatingResponse>;
 
     getRating(productId: number): Promise<GetRatingResponse>;
+
+    removeAllRatingsByProductId(productId: number): Promise<number>;
 }

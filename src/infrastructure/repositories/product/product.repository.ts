@@ -79,7 +79,7 @@ export class ProductRepository implements IProductRepository {
                 'image',
                 'tenant_id',
             ],
-            order: sort ? [['price', sort.toUpperCase()]] : undefined,
+            order: sort ? [[sort, 'ASC']] : undefined,
             limit: limit ? limit : 5,
             offset,
         });

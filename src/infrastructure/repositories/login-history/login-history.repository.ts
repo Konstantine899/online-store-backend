@@ -40,6 +40,8 @@ export class LoginHistoryRepository implements ILoginHistoryRepository {
         data: ILoginHistoryCreationAttributes,
     ): Promise<LoginHistoryModel> {
         const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        
+        // Создаем запись без tenant_id сначала, чтобы избежать проблем с FK
         const loginRecord = await this.loginHistoryModel.create({
             userId: data.userId,
             ipAddress: data.ipAddress || null,
@@ -47,8 +49,10 @@ export class LoginHistoryRepository implements ILoginHistoryRepository {
             success: data.success ?? true,
             failureReason: data.failureReason || null,
             loginAt: data.loginAt || new Date(),
-            tenant_id: tenantId,
         });
+
+        // Затем обновляем tenant_id
+        await loginRecord.update({ tenant_id: tenantId });
 
         return loginRecord;
     }

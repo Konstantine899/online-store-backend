@@ -1,6 +1,7 @@
 import { PromoCodeModel } from '@app/domain/models';
 import { IPromoCodeRepository } from '@app/domain/repositories';
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 
 /**
@@ -11,13 +12,17 @@ import { Op } from 'sequelize';
  */
 @Injectable()
 export class PromoCodeRepository implements IPromoCodeRepository {
+    constructor(
+        @InjectModel(PromoCodeModel)
+        private promoCodeModel: typeof PromoCodeModel,
+    ) {}
     /**
      * Найти промокод по коду (case-insensitive)
      * @param code - код промокода
      * @returns промокод или null если не найден
      */
     public async findByCode(code: string): Promise<PromoCodeModel | null> {
-        return PromoCodeModel.findOne({
+        return this.promoCodeModel.findOne({
             where: {
                 code: {
                     [Op.iLike]: code, // Case-insensitive поиск (для PostgreSQL)
@@ -32,7 +37,7 @@ export class PromoCodeRepository implements IPromoCodeRepository {
      * @returns промокод или null если не найден
      */
     public async findById(id: number): Promise<PromoCodeModel | null> {
-        return PromoCodeModel.findByPk(id);
+        return this.promoCodeModel.findByPk(id);
     }
 
     /**
@@ -50,7 +55,7 @@ export class PromoCodeRepository implements IPromoCodeRepository {
         min_purchase_amount?: number | null;
         is_active?: boolean;
     }): Promise<PromoCodeModel> {
-        return PromoCodeModel.create(data);
+        return this.promoCodeModel.create(data);
     }
 
     /**
@@ -93,7 +98,7 @@ export class PromoCodeRepository implements IPromoCodeRepository {
      * @returns список активных промокодов
      */
     public async findAllActive(): Promise<PromoCodeModel[]> {
-        return PromoCodeModel.scope('active').findAll();
+        return this.promoCodeModel.scope('active').findAll();
     }
 
     /**
@@ -101,6 +106,6 @@ export class PromoCodeRepository implements IPromoCodeRepository {
      * @returns список валидных промокодов
      */
     public async findAllValid(): Promise<PromoCodeModel[]> {
-        return PromoCodeModel.scope('valid').findAll();
+        return this.promoCodeModel.scope('valid').findAll();
     }
 }

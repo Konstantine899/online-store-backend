@@ -57,11 +57,12 @@ export class TenantMiddleware implements NestMiddleware {
                     hint: 'Добавьте x-tenant-id header в запрос',
                 });
             } else {
-                // DEVELOPMENT: Fallback to tenant_id=1 with warning
+                // DEVELOPMENT/TEST: Fallback to tenant_id=1 with warning
+                const env = process.env.NODE_ENV || 'development';
                 console.warn(
-                    '[TenantMiddleware] x-tenant-id header отсутствует. Используется default tenant_id=1 (dev mode)',
+                    `[TenantMiddleware] x-tenant-id header отсутствует. Используется default tenant_id=1 (${env} mode)`,
                 );
-                tenantId = 1; // Default tenant for development
+                tenantId = 1; // Default tenant for development/test
             }
         }
 
@@ -69,6 +70,9 @@ export class TenantMiddleware implements NestMiddleware {
         const tenant = await this.tenantModel.findByPk(tenantId);
 
         if (!tenant) {
+            console.error(
+                `[TenantMiddleware] Tenant с ID ${tenantId} не найден в системе`,
+            );
             throw new ForbiddenException({
                 statusCode: 403,
                 message: `Tenant с ID ${tenantId} не найден в системе`,
@@ -78,6 +82,9 @@ export class TenantMiddleware implements NestMiddleware {
         }
 
         if (tenant.status !== 'active') {
+            console.error(
+                `[TenantMiddleware] Tenant "${tenant.name}" неактивен (статус: ${tenant.status})`,
+            );
             throw new ForbiddenException({
                 statusCode: 403,
                 message: `Tenant "${tenant.name}" неактивен (статус: ${tenant.status})`,

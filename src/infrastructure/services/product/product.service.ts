@@ -1,15 +1,11 @@
-import {
-    ConflictException,
-    HttpStatus,
-    Injectable,
-    NotFoundException,
-} from '@nestjs/common';
+import { SortingEnum } from '@app/domain/dto';
+import { IProductService } from '@app/domain/services';
 import {
     CreateProductDto,
     SearchDto,
     SortingDto,
 } from '@app/infrastructure/dto';
-import { FileService } from '../file/file.service';
+import { MetaData, ProductInfo } from '@app/infrastructure/paginate';
 import {
     ProductPropertyRepository,
     ProductRepository,
@@ -17,22 +13,25 @@ import {
 import {
     CreateProductResponse,
     GetProductResponse,
-    UpdateProductResponse,
     RemoveProductResponse,
+    UpdateProductResponse,
 } from '@app/infrastructure/responses';
-import { MetaData, ProductInfo } from '@app/infrastructure/paginate';
-import { SortingEnum } from '@app/domain/dto';
-import { IProductService } from '@app/domain/services';
-import { RatingService } from '@app/infrastructure/services';
-import { GetListProductV2Response } from '@app/infrastructure/responses/product/get-list-product-v2.response';
 import { PaginatedResponse } from '@app/infrastructure/responses/paginate/paginated.response';
+import { GetListProductV2Response } from '@app/infrastructure/responses/product/get-list-product-v2.response';
+import {
+    ConflictException,
+    HttpStatus,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
+import { FileService } from '../file/file.service';
 
 @Injectable()
 export class ProductService implements IProductService {
     constructor(
         private readonly productPropertyRepository: ProductPropertyRepository,
         private readonly productRepository: ProductRepository,
-        private readonly ratingService: RatingService,
+        // private readonly ratingService: RatingService,
         private readonly fileService: FileService,
     ) {}
 
@@ -164,8 +163,8 @@ export class ProductService implements IProductService {
         const removedFile = await this.fileService.removeFile(
             findProduct.image,
         );
-        const removedRating =
-            await this.ratingService.removeAllRatingsByProductId(productId);
+        // const removedRating =
+        //     await this.ratingService.removeAllRatingsByProductId(productId);
         const removedProductProperties =
             await this.productPropertyRepository.removeProductPropertiesListByProductId(
                 productId,
@@ -180,11 +179,11 @@ export class ProductService implements IProductService {
                     'Произошел конфликт во время удаления характеристик продукта',
                 );
             }
-            if (!removedRating) {
-                this.conflict(
-                    'Произошел конфликт во время удаления рейтинга продукта',
-                );
-            }
+            // if (!removedRating) {
+            //     this.conflict(
+            //         'Произошел конфликт во время удаления рейтинга продукта',
+            //     );
+            // }
         }
         if (!removedProduct) {
             this.conflict('Произошел конфликт во время удаления продукта');

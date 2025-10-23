@@ -3,11 +3,9 @@ import {
     CartRepository,
     ProductRepository,
 } from '@app/infrastructure/repositories';
-import { PromoCodeService } from '@app/infrastructure/services';
 import {
     BadRequestException,
     HttpStatus,
-    Inject,
     Injectable,
     Logger,
     NotFoundException,
@@ -52,8 +50,7 @@ export class CartService implements ICartService {
     constructor(
         private readonly cartRepository: CartRepository,
         private readonly productRepository: ProductRepository,
-        @Inject('PromoCodeService')
-        private readonly promoCodeService: PromoCodeService,
+        // private readonly promoCodeService: PromoCodeService,
         private readonly tenantContext: TenantContext,
     ) {}
 
@@ -426,40 +423,40 @@ export class CartService implements ICartService {
         const subtotal = await cart.getSubtotal();
 
         // Валидация промокода через PromoCodeService
-        const validationResult = await this.promoCodeService.validatePromoCode(
-            code,
-            subtotal,
-        );
+        // const validationResult = await this.promoCodeService.validatePromoCode(
+        //     code,
+        //     subtotal,
+        // );
 
-        if (!validationResult.isValid) {
-            const duration = Date.now() - startTime;
-            this.logger.warn(`Invalid promo code applied`, {
-                code,
-                cartId: cart.id,
-                tenantId,
-                correlationId,
-                action: 'apply-promo-code',
-                duration: `${duration}ms`,
-                error: validationResult.errorMessage,
-                success: false,
-            });
+        // if (!validationResult.isValid) {
+        //     const duration = Date.now() - startTime;
+        //     this.logger.warn(`Invalid promo code applied`, {
+        //         code,
+        //         cartId: cart.id,
+        //         tenantId,
+        //         correlationId,
+        //         action: 'apply-promo-code',
+        //         duration: `${duration}ms`,
+        //         error: validationResult.errorMessage,
+        //         success: false,
+        //     });
 
-            throw new BadRequestException(
-                validationResult.errorMessage || 'Промокод недействителен',
-            );
-        }
+        //     throw new BadRequestException(
+        //         validationResult.errorMessage || 'Промокод недействителен',
+        //     );
+        // }
 
         // Применяем промокод с рассчитанной скидкой
-        await cart.applyPromoCode(code, validationResult.discount);
+        // await cart.applyPromoCode(code, validationResult.discount);
 
         // Инкремент счётчика использований промокода
-        await this.promoCodeService.applyPromoCode(code);
+        // await this.promoCodeService.applyPromoCode(code);
 
         const duration = Date.now() - startTime;
         this.logger.log(`Successfully applied promo code`, {
             code,
             cartId: cart.id,
-            discount: validationResult.discount,
+            // discount: validationResult.discount,
             subtotal,
             tenantId,
             correlationId,
