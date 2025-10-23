@@ -3,6 +3,11 @@ import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { TestDataFactory } from '../../../../../tests/utils';
 
+// Хелпер для создания запросов с tenant-id заголовком
+const createRequest = (app: INestApplication) => {
+    return request(app.getHttpServer()).set('x-tenant-id', '1');
+};
+
 /**
  * Comprehensive E2E тесты для RBAC (Role-Based Access Control)
  *
@@ -51,7 +56,7 @@ describe('RBAC (e2e integration)', () => {
 
     describe('Guest (без токена)', () => {
         it('должен вернуть 401 при доступе к /auth/check без токена', async () => {
-            const response = await request(app.getHttpServer()).get(
+            const response = await createRequest(app).get(
                 '/online-store/auth/check',
             );
 
@@ -66,7 +71,7 @@ describe('RBAC (e2e integration)', () => {
                 app,
                 'USER',
             );
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/online-store/auth/check')
                 .set('Authorization', `Bearer ${token}`);
 
@@ -83,7 +88,7 @@ describe('RBAC (e2e integration)', () => {
                 app,
                 'ADMIN',
             );
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/online-store/auth/check')
                 .set('Authorization', `Bearer ${token}`);
 
@@ -97,7 +102,7 @@ describe('RBAC (e2e integration)', () => {
 
     describe('Публичные endpoints (доступны всем)', () => {
         it('должен разрешить доступ к health endpoint без токена → 200', async () => {
-            const response = await request(app.getHttpServer()).get(
+            const response = await createRequest(app).get(
                 '/online-store/health',
             );
 
@@ -108,7 +113,7 @@ describe('RBAC (e2e integration)', () => {
 
     describe('Проверка сообщений об ошибках RBAC', () => {
         it('должен вернуть корректное русское сообщение об ошибке для 401', async () => {
-            const response = await request(app.getHttpServer()).get(
+            const response = await createRequest(app).get(
                 '/online-store/auth/check',
             );
 
@@ -131,7 +136,7 @@ describe('RBAC (e2e integration)', () => {
                     'ADMIN',
                 );
 
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/category/create')
                     .set('Authorization', `Bearer ${token}`)
                     .send({ name: 'Test Category' });
@@ -146,7 +151,7 @@ describe('RBAC (e2e integration)', () => {
                     'ADMIN',
                 );
 
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .delete('/online-store/brand/delete/999')
                     .set('Authorization', `Bearer ${token}`);
 
@@ -160,7 +165,7 @@ describe('RBAC (e2e integration)', () => {
                     'ADMIN',
                 );
 
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .get('/online-store/order/admin/get-all-order')
                     .set('Authorization', `Bearer ${token}`);
 
@@ -176,7 +181,7 @@ describe('RBAC (e2e integration)', () => {
                     'USER',
                 );
 
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/category/create')
                     .set('Authorization', `Bearer ${token}`)
                     .send({ name: 'Test Category' });
@@ -192,7 +197,7 @@ describe('RBAC (e2e integration)', () => {
                     'USER',
                 );
 
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .delete('/online-store/brand/delete/1')
                     .set('Authorization', `Bearer ${token}`);
 
@@ -205,7 +210,7 @@ describe('RBAC (e2e integration)', () => {
                     'USER',
                 );
 
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/order/user/create-order')
                     .set('Authorization', `Bearer ${token}`)
                     .send({ products: [] });
@@ -220,7 +225,7 @@ describe('RBAC (e2e integration)', () => {
                     'USER',
                 );
 
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .get('/online-store/order/admin/get-all-order')
                     .set('Authorization', `Bearer ${token}`);
 
@@ -235,7 +240,7 @@ describe('RBAC (e2e integration)', () => {
                     'CUSTOMER',
                 );
 
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .delete('/online-store/product/delete/1')
                     .set('Authorization', `Bearer ${token}`);
 
@@ -248,7 +253,7 @@ describe('RBAC (e2e integration)', () => {
                     'CUSTOMER',
                 );
 
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .get('/online-store/product/get-all')
                     .set('Authorization', `Bearer ${token}`);
 
@@ -307,7 +312,7 @@ describe('RBAC (e2e integration)', () => {
                         | 'post'
                         | 'put'
                         | 'delete';
-                    const server = request(app.getHttpServer());
+                    const server = createRequest(app);
                     const response = await server[methodLower](endpoint)
                         .set('Authorization', `Bearer ${token}`)
                         .send({ name: 'Test Product' });
@@ -329,7 +334,7 @@ describe('RBAC (e2e integration)', () => {
                     'ADMIN',
                 );
 
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .get('/online-store/role/list')
                     .set('Authorization', `Bearer ${token}`);
 
@@ -342,7 +347,7 @@ describe('RBAC (e2e integration)', () => {
                     'USER',
                 );
 
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .get('/online-store/role/list')
                     .set('Authorization', `Bearer ${token}`);
 
@@ -356,7 +361,7 @@ describe('RBAC (e2e integration)', () => {
     // ============================================================
     describe('401 (Unauthorized) vs 403 (Forbidden) distinction', () => {
         it('401: отсутствие Authorization header → Unauthorized', async () => {
-            const response = await request(app.getHttpServer()).post(
+            const response = await createRequest(app).post(
                 '/online-store/product/create',
             );
 
@@ -366,7 +371,7 @@ describe('RBAC (e2e integration)', () => {
         });
 
         it('401: пустой Bearer token → Unauthorized', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .post('/online-store/product/create')
                 .set('Authorization', 'Bearer ');
 
@@ -374,7 +379,7 @@ describe('RBAC (e2e integration)', () => {
         });
 
         it('401: некорректный Bearer prefix → Unauthorized', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .post('/online-store/product/create')
                 .set('Authorization', 'InvalidPrefix valid-token-123');
 
@@ -382,7 +387,7 @@ describe('RBAC (e2e integration)', () => {
         });
 
         it('401: невалидный JWT token → Unauthorized или Forbidden', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .post('/online-store/product/create')
                 .set('Authorization', 'Bearer invalid.jwt.token');
 
@@ -398,7 +403,7 @@ describe('RBAC (e2e integration)', () => {
                 'USER',
             );
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .post('/online-store/product/create')
                 .set('Authorization', `Bearer ${token}`);
 
@@ -412,7 +417,7 @@ describe('RBAC (e2e integration)', () => {
                 'CUSTOMER',
             );
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .delete('/online-store/brand/delete/1')
                 .set('Authorization', `Bearer ${token}`);
 
@@ -435,14 +440,14 @@ describe('RBAC (e2e integration)', () => {
             );
 
             // Проверяем доступ к ADMIN endpoint
-            const adminResponse = await request(app.getHttpServer())
+            const adminResponse = await createRequest(app)
                 .get('/online-store/order/admin/get-all-order')
                 .set('Authorization', `Bearer ${token}`);
 
             expect(adminResponse.status).toBe(HttpStatus.OK);
 
             // Проверяем доступ к USER endpoint (тоже должен работать)
-            const userResponse = await request(app.getHttpServer())
+            const userResponse = await createRequest(app)
                 .get('/online-store/order/user/get-all-order')
                 .set('Authorization', `Bearer ${token}`);
 
@@ -469,7 +474,7 @@ describe('RBAC (e2e integration)', () => {
 
             // Делаем 5 запросов подряд для проверки кэша
             const requests = Array.from({ length: 5 }).map(() =>
-                request(app.getHttpServer())
+                createRequest(app)
                     .get('/online-store/role/list')
                     .set('Authorization', `Bearer ${token}`),
             );
@@ -489,7 +494,7 @@ describe('RBAC (e2e integration)', () => {
                 'GUEST',
             );
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/online-store/order/admin/get-all-order')
                 .set('Authorization', `Bearer ${token}`);
 
@@ -503,7 +508,7 @@ describe('RBAC (e2e integration)', () => {
             );
 
             // /health endpoint не требует ролей (публичный)
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/online-store/health')
                 .set('Authorization', `Bearer ${token}`);
 
