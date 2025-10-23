@@ -8,6 +8,11 @@ import request from 'supertest';
 import { setupTestApp } from '../../setup/app';
 import { TestDataFactory } from '../../utils/test-data-factory';
 
+// Хелпер для создания запросов с tenant-id заголовком
+const createRequest = (app: INestApplication) => {
+    return request(app.getHttpServer()).set('x-tenant-id', '1');
+};
+
 describe('SEC-001-1: Password Update Invalidation (Integration)', () => {
     let app: INestApplication;
     let adminToken: string;
@@ -28,7 +33,7 @@ describe('SEC-001-1: Password Update Invalidation (Integration)', () => {
         it('✅ E2E: refresh token должен перестать работать после admin password reset', async () => {
             // 1. Создаём пользователя и логинимся
             const user = await TestDataFactory.createUserWithRole(app, 'USER');
-            const loginResponse = await request(app.getHttpServer())
+            const loginResponse = await createRequest(app)
                 .post('/online-store/auth/login')
                 .send({ email: user.email, password: user.password })
                 .expect(HttpStatus.OK);
@@ -43,13 +48,13 @@ describe('SEC-001-1: Password Update Invalidation (Integration)', () => {
             expect(refreshTokenCookie).toBeDefined();
 
             // 2. Проверяем, что refresh токен работает ДО смены пароля
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post('/online-store/auth/refresh')
                 .set('Cookie', refreshTokenCookie)
                 .expect(HttpStatus.OK);
 
             // 3. Admin меняет пароль пользователя
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .put(`/online-store/user/update/${user.userId}`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
@@ -59,7 +64,7 @@ describe('SEC-001-1: Password Update Invalidation (Integration)', () => {
                 .expect(HttpStatus.OK);
 
             // 4. CRITICAL: Старый refresh токен теперь НЕ должен работать
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post('/online-store/auth/refresh')
                 .set('Cookie', refreshTokenCookie)
                 .expect(HttpStatus.UNAUTHORIZED); // ✅ Session invalidated!
@@ -70,12 +75,12 @@ describe('SEC-001-1: Password Update Invalidation (Integration)', () => {
             const user = await TestDataFactory.createUserWithRole(app, 'USER');
 
             // Логинимся 2 раза (симулируем 2 устройства)
-            const login1 = await request(app.getHttpServer())
+            const login1 = await createRequest(app)
                 .post('/online-store/auth/login')
                 .send({ email: user.email, password: user.password })
                 .expect(HttpStatus.OK);
 
-            const login2 = await request(app.getHttpServer())
+            const login2 = await createRequest(app)
                 .post('/online-store/auth/login')
                 .send({ email: user.email, password: user.password })
                 .expect(HttpStatus.OK);
@@ -88,18 +93,18 @@ describe('SEC-001-1: Password Update Invalidation (Integration)', () => {
             ).find((c: string) => c.startsWith('refreshToken='))!;
 
             // Проверяем, что оба токена работают ДО смены пароля
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post('/online-store/auth/refresh')
                 .set('Cookie', session1Cookie)
                 .expect(HttpStatus.OK);
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post('/online-store/auth/refresh')
                 .set('Cookie', session2Cookie)
                 .expect(HttpStatus.OK);
 
             // Admin меняет пароль
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .put(`/online-store/user/update/${user.userId}`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
@@ -109,12 +114,12 @@ describe('SEC-001-1: Password Update Invalidation (Integration)', () => {
                 .expect(HttpStatus.OK);
 
             // CRITICAL: ОБА токена должны быть инвалидированы
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post('/online-store/auth/refresh')
                 .set('Cookie', session1Cookie)
                 .expect(HttpStatus.UNAUTHORIZED);
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post('/online-store/auth/refresh')
                 .set('Cookie', session2Cookie)
                 .expect(HttpStatus.UNAUTHORIZED);

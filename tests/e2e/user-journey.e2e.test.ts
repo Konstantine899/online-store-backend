@@ -8,6 +8,11 @@ import { TestCleanup, TestDataFactory } from '../utils';
 // API prefix для всех E2E запросов
 const API_PREFIX = '/online-store';
 
+// Хелпер для создания запросов с tenant-id заголовком
+const createRequest = (app: INestApplication) => {
+    return request(app.getHttpServer()).set('x-tenant-id', '1');
+};
+
 /**
  * E2E: User Journey - Complete User Flow
  *
@@ -86,7 +91,7 @@ describe('User Journey E2E', () => {
             // ========================================
             // STEP 1: Registration
             // ========================================
-            const registrationResponse = await request(app.getHttpServer())
+            const registrationResponse = await createRequest(app)
                 .post(`${API_PREFIX}/auth/registration`)
                 .send({
                     email: userEmail,
@@ -99,7 +104,7 @@ describe('User Journey E2E', () => {
             expect(registrationResponse.body.type).toBe('Bearer');
 
             // Get user ID через /auth/check
-            const checkResponse = await request(app.getHttpServer())
+            const checkResponse = await createRequest(app)
                 .get(`${API_PREFIX}/auth/check`)
                 .set(
                     'Authorization',
@@ -117,7 +122,7 @@ describe('User Journey E2E', () => {
             const regAccessToken = registrationResponse.body.accessToken;
 
             // Request verification code
-            const requestCodeResponse = await request(app.getHttpServer())
+            const requestCodeResponse = await createRequest(app)
                 .post(`${API_PREFIX}/user/verify/email/request`)
                 .set('Authorization', `Bearer ${regAccessToken}`)
                 .expect(HttpStatus.OK);
@@ -150,7 +155,7 @@ describe('User Journey E2E', () => {
             // ========================================
             // STEP 3: Email Verification - Confirm (SKIP для MVP)
             // ========================================
-            // const verificationResponse = await request(app.getHttpServer())
+            // const verificationResponse = await createRequest(app)
             //     .post(`${API_PREFIX}/user/verify/email/confirm`)
             //     .set('Authorization', `Bearer ${regAccessToken}`)
             //     .send({ code: 'XXXXXX' })
@@ -159,7 +164,7 @@ describe('User Journey E2E', () => {
             // ========================================
             // STEP 4: Login
             // ========================================
-            const loginResponse = await request(app.getHttpServer())
+            const loginResponse = await createRequest(app)
                 .post(`${API_PREFIX}/auth/login`)
                 .send({
                     email: userEmail,
@@ -186,7 +191,7 @@ describe('User Journey E2E', () => {
             // ========================================
             // STEP 5: Profile Setup
             // ========================================
-            const profileResponse = await request(app.getHttpServer())
+            const profileResponse = await createRequest(app)
                 .patch(`${API_PREFIX}/user/profile`)
                 .set('Authorization', `Bearer ${accessToken}`)
                 .send({
@@ -214,7 +219,7 @@ describe('User Journey E2E', () => {
         });
 
         it('should fail registration with invalid email', async () => {
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post(`${API_PREFIX}/auth/registration`)
                 .send({
                     email: 'invalid-email',
@@ -225,7 +230,7 @@ describe('User Journey E2E', () => {
 
         it('should fail login with wrong password', async () => {
             // Register user first
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post(`${API_PREFIX}/auth/registration`)
                 .send({
                     email: userEmail,
@@ -234,7 +239,7 @@ describe('User Journey E2E', () => {
                 .expect(HttpStatus.CREATED);
 
             // Try login with wrong password
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post(`${API_PREFIX}/auth/login`)
                 .send({
                     email: userEmail,
@@ -245,7 +250,7 @@ describe('User Journey E2E', () => {
 
         it('should fail verification with invalid code', async () => {
             // Register user first
-            const registrationResponse = await request(app.getHttpServer())
+            const registrationResponse = await createRequest(app)
                 .post(`${API_PREFIX}/auth/registration`)
                 .send({
                     email: userEmail,
@@ -254,7 +259,7 @@ describe('User Journey E2E', () => {
                 .expect(HttpStatus.CREATED);
 
             // Get user ID через /auth/check
-            const checkResponse = await request(app.getHttpServer())
+            const checkResponse = await createRequest(app)
                 .get(`${API_PREFIX}/auth/check`)
                 .set(
                     'Authorization',
@@ -266,7 +271,7 @@ describe('User Journey E2E', () => {
 
             // Try verify with wrong code
             const regAccessToken = registrationResponse.body.accessToken;
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post(`${API_PREFIX}/user/verify/email/confirm`)
                 .set('Authorization', `Bearer ${regAccessToken}`)
                 .send({
@@ -292,7 +297,7 @@ describe('User Journey E2E', () => {
 
         beforeEach(async () => {
             // Register and login user
-            const registrationResponse = await request(app.getHttpServer())
+            const registrationResponse = await createRequest(app)
                 .post(`${API_PREFIX}/auth/registration`)
                 .send({
                     email: userEmail,
@@ -303,7 +308,7 @@ describe('User Journey E2E', () => {
             accessToken = registrationResponse.body.accessToken;
 
             // Get user ID через /auth/check
-            const checkResponse = await request(app.getHttpServer())
+            const checkResponse = await createRequest(app)
                 .get(`${API_PREFIX}/auth/check`)
                 .set('Authorization', `Bearer ${accessToken}`)
                 .expect(HttpStatus.OK);
@@ -315,7 +320,7 @@ describe('User Journey E2E', () => {
             // ========================================
             // STEP 1: Browse all products
             // ========================================
-            const productsResponse = await request(app.getHttpServer())
+            const productsResponse = await createRequest(app)
                 .get(`${API_PREFIX}/product/list-v2`)
                 .expect(HttpStatus.OK);
 
@@ -333,7 +338,7 @@ describe('User Journey E2E', () => {
             // ========================================
             // STEP 2: Filter by category
             // ========================================
-            const categoryResponse = await request(app.getHttpServer())
+            const categoryResponse = await createRequest(app)
                 .get(
                     `${API_PREFIX}/product/category/${product.category_id}/list-v2`,
                 )
@@ -350,7 +355,7 @@ describe('User Journey E2E', () => {
             // ========================================
             // STEP 3: Add product to cart
             // ========================================
-            const addToCartResponse = await request(app.getHttpServer())
+            const addToCartResponse = await createRequest(app)
                 .put(`${API_PREFIX}/cart/product/${productId}/append/2`)
                 .expect(HttpStatus.OK);
 
@@ -360,7 +365,7 @@ describe('User Journey E2E', () => {
             // ========================================
             // STEP 4: View cart
             // ========================================
-            const cartResponse = await request(app.getHttpServer())
+            const cartResponse = await createRequest(app)
                 .get(`${API_PREFIX}/cart/get-cart`)
                 .expect(HttpStatus.OK);
 
@@ -376,7 +381,7 @@ describe('User Journey E2E', () => {
             // ========================================
             // STEP 5: Increment cart quantity
             // ========================================
-            const incrementResponse = await request(app.getHttpServer())
+            const incrementResponse = await createRequest(app)
                 .put(`${API_PREFIX}/cart/product/${productId}/increment/3`)
                 .expect(HttpStatus.OK);
 
@@ -391,7 +396,7 @@ describe('User Journey E2E', () => {
 
         it('should fail to add product without authentication', async () => {
             // Browse products (public)
-            const productsResponse = await request(app.getHttpServer())
+            const productsResponse = await createRequest(app)
                 .get(`${API_PREFIX}/product/list-v2`)
                 .expect(HttpStatus.OK);
 
@@ -399,7 +404,7 @@ describe('User Journey E2E', () => {
 
             // Try add to cart without token (cart endpoints не требуют auth - работают через cookies)
             // Этот тест проверяет, что можно добавить в гостевую корзину
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .put(`${API_PREFIX}/cart/product/${productId}/append/1`)
                 .expect(HttpStatus.OK);
 
@@ -410,7 +415,7 @@ describe('User Journey E2E', () => {
         it('should fail to add non-existent product to cart', async () => {
             // Non-existent product ID может вызвать ошибку сервиса
             // В зависимости от реализации может быть 400 или 404
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .put(`${API_PREFIX}/cart/product/999999/append/1`)
                 .expect((res) => {
                     expect([400, 404, 500]).toContain(res.status);
@@ -418,14 +423,14 @@ describe('User Journey E2E', () => {
         });
 
         it('should handle zero quantity gracefully', async () => {
-            const productsResponse = await request(app.getHttpServer())
+            const productsResponse = await createRequest(app)
                 .get(`${API_PREFIX}/product/list-v2`)
                 .expect(HttpStatus.OK);
 
             const productId = productsResponse.body.data[0].id;
 
             // Zero quantity - endpoint обрабатывает gracefully (возвращает 200)
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .put(`${API_PREFIX}/cart/product/${productId}/append/0`)
                 .expect(HttpStatus.OK);
 
@@ -453,7 +458,7 @@ describe('User Journey E2E', () => {
 
         beforeEach(async () => {
             // Register and login user
-            const registrationResponse = await request(app.getHttpServer())
+            const registrationResponse = await createRequest(app)
                 .post(`${API_PREFIX}/auth/registration`)
                 .send({
                     email: userEmail,
@@ -464,7 +469,7 @@ describe('User Journey E2E', () => {
             accessToken = registrationResponse.body.accessToken;
 
             // Get user ID через /auth/check
-            const checkResponse = await request(app.getHttpServer())
+            const checkResponse = await createRequest(app)
                 .get(`${API_PREFIX}/auth/check`)
                 .set('Authorization', `Bearer ${accessToken}`)
                 .expect(HttpStatus.OK);
@@ -472,7 +477,7 @@ describe('User Journey E2E', () => {
             userId = checkResponse.body.id;
 
             // Get product for order
-            const productsResponse = await request(app.getHttpServer())
+            const productsResponse = await createRequest(app)
                 .get(`${API_PREFIX}/product/list-v2`)
                 .expect(HttpStatus.OK);
 
@@ -482,7 +487,7 @@ describe('User Journey E2E', () => {
             productPrice = product.price;
 
             // Add product to cart
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .put(`${API_PREFIX}/cart/product/${productId}/append/2`)
                 .expect(HttpStatus.OK);
         });
@@ -491,7 +496,7 @@ describe('User Journey E2E', () => {
             // ========================================
             // STEP 1: Create Order
             // ========================================
-            const createOrderResponse = await request(app.getHttpServer())
+            const createOrderResponse = await createRequest(app)
                 .post(`${API_PREFIX}/order/user/create-order`)
                 .set('Authorization', `Bearer ${accessToken}`)
                 .send({
@@ -527,7 +532,7 @@ describe('User Journey E2E', () => {
             // ========================================
             // STEP 2: Get Order Confirmation
             // ========================================
-            const orderResponse = await request(app.getHttpServer())
+            const orderResponse = await createRequest(app)
                 .get(`${API_PREFIX}/order/user/get-order/${orderId}`)
                 .set('Authorization', `Bearer ${accessToken}`)
                 .expect(HttpStatus.OK);
@@ -544,7 +549,7 @@ describe('User Journey E2E', () => {
             // ========================================
             // STEP 3: Get All Orders
             // ========================================
-            const allOrdersResponse = await request(app.getHttpServer())
+            const allOrdersResponse = await createRequest(app)
                 .get(`${API_PREFIX}/order/user/get-all-order`)
                 .set('Authorization', `Bearer ${accessToken}`)
                 .expect(HttpStatus.OK);
@@ -565,7 +570,7 @@ describe('User Journey E2E', () => {
         });
 
         it('should fail to create order without authentication', async () => {
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post(`${API_PREFIX}/order/user/create-order`)
                 .send({
                     name: 'Test User',
@@ -584,7 +589,7 @@ describe('User Journey E2E', () => {
         });
 
         it('should fail to create order with invalid email', async () => {
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post(`${API_PREFIX}/order/user/create-order`)
                 .set('Authorization', `Bearer ${accessToken}`)
                 .send({
@@ -604,7 +609,7 @@ describe('User Journey E2E', () => {
         });
 
         it('should fail to create order with empty items', async () => {
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post(`${API_PREFIX}/order/user/create-order`)
                 .set('Authorization', `Bearer ${accessToken}`)
                 .send({

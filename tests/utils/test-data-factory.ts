@@ -146,7 +146,9 @@ export class TestDataFactory {
         }
 
         if (!role) {
-            throw new Error(`Role ${roleName} not found in database after ${3} retries`);
+            throw new Error(
+                `Role ${roleName} not found in database after ${3} retries`,
+            );
         }
 
         // Создаём пользователя через Sequelize Model (безопаснее чем raw SQL)
@@ -193,6 +195,7 @@ export class TestDataFactory {
 
         const response = await request(app.getHttpServer())
             .post('/online-store/auth/registration')
+            .set('x-tenant-id', '1')
             .send(dto)
             .expect(201);
 
@@ -224,6 +227,7 @@ export class TestDataFactory {
     ): Promise<string> {
         const response = await request(app.getHttpServer())
             .post('/online-store/auth/login')
+            .set('x-tenant-id', '1')
             .send({ email, password })
             .expect(200);
 

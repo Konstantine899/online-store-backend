@@ -3,6 +3,11 @@ import request from 'supertest';
 import { setupTestApp } from '../../setup/app';
 import { TestDataFactory } from '../../utils/test-data-factory';
 
+// Хелпер для создания запросов с tenant-id заголовком
+const createRequest = (app: INestApplication) => {
+    return request(app.getHttpServer()).set('x-tenant-id', '1');
+};
+
 /**
  * TEST-031: Error Handling & Recovery Tests
  *
@@ -75,7 +80,7 @@ describe('Error Handling & Recovery (Integration)', () => {
     describe('Validation Errors', () => {
         describe('DTO Validation', () => {
             it('должен вернуть 400 при invalid email format', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/auth/registration')
                     .send({
                         email: 'invalid-email',
@@ -89,7 +94,7 @@ describe('Error Handling & Recovery (Integration)', () => {
             });
 
             it('должен вернуть 400 при weak password', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/auth/registration')
                     .send({
                         email: 'valid@example.com',
@@ -103,7 +108,7 @@ describe('Error Handling & Recovery (Integration)', () => {
             });
 
             it('должен вернуть 400 при multiple validation errors', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/auth/registration')
                     .send({
                         email: 'invalid',
@@ -116,7 +121,7 @@ describe('Error Handling & Recovery (Integration)', () => {
             });
 
             it('должен возвращать русские сообщения об ошибках', async () => {
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/auth/registration')
                     .send({
                         email: '',
@@ -127,7 +132,7 @@ describe('Error Handling & Recovery (Integration)', () => {
                 expect(Array.isArray(response.body)).toBe(true);
                 expect(response.body.length).toBeGreaterThan(0);
                 // Verify Russian messages
-                const hasRussian = response.body.some((err: any) =>
+                const hasRussian = response.body.some((err: { messages?: string[] }) =>
                     err.messages?.some((msg: string) => /[а-яА-Я]/.test(msg)),
                 );
                 expect(hasRussian).toBe(true);
@@ -139,7 +144,7 @@ describe('Error Handling & Recovery (Integration)', () => {
                 const xssPayload = '<script>alert("XSS")</script>';
                 const email = TestDataFactory.uniqueEmail();
 
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/auth/registration')
                     .send({
                         email,
@@ -149,14 +154,17 @@ describe('Error Handling & Recovery (Integration)', () => {
 
                 expect(response.status).toBe(HttpStatus.BAD_REQUEST);
                 expect(Array.isArray(response.body)).toBe(true);
-                expect(response.body[0]).toHaveProperty('property', 'firstName');
+                expect(response.body[0]).toHaveProperty(
+                    'property',
+                    'firstName',
+                );
                 expect(response.body[0]).toHaveProperty('status', 400);
             });
 
             it('должен успешно создать пользователя с valid данными', async () => {
                 const email = TestDataFactory.uniqueEmail();
 
-                const response = await request(app.getHttpServer())
+                const response = await createRequest(app)
                     .post('/online-store/auth/registration')
                     .send({
                         email,
@@ -192,7 +200,7 @@ describe('Error Handling & Recovery (Integration)', () => {
     // ============================================================
     describe('CustomNotFoundExceptionFilter', () => {
         it('должен вернуть 404 для non-existent endpoint', async () => {
-            const response = await request(app.getHttpServer()).get(
+            const response = await createRequest(app).get(
                 '/online-store/non-existent-endpoint',
             );
 
@@ -202,7 +210,7 @@ describe('Error Handling & Recovery (Integration)', () => {
         });
 
         it('должен включать error message', async () => {
-            const response = await request(app.getHttpServer()).get(
+            const response = await createRequest(app).get(
                 '/online-store/non-existent-resource',
             );
 
@@ -219,7 +227,7 @@ describe('Error Handling & Recovery (Integration)', () => {
             ];
 
             for (const path of paths) {
-                const response = await request(app.getHttpServer()).get(path);
+                const response = await createRequest(app).get(path);
                 expect(response.status).toBe(HttpStatus.NOT_FOUND);
                 expect(response.body).toHaveProperty('statusCode', 404);
             }

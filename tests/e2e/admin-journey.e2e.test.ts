@@ -7,6 +7,11 @@ import { TestCleanup, TestDataFactory } from '../utils';
 // API prefix для всех E2E запросов
 const API_PREFIX = '/online-store';
 
+// Хелпер для создания запросов с tenant-id заголовком
+const createRequest = (app: INestApplication) => {
+    return request(app.getHttpServer()).set('x-tenant-id', '1');
+};
+
 /**
  * E2E: Admin Journey - Administrative Functions
  *
@@ -69,7 +74,7 @@ describe('Admin Journey E2E', () => {
         userEmail = TestDataFactory.uniqueEmail();
         userPhone = TestDataFactory.uniquePhone();
 
-        const userRegistrationResponse = await request(app.getHttpServer())
+        const userRegistrationResponse = await createRequest(app)
             .post(`${API_PREFIX}/auth/registration`)
             .send({
                 email: userEmail,
@@ -78,7 +83,7 @@ describe('Admin Journey E2E', () => {
             .expect(HttpStatus.CREATED);
 
         // Get user ID через /auth/check
-        const checkResponse = await request(app.getHttpServer())
+        const checkResponse = await createRequest(app)
             .get(`${API_PREFIX}/auth/check`)
             .set(
                 'Authorization',
@@ -89,7 +94,7 @@ describe('Admin Journey E2E', () => {
         userId = checkResponse.body.id;
 
         // Get product for testing
-        const productsResponse = await request(app.getHttpServer())
+        const productsResponse = await createRequest(app)
             .get(`${API_PREFIX}/product/list-v2`)
             .expect(HttpStatus.OK);
 
@@ -121,7 +126,7 @@ describe('Admin Journey E2E', () => {
             expect(adminId).toBeGreaterThan(0);
 
             // Verify admin can access public endpoints
-            const productsResponse = await request(app.getHttpServer())
+            const productsResponse = await createRequest(app)
                 .get(`${API_PREFIX}/product/list-v2`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(HttpStatus.OK);
@@ -131,7 +136,7 @@ describe('Admin Journey E2E', () => {
 
         it('should deny regular user from accessing admin endpoints', async () => {
             // Login as regular user
-            const userLoginResponse = await request(app.getHttpServer())
+            const userLoginResponse = await createRequest(app)
                 .post(`${API_PREFIX}/auth/login`)
                 .send({
                     email: userEmail,
@@ -142,7 +147,7 @@ describe('Admin Journey E2E', () => {
             const userToken = userLoginResponse.body.accessToken;
 
             // Try to access admin endpoint (use role endpoint as example)
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .get(`${API_PREFIX}/role/list`)
                 .set('Authorization', `Bearer ${userToken}`)
                 .expect(HttpStatus.FORBIDDEN);
@@ -165,7 +170,7 @@ describe('Admin Journey E2E', () => {
                 return;
             }
 
-            const orderResponse = await request(app.getHttpServer())
+            const orderResponse = await createRequest(app)
                 .post(`${API_PREFIX}/order/admin/create-order`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
@@ -189,7 +194,7 @@ describe('Admin Journey E2E', () => {
         });
 
         it('should allow admin to view all orders', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get(`${API_PREFIX}/order/admin/get-all-order`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(HttpStatus.OK);
@@ -209,7 +214,7 @@ describe('Admin Journey E2E', () => {
                 return; // Skip if no order was created
             }
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get(`${API_PREFIX}/order/admin/get-all-order/user/${userId}`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(HttpStatus.OK);
@@ -230,7 +235,7 @@ describe('Admin Journey E2E', () => {
                 return; // Skip if no order was created
             }
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get(`${API_PREFIX}/order/admin/get-order/${createdOrderId}`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(HttpStatus.OK);
@@ -248,7 +253,7 @@ describe('Admin Journey E2E', () => {
                 return; // Skip if no products
             }
 
-            const createResponse = await request(app.getHttpServer())
+            const createResponse = await createRequest(app)
                 .post(`${API_PREFIX}/order/admin/create-order`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
@@ -276,7 +281,7 @@ describe('Admin Journey E2E', () => {
             );
 
             // Verify order was created
-            const getResponse = await request(app.getHttpServer())
+            const getResponse = await createRequest(app)
                 .get(`/order/admin/get-order/${createResponse.body.id}`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(HttpStatus.OK);
@@ -290,7 +295,7 @@ describe('Admin Journey E2E', () => {
             }
 
             // Delete order
-            const deleteResponse = await request(app.getHttpServer())
+            const deleteResponse = await createRequest(app)
                 .delete(
                     `${API_PREFIX}/order/admin/delete-order/${createdOrderId}`,
                 )
@@ -300,7 +305,7 @@ describe('Admin Journey E2E', () => {
             expect(deleteResponse.body).toHaveProperty('message');
 
             // Verify order was deleted (should return 404)
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .get(`${API_PREFIX}/order/admin/get-order/${createdOrderId}`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(HttpStatus.NOT_FOUND);
@@ -311,7 +316,7 @@ describe('Admin Journey E2E', () => {
                 return;
             }
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post(`${API_PREFIX}/order/admin/create-order`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
@@ -332,7 +337,7 @@ describe('Admin Journey E2E', () => {
         });
 
         it('should fail to delete non-existent order', async () => {
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .delete(`${API_PREFIX}/order/admin/delete-order/999999`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(HttpStatus.NOT_FOUND);
@@ -346,7 +351,7 @@ describe('Admin Journey E2E', () => {
         let createdProductId: number;
 
         it('should allow admin to view all products', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get(`${API_PREFIX}/product/list-v2`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(HttpStatus.OK);
@@ -363,7 +368,7 @@ describe('Admin Journey E2E', () => {
                 return;
             }
 
-            const createResponse = await request(app.getHttpServer())
+            const createResponse = await createRequest(app)
                 .post(`${API_PREFIX}/product/create`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .field('name', 'Test E2E Product')
@@ -384,7 +389,7 @@ describe('Admin Journey E2E', () => {
                 return; // Skip if product wasn't created
             }
 
-            const updateResponse = await request(app.getHttpServer())
+            const updateResponse = await createRequest(app)
                 .put(`${API_PREFIX}/product/update/${createdProductId}`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .field('name', 'Updated E2E Product')
@@ -400,7 +405,7 @@ describe('Admin Journey E2E', () => {
                 return; // Skip if product wasn't created
             }
 
-            const deleteResponse = await request(app.getHttpServer())
+            const deleteResponse = await createRequest(app)
                 .delete(`${API_PREFIX}/product/delete/${createdProductId}`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .expect(HttpStatus.OK);
