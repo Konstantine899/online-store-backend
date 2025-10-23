@@ -214,25 +214,28 @@ describe('SAAS-001-13: Tenant Isolation (Integration)', () => {
     });
 
     describe('🔒 LoginHistory Repository Isolation', () => {
-            it.skip('✅ should create login record with tenant_id from context', async () => {
-                tenantContext.setTenantId(1);
+        it.skip('✅ should create login record with tenant_id from context', async () => {
+            tenantContext.setTenantId(1);
 
-                const loginRecord = await loginHistoryRepo.createLoginRecord({
-                    userId: 303, // Используем существующий ID пользователя из seeds
-                    ipAddress: '127.0.0.1',
-                    userAgent: 'test-agent',
-                    success: true,
-                });
-
-                expect(loginRecord).toBeDefined();
-                expect(loginRecord.id).toBeDefined();
-                expect(loginRecord.tenant_id).toBe(1);
+            const loginRecord = await loginHistoryRepo.createLoginRecord({
+                userId: 303, // Используем существующий ID пользователя из seeds
+                ipAddress: '127.0.0.1',
+                userAgent: 'test-agent',
+                success: true,
             });
+
+            expect(loginRecord).toBeDefined();
+            expect(loginRecord.id).toBeDefined();
+            expect(loginRecord.tenant_id).toBe(1);
+        });
 
         it('✅ should filter login history by tenant_id', async () => {
             tenantContext.setTenantId(1);
 
-            const history = await loginHistoryRepo.findUserLoginHistory(303, 10); // Используем существующий ID
+            const history = await loginHistoryRepo.findUserLoginHistory(
+                303,
+                10,
+            ); // Используем существующий ID
 
             expect(history).toBeDefined();
             expect(Array.isArray(history)).toBe(true);
