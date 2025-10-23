@@ -26,28 +26,33 @@ describe('CartController (Integration)', () => {
     let productId: number;
     let guestCartCookie: string;
 
-        beforeAll(async () => {
-            app = await setupTestApp();
+    beforeAll(async () => {
+        app = await setupTestApp();
 
-            // Применяем миграции и seeds для тестовой БД
-            await TestDatabaseSetup.setupDatabase('test');
+        // Применяем миграции и seeds для тестовой БД
+        await TestDatabaseSetup.setupDatabase('test');
 
-            await app.init();
+        await app.init();
 
-            // Проверяем, что CartController зарегистрирован
-            try {
-                const cartController = app.get('CartController');
-                console.log('✅ CartController найден:', cartController);
-            } catch (error) {
-                console.error('❌ CartController не найден:', error.message);
-            }
+        // Проверяем, что CartController зарегистрирован
+        try {
+            const cartController = app.get('CartController');
+            console.log('✅ CartController найден:', cartController);
+        } catch (error) {
+            console.error(
+                '❌ CartController не найден:',
+                error instanceof Error ? error.message : String(error),
+            );
+        }
 
-            // Проверяем доступные маршруты
-            const routes = app.getHttpServer()._events.request;
-            console.log('🔍 Доступные маршруты:', Object.keys(app.getHttpServer()._router?.stack || {}));
+        // Проверяем доступные маршруты
+        console.log(
+            '🔍 Доступные маршруты:',
+            Object.keys(app.getHttpServer()._router?.stack || {}),
+        );
 
-            // Используем продукт из seeds (id: 1 - iPhone 15)
-            productId = 1;
+        // Используем продукт из seeds (id: 1 - iPhone 15)
+        productId = 1;
 
         // Create auth user
         const user = await TestDataFactory.createUserInDB(app.get(Sequelize), {

@@ -54,6 +54,11 @@ const createMockTemplate = (overrides: Record<string, unknown> = {}) => ({
 // Кэш для тестовых данных
 const testDataCache = new Map<string, unknown[]>();
 
+// Хелпер для создания запросов с tenant-id заголовком
+const createRequest = (app: INestApplication) => {
+    return createRequest(app).set('x-tenant-id', '1');
+};
+
 describe('NotificationController (Integration)', () => {
     let app: INestApplication;
     let notificationService: NotificationService;
@@ -63,14 +68,12 @@ describe('NotificationController (Integration)', () => {
     beforeAll(async () => {
         const startTime = Date.now();
 
-        // Полный ресет тестовой БД и применение миграций (Variant A)
+        // Используем TestDatabaseSetup вместо полного ресета
         try {
-            execSync('npm run db:reset:test', {
-                stdio: 'pipe',
-                cwd: process.cwd(),
-            });
-        } catch {
-            // Оставляем тихим: миграции обязательны в Variant A, но не шумим в логах тестов
+            const { TestDatabaseSetup } = await import('../../../../../tests/utils');
+            await TestDatabaseSetup.setupDatabase('test');
+        } catch (error) {
+            console.warn('Database setup warning:', error.message);
         }
 
         module = await Test.createTestingModule({
@@ -97,7 +100,7 @@ describe('NotificationController (Integration)', () => {
 
         const endTime = Date.now();
         console.log(`Module setup completed in ${endTime - startTime}ms`);
-    }, 30000);
+    }, 60000); // Увеличиваем timeout до 60 секунд
 
     afterAll(async () => {
         if (app) {
@@ -126,9 +129,7 @@ describe('NotificationController (Integration)', () => {
                 createMockNotification(),
             );
 
-            const response = await request(app.getHttpServer()).get(
-                '/notifications',
-            );
+            const response = await createRequest(app).get('/notifications');
             console.log(
                 'GET /notifications status/body:',
                 response.status,
@@ -175,7 +176,7 @@ describe('NotificationController (Integration)', () => {
                 }),
             );
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications?status=sent')
                 .expect(200);
 
@@ -216,7 +217,7 @@ describe('NotificationController (Integration)', () => {
                 }),
             );
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications?type=email')
                 .expect(200);
 
@@ -266,7 +267,7 @@ describe('NotificationController (Integration)', () => {
                 ),
             ]);
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications/unread-count')
                 .expect(200);
 
@@ -291,7 +292,7 @@ describe('NotificationController (Integration)', () => {
                 createMockNotification(),
             );
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .put(`/notifications/${testNotification.id}/read`)
                 .expect(200);
 
@@ -318,7 +319,7 @@ describe('NotificationController (Integration)', () => {
         it('should return 404 for non-existent notification', async () => {
             const startTime = Date.now();
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .put('/notifications/99999/read')
                 .expect(404);
 
@@ -329,7 +330,7 @@ describe('NotificationController (Integration)', () => {
 
     describe('GET /notifications/settings', () => {
         it('should return user notification settings', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications/settings')
                 .expect(200);
 
@@ -351,7 +352,7 @@ describe('NotificationController (Integration)', () => {
                 marketing: false,
             };
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .put('/notifications/settings')
                 .send(updateData)
                 .expect(200);
@@ -373,7 +374,7 @@ describe('NotificationController (Integration)', () => {
             const testTemplate =
                 await NotificationTemplateModel.create(createMockTemplate());
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications/templates')
                 .expect(200);
 
@@ -414,7 +415,7 @@ describe('NotificationController (Integration)', () => {
                 ),
             ]);
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications/templates?type=email')
                 .expect(200);
 
@@ -440,7 +441,7 @@ describe('NotificationController (Integration)', () => {
                 message: 'This is a new template',
             };
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .post('/notifications/templates')
                 .send(templateData)
                 .expect(201);
@@ -474,7 +475,7 @@ describe('NotificationController (Integration)', () => {
                 message: 'Updated message',
             };
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .put(`/notifications/templates/${testTemplate.id}`)
                 .send(updateData)
                 .expect(200);
@@ -492,7 +493,7 @@ describe('NotificationController (Integration)', () => {
                 title: 'Updated Title',
             };
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .put('/notifications/templates/99999')
                 .send(updateData)
                 .expect(404);
@@ -509,7 +510,7 @@ describe('NotificationController (Integration)', () => {
                 isActive: true,
             });
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .delete(`/notifications/templates/${testTemplate.id}`)
                 .expect(204);
 
@@ -521,7 +522,7 @@ describe('NotificationController (Integration)', () => {
         });
 
         it('should return 404 for non-existent template', async () => {
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .delete('/notifications/templates/99999')
                 .expect(404);
         });
@@ -529,7 +530,7 @@ describe('NotificationController (Integration)', () => {
 
     describe('GET /notifications/statistics', () => {
         it('should return notification statistics', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications/statistics')
                 .expect(200);
 
@@ -543,7 +544,7 @@ describe('NotificationController (Integration)', () => {
         });
 
         it('should filter statistics by period', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications/statistics?period=7d')
                 .expect(200);
 
@@ -552,7 +553,7 @@ describe('NotificationController (Integration)', () => {
         });
 
         it('should filter statistics by type', async () => {
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications/statistics?type=email')
                 .expect(200);
 
@@ -565,7 +566,7 @@ describe('NotificationController (Integration)', () => {
         it('should allow CUSTOMER role to access user notifications', async () => {
             mockRoleGuard.canActivate.mockReturnValue(true);
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications')
                 .expect(200);
 
@@ -576,7 +577,7 @@ describe('NotificationController (Integration)', () => {
         it('should allow CUSTOMER role to access unread count', async () => {
             mockRoleGuard.canActivate.mockReturnValue(true);
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications/unread-count')
                 .expect(200);
 
@@ -586,7 +587,7 @@ describe('NotificationController (Integration)', () => {
         it('should allow CUSTOMER role to access settings', async () => {
             mockRoleGuard.canActivate.mockReturnValue(true);
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications/settings')
                 .expect(200);
 
@@ -602,7 +603,7 @@ describe('NotificationController (Integration)', () => {
                 pushEnabled: true,
             };
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .put('/notifications/settings')
                 .send(updateData)
                 .expect(200);
@@ -614,7 +615,7 @@ describe('NotificationController (Integration)', () => {
         it('should deny access for unauthorized users', async () => {
             mockAuthGuard.canActivate.mockReturnValue(false);
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .get('/notifications')
                 .expect(403);
 
@@ -625,7 +626,7 @@ describe('NotificationController (Integration)', () => {
         it('should deny access for insufficient permissions', async () => {
             mockRoleGuard.canActivate.mockReturnValue(false);
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .get('/notifications/templates')
                 .expect(403);
 
@@ -673,7 +674,7 @@ describe('NotificationController (Integration)', () => {
                 ),
             ]);
 
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications')
                 .expect(200);
 
@@ -705,7 +706,7 @@ describe('NotificationController (Integration)', () => {
                 }),
             );
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .put(`/notifications/${otherUserNotification.id}/read`)
                 .expect(404);
 
@@ -783,7 +784,7 @@ describe('NotificationController (Integration)', () => {
             ]);
 
             // Запрос от пользователя 1
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications')
                 .expect(200);
 
@@ -821,7 +822,7 @@ describe('NotificationController (Integration)', () => {
                 name: 'test',
             };
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .post('/notifications/templates')
                 .send(invalidData)
                 .expect(400);
@@ -843,7 +844,7 @@ describe('NotificationController (Integration)', () => {
                 type: 'invalid_type', // Invalid type
             };
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .put(`/notifications/templates/${testTemplate.id}`)
                 .send(invalidData)
                 .expect(400);
@@ -860,7 +861,7 @@ describe('NotificationController (Integration)', () => {
         it('should validate pagination limits', async () => {
             const startTime = Date.now();
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .get('/notifications?page=0&limit=0')
                 .expect(400);
 
@@ -873,7 +874,7 @@ describe('NotificationController (Integration)', () => {
         it('should validate statistics period format', async () => {
             const startTime = Date.now();
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .get('/notifications/statistics?period=invalid')
                 .expect(400);
 
@@ -888,14 +889,14 @@ describe('NotificationController (Integration)', () => {
 
             // Тестируем валидацию множественных операций параллельно
             const invalidRequests = await Promise.allSettled([
-                request(app.getHttpServer())
+                createRequest(app)
                     .post('/notifications/templates')
                     .send({ name: 'test1' }), // Missing required fields
-                request(app.getHttpServer())
+                createRequest(app)
                     .post('/notifications/templates')
                     .send({ type: 'invalid' }), // Missing required fields
-                request(app.getHttpServer()).get('/notifications?page=-1'), // Invalid page
-                request(app.getHttpServer()).get('/notifications?limit=1000'), // Invalid limit
+                createRequest(app).get('/notifications?page=-1'), // Invalid page
+                createRequest(app).get('/notifications?limit=1000'), // Invalid limit
             ]);
 
             // Все запросы должны завершиться с ошибкой
@@ -922,7 +923,7 @@ describe('NotificationController (Integration)', () => {
                 new Error('Database connection failed'),
             );
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .get('/notifications')
                 .expect(500);
 
@@ -944,7 +945,7 @@ describe('NotificationController (Integration)', () => {
                 'getNotifications',
             ).mockRejectedValue(new Error('Service error'));
 
-            await request(app.getHttpServer())
+            await createRequest(app)
                 .get('/notifications')
                 .expect(500);
 
@@ -967,7 +968,7 @@ describe('NotificationController (Integration)', () => {
                     jest.spyOn(NotificationModel, 'findAll').mockRejectedValue(
                         new Error('Database error'),
                     );
-                    const result = await request(app.getHttpServer())
+                    const result = await createRequest(app)
                         .get('/notifications')
                         .expect(500);
                     jest.restoreAllMocks();
@@ -979,7 +980,7 @@ describe('NotificationController (Integration)', () => {
                         notificationService,
                         'getNotifications',
                     ).mockRejectedValue(new Error('Service error'));
-                    const result = await request(app.getHttpServer())
+                    const result = await createRequest(app)
                         .get('/notifications')
                         .expect(500);
                     jest.restoreAllMocks();
@@ -991,7 +992,7 @@ describe('NotificationController (Integration)', () => {
                         notificationService,
                         'getTemplates',
                     ).mockRejectedValue(new Error('Template service error'));
-                    const result = await request(app.getHttpServer())
+                    const result = await createRequest(app)
                         .get('/notifications/templates')
                         .expect(500);
                     jest.restoreAllMocks();
@@ -1045,7 +1046,7 @@ describe('NotificationController (Integration)', () => {
             );
 
             const requestStartTime = Date.now();
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications?limit=20')
                 .expect(200);
             const requestEndTime = Date.now();
@@ -1080,7 +1081,7 @@ describe('NotificationController (Integration)', () => {
             );
 
             const requestStartTime = Date.now();
-            const response = await request(app.getHttpServer())
+            const response = await createRequest(app)
                 .get('/notifications/templates?limit=10')
                 .expect(200);
             const requestEndTime = Date.now();
@@ -1115,10 +1116,10 @@ describe('NotificationController (Integration)', () => {
             // Выполняем множественные запросы параллельно
             const requestStartTime = Date.now();
             const responses = await Promise.all([
-                request(app.getHttpServer()).get('/notifications?limit=5'),
-                request(app.getHttpServer()).get('/notifications/unread-count'),
-                request(app.getHttpServer()).get('/notifications/statistics'),
-                request(app.getHttpServer()).get('/notifications/templates'),
+                createRequest(app).get('/notifications?limit=5'),
+                createRequest(app).get('/notifications/unread-count'),
+                createRequest(app).get('/notifications/statistics'),
+                createRequest(app).get('/notifications/templates'),
             ]);
             const requestEndTime = Date.now();
 
@@ -1151,14 +1152,14 @@ describe('NotificationController (Integration)', () => {
 
             // Первый запрос (без кэша)
             const firstRequestStart = Date.now();
-            const firstResponse = await request(app.getHttpServer())
+            const firstResponse = await createRequest(app)
                 .get('/notifications')
                 .expect(200);
             const firstRequestEnd = Date.now();
 
             // Второй запрос (с кэшем)
             const secondRequestStart = Date.now();
-            const secondResponse = await request(app.getHttpServer())
+            const secondResponse = await createRequest(app)
                 .get('/notifications')
                 .expect(200);
             const secondRequestEnd = Date.now();
