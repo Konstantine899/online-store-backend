@@ -78,3 +78,4 @@ secrets/
 !docs/secrets-management.md
 !docs/env.example
 !docs/README.md
+!docs/project/*.md
