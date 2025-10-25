@@ -20,15 +20,20 @@
 #### Детальные оптимизации Swagger
 
 **Мемоизация общих ответов:**
+
 ```typescript
 // Кэш для мемоизации
 let unauthorizedResponseCache: ReturnType<typeof ApiResponse> | null = null;
 let forbiddenResponseCache: ReturnType<typeof ApiResponse> | null = null;
 const notFoundResponseCache = new Map<string, ReturnType<typeof ApiResponse>>();
-const badRequestResponseCache = new Map<string | undefined, ReturnType<typeof ApiResponse>>();
+const badRequestResponseCache = new Map<
+    string | undefined,
+    ReturnType<typeof ApiResponse>
+>();
 ```
 
 **Константы для схем:**
+
 - `MESSAGE_RESPONSE_SCHEMA` - схема простого ответа с сообщением
 - `TEMPLATE_SCHEMA` - схема шаблона
 - `USER_SETTINGS_SCHEMA` - схема настроек
@@ -36,6 +41,7 @@ const badRequestResponseCache = new Map<string | undefined, ReturnType<typeof Ap
 - `META_SCHEMA` - метаданные пагинации
 
 **Измерения производительности:**
+
 - **Без оптимизации:** ~22 объекта ApiResponse для стандартных ответов
 - **С оптимизацией:** ~4 объекта (сокращение на ~82%)
 - **UnauthorizedResponse:** 11 вызовов → 1 создание объекта (10 из кэша)
@@ -60,6 +66,7 @@ const badRequestResponseCache = new Map<string | undefined, ReturnType<typeof Ap
 #### Детальные оптимизации логирования
 
 **Singleton base logger:**
+
 ```typescript
 // Singleton base logger (создаётся один раз)
 let baseLogger: pino.Logger | null = null;
@@ -73,15 +80,25 @@ function getBaseLogger(): pino.Logger {
 ```
 
 **Константы для PII полей:**
+
 ```typescript
 const PII_FIELDS = new Set([
-    'password', 'token', 'accessToken', 'refreshToken',
-    'email', 'phone', 'firstName', 'lastName', 'address',
-    'secret', 'apiKey'
+    'password',
+    'token',
+    'accessToken',
+    'refreshToken',
+    'email',
+    'phone',
+    'firstName',
+    'lastName',
+    'address',
+    'secret',
+    'apiKey',
 ]);
 ```
 
 **Оптимизированные сериализаторы:**
+
 - `reqSerializer` - только безопасные поля (method, url, userAgent)
 - `resSerializer` - только statusCode
 - `errSerializer` - условный stack trace (только в development)
@@ -153,6 +170,7 @@ const PII_FIELDS = new Set([
 #### Детальные оптимизации NotificationService
 
 **Многоуровневое кэширование:**
+
 ```typescript
 // Кэш для статистики
 private readonly statisticsCache = new Map<string, NotificationStatistics>();
@@ -165,6 +183,7 @@ private readonly templatesCacheTimeout = 10 * 60 * 1000; // 10 минут
 ```
 
 **Оптимизированные запросы:**
+
 - `raw: true` - получение только нужных полей
 - Агрегация на уровне БД для статистики
 - Кэширование результатов с TTL
@@ -202,45 +221,48 @@ private readonly templatesCacheTimeout = 10 * 60 * 1000; // 10 минут
 #### Performance тесты
 
 **Bulk операции:**
+
 ```typescript
 it('should handle large bulk SMS operations efficiently', async () => {
     const largeMessageList = createBulkSmsMessages(100);
     const startTime = Date.now();
     const results = await service.sendBulkSms(largeMessageList);
     const endTime = Date.now();
-    
+
     expect(results).toHaveLength(100);
     expect(endTime - startTime).toBeLessThan(25000); // 25 секунд
 });
 ```
 
 **Кэширование валидации:**
+
 ```typescript
 it('should cache phone validation efficiently', async () => {
     const testPhones = ['+79991234567', '+79991234568', '+79991234567']; // повторный вызов
     const startTime = Date.now();
-    
+
     const results = await Promise.all(
-        testPhones.map(phone => service.validatePhoneNumber(phone))
+        testPhones.map((phone) => service.validatePhoneNumber(phone)),
     );
-    
+
     const endTime = Date.now();
     expect(endTime - startTime).toBeLessThan(100); // быстро благодаря кэшу
 });
 ```
 
 **Large template rendering:**
+
 ```typescript
 it('should handle large template rendering efficiently', async () => {
     const largeTemplate = createTemplate(
-        Array.from({ length: 100 }, (_, i) => `{{var${i}}}`).join(' ')
+        Array.from({ length: 100 }, (_, i) => `{{var${i}}}`).join(' '),
     );
     const largeVariables = createTemplateVariables(
         Object.fromEntries(
-            Array.from({ length: 100 }, (_, i) => [`var${i}`, `value${i}`])
-        )
+            Array.from({ length: 100 }, (_, i) => [`var${i}`, `value${i}`]),
+        ),
     );
-    
+
     const result = await service.renderTemplate(largeTemplate, largeVariables);
     expect(result.success).toBe(true);
 });
@@ -251,11 +273,13 @@ it('should handle large template rendering efficiently', async () => {
 ### Swagger оптимизации
 
 **Объекты ApiResponse:**
+
 - **Без оптимизации:** ~22 объекта для стандартных ответов
 - **С оптимизацией:** ~4 объекта (сокращение на ~82%)
 - **Экономия памяти:** ~18 объектов при старте приложения
 
 **Вызовы функций:**
+
 - **UnauthorizedResponse:** 11 вызовов → 1 создание объекта (10 из кэша)
 - **ForbiddenResponse:** 11 вызовов → 1 создание объекта (10 из кэша)
 - **NotFoundResponse:** ~3 вызова → ~3 создания (кэш по resourceName)
@@ -264,11 +288,13 @@ it('should handle large template rendering efficiently', async () => {
 ### Кэширование TTL
 
 **NotificationService:**
+
 - **Статистика:** 5 минут TTL, maxCacheSize: 100
 - **Шаблоны:** 10 минут TTL
 - **Ключи кэша:** `${userId}_${period}_${type}`
 
 **Connection Pool:**
+
 - **Development:** min: 2, max: 10 соединений
 - **Production:** min: 5, max: 20 соединений
 - **CI:** max: 30 для 4 workers
@@ -276,11 +302,13 @@ it('should handle large template rendering efficiently', async () => {
 ### Performance тесты
 
 **Bulk операции:**
+
 - **SMS bulk:** 100 сообщений за <25 секунд
 - **Template rendering:** 100 переменных за <100ms
 - **Phone validation:** повторные вызовы за <100ms
 
 **Кэширование:**
+
 - **Config calls:** сокращение с 4 до 1 вызова (-75%)
 - **Role sets:** кэширование в Map для O(1) доступа
 - **IP validation:** предкомпилированные regex
@@ -322,6 +350,7 @@ it('should handle large template rendering efficiently', async () => {
 #### Детальные оптимизации Guards
 
 **BruteforceGuard кэширование:**
+
 ```typescript
 // Кэшированные конфигурации для избежания повторных вызовов getConfig()
 interface CachedConfig {
@@ -334,11 +363,13 @@ interface CachedConfig {
 }
 
 // Предкомпилированные regex для валидации IP
-const IPV4_REGEX = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+const IPV4_REGEX =
+    /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 const IPV6_REGEX = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 ```
 
 **RoleGuard кэширование:**
+
 - Кэширование наборов ролей в `Map<string, Set<string>>`
 - Избежание повторных вычислений для одинаковых комбинаций ролей
 - Автоматическая очистка истёкших записей
