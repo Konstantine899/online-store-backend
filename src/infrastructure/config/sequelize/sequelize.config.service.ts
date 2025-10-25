@@ -66,6 +66,13 @@ export class SequelizeConfigService implements SequelizeOptionsFactory {
                 charset: 'utf8mb4',
                 collate: 'utf8mb4_0900_ai_ci',
             },
+            
+            // Подавляем предупреждения в тестовом режиме
+            ...(process.env.NODE_ENV === 'test' && {
+                logging: false,
+                benchmark: false,
+                logQueryParameters: false,
+            }),
         };
     }
 }
