@@ -12,6 +12,7 @@
 #### Детальная CI/CD конфигурация
 
 **Полный GitHub Actions workflow:**
+
 ```yaml
 # .github/workflows/ci.yml
 name: CI Pipeline
@@ -287,6 +288,7 @@ jobs:
 ```
 
 **CI оптимизации:**
+
 - **Shallow clone**: `fetch-depth: 1` для быстрого клонирования
 - **Build artifacts**: кэширование результатов сборки
 - **MySQL оптимизации**: быстрая настройка тестовой БД
@@ -329,6 +331,7 @@ CMD ["node", "dist/main.js"]
 #### Детальные Docker конфигурации
 
 **Multi-stage Dockerfile для production:**
+
 ```dockerfile
 # Multi-stage build для оптимизации размера образа
 FROM node:18-alpine AS builder
@@ -372,6 +375,7 @@ CMD ["node", "dist/main.js"]
 ```
 
 **Development Dockerfile:**
+
 ```dockerfile
 # Development Dockerfile для локальной разработки
 FROM node:18-alpine
@@ -395,6 +399,7 @@ CMD ["npm", "run", "start:dev"]
 ```
 
 **Оптимизированный .dockerignore:**
+
 ```dockerignore
 # Dependencies
 node_modules
@@ -534,6 +539,7 @@ volumes:
 ```
 
 **Production Docker Compose:**
+
 ```yaml
 # docker-compose.prod.yml
 version: '3.8'
@@ -556,7 +562,13 @@ services:
                 condition: service_healthy
         restart: unless-stopped
         healthcheck:
-            test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+            test:
+                [
+                    'CMD',
+                    'node',
+                    '-e',
+                    "require('http').get('http://localhost:5000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })",
+                ]
             interval: 30s
             timeout: 10s
             retries: 3
@@ -576,7 +588,7 @@ services:
             - '3306:3306'
         restart: unless-stopped
         healthcheck:
-            test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+            test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
             interval: 30s
             timeout: 10s
             retries: 3
@@ -601,6 +613,7 @@ volumes:
 ```
 
 **Development Docker Compose:**
+
 ```yaml
 # docker-compose.dev.yml
 version: '3.8'
@@ -642,6 +655,7 @@ volumes:
 ```
 
 **Nginx конфигурация для production:**
+
 ```nginx
 # nginx.conf
 events {
@@ -682,7 +696,7 @@ http {
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
-            
+
             # Timeouts
             proxy_connect_timeout 30s;
             proxy_send_timeout 30s;
@@ -710,6 +724,7 @@ http {
 #### Детальные Health Checks
 
 **Health Controller с Terminus интеграцией:**
+
 ```typescript
 // src/infrastructure/controllers/health/health.controller.ts
 import { Controller, Get } from '@nestjs/common';
@@ -743,6 +758,7 @@ export class HealthController {
 ```
 
 **Sequelize Health Indicator:**
+
 ```typescript
 // src/infrastructure/controllers/health/sequelize.health.ts
 import { Injectable } from '@nestjs/common';
@@ -768,6 +784,7 @@ export class SequelizeHealthIndicator extends HealthIndicator {
 ```
 
 **Health Module:**
+
 ```typescript
 // src/infrastructure/controllers/health/health.module.ts
 import { Module } from '@nestjs/common';
@@ -784,51 +801,52 @@ export class HealthModule {}
 ```
 
 **Kubernetes Health Check Probes:**
+
 ```yaml
 # kubernetes-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: online-store-backend
+    name: online-store-backend
 spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: online-store-backend
-  template:
-    metadata:
-      labels:
-        app: online-store-backend
-    spec:
-      containers:
-      - name: app
-        image: online-store-backend:latest
-        ports:
-        - containerPort: 5000
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 5000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 5000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
-        startupProbe:
-          httpGet:
-            path: /live
-            port: 5000
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 30
+    replicas: 3
+    selector:
+        matchLabels:
+            app: online-store-backend
+    template:
+        metadata:
+            labels:
+                app: online-store-backend
+        spec:
+            containers:
+                - name: app
+                  image: online-store-backend:latest
+                  ports:
+                      - containerPort: 5000
+                  livenessProbe:
+                      httpGet:
+                          path: /health
+                          port: 5000
+                      initialDelaySeconds: 30
+                      periodSeconds: 10
+                      timeoutSeconds: 5
+                      failureThreshold: 3
+                  readinessProbe:
+                      httpGet:
+                          path: /ready
+                          port: 5000
+                      initialDelaySeconds: 5
+                      periodSeconds: 5
+                      timeoutSeconds: 3
+                      failureThreshold: 3
+                  startupProbe:
+                      httpGet:
+                          path: /live
+                          port: 5000
+                      initialDelaySeconds: 10
+                      periodSeconds: 5
+                      timeoutSeconds: 3
+                      failureThreshold: 30
 ```
 
 ### Мониторинг
@@ -875,6 +893,7 @@ RATE_LIMIT_ENABLED=true
 #### Детальные Environment переменные
 
 **Полный список переменных из env.example:**
+
 ```bash
 # =============================================================================
 # ONLINE STORE BACKEND - Environment Variables Reference
@@ -927,6 +946,7 @@ MYSQL_PORT=3306
 ```
 
 **Production переменные:**
+
 ```bash
 # Production Environment Variables
 NODE_ENV=production
@@ -975,6 +995,7 @@ SWAGGER_ENABLED=false
 ```
 
 **Staging переменные:**
+
 ```bash
 # Staging Environment Variables
 NODE_ENV=staging
@@ -1010,6 +1031,7 @@ SWAGGER_ENABLED=true
 ```
 
 **Development переменные:**
+
 ```bash
 # Development Environment Variables
 NODE_ENV=development
@@ -1047,92 +1069,98 @@ SWAGGER_ENABLED=true
 ### Полный список доступных команд
 
 **Build и запуск:**
+
 ```json
 {
-  "build": "nest build",
-  "start": "cross-env NODE_ENV=production nest start",
-  "start:dev": "cross-env NODE_ENV=development nest start --watch"
+    "build": "nest build",
+    "start": "cross-env NODE_ENV=production nest start",
+    "start:dev": "cross-env NODE_ENV=development nest start --watch"
 }
 ```
 
 **Linting и форматирование:**
+
 ```json
 {
-  "lint:ts": "eslint \"{src,config,db}/**/*.ts\"",
-  "lint:ts:fix": "eslint \"{src,config,db}/**/*.ts\" --fix",
-  "prettier": "prettier --write \"src/**/*.ts\" \"db/**/*.{js,ts}\""
+    "lint:ts": "eslint \"{src,config,db}/**/*.ts\"",
+    "lint:ts:fix": "eslint \"{src,config,db}/**/*.ts\" --fix",
+    "prettier": "prettier --write \"src/**/*.ts\" \"db/**/*.{js,ts}\""
 }
 ```
 
 **Тестирование:**
+
 ```json
 {
-  "test": "cross-env NODE_ENV=test jest",
-  "test:watch": "jest --watch",
-  "test:unit": "jest --selectProjects unit",
-  "test:integration": "jest --selectProjects integration --runInBand",
-  "test:integration:ci": "cross-env CI=true jest --selectProjects integration --maxWorkers=4",
-  "test:unit:watch": "jest --selectProjects unit --watch",
-  "test:integration:watch": "jest --selectProjects integration --watch --runInBand",
-  "test:cov": "jest --coverage",
-  "test:cov:unit": "jest --selectProjects unit --coverage",
-  "test:cov:integration": "jest --selectProjects integration --coverage --runInBand",
-  "test:cov:integration:ci": "cross-env CI=true jest --selectProjects integration --coverage --maxWorkers=4",
-  "test:cov:open": "npm run test:cov && start coverage/index.html",
-  "test:html": "npm run test && start test-reports/test-report.html",
-  "test:html:open": "npm run test && start test-reports/test-report.html",
-  "test:ci": "cross-env CI=true NODE_ENV=test jest",
-  "test:debug": "jest --detectOpenHandles --runInBand",
-  "test:e2e": "cross-env NODE_ENV=test jest --config ./jest.e2e.config.js",
-  "test:setup": "node scripts/test-db-setup.js",
-  "test:reset": "npm run db:drop:test && npm run test:setup",
-  "pretest:integration": "npm run test:setup --if-present"
+    "test": "cross-env NODE_ENV=test jest",
+    "test:watch": "jest --watch",
+    "test:unit": "jest --selectProjects unit",
+    "test:integration": "jest --selectProjects integration --runInBand",
+    "test:integration:ci": "cross-env CI=true jest --selectProjects integration --maxWorkers=4",
+    "test:unit:watch": "jest --selectProjects unit --watch",
+    "test:integration:watch": "jest --selectProjects integration --watch --runInBand",
+    "test:cov": "jest --coverage",
+    "test:cov:unit": "jest --selectProjects unit --coverage",
+    "test:cov:integration": "jest --selectProjects integration --coverage --runInBand",
+    "test:cov:integration:ci": "cross-env CI=true jest --selectProjects integration --coverage --maxWorkers=4",
+    "test:cov:open": "npm run test:cov && start coverage/index.html",
+    "test:html": "npm run test && start test-reports/test-report.html",
+    "test:html:open": "npm run test && start test-reports/test-report.html",
+    "test:ci": "cross-env CI=true NODE_ENV=test jest",
+    "test:debug": "jest --detectOpenHandles --runInBand",
+    "test:e2e": "cross-env NODE_ENV=test jest --config ./jest.e2e.config.js",
+    "test:setup": "node scripts/test-db-setup.js",
+    "test:reset": "npm run db:drop:test && npm run test:setup",
+    "pretest:integration": "npm run test:setup --if-present"
 }
 ```
 
 **Database management:**
+
 ```json
 {
-  "db:migrate": "npx sequelize-cli db:migrate",
-  "db:migrate:undo": "npx sequelize-cli db:migrate:undo",
-  "db:migrate:undo:all": "npx sequelize-cli db:migrate:undo:all",
-  "db:migrate:status": "npx sequelize-cli db:migrate:status",
-  "db:seed:all": "npx sequelize-cli db:seed:all",
-  "db:seed:undo:all": "npx sequelize-cli db:seed:undo:all",
-  "db:reset": "npm run db:drop && npm run db:create && npm run db:migrate && npm run db:seed:all",
-  "db:drop": "npx sequelize-cli db:drop",
-  "db:create": "npx sequelize-cli db:create",
-  "db:build": "tsc -p db/tsconfig.json",
-  "db:lint": "eslint \"db/**/*.ts\"",
-  "db:lint:fix": "eslint \"db/**/*.ts\" --fix",
-  "db:migration:generate": "npx sequelize-cli migration:generate --name",
-  "db:migrate:test": "cross-env NODE_ENV=test npx sequelize-cli db:migrate --config db/config/database.js --migrations-path db/migrations",
-  "db:migrate:undo:test": "cross-env NODE_ENV=test npx sequelize-cli db:migrate:undo --config db/config/database.js --migrations-path db/migrations",
-  "db:migrate:undo:all:test": "cross-env NODE_ENV=test npx sequelize-cli db:migrate:undo:all --config db/config/database.js --migrations-path db/migrations",
-  "db:seed:test": "cross-env NODE_ENV=test npx sequelize-cli db:seed:all --config db/config/database.js --seeders-path db/seeders",
-  "db:seed:undo:test": "cross-env NODE_ENV=test npx sequelize-cli db:seed:undo:all --config db/config/database.js --seeders-path db/seeders"
+    "db:migrate": "npx sequelize-cli db:migrate",
+    "db:migrate:undo": "npx sequelize-cli db:migrate:undo",
+    "db:migrate:undo:all": "npx sequelize-cli db:migrate:undo:all",
+    "db:migrate:status": "npx sequelize-cli db:migrate:status",
+    "db:seed:all": "npx sequelize-cli db:seed:all",
+    "db:seed:undo:all": "npx sequelize-cli db:seed:undo:all",
+    "db:reset": "npm run db:drop && npm run db:create && npm run db:migrate && npm run db:seed:all",
+    "db:drop": "npx sequelize-cli db:drop",
+    "db:create": "npx sequelize-cli db:create",
+    "db:build": "tsc -p db/tsconfig.json",
+    "db:lint": "eslint \"db/**/*.ts\"",
+    "db:lint:fix": "eslint \"db/**/*.ts\" --fix",
+    "db:migration:generate": "npx sequelize-cli migration:generate --name",
+    "db:migrate:test": "cross-env NODE_ENV=test npx sequelize-cli db:migrate --config db/config/database.js --migrations-path db/migrations",
+    "db:migrate:undo:test": "cross-env NODE_ENV=test npx sequelize-cli db:migrate:undo --config db/config/database.js --migrations-path db/migrations",
+    "db:migrate:undo:all:test": "cross-env NODE_ENV=test npx sequelize-cli db:migrate:undo:all --config db/config/database.js --migrations-path db/migrations",
+    "db:seed:test": "cross-env NODE_ENV=test npx sequelize-cli db:seed:all --config db/config/database.js --seeders-path db/seeders",
+    "db:seed:undo:test": "cross-env NODE_ENV=test npx sequelize-cli db:seed:undo:all --config db/config/database.js --seeders-path db/seeders"
 }
 ```
 
 **Docker команды:**
+
 ```json
 {
-  "docker:build": "docker build -t online-store-backend .",
-  "docker:run": "docker run -p 5000:5000 online-store-backend",
-  "docker:dev": "docker-compose -f docker-compose.dev.yml up",
-  "docker:prod": "docker-compose -f docker-compose.prod.yml up",
-  "docker:down": "docker-compose down",
-  "docker:logs": "docker-compose logs -f",
-  "docker:clean": "docker system prune -f"
+    "docker:build": "docker build -t online-store-backend .",
+    "docker:run": "docker run -p 5000:5000 online-store-backend",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:clean": "docker system prune -f"
 }
 ```
 
 **Deployment команды:**
+
 ```json
 {
-  "deploy:staging": "npm run build && npm run db:migrate && npm run start",
-  "deploy:production": "npm run build && npm run db:migrate && npm run start",
-  "deploy:docker": "docker build -t online-store-backend . && docker run -p 5000:5000 online-store-backend"
+    "deploy:staging": "npm run build && npm run db:migrate && npm run start",
+    "deploy:production": "npm run build && npm run db:migrate && npm run start",
+    "deploy:docker": "docker build -t online-store-backend . && docker run -p 5000:5000 online-store-backend"
 }
 ```
 
