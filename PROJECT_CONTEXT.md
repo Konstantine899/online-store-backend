@@ -381,6 +381,7 @@ User ──┬── UserRole ── Role
 - **Статические файлы**: через CDN, с кэшированием
 
 **Multer защита**:
+
 - **MIME типы**: только изображения (JPEG, PNG, GIF)
 - **Размер файлов**: максимум 256 KB
 - **Path Traversal**: защита от `../../etc/passwd` атак
@@ -479,6 +480,25 @@ npm run test:integration   # Integration тесты
 npm run test:e2e          # E2E тесты
 npm run test:cov          # Покрытие
 ```
+
+### Jest конфигурация
+
+**Оптимизации производительности**:
+- **isolatedModules**: отключение проверки типов между модулями (в 2-3× быстрее)
+- **diagnostics: false**: TypeScript диагностика уже выполнена линтером
+- **Кэширование**: Jest cache для ускорения повторных запусков
+- **Проекты**: unit, integration, e2e с разными настройками
+
+**CI оптимизации**:
+- **bail**: остановка при первой ошибке
+- **silent**: минимальный вывод в логах
+- **minimal reporters**: только необходимые отчеты
+- **maxWorkers: 4**: параллельное выполнение тестов
+
+**Конфигурация проектов**:
+- **Unit**: быстрые тесты без БД, с моками
+- **Integration**: тесты с БД, последовательное выполнение
+- **E2E**: сквозные сценарии, полная изоляция
 
 ---
 
@@ -603,23 +623,27 @@ SECURITY_CSP_ENABLED=true
 ### Конфигурация компонентов
 
 **JWT конфигурация**:
+
 - **`JwtSettings()`**: настройки секретного ключа и времени жизни
 - **`jwtConfig()`**: конфигурация JwtModule с глобальной регистрацией
 - **Ленивая инициализация**: настройки загружаются при первом вызове
 
 **Swagger конфигурация**:
+
 - **`swaggerConfig()`**: настройка документации API
 - **Bearer Auth**: JWT аутентификация в Swagger UI (`JWT-auth`)
 - **Cookie Auth**: поддержка cookies (`authCookie`)
 - **Multi-tenant**: API Key для заголовка `x-tenant-id`
 
 **Multer конфигурация**:
+
 - **`multerConfig()`**: безопасная загрузка файлов
 - **MIME типы**: только изображения (JPEG, PNG, GIF)
 - **Размер файлов**: максимум 256 KB
 - **Защита**: от Path Traversal и MIME spoofing атак
 
 **Sequelize конфигурация**:
+
 - **`SequelizeConfigService`**: настройки подключения к БД
 - **Автозагрузка моделей**: все модели регистрируются автоматически
 - **Charset**: UTF8MB4 с collation `utf8mb4_0900_ai_ci`
@@ -628,13 +652,53 @@ SECURITY_CSP_ENABLED=true
 ### Скрипты
 
 ```bash
+# Разработка
 npm run start:dev     # Разработка
 npm run start:prod    # Продакшн
 npm run build         # Сборка
-npm run test          # Все тесты
 npm run lint          # Линтер
 npm run format        # Prettier
+
+# Тестирование
+npm run test          # Все тесты
+npm run test:unit     # Unit тесты
+npm run test:integration # Integration тесты
+npm run test:e2e      # E2E тесты
+npm run test:cov      # Покрытие
+npm run test:ci       # CI тесты
+
+# База данных
+npm run db:migrate    # Применить миграции
+npm run db:seed:all   # Применить сиды
+npm run db:reset      # Сброс БД (drop + create + migrate + seed)
+npm run db:drop       # Удалить БД
+npm run db:create     # Создать БД
 ```
+
+**Детальные скрипты**:
+
+**Тестирование**:
+- `test:unit` - Unit тесты (быстрые, без БД)
+- `test:integration` - Integration тесты (с БД, последовательно)
+- `test:integration:ci` - CI интеграционные тесты (параллельно, 4 workers)
+- `test:e2e` - E2E тесты (сквозные сценарии)
+- `test:cov` - Покрытие кода
+- `test:debug` - Отладка тестов (detectOpenHandles)
+
+**База данных**:
+- `db:migrate` - Применить миграции
+- `db:migrate:undo` - Откатить последнюю миграцию
+- `db:migrate:undo:all` - Откатить все миграции
+- `db:migrate:status` - Статус миграций
+- `db:seed:all` - Применить все сиды
+- `db:seed:undo:all` - Откатить все сиды
+- `db:migration:generate` - Создать новую миграцию
+
+**CI/CD**:
+- `test:setup` - Настройка тестовой БД
+- `test:reset` - Сброс тестовой БД
+- `db:migrate:test` - Миграции для тестов
+- `db:migrate:undo:test` - Откат миграций для тестов
 
 ---
 
@@ -682,6 +746,7 @@ npm run format        # Prettier
 - **TemplateRendererService**: рендеринг шаблонов уведомлений
 
 **События системы**:
+
 - **`OrderCreatedEvent`**: создание заказа
 - **`OrderStatusChangedEvent`**: изменение статуса заказа
 - **`UserRegisteredEvent`**: регистрация пользователя
@@ -695,6 +760,7 @@ npm run format        # Prettier
 - **`MarketingCampaignEvent`**: маркетинговые кампании
 
 **Оптимизации**:
+
 - Кэширование шаблонов уведомлений
 - Параллельная обработка событий
 - Батчевая отправка уведомлений
@@ -737,6 +803,24 @@ npm run format        # Prettier
 - **Версионирование**: четкая схема именования миграций
 - **Rollback**: полная поддержка отката изменений
 
+**Структура миграций**:
+- **Именование**: `YYYYMMDDHHMMSS-action-entity.ts`
+- **Индексы**: автоматическое создание индексов для производительности
+- **FK ограничения**: RESTRICT для предотвращения каскадного удаления
+- **Charset**: UTF8MB4 с collation `utf8mb4_0900_ai_ci`
+
+**Сиды ролей** (14 ролей):
+- **Платформенные**: SUPER_ADMIN, PLATFORM_ADMIN
+- **Тенантские**: TENANT_OWNER, TENANT_ADMIN, MANAGER, CONTENT_MANAGER, CUSTOMER_SERVICE
+- **Пользователи**: VIP_CUSTOMER, WHOLESALE, CUSTOMER, AFFILIATE, GUEST
+- **Legacy**: ADMIN, USER (для обратной совместимости)
+
+**Сиды пользователей**:
+- Пользователи для каждой роли с уникальными email
+- Хэшированные пароли: `Password123!`
+- Расширенные флаги: is_active, is_verified, is_email_verified, etc.
+- Локализация: preferred_language: 'ru', timezone: 'Europe/Moscow'
+
 ### Тестовые утилиты
 
 - **TestDataFactory**: генерация уникальных тестовых данных
@@ -744,6 +828,27 @@ npm run format        # Prettier
 - **TestTransaction**: изоляция тестов через транзакции
 - **MockFactories**: стандартизированные моки для unit тестов
 - **Auth helpers**: автоматическая авторизация в тестах
+
+**TestDataFactory возможности**:
+- `uniqueEmail()` - уникальный email адрес
+- `uniquePhone()` - уникальный российский телефон
+- `createUserDto(overrides)` - DTO для создания пользователя
+- `createAuthenticatedUser(app)` - создание пользователя в БД + получение токена
+- `createUserWithRole(app, role)` - создание пользователя с определенной ролью
+
+**TestCleanup методы**:
+- `cleanUsers(sequelize)` - очистка временных пользователей (id > 14)
+- `resetUser13(sequelize)` - сброс user 13 к дефолтным значениям
+- `cleanAuthData(sequelize)` - очистка login_history + refresh_token
+- `cleanOrders(sequelize)` - очистка заказов
+- `cleanCarts(sequelize)` - очистка корзин
+- `cleanAll(sequelize)` - полная очистка всех данных
+
+**TestTransaction возможности**:
+- Изоляция тестов через транзакции с автоматическим rollback
+- Быстрее cleanup для unit тестов
+- Полная изоляция без ручного cleanup
+- Не работает с вложенными транзакциями в коде
 
 ### Производительность и мониторинг
 
@@ -753,6 +858,24 @@ npm run format        # Prettier
 - **Логирование**: структурированные JSON логи с correlation ID
 - **Метрики**: отслеживание производительности и ошибок
 
+**Оптимизации Swagger декораторов**:
+- **Мемоизация**: экономия 82% объектов ApiResponse при инициализации
+- **Singleton кэш**: для функций без параметров (UnauthorizedResponse, ForbiddenResponse)
+- **Map кэш**: для функций с параметрами (NotFoundResponse, BadRequestResponse)
+- **Константы**: переиспользование схем между декораторами
+
+**Оптимизации логирования**:
+- **Pino конфигурация**: структурированные JSON логи в production
+- **Pretty printing**: только в development
+- **Маскирование PII**: автоматическое удаление чувствительных данных
+- **Correlation ID**: трассировка запросов через x-request-id
+
+**Оптимизации тестов**:
+- **Jest cache**: кэширование результатов трансформации
+- **isolatedModules**: отключение проверки типов между модулями
+- **diagnostics: false**: TypeScript диагностика уже выполнена линтером
+- **CI оптимизации**: bail, silent, minimal reporters
+
 ### CI/CD и Deployment
 
 - **GitHub Actions**: автоматические проверки на каждый PR
@@ -761,6 +884,23 @@ npm run format        # Prettier
 - **Docker**: multi-stage builds для production
 - **Health Checks**: мониторинг состояния приложения
 - **Migrations**: автоматическое применение миграций в production
+
+**GitHub Actions конфигурация**:
+- **Параллельные джобы**: lint, build, test-unit, test-integration, migration-check
+- **MySQL сервис**: оптимизированная конфигурация для тестов
+- **Кэширование**: TypeScript, Jest, npm dependencies
+- **Автоматическая отмена**: устаревших запусков при новых коммитах
+
+**Оптимизации CI**:
+- **Shallow clone**: fetch-depth: 1 для ускорения
+- **Кэширование**: build artifacts, Jest cache, TypeScript build
+- **Параллельность**: независимые джобы выполняются параллельно
+- **MySQL оптимизации**: innodb_flush_log_at_trx_commit = 2, sync_binlog = 0
+
+**Coverage отчеты**:
+- **Интеграционные тесты**: обязательное покрытие для критичных модулей
+- **Unit тесты**: покрытие не собирается (низкое покрытие ожидаемо)
+- **Артефакты**: отчеты сохраняются на 30 дней
 
 ---
 
