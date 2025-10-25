@@ -1,5 +1,5 @@
-import { MakePaymentDto } from '@app/infrastructure/dto';
-import {
+import type { MakePaymentDto } from '@app/infrastructure/dto';
+import type {
     UserMakePaymentResponse,
     GuestMakePaymentResponse,
 } from '@app/infrastructure/responses';

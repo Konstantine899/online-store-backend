@@ -1,6 +1,6 @@
-import { registerAs } from '@nestjs/config';
-import { Dialect } from 'sequelize';
 import { dbToken } from '@app/infrastructure/config/sequelize/db-token';
+import { registerAs } from '@nestjs/config';
+import type { Dialect } from 'sequelize';
 
 /**
  * Получение конфигурации connection pool в зависимости от окружения
@@ -15,8 +15,8 @@ const getPoolConfig = () => {
     const isTestEnv = process.env.NODE_ENV === 'test';
 
     // Приоритет: ENV переменные (CI override) > defaults
-    const envMax = parseInt(process.env.SEQUELIZE_POOL_MAX || '0', 10);
-    const envMin = parseInt(process.env.SEQUELIZE_POOL_MIN || '0', 10);
+    const envMax = parseInt(process.env.SEQUELIZE_POOL_MAX ?? '0', 10);
+    const envMin = parseInt(process.env.SEQUELIZE_POOL_MIN ?? '0', 10);
 
     if (envMax > 0) {
         // CI окружение с кастомной конфигурацией

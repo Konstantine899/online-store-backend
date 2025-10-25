@@ -1,4 +1,4 @@
-import {
+import type {
     GetRatingResponse,
     RatingResponse,
 } from '@app/infrastructure/responses';

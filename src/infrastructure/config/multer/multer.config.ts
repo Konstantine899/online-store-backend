@@ -1,5 +1,5 @@
 import { BadRequestException, HttpStatus } from '@nestjs/common';
-import { Express } from 'express';
+import type { Express } from 'express';
 import * as path from 'path';
 
 /**

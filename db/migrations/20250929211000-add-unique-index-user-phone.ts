@@ -1,4 +1,4 @@
-import { QueryInterface } from 'sequelize';
+import type { QueryInterface } from 'sequelize';
 
 const TABLE_NAME = 'user';
 const INDEX_NAME = 'user_phone_unique';

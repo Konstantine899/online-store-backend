@@ -26,12 +26,12 @@ import { hash } from 'bcrypt';
 import { createHash, randomBytes } from 'crypto';
 
 // Типы для статистики пользователей
-export type UserStats = {
+export interface UserStats {
     totalUsers: number;
     activeUsers: number;
     blockedUsers: number;
     newsletterSubscribers: number;
-};
+}
 
 @Injectable()
 export class UserRepository implements IUserRepository {
@@ -244,7 +244,7 @@ export class UserRepository implements IUserRepository {
         try {
             const allowedFields = this.pickAllowedFromCreate(dto);
             const hashedPassword = await hash(
-                allowedFields.password!,
+                allowedFields.password,
                 UserRepository.BCRYPT_ROUNDS,
             );
 

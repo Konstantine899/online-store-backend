@@ -1,5 +1,5 @@
 import { PaginatedResponse } from './paginated.response';
-import { MetaData } from '@app/infrastructure/paginate';
+import type { MetaData } from '@app/infrastructure/paginate';
 
 describe('PaginatedResponse', () => {
     it('должен создавать объект с правильной структурой', () => {

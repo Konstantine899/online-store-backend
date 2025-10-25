@@ -1,4 +1,4 @@
-import { Model, Optional } from 'sequelize';
+import type { Model, Optional } from 'sequelize';
 
 // Tenant types
 export interface TenantAttributes {

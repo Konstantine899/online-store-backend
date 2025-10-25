@@ -38,7 +38,7 @@ export class OrderRepository implements IOrderRepository {
     ): Promise<
         AdminGetStoreOrderListResponse[] | AdminGetOrderListUserResponse[]
     > {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         let orders: OrderModel[];
         if (user_id) {
             orders = await this.orderModel.findAll({
@@ -71,7 +71,7 @@ export class OrderRepository implements IOrderRepository {
         id: number,
         user_id?: number,
     ): Promise<AdminGetOrderUserResponse> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         let order: OrderModel;
         if (user_id) {
             order = (await this.orderModel.findOne({
@@ -106,7 +106,7 @@ export class OrderRepository implements IOrderRepository {
     public async findUserAndHisOrders(
         user_id: number,
     ): Promise<AdminCreateOrderResponse> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return (await this.orderModel.findOne({
             where: { user_id, tenant_id: tenantId },
             include: [
@@ -130,7 +130,7 @@ export class OrderRepository implements IOrderRepository {
     }
 
     public async findOrder(orderId: number): Promise<OrderModel> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.orderModel.findOne({
             where: { id: orderId, tenant_id: tenantId },
             include: [
@@ -144,14 +144,14 @@ export class OrderRepository implements IOrderRepository {
     }
 
     public async removeOrder(id: number): Promise<number> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.orderModel.destroy({ where: { id, tenant_id: tenantId } });
     }
 
     public async userFindOrderList(
         user_id: number,
     ): Promise<UserGetOrderListResponse[]> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         let orders: OrderModel[];
         if (user_id) {
             orders = await this.orderModel.findAll({
@@ -177,7 +177,7 @@ export class OrderRepository implements IOrderRepository {
         order_id: number,
         user_id?: number,
     ): Promise<OrderModel> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.orderModel.findOne({
             where: {
                 user_id,
@@ -271,7 +271,7 @@ export class OrderRepository implements IOrderRepository {
                     (sum: number, item: OrderItemModel) => sum + item.price,
                     0,
                 );
-                order.tenant_id = this.tenantContext.getTenantIdOrNull() || 1;
+                order.tenant_id = this.tenantContext.getTenantIdOrNull() ?? 1;
                 await order.save({ transaction });
 
                 // 6. Create order items
@@ -280,7 +280,7 @@ export class OrderRepository implements IOrderRepository {
                 }
 
                 // 7. Return created order with items
-                const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+                const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
                 return this.orderModel.findOne({
                     where: { id: order.id, tenant_id: tenantId },
                     include: [

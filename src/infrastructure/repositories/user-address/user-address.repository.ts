@@ -75,14 +75,14 @@ export class UserAddressRepository {
         dto: CreateUserAddressDto,
         trx?: Transaction,
     ): Promise<CreateUserAddressResponse> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         const allowed = this.pickAllowedFromCreate(dto);
         const address = await this.userAddressModel.create(
             {
                 user_id: userId,
                 ...allowed,
                 // Используем дефолтное значение, если country не передано
-                country: allowed.country || 'Россия',
+                country: allowed.country ?? 'Россия',
                 tenant_id: tenantId,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             { transaction: trx },
@@ -94,7 +94,7 @@ export class UserAddressRepository {
         userId: number,
         trx?: Transaction,
     ): Promise<GetUserAddressResponse[]> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.userAddressModel.findAll({
             attributes: [
                 'id',
@@ -122,7 +122,7 @@ export class UserAddressRepository {
         id: number,
         trx?: Transaction,
     ): Promise<GetUserAddressResponse | null> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
 
         return this.userAddressModel.findOne({
             attributes: [
@@ -148,7 +148,7 @@ export class UserAddressRepository {
         dto: UpdateUserAddressDto,
         trx?: Transaction,
     ): Promise<UpdateUserAddressResponse | null> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         const allowed = this.pickAllowedFromUpdate(
             dto,
         ) as Partial<UserAddressModel>;
@@ -158,18 +158,14 @@ export class UserAddressRepository {
             transaction: trx,
         });
         if (!affected) return null;
-        return (await this.findOne(
-            userId,
-            id,
-            trx,
-        )) as UpdateUserAddressResponse | null;
+        return await this.findOne(userId, id, trx);
     }
 
     public async clearDefault(
         userId: number,
         trx?: Transaction,
     ): Promise<void> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         await this.userAddressModel.update(
             { is_default: false },
             {
@@ -184,7 +180,7 @@ export class UserAddressRepository {
         id: number,
         trx?: Transaction,
     ): Promise<UpdateUserAddressResponse | null> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
 
         const [marked] = await this.userAddressModel.update(
             { is_default: true },
@@ -195,11 +191,7 @@ export class UserAddressRepository {
             },
         );
         if (!marked) return null;
-        return (await this.findOne(
-            userId,
-            id,
-            trx,
-        )) as UpdateUserAddressResponse | null;
+        return await this.findOne(userId, id, trx);
     }
 
     public async setDefault(
@@ -216,7 +208,7 @@ export class UserAddressRepository {
         id: number,
         trx?: Transaction,
     ): Promise<number> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
 
         return this.userAddressModel.destroy({
             where: { id, user_id: userId, tenant_id: tenantId },

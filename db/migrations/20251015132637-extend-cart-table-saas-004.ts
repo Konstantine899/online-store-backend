@@ -1,4 +1,5 @@
-import { DataTypes, QueryInterface } from 'sequelize';
+import type { QueryInterface } from 'sequelize';
+import { DataTypes } from 'sequelize';
 
 /**
  * SAAS-004-01: Расширение таблицы cart для SaaS функциональности

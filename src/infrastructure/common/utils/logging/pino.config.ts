@@ -1,4 +1,4 @@
-import { LoggerOptions } from 'pino';
+import type { LoggerOptions } from 'pino';
 import { getConfig } from '@app/infrastructure/config';
 
 /**

@@ -270,7 +270,7 @@ export class AuthService implements IAuthService {
                 tenantId,
             );
 
-        if (!resetToken || !resetToken.isValid()) {
+        if (!resetToken?.isValid()) {
             this.logger.warn(
                 { token: token.substring(0, 8) + '***', tenantId },
                 'Invalid or expired password reset token',
@@ -308,7 +308,7 @@ export class AuthService implements IAuthService {
      * TODO: заменить на реальный email provider (nodemailer)
      */
     private sendPasswordResetEmail(email: string, token: string): void {
-        const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+        const resetLink = `${process.env.FRONTEND_URL ?? 'http://localhost:3000'}/reset-password?token=${token}`;
 
         console.log(`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

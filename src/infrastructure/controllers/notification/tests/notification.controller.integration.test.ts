@@ -7,8 +7,8 @@ import {
 import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
 import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
 import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
-import { INestApplication } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import type { INestApplication } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { TestAppModule } from '../../../../../tests/setup/test-app.module';
 
@@ -1123,7 +1123,7 @@ describe('NotificationController (Integration)', () => {
             const requestEndTime = Date.now();
 
             // Проверяем, что все запросы успешны
-            responses.forEach((response) => {
+            responses.forEach((response: { status: number }) => {
                 expect(response.status).toBe(200);
             });
 

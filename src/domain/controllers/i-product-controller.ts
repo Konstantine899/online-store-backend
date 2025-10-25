@@ -1,9 +1,9 @@
-import {
+import type {
     CreateProductDto,
     SearchDto,
     SortingDto,
 } from '@app/infrastructure/dto';
-import {
+import type {
     CreateProductResponse,
     GetProductResponse,
     UpdateProductResponse,
@@ -11,7 +11,7 @@ import {
     GetListProductV2Response,
     PaginatedResponse,
 } from '@app/infrastructure/responses';
-import { ProductInfo } from '@app/infrastructure/paginate';
+import type { ProductInfo } from '@app/infrastructure/paginate';
 
 export interface IProductController {
     create(

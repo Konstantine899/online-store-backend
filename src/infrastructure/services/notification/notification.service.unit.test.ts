@@ -1,4 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import {
@@ -7,7 +8,7 @@ import {
     NotificationType,
     NotificationStatus,
 } from '@app/domain/models';
-import {
+import type {
     IEmailProvider,
     ISmsProvider,
     ITemplateRenderer,

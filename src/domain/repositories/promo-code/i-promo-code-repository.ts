@@ -1,4 +1,4 @@
-import { PromoCodeModel } from '@app/domain/models';
+import type { PromoCodeModel } from '@app/domain/models';
 
 /**
  * Интерфейс репозитория промокодов

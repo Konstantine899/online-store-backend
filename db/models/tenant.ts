@@ -1,6 +1,7 @@
-import { DataTypes, Model, Sequelize } from 'sequelize';
+import type { Sequelize } from 'sequelize';
+import { DataTypes, Model } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
-import { TenantCreationAttributes, TenantModel } from './types';
+import type { TenantCreationAttributes, TenantModel } from './types';
 
 class Tenant
     extends Model<TenantModel, TenantCreationAttributes>

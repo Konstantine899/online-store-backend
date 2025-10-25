@@ -1,11 +1,11 @@
-import { ForbiddenException, HttpStatus, Injectable } from '@nestjs/common';
+import { IPaymentService } from '@app/domain/services';
 import { MakePaymentDto } from '@app/infrastructure/dto';
-import axios from 'axios';
 import {
     GuestMakePaymentResponse,
     UserMakePaymentResponse,
 } from '@app/infrastructure/responses';
-import { IPaymentService } from '@app/domain/services';
+import { ForbiddenException, HttpStatus, Injectable } from '@nestjs/common';
+import axios from 'axios';
 
 @Injectable()
 export class PaymentService implements IPaymentService {
@@ -28,7 +28,7 @@ export class PaymentService implements IPaymentService {
             // TEST-032: Fix idempotency key to prevent double-charge
             // OLD: Date.now() - всегда разный!
             // NEW: deterministic key based on order
-            const idempotenceKey = `order-${makePaymentDto.orderId || 'unknown'}-payment`;
+            const idempotenceKey = `order-${makePaymentDto.orderId ?? 'unknown'}-payment`;
 
             const { data } = await axios({
                 method: 'POST',

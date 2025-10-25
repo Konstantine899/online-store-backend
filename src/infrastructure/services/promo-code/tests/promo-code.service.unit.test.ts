@@ -1,6 +1,7 @@
-import { PromoCodeModel } from '@app/domain/models';
+import type { PromoCodeModel } from '@app/domain/models';
 import { PromoCodeRepository } from '@app/infrastructure/repositories';
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { PromoCodeService } from '../promo-code.service';
 
 describe('PromoCodeService (Unit)', () => {

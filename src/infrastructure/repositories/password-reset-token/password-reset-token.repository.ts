@@ -28,9 +28,9 @@ export class PasswordResetTokenRepository
             userId,
             token,
             expiresAt,
-            tenantId: tenantId || null,
-            ipAddress: ipAddress || null,
-            userAgent: userAgent || null,
+            tenantId: tenantId ?? null,
+            ipAddress: ipAddress ?? null,
+            userAgent: userAgent ?? null,
             isUsed: false,
             usedAt: null,
         });

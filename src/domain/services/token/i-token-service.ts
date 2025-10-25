@@ -1,6 +1,6 @@
-import { UserModel, RefreshTokenModel, RoleModel } from '@app/domain/models';
-import { IDecodedAccessToken } from '@app/domain/jwt';
-import { Request } from 'express';
+import type { UserModel, RefreshTokenModel, RoleModel } from '@app/domain/models';
+import type { IDecodedAccessToken } from '@app/domain/jwt';
+import type { Request } from 'express';
 
 export interface ITokenService {
     generateAccessToken(user: UserModel): Promise<string>;

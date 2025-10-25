@@ -1,13 +1,14 @@
-import { IDecodedAccessToken } from '@app/domain/jwt';
-import { RoleModel } from '@app/domain/models';
+import type { IDecodedAccessToken } from '@app/domain/jwt';
+import type { RoleModel } from '@app/domain/models';
 import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
-import { TokenService } from '@app/infrastructure/services/token/token.service';
+import type { TokenService } from '@app/infrastructure/services/token/token.service';
+import type {
+    ExecutionContext} from '@nestjs/common';
 import {
-    ExecutionContext,
     ForbiddenException,
     UnauthorizedException,
 } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+import type { Reflector } from '@nestjs/core';
 
 // Типы для тестов
 interface TestRequest {

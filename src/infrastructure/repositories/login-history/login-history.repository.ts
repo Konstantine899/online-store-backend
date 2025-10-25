@@ -39,16 +39,16 @@ export class LoginHistoryRepository implements ILoginHistoryRepository {
     async createLoginRecord(
         data: ILoginHistoryCreationAttributes,
     ): Promise<LoginHistoryModel> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
-        
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
+
         // Создаем запись без tenant_id сначала, чтобы избежать проблем с FK
         const loginRecord = await this.loginHistoryModel.create({
             userId: data.userId,
-            ipAddress: data.ipAddress || null,
-            userAgent: data.userAgent || null,
+            ipAddress: data.ipAddress ?? null,
+            userAgent: data.userAgent ?? null,
             success: data.success ?? true,
-            failureReason: data.failureReason || null,
-            loginAt: data.loginAt || new Date(),
+            failureReason: data.failureReason ?? null,
+            loginAt: data.loginAt ?? new Date(),
         });
 
         // Затем обновляем tenant_id
@@ -62,7 +62,7 @@ export class LoginHistoryRepository implements ILoginHistoryRepository {
         limit = 10,
         offset = 0,
     ): Promise<LoginHistoryModel[]> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
 
         return this.loginHistoryModel.findAll({
             where: { userId, tenant_id: tenantId },
@@ -76,7 +76,7 @@ export class LoginHistoryRepository implements ILoginHistoryRepository {
         ipAddress: string,
         hours = 24,
     ): Promise<LoginHistoryModel[]> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
 
         const since = new Date();
         since.setHours(since.getHours() - hours);
@@ -97,7 +97,7 @@ export class LoginHistoryRepository implements ILoginHistoryRepository {
         userId: number,
         hours = 24,
     ): Promise<LoginHistoryModel[]> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         const since = new Date();
         since.setHours(since.getHours() - hours);
 
@@ -115,7 +115,7 @@ export class LoginHistoryRepository implements ILoginHistoryRepository {
     }
 
     async countUserLogins(userId: number, success?: boolean): Promise<number> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         const where: { userId: number; success?: boolean; tenant_id: number } =
             { userId, tenant_id: tenantId };
         if (success !== undefined) {
@@ -126,7 +126,7 @@ export class LoginHistoryRepository implements ILoginHistoryRepository {
     }
 
     async deleteOldLoginHistory(daysToKeep = 90): Promise<number> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
 
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);

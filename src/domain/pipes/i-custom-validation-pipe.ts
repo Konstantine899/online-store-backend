@@ -1,4 +1,4 @@
-import {
+import type {
     TLogin,
     TRegistration,
     IRefreshDto,
@@ -14,8 +14,8 @@ import {
     ICreateUserDto,
     IRemoveRoleDto,
 } from '@app/domain/dto';
-import { HttpStatus } from '@nestjs/common';
-import { IOrderDto, ISignedCookiesDto, IUserOrderDto } from '@app/domain/dto';
+import type { HttpStatus } from '@nestjs/common';
+import type { IOrderDto, ISignedCookiesDto, IUserOrderDto } from '@app/domain/dto';
 
 type TAuthValue = TRegistration | TLogin | IRefreshDto;
 type TBrandValue = ICreateBrand;

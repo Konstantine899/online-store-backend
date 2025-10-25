@@ -1,4 +1,5 @@
-import { DataTypes, QueryInterface } from 'sequelize';
+import type { QueryInterface } from 'sequelize';
+import { DataTypes } from 'sequelize';
 
 /**
  * SAAS-004-06: Создание таблицы promo_codes для системы промокодов

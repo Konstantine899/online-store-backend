@@ -1,8 +1,8 @@
 import { JwtStrategy } from '@app/infrastructure/common/strategies/jwt.strategy';
-import { UserService } from '@app/infrastructure/services';
-import { CheckResponse } from '@app/infrastructure/responses';
-import { IAccessTokenSubject } from '@app/domain/jwt';
-import { RoleModel } from '@app/domain/models';
+import type { UserService } from '@app/infrastructure/services';
+import type { CheckResponse } from '@app/infrastructure/responses';
+import type { IAccessTokenSubject } from '@app/domain/jwt';
+import type { RoleModel } from '@app/domain/models';
 
 // Helper для создания mock пользователя (DRY)
 const createMockUser = (

@@ -1,11 +1,11 @@
-import { CreateProductDto } from '@app/infrastructure/dto';
-import {
+import type { CreateProductDto } from '@app/infrastructure/dto';
+import type {
     CreateProductResponse,
     GetProductResponse,
     UpdateProductResponse,
 } from '@app/infrastructure/responses';
-import { ProductModel } from '@app/domain/models';
-import { ProductInfo } from '@app/infrastructure/paginate';
+import type { ProductModel } from '@app/domain/models';
+import type { ProductInfo } from '@app/infrastructure/paginate';
 
 export interface IProductRepository {
     create(

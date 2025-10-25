@@ -1,25 +1,25 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import * as process from 'process';
-import { CustomValidationPipe } from '@app/infrastructure/pipes';
 import {
-    SequelizeUniqueConstraintExceptionFilter,
-    SequelizeDatabaseErrorExceptionFilter,
     CustomNotFoundExceptionFilter,
+    SequelizeDatabaseErrorExceptionFilter,
+    SequelizeUniqueConstraintExceptionFilter,
 } from '@app/infrastructure/exceptions';
+import { CustomValidationPipe } from '@app/infrastructure/pipes';
+import { NestFactory } from '@nestjs/core';
+import * as process from 'process';
+import { AppModule } from './app.module';
 
-import * as cookieParser from 'cookie-parser';
-import { swaggerConfig } from '@app/infrastructure/config/swagger';
-import { NestExpressApplication } from '@nestjs/platform-express';
-import * as path from 'path';
-import helmet from 'helmet';
-import pinoHttp from 'pino-http';
 import { CorrelationIdMiddleware } from '@app/infrastructure/common/middleware/correlation-id.middleware';
-import { getConfig } from '@app/infrastructure/config';
-import { IncomingMessage } from 'http';
-import { randomUUID } from 'crypto';
-import { Request, Response, NextFunction } from 'express';
 import { createLogger } from '@app/infrastructure/common/utils/logging';
+import { getConfig } from '@app/infrastructure/config';
+import { swaggerConfig } from '@app/infrastructure/config/swagger';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import * as cookieParser from 'cookie-parser';
+import { randomUUID } from 'crypto';
+import type { NextFunction, Request, Response } from 'express';
+import helmet from 'helmet';
+import type { IncomingMessage } from 'http';
+import * as path from 'path';
+import pinoHttp from 'pino-http';
 
 type ReqWithCorrelation = IncomingMessage & {
     correlationId?: string;
@@ -136,8 +136,8 @@ async function bootstrap(): Promise<void> {
             }
 
             const ip =
-                (req.headers['x-forwarded-for'] as string) ||
-                req.socket.remoteAddress ||
+                (req.headers['x-forwarded-for'] as string) ??
+                req.socket.remoteAddress ??
                 'unknown';
             let ctr = perIpCounters.get(ip);
             if (!ctr) {
@@ -260,7 +260,7 @@ async function bootstrap(): Promise<void> {
                     const url = (req as unknown as { url?: string }).url;
                     // Проверка через Set (O(1)) + проверка префикса для static
                     return !!(
-                        (url && IGNORED_LOG_PATHS.has(url)) ||
+                        (url && IGNORED_LOG_PATHS.has(url)) ??
                         url?.startsWith('/online-store/static/')
                     );
                 },

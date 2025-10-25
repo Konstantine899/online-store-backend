@@ -379,7 +379,7 @@ export class UserService implements IUserService {
 
             // Кэш пользователя будет обновлен автоматически
 
-            return user as UserModel;
+            return user;
         } catch (error: unknown) {
             this.handleSequelizeError(error, 'обновление телефона');
             throw error;

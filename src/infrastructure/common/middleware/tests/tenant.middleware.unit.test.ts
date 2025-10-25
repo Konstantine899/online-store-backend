@@ -1,8 +1,9 @@
 import { TenantModel } from '@app/domain/models/tenant.model';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { getModelToken } from '@nestjs/sequelize';
-import { Test, TestingModule } from '@nestjs/testing';
-import { NextFunction, Request, Response } from 'express';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import type { NextFunction, Request, Response } from 'express';
 import { TenantContext } from '../../context';
 import { TenantMiddleware } from '../tenant.middleware';
 

@@ -1,4 +1,5 @@
-import { QueryInterface, DataTypes } from 'sequelize';
+import type { QueryInterface} from 'sequelize';
+import { DataTypes } from 'sequelize';
 
 export async function up(queryInterface: QueryInterface): Promise<void> {
     // Boolean flags

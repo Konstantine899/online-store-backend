@@ -1,10 +1,5 @@
-import { INestApplication } from '@nestjs/common';
+import { type INestApplication } from '@nestjs/common';
 import request from 'supertest';
-
-// Хелпер для создания запросов с tenant-id заголовком
-const createRequest = (app: INestApplication) => {
-    return request(app.getHttpServer()).set('x-tenant-id', '1');
-};
 
 export async function authLoginAs(
     app: INestApplication,
@@ -15,7 +10,7 @@ export async function authLoginAs(
             ? { email: 'admin@example.com', password: 'Password123!' }
             : { email: 'user@example.com', password: 'Password123!' };
 
-    const res = await createRequest(app)
+    const res = await request(app.getHttpServer())
         .post('/online-store/auth/login')
         .send(creds);
 

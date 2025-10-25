@@ -121,9 +121,7 @@ export class NotificationTemplateModel
 
     private static setCache<T>(key: string, value: T): void {
         if (this.cache.size >= this.CACHE_MAX_ENTRIES) {
-            const firstKey = this.cache.keys().next().value as
-                | string
-                | undefined;
+            const firstKey = this.cache.keys().next().value;
             if (firstKey !== undefined) {
                 this.cache.delete(firstKey);
             }

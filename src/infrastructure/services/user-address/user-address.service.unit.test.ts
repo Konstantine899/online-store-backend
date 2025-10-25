@@ -1,15 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
-import { Transaction } from 'sequelize';
+import type { Transaction } from 'sequelize';
 
 // Внутренние импорты
 import { UserAddressService } from './user-address.service';
 import { UserAddressRepository } from '@app/infrastructure/repositories';
-import {
+import type {
     CreateUserAddressDto,
     UpdateUserAddressDto,
 } from '@app/infrastructure/dto';
-import {
+import type {
     CreateUserAddressResponse,
     GetUserAddressResponse,
     UpdateUserAddressResponse,
@@ -97,7 +98,7 @@ describe('UserAddressService', () => {
         service = cachedModule.get(UserAddressService);
         repo = cachedModule.get(
             UserAddressRepository,
-        ) as MockedUserAddressRepository;
+        );
 
         // Сброс всех моков
         jest.clearAllMocks();

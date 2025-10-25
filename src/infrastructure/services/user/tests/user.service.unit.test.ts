@@ -1,12 +1,12 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { UserService } from '@app/infrastructure/services/user/user.service';
-import {
+import type {
     RefreshTokenRepository,
     UserRepository,
 } from '@app/infrastructure/repositories';
-import { UserModel } from '@app/domain/models';
-import { RoleService } from '@app/infrastructure/services/role/role.service';
-import { LoginHistoryService } from '@app/infrastructure/services/login-history/login-history.service';
+import type { UserModel } from '@app/domain/models';
+import type { RoleService } from '@app/infrastructure/services/role/role.service';
+import type { LoginHistoryService } from '@app/infrastructure/services/login-history/login-history.service';
 
 jest.mock('bcrypt', () => ({
     compare: jest.fn(async (a: string, b: string) => a === b),
@@ -68,7 +68,7 @@ describe('UserService', () => {
 
         it('maps SequelizeValidationError to BadRequestException', async () => {
             const err = new Error('validation');
-            (err as Error).name = 'SequelizeValidationError';
+            (err).name = 'SequelizeValidationError';
             (userRepository.updatePhone as jest.Mock).mockRejectedValue(err);
             await expect(service.updatePhone(1, 'bad')).rejects.toBeInstanceOf(
                 BadRequestException,

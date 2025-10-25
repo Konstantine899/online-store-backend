@@ -1,10 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
 import {
-    IEmailProvider,
+    EmailAttachment,
     EmailMessage,
     EmailSendResult,
-    EmailAttachment,
+    IEmailProvider,
 } from '@app/domain/services';
+import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class EmailProviderService implements IEmailProvider {
@@ -47,7 +47,7 @@ export class EmailProviderService implements IEmailProvider {
             this.logger.log(
                 `Mock email sent to ${message.to}: ${message.subject}`,
             );
-            this.logger.debug(`Email content: ${message.html || message.text}`);
+            this.logger.debug(`Email content: ${message.html ?? message.text}`);
 
             // Имитация задержки отправки
             await this.delay(100);

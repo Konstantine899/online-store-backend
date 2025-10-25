@@ -1,4 +1,4 @@
-import { DataTypes, QueryInterface } from 'sequelize';
+import type { DataTypes, QueryInterface } from 'sequelize';
 
 interface Migration {
     up(

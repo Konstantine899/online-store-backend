@@ -1,4 +1,4 @@
-import { UserModel, RefreshTokenModel } from '@app/domain/models';
+import type { UserModel, RefreshTokenModel } from '@app/domain/models';
 
 export interface IRefreshTokenRepository {
     createRefreshToken(

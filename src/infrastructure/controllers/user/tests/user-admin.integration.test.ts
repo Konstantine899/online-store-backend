@@ -1,5 +1,5 @@
-import { UpdateUserDto } from '@app/infrastructure/dto';
-import { INestApplication } from '@nestjs/common';
+import type { UpdateUserDto } from '@app/infrastructure/dto';
+import type { INestApplication } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
@@ -181,7 +181,7 @@ describe('User Admin Integration Tests', () => {
                 .send({ email: uniqueEmail, password: 'StrongPass123!' })
                 .expect(201);
 
-            const newUserId = createRes.body?.data?.id || createRes.body?.id;
+            const newUserId = createRes.body?.data?.id ?? createRes.body?.id;
             expect(newUserId).toBeTruthy();
 
             const delRes = await request(app.getHttpServer())

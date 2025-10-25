@@ -15,8 +15,9 @@ process.env.TEST_MYSQL_HOST = '127.0.0.1';
 process.env.TEST_MYSQL_PORT = '3308';
 process.env.TEST_DIALECT = 'mysql';
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../../../app.module';
 import { Sequelize } from 'sequelize-typescript';

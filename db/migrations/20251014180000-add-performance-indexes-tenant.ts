@@ -1,4 +1,4 @@
-import { QueryInterface } from 'sequelize';
+import type { QueryInterface } from 'sequelize';
 
 /**
  * SAAS-001 Performance Optimization: Add missing indexes for tenant-scoped queries

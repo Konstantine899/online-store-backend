@@ -1,9 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
 import {
     ITemplateRenderer,
-    TemplateVariables,
     RenderResult,
+    TemplateVariables,
 } from '@app/domain/services';
+import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class TemplateRendererService implements ITemplateRenderer {
@@ -248,9 +248,9 @@ export class TemplateRendererService implements ITemplateRenderer {
         const errors: string[] = [];
 
         // Используем предкомпилированные регулярные выражения
-        const openBraces = (template.match(this.openBracesPattern) || [])
+        const openBraces = (template.match(this.openBracesPattern) ?? [])
             .length;
-        const closeBraces = (template.match(this.closeBracesPattern) || [])
+        const closeBraces = (template.match(this.closeBracesPattern) ?? [])
             .length;
 
         if (openBraces !== closeBraces) {

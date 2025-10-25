@@ -25,9 +25,7 @@ import { SignOptions, TokenExpiredError } from 'jsonwebtoken';
 // Ленивая инициализация конфигурации/секретов — чтобы не требовать env при импорте
 let CACHED_ACCESS_SECRET: string | undefined;
 function getAccessSecret(): string {
-    if (!CACHED_ACCESS_SECRET) {
-        CACHED_ACCESS_SECRET = JwtSettings().jwtSecretKey;
-    }
+    CACHED_ACCESS_SECRET ??= JwtSettings().jwtSecretKey;
     return CACHED_ACCESS_SECRET;
 }
 

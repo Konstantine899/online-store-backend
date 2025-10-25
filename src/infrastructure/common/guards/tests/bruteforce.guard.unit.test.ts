@@ -2,15 +2,16 @@ import {
     BruteforceGuard,
     parseWindowToMs,
 } from '@app/infrastructure/common/guards/bruteforce.guard';
-import { ExecutionContext } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import {
-    ThrottlerException,
+import type { ExecutionContext } from '@nestjs/common';
+import type { Reflector } from '@nestjs/core';
+import type {
     ThrottlerModuleOptions,
-    ThrottlerStorage,
+    ThrottlerStorage} from '@nestjs/throttler';
+import {
+    ThrottlerException
 } from '@nestjs/throttler';
-import { Request } from 'express';
-import { Socket } from 'net';
+import type { Request } from 'express';
+import type { Socket } from 'net';
 
 // Расширяем Request для тестов
 interface TestRequest extends Omit<Partial<Request>, 'socket'> {
@@ -24,13 +25,13 @@ interface HandleRequestContext {
 }
 
 // Хелперы для доступа к приватным методам (для тестирования)
-type PrivateGuard = {
+interface PrivateGuard {
     handleRequest: (context: HandleRequestContext) => Promise<boolean>;
     extractClientIP: (req: Request) => string;
     isValidIP: (ip: string) => boolean;
     maskIP: (ip: string) => string;
     logger: { warn: jest.Mock };
-};
+}
 
 // Helper функции для сокращения кода (DRY)
 const asPrivate = (guard: BruteforceGuard): PrivateGuard =>
@@ -613,10 +614,10 @@ describe('BruteforceGuard (unit)', () => {
             const timestampAfterFirst = (BruteforceGuard as any)
                 .configCacheTime;
 
-            delete (mockRequest as TestRequest).__bruteforceProcessed;
+            delete (mockRequest).__bruteforceProcessed;
             await asPrivate(guard).handleRequest({ context: refreshContext });
 
-            delete (mockRequest as TestRequest).__bruteforceProcessed;
+            delete (mockRequest).__bruteforceProcessed;
             await asPrivate(guard).handleRequest({ context: regContext });
 
             // Timestamp не должен измениться (кэш используется)

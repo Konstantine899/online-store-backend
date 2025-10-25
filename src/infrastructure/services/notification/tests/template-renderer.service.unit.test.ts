@@ -1,6 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { TemplateRendererService } from '../template-renderer.service';
-import { TemplateVariables } from '@app/domain/services';
+import type { TemplateVariables } from '@app/domain/services';
 
 describe('TemplateRendererService', () => {
     let service: TemplateRendererService;

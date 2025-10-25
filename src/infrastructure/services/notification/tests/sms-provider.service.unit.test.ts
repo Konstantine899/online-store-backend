@@ -1,6 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { SmsProviderService } from '../sms-provider.service';
-import { SmsMessage } from '@app/domain/services';
+import type { SmsMessage } from '@app/domain/services';
 
 describe('SmsProviderService', () => {
     let service: SmsProviderService;

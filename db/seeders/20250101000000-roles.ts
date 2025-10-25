@@ -1,4 +1,4 @@
-import { QueryInterface } from 'sequelize';
+import type { QueryInterface } from 'sequelize';
 
 interface Seeder {
     up(queryInterface: QueryInterface): Promise<void>;

@@ -22,7 +22,7 @@ import User from './user';
 import UserAddress from './user-address';
 import UserRole from './user-role';
 
-const env = process.env.NODE_ENV || 'development';
+const env = process.env.NODE_ENV ?? 'development';
 const dbConfig = config[env as keyof typeof config];
 
 interface Database {

@@ -1,5 +1,5 @@
-import { CreateRoleDto } from '@app/infrastructure/dto';
-import {
+import type { CreateRoleDto } from '@app/infrastructure/dto';
+import type {
     CreateRoleResponse,
     GetRoleResponse,
     GetListRoleResponse,

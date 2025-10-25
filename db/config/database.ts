@@ -1,6 +1,6 @@
-import * as path from 'path';
 import * as dotenv from 'dotenv';
-import { Dialect } from 'sequelize';
+import * as path from 'path';
+import type { Dialect } from 'sequelize';
 
 // Load environment variables from .migrate.env
 dotenv.config({ path: path.join(__dirname, '../../.migrate.env') });
@@ -47,27 +47,27 @@ const {
 
 const config: Config = {
     development: {
-        username: DEV_MYSQL_USER || '',
-        password: DEV_MYSQL_PASSWORD || '',
-        database: DEV_MYSQL_DATABASE || '',
-        host: DEV_MYSQL_HOST || 'localhost',
-        port: parseInt(DEV_MYSQL_PORT || '3306', 10),
-        dialect: (DEV_DIALECT as Dialect) || 'mysql',
+        username: DEV_MYSQL_USER ?? '',
+        password: DEV_MYSQL_PASSWORD ?? '',
+        database: DEV_MYSQL_DATABASE ?? '',
+        host: DEV_MYSQL_HOST ?? 'localhost',
+        port: parseInt(DEV_MYSQL_PORT ?? '3306', 10),
+        dialect: (DEV_DIALECT as Dialect) ?? 'mysql',
     },
     test: {
-        username: TEST_MYSQL_USER || '',
-        password: TEST_MYSQL_PASSWORD || '',
-        database: TEST_MYSQL_DATABASE || '',
-        host: TEST_MYSQL_HOST || 'localhost',
-        port: parseInt(TEST_MYSQL_PORT || '3306', 10),
+        username: TEST_MYSQL_USER ?? '',
+        password: TEST_MYSQL_PASSWORD ?? '',
+        database: TEST_MYSQL_DATABASE ?? '',
+        host: TEST_MYSQL_HOST ?? 'localhost',
+        port: parseInt(TEST_MYSQL_PORT ?? '3306', 10),
         dialect: (TEST_DIALECT as Dialect) || 'mysql',
     },
     production: {
-        username: PROD_MYSQL_USER || '',
-        password: PROD_MYSQL_PASSWORD || '',
-        database: PROD_MYSQL_DATABASE || '',
-        host: PROD_MYSQL_HOST || 'localhost',
-        port: parseInt(PROD_MYSQL_PORT || '3306', 10),
+        username: PROD_MYSQL_USER ?? '',
+        password: PROD_MYSQL_PASSWORD ?? '',
+        database: PROD_MYSQL_DATABASE ?? '',
+        host: PROD_MYSQL_HOST ?? 'localhost',
+        port: parseInt(PROD_MYSQL_PORT ?? '3306', 10),
         dialect: (PROD_DIALECT as Dialect) || 'mysql',
     },
 };

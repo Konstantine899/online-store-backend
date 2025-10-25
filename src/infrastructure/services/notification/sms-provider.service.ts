@@ -1,10 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
 import {
     ISmsProvider,
+    SmsDeliveryReport,
     SmsMessage,
     SmsSendResult,
-    SmsDeliveryReport,
 } from '@app/domain/services';
+import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class SmsProviderService implements ISmsProvider {
@@ -165,7 +165,7 @@ export class SmsProviderService implements ISmsProvider {
             this.phoneValidationCache.set(phone, false);
             return false;
         }
-        if ((phone.match(/\+/g) || []).length > 1) {
+        if ((phone.match(/\+/g) ?? []).length > 1) {
             this.phoneValidationCache.set(phone, false);
             return false;
         }
@@ -199,7 +199,7 @@ export class SmsProviderService implements ISmsProvider {
         // - 10-15 цифр после знака '+'
         const hasSinglePlus =
             phone.startsWith('+') &&
-            phone.indexOf('+') === 0 &&
+            phone.startsWith('+') &&
             phone.lastIndexOf('+') === 0;
         const onlyPlusAndDigits = /^\+\d+$/.test(phone);
         const isValidInternational =
@@ -307,7 +307,7 @@ export class SmsProviderService implements ISmsProvider {
         limit: number = 100,
     ): Promise<SmsSendResult[]> {
         this.logger.debug(
-            `Getting SMS history for phone: ${phone || 'all'}, limit: ${limit}`,
+            `Getting SMS history for phone: ${phone ?? 'all'}, limit: ${limit}`,
         );
 
         // Mock история SMS

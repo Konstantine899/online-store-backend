@@ -1,4 +1,5 @@
-import { HttpStatus, INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { TestDataFactory } from '../../../../../tests/utils';
@@ -66,7 +67,7 @@ describe('User Addresses Integration Tests', () => {
                 })
                 .expect(HttpStatus.CREATED);
 
-            const created = createRes.body.data || createRes.body;
+            const created = createRes.body.data ?? createRes.body;
             expect(created).toHaveProperty('id');
             const id = created.id;
 
@@ -75,7 +76,7 @@ describe('User Addresses Integration Tests', () => {
                 .get('/online-store/user-addresses')
                 .set('Authorization', `Bearer ${token}`)
                 .expect(HttpStatus.OK);
-            const list = listRes.body.data || listRes.body;
+            const list = listRes.body.data ?? listRes.body;
             expect(Array.isArray(list)).toBe(true);
 
             // Get one
@@ -83,7 +84,7 @@ describe('User Addresses Integration Tests', () => {
                 .get(`/online-store/user-addresses/${id}`)
                 .set('Authorization', `Bearer ${token}`)
                 .expect(HttpStatus.OK);
-            const one = oneRes.body.data || oneRes.body;
+            const one = oneRes.body.data ?? oneRes.body;
             expect(one.id).toBe(id);
 
             // Update
@@ -92,7 +93,7 @@ describe('User Addresses Integration Tests', () => {
                 .set('Authorization', `Bearer ${token}`)
                 .send({ title: 'Квартира', is_default: true })
                 .expect(HttpStatus.OK);
-            const updated = updateRes.body.data || updateRes.body;
+            const updated = updateRes.body.data ?? updateRes.body;
             expect(updated.title).toBe('Квартира');
             expect(updated.is_default).toBe(true);
 
@@ -101,7 +102,7 @@ describe('User Addresses Integration Tests', () => {
                 .patch(`/online-store/user-addresses/${id}/set-default`)
                 .set('Authorization', `Bearer ${token}`)
                 .expect(HttpStatus.OK);
-            const setDefault = setDefaultRes.body.data || setDefaultRes.body;
+            const setDefault = setDefaultRes.body.data ?? setDefaultRes.body;
             expect(setDefault.id).toBe(id);
             expect(setDefault.is_default).toBe(true);
 
@@ -202,7 +203,7 @@ describe('User Addresses Integration Tests', () => {
                     is_default: true,
                 })
                 .expect(HttpStatus.CREATED);
-            const id1 = (a1.body.data || a1.body).id;
+            const id1 = (a1.body.data ?? a1.body).id;
 
             // Create second default -> should unset first
             const a2 = await http
@@ -217,14 +218,14 @@ describe('User Addresses Integration Tests', () => {
                     is_default: true,
                 })
                 .expect(HttpStatus.CREATED);
-            const id2 = (a2.body.data || a2.body).id;
+            const id2 = (a2.body.data ?? a2.body).id;
 
             // List should return default first
             const listRes = await http
                 .get('/online-store/user-addresses')
                 .set('Authorization', `Bearer ${token}`)
                 .expect(HttpStatus.OK);
-            const list = listRes.body.data || listRes.body;
+            const list = listRes.body.data ?? listRes.body;
             expect(list[0].id).toBe(id2);
             expect(
                 list.find(

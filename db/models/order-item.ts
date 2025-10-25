@@ -1,13 +1,14 @@
-import {
-    Model,
-    DataTypes,
+import type {
     Sequelize,
     ModelStatic,
     ModelAttributes,
-    Optional,
+    Optional} from 'sequelize';
+import {
+    Model,
+    DataTypes
 } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
-import { OrderItemModel, OrderItemCreationAttributes } from './types';
+import type { OrderItemModel, OrderItemCreationAttributes } from './types';
 
 class OrderItem
     extends Model<OrderItemModel, OrderItemCreationAttributes>

@@ -1,12 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { HttpStatus, NotFoundException } from '@nestjs/common';
 import { CartService } from './cart.service';
 import {
     CartRepository,
     ProductRepository,
 } from '@app/infrastructure/repositories';
-import { Request, Response } from 'express';
-import { CartModel, ProductModel } from '@app/domain/models';
+import type { Request, Response } from 'express';
+import type { CartModel, ProductModel } from '@app/domain/models';
 
 // Mock фабрики
 const createMockProduct = (

@@ -1,6 +1,7 @@
-import { Model, DataTypes, Sequelize } from 'sequelize';
+import type { Sequelize } from 'sequelize';
+import { Model, DataTypes } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
-import { OrderModel, OrderCreationAttributes } from './types';
+import type { OrderModel, OrderCreationAttributes } from './types';
 
 class Order
     extends Model<OrderModel, OrderCreationAttributes>

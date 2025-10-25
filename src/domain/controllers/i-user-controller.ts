@@ -1,9 +1,9 @@
-import {
+import type {
     CreateUserDto,
     AddRoleDto,
     RemoveRoleDto,
 } from '@app/infrastructure/dto';
-import {
+import type {
     CreateUserResponse,
     GetUserResponse,
     UpdateUserResponse,

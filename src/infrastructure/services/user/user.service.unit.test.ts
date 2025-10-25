@@ -1,5 +1,6 @@
-import { RoleModel, UserModel } from '@app/domain/models';
-import {
+import type { RoleModel} from '@app/domain/models';
+import { UserModel } from '@app/domain/models';
+import type {
     AddRoleDto,
     CreateUserDto,
     RemoveRoleDto,
@@ -9,7 +10,7 @@ import {
     RefreshTokenRepository,
     UserRepository,
 } from '@app/infrastructure/repositories';
-import {
+import type {
     GetUserResponse,
     UpdateUserResponse,
 } from '@app/infrastructure/responses';
@@ -20,7 +21,8 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { getModelToken } from '@nestjs/sequelize';
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { compare } from 'bcrypt';
 import { LoginHistoryService } from '../login-history/login-history.service';
 import { RoleService } from '../role/role.service';
@@ -948,7 +950,7 @@ describe('UserService', () => {
     describe('updatePassword (admin force update)', () => {
         it('успешно обновляет пароль пользователя (admin)', async () => {
             userRepository.findUserByPkId.mockResolvedValue(
-                mockUser as UserModel,
+                mockUser,
             );
 
             await service.updatePassword(1, 'hashed:NewSecurePass123!');

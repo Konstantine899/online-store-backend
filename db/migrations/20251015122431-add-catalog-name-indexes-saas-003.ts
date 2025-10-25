@@ -1,4 +1,4 @@
-import { QueryInterface } from 'sequelize';
+import type { QueryInterface } from 'sequelize';
 
 /**
  * SAAS-003 Performance Optimization: Add composite indexes for name sorting

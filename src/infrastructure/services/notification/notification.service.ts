@@ -1,27 +1,27 @@
 import {
-    Injectable,
-    NotFoundException,
-    BadRequestException,
-    Logger,
-    Inject,
-} from '@nestjs/common';
-import { Op } from 'sequelize';
-import {
     NotificationModel,
+    NotificationStatus,
     NotificationTemplateModel,
     NotificationType,
-    NotificationStatus,
 } from '@app/domain/models';
 import {
-    INotificationService,
     CreateNotificationDto,
-    UpdateNotificationDto,
+    IEmailProvider,
+    INotificationService,
+    ISmsProvider,
+    ITemplateRenderer,
     NotificationFilters,
     NotificationStatistics,
+    UpdateNotificationDto,
 } from '@app/domain/services';
-import { IEmailProvider } from '@app/domain/services';
-import { ISmsProvider } from '@app/domain/services';
-import { ITemplateRenderer } from '@app/domain/services';
+import {
+    BadRequestException,
+    Inject,
+    Injectable,
+    Logger,
+    NotFoundException,
+} from '@nestjs/common';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class NotificationService implements INotificationService {
@@ -60,7 +60,7 @@ export class NotificationService implements INotificationService {
                 templateName: createDto.templateName,
                 title: createDto.title,
                 message: createDto.message,
-                data: createDto.data || {},
+                data: createDto.data ?? {},
                 status: NotificationStatus.PENDING,
                 isRead: false,
                 isArchived: false,
@@ -277,7 +277,7 @@ export class NotificationService implements INotificationService {
         type?: NotificationType,
     ): Promise<NotificationStatistics> {
         // Создаем ключ кэша
-        const cacheKey = `${userId || 'all'}_${period || 'all'}_${type || 'all'}`;
+        const cacheKey = `${userId ?? 'all'}_${period ?? 'all'}_${type ?? 'all'}`;
 
         // Проверяем кэш
         const cached = this.statisticsCache.get(cacheKey);
@@ -418,7 +418,7 @@ export class NotificationService implements INotificationService {
         isActive?: boolean;
     }): Promise<NotificationTemplateModel[]> {
         // Создаем ключ кэша
-        const cacheKey = `${filters?.type || 'all'}_${filters?.isActive ?? 'all'}`;
+        const cacheKey = `${filters?.type ?? 'all'}_${filters?.isActive ?? 'all'}`;
 
         // Проверяем кэш
         const cached = this.templatesCache.get(cacheKey);

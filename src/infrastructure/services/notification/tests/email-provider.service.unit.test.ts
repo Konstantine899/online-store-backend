@@ -1,6 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { EmailProviderService } from '../email-provider.service';
-import { EmailMessage, EmailAttachment } from '@app/domain/services';
+import type { EmailMessage, EmailAttachment } from '@app/domain/services';
 
 describe('EmailProviderService', () => {
     let service: EmailProviderService;

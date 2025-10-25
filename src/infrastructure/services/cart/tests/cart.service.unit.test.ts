@@ -1,4 +1,5 @@
-import { CartModel, CartProductModel, ProductModel } from '@app/domain/models';
+import type { ProductModel } from '@app/domain/models';
+import { CartModel, CartProductModel } from '@app/domain/models';
 import { CART_STATUS } from '@app/domain/models/constants/cart.constants';
 import { TenantContext } from '@app/infrastructure/common/context';
 import {
@@ -7,8 +8,9 @@ import {
     PromoCodeRepository,
 } from '@app/infrastructure/repositories';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
-import { Request, Response } from 'express';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import type { Request, Response } from 'express';
 import { CartService } from '../cart.service';
 // Константы для тестов
 const TEST_PRODUCT_PRICE = 1000; // Цена тестового товара в копейках
@@ -94,8 +96,8 @@ describe('CartService (SAAS-004-03)', () => {
                     id: 1,
                     save: jest.fn().mockResolvedValue(undefined),
                     destroy: jest.fn().mockResolvedValue(undefined),
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                }) as any,
+                     
+                }),
         );
         jest.spyOn(CartProductModel, 'destroy').mockResolvedValue(1);
 

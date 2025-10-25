@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { setupTestApp } from '../../../../tests/setup/app';
 import { TestDataFactory } from '../../../../tests/utils';
 

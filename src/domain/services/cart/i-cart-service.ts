@@ -1,5 +1,5 @@
-import { CartModel } from '@app/domain/models';
-import {
+import type { CartModel } from '@app/domain/models';
+import type {
     AppendToCartResponse,
     CartResponse,
     ClearCartResponse,
@@ -7,7 +7,7 @@ import {
     IncrementResponse,
     RemoveProductFromCartResponse,
 } from '@app/infrastructure/responses';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 
 export interface ICartAnalytics {
     totalCarts: number; // Всего корзин

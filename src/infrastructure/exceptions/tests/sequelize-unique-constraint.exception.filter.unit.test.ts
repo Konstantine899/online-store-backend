@@ -1,5 +1,7 @@
-import { ArgumentsHost, HttpStatus } from '@nestjs/common';
-import { UniqueConstraintError, ValidationErrorItem } from 'sequelize';
+import type { ArgumentsHost} from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
+import type { ValidationErrorItem } from 'sequelize';
+import { UniqueConstraintError } from 'sequelize';
 import { SequelizeUniqueConstraintExceptionFilter } from '../sequelize-unique-constraint.exception.filter';
 
 /**

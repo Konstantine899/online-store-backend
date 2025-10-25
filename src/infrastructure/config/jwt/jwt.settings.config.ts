@@ -1,4 +1,4 @@
-import { IJwtSettings } from '@app/domain/jwt';
+import type { IJwtSettings } from '@app/domain/jwt';
 import { getConfig } from '@app/infrastructure/config';
 
 // Ленивая инициализация чтобы не требовать env до первого вызова

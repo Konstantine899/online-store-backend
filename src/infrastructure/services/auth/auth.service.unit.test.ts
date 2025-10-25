@@ -1,10 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 import { TokenService } from '../token/token.service';
 import { PasswordResetTokenRepository } from '@app/infrastructure/repositories/password-reset-token/password-reset-token.repository';
-import { CreateUserDto } from '@app/infrastructure/dto';
-import { UserModel } from '@app/domain/models';
+import type { CreateUserDto } from '@app/infrastructure/dto';
+import type { UserModel } from '@app/domain/models';
 import {
     BadRequestException,
     HttpStatus,
@@ -277,8 +278,8 @@ describe('AuthService', () => {
             tokenService.removeRefreshToken.mockResolvedValue(mockPayload.jti);
 
             // Act
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const result = await service.logout(refreshDto, mockRequest as any);
+             
+            const result = await service.logout(refreshDto, mockRequest);
 
             // Assert
             expect(result).toEqual({
@@ -292,8 +293,8 @@ describe('AuthService', () => {
                 mockPayload.jti,
                 mockPayload.sub,
             );
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            expect((mockRequest as any).headers.authorization).toBeUndefined();
+             
+            expect((mockRequest).headers.authorization).toBeUndefined();
         });
 
         it('должен пробросить ошибку если TokenService.decodeRefreshToken выбрасывает исключение', async () => {

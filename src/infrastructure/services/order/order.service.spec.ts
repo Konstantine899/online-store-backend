@@ -1,18 +1,19 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { HttpStatus, NotFoundException } from '@nestjs/common';
 import { OrderService } from './order.service';
-import { OrderDto } from '@app/infrastructure/dto';
+import type { OrderDto } from '@app/infrastructure/dto';
 import {
     CartRepository,
     OrderRepository,
     UserRepository,
 } from '@app/infrastructure/repositories';
 import { UserService } from '../user/user.service';
-import {
+import type {
     AdminGetOrderUserResponse,
     UserGetOrderResponse,
 } from '@app/infrastructure/responses';
-import {
+import type {
     OrderModel,
     CartModel,
     UserModel,

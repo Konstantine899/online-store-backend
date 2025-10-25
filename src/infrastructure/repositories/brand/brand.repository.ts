@@ -23,7 +23,7 @@ export class BrandRepository implements IBrandRepository {
     ) {}
 
     public async createBrand(dto: BrandDto): Promise<CreateBrandResponse> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         const brand = new BrandModel();
         brand.name = dto.name;
         brand.category_id = dto.category_id;
@@ -33,7 +33,7 @@ export class BrandRepository implements IBrandRepository {
     }
 
     public async findListAllBrands(): Promise<ListAllBrandsResponse[]> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.brandModel.findAll({
             where: { tenant_id: tenantId },
         });
@@ -46,7 +46,7 @@ export class BrandRepository implements IBrandRepository {
         limit: number,
         offset: number,
     ): Promise<{ count: number; rows: BrandInfo[] }> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         const where: WhereOptions<BrandModel> = { tenant_id: tenantId };
 
         if (search) {
@@ -79,7 +79,7 @@ export class BrandRepository implements IBrandRepository {
     public async findListAllBrandsByCategory(
         categoryId: number,
     ): Promise<ListAllBrandsByCategoryResponse[]> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.brandModel.findAll({
             where: {
                 category_id: categoryId,
@@ -96,7 +96,7 @@ export class BrandRepository implements IBrandRepository {
         limit: number,
         offset: number,
     ): Promise<{ count: number; rows: BrandInfo[] }> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         const where: WhereOptions<BrandModel> = {
             category_id: categoryId,
             tenant_id: tenantId,
@@ -130,7 +130,7 @@ export class BrandRepository implements IBrandRepository {
     }
 
     public async findBrand(id: number): Promise<BrandResponse> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.brandModel.findOne({
             where: {
                 id,
@@ -150,7 +150,7 @@ export class BrandRepository implements IBrandRepository {
     }
 
     public async removeBrand(id: number): Promise<number> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.brandModel.destroy({
             where: {
                 id,

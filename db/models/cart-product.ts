@@ -1,6 +1,7 @@
-import { Model, DataTypes, Sequelize } from 'sequelize';
+import type { Sequelize } from 'sequelize';
+import { Model, DataTypes } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
-import { CartProductModel, CartProductCreationAttributes } from './types';
+import type { CartProductModel, CartProductCreationAttributes } from './types';
 
 class CartProduct
     extends Model<CartProductModel, CartProductCreationAttributes>

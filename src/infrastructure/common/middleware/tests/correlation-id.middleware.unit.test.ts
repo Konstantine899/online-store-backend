@@ -1,5 +1,5 @@
 import { CorrelationIdMiddleware } from '@app/infrastructure/common/middleware/correlation-id.middleware';
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 
 // Типы для тестов
 type TestRequest = Request & { correlationId?: string };

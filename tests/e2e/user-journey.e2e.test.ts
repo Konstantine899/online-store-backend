@@ -1,4 +1,5 @@
-import { HttpStatus, INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { QueryTypes } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
@@ -47,7 +48,6 @@ describe('User Journey E2E', () => {
     let accessToken: string;
     let refreshToken: string;
     let userId: number;
-    let verificationCode: string;
 
     beforeAll(async () => {
         app = await setupTestApp();
@@ -211,7 +211,6 @@ describe('User Journey E2E', () => {
             // ========================================
             // ASSERTION: Full flow completed
             // ========================================
-            const verificationCode = ''; // TODO: fetch from DB when test is uncommented
             expect(userId).toBeGreaterThan(0);
             expect(accessToken).toBeTruthy();
             expect(refreshToken).toBeTruthy();

@@ -1,4 +1,4 @@
-import { QueryInterface } from 'sequelize';
+import type { QueryInterface } from 'sequelize';
 
 export default {
     up: async (queryInterface: QueryInterface): Promise<void> => {

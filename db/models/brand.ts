@@ -1,6 +1,7 @@
-import { Model, DataTypes, Sequelize } from 'sequelize';
+import type { Sequelize } from 'sequelize';
+import { Model, DataTypes } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
-import { BrandModel, BrandCreationAttributes } from './types';
+import type { BrandModel, BrandCreationAttributes } from './types';
 
 class Brand
     extends Model<BrandModel, BrandCreationAttributes>

@@ -1,5 +1,6 @@
 import * as bcrypt from 'bcrypt';
-import { QueryInterface, QueryTypes } from 'sequelize';
+import type { QueryInterface} from 'sequelize';
+import { QueryTypes } from 'sequelize';
 
 interface Seeder {
     up(queryInterface: QueryInterface): Promise<void>;

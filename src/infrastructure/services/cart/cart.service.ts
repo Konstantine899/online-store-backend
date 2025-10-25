@@ -504,7 +504,7 @@ export class CartService implements ICartService {
         userId: number,
         sessionId: string,
     ): Promise<CartModel | null> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
 
         // Находим гостевую корзину
         const guestCart = await CartModel.findOne({
@@ -562,7 +562,7 @@ export class CartService implements ICartService {
         days: number = CART_CONSTANTS.DEFAULT_ABANDONED_DAYS,
     ): Promise<CartModel[]> {
         const tenantId = this.tenantContext.getTenantIdOrNull();
-        return CartModel.findAbandonedCarts(days, tenantId || undefined);
+        return CartModel.findAbandonedCarts(days, tenantId ?? undefined);
     }
 
     /**
@@ -572,7 +572,7 @@ export class CartService implements ICartService {
     public async getExpiringSoonCarts(
         days: number = CART_CONSTANTS.DEFAULT_EXPIRING_SOON_DAYS,
     ): Promise<CartModel[]> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
 
         return CartModel.scope({
             method: ['expiringSoon', days],
@@ -593,14 +593,14 @@ export class CartService implements ICartService {
      */
     public async cleanupExpiredCarts(): Promise<number> {
         const tenantId = this.tenantContext.getTenantIdOrNull();
-        return CartModel.cleanupExpiredCarts(tenantId || undefined);
+        return CartModel.cleanupExpiredCarts(tenantId ?? undefined);
     }
 
     /**
      * Получить аналитику по корзинам (для dashboard)
      */
     public async getCartAnalytics(tenantId?: number): Promise<ICartAnalytics> {
-        const tid = tenantId || this.tenantContext.getTenantIdOrNull() || 1;
+        const tid = tenantId ?? this.tenantContext.getTenantIdOrNull() ?? 1;
 
         // Базовая статистика по корзинам
         const totalCarts = await CartModel.count({
@@ -785,7 +785,7 @@ export class CartService implements ICartService {
         request: Request,
         response: Response,
     ): Promise<CartModel> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         const user = request.user as IDecodedAccessToken | undefined;
 
         let cart: CartModel | null = null;
@@ -1105,9 +1105,9 @@ export class CartService implements ICartService {
                 ): ICartProductItem => {
                     // Используем price snapshot из CartProductModel
                     const unitPrice = Number(
-                        item.CartProductModel?.price || item.price,
+                        item.CartProductModel?.price ?? item.price,
                     );
-                    const quantity = item.CartProductModel?.quantity || 0;
+                    const quantity = item.CartProductModel?.quantity ?? 0;
                     return {
                         productId: item.id,
                         name: item.name,

@@ -1,4 +1,4 @@
-import {
+import type {
     AdminGetStoreOrderListResponse,
     AdminGetOrderListUserResponse,
     AdminGetOrderUserResponse,
@@ -9,8 +9,8 @@ import {
     UserCreateOrderResponse,
     GuestCreateOrderResponse,
 } from '@app/infrastructure/responses';
-import { OrderDto } from '@app/infrastructure/dto';
-import { Request } from 'express';
+import type { OrderDto } from '@app/infrastructure/dto';
+import type { Request } from 'express';
 
 export interface IOrderController {
     adminGetStoreOrderList(): Promise<AdminGetStoreOrderListResponse[]>;

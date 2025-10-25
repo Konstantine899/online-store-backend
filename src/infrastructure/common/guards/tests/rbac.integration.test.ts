@@ -1,4 +1,5 @@
-import { HttpStatus, INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { TestDataFactory } from '../../../../../tests/utils';

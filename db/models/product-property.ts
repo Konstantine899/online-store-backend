@@ -1,13 +1,14 @@
-import {
-    Model,
-    DataTypes,
+import type {
     Sequelize,
     ModelStatic,
     ModelAttributes,
-    Optional,
+    Optional} from 'sequelize';
+import {
+    Model,
+    DataTypes
 } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
-import {
+import type {
     ProductPropertyModel,
     ProductPropertyCreationAttributes,
 } from './types';

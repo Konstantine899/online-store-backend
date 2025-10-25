@@ -1,12 +1,12 @@
-import {
+import type {
     AdminGetStoreOrderListResponse,
     AdminGetOrderListUserResponse,
     AdminCreateOrderResponse,
     AdminGetOrderUserResponse,
     UserGetOrderListResponse,
 } from '@app/infrastructure/responses';
-import { OrderDto } from '@app/infrastructure/dto';
-import { OrderModel } from '@app/domain/models';
+import type { OrderDto } from '@app/infrastructure/dto';
+import type { OrderModel } from '@app/domain/models';
 
 export interface IOrderRepository {
     adminFindOrderListUser(

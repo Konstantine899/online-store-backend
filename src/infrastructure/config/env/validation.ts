@@ -3,7 +3,7 @@
  * Бросает Error с понятным русским сообщением при некорректной конфигурации.
  */
 
-export type ValidatedEnv = {
+export interface ValidatedEnv {
     NODE_ENV: 'development' | 'test' | 'staging' | 'production';
     PORT: number;
     ALLOWED_ORIGINS: string[];
@@ -29,7 +29,7 @@ export type ValidatedEnv = {
     // Параметры ротации секретов (опционально)
     JWT_SECRET_ROTATION_DATE?: string; // ISO date когда секрет должен быть заменён
     JWT_SECRET_VERSION?: string; // версия секрета для отслеживания
-};
+}
 
 function asNumber(
     value: string | undefined,
@@ -130,7 +130,7 @@ function checkSecretRotation(
 
 export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
     const NODE_ENV_RAW = requiredString(
-        raw.NODE_ENV || 'development',
+        raw.NODE_ENV ?? 'development',
         'NODE_ENV',
     ).toLowerCase();
     if (
@@ -141,9 +141,9 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         );
     }
 
-    const PORT = asNumber(raw.PORT || '5000', 'PORT', { min: 1, max: 65535 });
+    const PORT = asNumber(raw.PORT ?? '5000', 'PORT', { min: 1, max: 65535 });
 
-    const ALLOWED_ORIGINS = (raw.ALLOWED_ORIGINS || '')
+    const ALLOWED_ORIGINS = (raw.ALLOWED_ORIGINS ?? '')
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
@@ -169,11 +169,11 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
     );
 
     const JWT_ACCESS_TTL = requiredString(
-        raw.JWT_ACCESS_TTL || '900s',
+        raw.JWT_ACCESS_TTL ?? '900s',
         'JWT_ACCESS_TTL',
     );
     const JWT_REFRESH_TTL = requiredString(
-        raw.JWT_REFRESH_TTL || '30d',
+        raw.JWT_REFRESH_TTL ?? '30d',
         'JWT_REFRESH_TTL',
     );
 
@@ -196,40 +196,40 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
     // Rate limiting
     const RATE_LIMIT_ENABLED = asBoolean(raw.RATE_LIMIT_ENABLED, 'true');
     const RATE_LIMIT_GLOBAL_RPS = asNumber(
-        raw.RATE_LIMIT_GLOBAL_RPS || '3',
+        raw.RATE_LIMIT_GLOBAL_RPS ?? '3',
         'RATE_LIMIT_GLOBAL_RPS',
         { min: 1 },
     );
     const RATE_LIMIT_GLOBAL_RPM = asNumber(
-        raw.RATE_LIMIT_GLOBAL_RPM || '100',
+        raw.RATE_LIMIT_GLOBAL_RPM ?? '100',
         'RATE_LIMIT_GLOBAL_RPM',
         { min: 1 },
     );
     const RATE_LIMIT_LOGIN_ATTEMPTS = asNumber(
-        raw.RATE_LIMIT_LOGIN_ATTEMPTS || '5',
+        raw.RATE_LIMIT_LOGIN_ATTEMPTS ?? '5',
         'RATE_LIMIT_LOGIN_ATTEMPTS',
         { min: 1 },
     );
     const RATE_LIMIT_LOGIN_WINDOW = requiredString(
-        raw.RATE_LIMIT_LOGIN_WINDOW || '15m',
+        raw.RATE_LIMIT_LOGIN_WINDOW ?? '15m',
         'RATE_LIMIT_LOGIN_WINDOW',
     );
     const RATE_LIMIT_REFRESH_ATTEMPTS = asNumber(
-        raw.RATE_LIMIT_REFRESH_ATTEMPTS || '10',
+        raw.RATE_LIMIT_REFRESH_ATTEMPTS ?? '10',
         'RATE_LIMIT_REFRESH_ATTEMPTS',
         { min: 1 },
     );
     const RATE_LIMIT_REFRESH_WINDOW = requiredString(
-        raw.RATE_LIMIT_REFRESH_WINDOW || '5m',
+        raw.RATE_LIMIT_REFRESH_WINDOW ?? '5m',
         'RATE_LIMIT_REFRESH_WINDOW',
     );
     const RATE_LIMIT_REG_ATTEMPTS = asNumber(
-        raw.RATE_LIMIT_REG_ATTEMPTS || '3',
+        raw.RATE_LIMIT_REG_ATTEMPTS ?? '3',
         'RATE_LIMIT_REG_ATTEMPTS',
         { min: 1 },
     );
     const RATE_LIMIT_REG_WINDOW = requiredString(
-        raw.RATE_LIMIT_REG_WINDOW || '1m',
+        raw.RATE_LIMIT_REG_WINDOW ?? '1m',
         'RATE_LIMIT_REG_WINDOW',
     );
 

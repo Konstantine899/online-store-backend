@@ -14,7 +14,7 @@ export class CartRepository implements ICartRepository {
     ) {}
 
     public async findCart(cartId: number): Promise<CartModel> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.cartModel.findOne({
             where: {
                 id: cartId,
@@ -31,7 +31,7 @@ export class CartRepository implements ICartRepository {
     }
 
     public async createCart(): Promise<CartModel> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.cartModel.create({ tenant_id: tenantId });
     }
 
@@ -40,7 +40,7 @@ export class CartRepository implements ICartRepository {
         product_id: number,
         quantity: number,
     ): Promise<CartModel> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         let cart = await this.cartModel.findOne({
             where: {
                 id: cart_id,
@@ -55,9 +55,7 @@ export class CartRepository implements ICartRepository {
             ],
         });
 
-        if (!cart) {
-            cart = await this.cartModel.create({ tenant_id: tenantId });
-        }
+        cart ??= await this.cartModel.create({ tenant_id: tenantId });
 
         const cart_product = await this.cartProductModel.findOne({
             where: {
@@ -84,7 +82,7 @@ export class CartRepository implements ICartRepository {
         product_id: number,
         quantity: number,
     ): Promise<CartModel> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         let cart = await this.cartModel.findOne({
             where: {
                 id: cart_id,
@@ -97,9 +95,7 @@ export class CartRepository implements ICartRepository {
                 },
             ],
         });
-        if (!cart) {
-            cart = await this.cartModel.create({ tenant_id: tenantId });
-        }
+        cart ??= await this.cartModel.create({ tenant_id: tenantId });
 
         const cart_product = await this.cartProductModel.findOne({
             where: {
@@ -119,7 +115,7 @@ export class CartRepository implements ICartRepository {
         product_id: number,
         quantity: number,
     ): Promise<CartModel> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         let cart = await this.cartModel.findOne({
             where: {
                 id: cart_id,
@@ -130,9 +126,7 @@ export class CartRepository implements ICartRepository {
                 as: 'products',
             },
         });
-        if (!cart) {
-            cart = await this.cartModel.create({ tenant_id: tenantId });
-        }
+        cart ??= await this.cartModel.create({ tenant_id: tenantId });
 
         const cart_product = await this.cartProductModel.findOne({
             where: {
@@ -158,7 +152,7 @@ export class CartRepository implements ICartRepository {
         cart_id: number,
         product_id: number,
     ): Promise<CartModel> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         const cart = await this.cartModel.findOne({
             where: {
                 id: cart_id,
@@ -188,7 +182,7 @@ export class CartRepository implements ICartRepository {
     }
 
     public async clearCart(cart_id: number): Promise<CartModel> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         let cart = await this.cartModel.findOne({
             where: {
                 id: cart_id,
@@ -201,9 +195,7 @@ export class CartRepository implements ICartRepository {
                 },
             ],
         });
-        if (!cart) {
-            cart = await this.cartModel.create({ tenant_id: tenantId });
-        }
+        cart ??= await this.cartModel.create({ tenant_id: tenantId });
         await this.cartProductModel.destroy({ where: { cart_id } });
         await cart.reload();
         return cart;

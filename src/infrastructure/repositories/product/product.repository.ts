@@ -30,13 +30,13 @@ export class ProductRepository implements IProductRepository {
         product.category_id = dto.categoryId;
         product.image = imageName;
         // Multi-tenant: автоматически устанавливаем tenant_id
-        product.tenant_id = this.tenantContext.getTenantIdOrNull() || 1;
+        product.tenant_id = this.tenantContext.getTenantIdOrNull() ?? 1;
         return product.save();
     }
 
     // Используется в модуле Rating
     public async fidProductByPkId(productId: number): Promise<ProductModel> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.productModel.findOne({
             where: {
                 id: productId,
@@ -46,7 +46,7 @@ export class ProductRepository implements IProductRepository {
     }
 
     public async findProductProperty(id: number): Promise<GetProductResponse> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.productModel.findOne({
             where: {
                 id,
@@ -62,7 +62,7 @@ export class ProductRepository implements IProductRepository {
         limit: number,
         offset: number,
     ): Promise<{ count: number; rows: ProductInfo[] }> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         const where: WhereOptions<ProductModel> = { tenant_id: tenantId };
         if (search) {
             where.name = { [Op.like]: `%${search}%` };
@@ -92,7 +92,7 @@ export class ProductRepository implements IProductRepository {
         limit: number,
         offset: number,
     ): Promise<{ count: number; rows: ProductInfo[] }> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.productModel.findAndCountAll({
             where: {
                 brand_id: brandId,
@@ -121,7 +121,7 @@ export class ProductRepository implements IProductRepository {
         limit: number,
         offset: number,
     ): Promise<{ count: number; rows: ProductInfo[] }> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.productModel.findAndCountAll({
             where: {
                 category_id: categoryId,
@@ -151,7 +151,7 @@ export class ProductRepository implements IProductRepository {
         limit: number,
         offset: number,
     ): Promise<{ count: number; rows: ProductInfo[] }> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.productModel.findAndCountAll({
             where: {
                 brand_id: brandId,
@@ -175,7 +175,7 @@ export class ProductRepository implements IProductRepository {
     }
 
     public async removedProduct(id: number): Promise<number> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.productModel.destroy({
             where: {
                 id,

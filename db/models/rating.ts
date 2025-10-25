@@ -1,6 +1,7 @@
-import { Model, DataTypes, Sequelize } from 'sequelize';
+import type { Sequelize } from 'sequelize';
+import { Model, DataTypes } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
-import { RatingModel, RatingCreationAttributes } from './types';
+import type { RatingModel, RatingCreationAttributes } from './types';
 
 class Rating
     extends Model<RatingModel, RatingCreationAttributes>

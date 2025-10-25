@@ -37,7 +37,7 @@ export class CategoryRepository implements ICategoryRepository {
         dto: CreateCategoryDto,
         imageName: string,
     ): Promise<CreateCategoryResponse> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         const category = await this.categoryModel.create({
             name: dto.name,
             image: imageName,
@@ -47,7 +47,7 @@ export class CategoryRepository implements ICategoryRepository {
     }
 
     public async findListAllCategories(): Promise<ListAllCategoriesResponse[]> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         const list = await this.categoryModel.findAll({
             where: { tenant_id: tenantId },
         });
@@ -61,7 +61,7 @@ export class CategoryRepository implements ICategoryRepository {
         limit: number,
         offset: number,
     ): Promise<{ count: number; rows: CategoryInfo[] }> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         const where: WhereOptions<CategoryModel> = { tenant_id: tenantId };
 
         if (search) {
@@ -91,7 +91,7 @@ export class CategoryRepository implements ICategoryRepository {
     }
 
     public async findCategory(id: number): Promise<CategoryResponse> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         const found = await this.categoryModel.findOne({
             where: {
                 id,
@@ -117,7 +117,7 @@ export class CategoryRepository implements ICategoryRepository {
     }
 
     public async removeCategory(id: number): Promise<number> {
-        const tenantId = this.tenantContext.getTenantIdOrNull() || 1;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.categoryModel.destroy({
             where: {
                 id,

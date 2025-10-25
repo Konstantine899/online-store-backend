@@ -1,4 +1,4 @@
-import { QueryInterface } from 'sequelize';
+import type { QueryInterface } from 'sequelize';
 
 const TABLE_NAME = 'user_address';
 const INDEX_NAME = 'idx_user_address_user_default_created_at';

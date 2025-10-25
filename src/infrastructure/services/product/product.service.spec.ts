@@ -1,4 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import {
     ConflictException,
     HttpStatus,
@@ -11,20 +12,20 @@ import {
 } from '@app/infrastructure/repositories';
 import { RatingService } from '../rating/rating.service';
 import { FileService } from '../file/file.service';
-import {
+import type {
     CreateProductDto,
     SearchDto,
     SortingDto,
 } from '@app/infrastructure/dto';
 import { SortingEnum } from '@app/domain/dto';
-import {
+import type {
     CreateProductResponse,
     GetProductResponse,
     UpdateProductResponse,
     RemoveProductResponse,
 } from '@app/infrastructure/responses';
-import { BrandModel, CategoryModel } from '@app/domain/models';
-import { ProductInfo } from '@app/infrastructure/paginate';
+import type { BrandModel, CategoryModel } from '@app/domain/models';
+import type { ProductInfo } from '@app/infrastructure/paginate';
 
 const mockBrand: BrandModel = {
     id: 1,

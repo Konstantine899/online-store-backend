@@ -1,4 +1,5 @@
-import { QueryInterface, DataTypes } from 'sequelize';
+import type { QueryInterface} from 'sequelize';
+import { DataTypes } from 'sequelize';
 
 export const up = async (queryInterface: QueryInterface): Promise<void> => {
     const transaction = await queryInterface.sequelize.transaction();

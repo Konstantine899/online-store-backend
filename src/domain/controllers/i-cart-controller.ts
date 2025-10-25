@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import {
+import type { Request, Response } from 'express';
+import type {
     CartResponse,
     AppendToCartResponse,
     IncrementResponse,
@@ -9,7 +9,7 @@ import {
     ApplyPromoCodeResponse,
     RemovePromoCodeResponse,
 } from '@app/infrastructure/responses';
-import {
+import type {
     AddToCartDto,
     UpdateCartItemDto,
     ApplyCouponDto,

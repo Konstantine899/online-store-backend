@@ -1,10 +1,10 @@
-import {
+import type {
     CreateUserDto,
     AddRoleDto,
     RemoveRoleDto,
     UpdateUserDto,
 } from '@app/infrastructure/dto';
-import {
+import type {
     CreateUserResponse,
     GetUserResponse,
     CheckResponse,
@@ -14,7 +14,7 @@ import {
     RemoveUserRoleResponse,
     GetPaginatedUsersResponse,
 } from '@app/infrastructure/responses';
-import { UserModel } from '@app/domain/models';
+import type { UserModel } from '@app/domain/models';
 
 export interface IUserService {
     createUser(dto: CreateUserDto): Promise<CreateUserResponse>;

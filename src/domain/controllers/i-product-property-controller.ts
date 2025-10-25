@@ -1,5 +1,5 @@
-import { CreateProductPropertyDto } from '@app/infrastructure/dto';
-import {
+import type { CreateProductPropertyDto } from '@app/infrastructure/dto';
+import type {
     CreateProductPropertyResponse,
     GetProductPropertyResponse,
     GetListProductPropertyResponse,

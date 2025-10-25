@@ -1,4 +1,5 @@
-import { Model, DataTypes, Sequelize, Optional } from 'sequelize';
+import type { Sequelize, Optional } from 'sequelize';
+import { Model, DataTypes } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
 
 export interface UserVerificationCodeAttributes {

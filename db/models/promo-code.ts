@@ -1,5 +1,6 @@
-import { DataTypes, Model, Op, Sequelize } from 'sequelize';
-import { PromoCodeCreationAttributes, PromoCodeModel } from './types';
+import type { Sequelize } from 'sequelize';
+import { DataTypes, Model, Op } from 'sequelize';
+import type { PromoCodeCreationAttributes, PromoCodeModel } from './types';
 
 class PromoCode
     extends Model<PromoCodeModel, PromoCodeCreationAttributes>

@@ -1,6 +1,6 @@
 import { multerConfig } from '../multer.config';
 import { BadRequestException } from '@nestjs/common';
-import { Express } from 'express';
+import type { Express } from 'express';
 
 /**
  * Unit тесты для multerConfig

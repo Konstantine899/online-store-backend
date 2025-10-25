@@ -1,4 +1,5 @@
-import { ArgumentsHost, HttpStatus } from '@nestjs/common';
+import type { ArgumentsHost} from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import {
     AccessDeniedError,
     ConnectionError,

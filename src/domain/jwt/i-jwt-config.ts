@@ -1,4 +1,4 @@
-import { IExpiresIn } from './i-expires-in';
+import type { IExpiresIn } from './i-expires-in';
 
 export interface IJwtConfig {
     secret: string;

@@ -323,7 +323,7 @@ export class CartModel
         });
 
         const subtotal = Number(
-            (result as { subtotal: number } | null)?.subtotal || 0,
+            (result as { subtotal: number } | null)?.subtotal ?? 0,
         );
 
         // Применяем скидку и убеждаемся что total_amount не отрицательный

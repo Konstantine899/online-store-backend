@@ -1,7 +1,7 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { PaginatedResponse } from '@app/infrastructure/responses/paginate/paginated.response';
-import { ProductInfo } from '@app/infrastructure/paginate';
+import type { ProductInfo } from '@app/infrastructure/paginate';
 
 export function GetListProductByCategoryIdV2SwaggerDecorator(): MethodDecorator {
     return applyDecorators(

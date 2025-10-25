@@ -1,46 +1,46 @@
-import {
-    Controller,
-    Get,
-    Post,
-    Put,
-    Delete,
-    Param,
-    Body,
-    Query,
-    HttpCode,
-    HttpStatus,
-    UseGuards,
-    DefaultValuePipe,
-    ParseIntPipe,
-    Logger,
-    BadRequestException,
-} from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
-import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
+import { NotificationStatus, NotificationType } from '@app/domain/models';
+import { NotificationFilters } from '@app/domain/services';
 import { Roles } from '@app/infrastructure/common/decorators/roles-auth.decorator';
 import {
-    GetUserNotificationsSwaggerDecorator,
-    GetUnreadCountSwaggerDecorator,
-    MarkAsReadSwaggerDecorator,
-    GetUserSettingsSwaggerDecorator,
-    UpdateUserSettingsSwaggerDecorator,
-    GetTemplatesSwaggerDecorator,
     CreateTemplateSwaggerDecorator,
-    UpdateTemplateSwaggerDecorator,
     DeleteTemplateSwaggerDecorator,
     GetStatisticsSwaggerDecorator,
+    GetTemplatesSwaggerDecorator,
+    GetUnreadCountSwaggerDecorator,
+    GetUserNotificationsSwaggerDecorator,
+    GetUserSettingsSwaggerDecorator,
+    MarkAsReadSwaggerDecorator,
+    UpdateTemplateSwaggerDecorator,
+    UpdateUserSettingsSwaggerDecorator,
 } from '@app/infrastructure/common/decorators/swagger/notification';
-import { Req } from '@nestjs/common';
+import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
+import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
+import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
+import {
+    BadRequestException,
+    Body,
+    Controller,
+    DefaultValuePipe,
+    Delete,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Logger,
+    Param,
+    ParseIntPipe,
+    Post,
+    Put,
+    Query,
+    Req,
+    UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import {
     NOTIFICATION_ACCESS_LEVELS,
     PLATFORM_ROLES,
     TENANT_ADMIN_ROLES,
 } from './notification-roles.constants';
-import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
-import { NotificationType, NotificationStatus } from '@app/domain/models';
-import { NotificationFilters } from '@app/domain/services';
 
 interface AuthenticatedRequest extends Request {
     user: { id: number; role?: string };
@@ -569,7 +569,7 @@ export class NotificationController {
         const startTime = Date.now();
 
         // Кэширование для статистики
-        const cacheKey = `statistics:${req.user.id}:${period || 'default'}:${type || 'all'}`;
+        const cacheKey = `statistics:${req.user.id}:${period ?? 'default'}:${type ?? 'all'}`;
 
         const result = await this.getCachedData(
             cacheKey,

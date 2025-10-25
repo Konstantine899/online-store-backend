@@ -1,4 +1,4 @@
-import { MetaData, ProductInfo } from '@app/infrastructure/paginate';
+import type { MetaData, ProductInfo } from '@app/infrastructure/paginate';
 
 export interface IPaginatedResponse<T> {
     data: T[];

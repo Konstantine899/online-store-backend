@@ -107,7 +107,7 @@ export class AuthController {
     ): Promise<UpdateAccessTokenResponse> {
         const cookieName = getRefreshCookieName();
         const refreshFromCookie: string | undefined =
-            req.signedCookies?.[cookieName] || req.cookies?.[cookieName];
+            req.signedCookies?.[cookieName] ?? req.cookies?.[cookieName];
 
         if (!refreshFromCookie) {
             // cookie ожидается подписанной; отсутствует = невалидна/не отправлена
@@ -181,7 +181,7 @@ export class AuthController {
     ): Promise<LogoutResponse> {
         const cookieName = getRefreshCookieName();
         const refreshFromCookie: string | undefined =
-            req.signedCookies?.[cookieName] || req.cookies?.[cookieName];
+            req.signedCookies?.[cookieName] ?? req.cookies?.[cookieName];
 
         if (!refreshFromCookie) {
             // cookie ожидается подписанной; отсутствует = невалидна/не отправлена

@@ -1,8 +1,8 @@
-import { UserModel } from '@app/domain/models';
-import { CreateUserDto } from '@app/infrastructure/dto';
-import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
-import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
-import {
+import type { UserModel } from '@app/domain/models';
+import type { CreateUserDto } from '@app/infrastructure/dto';
+import type { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
+import type { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
+import type {
     CreateUserResponse,
     GetPaginatedUsersResponse,
     GetUserResponse,

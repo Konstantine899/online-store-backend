@@ -1,4 +1,5 @@
-import { DataTypes, QueryInterface } from 'sequelize';
+import type { QueryInterface } from 'sequelize';
+import { DataTypes } from 'sequelize';
 
 /**
  * SAAS-002 Cleanup: Remove ALL e-commerce specific flags from User table

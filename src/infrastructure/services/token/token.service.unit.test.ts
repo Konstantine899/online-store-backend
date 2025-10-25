@@ -1,4 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import {
     NotFoundException,
@@ -11,12 +12,12 @@ import {
     RefreshTokenRepository,
     UserRepository,
 } from '@app/infrastructure/repositories';
-import { RefreshTokenModel, UserModel, RoleModel } from '@app/domain/models';
-import {
+import type { RefreshTokenModel, UserModel, RoleModel } from '@app/domain/models';
+import type {
     IRefreshTokenPayload,
     IAccessTokenPayload,
 } from '@app/domain/services';
-import { IDecodedAccessToken } from '@app/domain/jwt';
+import type { IDecodedAccessToken } from '@app/domain/jwt';
 
 const mockUser: UserModel = {
     id: 1,

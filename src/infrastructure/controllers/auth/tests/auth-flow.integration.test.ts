@@ -1,4 +1,5 @@
-import { HttpStatus, INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
@@ -11,7 +12,7 @@ const extractRefreshCookie = (
     if (!cookies) return '';
     const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
     return (
-        cookieArray.find((c: string) => c?.startsWith('refreshToken=')) || ''
+        cookieArray.find((c: string) => c?.startsWith('refreshToken=')) ?? ''
     );
 };
 

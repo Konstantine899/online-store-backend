@@ -1,4 +1,4 @@
-import { PasswordResetTokenModel } from '@app/domain/models';
+import type { PasswordResetTokenModel } from '@app/domain/models';
 
 /**
  * Интерфейс репозитория для password reset tokens

@@ -10,7 +10,8 @@ import {
 } from '@app/infrastructure/repositories';
 import { NotFoundException } from '@nestjs/common';
 import { getModelToken } from '@nestjs/sequelize';
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { LoginHistoryService } from '../../login-history/login-history.service';
 import { RoleService } from '../../role/role.service';
 import { UserService } from '../user.service';
@@ -67,10 +68,10 @@ describe('SEC-001-1: Password Update Token Invalidation', () => {
         service = module.get<UserService>(UserService);
         userRepository = module.get(
             UserRepository,
-        ) as jest.Mocked<UserRepository>;
+        );
         refreshTokenRepository = module.get(
             RefreshTokenRepository,
-        ) as jest.Mocked<RefreshTokenRepository>;
+        );
         userModel = module.get(getModelToken(UserModel));
     });
 

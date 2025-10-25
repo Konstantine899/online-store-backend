@@ -1,10 +1,11 @@
-import { Model, DataTypes, Sequelize } from 'sequelize';
+import type { Sequelize } from 'sequelize';
+import { Model, DataTypes } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
-import {
+import type {
     LoginHistoryAttributes,
     LoginHistoryCreationAttributes,
 } from './types';
-import defineUser from './user';
+import type defineUser from './user';
 
 // Precise types for associated user model
 type UserCtor = ReturnType<typeof defineUser>;

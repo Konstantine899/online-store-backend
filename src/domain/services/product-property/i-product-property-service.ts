@@ -1,11 +1,11 @@
-import { CreateProductPropertyDto } from '@app/infrastructure/dto';
-import {
+import type { CreateProductPropertyDto } from '@app/infrastructure/dto';
+import type {
     CreateProductPropertyResponse,
     GetProductPropertyResponse,
     GetListProductPropertyResponse,
     RemoveProductPropertyResponse,
 } from '@app/infrastructure/responses';
-import { ProductPropertyModel } from '@app/domain/models';
+import type { ProductPropertyModel } from '@app/domain/models';
 
 export interface IProductPropertyService {
     createProductProperty(

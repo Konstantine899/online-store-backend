@@ -1,4 +1,4 @@
-import { LoginHistoryModel } from '@app/domain/models';
+import type { LoginHistoryModel } from '@app/domain/models';
 
 export interface ILoginHistoryService {
     logSuccessfulLogin(

@@ -1,6 +1,6 @@
-import { UserModel } from '@app/domain/models';
-import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
-import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
+import type { UserModel } from '@app/domain/models';
+import type { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
+import type { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
 import {
     RefreshTokenRepository,
     UserRepository,
@@ -9,7 +9,8 @@ import { LoginHistoryService } from '@app/infrastructure/services/login-history/
 import { RoleService } from '@app/infrastructure/services/role/role.service';
 import { UserService } from '@app/infrastructure/services/user/user.service';
 import { NotFoundException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 
 describe('UserService - Flags and Preferences', () => {
     let service: UserService;
@@ -161,7 +162,7 @@ describe('UserService - Flags and Preferences', () => {
             const flagsDto: UpdateUserFlagsDto = {};
 
             userRepository.findUser.mockResolvedValue(mockUser); // Added
-            userRepository.updateFlags.mockResolvedValue(mockUser as UserModel);
+            userRepository.updateFlags.mockResolvedValue(mockUser);
 
             const result = await service.updateFlags(1, flagsDto);
 
@@ -242,7 +243,7 @@ describe('UserService - Flags and Preferences', () => {
 
             userRepository.findUser.mockResolvedValue(mockUser); // Added
             userRepository.updatePreferences.mockResolvedValue(
-                mockUser as UserModel,
+                mockUser,
             );
 
             const result = await service.updatePreferences(1, preferencesDto);

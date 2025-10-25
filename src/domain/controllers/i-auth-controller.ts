@@ -1,12 +1,12 @@
-import { RegistrationDto, LoginDto } from '@app/infrastructure/dto';
-import {
+import type { RegistrationDto, LoginDto } from '@app/infrastructure/dto';
+import type {
     RegistrationResponse,
     LoginResponse,
     UpdateAccessTokenResponse,
     CheckResponse,
     LogoutResponse,
 } from '@app/infrastructure/responses';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 
 export interface IAuthController {
     registration(dto: RegistrationDto): Promise<RegistrationResponse>;

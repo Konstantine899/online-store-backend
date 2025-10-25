@@ -1,4 +1,4 @@
-import { HttpStatus, INestApplication } from '@nestjs/common';
+import { HttpStatus, type INestApplication } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
 import { setupTestApp } from '../../setup/app';
@@ -53,7 +53,7 @@ describe('CartController (Integration)', () => {
         // Проверяем доступные маршруты
         console.log(
             '🔍 Доступные маршруты:',
-            Object.keys(app.getHttpServer()._router?.stack || {}),
+            Object.keys(app.getHttpServer()._router?.stack ?? {}),
         );
 
         // Используем продукт из seeds (id: 1 - iPhone 15)
@@ -123,7 +123,7 @@ describe('CartController (Integration)', () => {
             // Запрашиваем с cookie
             const secondResponse = await createRequest(app)
                 .get('/online-store/cart/get-cart')
-                .set('Cookie', cartCookie || '')
+                .set('Cookie', cartCookie ?? '')
                 .expect(HttpStatus.OK);
 
             expect(secondResponse.body.cartId).toBe(firstResponse.body.cartId);
