@@ -1,10 +1,9 @@
-import { validateEnv, ValidatedEnv } from './env/validation';
+import type { ValidatedEnv } from './env/validation';
+import { validateEnv } from './env/validation';
 
 let cachedEnv: ValidatedEnv | null = null;
 
 export function getConfig(): ValidatedEnv {
-    if (!cachedEnv) {
-        cachedEnv = validateEnv(process.env);
-    }
+    cachedEnv ??= validateEnv(process.env);
     return cachedEnv;
 }

@@ -47,9 +47,7 @@ const PII_FIELDS = new Set([
  * Переиспользуется для всех child логгеров
  */
 function getBaseLogger(): pino.Logger {
-    if (!baseLogger) {
-        baseLogger = pino(createPinoConfig());
-    }
+    baseLogger ??= pino(createPinoConfig());
     return baseLogger;
 }
 

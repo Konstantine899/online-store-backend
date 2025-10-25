@@ -1,5 +1,5 @@
-import { ApiResponse } from '@nestjs/swagger';
 import { HttpStatus } from '@nestjs/common';
+import { ApiResponse } from '@nestjs/swagger';
 
 /**
  * Общие переиспользуемые Swagger ответы для оптимизации производительности.
@@ -22,12 +22,10 @@ const badRequestResponseCache = new Map<
  * Ответ 401 Unauthorized (мемоизирован)
  */
 export const UnauthorizedResponse = () => {
-    if (!unauthorizedResponseCache) {
-        unauthorizedResponseCache = ApiResponse({
-            status: HttpStatus.UNAUTHORIZED,
-            description: 'Не авторизован',
-        });
-    }
+    unauthorizedResponseCache ??= ApiResponse({
+        status: HttpStatus.UNAUTHORIZED,
+        description: 'Не авторизован',
+    });
     return unauthorizedResponseCache;
 };
 
@@ -35,12 +33,10 @@ export const UnauthorizedResponse = () => {
  * Ответ 403 Forbidden (мемоизирован)
  */
 export const ForbiddenResponse = () => {
-    if (!forbiddenResponseCache) {
-        forbiddenResponseCache = ApiResponse({
-            status: HttpStatus.FORBIDDEN,
-            description: 'Недостаточно прав доступа',
-        });
-    }
+    forbiddenResponseCache ??= ApiResponse({
+        status: HttpStatus.FORBIDDEN,
+        description: 'Недостаточно прав доступа',
+    });
     return forbiddenResponseCache;
 };
 
@@ -69,7 +65,7 @@ export const BadRequestResponse = (message?: string) => {
             message,
             ApiResponse({
                 status: HttpStatus.BAD_REQUEST,
-                description: message || 'Некорректные параметры запроса',
+                description: message ?? 'Некорректные параметры запроса',
             }),
         );
     }

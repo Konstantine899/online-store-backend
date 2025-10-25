@@ -1,6 +1,6 @@
 import { RoleModel, UserModel } from '@app/domain/models';
-import { CreateUserDto } from '@app/infrastructure/dto';
-import { INestApplication } from '@nestjs/common';
+import type { CreateUserDto } from '@app/infrastructure/dto';
+import type { INestApplication } from '@nestjs/common';
 import { hash } from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { Sequelize } from 'sequelize-typescript';
@@ -124,13 +124,13 @@ export class TestDataFactory {
         id: number;
     }> {
         this.userCounter++;
-        const email = overrides.email || this.uniqueEmail();
-        const password = overrides.password || 'TestPass123!';
+        const email = overrides.email ?? this.uniqueEmail();
+        const password = overrides.password ?? 'TestPass123!';
         const passwordHash = await hash(password, 10);
-        const phone = overrides.phone || this.uniquePhone();
+        const phone = overrides.phone ?? this.uniquePhone();
 
         // Находим роль с retry logic (для параллельных тестов)
-        const roleName = overrides.role || 'USER';
+        const roleName = overrides.role ?? 'USER';
         let role = await RoleModel.findOne({ where: { role: roleName } });
 
         // Retry до 3 раз с экспоненциальной задержкой (для race conditions в parallel tests)
@@ -156,12 +156,9 @@ export class TestDataFactory {
             email,
             password: passwordHash,
             phone,
-            firstName: overrides.firstName || null,
-            lastName: overrides.lastName || null,
-            isActive: true,
-            isVerified: true,
-            isEmailVerified: true,
-        } as any);
+            firstName: overrides.firstName ?? undefined,
+            lastName: overrides.lastName ?? undefined,
+        });
 
         // Присваиваем роль через прямую вставку (избегаем проблем с $add)
         await sequelize.query(
@@ -310,7 +307,7 @@ export class TestDataFactory {
             : new Date(now.getTime() + 15 * 60 * 1000); // +15 минут
 
         // Used: isUsed = true, usedAt = now
-        const isUsed = options.used || false;
+        const isUsed = options.used ?? false;
         const usedAt = options.used ? now : null;
 
         const [result] = await sequelize.query(
@@ -320,21 +317,23 @@ export class TestDataFactory {
             {
                 replacements: [
                     userId,
-                    options.tenantId || null,
+                    options.tenantId ?? null,
                     token,
                     expiresAt.toISOString().slice(0, 19).replace('T', ' '), // MySQL datetime format
                     isUsed,
                     usedAt
                         ? usedAt.toISOString().slice(0, 19).replace('T', ' ')
                         : null,
-                    options.ipAddress || '127.0.0.1',
-                    options.userAgent || 'test-agent',
+                    options.ipAddress ?? '127.0.0.1',
+                    options.userAgent ?? 'test-agent',
                 ],
             },
         );
 
         // MySQL возвращает insertId в result
-        const tokenId = (result as any).insertId || (result as any);
+        const tokenId =
+            (result as { insertId?: number }).insertId ??
+            (result as unknown as number);
 
         return { token, tokenId };
     }
