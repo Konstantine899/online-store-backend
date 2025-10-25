@@ -352,6 +352,13 @@ User ──┬── UserRole ── Role
 - **`RoleGuard`**: проверка ролей пользователя, кэширование ролей
 - **`BruteforceGuard`**: защита от брутфорса с разными лимитами для endpoints
 
+### Passport стратегии
+
+- **`JwtStrategy`**: Passport стратегия для JWT аутентификации
+    - Извлечение токена из заголовка `Authorization: Bearer`
+    - Валидация payload и получение пользователя через `UserService`
+    - Интеграция с `AuthGuard` для автоматической аутентификации
+
 ### Pipes (пайпы)
 
 - **`CustomValidationPipe`**: глобальная валидация DTO с русскими сообщениями
@@ -366,6 +373,20 @@ User ──┬── UserRole ── Role
 - **`CartBusinessLogicExceptionFilter`**: бизнес-логика корзины
 - **`CartValidationExceptionFilter`**: валидация корзины
 
+### Файловая безопасность
+
+- **FileInterceptor**: с ограничениями размера и типов
+- **Валидация файлов**: проверка MIME типов, размеров
+- **Безопасное хранение**: вне БД, с проверкой доступа
+- **Статические файлы**: через CDN, с кэшированием
+
+**Multer защита**:
+- **MIME типы**: только изображения (JPEG, PNG, GIF)
+- **Размер файлов**: максимум 256 KB
+- **Path Traversal**: защита от `../../etc/passwd` атак
+- **MIME spoofing**: проверка реального типа файла
+- **Расширения**: только разрешенные расширения файлов
+
 ### Middleware и Interceptors
 
 - **CorrelationIdMiddleware**: генерирует/пробрасывает `x-request-id` для трассировки
@@ -374,12 +395,20 @@ User ──┬── UserRole ── Role
 - **Helmet**: безопасные HTTP заголовки
 - **CORS**: настройка разрешенных origins
 
+### Кастомные декораторы
+
+- **`@Roles(...roles)`**: декоратор для проверки ролей пользователя
+    - Использует `SetMetadata` и `Reflector` для метаданных
+    - Интеграция с `RoleGuard` для автоматической авторизации
+    - Пример: `@Roles('ADMIN', 'MANAGER')`
+
 ### Swagger декораторы
 
 - **Кастомные декораторы**: `@CreateUserSwaggerDecorator()`, `@LoginSwaggerDecorator()`
 - **Паттерн**: `ApiOperation` + `ApiBody` + `ApiResponse` + `ApiBearerAuth`
 - **Примеры**: встроенные примеры валидных/невалидных данных
 - **Автодокументация**: `/online-store/docs` с полным описанием API
+- **Оптимизация**: мемоизация общих ответов для производительности
 
 ---
 
@@ -571,6 +600,31 @@ SECURITY_CSP_ENABLED=true
 - **Production**: 20 max для оптимальной производительности
 - **ENV override**: `SEQUELIZE_POOL_MAX`/`SEQUELIZE_POOL_MIN`
 
+### Конфигурация компонентов
+
+**JWT конфигурация**:
+- **`JwtSettings()`**: настройки секретного ключа и времени жизни
+- **`jwtConfig()`**: конфигурация JwtModule с глобальной регистрацией
+- **Ленивая инициализация**: настройки загружаются при первом вызове
+
+**Swagger конфигурация**:
+- **`swaggerConfig()`**: настройка документации API
+- **Bearer Auth**: JWT аутентификация в Swagger UI (`JWT-auth`)
+- **Cookie Auth**: поддержка cookies (`authCookie`)
+- **Multi-tenant**: API Key для заголовка `x-tenant-id`
+
+**Multer конфигурация**:
+- **`multerConfig()`**: безопасная загрузка файлов
+- **MIME типы**: только изображения (JPEG, PNG, GIF)
+- **Размер файлов**: максимум 256 KB
+- **Защита**: от Path Traversal и MIME spoofing атак
+
+**Sequelize конфигурация**:
+- **`SequelizeConfigService`**: настройки подключения к БД
+- **Автозагрузка моделей**: все модели регистрируются автоматически
+- **Charset**: UTF8MB4 с collation `utf8mb4_0900_ai_ci`
+- **Синхронизация**: отключена в пользу миграций
+
 ### Скрипты
 
 ```bash
@@ -626,6 +680,25 @@ npm run format        # Prettier
 - **EmailProviderService**: отправка email через внешние провайдеры
 - **SmsProviderService**: отправка SMS
 - **TemplateRendererService**: рендеринг шаблонов уведомлений
+
+**События системы**:
+- **`OrderCreatedEvent`**: создание заказа
+- **`OrderStatusChangedEvent`**: изменение статуса заказа
+- **`UserRegisteredEvent`**: регистрация пользователя
+- **`PaymentCompletedEvent`**: завершение платежа
+- **`OrderShippedEvent`**: отправка заказа
+- **`OrderDeliveredEvent`**: доставка заказа
+- **`OrderCancelledEvent`**: отмена заказа
+- **`PasswordChangedEvent`**: смена пароля
+- **`PasswordResetRequestedEvent`**: запрос сброса пароля
+- **`EmailVerificationEvent`**: верификация email
+- **`MarketingCampaignEvent`**: маркетинговые кампании
+
+**Оптимизации**:
+- Кэширование шаблонов уведомлений
+- Параллельная обработка событий
+- Батчевая отправка уведомлений
+- Пул обработчиков для масштабируемости
 
 ---
 
