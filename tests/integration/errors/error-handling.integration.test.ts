@@ -132,8 +132,11 @@ describe('Error Handling & Recovery (Integration)', () => {
                 expect(Array.isArray(response.body)).toBe(true);
                 expect(response.body.length).toBeGreaterThan(0);
                 // Verify Russian messages
-                const hasRussian = response.body.some((err: { messages?: string[] }) =>
-                    err.messages?.some((msg: string) => /[а-яА-Я]/.test(msg)),
+                const hasRussian = response.body.some(
+                    (err: { messages?: string[] }) =>
+                        err.messages?.some((msg: string) =>
+                            /[а-яА-Я]/.test(msg),
+                        ),
                 );
                 expect(hasRussian).toBe(true);
             });

@@ -1,16 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { execSync } from 'child_process';
-import { AppModule } from '../../../../app.module';
-import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
-import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
-import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
 import {
     NotificationModel,
+    NotificationStatus,
     NotificationTemplateModel,
+    NotificationType,
 } from '@app/domain/models';
-import { NotificationType, NotificationStatus } from '@app/domain/models';
+import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
+import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
+import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
+import { INestApplication } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import request from 'supertest';
+import { TestAppModule } from '../../../../../tests/setup/test-app.module';
 
 // Оптимизированные моки для производительности
 const mockAuthGuard = {
@@ -56,7 +56,7 @@ const testDataCache = new Map<string, unknown[]>();
 
 // Хелпер для создания запросов с tenant-id заголовком
 const createRequest = (app: INestApplication) => {
-    return createRequest(app).set('x-tenant-id', '1');
+    return request(app.getHttpServer()).set('x-tenant-id', '1');
 };
 
 describe('NotificationController (Integration)', () => {
@@ -70,14 +70,19 @@ describe('NotificationController (Integration)', () => {
 
         // Используем TestDatabaseSetup вместо полного ресета
         try {
-            const { TestDatabaseSetup } = await import('../../../../../tests/utils');
+            const { TestDatabaseSetup } = await import(
+                '../../../../../tests/utils'
+            );
             await TestDatabaseSetup.setupDatabase('test');
         } catch (error) {
-            console.warn('Database setup warning:', error.message);
+            console.warn(
+                'Database setup warning:',
+                error instanceof Error ? error.message : String(error),
+            );
         }
 
         module = await Test.createTestingModule({
-            imports: [AppModule],
+            imports: [TestAppModule],
         })
             .overrideGuard(AuthGuard)
             .useValue(mockAuthGuard)
@@ -615,9 +620,7 @@ describe('NotificationController (Integration)', () => {
         it('should deny access for unauthorized users', async () => {
             mockAuthGuard.canActivate.mockReturnValue(false);
 
-            await createRequest(app)
-                .get('/notifications')
-                .expect(403);
+            await createRequest(app).get('/notifications').expect(403);
 
             // Reset mock
             mockAuthGuard.canActivate.mockReturnValue(true);
@@ -923,9 +926,7 @@ describe('NotificationController (Integration)', () => {
                 new Error('Database connection failed'),
             );
 
-            await createRequest(app)
-                .get('/notifications')
-                .expect(500);
+            await createRequest(app).get('/notifications').expect(500);
 
             // Restore mock
             jest.restoreAllMocks();
@@ -945,9 +946,7 @@ describe('NotificationController (Integration)', () => {
                 'getNotifications',
             ).mockRejectedValue(new Error('Service error'));
 
-            await createRequest(app)
-                .get('/notifications')
-                .expect(500);
+            await createRequest(app).get('/notifications').expect(500);
 
             // Restore mock
             jest.restoreAllMocks();

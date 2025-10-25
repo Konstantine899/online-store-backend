@@ -66,3 +66,15 @@ secrets/
 .secrets
 *secret*.json
 *credentials*.json
+
+# Documentation - prevent scattered .md files
+# Allow only specific documentation files
+*.md
+!README.md
+!PROJECT_CONTEXT.md
+!docs/errors-logging.mdc
+!docs/SECURITY.md
+!docs/TESTING.md
+!docs/secrets-management.md
+!docs/env.example
+!docs/README.md
