@@ -304,8 +304,9 @@ export class UserService implements IUserService {
         if (!role) {
             this.notFound('Роль CUSTOMER не найдена');
         }
-        await this.linkUserRole(updatedUser.id, role!.id);
-        updatedUser.roles = [role! as UserModel['roles'][0]];
+        const ensuredRole = role as NonNullable<typeof role>;
+        await this.linkUserRole(updatedUser.id, ensuredRole.id);
+        updatedUser.roles = [ensuredRole as UserModel['roles'][0]];
         return updatedUser;
     }
 
@@ -315,7 +316,10 @@ export class UserService implements IUserService {
             this.notFound('Пользователь не найден в БД');
         }
         const roleId = await this.getRolesUser(user);
-        await user.$remove('role', roleId!);
+        if (roleId == null) {
+            this.notFound('Роль пользователя не найдена в БД');
+        }
+        await user.$remove('role', roleId as number);
         await this.userRepository.removeUser(user.id);
 
         // Кэш пользователя будет инвалидирован автоматически при следующем запросе
@@ -335,13 +339,17 @@ export class UserService implements IUserService {
         if (!foundRole) {
             this.notFound('Роль не найдена в БД');
         }
-        const alreadyHas = await this.isUserRoleExists(user.id, foundRole!.id);
+        const ensuredFoundRole = foundRole as NonNullable<typeof foundRole>;
+        const alreadyHas = await this.isUserRoleExists(
+            user.id,
+            ensuredFoundRole.id,
+        );
         if (alreadyHas) {
             this.conflictException(
-                `Данному пользователю уже присвоена роль ${foundRole!.role}`,
+                `Данному пользователю уже присвоена роль ${ensuredFoundRole.role}`,
             );
         }
-        await this.linkUserRole(user.id, foundRole!.id);
+        await this.linkUserRole(user.id, ensuredFoundRole.id);
 
         // Инвалидируем кэш пользователя
         this.invalidateUserCache(dto.userId);
@@ -360,7 +368,8 @@ export class UserService implements IUserService {
         if (!role) {
             this.notFound('Роль не найдена в БД');
         }
-        await this.unlinkUserRole(user.id, role!.id);
+        const ensuredRole = role as NonNullable<typeof role>;
+        await this.unlinkUserRole(user.id, ensuredRole.id);
 
         // Инвалидируем кэш пользователя
         this.invalidateUserCache(dto.userId);

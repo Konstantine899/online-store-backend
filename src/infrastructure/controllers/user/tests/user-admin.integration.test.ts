@@ -91,7 +91,7 @@ describe('User Admin Integration Tests', () => {
 
         // SAAS-002: Removed business-specific endpoints (VIP/Premium/Employee/Wholesale/Affiliate/HighValue)
         // Only universal lifecycle management endpoints remain
-        const getAdminCases = (userId: number) => [
+        const getAdminCases = (userId: number): Array<{ path: string }> => [
             { path: `/online-store/user/admin/block/${userId}` },
             { path: `/online-store/user/admin/unblock/${userId}` },
             { path: `/online-store/user/admin/suspend/${userId}` },

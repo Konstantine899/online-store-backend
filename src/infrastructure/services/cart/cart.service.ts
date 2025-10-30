@@ -28,6 +28,7 @@ import {
     IncrementResponse,
     RemoveProductFromCartResponse,
 } from '@app/infrastructure/responses';
+import type { Sequelize } from 'sequelize';
 import { Op, Transaction } from 'sequelize';
 
 /**
@@ -57,6 +58,14 @@ export class CartService implements ICartService {
     // Настройки cookies для cartId
     private readonly maxAge: number = 60 * 60 * 1000 * 24 * 365; // 1 год
     private readonly signed: boolean = true;
+
+    private getSequelize(): Sequelize {
+        const sequelize = CartModel.sequelize as Sequelize | null;
+        if (!sequelize) {
+            throw new Error('Sequelize instance is not initialized');
+        }
+        return sequelize;
+    }
 
     // ==================== БАЗОВЫЕ ОПЕРАЦИИ С КОРЗИНОЙ ====================
 
@@ -210,7 +219,7 @@ export class CartService implements ICartService {
         this.validateCartStatus(cart);
 
         // Используем транзакцию для атомарности операций
-        const transaction = await CartModel.sequelize!.transaction();
+        const transaction = await this.getSequelize().transaction();
 
         try {
             const cartItem = await CartProductModel.findOne({
@@ -265,7 +274,7 @@ export class CartService implements ICartService {
         this.validateCartStatus(cart);
 
         // Используем транзакцию для атомарности операций
-        const transaction = await CartModel.sequelize!.transaction();
+        const transaction = await this.getSequelize().transaction();
 
         try {
             const cartItem = await CartProductModel.findOne({
@@ -322,7 +331,7 @@ export class CartService implements ICartService {
         this.validateCartStatus(cart);
 
         // Используем транзакцию для атомарности операций
-        const transaction = await CartModel.sequelize!.transaction();
+        const transaction = await this.getSequelize().transaction();
 
         try {
             const cartItem = await CartProductModel.findOne({
@@ -366,7 +375,7 @@ export class CartService implements ICartService {
         this.validateCartStatus(cart);
 
         // Используем транзакцию для атомарности операций
-        const transaction = await CartModel.sequelize!.transaction();
+        const transaction = await this.getSequelize().transaction();
 
         try {
             await CartProductModel.destroy({
@@ -631,9 +640,9 @@ export class CartService implements ICartService {
             },
             attributes: [
                 [
-                    CartModel.sequelize!.fn(
+                    this.getSequelize().fn(
                         'AVG',
-                        CartModel.sequelize!.col('total_amount'),
+                        this.getSequelize().col('total_amount'),
                     ),
                     'avgValue',
                 ],
@@ -661,9 +670,9 @@ export class CartService implements ICartService {
             ],
             attributes: [
                 [
-                    CartModel.sequelize!.fn(
+                    this.getSequelize().fn(
                         'AVG',
-                        CartModel.sequelize!.literal(
+                        this.getSequelize().literal(
                             '(SELECT COUNT(*) FROM cart_products WHERE cart_products.cart_id = cart.id)',
                         ),
                     ),
@@ -722,10 +731,10 @@ export class CartService implements ICartService {
             ],
             attributes: [
                 'product_id',
-                [CartModel.sequelize!.fn('COUNT', '*'), 'count'],
+                [this.getSequelize().fn('COUNT', '*'), 'count'],
             ],
             group: ['product_id', 'product.id', 'product.name'],
-            order: [[CartModel.sequelize!.literal('count'), 'DESC']],
+            order: [[this.getSequelize().literal('count'), 'DESC']],
             limit: 10,
             raw: false,
         });
@@ -1013,7 +1022,7 @@ export class CartService implements ICartService {
         const retryDelay = 100; // ms
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            const transaction = await CartModel.sequelize!.transaction();
+            const transaction = await this.getSequelize().transaction();
 
             try {
                 const result = await operation(transaction);

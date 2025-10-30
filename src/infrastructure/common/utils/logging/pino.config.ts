@@ -1,5 +1,5 @@
-import type { LoggerOptions } from 'pino';
 import { getConfig } from '@app/infrastructure/config';
+import type { LoggerOptions } from 'pino';
 
 /**
  * Конфигурация Pino логгера для структурированного безопасного логирования.
@@ -47,7 +47,7 @@ const PII_REDACT_PATHS = [
 /**
  * Оптимизированные сериализаторы (функции создаются один раз)
  */
-const reqSerializer = (req: unknown) => {
+const reqSerializer = (req: unknown): Record<string, unknown> => {
     const r = req as {
         method?: string;
         url?: string;
@@ -61,7 +61,7 @@ const reqSerializer = (req: unknown) => {
     };
 };
 
-const resSerializer = (res: unknown) => {
+const resSerializer = (res: unknown): Record<string, unknown> => {
     const r = res as { statusCode?: number };
     return {
         statusCode: r.statusCode,
@@ -78,7 +78,7 @@ export function createPinoConfig(): LoggerOptions {
     const isDevelopment = cfg.NODE_ENV === 'development';
 
     // Сериализатор ошибок с условным stack (зависит от окружения)
-    const errSerializer = (err: unknown) => {
+    const errSerializer = (err: unknown): Record<string, unknown> => {
         const e = err as Error & { stack?: string };
         return {
             type: e.constructor?.name,

@@ -37,13 +37,13 @@ export class IsSanitizedStringConstraint
         return true;
     }
 
-    defaultMessage() {
+    defaultMessage(): string {
         return 'Строка содержит недопустимые символы или HTML теги.';
     }
 }
 
 export function IsSanitizedString(validationOptions?: ValidationOptions) {
-    return function (object: object, propertyName: string) {
+    return function (object: object, propertyName: string): void {
         registerDecorator({
             target: object.constructor,
             propertyName: propertyName,

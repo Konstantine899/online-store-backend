@@ -88,7 +88,21 @@ export class TestDataFactory {
     /**
      * Генерирует уникальный адрес
      */
-    static createAddress(overrides = {}) {
+    static createAddress(
+        overrides: Partial<{
+            title: string;
+            street: string;
+            house: string;
+            city: string;
+            country: string;
+        }> = {},
+    ): {
+        title: string;
+        street: string;
+        house: string;
+        city: string;
+        country: string;
+    } {
         return {
             title: `Адрес ${Date.now()}`,
             street: 'ул. Тестовая',

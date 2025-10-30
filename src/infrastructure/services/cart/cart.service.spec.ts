@@ -1,13 +1,13 @@
-import type { TestingModule } from '@nestjs/testing';
-import { Test } from '@nestjs/testing';
-import { HttpStatus, NotFoundException } from '@nestjs/common';
-import { CartService } from './cart.service';
+import type { CartModel, ProductModel } from '@app/domain/models';
 import {
     CartRepository,
     ProductRepository,
 } from '@app/infrastructure/repositories';
+import { HttpStatus, NotFoundException } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import type { Request, Response } from 'express';
-import type { CartModel, ProductModel } from '@app/domain/models';
+import { CartService } from './cart.service';
 
 // Mock фабрики
 const createMockProduct = (
@@ -21,7 +21,10 @@ const createMockProduct = (
         price,
     }) as unknown as ProductModel;
 
-const createMockCartProduct = (product: ProductModel, quantity = 2) =>
+const createMockCartProduct = (
+    product: ProductModel,
+    quantity = 2,
+): ProductModel =>
     ({
         ...product,
         CartProductModel: { quantity },
@@ -46,18 +49,18 @@ describe('CartService', () => {
     let productRepository: jest.Mocked<ProductRepository>;
 
     // Helper функции
-    const setupMockCart = (products: ProductModel[] = []) => {
+    const setupMockCart = (products: ProductModel[] = []): void => {
         cartRepository.findCart.mockResolvedValue(createMockCart(products));
     };
 
-    const setupMockProduct = (product = mockProduct) => {
+    const setupMockProduct = (product = mockProduct): void => {
         productRepository.fidProductByPkId.mockResolvedValue(product);
     };
 
     const expectCartResponse = (
         result: unknown,
         expectedProducts: unknown[],
-    ) => {
+    ): void => {
         expect((result as { cartId: number }).cartId).toBe(1);
         expect((result as { products: unknown[] }).products).toEqual(
             expectedProducts,
@@ -67,7 +70,7 @@ describe('CartService', () => {
     const expectNotFoundError = async (
         operation: () => Promise<unknown>,
         message: string,
-    ) => {
+    ): Promise<void> => {
         await expect(operation()).rejects.toThrow(
             new NotFoundException({
                 status: HttpStatus.NOT_FOUND,

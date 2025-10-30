@@ -28,6 +28,7 @@ const commonConfig = {
     },
     moduleNameMapper: {
         '^@app/(.*)$': '<rootDir>/src/$1',
+        '^@tests/(.*)$': '<rootDir>/tests/$1',
     },
     transformIgnorePatterns: ['node_modules/(?!(uuid)/)'],
     setupFilesAfterEnv: ['<rootDir>/tests/jest-setup.ts'],

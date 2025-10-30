@@ -1,19 +1,19 @@
+import { NotificationType } from '@app/domain/models';
+import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
-import { NotificationType } from '@app/domain/models';
 import {
-    OrderCreatedEvent,
-    OrderStatusChangedEvent,
-    UserRegisteredEvent,
-    PaymentCompletedEvent,
-    OrderShippedEvent,
-    OrderDeliveredEvent,
-    OrderCancelledEvent,
-    PasswordChangedEvent,
-    PasswordResetRequestedEvent,
     EmailVerificationEvent,
     MarketingCampaignEvent,
+    OrderCancelledEvent,
+    OrderCreatedEvent,
+    OrderDeliveredEvent,
+    OrderShippedEvent,
+    OrderStatusChangedEvent,
+    PasswordChangedEvent,
+    PasswordResetRequestedEvent,
+    PaymentCompletedEvent,
+    UserRegisteredEvent,
 } from './notification.events';
 
 /**
@@ -314,7 +314,15 @@ export class NotificationEventHandler {
     /**
      * Получение метрик производительности
      */
-    getMetrics() {
+    getMetrics(): {
+        eventsProcessed: number;
+        notificationsSent: number;
+        errors: number;
+        averageProcessingTime: number;
+        lastProcessedAt: number;
+        queueSize: number;
+        isProcessing: boolean;
+    } {
         return {
             ...this.metrics,
             queueSize: this.notificationQueue.length,

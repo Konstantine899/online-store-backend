@@ -1,3 +1,4 @@
+import { UserAddressResponse } from '@app/infrastructure/responses/user-address/user-address.response';
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
     ApiBearerAuth,
@@ -5,9 +6,8 @@ import {
     ApiParam,
     ApiResponse,
 } from '@nestjs/swagger';
-import { UserAddressResponse } from '@app/infrastructure/responses/user-address/user-address.response';
 
-export const SetDefaultUserAddressSwaggerDecorator = () =>
+export const SetDefaultUserAddressSwaggerDecorator = (): MethodDecorator =>
     applyDecorators(
         ApiBearerAuth('JWT-auth'),
         ApiOperation({

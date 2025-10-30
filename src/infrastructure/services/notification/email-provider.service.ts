@@ -124,8 +124,9 @@ export class EmailProviderService implements IEmailProvider {
 
     validateEmail(email: string): boolean {
         // Проверяем кэш сначала
-        if (this.emailValidationCache.has(email)) {
-            return this.emailValidationCache.get(email)!;
+        const cached = this.emailValidationCache.get(email);
+        if (cached !== undefined) {
+            return cached;
         }
 
         // Валидация email с оптимизированным regex

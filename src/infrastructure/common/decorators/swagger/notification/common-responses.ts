@@ -21,7 +21,7 @@ const badRequestResponseCache = new Map<
 /**
  * Ответ 401 Unauthorized (мемоизирован)
  */
-export const UnauthorizedResponse = () => {
+export const UnauthorizedResponse = (): MethodDecorator & ClassDecorator => {
     unauthorizedResponseCache ??= ApiResponse({
         status: HttpStatus.UNAUTHORIZED,
         description: 'Не авторизован',
@@ -32,7 +32,7 @@ export const UnauthorizedResponse = () => {
 /**
  * Ответ 403 Forbidden (мемоизирован)
  */
-export const ForbiddenResponse = () => {
+export const ForbiddenResponse = (): MethodDecorator & ClassDecorator => {
     forbiddenResponseCache ??= ApiResponse({
         status: HttpStatus.FORBIDDEN,
         description: 'Недостаточно прав доступа',
@@ -43,7 +43,9 @@ export const ForbiddenResponse = () => {
 /**
  * Ответ 404 Not Found (мемоизирован по resourceName)
  */
-export const NotFoundResponse = (resourceName: string) => {
+export const NotFoundResponse = (
+    resourceName: string,
+): MethodDecorator & ClassDecorator => {
     if (!notFoundResponseCache.has(resourceName)) {
         notFoundResponseCache.set(
             resourceName,
@@ -53,13 +55,19 @@ export const NotFoundResponse = (resourceName: string) => {
             }),
         );
     }
-    return notFoundResponseCache.get(resourceName)!;
+    const cached = notFoundResponseCache.get(resourceName);
+    if (!cached) {
+        throw new Error(`Failed to get cached response for: ${resourceName}`);
+    }
+    return cached;
 };
 
 /**
  * Ответ 400 Bad Request (мемоизирован по message)
  */
-export const BadRequestResponse = (message?: string) => {
+export const BadRequestResponse = (
+    message?: string,
+): MethodDecorator & ClassDecorator => {
     if (!badRequestResponseCache.has(message)) {
         badRequestResponseCache.set(
             message,
@@ -69,7 +77,11 @@ export const BadRequestResponse = (message?: string) => {
             }),
         );
     }
-    return badRequestResponseCache.get(message)!;
+    const cached = badRequestResponseCache.get(message);
+    if (!cached) {
+        throw new Error(`Failed to get cached response for: ${message}`);
+    }
+    return cached;
 };
 
 /**
@@ -90,7 +102,14 @@ export const MESSAGE_RESPONSE_SCHEMA = {
  * Фабрика для создания схемы BadRequest ответа с примером
  * Оптимизирует создание стандартной структуры ошибки валидации
  */
-export const createBadRequestSchema = (message: string) => ({
+export const createBadRequestSchema = (
+    message: string,
+): {
+    example: {
+        statusCode: number;
+        message: string;
+    };
+} => ({
     example: {
         statusCode: HttpStatus.BAD_REQUEST,
         message,

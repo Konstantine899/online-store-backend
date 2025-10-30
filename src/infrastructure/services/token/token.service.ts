@@ -170,9 +170,12 @@ export class TokenService implements ITokenService {
                 'Не верный формат refresh token',
             );
         }
+        const ensuredRefreshToken = refreshToken as NonNullable<
+            typeof refreshToken
+        >;
         return {
             user,
-            refreshToken: refreshToken!,
+            refreshToken: ensuredRefreshToken,
         };
     }
 

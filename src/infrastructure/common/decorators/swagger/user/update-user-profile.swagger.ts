@@ -1,3 +1,5 @@
+import { UpdateUserProfileDto } from '@app/infrastructure/dto';
+import { UpdateUserResponse } from '@app/infrastructure/responses';
 import { applyDecorators } from '@nestjs/common';
 import {
     ApiBadRequestResponse,
@@ -7,10 +9,8 @@ import {
     ApiOperation,
     ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { UpdateUserProfileDto } from '@app/infrastructure/dto';
-import { UpdateUserResponse } from '@app/infrastructure/responses';
 
-export function UpdateUserProfileSwaggerDecorator() {
+export function UpdateUserProfileSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({
             summary: 'Обновление профиля пользователя',

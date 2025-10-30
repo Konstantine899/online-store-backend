@@ -19,7 +19,7 @@ export class IsValidNameConstraint implements ValidatorConstraintInterface {
 }
 
 export function IsValidName(validationOptions?: ValidationOptions) {
-    return (object: object, propertyName: string) =>
+    return (object: object, propertyName: string): void =>
         registerDecorator({
             target: object.constructor,
             propertyName,

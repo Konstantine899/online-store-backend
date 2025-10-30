@@ -102,9 +102,12 @@ export class CategoryService implements ICategoryService {
         if (!categoryModel) {
             this.notFound('Категория товара не найдена');
         }
+        const ensuredCategoryModel = categoryModel as NonNullable<
+            typeof categoryModel
+        >;
         return this.categoryRepository.updateCategory(
             dto,
-            categoryModel!,
+            ensuredCategoryModel,
             updatedNameImage,
         );
     }

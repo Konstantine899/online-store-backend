@@ -36,7 +36,14 @@ let CACHED_BASE_COOKIE_OPTIONS:
       }>
     | undefined;
 
-function getBaseCookieOptions() {
+function getBaseCookieOptions(): Readonly<{
+    httpOnly: true;
+    secure: boolean;
+    sameSite: 'lax' | 'none';
+    path: string;
+    domain: string | undefined;
+    signed: true;
+}> {
     if (!CACHED_BASE_COOKIE_OPTIONS) {
         const isProd = process.env.NODE_ENV === 'production';
         const sameSite: 'lax' | 'none' = isProd ? 'none' : 'lax';

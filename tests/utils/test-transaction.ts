@@ -103,15 +103,18 @@ export class TestTransaction {
      * });
      * ```
      */
-    static suite(getSequelize: () => Sequelize) {
+    static suite(getSequelize: () => Sequelize): {
+        beforeEach: () => Promise<void>;
+        afterEach: () => Promise<void>;
+    } {
         let transaction: Transaction | null = null;
 
         return {
-            beforeEach: async () => {
+            beforeEach: async (): Promise<void> => {
                 const sequelize = getSequelize();
                 transaction = await TestTransaction.start(sequelize);
             },
-            afterEach: async () => {
+            afterEach: async (): Promise<void> => {
                 await TestTransaction.rollback(transaction);
                 transaction = null;
             },

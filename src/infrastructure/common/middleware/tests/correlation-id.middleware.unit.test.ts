@@ -1,11 +1,19 @@
 import { CorrelationIdMiddleware } from '@app/infrastructure/common/middleware/correlation-id.middleware';
-import type { Request, Response, NextFunction } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
 // Типы для тестов
 type TestRequest = Request & { correlationId?: string };
 
 // Helper для создания mock объектов (DRY)
-const createMockContext = (headers: Record<string, string> = {}) => ({
+interface MockContext {
+    req: TestRequest;
+    res: Response;
+    next: NextFunction;
+}
+
+const createMockContext = (
+    headers: Record<string, string> = {},
+): MockContext => ({
     req: { headers } as unknown as TestRequest,
     res: { setHeader: jest.fn() } as unknown as Response,
     next: jest.fn() as NextFunction,
@@ -64,7 +72,10 @@ describe('CorrelationIdMiddleware (unit)', () => {
             for (let i = 0; i < 100; i++) {
                 const { req, res, next } = createMockContext();
                 middleware.use(req, res, next);
-                correlationIds.add(req.correlationId!);
+                expect(req.correlationId).toBeDefined();
+                if (req.correlationId) {
+                    correlationIds.add(req.correlationId);
+                }
             }
 
             // Проверяем, что все ID уникальны

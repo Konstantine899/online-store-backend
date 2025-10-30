@@ -1,7 +1,7 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 
-export const UpdateUserPhoneSwaggerDecorator = () =>
+export const UpdateUserPhoneSwaggerDecorator = (): MethodDecorator =>
     applyDecorators(
         ApiBearerAuth('JWT-auth'),
         ApiOperation({

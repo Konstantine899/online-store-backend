@@ -2,7 +2,7 @@ import { applyDecorators } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 // Статистика пользователей
-export function GetUserStatsSwaggerDecorator() {
+export function GetUserStatsSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({
             summary: 'Получить статистику пользователей',

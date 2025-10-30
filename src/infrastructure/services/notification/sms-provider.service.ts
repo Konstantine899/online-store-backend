@@ -150,8 +150,9 @@ export class SmsProviderService implements ISmsProvider {
 
     validatePhoneNumber(phone: string): boolean {
         // Проверяем кэш сначала
-        if (this.phoneValidationCache.has(phone)) {
-            return this.phoneValidationCache.get(phone)!;
+        const cached = this.phoneValidationCache.get(phone);
+        if (cached !== undefined) {
+            return cached;
         }
 
         // Проверяем базовые условия
@@ -292,10 +293,12 @@ export class SmsProviderService implements ISmsProvider {
         const grouped = new Map<string, SmsMessage[]>();
 
         for (const message of messages) {
-            if (!grouped.has(message.to)) {
-                grouped.set(message.to, []);
+            let bucket = grouped.get(message.to);
+            if (!bucket) {
+                bucket = [];
+                grouped.set(message.to, bucket);
             }
-            grouped.get(message.to)!.push(message);
+            bucket.push(message);
         }
 
         return grouped;

@@ -15,7 +15,7 @@
  * - Payment double-charge prevention
  */
 
-import { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { setupTestApp } from '../../setup/app';
 
 describe('Race Conditions & Concurrency (Integration)', () => {

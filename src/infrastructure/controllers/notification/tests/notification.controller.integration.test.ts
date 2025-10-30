@@ -22,7 +22,9 @@ const mockRoleGuard = {
 };
 
 // Фабричные функции для создания тестовых данных
-const createMockUser = (overrides: Record<string, unknown> = {}) => ({
+const createMockUser = (
+    overrides: Record<string, unknown> = {},
+): Record<string, unknown> => ({
     id: 1,
     email: 'test@example.com',
     firstName: 'Test',
@@ -31,7 +33,19 @@ const createMockUser = (overrides: Record<string, unknown> = {}) => ({
     ...overrides,
 });
 
-const createMockNotification = (overrides: Record<string, unknown> = {}) => ({
+interface MockNotificationData {
+    userId: number;
+    type: NotificationType;
+    title: string;
+    message: string;
+    status: NotificationStatus;
+    isRead: boolean;
+    templateName: string;
+}
+
+const createMockNotification = (
+    overrides: Partial<MockNotificationData> = {},
+): MockNotificationData => ({
     userId: 1,
     type: NotificationType.EMAIL,
     title: 'Test Notification',
@@ -42,7 +56,17 @@ const createMockNotification = (overrides: Record<string, unknown> = {}) => ({
     ...overrides,
 });
 
-const createMockTemplate = (overrides: Record<string, unknown> = {}) => ({
+interface MockTemplateData {
+    name: string;
+    type: NotificationType;
+    title: string;
+    message: string;
+    isActive: boolean;
+}
+
+const createMockTemplate = (
+    overrides: Partial<MockTemplateData> = {},
+): MockTemplateData => ({
     name: 'test_template',
     type: NotificationType.EMAIL,
     title: 'Test Template',
@@ -55,8 +79,26 @@ const createMockTemplate = (overrides: Record<string, unknown> = {}) => ({
 const testDataCache = new Map<string, unknown[]>();
 
 // Хелпер для создания запросов с tenant-id заголовком
-const createRequest = (app: INestApplication) => {
-    return request(app.getHttpServer()).set('x-tenant-id', '1');
+const createRequest = (
+    app: INestApplication,
+): request.SuperTest<request.Test> => {
+    const agent = request(app.getHttpServer());
+    const wrap = (
+        fn: (url: string) => request.Test,
+    ): ((url: string) => request.Test) => {
+        return (url: string): request.Test =>
+            fn.call(agent, url).set('x-tenant-id', '1');
+    };
+    (agent as unknown as { get: unknown }).get = wrap(agent.get.bind(agent));
+    (agent as unknown as { post: unknown }).post = wrap(agent.post.bind(agent));
+    (agent as unknown as { put: unknown }).put = wrap(agent.put.bind(agent));
+    (agent as unknown as { patch: unknown }).patch = wrap(
+        agent.patch.bind(agent),
+    );
+    (agent as unknown as { delete: unknown }).delete = wrap(
+        agent.delete.bind(agent),
+    );
+    return agent as unknown as request.SuperTest<request.Test>;
 };
 
 describe('NotificationController (Integration)', () => {
@@ -963,7 +1005,7 @@ describe('NotificationController (Integration)', () => {
             // Тестируем множественные сценарии ошибок параллельно
             const errorScenarios = await Promise.allSettled([
                 // Database error
-                (async () => {
+                (async (): Promise<request.Response> => {
                     jest.spyOn(NotificationModel, 'findAll').mockRejectedValue(
                         new Error('Database error'),
                     );
@@ -974,7 +1016,7 @@ describe('NotificationController (Integration)', () => {
                     return result;
                 })(),
                 // Service error
-                (async () => {
+                (async (): Promise<request.Response> => {
                     jest.spyOn(
                         notificationService,
                         'getNotifications',
@@ -986,7 +1028,7 @@ describe('NotificationController (Integration)', () => {
                     return result;
                 })(),
                 // Template service error
-                (async () => {
+                (async (): Promise<request.Response> => {
                     jest.spyOn(
                         notificationService,
                         'getTemplates',

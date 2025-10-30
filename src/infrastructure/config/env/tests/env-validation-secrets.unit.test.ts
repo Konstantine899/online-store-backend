@@ -13,7 +13,9 @@ describe('Environment Validation - Secrets (unit)', () => {
         process.env = originalEnv;
     });
 
-    const getValidEnv = (overrides = {}) => ({
+    const getValidEnv = (
+        overrides: Record<string, string | undefined> = {},
+    ): Record<string, string | undefined> => ({
         NODE_ENV: 'development',
         PORT: '5000',
         ALLOWED_ORIGINS: 'http://localhost:3000',

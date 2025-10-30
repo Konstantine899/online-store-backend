@@ -1,3 +1,24 @@
+import { Roles } from '@app/infrastructure/common/decorators';
+import {
+    CreateUserAddressSwaggerDecorator,
+    GetUserAddressSwaggerDecorator,
+    GetUserAddressesSwaggerDecorator,
+    RemoveUserAddressSwaggerDecorator,
+    SetDefaultUserAddressSwaggerDecorator,
+    UpdateUserAddressSwaggerDecorator,
+} from '@app/infrastructure/common/decorators/swagger/user-address';
+import { AuthGuard, RoleGuard } from '@app/infrastructure/common/guards';
+import {
+    CreateUserAddressDto,
+    UpdateUserAddressDto,
+} from '@app/infrastructure/dto';
+import {
+    CreateUserAddressResponse,
+    GetUserAddressResponse,
+    RemoveUserAddressResponse,
+    UpdateUserAddressResponse,
+} from '@app/infrastructure/responses';
+import { UserAddressService } from '@app/infrastructure/services';
 import {
     Body,
     Controller,
@@ -14,21 +35,6 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { UserAddressService } from '@app/infrastructure/services';
-import {
-    CreateUserAddressDto,
-    UpdateUserAddressDto,
-} from '@app/infrastructure/dto';
-import { AuthGuard, RoleGuard } from '@app/infrastructure/common/guards';
-import { Roles } from '@app/infrastructure/common/decorators';
-import {
-    GetUserAddressesSwaggerDecorator,
-    GetUserAddressSwaggerDecorator,
-    CreateUserAddressSwaggerDecorator,
-    UpdateUserAddressSwaggerDecorator,
-    RemoveUserAddressSwaggerDecorator,
-    SetDefaultUserAddressSwaggerDecorator,
-} from '@app/infrastructure/common/decorators/swagger/user-address';
 
 // Типизированный интерфейс для Request
 interface AuthenticatedRequest extends Request {
@@ -71,7 +77,9 @@ export class UserAddressController {
     @Roles(...UserAddressController.USER_ROLES)
     @Get()
     @HttpCode(HttpStatus.OK)
-    async getAddresses(@Req() req: AuthenticatedRequest) {
+    async getAddresses(
+        @Req() req: AuthenticatedRequest,
+    ): Promise<{ data: GetUserAddressResponse[] }> {
         const data = await this.userAddressService.getAddresses(
             this.extractUserId(req),
         );
@@ -85,7 +93,7 @@ export class UserAddressController {
     async getAddress(
         @Req() req: AuthenticatedRequest,
         @Param('id', ParseIntPipe) id: number,
-    ) {
+    ): Promise<{ data: GetUserAddressResponse }> {
         const data = await this.userAddressService.getAddress(
             this.extractUserId(req),
             id,
@@ -100,7 +108,7 @@ export class UserAddressController {
     async createAddress(
         @Req() req: AuthenticatedRequest,
         @Body() dto: CreateUserAddressDto,
-    ) {
+    ): Promise<{ data: CreateUserAddressResponse }> {
         const data = await this.userAddressService.createAddress(
             this.extractUserId(req),
             dto,
@@ -116,7 +124,7 @@ export class UserAddressController {
         @Req() req: AuthenticatedRequest,
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: UpdateUserAddressDto,
-    ) {
+    ): Promise<{ data: UpdateUserAddressResponse }> {
         const data = await this.userAddressService.updateAddress(
             this.extractUserId(req),
             id,
@@ -132,7 +140,7 @@ export class UserAddressController {
     async removeAddress(
         @Req() req: AuthenticatedRequest,
         @Param('id', ParseIntPipe) id: number,
-    ) {
+    ): Promise<RemoveUserAddressResponse> {
         return this.userAddressService.removeAddress(
             this.extractUserId(req),
             id,
@@ -146,7 +154,7 @@ export class UserAddressController {
     async setDefaultAddress(
         @Req() req: AuthenticatedRequest,
         @Param('id', ParseIntPipe) id: number,
-    ) {
+    ): Promise<{ data: UpdateUserAddressResponse }> {
         const data = await this.userAddressService.setDefaultAddress(
             this.extractUserId(req),
             id,

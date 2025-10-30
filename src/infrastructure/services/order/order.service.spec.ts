@@ -1,24 +1,24 @@
-import type { TestingModule } from '@nestjs/testing';
-import { Test } from '@nestjs/testing';
-import { HttpStatus, NotFoundException } from '@nestjs/common';
-import { OrderService } from './order.service';
+import type {
+    CartModel,
+    OrderItemModel,
+    OrderModel,
+    UserModel,
+} from '@app/domain/models';
 import type { OrderDto } from '@app/infrastructure/dto';
 import {
     CartRepository,
     OrderRepository,
     UserRepository,
 } from '@app/infrastructure/repositories';
-import { UserService } from '../user/user.service';
 import type {
     AdminGetOrderUserResponse,
     UserGetOrderResponse,
 } from '@app/infrastructure/responses';
-import type {
-    OrderModel,
-    CartModel,
-    UserModel,
-    OrderItemModel,
-} from '@app/domain/models';
+import { HttpStatus, NotFoundException } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { UserService } from '../user/user.service';
+import { OrderService } from './order.service';
 
 // Упрощенные mock объекты
 const mockOrder = {
@@ -68,16 +68,19 @@ describe('OrderService', () => {
     let userRepository: jest.Mocked<UserRepository>;
 
     // Упрощенные helper функции
-    const setupOrder = (orders = [mockOrder]) =>
+    const setupOrder = (orders = [mockOrder]): void => {
         orderRepository.adminFindOrderListUser.mockResolvedValue(orders);
-    const setupUser = (user = mockUser) =>
+    };
+    const setupUser = (user = mockUser): void => {
         userRepository.findUserByPkId.mockResolvedValue(user);
-    const setupCart = (cart = mockCart) =>
+    };
+    const setupCart = (cart = mockCart): void => {
         cartRepository.findCart.mockResolvedValue(cart);
+    };
     const expectNotFound = async (
         operation: () => Promise<unknown>,
         message: string,
-    ) => {
+    ): Promise<void> => {
         await expect(operation()).rejects.toThrow(
             new NotFoundException({ status: HttpStatus.NOT_FOUND, message }),
         );

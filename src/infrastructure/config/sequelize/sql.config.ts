@@ -1,6 +1,6 @@
 import { dbToken } from '@app/infrastructure/config/sequelize/db-token';
 import { registerAs } from '@nestjs/config';
-import type { Dialect } from 'sequelize';
+import type { Dialect, PoolOptions } from 'sequelize';
 
 /**
  * Получение конфигурации connection pool в зависимости от окружения
@@ -10,7 +10,7 @@ import type { Dialect } from 'sequelize';
  * - Test (sequential): 10 max для стабильности
  * - Production: 20 max для оптимальной производительности
  */
-const getPoolConfig = () => {
+const getPoolConfig = (): PoolOptions => {
     const isCI = process.env.CI === 'true';
     const isTestEnv = process.env.NODE_ENV === 'test';
 

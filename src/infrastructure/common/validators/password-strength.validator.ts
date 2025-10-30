@@ -9,7 +9,7 @@ import {
 export class IsPasswordStrongConstraint
     implements ValidatorConstraintInterface
 {
-    validate(password: string) {
+    validate(password: string): boolean {
         if (!password) return false;
 
         // Минимальная длина 8 символов
@@ -51,13 +51,13 @@ export class IsPasswordStrongConstraint
         return true;
     }
 
-    defaultMessage() {
+    defaultMessage(): string {
         return 'Пароль должен содержать минимум 8 символов, включая заглавные и строчные буквы, цифры и специальные символы. Простые пароли запрещены.';
     }
 }
 
 export function IsPasswordStrong(validationOptions?: ValidationOptions) {
-    return function (object: object, propertyName: string) {
+    return function (object: object, propertyName: string): void {
         registerDecorator({
             target: object.constructor,
             propertyName: propertyName,

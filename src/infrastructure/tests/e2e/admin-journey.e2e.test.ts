@@ -1,15 +1,33 @@
 import { HttpStatus, type INestApplication } from '@nestjs/common';
+import { setupTestApp } from '@tests/setup/app';
+import { TestCleanup, TestDataFactory } from '@tests/utils';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
-import { setupTestApp } from '../setup/app';
-import { TestCleanup, TestDataFactory } from '../utils';
 
 // API prefix для всех E2E запросов
 const API_PREFIX = '/online-store';
 
 // Хелпер для создания запросов с tenant-id заголовком
-const createRequest = (app: INestApplication) => {
-    return request(app.getHttpServer()).set('x-tenant-id', '1');
+const createRequest = (
+    app: INestApplication,
+): request.SuperTest<request.Test> => {
+    const agent = request(app.getHttpServer());
+    const wrap = (
+        fn: (url: string) => request.Test,
+    ): ((url: string) => request.Test) => {
+        return (url: string): request.Test =>
+            fn.call(agent, url).set('x-tenant-id', '1');
+    };
+    (agent as unknown as { get: unknown }).get = wrap(agent.get.bind(agent));
+    (agent as unknown as { post: unknown }).post = wrap(agent.post.bind(agent));
+    (agent as unknown as { put: unknown }).put = wrap(agent.put.bind(agent));
+    (agent as unknown as { patch: unknown }).patch = wrap(
+        agent.patch.bind(agent),
+    );
+    (agent as unknown as { delete: unknown }).delete = wrap(
+        agent.delete.bind(agent),
+    );
+    return agent as unknown as request.SuperTest<request.Test>;
 };
 
 /**

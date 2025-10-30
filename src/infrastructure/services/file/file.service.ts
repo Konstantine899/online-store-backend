@@ -1,10 +1,10 @@
+import { IFileService } from '@app/domain/services';
 import { ConflictException, HttpStatus, Injectable } from '@nestjs/common';
-import * as path from 'path';
 import * as fs from 'fs';
 import { readdir } from 'fs/promises';
-import * as uuid from 'uuid';
+import * as path from 'path';
 import * as process from 'process';
-import { IFileService } from '@app/domain/services';
+import * as uuid from 'uuid';
 
 @Injectable()
 export class FileService implements IFileService {
@@ -54,10 +54,13 @@ export class FileService implements IFileService {
                 ? path.join(__dirname, '..', '..', '..', 'static')
                 : null; // получаю путь к директории где хранятся статические файлы
         /*Проверяю если директория хранения статических файлов не существует, то создаю ее*/
-        if (!fs.existsSync(filePath!)) {
-            fs.mkdirSync(filePath!, { recursive: true }); // создаю директорию
+        if (!filePath) {
+            throw new Error('File path is not configured');
         }
-        return filePath!;
+        if (!fs.existsSync(filePath)) {
+            fs.mkdirSync(filePath, { recursive: true }); // создаю директорию
+        }
+        return filePath;
     }
 
     private async generateFile(
@@ -72,7 +75,7 @@ export class FileService implements IFileService {
         fs.writeFile(
             path.join(filePath, newFileName),
             newFile.buffer,
-            (error) => {
+            (error: NodeJS.ErrnoException | null) => {
                 if (error) {
                     throw new ConflictException({
                         status: HttpStatus.CONFLICT,

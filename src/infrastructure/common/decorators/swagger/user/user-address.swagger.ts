@@ -1,8 +1,8 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 // Создание адреса пользователя
-export function CreateUserAddressSwaggerDecorator() {
+export function CreateUserAddressSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({
             summary: 'Создать адрес пользователя',
@@ -46,7 +46,7 @@ export function CreateUserAddressSwaggerDecorator() {
 }
 
 // Получение всех адресов пользователя
-export function GetUserAddressesSwaggerDecorator() {
+export function GetUserAddressesSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({
             summary: 'Получить все адреса пользователя',
@@ -95,7 +95,7 @@ export function GetUserAddressesSwaggerDecorator() {
 }
 
 // Получение конкретного адреса
-export function GetUserAddressSwaggerDecorator() {
+export function GetUserAddressSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({
             summary: 'Получить адрес пользователя по ID',
@@ -139,7 +139,7 @@ export function GetUserAddressSwaggerDecorator() {
 }
 
 // Обновление адреса
-export function UpdateUserAddressSwaggerDecorator() {
+export function UpdateUserAddressSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({
             summary: 'Обновить адрес пользователя',
@@ -187,7 +187,7 @@ export function UpdateUserAddressSwaggerDecorator() {
 }
 
 // Удаление адреса
-export function DeleteUserAddressSwaggerDecorator() {
+export function DeleteUserAddressSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({
             summary: 'Удалить адрес пользователя',
@@ -217,7 +217,7 @@ export function DeleteUserAddressSwaggerDecorator() {
 }
 
 // Установка основного адреса
-export function SetDefaultAddressSwaggerDecorator() {
+export function SetDefaultAddressSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({
             summary: 'Установить основной адрес',

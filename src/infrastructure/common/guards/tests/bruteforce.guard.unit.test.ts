@@ -6,10 +6,9 @@ import type { ExecutionContext } from '@nestjs/common';
 import type { Reflector } from '@nestjs/core';
 import type {
     ThrottlerModuleOptions,
-    ThrottlerStorage} from '@nestjs/throttler';
-import {
-    ThrottlerException
+    ThrottlerStorage,
 } from '@nestjs/throttler';
+import { ThrottlerException } from '@nestjs/throttler';
 import type { Request } from 'express';
 import type { Socket } from 'net';
 
@@ -125,8 +124,8 @@ describe('BruteforceGuard (unit)', () => {
         // Создаём mock context
         mockContext = {
             switchToHttp: () => ({
-                getRequest: () => mockRequest,
-                getResponse: () => mockResponse,
+                getRequest: (): TestRequest => mockRequest,
+                getResponse: (): typeof mockResponse => mockResponse,
             }),
         } as ExecutionContext;
     });
@@ -614,10 +613,10 @@ describe('BruteforceGuard (unit)', () => {
             const timestampAfterFirst = (BruteforceGuard as any)
                 .configCacheTime;
 
-            delete (mockRequest).__bruteforceProcessed;
+            delete mockRequest.__bruteforceProcessed;
             await asPrivate(guard).handleRequest({ context: refreshContext });
 
-            delete (mockRequest).__bruteforceProcessed;
+            delete mockRequest.__bruteforceProcessed;
             await asPrivate(guard).handleRequest({ context: regContext });
 
             // Timestamp не должен измениться (кэш используется)

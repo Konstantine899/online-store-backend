@@ -1,4 +1,4 @@
-import { ApiQuery, ApiParam } from '@nestjs/swagger';
+import { ApiParam, ApiQuery } from '@nestjs/swagger';
 
 /**
  * Общие переиспользуемые Swagger схемы для оптимизации производительности.
@@ -28,7 +28,18 @@ export const PAGINATION_QUERIES = [
  * Фабрика для создания схемы метаданных пагинации
  * Позволяет кастомизировать примеры для разных контекстов
  */
-export const createMetaSchema = (totalExample = 100, lastPageExample = 5) => ({
+export const createMetaSchema = (
+    totalExample = 100,
+    lastPageExample = 5,
+): {
+    type: 'object';
+    properties: {
+        totalCount: { type: string; example: number };
+        currentPage: { type: string; example: number };
+        lastPage: { type: string; example: number };
+        limit: { type: string; example: number };
+    };
+} => ({
     type: 'object' as const,
     properties: {
         totalCount: { type: 'number', example: totalExample },
@@ -50,7 +61,13 @@ export const META_SCHEMA = createMetaSchema(100, 5);
 export const createPaginatedResponseSchema = (
     itemSchema: Record<string, unknown>,
     metaSchema = META_SCHEMA,
-) => ({
+): {
+    type: 'object';
+    properties: {
+        data: { type: string; items: Record<string, unknown> };
+        meta: typeof META_SCHEMA;
+    };
+} => ({
     type: 'object' as const,
     properties: {
         data: {
@@ -65,7 +82,9 @@ export const createPaginatedResponseSchema = (
  * Фабрика для создания стандартного ApiParam для 'id'
  * Переиспользуется в update/delete endpoints
  */
-export const createIdParam = (resourceName: string) =>
+export const createIdParam = (
+    resourceName: string,
+): MethodDecorator & ClassDecorator =>
     ApiParam({
         name: 'id',
         description: `ID ${resourceName}`,

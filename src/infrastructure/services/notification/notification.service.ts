@@ -673,10 +673,12 @@ export class NotificationService implements INotificationService {
         const grouped = new Map<NotificationType, CreateNotificationDto[]>();
 
         for (const notification of notifications) {
-            if (!grouped.has(notification.type)) {
-                grouped.set(notification.type, []);
+            let bucket = grouped.get(notification.type);
+            if (!bucket) {
+                bucket = [];
+                grouped.set(notification.type, bucket);
             }
-            grouped.get(notification.type)!.push(notification);
+            bucket.push(notification);
         }
 
         return grouped;

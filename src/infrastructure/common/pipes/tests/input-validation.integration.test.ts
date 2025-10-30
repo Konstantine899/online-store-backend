@@ -1,4 +1,4 @@
-import type { INestApplication} from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { HttpStatus } from '@nestjs/common';
 import request from 'supertest';
 import { setupTestApp } from '../../../../../tests/setup/app';
@@ -17,7 +17,7 @@ describe('Input Validation and Sanitization (integration)', () => {
     });
 
     // Генерируем уникальный IP для каждого запроса, чтобы обойти rate limiting
-    const getUniqueHeaders = () => {
+    const getUniqueHeaders = (): Record<string, string> => {
         requestCounter++;
         return {
             'x-forwarded-for': `10.0.${Math.floor(requestCounter / 255)}.${requestCounter % 255}`,

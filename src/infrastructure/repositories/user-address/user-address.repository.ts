@@ -21,7 +21,16 @@ export class UserAddressRepository {
         private readonly tenantContext: TenantContext,
     ) {}
 
-    private pickAllowedFromCreate(dto: CreateUserAddressDto) {
+    private pickAllowedFromCreate(dto: CreateUserAddressDto): {
+        title: string;
+        street: string;
+        house: string;
+        apartment?: string;
+        city: string;
+        postal_code?: string;
+        country?: string;
+        is_default?: boolean;
+    } {
         const {
             title,
             street,
@@ -44,7 +53,9 @@ export class UserAddressRepository {
         };
     }
 
-    private pickAllowedFromUpdate(dto: UpdateUserAddressDto) {
+    private pickAllowedFromUpdate(
+        dto: UpdateUserAddressDto,
+    ): Partial<ReturnType<UserAddressRepository['pickAllowedFromCreate']>> {
         const allowed: Partial<
             ReturnType<UserAddressRepository['pickAllowedFromCreate']>
         > = {};

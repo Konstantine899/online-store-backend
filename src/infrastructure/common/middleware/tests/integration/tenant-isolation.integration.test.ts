@@ -12,7 +12,7 @@ import { OrderRepository } from '@app/infrastructure/repositories/order/order.re
 import { ProductRepository } from '@app/infrastructure/repositories/product/product.repository';
 import { RatingRepository } from '@app/infrastructure/repositories/rating/rating.repository';
 import { UserAddressRepository } from '@app/infrastructure/repositories/user-address/user-address.repository';
-import { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { setupTestApp } from '../../setup/app';
 import { TestDatabaseSetup } from '../../utils';
 

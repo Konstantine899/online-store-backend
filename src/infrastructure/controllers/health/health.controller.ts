@@ -1,5 +1,10 @@
 import { Controller, Get } from '@nestjs/common';
-import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
+import {
+    HealthCheck,
+    HealthCheckResult,
+    HealthCheckService,
+    HealthIndicatorResult,
+} from '@nestjs/terminus';
 import { SequelizeHealthIndicator } from './sequelize.health';
 
 @Controller()
@@ -11,18 +16,22 @@ export class HealthController {
 
     @Get('health')
     @HealthCheck()
-    health() {
-        return this.healthCheck.check([() => this.db.pingCheck()]);
+    health(): Promise<HealthCheckResult> {
+        return this.healthCheck.check([
+            (): Promise<HealthIndicatorResult> => this.db.pingCheck(),
+        ]);
     }
 
     @Get('live')
-    live() {
+    live(): { status: string } {
         return { status: 'ok' };
     }
 
     @Get('ready')
     @HealthCheck()
-    ready() {
-        return this.healthCheck.check([() => this.db.pingCheck()]);
+    ready(): Promise<HealthCheckResult> {
+        return this.healthCheck.check([
+            (): Promise<HealthIndicatorResult> => this.db.pingCheck(),
+        ]);
     }
 }

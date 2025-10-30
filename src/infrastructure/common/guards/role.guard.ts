@@ -1,3 +1,5 @@
+import { IDecodedAccessToken } from '@app/domain/jwt';
+import { TokenService } from '@app/infrastructure/services/token/token.service';
 import {
     CanActivate,
     ExecutionContext,
@@ -8,8 +10,6 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles-auth.decorator';
-import { IDecodedAccessToken } from '@app/domain/jwt';
-import { TokenService } from '@app/infrastructure/services/token/token.service';
 
 @Injectable()
 export class RoleGuard implements CanActivate {
@@ -108,6 +108,10 @@ export class RoleGuard implements CanActivate {
         if (!this.roleSetsCache.has(key)) {
             this.roleSetsCache.set(key, new Set(roles));
         }
-        return this.roleSetsCache.get(key)!;
+        const cached = this.roleSetsCache.get(key);
+        if (!cached) {
+            throw new Error(`Failed to get cached role set for key: ${key}`);
+        }
+        return cached;
     }
 }

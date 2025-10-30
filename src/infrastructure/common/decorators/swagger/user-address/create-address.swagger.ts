@@ -1,3 +1,5 @@
+import { CreateUserAddressDto } from '@app/infrastructure/dto';
+import { UserAddressResponse } from '@app/infrastructure/responses/user-address/user-address.response';
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
     ApiBearerAuth,
@@ -5,10 +7,8 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { CreateUserAddressDto } from '@app/infrastructure/dto';
-import { UserAddressResponse } from '@app/infrastructure/responses/user-address/user-address.response';
 
-export const CreateUserAddressSwaggerDecorator = () =>
+export const CreateUserAddressSwaggerDecorator = (): MethodDecorator =>
     applyDecorators(
         ApiBearerAuth('JWT-auth'),
         ApiOperation({

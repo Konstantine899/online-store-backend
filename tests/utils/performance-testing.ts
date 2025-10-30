@@ -380,19 +380,28 @@ export class PerformanceTesting {
 /**
  * Декоратор для автоматического бенчмарка методов
  */
-export function Benchmark(name?: string, config?: BenchmarkConfig) {
+export function Benchmark(
+    name?: string,
+    config?: BenchmarkConfig,
+): (
+    target: unknown,
+    propertyName: string,
+    descriptor: PropertyDescriptor,
+) => void {
     return function (
         target: unknown,
         propertyName: string,
         descriptor: PropertyDescriptor,
-    ) {
+    ): void {
         const method = descriptor.value;
         const ctorName =
             (target as { constructor?: { name?: string } })?.constructor
                 ?.name ?? 'Anonymous';
         const benchmarkName = name ?? `${ctorName}.${propertyName}`;
 
-        descriptor.value = async function (...args: unknown[]) {
+        descriptor.value = async function (
+            ...args: unknown[]
+        ): Promise<BenchmarkResult> {
             const result = await PerformanceTesting.benchmark(
                 benchmarkName,
                 () => method.apply(this, args),

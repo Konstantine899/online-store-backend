@@ -282,7 +282,7 @@ async function bootstrap(): Promise<void> {
     app.enableShutdownHooks();
 
     // корректное завершение по сигналам SIGINT/SIGTERM
-    const shutdown = async (signal: string) => {
+    const shutdown = async (signal: string): Promise<void> => {
         logger.info(
             { signal },
             'Получен сигнал завершения, graceful shutdown...',

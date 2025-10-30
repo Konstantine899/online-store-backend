@@ -1,18 +1,19 @@
-import type { TestingModule } from '@nestjs/testing';
-import { Test } from '@nestjs/testing';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { NotificationService } from './notification.service';
 import {
     NotificationModel,
+    NotificationStatus,
     NotificationTemplateModel,
     NotificationType,
-    NotificationStatus,
 } from '@app/domain/models';
 import type {
+    CreateNotificationDto,
     IEmailProvider,
     ISmsProvider,
     ITemplateRenderer,
 } from '@app/domain/services';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { NotificationService } from './notification.service';
 
 // Mock провайдеры
 const mockEmailProvider: jest.Mocked<IEmailProvider> = {
@@ -107,7 +108,9 @@ describe('NotificationService', () => {
             ...overrides,
         }) as NotificationTemplateModel;
 
-    const createMockCreateDto = (overrides: Record<string, unknown> = {}) => ({
+    const createMockCreateDto = (
+        overrides: Partial<CreateNotificationDto> = {},
+    ): CreateNotificationDto => ({
         userId: 1,
         type: NotificationType.EMAIL,
         templateName: 'test_template',

@@ -105,9 +105,12 @@ const STAFF_ROLES = [
 const validationPipe = new CustomValidationPipe();
 
 // Композитные декораторы для оптимизации производительности
-const AdminGuards = () => UseGuards(AuthGuard, RoleGuard);
-const UserGuards = () => UseGuards(AuthGuard, RoleGuard);
-const StaffGuards = () => UseGuards(AuthGuard, RoleGuard);
+const AdminGuards = (): ReturnType<typeof UseGuards> =>
+    UseGuards(AuthGuard, RoleGuard);
+const UserGuards = (): ReturnType<typeof UseGuards> =>
+    UseGuards(AuthGuard, RoleGuard);
+const StaffGuards = (): ReturnType<typeof UseGuards> =>
+    UseGuards(AuthGuard, RoleGuard);
 
 @ApiTags('Пользователи')
 @Controller('user')
@@ -194,7 +197,9 @@ export class UserController implements IUserController {
     @HttpCode(HttpStatus.OK)
     @Roles(...USER_ROLES)
     @UserGuards()
-    public async getMe(@Req() req: AuthenticatedRequest) {
+    public async getMe(
+        @Req() req: AuthenticatedRequest,
+    ): Promise<{ id: number }> {
         const userId = this.extractUserId(req);
         try {
             return await this.userService.findAuthenticatedUser(userId);
@@ -215,7 +220,8 @@ export class UserController implements IUserController {
     ): Promise<{ data: UpdateUserPhoneResponse }> {
         const userId = this.extractUserId(req);
         const user = await this.userService.updatePhone(userId, dto.phone);
-        return this.createResponse({ id: user.id, phone: user.phone! });
+        const ensuredPhone = user.phone ?? '';
+        return this.createResponse({ id: user.id, phone: ensuredPhone });
     }
 
     @Roles(...USER_ROLES)
@@ -239,7 +245,7 @@ export class UserController implements IUserController {
     async changePassword(
         @Req() req: AuthenticatedRequest,
         @Body(validationPipe) dto: ChangePasswordDto,
-    ) {
+    ): Promise<{ status: number; message: string }> {
         const userId = this.extractUserId(req);
         await this.userService.changePassword(
             userId,
@@ -257,7 +263,7 @@ export class UserController implements IUserController {
     async updateFlags(
         @Req() req: AuthenticatedRequest,
         @Body(validationPipe) dto: UpdateUserFlagsDto,
-    ) {
+    ): Promise<{ data: unknown }> {
         console.log('updateFlags method called');
         const userId = this.extractUserId(req);
         const user = await this.userService.updateFlags(userId, dto);
@@ -273,7 +279,7 @@ export class UserController implements IUserController {
     async updatePreferences(
         @Req() req: AuthenticatedRequest,
         @Body(validationPipe) dto: UpdateUserPreferencesDto,
-    ) {
+    ): Promise<{ data: unknown }> {
         console.log('updatePreferences method called');
         const userId = this.extractUserId(req);
         const user = await this.userService.updatePreferences(userId, dto);
@@ -286,7 +292,9 @@ export class UserController implements IUserController {
     @VerifyUserEmailSwaggerDecorator()
     @Patch('verify/email/:id')
     @HttpCode(HttpStatus.OK)
-    async verifyEmail(@Param('id', ParseIntPipe) id: number) {
+    async verifyEmail(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<{ data: unknown }> {
         const user = await this.userService.verifyEmailFlag(id);
         return this.createResponse(user);
     }
@@ -296,7 +304,9 @@ export class UserController implements IUserController {
     @VerifyUserPhoneSwaggerDecorator()
     @Patch('verify/phone/:id')
     @HttpCode(HttpStatus.OK)
-    async verifyPhone(@Param('id', ParseIntPipe) id: number) {
+    async verifyPhone(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<{ data: unknown }> {
         const user = await this.userService.verifyPhoneFlag(id);
         return this.createResponse(user);
     }
@@ -306,7 +316,9 @@ export class UserController implements IUserController {
     @UseGuards(AuthGuard, RoleGuard, BruteforceGuard)
     @Post('verify/email/request')
     @HttpCode(HttpStatus.OK)
-    async requestEmailCode(@Req() req: AuthenticatedRequest) {
+    async requestEmailCode(
+        @Req() req: AuthenticatedRequest,
+    ): Promise<{ status: number; message: string }> {
         const userId = this.extractUserId(req);
         await this.userService.requestVerificationCode(userId, 'email');
         return { status: HttpStatus.OK, message: 'success' };
@@ -319,7 +331,7 @@ export class UserController implements IUserController {
     async confirmEmailCode(
         @Req() req: AuthenticatedRequest,
         @Body(validationPipe) dto: ConfirmVerificationDto,
-    ) {
+    ): Promise<{ status: number; message: string }> {
         const userId = this.extractUserId(req);
         await this.userService.confirmVerificationCode(
             userId,
@@ -333,7 +345,9 @@ export class UserController implements IUserController {
     @UseGuards(AuthGuard, RoleGuard, BruteforceGuard)
     @Post('verify/phone/request')
     @HttpCode(HttpStatus.OK)
-    async requestPhoneCode(@Req() req: AuthenticatedRequest) {
+    async requestPhoneCode(
+        @Req() req: AuthenticatedRequest,
+    ): Promise<{ status: number; message: string }> {
         const userId = this.extractUserId(req);
         await this.userService.requestVerificationCode(userId, 'phone');
         return { status: HttpStatus.OK, message: 'success' };
@@ -346,7 +360,7 @@ export class UserController implements IUserController {
     async confirmPhoneCode(
         @Req() req: AuthenticatedRequest,
         @Body(validationPipe) dto: ConfirmVerificationDto,
-    ) {
+    ): Promise<{ status: number; message: string }> {
         const userId = this.extractUserId(req);
         await this.userService.confirmVerificationCode(
             userId,
@@ -361,7 +375,9 @@ export class UserController implements IUserController {
     @AdminGuards()
     @Patch('admin/block/:id')
     @HttpCode(HttpStatus.OK)
-    async block(@Param('id', ParseIntPipe) id: number) {
+    async block(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<{ data: unknown }> {
         const user = await this.userService.blockUser(id);
         return this.createResponse(user);
     }
@@ -370,7 +386,9 @@ export class UserController implements IUserController {
     @AdminGuards()
     @Patch('admin/unblock/:id')
     @HttpCode(HttpStatus.OK)
-    async unblock(@Param('id', ParseIntPipe) id: number) {
+    async unblock(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<{ data: unknown }> {
         const user = await this.userService.unblockUser(id);
         return this.createResponse(user);
     }
@@ -379,7 +397,9 @@ export class UserController implements IUserController {
     @AdminGuards()
     @Patch('admin/suspend/:id')
     @HttpCode(HttpStatus.OK)
-    async suspend(@Param('id', ParseIntPipe) id: number) {
+    async suspend(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<{ data: unknown }> {
         const user = await this.userService.suspendUser(id);
         return this.createResponse(user);
     }
@@ -388,7 +408,9 @@ export class UserController implements IUserController {
     @AdminGuards()
     @Patch('admin/unsuspend/:id')
     @HttpCode(HttpStatus.OK)
-    async unsuspend(@Param('id', ParseIntPipe) id: number) {
+    async unsuspend(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<{ data: unknown }> {
         const user = await this.userService.unsuspendUser(id);
         return this.createResponse(user);
     }
@@ -397,7 +419,9 @@ export class UserController implements IUserController {
     @AdminGuards()
     @Patch('admin/delete/:id')
     @HttpCode(HttpStatus.OK)
-    async softDelete(@Param('id', ParseIntPipe) id: number) {
+    async softDelete(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<{ data: unknown }> {
         const user = await this.userService.softDeleteUser(id);
         return this.createResponse(user);
     }
@@ -406,7 +430,9 @@ export class UserController implements IUserController {
     @AdminGuards()
     @Patch('admin/restore/:id')
     @HttpCode(HttpStatus.OK)
-    async restore(@Param('id', ParseIntPipe) id: number) {
+    async restore(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<{ data: unknown }> {
         const user = await this.userService.restoreUser(id);
         return this.createResponse(user);
     }
@@ -417,7 +443,7 @@ export class UserController implements IUserController {
     @GetUserStatsSwaggerDecorator()
     @Get('admin/stats')
     @HttpCode(HttpStatus.OK)
-    async getUserStats() {
+    async getUserStats(): Promise<{ data: unknown }> {
         const stats = await this.userService.getUserStats();
         return this.createResponse(stats);
     }
