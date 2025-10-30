@@ -3,7 +3,7 @@ import * as path from 'path';
 
 /**
  * Jest global setup - загружает .test.env перед запуском тестов
- * 
+ *
  * Этот файл выполняется перед всеми тестами и обеспечивает
  * наличие необходимых environment переменных для unit-тестов.
  */
@@ -22,12 +22,12 @@ if (result.error) {
 } else {
     console.log(`✅ Environment loaded from ${envPath}`);
     console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
-    console.log(`   DEBUG_SQL: ${process.env.DEBUG_SQL || 'false'}`);
+    console.log(`   DEBUG_SQL: ${process.env.DEBUG_SQL ?? 'false'}`);
 }
 
 /**
  * Подавление SQL логов в тестах (если DEBUG_SQL не включен)
- * 
+ *
  * Sequelize может логировать через console.log даже при logging:false.
  * Перехватываем и фильтруем SQL-подобные логи для чистого вывода.
  */
@@ -52,7 +52,7 @@ if (process.env.DEBUG_SQL !== 'true') {
     };
 
     // Перехватываем console.log
-    console.log = (...args: any[]): void => {
+    console.log = (...args: Parameters<typeof originalConsoleLog>): void => {
         const message = args.join(' ');
         if (!isSqlLog(message)) {
             originalConsoleLog(...args);
@@ -61,7 +61,9 @@ if (process.env.DEBUG_SQL !== 'true') {
     };
 
     // Перехватываем console.debug (некоторые библиотеки используют debug)
-    console.debug = (...args: any[]): void => {
+    console.debug = (
+        ...args: Parameters<typeof originalConsoleDebug>
+    ): void => {
         const message = args.join(' ');
         if (!isSqlLog(message)) {
             originalConsoleDebug(...args);
@@ -71,5 +73,3 @@ if (process.env.DEBUG_SQL !== 'true') {
 
     console.log('🔇 SQL logging suppressed (set DEBUG_SQL=true to enable)');
 }
-
-

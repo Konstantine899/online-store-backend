@@ -19,7 +19,8 @@ export class TestDatabaseSetup {
             });
             console.log(`✅ Migrations applied for ${env} environment`);
         } catch (error) {
-            console.warn(`⚠️  Migration warning for ${env}:`, error.message);
+            const msg = error instanceof Error ? error.message : String(error);
+            console.warn(`⚠️  Migration warning for ${env}:`, msg);
             // Не бросаем ошибку - миграции могут быть уже применены
         }
     }
@@ -36,7 +37,8 @@ export class TestDatabaseSetup {
             });
             console.log(`✅ Seeds applied for ${env} environment`);
         } catch (error) {
-            console.warn(`⚠️  Seed warning for ${env}:`, error.message);
+            const msg = error instanceof Error ? error.message : String(error);
+            console.warn(`⚠️  Seed warning for ${env}:`, msg);
             // Не бросаем ошибку - seeds могут быть уже применены
         }
     }
@@ -62,7 +64,8 @@ export class TestDatabaseSetup {
                 cwd: process.cwd(),
             });
         } catch (error) {
-            console.warn(`⚠️  Drop warning for ${env}:`, error.message);
+            const msg = error instanceof Error ? error.message : String(error);
+            console.warn(`⚠️  Drop warning for ${env}:`, msg);
         }
 
         try {
@@ -72,11 +75,11 @@ export class TestDatabaseSetup {
                 cwd: process.cwd(),
             });
         } catch (error) {
-            console.warn(`⚠️  Create warning for ${env}:`, error.message);
+            const msg = error instanceof Error ? error.message : String(error);
+            console.warn(`⚠️  Create warning for ${env}:`, msg);
         }
 
         // Применяем миграции и seeds
         await this.setupDatabase(env);
     }
 }
-

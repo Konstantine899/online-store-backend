@@ -1,5 +1,5 @@
-import { Transaction } from 'sequelize';
-import { Sequelize } from 'sequelize-typescript';
+import type { Transaction } from 'sequelize';
+import type { Sequelize } from 'sequelize-typescript';
 
 /**
  * TestTransaction - изоляция тестов через транзакции

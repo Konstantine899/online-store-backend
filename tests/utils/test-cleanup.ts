@@ -1,4 +1,4 @@
-import { Sequelize } from 'sequelize-typescript';
+import type { Sequelize } from 'sequelize-typescript';
 
 /**
  * TestCleanup - централизованная очистка БД между тестами

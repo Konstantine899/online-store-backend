@@ -19,7 +19,7 @@
  * ```
  */
 
-import {
+import type {
     CartModel,
     OrderModel,
     ProductModel,

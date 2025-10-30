@@ -10,7 +10,8 @@
 
 import { CartService } from '@app/infrastructure/services/cart/cart.service';
 import { UserService } from '@app/infrastructure/services/user/user.service';
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import {
     MockFactories,
     PerformanceTesting,
@@ -125,15 +126,19 @@ describe('Comprehensive Test Example', () => {
                 cartId: mockCart.id,
                 products: [],
                 totalAmount: 0,
-            } as any);
+            } as unknown as Awaited<ReturnType<typeof cartService.getCart>>);
 
             // Выполняем бенчмарк
             const result = await PerformanceTesting.benchmark(
                 'cart-get-operation',
                 async () => {
                     await cartService.getCart(
-                        MockFactories.createMockRequest() as any,
-                        MockFactories.createMockResponse() as any,
+                        MockFactories.createMockRequest() as unknown as Parameters<
+                            typeof cartService.getCart
+                        >[0],
+                        MockFactories.createMockResponse() as unknown as Parameters<
+                            typeof cartService.getCart
+                        >[1],
                     );
                 },
                 {
@@ -159,7 +164,9 @@ describe('Comprehensive Test Example', () => {
             });
 
             jest.spyOn(userService, 'createUser').mockResolvedValue(
-                mockUser as any,
+                mockUser as unknown as Awaited<
+                    ReturnType<typeof userService.createUser>
+                >,
             );
 
             // Выполняем нагрузочный тест
@@ -171,7 +178,9 @@ describe('Comprehensive Test Example', () => {
                         phone: TEST_CONSTANTS.USER.PHONE,
                         firstName: TEST_CONSTANTS.USER.FIRST_NAME,
                         lastName: TEST_CONSTANTS.USER.LAST_NAME,
-                    } as any);
+                    } as unknown as Parameters<
+                        typeof userService.createUser
+                    >[0]);
                 },
                 {
                     concurrentUsers: 10,
@@ -292,19 +301,23 @@ describe('Comprehensive Test Example', () => {
             const productRepo = MockFactories.createProductRepository();
 
             // 4. Настраиваем моки
-            cartRepo.findCart.mockResolvedValue(cart as any);
-            productRepo.fidProductByPkId.mockResolvedValue(product as any);
+            cartRepo.findCart.mockResolvedValue(
+                cart as unknown as Awaited<
+                    ReturnType<typeof cartRepo.findCart>
+                >,
+            );
+            productRepo.fidProductByPkId.mockResolvedValue(
+                product as unknown as Awaited<
+                    ReturnType<typeof productRepo.fidProductByPkId>
+                >,
+            );
 
             // 5. Выполняем бенчмарк
             const benchmarkResult = await PerformanceTesting.benchmark(
                 'complete-workflow-test',
                 async () => {
                     // Имитируем работу с данными
-                    const foundCart = await cartRepo.findCart(
-                        {} as any,
-                        {} as any,
-                        {} as any,
-                    );
+                    const foundCart = await cartRepo.findCart({}, {}, {});
                     const foundProduct = await productRepo.fidProductByPkId(
                         TEST_CONSTANTS.PRODUCT.ID,
                     );
@@ -321,15 +334,7 @@ describe('Comprehensive Test Example', () => {
     });
 });
 
-/**
- * Демонстрация сервиса с производительностью
- */
-class ExampleService {
-    async performOperation(): Promise<void> {
-        // Имитируем работу
-        await new Promise((resolve) => setTimeout(resolve, Math.random() * 10));
-    }
-}
+// (удалено) Demo-класс не использовался в примере теста
 
 /**
  * Преимущества использования новых утилит:

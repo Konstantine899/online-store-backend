@@ -1,16 +1,17 @@
-import { INestApplication } from '@nestjs/common';
-import { Test, TestingModuleBuilder } from '@nestjs/testing';
-import { getModelToken } from '@nestjs/sequelize';
-import { TestAppModule } from './test-app.module';
-import 'dotenv/config';
 import { UserModel } from '@app/domain/models';
-import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
-import cookieParser from 'cookie-parser';
 import { BruteforceGuard } from '@app/infrastructure/common/guards';
-import helmet from 'helmet';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { getConfig } from '@app/infrastructure/config';
+import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
+import type { INestApplication } from '@nestjs/common';
+import { getModelToken } from '@nestjs/sequelize';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { TestingModuleBuilder } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import cookieParser from 'cookie-parser';
+import 'dotenv/config';
+import helmet from 'helmet';
 import { Sequelize } from 'sequelize-typescript';
+import { TestAppModule } from './test-app.module';
 
 /**
  * Карта активных приложений для предотвращения утечек
@@ -56,7 +57,7 @@ function addGracefulShutdown(app: INestApplication): void {
 }
 
 export async function setupTestApp(): Promise<INestApplication> {
-    process.env.NODE_ENV = process.env.NODE_ENV || 'test';
+    process.env.NODE_ENV = process.env.NODE_ENV ?? 'test';
 
     const builder: TestingModuleBuilder = Test.createTestingModule({
         imports: [TestAppModule],
@@ -75,7 +76,7 @@ export async function setupTestApp(): Promise<INestApplication> {
 
     // Настройка cookieParser для тестов
     app.use(
-        cookieParser(process.env.COOKIE_PARSER_SECRET_KEY || 'test-secret'),
+        cookieParser(process.env.COOKIE_PARSER_SECRET_KEY ?? 'test-secret'),
     );
 
     // Включаем базовый Helmet для тестов (минимальный набор заголовков)
@@ -121,7 +122,7 @@ export async function setupTestApp(): Promise<INestApplication> {
 }
 
 export async function setupTestAppWithRateLimit(): Promise<INestApplication> {
-    process.env.NODE_ENV = process.env.NODE_ENV || 'test';
+    process.env.NODE_ENV = process.env.NODE_ENV ?? 'test';
 
     const builder: TestingModuleBuilder = Test.createTestingModule({
         imports: [TestAppModule],
@@ -136,7 +137,7 @@ export async function setupTestAppWithRateLimit(): Promise<INestApplication> {
     const app = moduleRef.createNestApplication();
 
     app.use(
-        cookieParser(process.env.COOKIE_PARSER_SECRET_KEY || 'test-secret'),
+        cookieParser(process.env.COOKIE_PARSER_SECRET_KEY ?? 'test-secret'),
     );
     app.useGlobalPipes(new CustomValidationPipe());
 

@@ -203,7 +203,6 @@ export class PerformanceTesting {
 
         const startTime = Date.now();
         const results: Array<{ success: boolean; duration: number }> = [];
-        let activeUsers = 0;
 
         // Функция для выполнения запроса
         const executeRequest = async (): Promise<void> => {
@@ -220,7 +219,7 @@ export class PerformanceTesting {
                 ]);
                 const requestDuration = Date.now() - requestStart;
                 results.push({ success: true, duration: requestDuration });
-            } catch (error) {
+            } catch {
                 const requestDuration = Date.now() - requestStart;
                 results.push({ success: false, duration: requestDuration });
             }
@@ -228,7 +227,6 @@ export class PerformanceTesting {
 
         // Функция для пользователя
         const userLoop = async (): Promise<void> => {
-            activeUsers++;
             while (Date.now() - startTime < duration) {
                 await executeRequest();
                 // Небольшая задержка между запросами
@@ -236,7 +234,6 @@ export class PerformanceTesting {
                     setTimeout(resolve, Math.random() * 100),
                 );
             }
-            activeUsers--;
         };
 
         // Постепенное наращивание нагрузки
@@ -385,15 +382,17 @@ export class PerformanceTesting {
  */
 export function Benchmark(name?: string, config?: BenchmarkConfig) {
     return function (
-        target: any,
+        target: unknown,
         propertyName: string,
         descriptor: PropertyDescriptor,
     ) {
         const method = descriptor.value;
-        const benchmarkName =
-            name || `${target.constructor.name}.${propertyName}`;
+        const ctorName =
+            (target as { constructor?: { name?: string } })?.constructor
+                ?.name ?? 'Anonymous';
+        const benchmarkName = name ?? `${ctorName}.${propertyName}`;
 
-        descriptor.value = async function (...args: any[]) {
+        descriptor.value = async function (...args: unknown[]) {
             const result = await PerformanceTesting.benchmark(
                 benchmarkName,
                 () => method.apply(this, args),
