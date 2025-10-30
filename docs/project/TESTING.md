@@ -44,10 +44,11 @@
 #### Детальные тестовые утилиты
 
 **TestDataFactory с дополнительными методами:**
+
 ```typescript
 export class TestDataFactory {
     private static userCounter = 0;
-    
+
     /**
      * Генерирует уникальный email адрес
      * Формат: test.user.{timestamp}.{random}@test.com
@@ -57,7 +58,7 @@ export class TestDataFactory {
         const random = Math.random().toString(36).substring(2, 8);
         return `test.user.${timestamp}.${random}@test.com`;
     }
-    
+
     /**
      * Создаёт пользователя напрямую в БД (быстрее чем через API)
      * Используется когда не нужна полная регистрация
@@ -83,11 +84,11 @@ export class TestDataFactory {
         const password = overrides.password || 'TestPass123!';
         const passwordHash = await hash(password, 10);
         const phone = overrides.phone || this.uniquePhone();
-        
+
         // Находим роль с retry logic (для параллельных тестов)
         const roleName = overrides.role || 'USER';
         let role = await RoleModel.findOne({ where: { role: roleName } });
-        
+
         // Retry до 3 раз с экспоненциальной задержкой (для race conditions в parallel tests)
         if (!role) {
             const maxRetries = 3;
@@ -99,13 +100,13 @@ export class TestDataFactory {
                 if (role) break;
             }
         }
-        
+
         if (!role) {
             throw new Error(
                 `Role ${roleName} not found in database after ${3} retries`,
             );
         }
-        
+
         // Создаём пользователя через Sequelize Model (безопаснее чем raw SQL)
         const user = await UserModel.create({
             email,
@@ -116,13 +117,13 @@ export class TestDataFactory {
             isActive: true,
             isVerified: true,
         });
-        
+
         // Связываем пользователя с ролью
         await UserRoleModel.create({
             user_id: user.id,
             role_id: role.id,
         });
-        
+
         return {
             userId: user.id,
             email,
@@ -130,7 +131,7 @@ export class TestDataFactory {
             id: user.id,
         };
     }
-    
+
     /**
      * Создаёт пользователя в БД с определённой ролью и возвращает токен
      * Комбинация createUserInDB + loginUser для быстрых тестов
@@ -156,9 +157,9 @@ export class TestDataFactory {
             sequelize,
             { ...overrides, role },
         );
-        
+
         const token = await this.loginUser(app, email, password);
-        
+
         return {
             userId,
             email,
@@ -171,10 +172,11 @@ export class TestDataFactory {
 ```
 
 **MockFactories с полным набором моков:**
+
 ```typescript
 export class MockFactories {
     // ==================== CART MODULE ====================
-    
+
     /**
      * Создает мок CartRepository с базовыми методами
      */
@@ -189,11 +191,13 @@ export class MockFactories {
             clearCart: jest.fn(),
         };
     }
-    
+
     /**
      * Создает мок CartModel с базовыми методами и свойствами
      */
-    static createCartModel(overrides: Partial<CartModel> = {}): Partial<CartModel> {
+    static createCartModel(
+        overrides: Partial<CartModel> = {},
+    ): Partial<CartModel> {
         const defaultCart = {
             id: 1,
             tenant_id: 1,
@@ -212,26 +216,28 @@ export class MockFactories {
             convertToAuthenticated: jest.fn().mockResolvedValue(undefined),
             getSubtotal: jest.fn().mockReturnValue(1000),
         };
-        
+
         return { ...defaultCart, ...overrides };
     }
-    
+
     // ==================== COMPOSITE FACTORIES ====================
-    
+
     /**
      * Создает полный набор провайдеров для CartService тестов
      */
-    static createCartServiceProviders(config: {
-        tenantId?: number;
-        mockCart?: Partial<CartModel>;
-        mockProduct?: Partial<ProductModel>;
-        mockPromoCodeService?: unknown;
-    } = {}) {
+    static createCartServiceProviders(
+        config: {
+            tenantId?: number;
+            mockCart?: Partial<CartModel>;
+            mockProduct?: Partial<ProductModel>;
+            mockPromoCodeService?: unknown;
+        } = {},
+    ) {
         const {
             tenantId = 1,
             mockPromoCodeService = this.createPromoCodeService(),
         } = config;
-        
+
         return [
             {
                 provide: 'CartRepository',
@@ -259,6 +265,7 @@ export class MockFactories {
 ```
 
 **TEST_CONSTANTS для стандартизации:**
+
 ```typescript
 /**
  * Константы для тестов всех модулей
@@ -276,7 +283,7 @@ export const TEST_CONSTANTS = {
         PROMO_DISCOUNT: 100,
         LARGE_QUANTITY: 1000,
     },
-    
+
     // User constants
     USER: {
         ID: 1,
@@ -285,7 +292,7 @@ export const TEST_CONSTANTS = {
         FIRST_NAME: 'Test',
         LAST_NAME: 'User',
     },
-    
+
     // Product constants
     PRODUCT: {
         ID: 1,
@@ -295,7 +302,7 @@ export const TEST_CONSTANTS = {
         CATEGORY_ID: 1,
         BRAND_ID: 1,
     },
-    
+
     // Order constants
     ORDER: {
         ID: 1,
@@ -303,7 +310,7 @@ export const TEST_CONSTANTS = {
         TOTAL_AMOUNT: 1000,
         PAYMENT_METHOD: 'card',
     },
-    
+
     // Common constants
     COMMON: {
         TENANT_ID: 1,
@@ -394,6 +401,7 @@ describe('UserRepository', () => {
 #### Детальная Jest конфигурация
 
 **Performance оптимизации:**
+
 ```javascript
 // jest.config.js
 const commonConfig = {
@@ -419,6 +427,7 @@ const commonConfig = {
 ```
 
 **CI оптимизации:**
+
 ```javascript
 // CI-специфичные настройки
 const isCI = process.env.CI === 'true';
@@ -438,6 +447,7 @@ module.exports = {
 ```
 
 **Project конфигурации:**
+
 ```javascript
 // Projects configuration - основная конфигурация
 projects: [
@@ -465,6 +475,7 @@ projects: [
 ```
 
 **Coverage thresholds:**
+
 ```javascript
 coverageThreshold: {
     global: {
@@ -473,7 +484,7 @@ coverageThreshold: {
         lines: 70, // Current: 73.73% → Target: 70% (safe margin)
         statements: 70, // Current: 73.73% → Target: 70% (safe margin)
     },
-    
+
     // CRITICAL: Auth Services (High security impact)
     './src/infrastructure/services/auth/**/*.ts': {
         branches: 65,
@@ -481,7 +492,7 @@ coverageThreshold: {
         lines: 85,
         statements: 85,
     },
-    
+
     // CRITICAL: Security Guards (High security impact)
     './src/infrastructure/common/guards/**/*.ts': {
         branches: 35, // Conservative: actual 38-99% mixed
@@ -489,7 +500,7 @@ coverageThreshold: {
         lines: 60,
         statements: 60,
     },
-    
+
     // HIGH: Token Services (Security critical)
     './src/infrastructure/services/token/**/*.ts': {
         branches: 75, // Actual: 75.92%
@@ -510,11 +521,33 @@ coverageThreshold: {
 
 ### Каталоги
 
-- `tests/unit/` - unit тесты
-- `tests/integration/` - integration тесты
-- `tests/e2e/` - E2E тесты
-- `tests/setup/` - общие настройки
-- `tests/utils/` - тестовые утилиты
+- Единый принцип: тесты колоцируются рядом с кодом модуля в `src/**/tests/`.
+- Расположение по слоям и подсекциям:
+    - Domain layer:
+        - `src/domain/**/tests/unit/**/*.unit.test.ts`
+        - `src/domain/**/tests/integration/**/*.integration.test.ts`
+        - `src/domain/**/tests/e2e/**/*.e2e.test.ts`
+    - Infrastructure/controllers:
+        - `src/infrastructure/controllers/**/tests/unit/**/*.unit.test.ts`
+        - `src/infrastructure/controllers/**/tests/integration/**/*.integration.test.ts`
+        - `src/infrastructure/controllers/**/tests/e2e/**/*.e2e.test.ts`
+    - Infrastructure/services:
+        - `src/infrastructure/services/**/tests/unit/**/*.unit.test.ts`
+        - `src/infrastructure/services/**/tests/integration/**/*.integration.test.ts`
+        - `src/infrastructure/services/**/tests/e2e/**/*.e2e.test.ts`
+    - Infrastructure/repositories:
+        - `src/infrastructure/repositories/**/tests/unit/**/*.unit.test.ts`
+        - `src/infrastructure/repositories/**/tests/integration/**/*.integration.test.ts`
+        - `src/infrastructure/repositories/**/tests/e2e/**/*.e2e.test.ts`
+    - Infrastructure/common (guards, pipes, filters, middleware, decorators, etc.):
+        - `src/infrastructure/common/**/tests/unit/**/*.unit.test.ts`
+        - `src/infrastructure/common/**/tests/integration/**/*.integration.test.ts`
+        - `src/infrastructure/common/**/tests/e2e/**/*.e2e.test.ts`
+- Глобальные служебные каталоги (в корне):
+    - `tests/setup/` — общие настройки (инициализация приложений/БД, global setup/teardown)
+    - `tests/utils/` — тестовые утилиты, фабрики, константы, моки
+
+Требование к расположению: тесты всегда лежат в подпапке `tests` рядом с тестируемым модулем в `src/**`. В корне репозитория разрешены только общие каталоги `tests/setup/` и `tests/utils/`.
 
 ### Правило AAA
 
@@ -585,6 +618,7 @@ coverageThreshold: {
 ### Jest setup
 
 **Загрузка environment переменных:**
+
 ```typescript
 // tests/jest-setup.ts
 import * as dotenv from 'dotenv';
@@ -592,7 +626,7 @@ import * as path from 'path';
 
 /**
  * Jest global setup - загружает .test.env перед запуском тестов
- * 
+ *
  * Этот файл выполняется перед всеми тестами и обеспечивает
  * наличие необходимых environment переменных для unit-тестов.
  */
@@ -616,13 +650,14 @@ if (result.error) {
 
 /**
  * Подавление SQL логов в тестах (если DEBUG_SQL не включен)
- * 
+ *
  * Sequelize может логировать через console.log даже при logging:false.
  * Перехватываем и фильтруем SQL-подобные логи для чистого вывода.
  */
 ```
 
 **Test app setup с graceful shutdown:**
+
 ```typescript
 // tests/setup/app.ts
 import { INestApplication } from '@nestjs/common';
@@ -681,16 +716,17 @@ function addGracefulShutdown(app: INestApplication): void {
 ```
 
 **E2E конфигурация:**
+
 ```javascript
 // jest.e2e.config.js
 module.exports = {
     // TypeScript support
     preset: 'ts-jest',
     testEnvironment: 'node',
-    
+
     // File extensions
     moduleFileExtensions: ['js', 'json', 'ts'],
-    
+
     // TypeScript transformation
     transform: {
         '^.+\\.(t|j)s$': [
@@ -708,47 +744,47 @@ module.exports = {
             },
         ],
     },
-    
+
     // Module resolution
     moduleNameMapper: {
         '^@app/(.*)$': '<rootDir>/src/$1',
     },
-    
+
     // Transform ignore patterns
     transformIgnorePatterns: ['node_modules/(?!(uuid)/)'],
-    
+
     // Только E2E тесты
     testMatch: ['<rootDir>/tests/e2e/**/*.e2e.test.ts'],
-    
+
     // E2E setup
     setupFilesAfterEnv: ['<rootDir>/tests/jest-setup.ts'],
-    
+
     // E2E тесты медленнее - увеличиваем timeout
     testTimeout: 60000, // 60 секунд
-    
+
     // Sequential execution для стабильности
     maxWorkers: 1,
-    
+
     // Отключаем coverage для E2E (фокус на функциональности, не покрытии)
     collectCoverage: false,
-    
+
     // Display name для удобства
     displayName: {
         name: 'E2E',
         color: 'magenta',
     },
-    
+
     // Отключаем параллельные запуски (E2E должны идти последовательно)
     bail: 1, // Останавливаем на первой ошибке
-    
+
     // Более verbose output для отладки
     verbose: true,
-    
+
     // Отключаем fake timers (E2E работает с реальным временем)
     fakeTimers: {
         enableGlobally: false,
     },
-    
+
     // Mocks
     clearMocks: true,
     restoreMocks: true,
@@ -760,10 +796,11 @@ module.exports = {
 ### Бенчмарки и нагрузочное тестирование
 
 **PerformanceTesting класс:**
+
 ```typescript
 /**
  * Performance Testing Framework - инструменты для тестирования производительности
- * 
+ *
  * Назначение:
  * - Бенчмарки для критичных операций
  * - Нагрузочное тестирование API endpoints
@@ -797,7 +834,7 @@ export interface BenchmarkConfig {
 export class PerformanceTesting {
     private static logger = new Logger(PerformanceTesting.name);
     private static results: BenchmarkResult[] = [];
-    
+
     /**
      * Выполняет бенчмарк операции
      */
@@ -896,7 +933,7 @@ export class PerformanceTesting {
 
         return result;
     }
-    
+
     /**
      * Генерирует отчет о производительности
      */
@@ -925,6 +962,7 @@ export class PerformanceTesting {
 ```
 
 **Декоратор для автоматического бенчмарка:**
+
 ```typescript
 /**
  * Декоратор для автоматического бенчмарка методов
@@ -952,17 +990,22 @@ export function Benchmark(name?: string, config?: BenchmarkConfig) {
 ```
 
 **Примеры использования:**
+
 ```typescript
 // Бенчмарк операции корзины
-await PerformanceTesting.benchmark('cart-operation', async () => {
-    await cartService.addToCart(productId, quantity);
-}, {
-    iterations: 1000,
-    warmupIterations: 50,
-    threshold: {
-        maxAverageDuration: 100, // 100ms максимум
+await PerformanceTesting.benchmark(
+    'cart-operation',
+    async () => {
+        await cartService.addToCart(productId, quantity);
     },
-});
+    {
+        iterations: 1000,
+        warmupIterations: 50,
+        threshold: {
+            maxAverageDuration: 100, // 100ms максимум
+        },
+    },
+);
 
 // Автоматический бенчмарк метода
 class CartService {
@@ -1011,6 +1054,7 @@ class CartService {
 ### Конкретные измерения производительности
 
 **Jest оптимизации:**
+
 - **isolatedModules**: ускорение компиляции TypeScript в 2-3×
 - **diagnostics: false**: отключение медленных проверок
 - **coverageProvider: 'v8'**: в 3-5× быстрее, чем babel coverage
@@ -1018,12 +1062,14 @@ class CartService {
 - **workerIdleMemoryLimit**: перезапуск воркеров при превышении лимита памяти
 
 **CI оптимизации:**
+
 - **bail: 1**: остановка при первой ошибке (экономит время)
 - **silent: true**: минимальный вывод (меньше I/O)
 - **maxWorkers: 2**: ограничение воркеров для стабильности
 - **coverageReporters**: минимум репортеров для скорости
 
 **Coverage thresholds:**
+
 - **Global**: 70% branches, 60% functions, 70% lines/statements
 - **Auth Services**: 85% lines/statements (высокая безопасность)
 - **Security Guards**: 60% lines/statements (консервативно)
