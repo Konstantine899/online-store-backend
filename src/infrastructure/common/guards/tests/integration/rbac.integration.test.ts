@@ -1,8 +1,8 @@
 import type { INestApplication } from '@nestjs/common';
 import { HttpStatus } from '@nestjs/common';
+import { setupTestApp } from '@tests/setup/app';
+import { TestDataFactory } from '@tests/utils';
 import request from 'supertest';
-import { setupTestApp } from '../../setup/app';
-import { TestDataFactory } from '../../utils';
 
 // Хелпер для создания запросов с tenant-id заголовком
 const createRequest = (app: INestApplication): ReturnType<typeof request> => {

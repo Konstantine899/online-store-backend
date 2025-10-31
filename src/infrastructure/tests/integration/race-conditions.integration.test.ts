@@ -16,7 +16,7 @@
  */
 
 import type { INestApplication } from '@nestjs/common';
-import { setupTestApp } from '../../setup/app';
+import { setupTestApp } from '@tests/setup/app';
 
 describe('Race Conditions & Concurrency (Integration)', () => {
     let app: INestApplication;

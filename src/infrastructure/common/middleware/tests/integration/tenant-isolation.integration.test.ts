@@ -13,8 +13,8 @@ import { ProductRepository } from '@app/infrastructure/repositories/product/prod
 import { RatingRepository } from '@app/infrastructure/repositories/rating/rating.repository';
 import { UserAddressRepository } from '@app/infrastructure/repositories/user-address/user-address.repository';
 import type { INestApplication } from '@nestjs/common';
-import { setupTestApp } from '../../setup/app';
-import { TestDatabaseSetup } from '../../utils';
+import { setupTestApp } from '@tests/setup/app';
+import { TestDatabaseSetup } from '@tests/utils';
 
 describe('SAAS-001-13: Tenant Isolation (Integration)', () => {
     let app: INestApplication;
