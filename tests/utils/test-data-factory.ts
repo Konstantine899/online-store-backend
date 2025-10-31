@@ -174,13 +174,32 @@ export class TestDataFactory {
             lastName: overrides.lastName ?? undefined,
         });
 
+        // Проверяем наличие обязательных полей
+        if (!user.id) {
+            throw new Error('User ID is missing after creation');
+        }
+        if (!role.id) {
+            throw new Error(`Role ID is missing for role: ${roleName}`);
+        }
+
         // Присваиваем роль через прямую вставку (избегаем проблем с $add)
-        await sequelize.query(
-            `INSERT INTO user_role (user_id, role_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW())`,
-            {
-                replacements: [user.id, role.id],
-            },
-        );
+        // Используем явную дату вместо NOW() для совместимости с параметризованными запросами
+        // Используем транзакцию для атомарности операции (как в user.service.ts)
+        const transaction = await sequelize.transaction();
+        try {
+            const now = new Date();
+            await sequelize.query(
+                `INSERT INTO \`user_role\` (\`user_id\`, \`role_id\`, \`created_at\`, \`updated_at\`) VALUES (?, ?, ?, ?)`,
+                {
+                    replacements: [user.id, role.id, now, now],
+                    transaction,
+                },
+            );
+            await transaction.commit();
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
 
         return { userId: user.id, email, password, id: user.id };
     }
@@ -324,10 +343,14 @@ export class TestDataFactory {
         const isUsed = options.used ?? false;
         const usedAt = options.used ? now : null;
 
+        // Используем явную дату вместо NOW() для совместимости с параметризованными запросами
+        const createdAt = now.toISOString().slice(0, 19).replace('T', ' ');
+        const updatedAt = now.toISOString().slice(0, 19).replace('T', ' ');
+
         const [result] = await sequelize.query(
             `INSERT INTO password_reset_tokens
             (user_id, tenant_id, token, expires_at, is_used, used_at, ip_address, user_agent, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             {
                 replacements: [
                     userId,
@@ -340,6 +363,8 @@ export class TestDataFactory {
                         : null,
                     options.ipAddress ?? '127.0.0.1',
                     options.userAgent ?? 'test-agent',
+                    createdAt,
+                    updatedAt,
                 ],
             },
         );
