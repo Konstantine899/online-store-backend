@@ -2,17 +2,13 @@ import { HttpStatus, type INestApplication } from '@nestjs/common';
 import { setupTestApp } from '@tests/setup/app';
 import { TestDataFactory, TestDatabaseSetup } from '@tests/utils';
 import { Sequelize } from 'sequelize-typescript';
-import * as request from 'supertest';
+import request, { type SuperTest, type Test } from 'supertest';
 
 // Хелпер для создания запросов с tenant-id заголовком
-const createRequest = (
-    app: INestApplication,
-): request.SuperTest<request.Test> => {
+const createRequest = (app: INestApplication): SuperTest<Test> => {
     const agent = request(app.getHttpServer());
-    const wrap = (
-        fn: (url: string) => request.Test,
-    ): ((url: string) => request.Test) => {
-        return (url: string): request.Test =>
+    const wrap = (fn: (url: string) => Test): ((url: string) => Test) => {
+        return (url: string): Test =>
             fn.call(agent, url).set('x-tenant-id', '1');
     };
     (agent as unknown as { get: unknown }).get = wrap(agent.get.bind(agent));
@@ -24,7 +20,7 @@ const createRequest = (
     (agent as unknown as { delete: unknown }).delete = wrap(
         agent.delete.bind(agent),
     );
-    return agent as unknown as request.SuperTest<request.Test>;
+    return agent as unknown as SuperTest<Test>;
 };
 
 /**
