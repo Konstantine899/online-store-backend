@@ -220,17 +220,28 @@ describe('CorrelationIdMiddleware (unit)', () => {
             expect(mockRequest.correlationId).toBe('first-id');
         });
 
-        it('должен обработать x-request-id с пробелами по краям', () => {
+        it('должен обработать x-request-id с пробелами по краям (trim)', () => {
             mockRequest.headers = {
                 'x-request-id': '  correlation-id-with-spaces  ',
             };
 
             middleware.use(mockRequest, mockResponse, mockNext);
 
-            // Middleware не делает trim, пробрасывает как есть
+            // Middleware делает trim, пробелы удаляются
             expect(mockRequest.correlationId).toBe(
-                '  correlation-id-with-spaces  ',
+                'correlation-id-with-spaces',
             );
+        });
+
+        it('должен сгенерировать новый ID если x-request-id состоит только из пробелов', () => {
+            mockRequest.headers = { 'x-request-id': '   ' };
+
+            middleware.use(mockRequest, mockResponse, mockNext);
+
+            // После trim остаётся пустая строка, должен быть сгенерирован новый ID
+            expect(mockRequest.correlationId).toBeDefined();
+            expect(mockRequest.correlationId).not.toBe('');
+            expect(mockRequest.correlationId).toHaveLength(36);
         });
     });
 
