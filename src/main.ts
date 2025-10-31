@@ -40,7 +40,7 @@ process.on('unhandledRejection', (reason: unknown) => {
             reason: reason instanceof Error ? reason.message : String(reason),
             stack: reason instanceof Error ? reason.stack : undefined,
         },
-        'Необработанное Promise rejection',
+        'Unhandled Promise rejection',
     );
 
     // Graceful shutdown после логирования
@@ -58,7 +58,7 @@ process.on('uncaughtException', (error: Error) => {
             stack: error.stack,
             name: error.name,
         },
-        'Необработанное исключение',
+        'Unhandled exception',
     );
 
     // Критичная ошибка - немедленное завершение
@@ -81,6 +81,18 @@ async function bootstrap(): Promise<void> {
     app.useStaticAssets(path.join(__dirname, 'static'), {
         prefix: '/online-store/static/',
     });
+
+    // Раздача HTML отчетов тестов только в development/test окружениях
+    if (cfg.NODE_ENV === 'development' || cfg.NODE_ENV === 'test') {
+        // test-reports доступны по /online-store/test-reports/*
+        app.useStaticAssets(path.join(process.cwd(), 'test-reports'), {
+            prefix: '/online-store/test-reports/',
+        });
+        // coverage отчеты доступны по /online-store/coverage/*
+        app.useStaticAssets(path.join(process.cwd(), 'coverage'), {
+            prefix: '/online-store/coverage/',
+        });
+    }
     app.useGlobalPipes(...[new CustomValidationPipe()]);
     app.useGlobalFilters(
         ...[
@@ -172,7 +184,7 @@ async function bootstrap(): Promise<void> {
                     url: req.url,
                     path: req.url,
                     name: 'TooManyRequests',
-                    message: 'Слишком много запросов. Попробуйте позже',
+                    message: 'Too many requests. Please try again later',
                 });
                 return;
             }
@@ -269,14 +281,18 @@ async function bootstrap(): Promise<void> {
     );
 
     // Swagger документация: управляется через SWAGGER_ENABLED (по умолчанию только dev/test)
+    const swaggerPath = '/online-store/docs';
     if (cfg.SWAGGER_ENABLED) {
         swaggerConfig(app);
         logger.info(
-            { port: PORT },
-            'Swagger документация доступна на /online-store/docs',
+            {
+                port: PORT,
+                swaggerPath,
+            },
+            'Swagger documentation available at /online-store/docs',
         );
     } else {
-        logger.info('Swagger документация отключена (SWAGGER_ENABLED=false)');
+        logger.info('Swagger documentation disabled (SWAGGER_ENABLED=false)');
     }
 
     app.enableShutdownHooks();
@@ -285,16 +301,16 @@ async function bootstrap(): Promise<void> {
     const shutdown = async (signal: string): Promise<void> => {
         logger.info(
             { signal },
-            'Получен сигнал завершения, graceful shutdown...',
+            'Received shutdown signal, graceful shutdown...',
         );
         try {
             await app.close();
-            logger.info('Приложение корректно завершено');
+            logger.info('Application gracefully shut down');
             process.exit(0);
         } catch (e) {
             logger.error(
                 { error: e instanceof Error ? e.message : String(e) },
-                'Ошибка при завершении приложения',
+                'Error during application shutdown',
             );
             process.exit(1);
         }
@@ -303,15 +319,35 @@ async function bootstrap(): Promise<void> {
     process.on('SIGTERM', () => shutdown('SIGTERM'));
 
     await app.listen(PORT, () => {
-        logger.info(
-            {
-                port: PORT,
-                env: cfg.NODE_ENV,
-                apiPrefix: '/online-store',
-                swaggerEnabled: cfg.SWAGGER_ENABLED,
-            },
-            'Приложение успешно запущено',
-        );
+        const baseUrl = `http://localhost:${PORT}`;
+        const info = {
+            port: PORT,
+            env: cfg.NODE_ENV,
+            apiPrefix: '/online-store',
+            swaggerEnabled: cfg.SWAGGER_ENABLED,
+            ...(cfg.SWAGGER_ENABLED && {
+                swaggerPath: '/online-store/docs',
+                swaggerUrl: `${baseUrl}/online-store/docs`,
+            }),
+            testReports:
+                cfg.NODE_ENV === 'development' || cfg.NODE_ENV === 'test'
+                    ? {
+                          html: {
+                              filePath: 'test-reports/test-report.html',
+                              url: `${baseUrl}/online-store/test-reports/test-report.html`,
+                          },
+                          coverage: {
+                              filePath: 'coverage/index.html',
+                              url: `${baseUrl}/online-store/coverage/index.html`,
+                          },
+                      }
+                    : {
+                          html: { filePath: 'test-reports/test-report.html' },
+                          coverage: { filePath: 'coverage/index.html' },
+                      },
+        };
+
+        logger.info(info, 'Application started successfully');
     });
 }
 
@@ -321,7 +357,7 @@ bootstrap().catch((error) => {
             error: error instanceof Error ? error.message : String(error),
             stack: error instanceof Error ? error.stack : undefined,
         },
-        'Критичная ошибка при запуске приложения',
+        'Critical error during application startup',
     );
     process.exit(1);
 });
