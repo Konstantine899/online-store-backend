@@ -20,5 +20,6 @@ export { RefreshTokenModel } from './refresh-token.model';
 export { RoleModel } from './role.model';
 export { TenantModel } from './tenant.model';
 export { UserAddressModel } from './user-address';
+export { UserNotificationSettingsModel } from './user-notification-settings.model';
 export { UserRoleModel } from './user-role.model';
 export { UserModel } from './user.model';
