@@ -14,7 +14,7 @@ const migration: Migration = {
         queryInterface: QueryInterface,
         Sequelize: typeof DataTypes,
     ): Promise<void> {
-        // Создание таблицы notifications
+        // Создание таблицы notifications (SAAS-009-01)
         await queryInterface.createTable('notifications', {
             id: {
                 type: Sequelize.INTEGER,
@@ -124,10 +124,101 @@ const migration: Migration = {
         await queryInterface.addIndex('notifications', ['user_id', 'status'], {
             name: 'idx_notifications_user_status',
         });
+
+        // Создание таблицы notification_templates
+        await queryInterface.createTable('notification_templates', {
+            id: {
+                type: Sequelize.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+                allowNull: false,
+            },
+            name: {
+                type: Sequelize.STRING(50),
+                allowNull: false,
+                unique: true,
+            },
+            type: {
+                type: Sequelize.ENUM('email', 'push'),
+                allowNull: false,
+            },
+            subject: {
+                type: Sequelize.STRING(255),
+                allowNull: true,
+            },
+            title: {
+                type: Sequelize.STRING(255),
+                allowNull: false,
+            },
+            message: {
+                type: Sequelize.TEXT,
+                allowNull: false,
+            },
+            variables: {
+                type: Sequelize.JSON,
+                allowNull: false,
+                defaultValue: [],
+            },
+            is_active: {
+                type: Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: true,
+            },
+            created_at: {
+                type: Sequelize.DATE,
+                allowNull: false,
+                defaultValue: Sequelize.NOW,
+            },
+            updated_at: {
+                type: Sequelize.DATE,
+                allowNull: false,
+                defaultValue: Sequelize.NOW,
+            },
+        });
+
+        // Создание индексов для notification_templates
+        await queryInterface.addIndex('notification_templates', ['name'], {
+            name: 'idx_notification_templates_name',
+            unique: true,
+        });
+
+        await queryInterface.addIndex('notification_templates', ['type'], {
+            name: 'idx_notification_templates_type',
+        });
+
+        await queryInterface.addIndex('notification_templates', ['is_active'], {
+            name: 'idx_notification_templates_is_active',
+        });
     },
 
     async down(queryInterface: QueryInterface): Promise<void> {
-        // Удаление индексов (сначала композитный с user_id, затем остальные)
+        // Удаление индексов notification_templates
+        const templateIndexesToRemove = [
+            'idx_notification_templates_is_active',
+            'idx_notification_templates_type',
+            'idx_notification_templates_name',
+        ];
+
+        for (const indexName of templateIndexesToRemove) {
+            try {
+                await queryInterface.removeIndex(
+                    'notification_templates',
+                    indexName,
+                );
+            } catch (error) {
+                const errorMessage =
+                    error instanceof Error ? error.message : 'Unknown error';
+                if (
+                    !errorMessage.includes('Unknown key') &&
+                    !errorMessage.includes('does not exist') &&
+                    !errorMessage.includes('Cannot drop')
+                ) {
+                    throw error;
+                }
+            }
+        }
+
+        // Удаление индексов notifications (сначала композитный с user_id, затем остальные)
         const indexesToRemove = [
             'idx_notifications_user_status', // Композитный индекс с user_id
             'idx_notifications_user_id',
@@ -196,7 +287,8 @@ const migration: Migration = {
             }
         }
 
-        // Удаление таблицы (автоматически удалит все оставшиеся колонки)
+        // Удаление таблиц (автоматически удалит все оставшиеся колонки)
+        await queryInterface.dropTable('notification_templates');
         await queryInterface.dropTable('notifications');
     },
 };

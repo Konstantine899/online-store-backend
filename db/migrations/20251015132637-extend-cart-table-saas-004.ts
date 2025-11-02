@@ -153,10 +153,24 @@ const migration = {
             }
         }
 
-        console.log('✅ Cart table extended with SaaS fields (SAAS-004-01)');
+        // SAAS-004-01: Добавляем поле price в cart-product для price snapshot
+        try {
+            await queryInterface.addColumn('cart-product', 'price', {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: false,
+                defaultValue: 0,
+                comment: 'Product price snapshot at the time of adding to cart',
+            });
+            console.log('✅ Added column: price to cart-product table');
+        } catch {
+            console.log('⚠️  Column price already exists - skipping');
+        }
+
+        console.log('✅ Cart tables extended with SaaS fields (SAAS-004-01)');
         console.log(
-            '✅ Added fields: user_id, session_id, status, expired_at, promo_code, discount, total_amount',
+            '✅ Added fields to cart: user_id, session_id, status, expired_at, promo_code, discount, total_amount',
         );
+        console.log('✅ Added field to cart-product: price (price snapshot)');
         console.log('✅ Added 5 composite indexes for tenant isolation');
     },
 
@@ -197,7 +211,15 @@ const migration = {
             console.log('⚠️  Index idx_cart_tenant_user does not exist');
         }
 
-        // Удаляем колонки в обратном порядке
+        // Удаляем колонку price из cart-product
+        try {
+            await queryInterface.removeColumn('cart-product', 'price');
+            console.log('✅ Removed column: price from cart-product');
+        } catch {
+            console.log('⚠️  Column price does not exist in cart-product');
+        }
+
+        // Удаляем колонки cart в обратном порядке
         try {
             await queryInterface.removeColumn('cart', 'total_amount');
             console.log('✅ Removed column: total_amount');

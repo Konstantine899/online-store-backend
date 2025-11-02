@@ -125,10 +125,12 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
         allowNull: false,
         defaultValue: 'Europe/Moscow',
     });
+    // MySQL JSON columns cannot have non-NULL default in strict modes
+    // Создаем сразу с правильными значениями, чтобы избежать отдельной fix-миграции
     await queryInterface.addColumn('user', 'notification_preferences', {
         type: DataTypes.JSON,
-        allowNull: false,
-        defaultValue: {},
+        allowNull: true,
+        defaultValue: null,
     });
     await queryInterface.addColumn('user', 'theme_preference', {
         type: DataTypes.STRING(20),
@@ -143,7 +145,7 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
     await queryInterface.addColumn('user', 'translations', {
         type: DataTypes.JSON,
         allowNull: true,
-        defaultValue: {},
+        defaultValue: null,
     });
 
     // Timestamps
@@ -277,6 +279,8 @@ export async function down(queryInterface: QueryInterface): Promise<void> {
     }
 
     // Remove columns (reverse order is not strictly necessary here)
+    // Note: notification_preferences and translations теперь с defaultValue: null
+    // вместо defaultValue: {} (исправлено для MySQL compatibility)
     const columns = [
         'translations',
         'default_language',

@@ -14,6 +14,7 @@ import { NotificationStatus, NotificationType } from './notification.types';
 interface INotificationModel {
     id: number;
     userId: number;
+    tenantId: number;
     type: NotificationType;
     templateName: string;
     title: string;
@@ -31,6 +32,7 @@ interface INotificationModel {
 
 interface INotificationCreationAttributes {
     userId: number;
+    tenantId: number;
     type: NotificationType;
     templateName: string;
     title: string;
@@ -51,6 +53,10 @@ interface INotificationCreationAttributes {
         attributes: { exclude: ['updatedAt'] },
     },
     scopes: {
+        // Scope для поиска по тенанту
+        byTenant: (tenantId: number) => ({
+            where: { tenantId },
+        }),
         // Scope для поиска по пользователю
         byUser: (userId: number) => ({
             where: { userId },
@@ -98,6 +104,7 @@ interface INotificationCreationAttributes {
         },
     },
     indexes: [
+        { fields: ['tenant_id'], name: 'idx_notifications_tenant_id' },
         { fields: ['user_id'], name: 'idx_notifications_user_id' },
         { fields: ['type'], name: 'idx_notifications_type' },
         { fields: ['status'], name: 'idx_notifications_status' },
@@ -105,6 +112,14 @@ interface INotificationCreationAttributes {
         { fields: ['is_read'], name: 'idx_notifications_is_read' },
         { fields: ['is_archived'], name: 'idx_notifications_is_archived' },
         { fields: ['created_at'], name: 'idx_notifications_created_at' },
+        {
+            fields: ['tenant_id', 'user_id'],
+            name: 'idx_notifications_tenant_user',
+        },
+        {
+            fields: ['tenant_id', 'type'],
+            name: 'idx_notifications_tenant_type',
+        },
         {
             fields: ['user_id', 'status'],
             name: 'idx_notifications_user_status',
@@ -129,6 +144,14 @@ export class NotificationModel
         field: 'user_id',
     })
     declare userId: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'tenant_id',
+        comment: 'Tenant ID for multi-tenant isolation',
+    })
+    declare tenantId: number;
 
     @Column({
         type: DataType.ENUM(...Object.values(NotificationType)),

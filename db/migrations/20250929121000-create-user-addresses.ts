@@ -69,6 +69,15 @@ export const up = async (queryInterface: QueryInterface): Promise<void> => {
     await queryInterface.addIndex('user_address', ['user_id', 'is_default'], {
         name: 'idx_user_address_user_default',
     });
+    // Композитный индекс под частый запрос списка адресов пользователя
+    // с сортировкой по is_default DESC, created_at ASC
+    await queryInterface.addIndex(
+        'user_address',
+        ['user_id', 'is_default', 'created_at'],
+        {
+            name: 'idx_user_address_user_default_created_at',
+        },
+    );
 };
 
 export const down = async (queryInterface: QueryInterface): Promise<void> => {
