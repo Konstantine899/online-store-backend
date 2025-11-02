@@ -42,6 +42,11 @@ const migration: Migration = {
             },
             {
                 table: 'notifications',
+                columns: ['tenant_id', 'status'],
+                name: 'idx_notifications_tenant_status',
+            },
+            {
+                table: 'notifications',
                 columns: ['tenant_id'],
                 name: 'idx_notifications_tenant_id',
             },
@@ -126,6 +131,7 @@ const migration: Migration = {
         const indexesToRemove = [
             'idx_notifications_tenant_type',
             'idx_notifications_tenant_user',
+            'idx_notifications_tenant_status',
             'idx_notifications_tenant_id',
         ];
 

@@ -121,6 +121,10 @@ interface INotificationCreationAttributes {
             name: 'idx_notifications_tenant_type',
         },
         {
+            fields: ['tenant_id', 'status'],
+            name: 'idx_notifications_tenant_status',
+        },
+        {
             fields: ['user_id', 'status'],
             name: 'idx_notifications_user_status',
         },
