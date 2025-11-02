@@ -1,7 +1,7 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { UserNotificationSettingsResponse } from '@app/infrastructure/responses/notification/user-notification-settings.response';
 import { UnauthorizedResponse, ForbiddenResponse } from './common-responses';
-import { USER_SETTINGS_SCHEMA } from './get-user-settings.swagger';
 
 export function UpdateUserSettingsSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
@@ -13,14 +13,7 @@ export function UpdateUserSettingsSwaggerDecorator(): MethodDecorator {
         ApiResponse({
             status: HttpStatus.OK,
             description: 'Настройки уведомлений обновлены',
-            schema: {
-                ...USER_SETTINGS_SCHEMA,
-                properties: {
-                    ...USER_SETTINGS_SCHEMA.properties,
-                    pushEnabled: { type: 'boolean', example: false },
-                    marketing: { type: 'boolean', example: true },
-                },
-            },
+            type: UserNotificationSettingsResponse,
         }),
         UnauthorizedResponse(),
         ForbiddenResponse(),

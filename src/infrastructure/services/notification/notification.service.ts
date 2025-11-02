@@ -4,6 +4,7 @@ import {
     NotificationTemplateModel,
     NotificationType,
     UserModel,
+    UserNotificationSettingsModel,
 } from '@app/domain/models';
 import {
     CreateNotificationDto,
@@ -24,6 +25,7 @@ import {
     NotFoundException,
     Optional,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes } from 'sequelize';
 
 @Injectable()
@@ -59,6 +61,8 @@ export class NotificationService implements INotificationService {
         @Inject('ISmsProvider') private readonly smsProvider: ISmsProvider,
         @Inject('ITemplateRenderer')
         private readonly templateRenderer: ITemplateRenderer,
+        @InjectModel(UserNotificationSettingsModel)
+        private readonly userNotificationSettingsModel: typeof UserNotificationSettingsModel,
         @Optional()
         @Inject('IRedisCache')
         private readonly redisCache?: IRedisCache,
@@ -576,13 +580,144 @@ export class NotificationService implements INotificationService {
         return stats;
     }
 
+    /**
+     * Получает настройки уведомлений пользователя
+     * Автоматически создает настройки по умолчанию, если их нет
+     *
+     * @param userId - ID пользователя
+     * @returns настройки уведомлений пользователя
+     */
+    async getUserSettings(
+        userId: number,
+    ): Promise<UserNotificationSettingsModel> {
+        try {
+            // Пытаемся найти существующие настройки
+            let settings = await UserNotificationSettingsModel.findOne({
+                where: { userId },
+            });
+
+            // Если настроек нет, создаем с дефолтными значениями
+            if (!settings) {
+                settings = await UserNotificationSettingsModel.create({
+                    userId,
+                    emailEnabled: true,
+                    pushEnabled: true,
+                    orderUpdates: true,
+                    marketing: false,
+                });
+                this.logger.debug(
+                    `Created default notification settings for user ${userId}`,
+                );
+            }
+
+            return settings;
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(
+                `Failed to get user settings for user ${userId}: ${errorMessage}`,
+                errorStack,
+            );
+            throw new BadRequestException(
+                'Не удалось получить настройки уведомлений',
+            );
+        }
+    }
+
+    /**
+     * Обновляет настройки уведомлений пользователя
+     *
+     * @param userId - ID пользователя
+     * @param updateData - данные для обновления (частичное обновление)
+     * @returns обновленные настройки
+     */
+    async updateUserSettings(
+        userId: number,
+        updateData: Partial<{
+            emailEnabled: boolean;
+            pushEnabled: boolean;
+            orderUpdates: boolean;
+            marketing: boolean;
+        }>,
+    ): Promise<UserNotificationSettingsModel> {
+        try {
+            // Получаем или создаем настройки
+            const settings = await this.getUserSettings(userId);
+
+            // Обновляем только переданные поля
+            await settings.update(updateData);
+
+            this.logger.log(
+                `Updated notification settings for user ${userId}: ${JSON.stringify(updateData)}`,
+            );
+
+            return settings;
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(
+                `Failed to update user settings for user ${userId}: ${errorMessage}`,
+                errorStack,
+            );
+            throw new BadRequestException(
+                'Не удалось обновить настройки уведомлений',
+            );
+        }
+    }
+
+    /**
+     * Проверяет, разрешено ли отправлять уведомление указанного типа
+     *
+     * @param settings - настройки пользователя
+     * @param type - тип уведомления (EMAIL или PUSH)
+     * @returns true если отправка разрешена, false если запрещена
+     */
+    private isNotificationEnabled(
+        settings: UserNotificationSettingsModel,
+        type: NotificationType,
+    ): boolean {
+        // Проверяем базовую настройку типа уведомления
+        if (type === NotificationType.EMAIL) {
+            if (!settings.emailEnabled) {
+                return false;
+            }
+        } else if (type === NotificationType.PUSH) {
+            if (!settings.pushEnabled) {
+                return false;
+            }
+        }
+
+        // Дополнительная проверка для order updates и marketing
+        // Если это уведомление о заказе, проверяем orderUpdates
+        // Если это маркетинговое уведомление, проверяем marketing
+        // (Эта логика может быть расширена в будущем на основе templateName или других признаков)
+
+        return true;
+    }
+
     async sendNotification(
         createDto: CreateNotificationDto,
-    ): Promise<NotificationModel> {
-        // Создаем уведомление
-        const notification = await this.createNotification(createDto);
+    ): Promise<NotificationModel | null> {
+        let notification: NotificationModel | null = null;
 
         try {
+            // Получаем настройки пользователя
+            const settings = await this.getUserSettings(createDto.userId);
+
+            // Проверяем, разрешена ли отправка этого типа уведомления
+            // Делаем проверку ДО создания уведомления, чтобы не создавать лишние записи
+            if (!this.isNotificationEnabled(settings, createDto.type)) {
+                this.logger.debug(
+                    `Notification type ${createDto.type} is disabled for user ${createDto.userId}. Skipping notification.`,
+                );
+                return null; // Возвращаем null если тип уведомления отключен
+            }
+
+            // Создаем уведомление только если отправка разрешена
+            notification = await this.createNotification(createDto);
+
             // Отправляем через соответствующий провайдер
             if (createDto.type === NotificationType.EMAIL) {
                 await this.sendEmailNotification(notification);
@@ -599,14 +734,24 @@ export class NotificationService implements INotificationService {
             this.logger.log(`Notification sent: ${notification.id}`);
             return notification;
         } catch (error) {
-            // Обновляем статус на неудачное
+            // Обновляем статус на неудачное, если уведомление было создано
             const errorMessage =
                 error instanceof Error ? error.message : 'Unknown error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            await this.updateNotification(notification.id, {
-                status: NotificationStatus.FAILED,
-                failedReason: errorMessage,
-            });
+
+            if (notification) {
+                try {
+                    await this.updateNotification(notification.id, {
+                        status: NotificationStatus.FAILED,
+                        failedReason: errorMessage,
+                    });
+                } catch (updateError) {
+                    // Если не удалось обновить статус, просто логируем
+                    this.logger.warn(
+                        `Failed to update notification status after error: ${updateError instanceof Error ? updateError.message : 'Unknown error'}`,
+                    );
+                }
+            }
 
             this.logger.error(
                 `Failed to send notification: ${errorMessage}`,

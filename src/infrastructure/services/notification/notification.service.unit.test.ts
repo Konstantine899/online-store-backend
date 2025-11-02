@@ -196,7 +196,9 @@ describe('NotificationService', () => {
             const createDto = createMockCreateDto();
 
             // Мокируем получение tenantId
-            (NotificationModel.findOne as jest.Mock).mockResolvedValueOnce(null);
+            (NotificationModel.findOne as jest.Mock).mockResolvedValueOnce(
+                null,
+            );
             (NotificationModel.create as jest.Mock).mockRejectedValue(
                 new Error('Database error'),
             );
@@ -209,7 +211,9 @@ describe('NotificationService', () => {
         it('should use tenantId from existing notification', async () => {
             const createDto = createMockCreateDto();
             const mockNotification = createMockNotification({ tenantId: 5 });
-            const existingNotification = createMockNotification({ tenantId: 5 });
+            const existingNotification = createMockNotification({
+                tenantId: 5,
+            });
 
             // Мокируем получение tenantId из существующего уведомления
             (NotificationModel.findOne as jest.Mock).mockResolvedValueOnce(
@@ -330,7 +334,9 @@ describe('NotificationService', () => {
             ] as NotificationModel[];
 
             // Мокируем getUserTenantId и затем findAndCountAll
-            (NotificationModel.findOne as jest.Mock).mockResolvedValueOnce(null); // getUserTenantId
+            (NotificationModel.findOne as jest.Mock).mockResolvedValueOnce(
+                null,
+            ); // getUserTenantId
             (NotificationModel.findAndCountAll as jest.Mock).mockResolvedValue({
                 count: 2,
                 rows: mockNotifications,

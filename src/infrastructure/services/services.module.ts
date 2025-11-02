@@ -2,6 +2,7 @@ import {
     NotificationModel,
     NotificationTemplateModel,
     UserModel,
+    UserNotificationSettingsModel,
 } from '@app/domain/models';
 import { NotificationEventHandler } from '@app/infrastructure/common/events/notification.event-handler';
 import { jwtConfig } from '@app/infrastructure/config/jwt';
@@ -38,6 +39,7 @@ import { UserService } from './user/user.service';
             UserModel,
             NotificationModel,
             NotificationTemplateModel,
+            UserNotificationSettingsModel,
         ]),
         JwtModule,
     ],

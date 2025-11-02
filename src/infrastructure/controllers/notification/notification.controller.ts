@@ -20,6 +20,7 @@ import {
     UpdateSettingsDto,
     UpdateTemplateDto,
 } from '@app/infrastructure/dto/notification';
+import { UserNotificationSettingsResponse } from '@app/infrastructure/responses/notification/user-notification-settings.response';
 import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
 import {
     BadRequestException,
@@ -346,29 +347,24 @@ export class NotificationController {
     @Get('settings')
     @HttpCode(HttpStatus.OK)
     @Roles(...CUSTOMER_ROLES)
-    async getUserSettings(@Req() req: AuthenticatedRequest): Promise<{
-        id: number;
-        userId: number;
-        emailEnabled: boolean;
-        pushEnabled: boolean;
-        orderUpdates: boolean;
-        marketing: boolean;
-    }> {
+    async getUserSettings(
+        @Req() req: AuthenticatedRequest,
+    ): Promise<UserNotificationSettingsResponse> {
         try {
-            // TODO: Реализовать после создания NotificationSettingsService (SAAS-009-02-1)
-            // Временная заглушка до реализации методов в NotificationService
-            // После реализации SAAS-009-02-1 заменить на:
-            // const settings = await this.notificationService.getUserSettings(req.user.id);
-            // return { id: settings.id, userId: settings.userId, ... };
+            // Кэшируем настройки на 30 секунд для снижения нагрузки на БД
+            const settings = await this.getCachedData(
+                `settings:${req.user.id}`,
+                () => this.notificationService.getUserSettings(req.user.id),
+                30_000, // 30 секунд
+            );
 
-            // Fallback на значения по умолчанию
             return {
-                id: 1,
-                userId: req.user.id,
-                emailEnabled: true,
-                pushEnabled: true,
-                orderUpdates: true,
-                marketing: false,
+                id: settings.id,
+                userId: settings.userId,
+                emailEnabled: settings.emailEnabled,
+                pushEnabled: settings.pushEnabled,
+                orderUpdates: settings.orderUpdates,
+                marketing: settings.marketing,
             };
         } catch (error) {
             const errorMessage =
@@ -392,29 +388,23 @@ export class NotificationController {
     async updateUserSettings(
         @Body() updateSettingsDto: UpdateSettingsDto,
         @Req() req: AuthenticatedRequest,
-    ): Promise<{
-        id: number;
-        userId: number;
-        emailEnabled: boolean;
-        pushEnabled: boolean;
-        orderUpdates: boolean;
-        marketing: boolean;
-    }> {
+    ): Promise<UserNotificationSettingsResponse> {
         try {
-            // TODO: Реализовать после создания NotificationSettingsService (SAAS-009-02-1)
-            // Временная заглушка до реализации методов в NotificationService
-            // После реализации SAAS-009-02-1 заменить на:
-            // const settings = await this.notificationService.updateUserSettings(req.user.id, updateSettingsDto);
-            // return { id: settings.id, userId: settings.userId, ... };
+            const settings = await this.notificationService.updateUserSettings(
+                req.user.id,
+                updateSettingsDto,
+            );
 
-            // Fallback на значения из DTO
+            // Инвалидируем кэш настроек после обновления
+            this.clearCache(`settings:${req.user.id}`);
+
             return {
-                id: 1,
-                userId: req.user.id,
-                emailEnabled: updateSettingsDto.emailEnabled ?? true,
-                pushEnabled: updateSettingsDto.pushEnabled ?? true,
-                orderUpdates: updateSettingsDto.orderUpdates ?? true,
-                marketing: updateSettingsDto.marketing ?? false,
+                id: settings.id,
+                userId: settings.userId,
+                emailEnabled: settings.emailEnabled,
+                pushEnabled: settings.pushEnabled,
+                orderUpdates: settings.orderUpdates,
+                marketing: settings.marketing,
             };
         } catch (error) {
             const errorMessage =

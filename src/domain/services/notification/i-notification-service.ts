@@ -3,6 +3,7 @@ import type {
     NotificationTemplateModel,
     NotificationType,
     NotificationStatus,
+    UserNotificationSettingsModel,
 } from '@app/domain/models';
 
 export interface CreateNotificationDto {
@@ -92,7 +93,7 @@ export interface INotificationService {
     // Отправка уведомлений
     sendNotification(
         createDto: CreateNotificationDto,
-    ): Promise<NotificationModel>;
+    ): Promise<NotificationModel | null>;
     sendBulkNotifications(
         notifications: CreateNotificationDto[],
     ): Promise<NotificationModel[]>;
@@ -115,4 +116,16 @@ export interface INotificationService {
     createTemplateFromNotification(
         notificationId: number,
     ): Promise<NotificationTemplateModel>;
+
+    // Работа с настройками уведомлений пользователя
+    getUserSettings(userId: number): Promise<UserNotificationSettingsModel>;
+    updateUserSettings(
+        userId: number,
+        updateData: Partial<{
+            emailEnabled: boolean;
+            pushEnabled: boolean;
+            orderUpdates: boolean;
+            marketing: boolean;
+        }>,
+    ): Promise<UserNotificationSettingsModel>;
 }
