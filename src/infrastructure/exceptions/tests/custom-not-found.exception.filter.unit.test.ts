@@ -1,4 +1,4 @@
-import type { ArgumentsHost} from '@nestjs/common';
+import type { ArgumentsHost } from '@nestjs/common';
 import { NotFoundException } from '@nestjs/common';
 import { CustomNotFoundExceptionFilter } from '../custom-not-found.exception.filter';
 

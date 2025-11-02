@@ -1,4 +1,4 @@
-import type { QueryInterface} from 'sequelize';
+import type { QueryInterface } from 'sequelize';
 import { DataTypes } from 'sequelize';
 
 const TABLE = 'user';

@@ -11,8 +11,7 @@ export class CorrelationIdMiddleware implements NestMiddleware {
     ): void {
         const headerId = req.headers['x-request-id'] as string | undefined;
         // Генерируем новый UUID если заголовок отсутствует, null, undefined или пустая строка
-        req.correlationId =
-            headerId && headerId.trim() ? headerId.trim() : randomUUID();
+        req.correlationId = headerId?.trim() ? headerId.trim() : randomUUID();
         res.setHeader('x-request-id', req.correlationId);
         next();
     }

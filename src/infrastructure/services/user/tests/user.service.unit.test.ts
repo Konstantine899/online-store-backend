@@ -68,7 +68,7 @@ describe('UserService', () => {
 
         it('maps SequelizeValidationError to BadRequestException', async () => {
             const err = new Error('validation');
-            (err).name = 'SequelizeValidationError';
+            err.name = 'SequelizeValidationError';
             (userRepository.updatePhone as jest.Mock).mockRejectedValue(err);
             await expect(service.updatePhone(1, 'bad')).rejects.toBeInstanceOf(
                 BadRequestException,

@@ -75,7 +75,8 @@ const migration = {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: true,
                 defaultValue: 0,
-                comment: 'Minimum purchase amount required (0 or NULL = no minimum)',
+                comment:
+                    'Minimum purchase amount required (0 or NULL = no minimum)',
             },
             is_active: {
                 type: DataTypes.BOOLEAN,
@@ -129,8 +130,12 @@ const migration = {
             name: 'idx_promo_codes_usage_count',
         });
 
-        console.log('✅ Created table: promo_codes with all fields and indexes');
-        console.log('✅ Promo codes system ready for integration (SAAS-004-06)');
+        console.log(
+            '✅ Created table: promo_codes with all fields and indexes',
+        );
+        console.log(
+            '✅ Promo codes system ready for integration (SAAS-004-06)',
+        );
     },
 
     async down(queryInterface: QueryInterface): Promise<void> {
@@ -169,4 +174,3 @@ const migration = {
 };
 
 export default migration;
-

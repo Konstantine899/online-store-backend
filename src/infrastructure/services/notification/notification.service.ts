@@ -282,7 +282,10 @@ export class NotificationService implements INotificationService {
 
         // Проверяем кэш
         const cached = this.statisticsCache.get(cacheKey);
-        if (cached && this.isCacheValid(cacheKey, cached.timestamp, this.cacheTimeout)) {
+        if (
+            cached &&
+            this.isCacheValid(cacheKey, cached.timestamp, this.cacheTimeout)
+        ) {
             return cached.value;
         }
 
@@ -423,7 +426,14 @@ export class NotificationService implements INotificationService {
 
         // Проверяем кэш
         const cached = this.templatesCache.get(cacheKey);
-        if (cached && this.isCacheValid(cacheKey, cached.timestamp, this.templatesCacheTimeout)) {
+        if (
+            cached &&
+            this.isCacheValid(
+                cacheKey,
+                cached.timestamp,
+                this.templatesCacheTimeout,
+            )
+        ) {
             return cached.value;
         }
 
@@ -584,9 +594,14 @@ export class NotificationService implements INotificationService {
 
                 if (template) {
                     // Преобразуем notification.data в TemplateVariables (фильтруем только допустимые типы)
-                    const templateData: Record<string, string | number | boolean | object | Date> = {};
+                    const templateData: Record<
+                        string,
+                        string | number | boolean | object | Date
+                    > = {};
                     if (notification.data) {
-                        for (const [key, value] of Object.entries(notification.data)) {
+                        for (const [key, value] of Object.entries(
+                            notification.data,
+                        )) {
                             if (
                                 typeof value === 'string' ||
                                 typeof value === 'number' ||
@@ -594,25 +609,32 @@ export class NotificationService implements INotificationService {
                                 value instanceof Date ||
                                 (typeof value === 'object' && value !== null)
                             ) {
-                                templateData[key] = value as string | number | boolean | object | Date;
+                                templateData[key] = value as
+                                    | string
+                                    | number
+                                    | boolean
+                                    | object
+                                    | Date;
                             }
                         }
                     }
 
                     // Рендерим title шаблона
-                    const titleResult = await this.templateRenderer.renderTemplate(
-                        template.title,
-                        templateData,
-                    );
+                    const titleResult =
+                        await this.templateRenderer.renderTemplate(
+                            template.title,
+                            templateData,
+                        );
                     if (titleResult.success && titleResult.content) {
                         renderedTitle = titleResult.content;
                     }
 
                     // Рендерим message шаблона
-                    const messageResult = await this.templateRenderer.renderTemplate(
-                        template.message,
-                        templateData,
-                    );
+                    const messageResult =
+                        await this.templateRenderer.renderTemplate(
+                            template.message,
+                            templateData,
+                        );
                     if (messageResult.success && messageResult.content) {
                         renderedMessage = messageResult.content;
                     }

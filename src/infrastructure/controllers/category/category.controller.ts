@@ -15,7 +15,11 @@ import {
     UseInterceptors,
 } from '@nestjs/common';
 import { CategoryService } from '@app/infrastructure/services';
-import { CreateCategoryDto, SearchDto, SortingDto } from '@app/infrastructure/dto';
+import {
+    CreateCategoryDto,
+    SearchDto,
+    SortingDto,
+} from '@app/infrastructure/dto';
 import {
     Roles,
     CreateCategorySwaggerDecorator,

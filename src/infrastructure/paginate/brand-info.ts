@@ -52,4 +52,3 @@ export class BrandInfo extends BrandModel {
     })
     declare tenant_id: number;
 }
-

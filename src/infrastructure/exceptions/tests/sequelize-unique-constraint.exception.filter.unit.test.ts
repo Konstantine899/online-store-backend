@@ -1,4 +1,4 @@
-import type { ArgumentsHost} from '@nestjs/common';
+import type { ArgumentsHost } from '@nestjs/common';
 import { HttpStatus } from '@nestjs/common';
 import type { ValidationErrorItem } from 'sequelize';
 import { UniqueConstraintError } from 'sequelize';

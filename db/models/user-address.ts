@@ -1,7 +1,10 @@
 import type { Sequelize } from 'sequelize';
 import { Model, DataTypes } from 'sequelize';
 import { TABLE_NAMES, USER_ID } from '../consts';
-import type { UserAddressAttributes, UserAddressCreationAttributes } from './types';
+import type {
+    UserAddressAttributes,
+    UserAddressCreationAttributes,
+} from './types';
 
 class UserAddress
     extends Model<UserAddressAttributes, UserAddressCreationAttributes>

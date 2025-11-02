@@ -293,15 +293,14 @@ export class NotificationEventHandler implements OnModuleDestroy {
                         n.priority <= 2 &&
                         n.timestamp ===
                             Math.min(
-                                ...lowPriorityNotifications.map((n) => n.timestamp),
+                                ...lowPriorityNotifications.map(
+                                    (n) => n.timestamp,
+                                ),
                             ),
                 );
 
                 if (oldestLowPriorityIndex !== -1) {
-                    this.notificationQueue.splice(
-                        oldestLowPriorityIndex,
-                        1,
-                    );
+                    this.notificationQueue.splice(oldestLowPriorityIndex, 1);
                     this.metrics.droppedNotifications++;
                     this.logger.warn(
                         `Queue is full. Dropped low-priority notification to make room. Queue size: ${this.notificationQueue.length}/${this.MAX_QUEUE_SIZE}`,
@@ -342,10 +341,7 @@ export class NotificationEventHandler implements OnModuleDestroy {
         }
 
         // Логируем предупреждение, если очередь заполнена более чем на 80%
-        if (
-            this.notificationQueue.length >=
-            this.MAX_QUEUE_SIZE * 0.8
-        ) {
+        if (this.notificationQueue.length >= this.MAX_QUEUE_SIZE * 0.8) {
             this.logger.warn(
                 `Notification queue is ${Math.round(
                     (this.notificationQueue.length / this.MAX_QUEUE_SIZE) * 100,

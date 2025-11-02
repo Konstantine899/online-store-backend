@@ -1,4 +1,4 @@
-import type { RoleModel} from '@app/domain/models';
+import type { RoleModel } from '@app/domain/models';
 import { UserModel } from '@app/domain/models';
 import type {
     AddRoleDto,
@@ -949,9 +949,7 @@ describe('UserService', () => {
     // ============================================================
     describe('updatePassword (admin force update)', () => {
         it('успешно обновляет пароль пользователя (admin)', async () => {
-            userRepository.findUserByPkId.mockResolvedValue(
-                mockUser,
-            );
+            userRepository.findUserByPkId.mockResolvedValue(mockUser);
 
             await service.updatePassword(1, 'hashed:NewSecurePass123!');
 

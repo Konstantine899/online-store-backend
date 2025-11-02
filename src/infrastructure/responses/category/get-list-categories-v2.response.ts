@@ -33,4 +33,3 @@ export class GetListCategoriesV2Response {
     })
     declare meta: MetaData;
 }
-

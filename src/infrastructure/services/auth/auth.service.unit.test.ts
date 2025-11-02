@@ -278,7 +278,7 @@ describe('AuthService', () => {
             tokenService.removeRefreshToken.mockResolvedValue(mockPayload.jti);
 
             // Act
-             
+
             const result = await service.logout(refreshDto, mockRequest);
 
             // Assert
@@ -293,8 +293,8 @@ describe('AuthService', () => {
                 mockPayload.jti,
                 mockPayload.sub,
             );
-             
-            expect((mockRequest).headers.authorization).toBeUndefined();
+
+            expect(mockRequest.headers.authorization).toBeUndefined();
         });
 
         it('должен пробросить ошибку если TokenService.decodeRefreshToken выбрасывает исключение', async () => {

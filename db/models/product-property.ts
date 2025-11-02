@@ -2,11 +2,9 @@ import type {
     Sequelize,
     ModelStatic,
     ModelAttributes,
-    Optional} from 'sequelize';
-import {
-    Model,
-    DataTypes
+    Optional,
 } from 'sequelize';
+import { Model, DataTypes } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
 import type {
     ProductPropertyModel,

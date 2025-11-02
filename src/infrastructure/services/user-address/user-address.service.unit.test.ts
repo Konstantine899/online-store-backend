@@ -96,9 +96,7 @@ describe('UserAddressService', () => {
         }
 
         service = cachedModule.get(UserAddressService);
-        repo = cachedModule.get(
-            UserAddressRepository,
-        );
+        repo = cachedModule.get(UserAddressRepository);
 
         // Сброс всех моков
         jest.clearAllMocks();

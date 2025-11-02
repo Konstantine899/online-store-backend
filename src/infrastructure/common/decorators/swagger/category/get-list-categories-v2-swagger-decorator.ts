@@ -39,7 +39,8 @@ export function GetListCategoriesV2SwaggerDecorator(): MethodDecorator {
             name: 'sort',
             required: false,
             type: String,
-            description: 'Направление сортировки (ASC или DESC, по умолчанию: DESC)',
+            description:
+                'Направление сортировки (ASC или DESC, по умолчанию: DESC)',
             enum: ['ASC', 'DESC'],
             example: 'DESC',
         }),
@@ -60,4 +61,3 @@ export function GetListCategoriesV2SwaggerDecorator(): MethodDecorator {
         }),
     );
 }
-

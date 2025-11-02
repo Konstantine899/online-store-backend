@@ -90,14 +90,12 @@ describe('CartService (SAAS-004-03)', () => {
         jest.spyOn(CartProductModel, 'findOne').mockResolvedValue(null);
         jest.spyOn(CartProductModel, 'create').mockImplementation(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            async (values?: any) =>
-                ({
-                    ...values,
-                    id: 1,
-                    save: jest.fn().mockResolvedValue(undefined),
-                    destroy: jest.fn().mockResolvedValue(undefined),
-                     
-                }),
+            async (values?: any) => ({
+                ...values,
+                id: 1,
+                save: jest.fn().mockResolvedValue(undefined),
+                destroy: jest.fn().mockResolvedValue(undefined),
+            }),
         );
         jest.spyOn(CartProductModel, 'destroy').mockResolvedValue(1);
 

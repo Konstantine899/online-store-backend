@@ -66,12 +66,8 @@ describe('SEC-001-1: Password Update Token Invalidation', () => {
         }).compile();
 
         service = module.get<UserService>(UserService);
-        userRepository = module.get(
-            UserRepository,
-        );
-        refreshTokenRepository = module.get(
-            RefreshTokenRepository,
-        );
+        userRepository = module.get(UserRepository);
+        refreshTokenRepository = module.get(RefreshTokenRepository);
         userModel = module.get(getModelToken(UserModel));
     });
 

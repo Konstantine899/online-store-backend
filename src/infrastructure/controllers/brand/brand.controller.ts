@@ -71,7 +71,12 @@ export class BrandController implements IBrandController {
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
     ): Promise<GetListBrandsV2Response> {
-        return this.brandService.getListBrandsV2(searchQuery, sortQuery, page, size);
+        return this.brandService.getListBrandsV2(
+            searchQuery,
+            sortQuery,
+            page,
+            size,
+        );
     }
 
     @GetBrandsByCategoryDecorator()
@@ -94,7 +99,13 @@ export class BrandController implements IBrandController {
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('size', new DefaultValuePipe(5), ParseIntPipe) size: number,
     ): Promise<GetListBrandsV2Response> {
-        return this.brandService.getListBrandsByCategoryV2(categoryId, searchQuery, sortQuery, page, size);
+        return this.brandService.getListBrandsByCategoryV2(
+            categoryId,
+            searchQuery,
+            sortQuery,
+            page,
+            size,
+        );
     }
 
     @GetBrandSwaggerDecorator()

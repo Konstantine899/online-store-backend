@@ -242,9 +242,7 @@ describe('UserService - Flags and Preferences', () => {
             const preferencesDto: UpdateUserPreferencesDto = {};
 
             userRepository.findUser.mockResolvedValue(mockUser); // Added
-            userRepository.updatePreferences.mockResolvedValue(
-                mockUser,
-            );
+            userRepository.updatePreferences.mockResolvedValue(mockUser);
 
             const result = await service.updatePreferences(1, preferencesDto);
 

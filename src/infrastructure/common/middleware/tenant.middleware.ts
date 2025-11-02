@@ -60,7 +60,7 @@ export class TenantMiddleware implements NestMiddleware {
                 // DEVELOPMENT/TEST: Fallback to tenant_id=1 with warning
                 const env = process.env.NODE_ENV ?? 'development';
                 const isTest = env === 'test';
-                
+
                 if (!isTest) {
                     console.warn(
                         `[TenantMiddleware] x-tenant-id header отсутствует. Используется default tenant_id=1 (${env} mode)`,

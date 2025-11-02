@@ -34,4 +34,3 @@ export class GetListBrandsV2Response {
     })
     declare meta: MetaData;
 }
-

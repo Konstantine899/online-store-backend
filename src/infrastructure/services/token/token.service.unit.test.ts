@@ -12,7 +12,11 @@ import {
     RefreshTokenRepository,
     UserRepository,
 } from '@app/infrastructure/repositories';
-import type { RefreshTokenModel, UserModel, RoleModel } from '@app/domain/models';
+import type {
+    RefreshTokenModel,
+    UserModel,
+    RoleModel,
+} from '@app/domain/models';
 import type {
     IRefreshTokenPayload,
     IAccessTokenPayload,

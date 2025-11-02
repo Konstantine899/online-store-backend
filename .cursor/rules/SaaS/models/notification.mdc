@@ -1,9 +1,11 @@
 # Система уведомлений (Notification System) - Ecommerce Edition
 
 ## Контекст и цель
+
 Создание практичной системы уведомлений для ecommerce приложения с базовыми email и push уведомлениями, фокусом на быструю разработку и готовность к масштабированию.
 
 ## Основные требования
+
 - **Email уведомления** - подтверждение заказа, статус доставки, сброс пароля
 - **Push уведомления** - мобильные и браузерные уведомления
 - **Шаблоны уведомлений** - переиспользуемые шаблоны
@@ -13,6 +15,7 @@
 ## Структура базы данных
 
 ### Таблица `notifications`
+
 ```sql
 CREATE TABLE notifications (
     id SERIAL PRIMARY KEY,
@@ -33,6 +36,7 @@ CREATE TABLE notifications (
 ```
 
 ### Таблица `notification_templates`
+
 ```sql
 CREATE TABLE notification_templates (
     id SERIAL PRIMARY KEY,
@@ -49,6 +53,7 @@ CREATE TABLE notification_templates (
 ```
 
 ### Таблица `user_notification_settings`
+
 ```sql
 CREATE TABLE user_notification_settings (
     id SERIAL PRIMARY KEY,
@@ -66,14 +71,22 @@ CREATE TABLE user_notification_settings (
 ## Модели Sequelize
 
 ### Notification Model
+
 ```typescript
 // src/domain/models/notification.model.ts
-import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import {
+    Model,
+    DataType,
+    Column,
+    Table,
+    BelongsTo,
+    ForeignKey,
+} from 'sequelize-typescript';
 import { UserModel } from './user.model';
 
 export enum NotificationType {
     EMAIL = 'email',
-    PUSH = 'push'
+    PUSH = 'push',
 }
 
 export enum NotificationStatus {
@@ -81,7 +94,7 @@ export enum NotificationStatus {
     SENT = 'sent',
     DELIVERED = 'delivered',
     READ = 'read',
-    FAILED = 'failed'
+    FAILED = 'failed',
 }
 
 interface INotificationModel {
@@ -128,7 +141,10 @@ interface INotificationCreationAttributes {
         { fields: ['is_read'], name: 'idx_notifications_is_read' },
         { fields: ['is_archived'], name: 'idx_notifications_is_archived' },
         { fields: ['created_at'], name: 'idx_notifications_created_at' },
-        { fields: ['user_id', 'status'], name: 'idx_notifications_user_status' },
+        {
+            fields: ['user_id', 'status'],
+            name: 'idx_notifications_user_status',
+        },
     ],
 })
 export class NotificationModel
@@ -300,6 +316,7 @@ export class NotificationModel
 ```
 
 ### NotificationTemplate Model
+
 ```typescript
 // src/domain/models/notification-template.model.ts
 import { Model, DataType, Column, Table } from 'sequelize-typescript';
@@ -333,13 +350,20 @@ interface INotificationTemplateCreationAttributes {
     underscored: true,
     timestamps: true,
     indexes: [
-        { fields: ['name'], name: 'idx_notification_templates_name', unique: true },
+        {
+            fields: ['name'],
+            name: 'idx_notification_templates_name',
+            unique: true,
+        },
         { fields: ['type'], name: 'idx_notification_templates_type' },
         { fields: ['is_active'], name: 'idx_notification_templates_active' },
     ],
 })
 export class NotificationTemplateModel
-    extends Model<NotificationTemplateModel, INotificationTemplateCreationAttributes>
+    extends Model<
+        NotificationTemplateModel,
+        INotificationTemplateCreationAttributes
+    >
     implements INotificationTemplateModel
 {
     @Column({
@@ -414,9 +438,17 @@ export class NotificationTemplateModel
 ```
 
 ### UserNotificationSettings Model
+
 ```typescript
 // src/domain/models/user-notification-settings.model.ts
-import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import {
+    Model,
+    DataType,
+    Column,
+    Table,
+    BelongsTo,
+    ForeignKey,
+} from 'sequelize-typescript';
 import { UserModel } from './user.model';
 
 interface IUserNotificationSettingsModel {
@@ -444,11 +476,18 @@ interface IUserNotificationSettingsCreationAttributes {
     underscored: true,
     timestamps: true,
     indexes: [
-        { fields: ['user_id'], name: 'idx_user_notification_settings_user_id', unique: true },
+        {
+            fields: ['user_id'],
+            name: 'idx_user_notification_settings_user_id',
+            unique: true,
+        },
     ],
 })
 export class UserNotificationSettingsModel
-    extends Model<UserNotificationSettingsModel, IUserNotificationSettingsCreationAttributes>
+    extends Model<
+        UserNotificationSettingsModel,
+        IUserNotificationSettingsCreationAttributes
+    >
     implements IUserNotificationSettingsModel
 {
     @Column({
@@ -522,11 +561,16 @@ export class UserNotificationSettingsModel
 ## Сервисы
 
 ### Notification Service
+
 ```typescript
 // src/infrastructure/services/notification.service.ts
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { NotificationModel, NotificationType, NotificationStatus } from '@app/domain/models/notification.model';
+import {
+    NotificationModel,
+    NotificationType,
+    NotificationStatus,
+} from '@app/domain/models/notification.model';
 import { NotificationTemplateModel } from '@app/domain/models/notification-template.model';
 import { UserNotificationSettingsModel } from '@app/domain/models/user-notification-settings.model';
 import { Op } from 'sequelize';
@@ -552,7 +596,7 @@ export class NotificationService {
     ): Promise<NotificationModel> {
         // Получаем шаблон
         const template = await this.templateModel.findOne({
-            where: { 
+            where: {
                 name: templateName,
                 type,
                 isActive: true,
@@ -566,14 +610,18 @@ export class NotificationService {
         // Проверяем настройки пользователя
         const userSettings = await this.getUserSettings(userId);
         if (!this.isNotificationEnabled(userSettings, type)) {
-            this.logger.log(`Уведомления ${type} отключены для пользователя ${userId}`);
+            this.logger.log(
+                `Уведомления ${type} отключены для пользователя ${userId}`,
+            );
             return null;
         }
 
         // Заменяем переменные в шаблоне
         const title = this.replaceVariables(template.title, variables);
         const message = this.replaceVariables(template.message, variables);
-        const subject = template.subject ? this.replaceVariables(template.subject, variables) : null;
+        const subject = template.subject
+            ? this.replaceVariables(template.subject, variables)
+            : null;
 
         // Создаем уведомление
         const notification = await this.notificationModel.create({
@@ -598,7 +646,9 @@ export class NotificationService {
                 status: NotificationStatus.FAILED,
                 failedReason: error.message,
             });
-            this.logger.error(`Ошибка отправки уведомления ${notification.id}: ${error.message}`);
+            this.logger.error(
+                `Ошибка отправки уведомления ${notification.id}: ${error.message}`,
+            );
         }
 
         return notification;
@@ -609,7 +659,12 @@ export class NotificationService {
         templateName: string,
         variables: Record<string, any> = {},
     ): Promise<NotificationModel> {
-        return this.sendNotification(userId, templateName, variables, NotificationType.EMAIL);
+        return this.sendNotification(
+            userId,
+            templateName,
+            variables,
+            NotificationType.EMAIL,
+        );
     }
 
     async sendPushNotification(
@@ -617,7 +672,12 @@ export class NotificationService {
         templateName: string,
         variables: Record<string, any> = {},
     ): Promise<NotificationModel> {
-        return this.sendNotification(userId, templateName, variables, NotificationType.PUSH);
+        return this.sendNotification(
+            userId,
+            templateName,
+            variables,
+            NotificationType.PUSH,
+        );
     }
 
     async getUserNotifications(
@@ -625,12 +685,13 @@ export class NotificationService {
         page: number = 1,
         limit: number = 20,
     ): Promise<{ data: NotificationModel[]; total: number }> {
-        const { rows: notifications, count: total } = await this.notificationModel.findAndCountAll({
-            where: { userId },
-            order: [['created_at', 'DESC']],
-            limit,
-            offset: (page - 1) * limit,
-        });
+        const { rows: notifications, count: total } =
+            await this.notificationModel.findAndCountAll({
+                where: { userId },
+                order: [['created_at', 'DESC']],
+                limit,
+                offset: (page - 1) * limit,
+            });
 
         return { data: notifications, total };
     }
@@ -644,7 +705,10 @@ export class NotificationService {
             throw new NotFoundException('Уведомление не найдено');
         }
 
-        if (notification.status === NotificationStatus.SENT || notification.status === NotificationStatus.DELIVERED) {
+        if (
+            notification.status === NotificationStatus.SENT ||
+            notification.status === NotificationStatus.DELIVERED
+        ) {
             await notification.update({
                 status: NotificationStatus.READ,
                 readAt: new Date(),
@@ -652,7 +716,9 @@ export class NotificationService {
         }
     }
 
-    async getUserSettings(userId: number): Promise<UserNotificationSettingsModel> {
+    async getUserSettings(
+        userId: number,
+    ): Promise<UserNotificationSettingsModel> {
         let settings = await this.settingsModel.findOne({
             where: { userId },
         });
@@ -673,7 +739,12 @@ export class NotificationService {
 
     async updateUserSettings(
         userId: number,
-        settings: Partial<Pick<UserNotificationSettingsModel, 'emailEnabled' | 'pushEnabled' | 'orderUpdates' | 'marketing'>>,
+        settings: Partial<
+            Pick<
+                UserNotificationSettingsModel,
+                'emailEnabled' | 'pushEnabled' | 'orderUpdates' | 'marketing'
+            >
+        >,
     ): Promise<UserNotificationSettingsModel> {
         const userSettings = await this.getUserSettings(userId);
         return userSettings.update(settings);
@@ -684,7 +755,10 @@ export class NotificationService {
             where: {
                 userId,
                 status: {
-                    [Op.in]: [NotificationStatus.SENT, NotificationStatus.DELIVERED],
+                    [Op.in]: [
+                        NotificationStatus.SENT,
+                        NotificationStatus.DELIVERED,
+                    ],
                 },
             },
         });
@@ -703,22 +777,29 @@ export class NotificationService {
         return false;
     }
 
-    private replaceVariables(text: string, variables: Record<string, any>): string {
+    private replaceVariables(
+        text: string,
+        variables: Record<string, any>,
+    ): string {
         let result = text;
-        Object.keys(variables).forEach(key => {
+        Object.keys(variables).forEach((key) => {
             const regex = new RegExp(`{{${key}}}`, 'g');
             result = result.replace(regex, variables[key] || '');
         });
         return result;
     }
 
-    private async deliverNotification(notification: NotificationModel): Promise<void> {
+    private async deliverNotification(
+        notification: NotificationModel,
+    ): Promise<void> {
         // Здесь должна быть интеграция с email/SMS/push провайдерами
         // Для примера просто логируем
-        this.logger.log(`Отправка ${notification.type} уведомления пользователю ${notification.userId}: ${notification.title}`);
-        
+        this.logger.log(
+            `Отправка ${notification.type} уведомления пользователю ${notification.userId}: ${notification.title}`,
+        );
+
         // Симуляция отправки
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
     }
 }
 ```
@@ -726,125 +807,379 @@ export class NotificationService {
 ## Контроллеры
 
 ### Notification Controller
-```typescript
-// src/infrastructure/controllers/notification.controller.ts
-import { Controller, Get, Post, Put, Param, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
-import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
-import { CurrentUser } from '@app/infrastructure/common/decorators/current-user.decorator';
-import { NotificationService } from '@app/infrastructure/services/notification.service';
-import { MarkAsReadDto } from '@app/infrastructure/dto/notification/mark-as-read.dto';
-import { UpdateSettingsDto } from '@app/infrastructure/dto/notification/update-settings.dto';
-import { NotificationResponse, UserNotificationSettingsResponse } from '@app/infrastructure/responses/notification/notification.response';
 
+```typescript
+// src/infrastructure/controllers/notification/notification.controller.ts
+import { NotificationStatus, NotificationType } from '@app/domain/models';
+import { NotificationFilters } from '@app/domain/services';
+import { Roles } from '@app/infrastructure/common/decorators/roles-auth.decorator';
+import {
+    CreateTemplateSwaggerDecorator,
+    DeleteTemplateSwaggerDecorator,
+    GetStatisticsSwaggerDecorator,
+    GetTemplatesSwaggerDecorator,
+    GetUnreadCountSwaggerDecorator,
+    GetUserNotificationsSwaggerDecorator,
+    GetUserSettingsSwaggerDecorator,
+    MarkAsReadSwaggerDecorator,
+    UpdateTemplateSwaggerDecorator,
+    UpdateUserSettingsSwaggerDecorator,
+} from '@app/infrastructure/common/decorators/swagger/notification';
+import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
+import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
+import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
+import {
+    Body,
+    Controller,
+    DefaultValuePipe,
+    Delete,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Param,
+    ParseIntPipe,
+    Post,
+    Put,
+    Query,
+    Req,
+    UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Request } from 'express';
+import {
+    CUSTOMER_ROLES,
+    MANAGER_ROLES,
+    NOTIFICATION_ACCESS_LEVELS,
+    PLATFORM_ROLES,
+    TENANT_ADMIN_ROLES,
+} from './notification-roles.constants';
+
+interface AuthenticatedRequest extends Request {
+    user: { id: number; role?: string };
+}
+
+/**
+ * Контроллер уведомлений с полной системой ролей и тенантской изоляцией
+ *
+ * Роли и доступ:
+ * - PLATFORM_ROLES (SUPER_ADMIN, PLATFORM_ADMIN): полный доступ ко всем уведомлениям платформы
+ * - TENANT_ADMIN_ROLES (TENANT_OWNER, TENANT_ADMIN): управление уведомлениями тенанта
+ * - MANAGER_ROLES (MANAGER, CONTENT_MANAGER): управление шаблонами и настройками
+ * - STAFF_ROLES (CUSTOMER_SERVICE): просмотр статистики и обслуживание
+ * - CUSTOMER_ROLES (VIP_CUSTOMER, WHOLESALE, CUSTOMER, AFFILIATE): управление своими уведомлениями
+ */
 @ApiTags('Уведомления')
 @Controller('notifications')
+@UseGuards(AuthGuard, RoleGuard)
+@ApiBearerAuth('JWT-auth')
 export class NotificationController {
     constructor(private readonly notificationService: NotificationService) {}
 
+    /**
+     * Получить уведомления пользователя
+     * Доступ: CUSTOMER_ROLES (только свои уведомления)
+     */
+    @GetUserNotificationsSwaggerDecorator()
     @Get()
     @HttpCode(HttpStatus.OK)
-    @UseGuards(AuthGuard)
-    @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Получить уведомления пользователя' })
-    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
-    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
-    @ApiResponse({ status: 200, description: 'Уведомления получены', type: [NotificationResponse] })
+    @Roles(...CUSTOMER_ROLES)
     async getUserNotifications(
-        @CurrentUser() user: any,
-        @Query('page') page: number = 1,
-        @Query('limit') limit: number = 20,
-    ): Promise<{ data: NotificationResponse[]; total: number }> {
-        const result = await this.notificationService.getUserNotifications(user.id, page, limit);
-        
-        return {
-            data: result.data.map(notification => ({
-                id: notification.id,
-                userId: notification.userId,
-                type: notification.type,
-                templateName: notification.templateName,
-                title: notification.title,
-                message: notification.message,
-                data: notification.data,
-                status: notification.status,
-                sentAt: notification.sentAt,
-                readAt: notification.readAt,
-                failedReason: notification.failedReason,
-                createdAt: notification.createdAt,
-            })),
-            total: result.total,
+        @Req() req: AuthenticatedRequest,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+        @Query('status') status?: string,
+        @Query('type') type?: string,
+    ): Promise<{
+        data: unknown[];
+        meta: {
+            totalCount: number;
+            currentPage: number;
+            lastPage: number;
+            limit: number;
         };
+    }> {
+        const filters: NotificationFilters = {
+            userId: req.user.id,
+            page,
+            limit,
+        };
+
+        if (status) {
+            filters.status = status as NotificationStatus;
+        }
+
+        if (type) {
+            filters.type = type as NotificationType;
+        }
+
+        return await this.notificationService.getNotifications(filters);
     }
 
+    /**
+     * Получить количество непрочитанных уведомлений
+     * Доступ: CUSTOMER_ROLES
+     */
+    @GetUnreadCountSwaggerDecorator()
     @Get('unread-count')
     @HttpCode(HttpStatus.OK)
-    @UseGuards(AuthGuard)
-    @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Получить количество непрочитанных уведомлений' })
-    @ApiResponse({ status: 200, description: 'Количество непрочитанных уведомлений' })
-    async getUnreadCount(@CurrentUser() user: any): Promise<{ count: number }> {
-        const count = await this.notificationService.getUnreadCount(user.id);
+    @Roles(...CUSTOMER_ROLES)
+    async getUnreadCount(
+        @Req() req: AuthenticatedRequest,
+    ): Promise<{ count: number }> {
+        const count = await this.notificationService.getUnreadCount(
+            req.user.id,
+        );
         return { count };
     }
 
+    /**
+     * Отметить уведомление как прочитанное
+     * Доступ: CUSTOMER_ROLES (только свои уведомления)
+     */
+    @MarkAsReadSwaggerDecorator()
     @Put(':id/read')
     @HttpCode(HttpStatus.OK)
-    @UseGuards(AuthGuard)
-    @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Отметить уведомление как прочитанное' })
-    @ApiResponse({ status: 200, description: 'Уведомление отмечено как прочитанное' })
-    @ApiResponse({ status: 404, description: 'Уведомление не найдено' })
+    @Roles(...CUSTOMER_ROLES)
     async markAsRead(
-        @Param('id') notificationId: number,
-        @CurrentUser() user: any,
+        @Param('id', ParseIntPipe) notificationId: number,
+        @Req() req: AuthenticatedRequest,
     ): Promise<{ message: string }> {
-        await this.notificationService.markAsRead(notificationId, user.id);
+        await this.notificationService.markAsRead(notificationId, req.user.id);
         return { message: 'Уведомление отмечено как прочитанное' };
     }
 
+    /**
+     * Получить настройки уведомлений пользователя
+     * Доступ: CUSTOMER_ROLES
+     */
+    @GetUserSettingsSwaggerDecorator()
     @Get('settings')
     @HttpCode(HttpStatus.OK)
-    @UseGuards(AuthGuard)
-    @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Получить настройки уведомлений пользователя' })
-    @ApiResponse({ status: 200, description: 'Настройки получены', type: UserNotificationSettingsResponse })
-    async getUserSettings(@CurrentUser() user: any): Promise<UserNotificationSettingsResponse> {
-        const settings = await this.notificationService.getUserSettings(user.id);
-        
+    @Roles(...CUSTOMER_ROLES)
+    async getUserSettings(@Req() req: AuthenticatedRequest): Promise<{
+        id: number;
+        userId: number;
+        emailEnabled: boolean;
+        pushEnabled: boolean;
+        orderUpdates: boolean;
+        marketing: boolean;
+    }> {
+        return await this.notificationService.getUserSettings(req.user.id);
+    }
+
+    /**
+     * Обновить настройки уведомлений пользователя
+     * Доступ: CUSTOMER_ROLES
+     */
+    @UpdateUserSettingsSwaggerDecorator()
+    @Put('settings')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...CUSTOMER_ROLES)
+    async updateUserSettings(
+        @Body()
+        updateSettingsDto: {
+            emailEnabled?: boolean;
+            pushEnabled?: boolean;
+            orderUpdates?: boolean;
+            marketing?: boolean;
+        },
+        @Req() req: AuthenticatedRequest,
+    ): Promise<{
+        id: number;
+        userId: number;
+        emailEnabled: boolean;
+        pushEnabled: boolean;
+        orderUpdates: boolean;
+        marketing: boolean;
+    }> {
+        return await this.notificationService.updateUserSettings(
+            req.user.id,
+            updateSettingsDto,
+        );
+    }
+
+    /**
+     * Получить шаблоны уведомлений
+     * Доступ: MANAGER_ROLES, TENANT_ADMIN_ROLES, PLATFORM_ROLES
+     */
+    @GetTemplatesSwaggerDecorator()
+    @Get('templates')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...NOTIFICATION_ACCESS_LEVELS.TEMPLATE_MANAGEMENT)
+    async getTemplates(
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+        @Query('type') type?: string,
+    ): Promise<{
+        data: unknown[];
+        meta: {
+            totalCount: number;
+            currentPage: number;
+            lastPage: number;
+            limit: number;
+        };
+    }> {
+        const templates = await this.notificationService.getTemplates({
+            type: type as NotificationType,
+            isActive: true,
+        });
+
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        const paginatedTemplates = templates.slice(startIndex, endIndex);
+
         return {
-            id: settings.id,
-            userId: settings.userId,
-            emailEnabled: settings.emailEnabled,
-            pushEnabled: settings.pushEnabled,
-            orderUpdates: settings.orderUpdates,
-            marketing: settings.marketing,
-            createdAt: settings.createdAt,
-            updatedAt: settings.updatedAt,
+            data: paginatedTemplates,
+            meta: {
+                totalCount: templates.length,
+                currentPage: page,
+                lastPage: Math.ceil(templates.length / limit),
+                limit,
+            },
         };
     }
 
-    @Put('settings')
-    @HttpCode(HttpStatus.OK)
-    @UseGuards(AuthGuard)
-    @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Обновить настройки уведомлений пользователя' })
-    @ApiResponse({ status: 200, description: 'Настройки обновлены', type: UserNotificationSettingsResponse })
-    async updateUserSettings(
-        @Body() updateSettingsDto: UpdateSettingsDto,
-        @CurrentUser() user: any,
-    ): Promise<UserNotificationSettingsResponse> {
-        const settings = await this.notificationService.updateUserSettings(user.id, updateSettingsDto);
-        
+    /**
+     * Создать шаблон уведомления
+     * Доступ: MANAGER_ROLES, TENANT_ADMIN_ROLES, PLATFORM_ROLES
+     */
+    @CreateTemplateSwaggerDecorator()
+    @Post('templates')
+    @HttpCode(HttpStatus.CREATED)
+    @Roles(...NOTIFICATION_ACCESS_LEVELS.TEMPLATE_MANAGEMENT)
+    async createTemplate(
+        @Body()
+        createTemplateDto: {
+            name: string;
+            type: string;
+            title: string;
+            message: string;
+        },
+    ): Promise<{
+        id: number;
+        name: string;
+        type: string;
+        title: string;
+        message: string;
+        isActive: boolean;
+    }> {
+        const template = await this.notificationService.createTemplate({
+            name: createTemplateDto.name,
+            type: createTemplateDto.type as NotificationType,
+            title: createTemplateDto.title,
+            message: createTemplateDto.message,
+            isActive: true,
+        });
+
         return {
-            id: settings.id,
-            userId: settings.userId,
-            emailEnabled: settings.emailEnabled,
-            pushEnabled: settings.pushEnabled,
-            orderUpdates: settings.orderUpdates,
-            marketing: settings.marketing,
-            createdAt: settings.createdAt,
-            updatedAt: settings.updatedAt,
+            id: template.id,
+            name: template.name,
+            type: template.type,
+            title: template.title,
+            message: template.message,
+            isActive: template.isActive,
         };
+    }
+
+    /**
+     * Обновить шаблон уведомления
+     * Доступ: MANAGER_ROLES, TENANT_ADMIN_ROLES, PLATFORM_ROLES
+     */
+    @UpdateTemplateSwaggerDecorator()
+    @Put('templates/:id')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...NOTIFICATION_ACCESS_LEVELS.TEMPLATE_MANAGEMENT)
+    async updateTemplate(
+        @Param('id', ParseIntPipe) templateId: number,
+        @Body()
+        updateTemplateDto: {
+            name?: string;
+            type?: string;
+            title?: string;
+            message?: string;
+            isActive?: boolean;
+        },
+    ): Promise<{
+        id: number;
+        name: string;
+        type: string;
+        title: string;
+        message: string;
+        isActive: boolean;
+    }> {
+        const updateData: Record<string, unknown> = {};
+        if (updateTemplateDto.name) updateData.name = updateTemplateDto.name;
+        if (updateTemplateDto.type)
+            updateData.type = updateTemplateDto.type as NotificationType;
+        if (updateTemplateDto.title) updateData.title = updateTemplateDto.title;
+        if (updateTemplateDto.message)
+            updateData.message = updateTemplateDto.message;
+        if (updateTemplateDto.isActive !== undefined)
+            updateData.isActive = updateTemplateDto.isActive;
+
+        const template = await this.notificationService.updateTemplate(
+            templateId,
+            updateData,
+        );
+
+        return {
+            id: template.id,
+            name: template.name,
+            type: template.type,
+            title: template.title,
+            message: template.message,
+            isActive: template.isActive,
+        };
+    }
+
+    /**
+     * Удалить шаблон уведомления
+     * Доступ: TENANT_ADMIN_ROLES, PLATFORM_ROLES
+     */
+    @DeleteTemplateSwaggerDecorator()
+    @Delete('templates/:id')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @Roles(...TENANT_ADMIN_ROLES, ...PLATFORM_ROLES)
+    async deleteTemplate(
+        @Param('id', ParseIntPipe) templateId: number,
+    ): Promise<void> {
+        await this.notificationService.deleteTemplate(templateId);
+    }
+
+    /**
+     * Получить статистику уведомлений
+     * Доступ: MANAGER_ROLES, STAFF_ROLES, TENANT_ADMIN_ROLES, PLATFORM_ROLES
+     */
+    @GetStatisticsSwaggerDecorator()
+    @Get('statistics')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...NOTIFICATION_ACCESS_LEVELS.STATISTICS_VIEW)
+    async getStatistics(
+        @Req() req: AuthenticatedRequest,
+        @Query('period') period?: string,
+        @Query('type') type?: string,
+    ): Promise<{
+        totalSent: number;
+        totalDelivered: number;
+        totalRead: number;
+        deliveryRate: number;
+        readRate: number;
+        byType: {
+            email: number;
+            push: number;
+        };
+        byStatus: {
+            sent: number;
+            delivered: number;
+            read: number;
+            failed: number;
+        };
+    }> {
+        return await this.notificationService.getStatistics(
+            req.user.id,
+            period,
+            type as NotificationType,
+        );
     }
 }
 ```
@@ -852,6 +1187,7 @@ export class NotificationController {
 ## Миграции
 
 ### Создание таблиц уведомлений
+
 ```typescript
 // db/migrations/YYYYMMDDHHMMSS-create-notification-system.ts
 import { QueryInterface, DataTypes } from 'sequelize';
@@ -891,7 +1227,13 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
             allowNull: true,
         },
         status: {
-            type: DataTypes.ENUM('pending', 'sent', 'delivered', 'read', 'failed'),
+            type: DataTypes.ENUM(
+                'pending',
+                'sent',
+                'delivered',
+                'read',
+                'failed',
+            ),
             allowNull: false,
             defaultValue: 'pending',
         },
@@ -1018,11 +1360,15 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
     await queryInterface.addIndex('notifications', ['created_at']);
     await queryInterface.addIndex('notifications', ['user_id', 'status']);
 
-    await queryInterface.addIndex('notification_templates', ['name'], { unique: true });
+    await queryInterface.addIndex('notification_templates', ['name'], {
+        unique: true,
+    });
     await queryInterface.addIndex('notification_templates', ['type']);
     await queryInterface.addIndex('notification_templates', ['is_active']);
 
-    await queryInterface.addIndex('user_notification_settings', ['user_id'], { unique: true });
+    await queryInterface.addIndex('user_notification_settings', ['user_id'], {
+        unique: true,
+    });
 }
 
 export async function down(queryInterface: QueryInterface): Promise<void> {
@@ -1033,6 +1379,7 @@ export async function down(queryInterface: QueryInterface): Promise<void> {
 ```
 
 ### Сиды для шаблонов уведомлений
+
 ```typescript
 // db/seeders/YYYYMMDDHHMMSS-notification-templates.ts
 import { QueryInterface } from 'sequelize';
@@ -1044,7 +1391,8 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
             type: 'email',
             subject: 'Подтверждение заказа #{{orderNumber}}',
             title: 'Заказ подтвержден',
-            message: 'Ваш заказ #{{orderNumber}} на сумму {{totalAmount}} руб. подтвержден и принят в обработку.',
+            message:
+                'Ваш заказ #{{orderNumber}} на сумму {{totalAmount}} руб. подтвержден и принят в обработку.',
             variables: JSON.stringify(['orderNumber', 'totalAmount']),
             is_active: true,
             created_at: new Date(),
@@ -1055,7 +1403,8 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
             type: 'email',
             subject: 'Заказ #{{orderNumber}} отправлен',
             title: 'Заказ отправлен',
-            message: 'Ваш заказ #{{orderNumber}} отправлен. Трек-номер: {{trackingNumber}}',
+            message:
+                'Ваш заказ #{{orderNumber}} отправлен. Трек-номер: {{trackingNumber}}',
             variables: JSON.stringify(['orderNumber', 'trackingNumber']),
             is_active: true,
             created_at: new Date(),
@@ -1077,7 +1426,8 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
             type: 'email',
             subject: 'Добро пожаловать!',
             title: 'Добро пожаловать в наш магазин',
-            message: 'Спасибо за регистрацию! Добро пожаловать в наш интернет-магазин.',
+            message:
+                'Спасибо за регистрацию! Добро пожаловать в наш интернет-магазин.',
             variables: JSON.stringify([]),
             is_active: true,
             created_at: new Date(),
@@ -1114,6 +1464,7 @@ export async function down(queryInterface: QueryInterface): Promise<void> {
 ## DTO и валидация
 
 ### MarkAsReadDto
+
 ```typescript
 // src/infrastructure/dto/notification/mark-as-read.dto.ts
 import { IsNumber, Min } from 'class-validator';
@@ -1126,6 +1477,7 @@ export class MarkAsReadDto {
 ```
 
 ### UpdateSettingsDto
+
 ```typescript
 // src/infrastructure/dto/notification/update-settings.dto.ts
 import { IsOptional, IsBoolean } from 'class-validator';
@@ -1140,11 +1492,15 @@ export class UpdateSettingsDto {
     declare readonly pushEnabled?: boolean;
 
     @IsOptional()
-    @IsBoolean({ message: 'Настройка обновлений заказа должна быть булевым значением' })
+    @IsBoolean({
+        message: 'Настройка обновлений заказа должна быть булевым значением',
+    })
     declare readonly orderUpdates?: boolean;
 
     @IsOptional()
-    @IsBoolean({ message: 'Настройка маркетинга должна быть булевым значением' })
+    @IsBoolean({
+        message: 'Настройка маркетинга должна быть булевым значением',
+    })
     declare readonly marketing?: boolean;
 }
 ```
@@ -1152,6 +1508,7 @@ export class UpdateSettingsDto {
 ## Response классы
 
 ### NotificationResponse
+
 ```typescript
 // src/infrastructure/responses/notification/notification.response.ts
 import { ApiProperty } from '@nestjs/swagger';
@@ -1196,6 +1553,7 @@ export class NotificationResponse {
 ```
 
 ### UserNotificationSettingsResponse
+
 ```typescript
 // src/infrastructure/responses/notification/notification.response.ts
 import { ApiProperty } from '@nestjs/swagger';
@@ -1230,6 +1588,7 @@ export class UserNotificationSettingsResponse {
 ## Критерии готовности
 
 ### ✅ Обязательные требования:
+
 - [ ] Созданы миграции для таблиц notifications, notification_templates, user_notification_settings
 - [ ] Реализованы модели Sequelize (NotificationModel, NotificationTemplateModel, UserNotificationSettingsModel)
 - [ ] Создан NotificationService с отправкой уведомлений
@@ -1243,6 +1602,7 @@ export class UserNotificationSettingsResponse {
 - [ ] Интеграция с email/push провайдерами
 
 ### 🎯 Дополнительные возможности:
+
 - [ ] SMS уведомления
 - [ ] Webhook уведомления
 - [ ] Планировщик для отложенных уведомлений
@@ -1252,6 +1612,7 @@ export class UserNotificationSettingsResponse {
 ## Следующие шаги
 
 ### Фаза 1: Базовая реализация (1 неделя)
+
 1. **Создать миграции** для всех таблиц
 2. **Реализовать модели** Sequelize
 3. **Создать DTO классы** с валидацией
@@ -1259,12 +1620,14 @@ export class UserNotificationSettingsResponse {
 5. **Реализовать сервис** с основной логикой
 
 ### Фаза 2: API и интеграции (3-4 дня)
+
 6. **Создать контроллер** с API endpoints
 7. **Настроить интеграцию** с email провайдерами
 8. **Добавить push уведомления** (опционально)
 9. **Создать сиды** для базовых шаблонов
 
 ### Фаза 3: Тестирование и качество (2-3 дня)
+
 10. **Написать unit тесты** для сервисов
 11. **Написать integration тесты** для API
 12. **Добавить обработку ошибок** и валидацию
@@ -1273,11 +1636,13 @@ export class UserNotificationSettingsResponse {
 ## Риски и альтернативы
 
 ### ⚠️ Риски:
+
 - **Производительность**: большое количество уведомлений может замедлить систему
 - **Доставляемость**: email могут попадать в спам
 - **Масштабируемость**: нужна очередь для обработки уведомлений
 
 ### 🔄 Альтернативы:
+
 - **Очередь сообщений**: Redis/RabbitMQ для асинхронной обработки
 - **Внешние сервисы**: SendGrid, Twilio для email/SMS
 - **Кэширование**: Redis для хранения настроек пользователей
@@ -1285,6 +1650,7 @@ export class UserNotificationSettingsResponse {
 ## Интеграция с другими системами
 
 ### 🔗 Связанные системы:
+
 - **OrderService** - уведомления о заказах
 - **UserService** - управление пользователями
 - **AuthService** - уведомления о сбросе пароля
@@ -1292,6 +1658,7 @@ export class UserNotificationSettingsResponse {
 - **PushService** - отправка push уведомлений
 
 ### 📊 Аналитика:
+
 - Статистика отправленных уведомлений
 - Процент доставляемости
 - Популярные шаблоны
@@ -1299,6 +1666,7 @@ export class UserNotificationSettingsResponse {
 ## TL;DR
 
 Упрощенная система уведомлений включает:
+
 - **3 таблицы**: notifications, notification_templates, user_notification_settings
 - **3 модели**: NotificationModel, NotificationTemplateModel, UserNotificationSettingsModel
 - **1 сервис**: NotificationService
@@ -1307,4 +1675,7 @@ export class UserNotificationSettingsResponse {
 - **Валидация**: проверка настроек и шаблонов
 - **Автоматизация**: отправка уведомлений по событиям
 - **Готовность**: к масштабированию и дополнительным каналам
+
+```
+
 ```

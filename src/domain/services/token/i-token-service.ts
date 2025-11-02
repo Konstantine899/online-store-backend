@@ -1,4 +1,8 @@
-import type { UserModel, RefreshTokenModel, RoleModel } from '@app/domain/models';
+import type {
+    UserModel,
+    RefreshTokenModel,
+    RoleModel,
+} from '@app/domain/models';
 import type { IDecodedAccessToken } from '@app/domain/jwt';
 import type { Request } from 'express';
 
