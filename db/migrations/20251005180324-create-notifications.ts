@@ -1,4 +1,5 @@
 import type { QueryInterface, DataTypes } from 'sequelize';
+import { QueryTypes } from 'sequelize';
 
 interface Migration {
     up(
@@ -126,47 +127,76 @@ const migration: Migration = {
     },
 
     async down(queryInterface: QueryInterface): Promise<void> {
-        // Удаление foreign key constraint
-        await queryInterface.removeConstraint(
-            'notifications',
-            'notifications_user_id_fkey',
-        );
-
-        // Удаление индексов
-        await queryInterface.removeIndex(
-            'notifications',
+        // Удаление индексов (сначала композитный с user_id, затем остальные)
+        const indexesToRemove = [
+            'idx_notifications_user_status', // Композитный индекс с user_id
             'idx_notifications_user_id',
-        );
-        await queryInterface.removeIndex(
-            'notifications',
             'idx_notifications_type',
-        );
-        await queryInterface.removeIndex(
-            'notifications',
             'idx_notifications_status',
-        );
-        await queryInterface.removeIndex(
-            'notifications',
             'idx_notifications_template_name',
-        );
-        await queryInterface.removeIndex(
-            'notifications',
             'idx_notifications_is_read',
-        );
-        await queryInterface.removeIndex(
-            'notifications',
             'idx_notifications_is_archived',
-        );
-        await queryInterface.removeIndex(
-            'notifications',
             'idx_notifications_created_at',
-        );
-        await queryInterface.removeIndex(
-            'notifications',
-            'idx_notifications_user_status',
-        );
+        ];
 
-        // Удаление таблицы
+        for (const indexName of indexesToRemove) {
+            try {
+                await queryInterface.removeIndex('notifications', indexName);
+            } catch (error) {
+                // Игнорируем ошибки, если индекс уже удален или не существует
+                const errorMessage =
+                    error instanceof Error ? error.message : 'Unknown error';
+                if (
+                    !errorMessage.includes('Unknown key') &&
+                    !errorMessage.includes('does not exist') &&
+                    !errorMessage.includes('Cannot drop')
+                ) {
+                    throw error;
+                }
+            }
+        }
+
+        // Динамическое удаление foreign key constraint
+        // Ищем реальное имя констрейнта через запрос к information_schema
+        try {
+            const constraints = (await queryInterface.sequelize.query(
+                `
+                SELECT CONSTRAINT_NAME
+                FROM information_schema.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = DATABASE()
+                    AND TABLE_NAME = 'notifications'
+                    AND COLUMN_NAME = 'user_id'
+                    AND REFERENCED_TABLE_NAME IS NOT NULL
+                LIMIT 1
+            `,
+                {
+                    type: QueryTypes.SELECT,
+                },
+            )) as unknown as Array<{ CONSTRAINT_NAME: string }>;
+
+            if (constraints && constraints.length > 0) {
+                const constraintName = constraints[0].CONSTRAINT_NAME;
+                await queryInterface.sequelize.query(
+                    `ALTER TABLE notifications DROP FOREIGN KEY ${constraintName}`,
+                );
+            }
+        } catch (error) {
+            // Если FK уже удален или не существует, игнорируем ошибку
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            if (
+                !errorMessage.includes('Unknown key') &&
+                !errorMessage.includes('does not exist') &&
+                !errorMessage.includes('Cannot drop')
+            ) {
+                // Логируем предупреждение, но не прерываем выполнение
+                console.warn(
+                    `[migrate] Could not remove FK constraint: ${errorMessage}`,
+                );
+            }
+        }
+
+        // Удаление таблицы (автоматически удалит все оставшиеся колонки)
         await queryInterface.dropTable('notifications');
     },
 };
