@@ -155,16 +155,30 @@ describe('NotificationService', () => {
     describe('createNotification', () => {
         it('should create notification successfully', async () => {
             const createDto = createMockCreateDto();
-            const mockNotification = createMockNotification();
+            const mockNotification = createMockNotification({ tenantId: 1 });
 
+            // Мокируем получение tenantId (getUserTenantId использует findOne)
+            (NotificationModel.findOne as jest.Mock).mockResolvedValueOnce(
+                null, // Нет предыдущих уведомлений, используем default tenant = 1
+            );
             (NotificationModel.create as jest.Mock).mockResolvedValue(
                 mockNotification,
             );
 
             const result = await service.createNotification(createDto);
 
+            // Проверяем, что tenantId был получен (через findOne для getUserTenantId)
+            expect(NotificationModel.findOne).toHaveBeenCalledWith({
+                where: { userId: createDto.userId },
+                attributes: ['tenantId'],
+                order: [['createdAt', 'DESC']],
+                limit: 1,
+            });
+
+            // Проверяем, что создание уведомления включает tenantId
             expect(NotificationModel.create).toHaveBeenCalledWith({
                 userId: createDto.userId,
+                tenantId: 1, // ✅ Добавлен tenantId
                 type: createDto.type,
                 templateName: createDto.templateName,
                 title: createDto.title,
@@ -181,6 +195,8 @@ describe('NotificationService', () => {
         it('should throw BadRequestException on create failure', async () => {
             const createDto = createMockCreateDto();
 
+            // Мокируем получение tenantId
+            (NotificationModel.findOne as jest.Mock).mockResolvedValueOnce(null);
             (NotificationModel.create as jest.Mock).mockRejectedValue(
                 new Error('Database error'),
             );
@@ -189,45 +205,96 @@ describe('NotificationService', () => {
                 BadRequestException,
             );
         });
-    });
 
-    describe('getNotificationById', () => {
-        it('should return notification for user', async () => {
-            const mockNotification = createMockNotification();
+        it('should use tenantId from existing notification', async () => {
+            const createDto = createMockCreateDto();
+            const mockNotification = createMockNotification({ tenantId: 5 });
+            const existingNotification = createMockNotification({ tenantId: 5 });
 
-            (NotificationModel.findOne as jest.Mock).mockResolvedValue(
+            // Мокируем получение tenantId из существующего уведомления
+            (NotificationModel.findOne as jest.Mock).mockResolvedValueOnce(
+                existingNotification,
+            );
+            (NotificationModel.create as jest.Mock).mockResolvedValue(
                 mockNotification,
             );
 
+            const result = await service.createNotification(createDto);
+
+            expect(NotificationModel.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    tenantId: 5, // Используется tenantId из существующего уведомления
+                }),
+            );
+
+            expect(result).toEqual(mockNotification);
+        });
+    });
+
+    describe('getNotificationById', () => {
+        it('should return notification for user with tenant isolation', async () => {
+            const mockNotification = createMockNotification({ tenantId: 1 });
+
+            // Мокируем получение tenantId (первый вызов) и получение уведомления (второй вызов)
+            (NotificationModel.findOne as jest.Mock)
+                .mockResolvedValueOnce(null) // getUserTenantId: нет предыдущих уведомлений
+                .mockResolvedValueOnce(mockNotification); // getNotificationById: результат
+
             const result = await service.getNotificationById(1, 1);
 
-            expect(NotificationModel.findOne).toHaveBeenCalledWith({
-                where: { id: 1, userId: 1 },
-                include: expect.any(Array),
+            // Проверяем, что вызывается getUserTenantId
+            expect(NotificationModel.findOne).toHaveBeenNthCalledWith(1, {
+                where: { userId: 1 },
+                attributes: ['tenantId'],
+                order: [['createdAt', 'DESC']],
+                limit: 1,
+            });
+
+            // Проверяем, что используется tenantId в фильтре
+            expect(NotificationModel.findOne).toHaveBeenNthCalledWith(2, {
+                where: { id: 1, userId: 1, tenantId: 1 }, // ✅ Добавлен tenantId
+                include: [
+                    {
+                        model: NotificationTemplateModel,
+                        as: 'template',
+                        required: false,
+                    },
+                ],
             });
 
             expect(result).toEqual(mockNotification);
         });
 
         it('should return notification without user filter for admin', async () => {
-            const mockNotification = createMockNotification();
+            const mockNotification = createMockNotification({ tenantId: 1 });
 
+            // Для админа не вызывается getUserTenantId (userId не указан)
             (NotificationModel.findOne as jest.Mock).mockResolvedValue(
                 mockNotification,
             );
 
             const result = await service.getNotificationById(1);
 
+            // Без userId не добавляется tenantId фильтр
             expect(NotificationModel.findOne).toHaveBeenCalledWith({
                 where: { id: 1 },
-                include: expect.any(Array),
+                include: [
+                    {
+                        model: NotificationTemplateModel,
+                        as: 'template',
+                        required: false,
+                    },
+                ],
             });
 
             expect(result).toEqual(mockNotification);
         });
 
         it('should return null when notification not found', async () => {
-            (NotificationModel.findOne as jest.Mock).mockResolvedValue(null);
+            // Мокируем getUserTenantId и затем пустой результат
+            (NotificationModel.findOne as jest.Mock)
+                .mockResolvedValueOnce(null) // getUserTenantId
+                .mockResolvedValueOnce(null); // getNotificationById
 
             const result = await service.getNotificationById(999, 1);
 
@@ -236,7 +303,7 @@ describe('NotificationService', () => {
     });
 
     describe('getNotifications', () => {
-        it('should return paginated notifications with filters', async () => {
+        it('should return paginated notifications with tenant isolation', async () => {
             const filters = {
                 userId: 1,
                 type: NotificationType.EMAIL,
@@ -249,17 +316,21 @@ describe('NotificationService', () => {
                 {
                     id: 1,
                     userId: 1,
+                    tenantId: 1, // ✅ Добавлен tenantId
                     type: NotificationType.EMAIL,
                     status: NotificationStatus.SENT,
                 },
                 {
                     id: 2,
                     userId: 1,
+                    tenantId: 1, // ✅ Добавлен tenantId
                     type: NotificationType.EMAIL,
                     status: NotificationStatus.SENT,
                 },
             ] as NotificationModel[];
 
+            // Мокируем getUserTenantId и затем findAndCountAll
+            (NotificationModel.findOne as jest.Mock).mockResolvedValueOnce(null); // getUserTenantId
             (NotificationModel.findAndCountAll as jest.Mock).mockResolvedValue({
                 count: 2,
                 rows: mockNotifications,
@@ -267,9 +338,19 @@ describe('NotificationService', () => {
 
             const result = await service.getNotifications(filters);
 
+            // Проверяем, что вызывается getUserTenantId
+            expect(NotificationModel.findOne).toHaveBeenCalledWith({
+                where: { userId: 1 },
+                attributes: ['tenantId'],
+                order: [['createdAt', 'DESC']],
+                limit: 1,
+            });
+
+            // Проверяем, что используется tenantId в фильтре
             expect(NotificationModel.findAndCountAll).toHaveBeenCalledWith({
                 where: {
                     userId: 1,
+                    tenantId: 1, // ✅ Добавлен tenantId для tenant isolation
                     type: NotificationType.EMAIL,
                     status: NotificationStatus.SENT,
                 },

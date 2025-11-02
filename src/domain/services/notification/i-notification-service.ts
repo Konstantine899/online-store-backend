@@ -25,6 +25,7 @@ export interface UpdateNotificationDto {
 
 export interface NotificationFilters {
     userId?: number;
+    tenantId?: number; // Опциональный фильтр по tenant (для явной фильтрации)
     type?: NotificationType;
     status?: NotificationStatus;
     templateName?: string;

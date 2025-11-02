@@ -15,14 +15,16 @@ import {
     NotificationStatistics,
     UpdateNotificationDto,
 } from '@app/domain/services';
+import type { IRedisCache } from '@app/domain/services/notification/i-redis-cache';
 import {
     BadRequestException,
     Inject,
     Injectable,
     Logger,
     NotFoundException,
+    Optional,
 } from '@nestjs/common';
-import { Op } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 
 @Injectable()
 export class NotificationService implements INotificationService {
@@ -43,20 +45,199 @@ export class NotificationService implements INotificationService {
     >();
     private readonly templatesCacheTimeout = 10 * 60 * 1000; // 10 минут
 
+    // Кэш для tenantId пользователей (оптимизация производительности)
+    private readonly tenantIdCache = new Map<
+        number,
+        { tenantId: number; timestamp: number }
+    >();
+    private readonly tenantCacheTimeout = 5 * 60 * 1000; // 5 минут
+    private readonly maxTenantCacheSize = 1000; // Больше чем для статистики, т.к. это критично для производительности
+
     constructor(
         @Inject('IEmailProvider')
         private readonly emailProvider: IEmailProvider,
         @Inject('ISmsProvider') private readonly smsProvider: ISmsProvider,
         @Inject('ITemplateRenderer')
         private readonly templateRenderer: ITemplateRenderer,
+        @Optional()
+        @Inject('IRedisCache')
+        private readonly redisCache?: IRedisCache,
     ) {}
+
+    /**
+     * Получает tenantId для пользователя с кэшированием
+     *
+     * @param userId - ID пользователя
+     * @returns tenantId пользователя
+     *
+     * @remarks
+     * - Использует многоуровневое кэширование: in-memory (5 минут) и опционально Redis
+     * - Приоритет получения tenantId:
+     *   1. tenant_users таблица (основной источник истины)
+     *   2. Последнее уведомление пользователя (fallback для обратной совместимости)
+     *   3. Default tenant = 1 (только при отсутствии данных в БД)
+     * - Логирует предупреждения при использовании fallback для мониторинга
+     */
+    private async getUserTenantId(userId: number): Promise<number> {
+        const now = Date.now();
+        const cacheKey = `tenant:user:${userId}`;
+
+        // Приоритет 1: Проверяем Redis кэш (если доступен)
+        if (this.redisCache) {
+            try {
+                const cachedTenantId =
+                    await this.redisCache.get<number>(cacheKey);
+                if (cachedTenantId !== null) {
+                    // Обновляем in-memory кэш для быстрого доступа
+                    this.tenantIdCache.set(userId, {
+                        tenantId: cachedTenantId,
+                        timestamp: now,
+                    });
+                    return cachedTenantId;
+                }
+            } catch (redisError) {
+                const errorMessage =
+                    redisError instanceof Error
+                        ? redisError.message
+                        : 'Unknown error';
+                this.logger.warn(
+                    `Redis cache error for user ${userId}: ${errorMessage}, falling back to in-memory cache`,
+                );
+                // Продолжаем проверку in-memory кэша
+            }
+        }
+
+        // Приоритет 2: Проверяем in-memory кэш
+        const cached = this.tenantIdCache.get(userId);
+        if (cached && now - cached.timestamp < this.tenantCacheTimeout) {
+            return cached.tenantId;
+        }
+
+        try {
+            let tenantId: number | null = null;
+
+            // Приоритет 1: Получаем tenantId из таблицы tenant_users (основной источник истины)
+            if (NotificationModel.sequelize) {
+                try {
+                    const tenantUserResult =
+                        await NotificationModel.sequelize.query<{
+                            tenant_id: number;
+                        }>(
+                            'SELECT tenant_id FROM tenant_users WHERE user_id = :userId LIMIT 1',
+                            {
+                                replacements: { userId },
+                                type: QueryTypes.SELECT,
+                            },
+                        );
+
+                    if (tenantUserResult && tenantUserResult.length > 0) {
+                        tenantId = tenantUserResult[0].tenant_id;
+                        this.logger.debug(
+                            `Found tenantId ${tenantId} for user ${userId} from tenant_users table`,
+                        );
+                    }
+                } catch (tenantUserError) {
+                    const errorMessage =
+                        tenantUserError instanceof Error
+                            ? tenantUserError.message
+                            : 'Unknown error';
+                    this.logger.warn(
+                        `Failed to get tenantId from tenant_users for user ${userId}: ${errorMessage}`,
+                    );
+                    // Продолжаем проверку других источников
+                }
+            }
+
+            // Приоритет 2: Если не нашли в tenant_users, пытаемся получить из последнего уведомления
+            if (tenantId === null) {
+                const lastNotification = await NotificationModel.findOne({
+                    where: { userId },
+                    attributes: ['tenantId'],
+                    order: [['createdAt', 'DESC']],
+                    limit: 1,
+                });
+
+                if (lastNotification?.tenantId) {
+                    tenantId = lastNotification.tenantId;
+                    this.logger.debug(
+                        `Found tenantId ${tenantId} for user ${userId} from last notification`,
+                    );
+                }
+            }
+
+            // Приоритет 3: Fallback на default tenant = 1 (только если данных нет в БД)
+            if (tenantId === null) {
+                this.logger.warn(
+                    `User ${userId} has no tenant assigned in tenant_users table and no notifications. Using default tenant 1. This may indicate data inconsistency.`,
+                );
+                tenantId = 1;
+            }
+
+            // Кэшируем результат: сначала в Redis (если доступен), затем в in-memory
+            if (this.redisCache) {
+                try {
+                    const ttlSeconds = Math.floor(
+                        this.tenantCacheTimeout / 1000,
+                    );
+                    await this.redisCache.set(cacheKey, tenantId, ttlSeconds);
+                } catch (redisError) {
+                    const errorMessage =
+                        redisError instanceof Error
+                            ? redisError.message
+                            : 'Unknown error';
+                    this.logger.warn(
+                        `Failed to cache tenantId in Redis for user ${userId}: ${errorMessage}`,
+                    );
+                    // Продолжаем кэширование в in-memory
+                }
+            }
+
+            // Кэшируем в in-memory кэш
+            if (this.tenantIdCache.size >= this.maxTenantCacheSize) {
+                const firstKey = this.tenantIdCache.keys().next().value;
+                if (firstKey !== undefined) {
+                    this.tenantIdCache.delete(firstKey);
+                }
+            }
+            this.tenantIdCache.set(userId, { tenantId, timestamp: now });
+
+            return tenantId;
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(
+                `Failed to get tenantId for user ${userId}: ${errorMessage}, using default tenant 1`,
+            );
+
+            // Кэшируем fallback значение на короткое время (1 минута) при ошибках
+            const fallbackTenantId = 1;
+
+            // Не кэшируем fallback в Redis при ошибках, только в in-memory
+            if (this.tenantIdCache.size >= this.maxTenantCacheSize) {
+                const firstKey = this.tenantIdCache.keys().next().value;
+                if (firstKey !== undefined) {
+                    this.tenantIdCache.delete(firstKey);
+                }
+            }
+            this.tenantIdCache.set(userId, {
+                tenantId: fallbackTenantId,
+                timestamp: now,
+            });
+
+            return fallbackTenantId;
+        }
+    }
 
     async createNotification(
         createDto: CreateNotificationDto,
     ): Promise<NotificationModel> {
         try {
+            // Получаем tenantId для пользователя
+            const tenantId = await this.getUserTenantId(createDto.userId);
+
             const notification = await NotificationModel.create({
                 userId: createDto.userId,
+                tenantId, // ✅ Добавляем tenant scope
                 type: createDto.type,
                 templateName: createDto.templateName,
                 title: createDto.title,
@@ -68,7 +249,7 @@ export class NotificationService implements INotificationService {
             });
 
             this.logger.log(
-                `Notification created: ${notification.id} for user ${createDto.userId}`,
+                `Notification created: ${notification.id} for user ${createDto.userId} (tenant ${tenantId})`,
             );
             return notification;
         } catch (error) {
@@ -87,15 +268,28 @@ export class NotificationService implements INotificationService {
         id: number,
         userId?: number,
     ): Promise<NotificationModel | null> {
-        const whereClause: Record<string, unknown> = { id };
-
         // Тенантская изоляция: пользователи видят только свои уведомления
         if (userId) {
-            whereClause.userId = userId;
+            // Получаем tenantId для использования scope
+            const tenantId = await this.getUserTenantId(userId);
+            // Используем scope byTenant из модели для согласованности
+            return NotificationModel.scope({
+                method: ['byTenant', tenantId],
+            }).findOne({
+                where: { id, userId },
+                include: [
+                    {
+                        model: NotificationTemplateModel,
+                        as: 'template',
+                        required: false,
+                    },
+                ],
+            });
         }
 
+        // Без userId (для админов) - без tenant фильтрации
         return NotificationModel.findOne({
-            where: whereClause,
+            where: { id },
             include: [
                 {
                     model: NotificationTemplateModel,
@@ -111,6 +305,7 @@ export class NotificationService implements INotificationService {
     ): Promise<{ data: NotificationModel[]; meta: Record<string, unknown> }> {
         const {
             userId,
+            tenantId: explicitTenantId,
             type,
             status,
             templateName,
@@ -122,9 +317,17 @@ export class NotificationService implements INotificationService {
 
         const whereClause: Record<string, unknown> = {};
 
-        // Тенантская изоляция: обязательный фильтр по userId
+        // Тенантская изоляция: обязательный фильтр по userId и tenantId
+        let tenantId: number | undefined;
         if (userId) {
             whereClause.userId = userId;
+            // Используем явный tenantId из фильтров или получаем из пользователя
+            tenantId = explicitTenantId ?? (await this.getUserTenantId(userId));
+            whereClause.tenantId = tenantId;
+        } else if (explicitTenantId) {
+            // Если указан только tenantId (без userId), используем его
+            tenantId = explicitTenantId;
+            whereClause.tenantId = tenantId;
         }
 
         if (type) whereClause.type = type;
@@ -136,9 +339,10 @@ export class NotificationService implements INotificationService {
 
         const offset = (page - 1) * limit;
 
-        const { count, rows } = await NotificationModel.findAndCountAll({
+        // Используем scope byTenant, если tenantId определен
+        const baseQuery = {
             where: whereClause,
-            order: [['createdAt', 'DESC']],
+            order: [['createdAt', 'DESC']] as [string, string][],
             limit,
             offset,
             include: [
@@ -148,7 +352,13 @@ export class NotificationService implements INotificationService {
                     required: false,
                 },
             ],
-        });
+        };
+
+        const { count, rows } = tenantId
+            ? await NotificationModel.scope({
+                  method: ['byTenant', tenantId],
+              }).findAndCountAll(baseQuery)
+            : await NotificationModel.findAndCountAll(baseQuery);
 
         const totalPages = Math.ceil(count / limit);
 
@@ -173,13 +383,21 @@ export class NotificationService implements INotificationService {
         const whereClause: Record<string, unknown> = { id };
 
         // Тенантская изоляция
+        let tenantId: number | undefined;
         if (userId) {
             whereClause.userId = userId;
+            // Получаем tenantId для использования scope
+            tenantId = await this.getUserTenantId(userId);
+            whereClause.tenantId = tenantId;
         }
 
-        const [affectedCount] = await NotificationModel.update(updateDto, {
-            where: whereClause,
-        });
+        // Используем scope byTenant, если tenantId определен
+        const updateOptions = { where: whereClause };
+        const [affectedCount] = tenantId
+            ? await NotificationModel.scope({
+                  method: ['byTenant', tenantId],
+              }).update(updateDto, updateOptions)
+            : await NotificationModel.update(updateDto, updateOptions);
 
         if (affectedCount === 0) {
             throw new NotFoundException('Уведомление не найдено');
@@ -198,13 +416,21 @@ export class NotificationService implements INotificationService {
         const whereClause: Record<string, unknown> = { id };
 
         // Тенантская изоляция
+        let tenantId: number | undefined;
         if (userId) {
             whereClause.userId = userId;
+            // Получаем tenantId для использования scope
+            tenantId = await this.getUserTenantId(userId);
+            whereClause.tenantId = tenantId;
         }
 
-        const deletedCount = await NotificationModel.destroy({
-            where: whereClause,
-        });
+        // Используем scope byTenant, если tenantId определен
+        const deleteOptions = { where: whereClause };
+        const deletedCount = tenantId
+            ? await NotificationModel.scope({
+                  method: ['byTenant', tenantId],
+              }).destroy(deleteOptions)
+            : await NotificationModel.destroy(deleteOptions);
 
         if (deletedCount === 0) {
             throw new NotFoundException('Уведомление не найдено');
@@ -263,7 +489,13 @@ export class NotificationService implements INotificationService {
     }
 
     async getUnreadCount(userId: number): Promise<number> {
-        return NotificationModel.count({
+        // Получаем tenantId для использования scope
+        const tenantId = await this.getUserTenantId(userId);
+
+        // Используем scope byTenant из модели для согласованности
+        return NotificationModel.scope({
+            method: ['byTenant', tenantId],
+        }).count({
             where: {
                 userId,
                 isRead: false,
@@ -277,8 +509,14 @@ export class NotificationService implements INotificationService {
         period?: string,
         type?: NotificationType,
     ): Promise<NotificationStatistics> {
-        // Создаем ключ кэша
-        const cacheKey = `${userId ?? 'all'}_${period ?? 'all'}_${type ?? 'all'}`;
+        // Получаем tenantId для включения в ключ кэша
+        let tenantId: number | string = 'all';
+        if (userId) {
+            tenantId = await this.getUserTenantId(userId);
+        }
+
+        // Создаем ключ кэша с tenantId для предотвращения пересечений между tenants
+        const cacheKey = `${userId ?? 'all'}_${tenantId}_${period ?? 'all'}_${type ?? 'all'}`;
 
         // Проверяем кэш
         const cached = this.statisticsCache.get(cacheKey);
@@ -294,6 +532,7 @@ export class NotificationService implements INotificationService {
         // Тенантская изоляция
         if (userId) {
             whereClause.userId = userId;
+            whereClause.tenantId = tenantId;
         }
 
         // Фильтр по периоду
@@ -310,11 +549,18 @@ export class NotificationService implements INotificationService {
         }
 
         // Оптимизированный запрос с агрегацией на уровне БД
-        const notifications = await NotificationModel.findAll({
+        // Используем scope byTenant, если tenantId определен
+        const queryOptions = {
             where: whereClause,
             attributes: ['status', 'type'],
             raw: true, // Получаем только нужные поля
-        });
+        };
+        const notifications =
+            userId && whereClause.tenantId
+                ? await NotificationModel.scope({
+                      method: ['byTenant', whereClause.tenantId as number],
+                  }).findAll(queryOptions)
+                : await NotificationModel.findAll(queryOptions);
 
         // Оптимизированная обработка данных
         const stats = this.calculateStatistics(notifications);
@@ -380,37 +626,46 @@ export class NotificationService implements INotificationService {
         const results: NotificationModel[] = [];
         const batchSize = 10; // Обрабатываем по 10 уведомлений одновременно
 
-        // Группируем по типам для оптимизации
-        const groupedByType = this.groupNotificationsByType(notifications);
+        // Группируем по userId для оптимизации получения tenantId
+        const groupedByUser = this.groupNotificationsByUserId(notifications);
 
-        for (const [, typeNotifications] of groupedByType.entries()) {
-            // Обрабатываем батчами
-            for (let i = 0; i < typeNotifications.length; i += batchSize) {
-                const batch = typeNotifications.slice(i, i + batchSize);
+        for (const [userId, userNotifications] of groupedByUser.entries()) {
+            // Получаем tenantId один раз для всех уведомлений пользователя
+            await this.getUserTenantId(userId); // Кэшируем tenantId для последующих вызовов
 
-                // Параллельная обработка батча
-                const batchPromises = batch.map(async (notificationDto) => {
-                    try {
-                        return await this.sendNotification(notificationDto);
-                    } catch (error) {
-                        const errorMessage =
-                            error instanceof Error
-                                ? error.message
-                                : 'Unknown error';
-                        this.logger.error(
-                            `Failed to send bulk notification: ${errorMessage}`,
-                        );
-                        return null; // Возвращаем null для неудачных
-                    }
-                });
+            // Затем группируем по типам для оптимизации отправки
+            const groupedByType =
+                this.groupNotificationsByType(userNotifications);
 
-                const batchResults = await Promise.all(batchPromises);
-                results.push(
-                    ...batchResults.filter(
-                        (result): result is NotificationModel =>
-                            result !== null,
-                    ),
-                ); // Фильтруем null
+            for (const [, typeNotifications] of groupedByType.entries()) {
+                // Обрабатываем батчами
+                for (let i = 0; i < typeNotifications.length; i += batchSize) {
+                    const batch = typeNotifications.slice(i, i + batchSize);
+
+                    // Параллельная обработка батча
+                    const batchPromises = batch.map(async (notificationDto) => {
+                        try {
+                            return await this.sendNotification(notificationDto);
+                        } catch (error) {
+                            const errorMessage =
+                                error instanceof Error
+                                    ? error.message
+                                    : 'Unknown error';
+                            this.logger.error(
+                                `Failed to send bulk notification: ${errorMessage}`,
+                            );
+                            return null; // Возвращаем null для неудачных
+                        }
+                    });
+
+                    const batchResults = await Promise.all(batchPromises);
+                    results.push(
+                        ...batchResults.filter(
+                            (result): result is NotificationModel =>
+                                result !== null,
+                        ),
+                    ); // Фильтруем null
+                }
             }
         }
 
@@ -799,6 +1054,26 @@ export class NotificationService implements INotificationService {
             if (!bucket) {
                 bucket = [];
                 grouped.set(notification.type, bucket);
+            }
+            bucket.push(notification);
+        }
+
+        return grouped;
+    }
+
+    /**
+     * Группирует уведомления по userId для оптимизации получения tenantId
+     */
+    private groupNotificationsByUserId(
+        notifications: CreateNotificationDto[],
+    ): Map<number, CreateNotificationDto[]> {
+        const grouped = new Map<number, CreateNotificationDto[]>();
+
+        for (const notification of notifications) {
+            let bucket = grouped.get(notification.userId);
+            if (!bucket) {
+                bucket = [];
+                grouped.set(notification.userId, bucket);
             }
             bucket.push(notification);
         }
