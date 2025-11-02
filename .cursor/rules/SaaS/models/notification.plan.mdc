@@ -62,6 +62,29 @@ tasks:
       gate:
     - require: "Одобряю SAAS-009-01"
 
+- id: SAAS-009-01-1
+  title: Создать таблицу и модель настроек уведомлений пользователя
+  branch: "feature/notification/SAAS-009/notification-settings"
+  files_scope:
+    - "db/migrations/\*\*"
+    - "src/domain/models/user-notification-settings.model.ts"
+    - "src/domain/models/index.ts"
+      steps:
+    - создать миграцию для таблицы user_notification_settings
+    - добавить поля: id, user_id (FK to users, UNIQUE), email_enabled, push_enabled, order_updates, marketing
+    - добавить индекс на user_id (UNIQUE)
+    - добавить timestamps: created_at, updated_at
+    - создать UserNotificationSettingsModel с BelongsTo UserModel
+    - добавить значения по умолчанию: email_enabled=true, push_enabled=true, order_updates=true, marketing=false
+    - экспортировать UserNotificationSettingsModel из src/domain/models/index.ts
+      dod:
+    - миграция up/down проходит успешно
+    - UserNotificationSettingsModel создана с правильными полями
+    - уникальный индекс на user_id создан
+    - ассоциация с UserModel настроена
+      gate:
+    - require: "Одобряю SAAS-009-01-1"
+
 - id: SAAS-009-02
   title: Notification service and providers
   branch: "feature/notification/SAAS-009/notification-core"
@@ -79,20 +102,55 @@ tasks:
       gate:
     - require: "Одобряю SAAS-009-02"
 
+- id: SAAS-009-02-1
+  title: Реализовать методы работы с настройками уведомлений в NotificationService
+  branch: "feature/notification/SAAS-009/notification-settings-service"
+  files_scope:
+    - "src/infrastructure/services/notification/\*\*"
+    - "src/infrastructure/services/services.module.ts"
+    - "src/domain/models/user-notification-settings.model.ts"
+      steps:
+    - зарегистрировать UserNotificationSettingsModel в SequelizeModule.forFeature() в ServicesModule
+    - инжектировать UserNotificationSettingsModel в конструктор NotificationService
+    - реализовать метод getUserSettings(userId) с автоматическим созданием настроек по умолчанию
+    - реализовать метод updateUserSettings(userId, settings)
+    - реализовать приватный метод isNotificationEnabled(settings, type)
+    - интегрировать проверку настроек в метод sendNotification()
+    - добавить валидацию: проверять настройки пользователя перед отправкой уведомления
+    - возвращать null если тип уведомления отключен для пользователя
+      dod:
+    - getUserSettings создает настройки по умолчанию если их нет
+    - updateUserSettings обновляет существующие настройки
+    - isNotificationEnabled правильно проверяет флаги email/push
+    - sendNotification учитывает настройки пользователя
+    - unit тесты для методов настроек проходят
+      gate:
+    - require: "Одобряю SAAS-009-02-1"
+
 - id: SAAS-009-03
-  title: Notification controller and events
+  title: Контроллер уведомлений и события
   branch: "feature/notification/SAAS-009/notification-core"
   files_scope:
     - "src/infrastructure/controllers/notification/\*\*"
     - "src/infrastructure/common/events/\*\*"
+    - "src/infrastructure/dto/notification/\*\*"
+    - "src/infrastructure/responses/notification/\*\*"
       steps:
-    - implement notification management endpoints
-    - add event-driven notification triggers
-    - add proper Swagger documentation
+    - реализовать endpoints управления уведомлениями
+    - реализовать GET /notifications/settings endpoint используя NotificationService.getUserSettings()
+    - реализовать PUT /notifications/settings endpoint используя NotificationService.updateUserSettings()
+    - создать UpdateSettingsDto с опциональными boolean полями (emailEnabled, pushEnabled, orderUpdates, marketing)
+    - создать класс UserNotificationSettingsResponse с декораторами ApiProperty
+    - удалить TODO комментарии из endpoints настроек в контроллере
+    - добавить event-driven триггеры уведомлений
+    - добавить правильную Swagger документацию для endpoints настроек
       dod:
-    - notification endpoints isolated by tenant
-    - event triggers work correctly
-    - integration tests pass (success + error cases)
+    - endpoints уведомлений изолированы по тенантам
+    - GET/PUT /notifications/settings endpoints полностью реализованы
+    - UpdateSettingsDto правильно валидирует входные данные
+    - UserNotificationSettingsResponse задокументирован в Swagger
+    - event триггеры работают корректно
+    - integration тесты проходят (успешные и ошибочные случаи)
       gate:
     - require: "Одобряю SAAS-009-03"
 
@@ -141,9 +199,15 @@ tasks:
       steps:
     - покрыть все эндпоинты уведомлений
     - покрыть эндпоинты шаблонов
+    - покрыть GET /notifications/settings endpoint
+    - покрыть PUT /notifications/settings endpoint
     - покрыть тенантскую изоляцию
+    - добавить тесты на проверку настроек пользователя перед отправкой уведомлений
       dod:
-    - integration тесты покрывают все эндпоинты
+    - integration тесты покрывают все эндпоинты (включая settings)
+    - тесты проверяют создание настроек по умолчанию
+    - тесты проверяют обновление настроек
+    - тесты проверяют блокировку уведомлений при отключенных настройках
     - тесты изолированы и детерминированы
     - негативные сценарии покрыты
       gate:
