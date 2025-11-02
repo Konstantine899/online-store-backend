@@ -3,6 +3,7 @@ import {
     NotificationStatus,
     NotificationTemplateModel,
     NotificationType,
+    UserModel,
 } from '@app/domain/models';
 import {
     CreateNotificationDto,
@@ -553,28 +554,127 @@ export class NotificationService implements INotificationService {
     private async sendEmailNotification(
         notification: NotificationModel,
     ): Promise<void> {
-        // Mock реализация для разработки
-        this.logger.log(
-            `Mock email sent to user ${notification.userId}: ${notification.title}`,
-        );
+        // Загружаем пользователя для получения email
+        const user = await UserModel.findByPk(notification.userId, {
+            attributes: ['id', 'email', 'firstName', 'lastName'],
+        });
 
-        // В реальной реализации здесь будет:
-        // const result = await this.emailProvider.sendEmail({
-        //     to: user.email,
-        //     subject: notification.title,
-        //     html: notification.message,
-        // });
+        if (!user) {
+            throw new NotFoundException(
+                `Пользователь с ID ${notification.userId} не найден`,
+            );
+        }
+
+        if (!user.email) {
+            throw new BadRequestException(
+                `У пользователя ${notification.userId} не указан email`,
+            );
+        }
+
+        // Используем templateRenderer для рендеринга, если есть шаблон
+        let renderedTitle = notification.title;
+        let renderedMessage = notification.message;
+
+        if (notification.templateName && this.templateRenderer) {
+            try {
+                // Получаем шаблон для рендеринга
+                const template = await NotificationTemplateModel.findOne({
+                    where: { name: notification.templateName },
+                });
+
+                if (template) {
+                    // Преобразуем notification.data в TemplateVariables (фильтруем только допустимые типы)
+                    const templateData: Record<string, string | number | boolean | object | Date> = {};
+                    if (notification.data) {
+                        for (const [key, value] of Object.entries(notification.data)) {
+                            if (
+                                typeof value === 'string' ||
+                                typeof value === 'number' ||
+                                typeof value === 'boolean' ||
+                                value instanceof Date ||
+                                (typeof value === 'object' && value !== null)
+                            ) {
+                                templateData[key] = value as string | number | boolean | object | Date;
+                            }
+                        }
+                    }
+
+                    // Рендерим title шаблона
+                    const titleResult = await this.templateRenderer.renderTemplate(
+                        template.title,
+                        templateData,
+                    );
+                    if (titleResult.success && titleResult.content) {
+                        renderedTitle = titleResult.content;
+                    }
+
+                    // Рендерим message шаблона
+                    const messageResult = await this.templateRenderer.renderTemplate(
+                        template.message,
+                        templateData,
+                    );
+                    if (messageResult.success && messageResult.content) {
+                        renderedMessage = messageResult.content;
+                    }
+                }
+            } catch (error) {
+                // Если рендеринг не удался, используем оригинальные значения
+                this.logger.warn(
+                    `Failed to render template for notification ${notification.id}: ${
+                        error instanceof Error ? error.message : 'Unknown error'
+                    }`,
+                );
+            }
+        }
+
+        // Отправляем email через провайдер
+        const emailResult = await this.emailProvider.sendEmail({
+            to: user.email,
+            subject: renderedTitle,
+            html: renderedMessage,
+            text: renderedMessage.replace(/<[^>]*>/g, ''), // Plain text версия
+        });
+
+        if (!emailResult.success) {
+            throw new Error(
+                emailResult.error ?? 'Не удалось отправить email уведомление',
+            );
+        }
+
+        this.logger.log(
+            `Email notification sent to ${user.email} (user ${notification.userId}): ${notification.title}`,
+        );
     }
 
     private async sendPushNotification(
         notification: NotificationModel,
     ): Promise<void> {
+        // Загружаем пользователя для проверки
+        const user = await UserModel.findByPk(notification.userId, {
+            attributes: ['id', 'email', 'firstName', 'lastName'],
+        });
+
+        if (!user) {
+            throw new NotFoundException(
+                `Пользователь с ID ${notification.userId} не найден`,
+            );
+        }
+
         // Mock реализация для разработки
+        // В реальной реализации здесь будет:
+        // 1. Получение push tokens пользователя из БД/кэша
+        // 2. Интеграция с FCM (Firebase Cloud Messaging) для Android
+        // 3. Интеграция с APNS (Apple Push Notification Service) для iOS
+        // 4. Отправка через соответствующий сервис
         this.logger.log(
-            `Mock push notification sent to user ${notification.userId}: ${notification.title}`,
+            `Mock push notification queued for user ${notification.userId} (${user.email}): ${notification.title}`,
+        );
+        this.logger.debug(
+            `Push notification content: ${notification.message.substring(0, 100)}...`,
         );
 
-        // В реальной реализации здесь будет интеграция с push-сервисом
+        // Имитация задержки отправки
+        await new Promise((resolve) => setTimeout(resolve, 50));
     }
 
     private parsePeriod(period: string): number {
