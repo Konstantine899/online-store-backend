@@ -3,6 +3,8 @@ import {
     NotificationStatus,
     NotificationTemplateModel,
     NotificationType,
+    UserModel,
+    UserNotificationSettingsModel,
 } from '@app/domain/models';
 import type {
     CreateNotificationDto,
@@ -13,6 +15,7 @@ import type {
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
+import { getModelToken } from '@nestjs/sequelize';
 import { NotificationService } from './notification.service';
 
 // Mock провайдеры
@@ -40,6 +43,10 @@ const mockTemplateRenderer: jest.Mocked<ITemplateRenderer> = {
     getSupportedSyntax: jest.fn(),
 };
 
+// Mock для UserNotificationSettingsModel (используется напрямую в сервисе)
+const mockUserNotificationSettingsModelFindOne = jest.fn();
+const mockUserNotificationSettingsModelCreate = jest.fn();
+
 // Mock модели
 jest.mock('@app/domain/models', () => ({
     NotificationModel: {
@@ -51,6 +58,17 @@ jest.mock('@app/domain/models', () => ({
         count: jest.fn(),
         findAll: jest.fn(),
         findByPk: jest.fn(),
+        scope: jest.fn(() => ({
+            findOne: jest.fn(),
+            findAndCountAll: jest.fn(),
+            update: jest.fn(),
+            destroy: jest.fn(),
+            count: jest.fn(),
+            findAll: jest.fn(),
+        })),
+        sequelize: {
+            query: jest.fn(),
+        },
     },
     NotificationTemplateModel: {
         findOne: jest.fn(),
@@ -59,6 +77,15 @@ jest.mock('@app/domain/models', () => ({
         findByPk: jest.fn(),
         update: jest.fn(),
         destroy: jest.fn(),
+    },
+    UserModel: {
+        findByPk: jest.fn(),
+    },
+    UserNotificationSettingsModel: {
+        findOne: (...args: unknown[]) =>
+            mockUserNotificationSettingsModelFindOne(...args),
+        create: (...args: unknown[]) =>
+            mockUserNotificationSettingsModelCreate(...args),
     },
     NotificationType: {
         EMAIL: 'email',
@@ -120,7 +147,27 @@ describe('NotificationService', () => {
         ...overrides,
     });
 
+    const createMockSettings = (
+        overrides: Partial<UserNotificationSettingsModel> = {},
+    ): UserNotificationSettingsModel =>
+        ({
+            id: 1,
+            userId: 1,
+            emailEnabled: true,
+            pushEnabled: true,
+            orderUpdates: true,
+            marketing: false,
+            update: jest.fn().mockResolvedValue(undefined),
+            ...overrides,
+        }) as UserNotificationSettingsModel;
+
     beforeEach(async () => {
+        // Мок для UserNotificationSettingsModel
+        const mockUserNotificationSettingsModel = {
+            findOne: jest.fn(),
+            create: jest.fn(),
+        };
+
         module = await Test.createTestingModule({
             providers: [
                 NotificationService,
@@ -136,6 +183,10 @@ describe('NotificationService', () => {
                     provide: 'ITemplateRenderer',
                     useValue: mockTemplateRenderer,
                 },
+                {
+                    provide: getModelToken(UserNotificationSettingsModel),
+                    useValue: mockUserNotificationSettingsModel,
+                },
             ],
         }).compile();
 
@@ -144,6 +195,8 @@ describe('NotificationService', () => {
 
     afterEach(() => {
         jest.clearAllMocks();
+        mockUserNotificationSettingsModelFindOne.mockClear();
+        mockUserNotificationSettingsModelCreate.mockClear();
     });
 
     afterAll(async () => {
@@ -1270,6 +1323,350 @@ describe('NotificationService', () => {
             expect(NotificationTemplateModel.findAll).toHaveBeenCalled();
             expect(results).toHaveLength(20);
             expect(endTime - startTime).toBeLessThan(1000); // Увеличиваем порог времени
+        });
+    });
+
+    describe('getUserSettings', () => {
+        it('should return existing settings when found', async () => {
+            const mockSettings = createMockSettings({
+                id: 1,
+                userId: 1,
+                emailEnabled: true,
+                pushEnabled: false,
+            });
+
+            mockUserNotificationSettingsModelFindOne.mockResolvedValue(
+                mockSettings,
+            );
+
+            const result = await service.getUserSettings(1);
+
+            expect(mockUserNotificationSettingsModelFindOne).toHaveBeenCalledWith(
+                {
+                    where: { userId: 1 },
+                },
+            );
+            expect(result).toEqual(mockSettings);
+            expect(mockUserNotificationSettingsModelCreate).not.toHaveBeenCalled();
+        });
+
+        it('should create default settings when not found', async () => {
+            const defaultSettings = createMockSettings({
+                id: 1,
+                userId: 1,
+                emailEnabled: true,
+                pushEnabled: true,
+                orderUpdates: true,
+                marketing: false,
+            });
+
+            mockUserNotificationSettingsModelFindOne.mockResolvedValue(null);
+            mockUserNotificationSettingsModelCreate.mockResolvedValue(
+                defaultSettings,
+            );
+
+            const result = await service.getUserSettings(1);
+
+            expect(mockUserNotificationSettingsModelFindOne).toHaveBeenCalledWith(
+                {
+                    where: { userId: 1 },
+                },
+            );
+            expect(mockUserNotificationSettingsModelCreate).toHaveBeenCalledWith({
+                userId: 1,
+                emailEnabled: true,
+                pushEnabled: true,
+                orderUpdates: true,
+                marketing: false,
+            });
+            expect(result).toEqual(defaultSettings);
+        });
+
+        it('should throw BadRequestException on database error', async () => {
+            const dbError = new Error('Database connection failed');
+
+            mockUserNotificationSettingsModelFindOne.mockRejectedValue(dbError);
+
+            await expect(service.getUserSettings(1)).rejects.toThrow(
+                BadRequestException,
+            );
+            await expect(service.getUserSettings(1)).rejects.toThrow(
+                'Не удалось получить настройки уведомлений',
+            );
+        });
+
+        it('should throw BadRequestException when create fails', async () => {
+            const createError = new Error('Unique constraint violation');
+
+            mockUserNotificationSettingsModelFindOne.mockResolvedValue(null);
+            mockUserNotificationSettingsModelCreate.mockRejectedValue(
+                createError,
+            );
+
+            await expect(service.getUserSettings(1)).rejects.toThrow(
+                BadRequestException,
+            );
+        });
+    });
+
+    describe('updateUserSettings', () => {
+        it('should update existing settings successfully', async () => {
+            const existingSettings = createMockSettings({
+                id: 1,
+                userId: 1,
+                emailEnabled: true,
+                pushEnabled: true,
+            });
+
+            // Мокируем getUserSettings (который вызывается внутри updateUserSettings)
+            jest.spyOn(service, 'getUserSettings').mockResolvedValue(
+                existingSettings,
+            );
+
+            // update возвращает обновленный объект
+            existingSettings.update = jest
+                .fn()
+                .mockResolvedValue(existingSettings);
+
+            const updateData = { emailEnabled: false };
+            const result = await service.updateUserSettings(1, updateData);
+
+            expect(service.getUserSettings).toHaveBeenCalledWith(1);
+            expect(existingSettings.update).toHaveBeenCalledWith(updateData);
+            expect(result).toEqual(existingSettings);
+        });
+
+        it('should create settings if not exists before update', async () => {
+            const defaultSettings = createMockSettings({
+                id: 1,
+                userId: 1,
+                emailEnabled: true,
+                pushEnabled: true,
+            });
+
+            // getUserSettings создаст настройки по умолчанию
+            jest.spyOn(service, 'getUserSettings').mockResolvedValue(
+                defaultSettings,
+            );
+
+            defaultSettings.update = jest
+                .fn()
+                .mockResolvedValue(defaultSettings);
+
+            const updateData = { marketing: true };
+            const result = await service.updateUserSettings(1, updateData);
+
+            expect(service.getUserSettings).toHaveBeenCalledWith(1);
+            expect(defaultSettings.update).toHaveBeenCalledWith(updateData);
+            expect(result).toEqual(defaultSettings);
+        });
+
+        it('should handle partial updates', async () => {
+            const existingSettings = createMockSettings({
+                id: 1,
+                userId: 1,
+                emailEnabled: true,
+                pushEnabled: true,
+                orderUpdates: true,
+                marketing: false,
+            });
+
+            jest.spyOn(service, 'getUserSettings').mockResolvedValue(
+                existingSettings,
+            );
+            existingSettings.update = jest
+                .fn()
+                .mockResolvedValue(existingSettings);
+
+            // Обновляем только одно поле
+            const updateData = { pushEnabled: false };
+            await service.updateUserSettings(1, updateData);
+
+            expect(existingSettings.update).toHaveBeenCalledWith(updateData);
+        });
+
+        it('should throw BadRequestException on update error', async () => {
+            const existingSettings = createMockSettings({
+                id: 1,
+                userId: 1,
+            });
+            const updateError = new Error('Update failed');
+
+            jest.spyOn(service, 'getUserSettings').mockResolvedValue(
+                existingSettings,
+            );
+            existingSettings.update = jest.fn().mockRejectedValue(updateError);
+
+            await expect(
+                service.updateUserSettings(1, { emailEnabled: false }),
+            ).rejects.toThrow(BadRequestException);
+            await expect(
+                service.updateUserSettings(1, { emailEnabled: false }),
+            ).rejects.toThrow('Не удалось обновить настройки уведомлений');
+        });
+
+        it('should throw BadRequestException when getUserSettings fails', async () => {
+            const getUserSettingsError = new BadRequestException(
+                'Failed to get settings',
+            );
+
+            jest.spyOn(service, 'getUserSettings').mockRejectedValue(
+                getUserSettingsError,
+            );
+
+            await expect(
+                service.updateUserSettings(1, { emailEnabled: false }),
+            ).rejects.toThrow(BadRequestException);
+        });
+    });
+
+    describe('sendNotification with user settings', () => {
+        it('should skip notification when email is disabled', async () => {
+            const createDto = createMockCreateDto({
+                type: NotificationType.EMAIL,
+            });
+            const settings = createMockSettings({
+                emailEnabled: false,
+                pushEnabled: true,
+            });
+
+            jest.spyOn(service, 'getUserSettings').mockResolvedValue(settings);
+
+            const result = await service.sendNotification(createDto);
+
+            expect(service.getUserSettings).toHaveBeenCalledWith(
+                createDto.userId,
+            );
+            expect(NotificationModel.create).not.toHaveBeenCalled();
+            expect(result).toBeNull();
+        });
+
+        it('should skip notification when push is disabled', async () => {
+            const createDto = createMockCreateDto({
+                type: NotificationType.PUSH,
+            });
+            const settings = createMockSettings({
+                emailEnabled: true,
+                pushEnabled: false,
+            });
+
+            jest.spyOn(service, 'getUserSettings').mockResolvedValue(settings);
+
+            const result = await service.sendNotification(createDto);
+
+            expect(service.getUserSettings).toHaveBeenCalledWith(
+                createDto.userId,
+            );
+            expect(NotificationModel.create).not.toHaveBeenCalled();
+            expect(result).toBeNull();
+        });
+
+        it('should send notification when email is enabled', async () => {
+            const createDto = createMockCreateDto({
+                type: NotificationType.EMAIL,
+            });
+            const settings = createMockSettings({
+                emailEnabled: true,
+                pushEnabled: true,
+            });
+            const mockNotification = createMockNotification({
+                id: 1,
+                status: NotificationStatus.SENT,
+            });
+            const mockUser = {
+                id: 1,
+                email: 'test@example.com',
+                firstName: 'Test',
+                lastName: 'User',
+            };
+
+            jest.spyOn(service, 'getUserSettings').mockResolvedValue(settings);
+            (NotificationModel.findOne as jest.Mock).mockResolvedValueOnce(
+                null, // getUserTenantId
+            );
+            (NotificationModel.create as jest.Mock).mockResolvedValue(
+                mockNotification,
+            );
+            (NotificationModel.update as jest.Mock).mockResolvedValue([1]);
+            (UserModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
+            (mockEmailProvider.sendEmail as jest.Mock).mockResolvedValue({
+                success: true,
+                messageId: 'test-message-id',
+                provider: 'MockEmailProvider',
+            });
+
+            const result = await service.sendNotification(createDto);
+
+            expect(service.getUserSettings).toHaveBeenCalledWith(
+                createDto.userId,
+            );
+            expect(NotificationModel.create).toHaveBeenCalled();
+            expect(result).not.toBeNull();
+        });
+
+        it('should send notification when push is enabled', async () => {
+            const createDto = createMockCreateDto({
+                type: NotificationType.PUSH,
+            });
+            const settings = createMockSettings({
+                emailEnabled: true,
+                pushEnabled: true,
+            });
+            const mockNotification = createMockNotification({
+                id: 1,
+                status: NotificationStatus.SENT,
+            });
+            const mockUser = {
+                id: 1,
+                email: 'test@example.com',
+                firstName: 'Test',
+                lastName: 'User',
+            };
+
+            jest.spyOn(service, 'getUserSettings').mockResolvedValue(settings);
+            (NotificationModel.findOne as jest.Mock).mockResolvedValueOnce(
+                null, // getUserTenantId
+            );
+            (NotificationModel.create as jest.Mock).mockResolvedValue(
+                mockNotification,
+            );
+            (NotificationModel.update as jest.Mock).mockResolvedValue([1]);
+            (UserModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
+            (mockSmsProvider.sendSms as jest.Mock).mockResolvedValue({
+                success: true,
+                messageId: 'test-sms-id',
+                provider: 'MockSmsProvider',
+                deliveryStatus: 'pending',
+            });
+
+            const result = await service.sendNotification(createDto);
+
+            expect(service.getUserSettings).toHaveBeenCalledWith(
+                createDto.userId,
+            );
+            expect(NotificationModel.create).toHaveBeenCalled();
+            expect(result).not.toBeNull();
+        });
+
+        it('should not create notification when settings block it', async () => {
+            const createDto = createMockCreateDto({
+                type: NotificationType.EMAIL,
+            });
+            const settings = createMockSettings({
+                emailEnabled: false,
+                pushEnabled: false,
+            });
+
+            jest.spyOn(service, 'getUserSettings').mockResolvedValue(settings);
+
+            const result = await service.sendNotification(createDto);
+
+            expect(service.getUserSettings).toHaveBeenCalledWith(
+                createDto.userId,
+            );
+            expect(NotificationModel.create).not.toHaveBeenCalled();
+            expect(mockEmailProvider.sendEmail).not.toHaveBeenCalled();
+            expect(result).toBeNull();
         });
     });
 });

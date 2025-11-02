@@ -1,8 +1,8 @@
 import type {
     NotificationModel,
+    NotificationStatus,
     NotificationTemplateModel,
     NotificationType,
-    NotificationStatus,
     UserNotificationSettingsModel,
 } from '@app/domain/models';
 
