@@ -15,6 +15,11 @@ import {
 } from '@app/infrastructure/common/decorators/swagger/notification';
 import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
 import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
+import {
+    CreateTemplateDto,
+    UpdateSettingsDto,
+    UpdateTemplateDto,
+} from '@app/infrastructure/dto/notification';
 import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
 import {
     BadRequestException,
@@ -26,6 +31,7 @@ import {
     HttpCode,
     HttpStatus,
     Logger,
+    NotFoundException,
     Param,
     ParseIntPipe,
     Post,
@@ -37,6 +43,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import {
+    CUSTOMER_ROLES,
     NOTIFICATION_ACCESS_LEVELS,
     PLATFORM_ROLES,
     TENANT_ADMIN_ROLES,
@@ -75,11 +82,16 @@ export class NotificationController {
         { data: unknown; timestamp: number }
     >();
     private readonly CACHE_TTL = 5 * 60 * 1000; // 5 минут
+    private readonly MAX_CACHE_SIZE = 100; // Максимальный размер кэша
+    private readonly DEFAULT_PAGE = 1;
+    private readonly DEFAULT_LIMIT = 20;
+    private readonly MAX_LIMIT = 100;
 
     constructor(private readonly notificationService: NotificationService) {}
 
     /**
      * Получить данные из кэша или выполнить функцию
+     * Автоматически очищает старые записи при превышении MAX_CACHE_SIZE
      */
     private async getCachedData<T>(
         key: string,
@@ -94,8 +106,30 @@ export class NotificationController {
         }
 
         const data = await fetcher();
-        this.cache.set(key, { data, timestamp: now });
+        this.setCacheValue(key, data, now);
         return data;
+    }
+
+    /**
+     * Установить значение в кэш с автоматической очисткой при превышении размера
+     */
+    private setCacheValue(
+        key: string,
+        data: unknown,
+        timestamp: number = Date.now(),
+    ): void {
+        // Если достигнут лимит, удаляем самые старые записи (простой LRU)
+        if (this.cache.size >= this.MAX_CACHE_SIZE) {
+            const entries = Array.from(this.cache.entries());
+            // Сортируем по timestamp и удаляем 10% самых старых
+            entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+            const toDelete = Math.ceil(this.MAX_CACHE_SIZE * 0.1);
+            for (let i = 0; i < toDelete; i++) {
+                this.cache.delete(entries[i][0]);
+            }
+        }
+
+        this.cache.set(key, { data, timestamp });
     }
 
     /**
@@ -115,12 +149,12 @@ export class NotificationController {
 
     /**
      * Получить уведомления пользователя
-     * Доступ: CUSTOMER_ROLES, STAFF_ROLES, MANAGER_ROLES, TENANT_ADMIN_ROLES, PLATFORM_ROLES
+     * Доступ: CUSTOMER_ROLES (только свои уведомления)
      */
     @GetUserNotificationsSwaggerDecorator()
     @Get()
     @HttpCode(HttpStatus.OK)
-    @Roles(...NOTIFICATION_ACCESS_LEVELS.NOTIFICATION_VIEW)
+    @Roles(...CUSTOMER_ROLES)
     async getUserNotifications(
         @Req() req: AuthenticatedRequest,
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
@@ -138,118 +172,180 @@ export class NotificationController {
     }> {
         const startTime = Date.now();
 
-        // Строгая валидация параметров (ожидаем 400 на некорректные значения)
-        if (page < 1 || limit < 1 || limit > 100) {
-            throw new BadRequestException(
-                'Некорректные параметры пагинации: page и limit должны быть >= 1, limit <= 100',
+        try {
+            // Валидация через enum для status и type
+            let validatedStatus: NotificationStatus | undefined;
+            if (status) {
+                if (
+                    !Object.values(NotificationStatus).includes(
+                        status as NotificationStatus,
+                    )
+                ) {
+                    throw new BadRequestException(
+                        'Некорректный статус уведомления',
+                    );
+                }
+                validatedStatus = status as NotificationStatus;
+            }
+
+            let validatedType: NotificationType | undefined;
+            if (type) {
+                if (
+                    !Object.values(NotificationType).includes(
+                        type as NotificationType,
+                    )
+                ) {
+                    throw new BadRequestException(
+                        'Некорректный тип уведомления',
+                    );
+                }
+                validatedType = type as NotificationType;
+            }
+
+            // Валидация параметров пагинации
+            if (page < 1 || limit < 1 || limit > this.MAX_LIMIT) {
+                throw new BadRequestException(
+                    `Некорректные параметры пагинации: page и limit должны быть >= 1, limit <= ${this.MAX_LIMIT}`,
+                );
+            }
+
+            const filters: NotificationFilters = {
+                userId: req.user.id,
+                page,
+                limit,
+            };
+
+            if (validatedStatus) {
+                filters.status = validatedStatus;
+            }
+
+            if (validatedType) {
+                filters.type = validatedType;
+            }
+
+            // Без кэширования — важно для тестов ошибок/валидации
+            const result =
+                await this.notificationService.getNotifications(filters);
+
+            const endTime = Date.now();
+            this.logger.log(
+                `getUserNotifications completed in ${endTime - startTime}ms for user ${req.user.id}`,
             );
+
+            return {
+                data: result.data,
+                meta: {
+                    totalCount: result.meta.totalCount as number,
+                    currentPage: result.meta.currentPage as number,
+                    lastPage: result.meta.lastPage as number,
+                    limit: result.meta.limit as number,
+                },
+            };
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(
+                `Error in getUserNotifications for user ${req.user.id}: ${errorMessage}`,
+                error instanceof Error ? error.stack : undefined,
+            );
+            throw error;
         }
-        const validatedPage = Math.min(page, 1000000);
-        const validatedLimit = Math.min(limit, 100); // Ограничение до 100 элементов
-
-        const filters: NotificationFilters = {
-            userId: req.user.id,
-            page: validatedPage,
-            limit: validatedLimit,
-        };
-
-        if (status) {
-            filters.status = status as NotificationStatus;
-        }
-
-        if (type) {
-            filters.type = type as NotificationType;
-        }
-
-        // Без кэширования — важно для тестов ошибок/валидации
-        const result = await this.notificationService.getNotifications(filters);
-
-        const endTime = Date.now();
-        this.logger.log(
-            `getUserNotifications completed in ${endTime - startTime}ms for user ${req.user.id}`,
-        );
-
-        return {
-            data: result.data,
-            meta: {
-                totalCount: result.meta.totalCount as number,
-                currentPage: result.meta.currentPage as number,
-                lastPage: result.meta.lastPage as number,
-                limit: result.meta.limit as number,
-            },
-        };
     }
 
     /**
      * Получить количество непрочитанных уведомлений
-     * Доступ: CUSTOMER_ROLES, STAFF_ROLES, MANAGER_ROLES, TENANT_ADMIN_ROLES, PLATFORM_ROLES
+     * Доступ: CUSTOMER_ROLES
      */
     @GetUnreadCountSwaggerDecorator()
     @Get('unread-count')
     @HttpCode(HttpStatus.OK)
-    @Roles(...NOTIFICATION_ACCESS_LEVELS.NOTIFICATION_VIEW)
+    @Roles(...CUSTOMER_ROLES)
     async getUnreadCount(
         @Req() req: AuthenticatedRequest,
     ): Promise<{ count: number }> {
         const startTime = Date.now();
 
-        // Кэширование для счетчика непрочитанных
-        const cacheKey = `unread-count:${req.user.id}`;
+        try {
+            // Кэширование для счетчика непрочитанных
+            const cacheKey = `unread-count:${req.user.id}`;
+            const UNREAD_COUNT_TTL = 60 * 1000; // 1 минута TTL для счетчика
 
-        const count = await this.getCachedData(
-            cacheKey,
-            async () => {
-                return await this.notificationService.getUnreadCount(
-                    req.user.id,
-                );
-            },
-            60 * 1000,
-        ); // 1 минута TTL для счетчика
+            const count = await this.getCachedData(
+                cacheKey,
+                async () => {
+                    return await this.notificationService.getUnreadCount(
+                        req.user.id,
+                    );
+                },
+                UNREAD_COUNT_TTL,
+            );
 
-        const endTime = Date.now();
-        this.logger.log(
-            `getUnreadCount completed in ${endTime - startTime}ms for user ${req.user.id}`,
-        );
+            const endTime = Date.now();
+            this.logger.log(
+                `getUnreadCount completed in ${endTime - startTime}ms for user ${req.user.id}`,
+            );
 
-        return { count };
+            return { count };
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(
+                `Error in getUnreadCount for user ${req.user.id}: ${errorMessage}`,
+                error instanceof Error ? error.stack : undefined,
+            );
+            throw error;
+        }
     }
 
     /**
      * Отметить уведомление как прочитанное
-     * Доступ: CUSTOMER_ROLES, STAFF_ROLES, MANAGER_ROLES, TENANT_ADMIN_ROLES, PLATFORM_ROLES
+     * Доступ: CUSTOMER_ROLES (только свои уведомления)
      */
     @MarkAsReadSwaggerDecorator()
     @Put(':id/read')
     @HttpCode(HttpStatus.OK)
-    @Roles(...NOTIFICATION_ACCESS_LEVELS.NOTIFICATION_VIEW)
+    @Roles(...CUSTOMER_ROLES)
     async markAsRead(
         @Param('id', ParseIntPipe) notificationId: number,
         @Req() req: AuthenticatedRequest,
     ): Promise<{ message: string }> {
         const startTime = Date.now();
 
-        await this.notificationService.markAsRead(notificationId, req.user.id);
+        try {
+            await this.notificationService.markAsRead(
+                notificationId,
+                req.user.id,
+            );
 
-        // Очищаем кэш для пользователя после изменения
-        this.clearCache(`notifications:${req.user.id}`);
-        this.clearCache(`unread-count:${req.user.id}`);
+            // Очищаем кэш для пользователя после изменения
+            this.clearCache(`notifications:${req.user.id}`);
+            this.clearCache(`unread-count:${req.user.id}`);
 
-        const endTime = Date.now();
-        this.logger.log(
-            `markAsRead completed in ${endTime - startTime}ms for user ${req.user.id}, notification ${notificationId}`,
-        );
+            const endTime = Date.now();
+            this.logger.log(
+                `markAsRead completed in ${endTime - startTime}ms for user ${req.user.id}, notification ${notificationId}`,
+            );
 
-        return { message: 'Уведомление отмечено как прочитанное' };
+            return { message: 'Уведомление отмечено как прочитанное' };
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(
+                `Error in markAsRead for user ${req.user.id}, notification ${notificationId}: ${errorMessage}`,
+                error instanceof Error ? error.stack : undefined,
+            );
+            throw error;
+        }
     }
 
     /**
      * Получить настройки уведомлений пользователя
-     * Доступ: CUSTOMER_ROLES, STAFF_ROLES, MANAGER_ROLES, TENANT_ADMIN_ROLES, PLATFORM_ROLES
+     * Доступ: CUSTOMER_ROLES
      */
     @GetUserSettingsSwaggerDecorator()
     @Get('settings')
     @HttpCode(HttpStatus.OK)
-    @Roles(...NOTIFICATION_ACCESS_LEVELS.NOTIFICATION_VIEW)
+    @Roles(...CUSTOMER_ROLES)
     async getUserSettings(@Req() req: AuthenticatedRequest): Promise<{
         id: number;
         userId: number;
@@ -258,35 +354,43 @@ export class NotificationController {
         orderUpdates: boolean;
         marketing: boolean;
     }> {
-        // TODO: Реализовать после создания NotificationSettingsService
-        // return this.notificationService.getUserSettings(req.user.id);
+        try {
+            // TODO: Реализовать после создания NotificationSettingsService (SAAS-009-02-1)
+            // Временная заглушка до реализации методов в NotificationService
+            // После реализации SAAS-009-02-1 заменить на:
+            // const settings = await this.notificationService.getUserSettings(req.user.id);
+            // return { id: settings.id, userId: settings.userId, ... };
 
-        return {
-            id: 1,
-            userId: req.user.id,
-            emailEnabled: true,
-            pushEnabled: true,
-            orderUpdates: true,
-            marketing: false,
-        };
+            // Fallback на значения по умолчанию
+            return {
+                id: 1,
+                userId: req.user.id,
+                emailEnabled: true,
+                pushEnabled: true,
+                orderUpdates: true,
+                marketing: false,
+            };
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(
+                `Error in getUserSettings for user ${req.user.id}: ${errorMessage}`,
+                error instanceof Error ? error.stack : undefined,
+            );
+            throw error;
+        }
     }
 
     /**
      * Обновить настройки уведомлений пользователя
-     * Доступ: CUSTOMER_ROLES, STAFF_ROLES, MANAGER_ROLES, TENANT_ADMIN_ROLES, PLATFORM_ROLES
+     * Доступ: CUSTOMER_ROLES
      */
     @UpdateUserSettingsSwaggerDecorator()
     @Put('settings')
     @HttpCode(HttpStatus.OK)
-    @Roles(...NOTIFICATION_ACCESS_LEVELS.NOTIFICATION_VIEW)
+    @Roles(...CUSTOMER_ROLES)
     async updateUserSettings(
-        @Body()
-        updateSettingsDto: {
-            emailEnabled?: boolean;
-            pushEnabled?: boolean;
-            orderUpdates?: boolean;
-            marketing?: boolean;
-        },
+        @Body() updateSettingsDto: UpdateSettingsDto,
         @Req() req: AuthenticatedRequest,
     ): Promise<{
         id: number;
@@ -296,17 +400,31 @@ export class NotificationController {
         orderUpdates: boolean;
         marketing: boolean;
     }> {
-        // TODO: Реализовать после создания NotificationSettingsService
-        // return this.notificationService.updateUserSettings(req.user.id, updateSettingsDto);
+        try {
+            // TODO: Реализовать после создания NotificationSettingsService (SAAS-009-02-1)
+            // Временная заглушка до реализации методов в NotificationService
+            // После реализации SAAS-009-02-1 заменить на:
+            // const settings = await this.notificationService.updateUserSettings(req.user.id, updateSettingsDto);
+            // return { id: settings.id, userId: settings.userId, ... };
 
-        return {
-            id: 1,
-            userId: req.user.id,
-            emailEnabled: updateSettingsDto.emailEnabled ?? true,
-            pushEnabled: updateSettingsDto.pushEnabled ?? true,
-            orderUpdates: updateSettingsDto.orderUpdates ?? true,
-            marketing: updateSettingsDto.marketing ?? false,
-        };
+            // Fallback на значения из DTO
+            return {
+                id: 1,
+                userId: req.user.id,
+                emailEnabled: updateSettingsDto.emailEnabled ?? true,
+                pushEnabled: updateSettingsDto.pushEnabled ?? true,
+                orderUpdates: updateSettingsDto.orderUpdates ?? true,
+                marketing: updateSettingsDto.marketing ?? false,
+            };
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(
+                `Error in updateUserSettings for user ${req.user.id}: ${errorMessage}`,
+                error instanceof Error ? error.stack : undefined,
+            );
+            throw error;
+        }
     }
 
     /**
@@ -332,38 +450,63 @@ export class NotificationController {
     }> {
         const startTime = Date.now();
 
-        // Строгая валидация параметров
-        if (page < 1 || limit < 1 || limit > 100) {
-            throw new BadRequestException(
-                'Некорректные параметры пагинации: page и limit должны быть >= 1, limit <= 100',
+        try {
+            // Валидация параметров пагинации
+            if (page < 1 || limit < 1 || limit > this.MAX_LIMIT) {
+                throw new BadRequestException(
+                    `Некорректные параметры пагинации: page и limit должны быть >= 1, limit <= ${this.MAX_LIMIT}`,
+                );
+            }
+
+            // Валидация типа через enum
+            let validatedType: NotificationType | undefined;
+            if (type) {
+                if (
+                    !Object.values(NotificationType).includes(
+                        type as NotificationType,
+                    )
+                ) {
+                    throw new BadRequestException('Некорректный тип шаблона');
+                }
+                validatedType = type as NotificationType;
+            }
+
+            const templates = await this.notificationService.getTemplates({
+                type: validatedType,
+                isActive: true,
+            });
+
+            // Пагинация на уровне контроллера (временное решение)
+            // TODO: Переместить пагинацию в сервис для оптимизации
+            const startIndex = (page - 1) * limit;
+            const endIndex = startIndex + limit;
+            const paginatedTemplates = templates.slice(startIndex, endIndex);
+
+            const result = {
+                data: paginatedTemplates,
+                meta: {
+                    totalCount: templates.length,
+                    currentPage: page,
+                    lastPage: Math.ceil(templates.length / limit),
+                    limit,
+                },
+            };
+
+            const endTime = Date.now();
+            this.logger.log(
+                `getTemplates completed in ${endTime - startTime}ms`,
             );
+
+            return result;
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(
+                `Error in getTemplates: ${errorMessage}`,
+                error instanceof Error ? error.stack : undefined,
+            );
+            throw error;
         }
-        const validatedPage = Math.min(page, 1000000);
-        const validatedLimit = Math.min(limit, 100);
-
-        const templates = await this.notificationService.getTemplates({
-            type: type as NotificationType,
-            isActive: true,
-        });
-
-        const startIndex = (validatedPage - 1) * validatedLimit;
-        const endIndex = startIndex + validatedLimit;
-        const paginatedTemplates = templates.slice(startIndex, endIndex);
-
-        const result = {
-            data: paginatedTemplates,
-            meta: {
-                totalCount: templates.length,
-                currentPage: validatedPage,
-                lastPage: Math.ceil(templates.length / validatedLimit),
-                limit: validatedLimit,
-            },
-        };
-
-        const endTime = Date.now();
-        this.logger.log(`getTemplates completed in ${endTime - startTime}ms`);
-
-        return result;
     }
 
     /**
@@ -375,13 +518,7 @@ export class NotificationController {
     @HttpCode(HttpStatus.CREATED)
     @Roles(...NOTIFICATION_ACCESS_LEVELS.TEMPLATE_MANAGEMENT)
     async createTemplate(
-        @Body()
-        createTemplateDto: {
-            name: string;
-            type: string;
-            title: string;
-            message: string;
-        },
+        @Body() createTemplateDto: CreateTemplateDto,
         @Req() _req: AuthenticatedRequest, // eslint-disable-line @typescript-eslint/no-unused-vars
     ): Promise<{
         id: number;
@@ -393,47 +530,40 @@ export class NotificationController {
     }> {
         const startTime = Date.now();
 
-        // Валидация входных данных → 400
-        if (
-            !createTemplateDto.name ||
-            !createTemplateDto.type ||
-            !createTemplateDto.title ||
-            !createTemplateDto.message
-        ) {
-            throw new BadRequestException('Все поля шаблона обязательны');
+        try {
+            const template = await this.notificationService.createTemplate({
+                name: createTemplateDto.name,
+                type: createTemplateDto.type,
+                title: createTemplateDto.title,
+                message: createTemplateDto.message,
+                isActive: true,
+            });
+
+            // Очищаем кэш шаблонов после создания
+            this.clearCache('templates');
+
+            const endTime = Date.now();
+            this.logger.log(
+                `createTemplate completed in ${endTime - startTime}ms for template ${template.name}`,
+            );
+
+            return {
+                id: template.id,
+                name: template.name,
+                type: template.type,
+                title: template.title,
+                message: template.message,
+                isActive: template.isActive,
+            };
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(
+                `Error in createTemplate: ${errorMessage}`,
+                error instanceof Error ? error.stack : undefined,
+            );
+            throw error;
         }
-        if (
-            !Object.values(NotificationType).includes(
-                createTemplateDto.type as NotificationType,
-            )
-        ) {
-            throw new BadRequestException('Некорректный тип шаблона');
-        }
-
-        const template = await this.notificationService.createTemplate({
-            name: createTemplateDto.name,
-            type: createTemplateDto.type as NotificationType,
-            title: createTemplateDto.title,
-            message: createTemplateDto.message,
-            isActive: true,
-        });
-
-        // Очищаем кэш шаблонов после создания
-        this.clearCache('templates');
-
-        const endTime = Date.now();
-        this.logger.log(
-            `createTemplate completed in ${endTime - startTime}ms for template ${template.name}`,
-        );
-
-        return {
-            id: template.id,
-            name: template.name,
-            type: template.type,
-            title: template.title,
-            message: template.message,
-            isActive: template.isActive,
-        };
     }
 
     /**
@@ -446,14 +576,7 @@ export class NotificationController {
     @Roles(...NOTIFICATION_ACCESS_LEVELS.TEMPLATE_MANAGEMENT)
     async updateTemplate(
         @Param('id', ParseIntPipe) templateId: number,
-        @Body()
-        updateTemplateDto: {
-            name?: string;
-            type?: string;
-            title?: string;
-            message?: string;
-            isActive?: boolean;
-        },
+        @Body() updateTemplateDto: UpdateTemplateDto,
         @Req() _req: AuthenticatedRequest, // eslint-disable-line @typescript-eslint/no-unused-vars
     ): Promise<{
         id: number;
@@ -465,51 +588,55 @@ export class NotificationController {
     }> {
         const startTime = Date.now();
 
-        // Оптимизированная валидация и подготовка данных
-        const updateData: Record<string, unknown> = {};
-        if (updateTemplateDto.name) updateData.name = updateTemplateDto.name;
-        if (updateTemplateDto.type) {
-            if (
-                !Object.values(NotificationType).includes(
-                    updateTemplateDto.type as NotificationType,
-                )
-            ) {
-                throw new BadRequestException('Некорректный тип шаблона');
+        try {
+            // Подготовка данных для обновления
+            const updateData: Record<string, unknown> = {};
+            if (updateTemplateDto.name !== undefined)
+                updateData.name = updateTemplateDto.name;
+            if (updateTemplateDto.type !== undefined)
+                updateData.type = updateTemplateDto.type;
+            if (updateTemplateDto.title !== undefined)
+                updateData.title = updateTemplateDto.title;
+            if (updateTemplateDto.message !== undefined)
+                updateData.message = updateTemplateDto.message;
+            if (updateTemplateDto.isActive !== undefined)
+                updateData.isActive = updateTemplateDto.isActive;
+
+            // Проверяем, есть ли данные для обновления
+            if (Object.keys(updateData).length === 0) {
+                throw new BadRequestException('Нет данных для обновления');
             }
-            updateData.type = updateTemplateDto.type as NotificationType;
+
+            const template = await this.notificationService.updateTemplate(
+                templateId,
+                updateData,
+            );
+
+            // Очищаем кэш шаблонов после обновления
+            this.clearCache('templates');
+
+            const endTime = Date.now();
+            this.logger.log(
+                `updateTemplate completed in ${endTime - startTime}ms for template ${templateId}`,
+            );
+
+            return {
+                id: template.id,
+                name: template.name,
+                type: template.type,
+                title: template.title,
+                message: template.message,
+                isActive: template.isActive,
+            };
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(
+                `Error in updateTemplate for template ${templateId}: ${errorMessage}`,
+                error instanceof Error ? error.stack : undefined,
+            );
+            throw error;
         }
-        if (updateTemplateDto.title) updateData.title = updateTemplateDto.title;
-        if (updateTemplateDto.message)
-            updateData.message = updateTemplateDto.message;
-        if (updateTemplateDto.isActive !== undefined)
-            updateData.isActive = updateTemplateDto.isActive;
-
-        // Проверяем, есть ли данные для обновления
-        if (Object.keys(updateData).length === 0) {
-            throw new BadRequestException('Нет данных для обновления');
-        }
-
-        const template = await this.notificationService.updateTemplate(
-            templateId,
-            updateData,
-        );
-
-        // Очищаем кэш шаблонов после обновления
-        this.clearCache('templates');
-
-        const endTime = Date.now();
-        this.logger.log(
-            `updateTemplate completed in ${endTime - startTime}ms for template ${templateId}`,
-        );
-
-        return {
-            id: template.id,
-            name: template.name,
-            type: template.type,
-            title: template.title,
-            message: template.message,
-            isActive: template.isActive,
-        };
     }
 
     /**
@@ -526,15 +653,32 @@ export class NotificationController {
     ): Promise<void> {
         const startTime = Date.now();
 
-        await this.notificationService.deleteTemplate(templateId);
+        try {
+            // Проверяем существование шаблона перед удалением
+            const template =
+                await this.notificationService.getTemplateById(templateId);
+            if (!template) {
+                throw new NotFoundException('Шаблон не найден');
+            }
 
-        // Очищаем кэш шаблонов после удаления
-        this.clearCache('templates');
+            await this.notificationService.deleteTemplate(templateId);
 
-        const endTime = Date.now();
-        this.logger.log(
-            `deleteTemplate completed in ${endTime - startTime}ms for template ${templateId}`,
-        );
+            // Очищаем кэш шаблонов после удаления
+            this.clearCache('templates');
+
+            const endTime = Date.now();
+            this.logger.log(
+                `deleteTemplate completed in ${endTime - startTime}ms for template ${templateId}`,
+            );
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(
+                `Error in deleteTemplate for template ${templateId}: ${errorMessage}`,
+                error instanceof Error ? error.stack : undefined,
+            );
+            throw error;
+        }
     }
 
     /**
@@ -568,26 +712,52 @@ export class NotificationController {
     }> {
         const startTime = Date.now();
 
-        // Кэширование для статистики
-        const cacheKey = `statistics:${req.user.id}:${period ?? 'default'}:${type ?? 'all'}`;
+        try {
+            // Валидация типа через enum
+            let validatedType: NotificationType | undefined;
+            if (type) {
+                if (
+                    !Object.values(NotificationType).includes(
+                        type as NotificationType,
+                    )
+                ) {
+                    throw new BadRequestException(
+                        'Некорректный тип уведомления',
+                    );
+                }
+                validatedType = type as NotificationType;
+            }
 
-        const result = await this.getCachedData(
-            cacheKey,
-            async () => {
-                return await this.notificationService.getStatistics(
-                    req.user.id,
-                    period,
-                    type as NotificationType,
-                );
-            },
-            10 * 60 * 1000,
-        ); // 10 минут TTL для статистики
+            // Кэширование для статистики
+            const cacheKey = `statistics:${req.user.id}:${period ?? 'default'}:${validatedType ?? 'all'}`;
+            const STATISTICS_TTL = 10 * 60 * 1000; // 10 минут TTL для статистики
 
-        const endTime = Date.now();
-        this.logger.log(
-            `getStatistics completed in ${endTime - startTime}ms for user ${req.user.id}`,
-        );
+            const result = await this.getCachedData(
+                cacheKey,
+                async () => {
+                    return await this.notificationService.getStatistics(
+                        req.user.id,
+                        period,
+                        validatedType,
+                    );
+                },
+                STATISTICS_TTL,
+            );
 
-        return result;
+            const endTime = Date.now();
+            this.logger.log(
+                `getStatistics completed in ${endTime - startTime}ms for user ${req.user.id}`,
+            );
+
+            return result;
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(
+                `Error in getStatistics for user ${req.user.id}: ${errorMessage}`,
+                error instanceof Error ? error.stack : undefined,
+            );
+            throw error;
+        }
     }
 }
