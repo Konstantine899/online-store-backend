@@ -1,5 +1,5 @@
 import type { DataTypes, QueryInterface } from 'sequelize';
-import { DataTypes as SequelizeDataTypes, QueryTypes } from 'sequelize';
+import { QueryTypes, DataTypes as SequelizeDataTypes } from 'sequelize';
 
 interface Migration {
     up(
@@ -86,7 +86,9 @@ const migration: Migration = {
             `UPDATE notifications SET tenant_id = 1 WHERE tenant_id IS NULL`,
         );
 
-        console.log('Backfilled notifications: tenant_id assigned from users or default');
+        console.log(
+            'Backfilled notifications: tenant_id assigned from users or default',
+        );
 
         // Step 4: Make tenant_id NOT NULL (enforce constraint)
         await queryInterface.changeColumn('notifications', 'tenant_id', {
