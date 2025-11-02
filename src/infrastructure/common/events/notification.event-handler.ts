@@ -1,10 +1,6 @@
 import { NotificationType } from '@app/domain/models';
 import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
-import {
-    Injectable,
-    Logger,
-    OnModuleDestroy,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
     EmailVerificationEvent,
@@ -61,6 +57,7 @@ export class NotificationEventHandler implements OnModuleDestroy {
     private readonly BATCH_TIMEOUT = 1000; // 1 секунда
     private readonly MAX_RETRIES = 3;
     private readonly RETRY_DELAY = 1000; // 1 секунда
+    private readonly MAX_QUEUE_SIZE = 1000; // Максимальный размер очереди
 
     // Метрики производительности
     private metrics = {
@@ -69,6 +66,7 @@ export class NotificationEventHandler implements OnModuleDestroy {
         errors: 0,
         averageProcessingTime: 0,
         lastProcessedAt: Date.now(),
+        droppedNotifications: 0, // Количество отброшенных уведомлений из-за переполнения очереди
     };
 
     private batchTimer: NodeJS.Timeout | null = null;
@@ -266,7 +264,7 @@ export class NotificationEventHandler implements OnModuleDestroy {
     }
 
     /**
-     * Добавление уведомления в очередь
+     * Добавление уведомления в очередь с проверкой лимита размера
      */
     private addToQueue(
         userId: number,
@@ -281,6 +279,52 @@ export class NotificationEventHandler implements OnModuleDestroy {
             return;
         }
 
+        // Проверяем размер очереди
+        if (this.notificationQueue.length >= this.MAX_QUEUE_SIZE) {
+            // Пытаемся освободить место, удаляя самые старые уведомления с низким приоритетом
+            const lowPriorityNotifications = this.notificationQueue.filter(
+                (n) => n.priority <= 2,
+            );
+
+            if (lowPriorityNotifications.length > 0) {
+                // Удаляем самое старое уведомление с низким приоритетом
+                const oldestLowPriorityIndex = this.notificationQueue.findIndex(
+                    (n) =>
+                        n.priority <= 2 &&
+                        n.timestamp ===
+                            Math.min(
+                                ...lowPriorityNotifications.map((n) => n.timestamp),
+                            ),
+                );
+
+                if (oldestLowPriorityIndex !== -1) {
+                    this.notificationQueue.splice(
+                        oldestLowPriorityIndex,
+                        1,
+                    );
+                    this.metrics.droppedNotifications++;
+                    this.logger.warn(
+                        `Queue is full. Dropped low-priority notification to make room. Queue size: ${this.notificationQueue.length}/${this.MAX_QUEUE_SIZE}`,
+                    );
+                } else {
+                    // Если не нашли старое уведомление с низким приоритетом, просто отбрасываем новое
+                    this.metrics.droppedNotifications++;
+                    this.logger.error(
+                        `Queue overflow! Dropping notification for user ${userId}, template ${templateKey}. Queue size: ${this.notificationQueue.length}/${this.MAX_QUEUE_SIZE}`,
+                    );
+                    return;
+                }
+            } else {
+                // Если все уведомления с высоким приоритетом, отбрасываем новое
+                this.metrics.droppedNotifications++;
+                this.logger.error(
+                    `Queue overflow! All notifications are high-priority. Dropping notification for user ${userId}, template ${templateKey}. Queue size: ${this.notificationQueue.length}/${this.MAX_QUEUE_SIZE}`,
+                );
+                return;
+            }
+        }
+
+        // Добавляем уведомление в очередь
         this.notificationQueue.push({
             userId,
             type,
@@ -292,9 +336,21 @@ export class NotificationEventHandler implements OnModuleDestroy {
             timestamp: Date.now(),
         });
 
-        // Если очередь переполнена, обрабатываем немедленно
+        // Если очередь близка к переполнению, обрабатываем немедленно
         if (this.notificationQueue.length >= this.BATCH_SIZE * 2) {
             setImmediate(() => this.processBatch());
+        }
+
+        // Логируем предупреждение, если очередь заполнена более чем на 80%
+        if (
+            this.notificationQueue.length >=
+            this.MAX_QUEUE_SIZE * 0.8
+        ) {
+            this.logger.warn(
+                `Notification queue is ${Math.round(
+                    (this.notificationQueue.length / this.MAX_QUEUE_SIZE) * 100,
+                )}% full. Size: ${this.notificationQueue.length}/${this.MAX_QUEUE_SIZE}`,
+            );
         }
     }
 
@@ -324,12 +380,19 @@ export class NotificationEventHandler implements OnModuleDestroy {
         errors: number;
         averageProcessingTime: number;
         lastProcessedAt: number;
+        droppedNotifications: number;
         queueSize: number;
+        maxQueueSize: number;
+        queueUtilizationPercent: number;
         isProcessing: boolean;
     } {
         return {
             ...this.metrics,
             queueSize: this.notificationQueue.length,
+            maxQueueSize: this.MAX_QUEUE_SIZE,
+            queueUtilizationPercent: Math.round(
+                (this.notificationQueue.length / this.MAX_QUEUE_SIZE) * 100,
+            ),
             isProcessing: this.isProcessing,
         };
     }
@@ -362,7 +425,9 @@ export class NotificationEventHandler implements OnModuleDestroy {
                     // Защита от бесконечного цикла
                     if (this.notificationQueue.length > 0) {
                         // Если после обработки батча остались уведомления, делаем небольшую паузу
-                        await new Promise((resolve) => setTimeout(resolve, 100));
+                        await new Promise((resolve) =>
+                            setTimeout(resolve, 100),
+                        );
                     }
                 }
 
