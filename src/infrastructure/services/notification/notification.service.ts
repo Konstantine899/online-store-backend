@@ -27,18 +27,18 @@ import { Op } from 'sequelize';
 export class NotificationService implements INotificationService {
     private readonly logger = new Logger(NotificationService.name);
 
-    // Кэш для статистики
+    // Кэш для статистики с timestamp для проверки TTL
     private readonly statisticsCache = new Map<
         string,
-        NotificationStatistics
+        { value: NotificationStatistics; timestamp: number }
     >();
     private readonly cacheTimeout = 5 * 60 * 1000; // 5 минут
     private readonly maxCacheSize = 100;
 
-    // Кэш для шаблонов
+    // Кэш для шаблонов с timestamp для проверки TTL
     private readonly templatesCache = new Map<
         string,
-        NotificationTemplateModel[]
+        { value: NotificationTemplateModel[]; timestamp: number }
     >();
     private readonly templatesCacheTimeout = 10 * 60 * 1000; // 10 минут
 
@@ -281,8 +281,8 @@ export class NotificationService implements INotificationService {
 
         // Проверяем кэш
         const cached = this.statisticsCache.get(cacheKey);
-        if (cached && this.isCacheValid()) {
-            return cached;
+        if (cached && this.isCacheValid(cacheKey, cached.timestamp, this.cacheTimeout)) {
+            return cached.value;
         }
 
         const whereClause: Record<string, unknown> = {};
@@ -422,8 +422,8 @@ export class NotificationService implements INotificationService {
 
         // Проверяем кэш
         const cached = this.templatesCache.get(cacheKey);
-        if (cached && this.isCacheValid()) {
-            return cached;
+        if (cached && this.isCacheValid(cacheKey, cached.timestamp, this.templatesCacheTimeout)) {
+            return cached.value;
         }
 
         const whereClause: Record<string, unknown> = {};
@@ -684,26 +684,60 @@ export class NotificationService implements INotificationService {
         return grouped;
     }
 
-    private isCacheValid(): boolean {
-        // Простая проверка валидности кэша по времени
-        // В реальной реализации можно добавить timestamp в кэш
-        return true; // Упрощенная реализация
+    /**
+     * Проверяет валидность записи в кэше по TTL
+     * @param cacheKey - ключ записи в кэше
+     * @param timestamp - timestamp записи
+     * @param ttl - время жизни записи в миллисекундах
+     * @returns true если запись еще актуальна, false если истекла
+     */
+    private isCacheValid(
+        cacheKey: string,
+        timestamp: number,
+        ttl: number,
+    ): boolean {
+        const now = Date.now();
+        const age = now - timestamp;
+
+        // Если запись устарела, удаляем её из кэша
+        if (age > ttl) {
+            // Определяем, из какого кэша удалять по префиксу ключа
+            // (в данном случае можем удалить из обоих, так как ключи уникальны)
+            this.statisticsCache.delete(cacheKey);
+            this.templatesCache.delete(cacheKey);
+            return false;
+        }
+
+        return true;
     }
 
+    /**
+     * Устанавливает значение в кэш с timestamp
+     * @param cache - кэш для сохранения
+     * @param key - ключ записи
+     * @param value - значение для кэширования
+     * @param maxSize - максимальный размер кэша
+     */
     private setCacheValue<T>(
-        cache: Map<string, T>,
+        cache: Map<string, { value: T; timestamp: number }>,
         key: string,
         value: T,
         maxSize: number,
     ): void {
-        // Очищаем кэш при достижении лимита
+        // Очищаем устаревшие записи и освобождаем место при достижении лимита
         if (cache.size >= maxSize) {
+            // Удаляем самую старую запись (первую в Map)
             const firstKey = cache.keys().next().value;
             if (firstKey !== undefined) {
                 cache.delete(firstKey);
             }
         }
-        cache.set(key, value);
+
+        // Сохраняем значение с текущим timestamp
+        cache.set(key, {
+            value,
+            timestamp: Date.now(),
+        });
     }
 
     private invalidateTemplatesCache(): void {
