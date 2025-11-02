@@ -1,6 +1,10 @@
 import { NotificationType } from '@app/domain/models';
 import { NotificationService } from '@app/infrastructure/services/notification/notification.service';
-import { Injectable, Logger } from '@nestjs/common';
+import {
+    Injectable,
+    Logger,
+    OnModuleDestroy,
+} from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
     EmailVerificationEvent,
@@ -27,7 +31,7 @@ import {
  * - Метрики производительности
  */
 @Injectable()
-export class NotificationEventHandler {
+export class NotificationEventHandler implements OnModuleDestroy {
     private readonly logger = new Logger(NotificationEventHandler.name);
 
     // Кэш для шаблонов уведомлений
@@ -331,17 +335,75 @@ export class NotificationEventHandler {
     }
 
     /**
-     * Очистка ресурсов
+     * Очистка ресурсов при завершении работы модуля
+     * Обрабатывает оставшиеся уведомления с обработкой ошибок и graceful shutdown
      */
-    onModuleDestroy(): void {
+    async onModuleDestroy(): Promise<void> {
+        this.logger.log('Shutting down notification event handler...');
+
+        // Останавливаем таймер батчевой обработки
         if (this.batchTimer) {
             clearInterval(this.batchTimer);
+            this.batchTimer = null;
         }
 
-        // Обрабатываем оставшиеся уведомления
-        if (this.notificationQueue.length > 0) {
-            this.processBatch();
+        // Обрабатываем оставшиеся уведомления с обработкой ошибок
+        const remainingCount = this.notificationQueue.length;
+        if (remainingCount > 0) {
+            this.logger.log(
+                `Processing ${remainingCount} remaining notifications before shutdown...`,
+            );
+
+            try {
+                // Обрабатываем все оставшиеся уведомления
+                while (this.notificationQueue.length > 0) {
+                    await this.processBatch();
+
+                    // Защита от бесконечного цикла
+                    if (this.notificationQueue.length > 0) {
+                        // Если после обработки батча остались уведомления, делаем небольшую паузу
+                        await new Promise((resolve) => setTimeout(resolve, 100));
+                    }
+                }
+
+                this.logger.log(
+                    `Successfully processed ${remainingCount} remaining notifications`,
+                );
+            } catch (error) {
+                const errorMessage =
+                    error instanceof Error ? error.message : 'Unknown error';
+                const errorStack =
+                    error instanceof Error ? error.stack : undefined;
+
+                this.logger.error(
+                    `Critical error during shutdown while processing notifications: ${errorMessage}`,
+                    errorStack,
+                );
+
+                // Сохраняем оставшиеся уведомления для последующей обработки
+                const failedCount = this.notificationQueue.length;
+                if (failedCount > 0) {
+                    this.logger.warn(
+                        `Failed to process ${failedCount} notifications during shutdown. They will be lost.`,
+                    );
+
+                    // В будущем здесь можно добавить сохранение в БД для последующей обработки
+                    // await this.saveFailedNotificationsToDatabase();
+                }
+
+                // Не пробрасываем ошибку дальше, чтобы не блокировать завершение приложения
+                // Но логируем критичность
+                this.metrics.errors += failedCount;
+            }
+        } else {
+            this.logger.log('No remaining notifications to process');
         }
+
+        // Логируем финальные метрики
+        const finalMetrics = this.getMetrics();
+        this.logger.log(
+            `Notification handler shutdown complete. Final metrics: ${JSON.stringify(finalMetrics)}`,
+        );
     }
 
     /**
