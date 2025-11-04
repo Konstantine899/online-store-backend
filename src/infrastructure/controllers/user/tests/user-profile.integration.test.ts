@@ -334,9 +334,16 @@ describe('User Profile Integration Tests', () => {
                 .send({ dateOfBirth: invalidDateOfBirth })
                 .expect(400)
                 .expect(({ body }) => {
-                    expect(body.message).toContain(
-                        'Дата рождения должна соответствовать возрасту от 18 до 150 лет',
-                    );
+                    expect(Array.isArray(body)).toBe(true);
+                    expect(body[0]).toHaveProperty('messages');
+                    expect(Array.isArray(body[0].messages)).toBe(true);
+                    expect(
+                        body[0].messages.some((msg: string) =>
+                            msg.includes(
+                                'Дата рождения должна соответствовать возрасту от 18 до 150 лет',
+                            ),
+                        ),
+                    ).toBe(true);
                 });
         });
 

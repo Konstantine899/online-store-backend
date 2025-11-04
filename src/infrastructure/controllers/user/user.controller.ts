@@ -244,8 +244,11 @@ export class UserController implements IUserController {
             userId,
             dto.dateOfBirth,
         );
+        // Sequelize DATEONLY может возвращать как строку 'YYYY-MM-DD', так и Date объект
         const ensuredDateOfBirth = user.dateOfBirth
-            ? user.dateOfBirth.toISOString().split('T')[0]
+            ? typeof user.dateOfBirth === 'string'
+                ? user.dateOfBirth
+                : user.dateOfBirth.toISOString().split('T')[0]
             : null;
         return this.createResponse({
             id: user.id,
