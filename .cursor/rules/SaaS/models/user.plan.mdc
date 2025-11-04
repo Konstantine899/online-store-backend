@@ -1,0 +1,423 @@
+# User Module Execution Plan (Binding)
+
+binding: true
+module: user
+epic_ref: USER-001
+version: 1.0
+
+execution_policy:
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - no public API changes without explicit approval - operate strictly within files_scope - pass lints/tests and Swagger before DoD complete
+
+context:
+goal: User system enhancement with atomic approach - profile fields, consent flags, addresses, preferences
+
+# DEFAULT PRE-COMMIT WORKFLOW для всех user задач
+
+default_pre_commit_workflow: "СТАНДАРТНЫЙ (business logic: user management)"
+default_pre_commit_steps:
+
+- "«Ревью» → business logic, user data handling, validation"
+- "«Автофикс» → linter/prettier"
+- "Тесты: user integration tests"
+- "«Коммит» → feat(user): <TASK_ID> complete"
+
+tasks:
+
+# Фаза 1: Базовый профиль пользователя
+
+- id: USER-001-01
+  title: Добавить поля имени и фамилии в профиль пользователя
+  branch: "feature/user/USER-001/add-name-fields"
+  files_scope:
+    - "db/migrations/**"
+    - "db/models/user.ts"
+    - "db/models/types.ts"
+    - "src/domain/models/user.model.ts"
+    - "src/infrastructure/services/user/**"
+    - "src/infrastructure/dto/user/**"
+    - "src/infrastructure/controllers/user/**"
+  steps:
+    - создать миграцию для добавления колонок first_name, last_name в таблицу users
+    - обновить db/models/types.ts и db/models/user.ts с новыми полями
+    - обновить UserModel (Domain) с новыми полями и валидацией (@IsValidName)
+    - добавить методы для работы с именем/фамилией в UserService
+    - создать UpdateUserProfileDto с валидацией имени (@IsValidName)
+    - добавить endpoint PATCH /users/profile для обновления профиля
+    - написать unit тесты для сервиса
+    - написать integration тесты для API endpoint
+    - обновить Swagger документацию
+  dod:
+    - миграция up/down успешна
+    - UserModel содержит first_name и last_name с валидацией
+    - API endpoint PATCH /users/profile работает с валидацией
+    - тесты покрывают новую функциональность
+    - Swagger документация обновлена
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → validation logic, name sanitization"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: unit + integration tests"
+    - "«Коммит» → feat(user): add firstName and lastName fields to user profile"
+  gate:
+    - require: "Одобряю USER-001-01"
+
+- id: USER-001-02
+  title: Добавить поле телефона с валидацией российских номеров
+  branch: "feature/user/USER-001/add-phone-field"
+  files_scope:
+    - "db/migrations/**"
+    - "db/models/user.ts"
+    - "db/models/types.ts"
+    - "src/domain/models/user.model.ts"
+    - "src/infrastructure/services/user/**"
+    - "src/infrastructure/dto/user/**"
+    - "src/infrastructure/controllers/user/**"
+  steps:
+    - создать миграцию для добавления колонки phone в таблицу users
+    - обновить db/models/types.ts и db/models/user.ts (валидатор E.164)
+    - обновить UserModel (Domain) с валидацией телефона
+    - добавить методы для работы с телефоном в UserService
+    - обновить DTO с валидацией телефона (@IsValidPhone)
+    - обновить endpoint для работы с телефоном
+    - написать тесты валидации телефона (успешные и ошибочные кейсы)
+    - обновить Swagger документацию
+  dod:
+    - миграция up/down успешна
+    - UserModel содержит phone с валидацией @IsValidPhone
+    - валидация российских номеров работает корректно
+    - тесты покрывают валидацию телефона
+    - Swagger документация обновлена
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → phone validation, Russian number format"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: phone validation tests"
+    - "«Коммит» → feat(user): add phone field with Russian number validation"
+  gate:
+    - require: "Одобряю USER-001-02"
+
+- id: USER-001-03
+  title: Добавить поле даты рождения с валидацией возраста
+  branch: "feature/user/USER-001/add-birth-date-field"
+  files_scope:
+    - "db/migrations/**"
+    - "db/models/user.ts"
+    - "db/models/types.ts"
+    - "src/domain/models/user.model.ts"
+    - "src/infrastructure/services/user/**"
+    - "src/infrastructure/dto/user/**"
+    - "src/infrastructure/controllers/user/**"
+  steps:
+    - создать миграцию для добавления колонки date_of_birth в таблицу users
+    - обновить db/models/types.ts и db/models/user.ts
+    - обновить UserModel (Domain) с валидацией даты
+    - добавить методы для работы с датой рождения в UserService
+    - обновить DTO с валидацией возраста (18+)
+    - обновить endpoint для работы с датой рождения
+    - написать тесты валидации возраста (18+, некорректные даты)
+    - обновить Swagger документацию
+  dod:
+    - миграция up/down успешна
+    - UserModel содержит date_of_birth с валидацией возраста
+    - валидация возраста 18+ работает корректно
+    - тесты покрывают валидацию возраста
+    - Swagger документация обновлена
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → age validation, date parsing"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: age validation tests"
+    - "«Коммит» → feat(user): add dateOfBirth field with age validation"
+  gate:
+    - require: "Одобряю USER-001-03"
+
+# Фаза 2: Флаги согласий и статусов
+
+- id: USER-001-04
+  title: Добавить флаги согласий (newsletter, marketing, cookies)
+  branch: "feature/user/USER-001/add-consent-flags"
+  files_scope:
+    - "db/migrations/**"
+    - "db/models/user.ts"
+    - "db/models/types.ts"
+    - "src/domain/models/user.model.ts"
+    - "src/infrastructure/services/user/**"
+    - "src/infrastructure/dto/user/**"
+    - "src/infrastructure/controllers/user/**"
+  steps:
+    - создать миграцию для добавления колонок is_newsletter_subscribed, is_marketing_consent, is_cookie_consent
+    - обновить db/models/types.ts и db/models/user.ts
+    - обновить UserModel (Domain) с флагами согласий
+    - добавить методы для управления согласиями в UserService
+    - создать UpdateConsentsDto с валидацией boolean полей
+    - добавить endpoint PATCH /users/consents
+    - написать тесты управления согласиями
+    - обновить Swagger документацию
+  dod:
+    - миграция up/down успешна
+    - UserModel содержит флаги согласий
+    - API endpoint PATCH /users/consents работает
+    - тесты покрывают управление согласиями
+    - Swagger документация обновлена
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → consent management, GDPR compliance"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: consent management tests"
+    - "«Коммит» → feat(user): add consent management flags (newsletter, marketing, cookies)"
+  gate:
+    - require: "Одобряю USER-001-04"
+
+- id: USER-001-05
+  title: Добавить статусные флаги (VIP, Premium, Beta) с админскими контролами
+  branch: "feature/user/USER-001/add-status-flags"
+  files_scope:
+    - "db/migrations/**"
+    - "db/models/user.ts"
+    - "db/models/types.ts"
+    - "src/domain/models/user.model.ts"
+    - "src/infrastructure/services/user/**"
+    - "src/infrastructure/dto/user/**"
+    - "src/infrastructure/controllers/user/**"
+  steps:
+    - создать миграцию для добавления колонок is_vip_customer, is_premium, is_beta_tester
+    - обновить db/models/types.ts и db/models/user.ts
+    - обновить UserModel (Domain) с статусными флагами
+    - добавить методы для управления статусами в UserService (только для ADMIN)
+    - создать UpdateUserStatusDto с валидацией
+    - добавить endpoint PATCH /users/{id}/status (ADMIN only)
+    - добавить RoleGuard для проверки прав ADMIN
+    - написать тесты управления статусами (с проверкой прав)
+    - обновить Swagger документацию
+  dod:
+    - миграция up/down успешна
+    - UserModel содержит статусные флаги
+    - API endpoint PATCH /users/{id}/status работает только для ADMIN
+    - тесты покрывают управление статусами и проверку прав
+    - Swagger документация обновлена
+  pre_commit_workflow: "КРИТИЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → RBAC logic, admin controls, security"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: status management + role guard tests"
+    - "«Коммит» → feat(user): add status flags (VIP, Premium, Beta) with admin controls"
+  gate:
+    - require: "Одобряю USER-001-05"
+
+- id: USER-001-06
+  title: Добавить систему верификации email и телефона
+  branch: "feature/user/USER-001/add-verification-flags"
+  files_scope:
+    - "db/migrations/**"
+    - "db/models/user.ts"
+    - "db/models/types.ts"
+    - "src/domain/models/user.model.ts"
+    - "src/infrastructure/services/user/**"
+    - "src/infrastructure/dto/user/**"
+    - "src/infrastructure/controllers/user/**"
+  steps:
+    - создать миграцию для добавления колонок is_email_verified, is_phone_verified, email_verified_at, phone_verified_at
+    - обновить db/models/types.ts и db/models/user.ts
+    - обновить UserModel (Domain) с флагами верификации
+    - добавить методы для верификации в UserService
+    - создать VerifyEmailDto, VerifyPhoneDto с валидацией кодов
+    - добавить endpoints для верификации (POST /users/verify/email, POST /users/verify/phone)
+    - написать тесты процесса верификации
+    - обновить Swagger документацию
+  dod:
+    - миграция up/down успешна
+    - UserModel содержит флаги верификации
+    - API endpoints для верификации работают
+    - тесты покрывают процесс верификации
+    - Swagger документация обновлена
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → verification logic, code validation"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: verification flow tests"
+    - "«Коммит» → feat(user): add email and phone verification system"
+  gate:
+    - require: "Одобряю USER-001-06"
+
+# Фаза 3: Адреса пользователей
+
+- id: USER-001-07
+  title: Создать систему управления адресами пользователей
+  branch: "feature/user/USER-001/create-address-system"
+  files_scope:
+    - "db/migrations/**"
+    - "db/models/user-address.ts"
+    - "db/models/types.ts"
+    - "src/domain/models/user-address.model.ts"
+    - "src/infrastructure/services/user-address/**"
+    - "src/infrastructure/repositories/user-address/**"
+    - "src/infrastructure/dto/user-address/**"
+    - "src/infrastructure/controllers/user-address/**"
+  steps:
+    - создать миграцию для таблицы user_addresses с FK на users
+    - создать db/models/user-address.ts и обновить types.ts
+    - создать UserAddressModel (Domain) с ассоциациями
+    - создать UserAddressRepository с CRUD операциями
+    - создать UserAddressService с CRUD операциями
+    - создать CreateAddressDto, UpdateAddressDto с валидацией
+    - создать UserAddressController с полным CRUD (GET, POST, PUT, DELETE)
+    - написать полные тесты для системы адресов (unit + integration)
+    - обновить Swagger документацию
+  dod:
+    - миграция up/down успешна
+    - UserAddressModel создана с ассоциациями
+    - UserAddressService содержит CRUD операции
+    - UserAddressController содержит полный CRUD
+    - тесты покрывают все операции
+    - Swagger документация обновлена
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → address CRUD, validation, associations"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: address system tests (unit + integration)"
+    - "«Коммит» → feat(user): create user address management system"
+  gate:
+    - require: "Одобряю USER-001-07"
+
+- id: USER-001-08
+  title: Добавить логику адресов по умолчанию
+  branch: "feature/user/USER-001/add-default-address-logic"
+  files_scope:
+    - "db/migrations/**"
+    - "db/models/user-address.ts"
+    - "db/models/types.ts"
+    - "src/domain/models/user-address.model.ts"
+    - "src/infrastructure/services/user-address/**"
+    - "src/infrastructure/dto/user-address/**"
+    - "src/infrastructure/controllers/user-address/**"
+  steps:
+    - создать миграцию для добавления колонки is_default в user_addresses
+    - обновить db/models/user-address.ts и types.ts
+    - обновить UserAddressModel (Domain) с логикой default
+    - добавить методы setAsDefault, getDefaultAddress в UserAddressService
+    - добавить логику: только один адрес может быть default (установка нового default снимает флаг с предыдущего)
+    - обновить DTO с флагом isDefault
+    - обновить endpoints для работы с default адресами
+    - написать тесты логики default адресов
+    - обновить Swagger документацию
+  dod:
+    - миграция up/down успешна
+    - UserAddressModel содержит is_default с логикой
+    - методы setAsDefault и getDefaultAddress работают корректно
+    - логика "только один default адрес" реализована
+    - тесты покрывают логику default адресов
+    - Swagger документация обновлена
+  pre_commit_workflow: "ОБЫЧНЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → default address logic, uniqueness constraint"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: default address logic tests"
+    - "«Коммит» → feat(user): add default address management logic"
+  gate:
+    - require: "Одобряю USER-001-08"
+
+# Фаза 4: Предпочтения пользователя
+
+- id: USER-001-09
+  title: Добавить предпочтения темы и языка
+  branch: "feature/user/USER-001/add-user-preferences"
+  files_scope:
+    - "db/migrations/**"
+    - "db/models/user.ts"
+    - "db/models/types.ts"
+    - "src/domain/models/user.model.ts"
+    - "src/infrastructure/services/user/**"
+    - "src/infrastructure/dto/user/**"
+    - "src/infrastructure/controllers/user/**"
+  steps:
+    - создать миграцию для добавления колонок theme_preference, preferred_language, timezone
+    - обновить db/models/types.ts и db/models/user.ts
+    - обновить UserModel (Domain) с предпочтениями
+    - добавить методы для управления предпочтениями в UserService
+    - создать UpdatePreferencesDto с валидацией (enum для theme, language, timezone)
+    - добавить endpoint PATCH /users/preferences
+    - написать тесты управления предпочтениями
+    - обновить Swagger документацию
+  dod:
+    - миграция up/down успешна
+    - UserModel содержит предпочтения (theme, language, timezone)
+    - API endpoint PATCH /users/preferences работает
+    - тесты покрывают управление предпочтениями
+    - Swagger документация обновлена
+  pre_commit_workflow: "УПРОЩЕННЫЙ"
+  pre_commit_steps:
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: preferences management tests"
+    - "«Коммит» → feat(user): add theme and language preferences"
+  gate:
+    - require: "Одобряю USER-001-09"
+
+- id: USER-001-10
+  title: Добавить систему персональных переводов
+  branch: "feature/user/USER-001/add-custom-translations"
+  files_scope:
+    - "db/migrations/**"
+    - "db/models/user.ts"
+    - "db/models/types.ts"
+    - "src/domain/models/user.model.ts"
+    - "src/infrastructure/services/user/**"
+    - "src/infrastructure/dto/user/**"
+    - "src/infrastructure/controllers/user/**"
+  steps:
+    - создать миграцию для добавления колонки translations (JSON) в таблицу users
+    - обновить db/models/types.ts и db/models/user.ts
+    - обновить UserModel (Domain) с переводами (JSON тип)
+    - добавить методы для работы с переводами в UserService
+    - создать TranslationDto с валидацией JSON структуры
+    - добавить endpoints для переводов (GET, PUT /users/translations)
+    - написать тесты системы переводов
+    - обновить Swagger документацию
+  dod:
+    - миграция up/down успешна
+    - UserModel содержит translations (JSON)
+    - API endpoints для переводов работают
+    - тесты покрывают систему переводов
+    - Swagger документация обновлена
+  pre_commit_workflow: "УПРОЩЕННЫЙ"
+  pre_commit_steps:
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: translations system tests"
+    - "«Коммит» → feat(user): add custom translations system"
+  gate:
+    - require: "Одобряю USER-001-10"
+
+# Фаза 5: Индексы и производительность
+
+- id: USER-001-11
+  title: Добавить индексы для производительности запросов пользователей
+  branch: "feature/user/USER-001/add-performance-indexes"
+  files_scope:
+    - "db/migrations/**"
+    - "db/models/user.ts"
+    - "src/domain/models/user.model.ts"
+    - "src/infrastructure/services/user/**"
+  steps:
+    - создать миграцию для добавления всех необходимых индексов для флагов (is_vip_customer, is_premium, is_beta_tester, is_newsletter_subscribed, etc.)
+    - добавить составные индексы для частых запросов (например, tenant_id + is_active)
+    - обновить db/models/user.ts (indexes) при необходимости
+    - обновить модель (Domain) с индексами/скоупами
+    - добавить методы в UserService с использованием индексов
+    - написать тесты производительности (опционально)
+    - проверить производительность запросов
+  dod:
+    - миграция up/down успешна
+    - индексы созданы для всех флагов
+    - составные индексы созданы для частых запросов
+    - производительность запросов улучшена
+    - тесты производительности проходят (если добавлены)
+  pre_commit_workflow: "УПРОЩЕННЫЙ"
+  pre_commit_steps:
+    - "«Ревью» → index strategy, query performance"
+    - "«Оптимизируй» → DB queries, index usage"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: performance tests (optional)"
+    - "«Коммит» → perf(user): add database indexes for user flags and queries"
+  gate:
+    - require: "Одобряю USER-001-11"
