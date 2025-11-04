@@ -11,7 +11,7 @@ export default {
                 name: 'Default Tenant',
                 subdomain: 'default',
                 status: 'active',
-                plan: 'basic',
+                plan: 'free',
                 created_at: new Date(),
                 updated_at: new Date(),
             },

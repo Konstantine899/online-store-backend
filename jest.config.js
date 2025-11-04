@@ -58,6 +58,9 @@ module.exports = {
             testTimeout: 30000, // Integration тесты могут быть медленнее
             // Sequential локально (стабильность), параллельно в CI (скорость)
             maxWorkers: isCI && !isDebug ? 4 : 1,
+            // Global setup/teardown для полной очистки БД перед тестами
+            globalSetup: '<rootDir>/tests/setup/integration-global-setup.ts',
+            globalTeardown: '<rootDir>/tests/setup/integration-global-teardown.ts',
         },
     ],
 

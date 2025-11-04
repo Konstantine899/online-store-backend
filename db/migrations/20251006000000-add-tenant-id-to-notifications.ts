@@ -76,17 +76,8 @@ const migration: Migration = {
         }
 
         // Step 3: Backfill tenant_id = 1 for existing notifications records
-        // Получаем tenant_id из users через JOIN или берем default tenant
-        await queryInterface.sequelize.query(
-            `
-            UPDATE notifications n
-            INNER JOIN user u ON n.user_id = u.id
-            SET n.tenant_id = COALESCE(u.tenant_id, 1)
-            WHERE n.tenant_id IS NULL
-        `,
-        );
-
-        // Если есть записи без связанного user, используем default tenant
+        // Используем default tenant (1) для всех существующих уведомлений
+        // Note: Не используем u.tenant_id, так как колонка может ещё не существовать в user
         await queryInterface.sequelize.query(
             `UPDATE notifications SET tenant_id = 1 WHERE tenant_id IS NULL`,
         );
