@@ -5,6 +5,7 @@ import type {
     CreateUserDto,
     RemoveRoleDto,
     UpdateUserDto,
+    UpdateUserProfileDto,
 } from '@app/infrastructure/dto';
 import {
     RefreshTokenRepository,
@@ -123,6 +124,7 @@ describe('UserService', () => {
                         findListUsers: jest.fn(),
                         updateUser: jest.fn(),
                         updatePhone: jest.fn(),
+                        updateUserProfile: jest.fn(),
                         removeUser: jest.fn(),
                         findRegisteredUser: jest.fn(),
                         findListUsersPaginated: jest.fn(),
@@ -667,6 +669,106 @@ describe('UserService', () => {
                     status: HttpStatus.CONFLICT,
                     message: 'Конфликт данных: обновление телефона',
                 }),
+            );
+        });
+    });
+
+    describe('updateProfile', () => {
+        it('должен успешно обновить профиль пользователя (firstName и lastName)', async () => {
+            const updatedUser = {
+                ...mockUser,
+                firstName: 'Иван',
+                lastName: 'Иванов',
+            } as unknown as UpdateUserResponse;
+            userRepository.findUser.mockResolvedValue(mockUser);
+            userRepository.updateUserProfile.mockResolvedValue(updatedUser);
+
+            const dto: UpdateUserProfileDto = {
+                firstName: 'Иван',
+                lastName: 'Иванов',
+            };
+
+            const result = await service.updateProfile(1, dto);
+
+            expect(result).toBe(updatedUser);
+            expect(userRepository.findUser).toHaveBeenCalledWith(1);
+            expect(userRepository.updateUserProfile).toHaveBeenCalledWith(
+                mockUser,
+                dto,
+            );
+        });
+
+        it('должен успешно обновить только firstName', async () => {
+            const updatedUser = {
+                ...mockUser,
+                firstName: 'Пётр',
+            } as unknown as UpdateUserResponse;
+            userRepository.findUser.mockResolvedValue(mockUser);
+            userRepository.updateUserProfile.mockResolvedValue(updatedUser);
+
+            const dto: UpdateUserProfileDto = {
+                firstName: 'Пётр',
+            };
+
+            const result = await service.updateProfile(1, dto);
+
+            expect(result).toBe(updatedUser);
+            expect(userRepository.updateUserProfile).toHaveBeenCalledWith(
+                mockUser,
+                dto,
+            );
+        });
+
+        it('должен успешно обновить только lastName', async () => {
+            const updatedUser = {
+                ...mockUser,
+                lastName: 'Петров',
+            } as unknown as UpdateUserResponse;
+            userRepository.findUser.mockResolvedValue(mockUser);
+            userRepository.updateUserProfile.mockResolvedValue(updatedUser);
+
+            const dto: UpdateUserProfileDto = {
+                lastName: 'Петров',
+            };
+
+            const result = await service.updateProfile(1, dto);
+
+            expect(result).toBe(updatedUser);
+            expect(userRepository.updateUserProfile).toHaveBeenCalledWith(
+                mockUser,
+                dto,
+            );
+        });
+
+        it('должен выбросить NotFoundException если пользователь не найден', async () => {
+            (userRepository.findUser as jest.Mock).mockResolvedValue(null);
+
+            const dto: UpdateUserProfileDto = {
+                firstName: 'Иван',
+            };
+
+            await expect(service.updateProfile(999, dto)).rejects.toThrow(
+                new NotFoundException({
+                    status: HttpStatus.NOT_FOUND,
+                    message: 'Пользователь не найден для обновление профиля',
+                }),
+            );
+        });
+
+        it('должен пробросить ошибку репозитория если она не обрабатывается', async () => {
+            const dbError = new Error('Database error') as NamedError;
+            dbError.name = 'SequelizeDatabaseError';
+            userRepository.findUser.mockResolvedValue(mockUser);
+            userRepository.updateUserProfile.mockRejectedValue(dbError);
+
+            const dto: UpdateUserProfileDto = {
+                firstName: 'Иван',
+            };
+
+            // handleSequelizeError не обрабатывает SequelizeDatabaseError,
+            // поэтому ошибка пробрасывается дальше
+            await expect(service.updateProfile(1, dto)).rejects.toThrow(
+                dbError,
             );
         });
     });

@@ -1,6 +1,6 @@
+import { IsValidName } from '@app/infrastructure/common/validators/name.validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
-import { IsSanitizedString } from '@app/infrastructure/common/validators/sanitize-string.validator';
+import { IsOptional } from 'class-validator';
 
 export class UpdateUserProfileDto {
     @ApiPropertyOptional({
@@ -8,10 +8,10 @@ export class UpdateUserProfileDto {
         description: 'Имя пользователя',
     })
     @IsOptional()
-    @IsString({ message: 'Поле имени должно быть строкой' })
-    @MinLength(2, { message: 'Имя должно содержать минимум 2 символа' })
-    @MaxLength(100, { message: 'Имя не может быть длиннее 100 символов' })
-    @IsSanitizedString({ message: 'Имя содержит недопустимые символы' })
+    @IsValidName({
+        message:
+            'Имя должно содержать от 2 до 100 символов, только буквы, пробелы, дефисы и апострофы',
+    })
     declare readonly firstName?: string;
 
     @ApiPropertyOptional({
@@ -19,11 +19,9 @@ export class UpdateUserProfileDto {
         description: 'Фамилия пользователя',
     })
     @IsOptional()
-    @IsString({ message: 'Поле фамилии должно быть строкой' })
-    @MinLength(2, { message: 'Фамилия должна содержать минимум 2 символа' })
-    @MaxLength(100, {
-        message: 'Фамилия не может быть длиннее 100 символов',
+    @IsValidName({
+        message:
+            'Фамилия должна содержать от 2 до 100 символов, только буквы, пробелы, дефисы и апострофы',
     })
-    @IsSanitizedString({ message: 'Фамилия содержит недопустимые символы' })
     declare readonly lastName?: string;
 }
