@@ -33,12 +33,12 @@ tasks:
   branch: "feature/user/USER-001/improve-name-fields-validation"
   files_scope:
     - "src/domain/models/user.model.ts"
-    - "src/infrastructure/services/user/**"
-    - "src/infrastructure/dto/user/**"
-    - "src/infrastructure/controllers/user/**"
-    - "src/infrastructure/responses/user/**"
-    - "src/infrastructure/common/decorators/swagger/user/**"
-  steps:
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/dto/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+    - "src/infrastructure/responses/user/\*\*"
+    - "src/infrastructure/common/decorators/swagger/user/\*\*"
+      steps:
     - проверить существование полей first_name, last_name в БД (уже есть)
     - обновить UserModel (Domain) с валидацией @IsValidName для firstName и lastName
     - добавить методы для работы с именем/фамилией в UserService (если отсутствуют)
@@ -50,7 +50,7 @@ tasks:
     - написать unit тесты для сервиса
     - написать integration тесты для API endpoint (с tenant isolation)
     - обновить Swagger документацию
-  dod:
+      dod:
     - UserModel содержит first_name и last_name с валидацией @IsValidName
     - API endpoint PATCH /users/profile работает с валидацией
     - Response класс создан с Swagger декораторами
@@ -58,13 +58,13 @@ tasks:
     - tenant isolation обеспечена
     - тесты покрывают новую функциональность и tenant isolation
     - Swagger документация обновлена
-  pre_commit_workflow: "ОБЫЧНЫЙ"
-  pre_commit_steps:
+      pre_commit_workflow: "ОБЫЧНЫЙ"
+      pre_commit_steps:
     - "«Ревью» → validation logic, name sanitization, tenant isolation"
     - "«Автофикс» → linter/prettier"
     - "Тесты: unit + integration tests (with tenant isolation)"
     - "«Коммит» → feat(user): USER-001-01 complete"
-  gate:
+      gate:
     - require: "Одобряю USER-001-01"
 
 - id: USER-001-02
@@ -72,12 +72,12 @@ tasks:
   branch: "feature/user/USER-001/improve-phone-validation"
   files_scope:
     - "src/domain/models/user.model.ts"
-    - "src/infrastructure/services/user/**"
-    - "src/infrastructure/dto/user/**"
-    - "src/infrastructure/controllers/user/**"
-    - "src/infrastructure/responses/user/**"
-    - "src/infrastructure/common/decorators/swagger/user/**"
-  steps:
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/dto/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+    - "src/infrastructure/responses/user/\*\*"
+    - "src/infrastructure/common/decorators/swagger/user/\*\*"
+      steps:
     - проверить существование поля phone в БД (уже есть с E.164 валидацией)
     - обновить UserModel (Domain) с валидацией @IsValidPhone для российских номеров
     - обновить валидатор @IsValidPhone для поддержки российских форматов (+7, 8, без префикса)
@@ -89,7 +89,7 @@ tasks:
     - добавить проверку tenant isolation
     - написать тесты валидации телефона (успешные и ошибочные кейсы, российские форматы)
     - обновить Swagger документацию
-  dod:
+      dod:
     - UserModel содержит phone с валидацией @IsValidPhone для российских номеров
     - валидация российских номеров работает корректно (+7, 8, без префикса)
     - Response класс создан с Swagger декораторами
@@ -97,29 +97,29 @@ tasks:
     - tenant isolation обеспечена
     - тесты покрывают валидацию телефона (все форматы)
     - Swagger документация обновлена
-  pre_commit_workflow: "ОБЫЧНЫЙ"
-  pre_commit_steps:
+      pre_commit_workflow: "ОБЫЧНЫЙ"
+      pre_commit_steps:
     - "«Ревью» → phone validation, Russian number format, tenant isolation"
     - "«Автофикс» → linter/prettier"
     - "Тесты: phone validation tests (all Russian formats)"
     - "«Коммит» → feat(user): USER-001-02 complete"
-  gate:
+      gate:
     - require: "Одобряю USER-001-02"
 
 - id: USER-001-03
   title: Добавить поле даты рождения с валидацией возраста
   branch: "feature/user/USER-001/add-birth-date-field"
   files_scope:
-    - "db/migrations/**"
+    - "db/migrations/\*\*"
     - "db/models/user.ts"
     - "db/models/types.ts"
     - "src/domain/models/user.model.ts"
-    - "src/infrastructure/services/user/**"
-    - "src/infrastructure/dto/user/**"
-    - "src/infrastructure/controllers/user/**"
-    - "src/infrastructure/responses/user/**"
-    - "src/infrastructure/common/decorators/swagger/user/**"
-  steps:
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/dto/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+    - "src/infrastructure/responses/user/\*\*"
+    - "src/infrastructure/common/decorators/swagger/user/\*\*"
+      steps:
     - проверить отсутствие поля date_of_birth в БД (новое поле)
     - создать миграцию для добавления колонки date_of_birth в таблицу users
     - обновить db/models/types.ts и db/models/user.ts
@@ -132,7 +132,7 @@ tasks:
     - добавить проверку tenant isolation
     - написать тесты валидации возраста (18+, некорректные даты, будущие даты)
     - обновить Swagger документацию
-  dod:
+      dod:
     - миграция up/down успешна
     - UserModel содержит date_of_birth с валидацией возраста
     - валидация возраста 18+ работает корректно
@@ -141,13 +141,13 @@ tasks:
     - tenant isolation обеспечена
     - тесты покрывают валидацию возраста (все сценарии)
     - Swagger документация обновлена
-  pre_commit_workflow: "ОБЫЧНЫЙ"
-  pre_commit_steps:
+      pre_commit_workflow: "ОБЫЧНЫЙ"
+      pre_commit_steps:
     - "«Ревью» → age validation, date parsing, tenant isolation"
     - "«Автофикс» → linter/prettier"
     - "Тесты: age validation tests (with tenant isolation)"
     - "«Коммит» → feat(user): USER-001-03 complete"
-  gate:
+      gate:
     - require: "Одобряю USER-001-03"
 
 # Фаза 2: Флаги согласий и статусов
@@ -157,12 +157,12 @@ tasks:
   branch: "feature/user/USER-001/add-consent-management-api"
   files_scope:
     - "src/domain/models/user.model.ts"
-    - "src/infrastructure/services/user/**"
-    - "src/infrastructure/dto/user/**"
-    - "src/infrastructure/controllers/user/**"
-    - "src/infrastructure/responses/user/**"
-    - "src/infrastructure/common/decorators/swagger/user/**"
-  steps:
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/dto/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+    - "src/infrastructure/responses/user/\*\*"
+    - "src/infrastructure/common/decorators/swagger/user/\*\*"
+      steps:
     - проверить существование флагов is_newsletter_subscribed, is_marketing_consent, is_cookie_consent в БД (уже есть)
     - обновить UserModel (Domain) с флагами согласий (если нужно)
     - добавить методы для управления согласиями в UserService (если отсутствуют)
@@ -173,7 +173,7 @@ tasks:
     - добавить проверку tenant isolation
     - написать тесты управления согласиями (с tenant isolation)
     - обновить Swagger документацию
-  dod:
+      dod:
     - UserModel содержит флаги согласий
     - API endpoint PATCH /users/consents работает
     - Response класс создан с Swagger декораторами
@@ -181,13 +181,13 @@ tasks:
     - tenant isolation обеспечена
     - тесты покрывают управление согласиями
     - Swagger документация обновлена
-  pre_commit_workflow: "ОБЫЧНЫЙ"
-  pre_commit_steps:
+      pre_commit_workflow: "ОБЫЧНЫЙ"
+      pre_commit_steps:
     - "«Ревью» → consent management, GDPR compliance, tenant isolation"
     - "«Автофикс» → linter/prettier"
     - "Тесты: consent management tests (with tenant isolation)"
     - "«Коммит» → feat(user): USER-001-04 complete"
-  gate:
+      gate:
     - require: "Одобряю USER-001-04"
 
 - id: USER-001-05
@@ -195,12 +195,12 @@ tasks:
   branch: "feature/user/USER-001/add-status-management-api"
   files_scope:
     - "src/domain/models/user.model.ts"
-    - "src/infrastructure/services/user/**"
-    - "src/infrastructure/dto/user/**"
-    - "src/infrastructure/controllers/user/**"
-    - "src/infrastructure/responses/user/**"
-    - "src/infrastructure/common/decorators/swagger/user/**"
-  steps:
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/dto/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+    - "src/infrastructure/responses/user/\*\*"
+    - "src/infrastructure/common/decorators/swagger/user/\*\*"
+      steps:
     - проверить существование флагов is_vip_customer, is_premium, is_beta_tester в БД (уже есть)
     - обновить UserModel (Domain) с статусными флагами (если нужно)
     - добавить методы для управления статусами в UserService (только для ADMIN)
@@ -212,7 +212,7 @@ tasks:
     - добавить проверку tenant isolation (админ может управлять только пользователями своего тенанта)
     - написать тесты управления статусами (с проверкой прав и tenant isolation)
     - обновить Swagger документацию
-  dod:
+      dod:
     - UserModel содержит статусные флаги
     - API endpoint PATCH /users/{id}/status работает только для ADMIN
     - RoleGuard проверяет права ADMIN с учетом tenant isolation
@@ -221,14 +221,14 @@ tasks:
     - кастомный Swagger декоратор создан
     - тесты покрывают управление статусами, проверку прав и tenant isolation
     - Swagger документация обновлена
-  pre_commit_workflow: "КРИТИЧНЫЙ"
-  pre_commit_steps:
+      pre_commit_workflow: "КРИТИЧНЫЙ"
+      pre_commit_steps:
     - "«Ревью» → RBAC logic, admin controls, security, tenant isolation"
     - "«Оптимизируй» → RBAC queries, tenant scoping"
     - "«Автофикс» → linter/prettier"
     - "Тесты: status management + role guard tests + tenant isolation"
     - "«Коммит» → feat(user): USER-001-05 complete"
-  gate:
+      gate:
     - require: "Одобряю USER-001-05"
 
 - id: USER-001-06
@@ -236,13 +236,13 @@ tasks:
   branch: "feature/user/USER-001/add-verification-api"
   files_scope:
     - "src/domain/models/user.model.ts"
-    - "src/infrastructure/services/user/**"
-    - "src/infrastructure/services/notification/**"
-    - "src/infrastructure/dto/user/**"
-    - "src/infrastructure/controllers/user/**"
-    - "src/infrastructure/responses/user/**"
-    - "src/infrastructure/common/decorators/swagger/user/**"
-  steps:
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/services/notification/\*\*"
+    - "src/infrastructure/dto/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+    - "src/infrastructure/responses/user/\*\*"
+    - "src/infrastructure/common/decorators/swagger/user/\*\*"
+      steps:
     - проверить существование флагов is_email_verified, is_phone_verified, email_verified_at, phone_verified_at в БД (уже есть)
     - обновить UserModel (Domain) с флагами верификации (если нужно)
     - добавить методы для верификации в UserService
@@ -254,7 +254,7 @@ tasks:
     - добавить проверку tenant isolation
     - написать тесты процесса верификации (с интеграцией NotificationService и tenant isolation)
     - обновить Swagger документацию
-  dod:
+      dod:
     - UserModel содержит флаги верификации
     - интеграция с NotificationService для отправки кодов работает
     - API endpoints для верификации работают
@@ -263,13 +263,13 @@ tasks:
     - tenant isolation обеспечена
     - тесты покрывают процесс верификации (с NotificationService и tenant isolation)
     - Swagger документация обновлена
-  pre_commit_workflow: "ОБЫЧНЫЙ"
-  pre_commit_steps:
+      pre_commit_workflow: "ОБЫЧНЫЙ"
+      pre_commit_steps:
     - "«Ревью» → verification logic, code validation, NotificationService integration, tenant isolation"
     - "«Автофикс» → linter/prettier"
     - "Тесты: verification flow tests (with NotificationService and tenant isolation)"
     - "«Коммит» → feat(user): USER-001-06 complete"
-  gate:
+      gate:
     - require: "Одобряю USER-001-06"
 
 # Фаза 3: Адреса пользователей
@@ -278,17 +278,17 @@ tasks:
   title: Улучшить систему адресов пользователей с tenant isolation
   branch: "feature/user/USER-001/improve-address-system-tenant"
   files_scope:
-    - "db/migrations/**"
+    - "db/migrations/\*\*"
     - "db/models/user-address.ts"
     - "db/models/types.ts"
     - "src/domain/models/user-address.model.ts"
-    - "src/infrastructure/services/user-address/**"
-    - "src/infrastructure/repositories/user-address/**"
-    - "src/infrastructure/dto/user-address/**"
-    - "src/infrastructure/controllers/user-address/**"
-    - "src/infrastructure/responses/user-address/**"
-    - "src/infrastructure/common/decorators/swagger/user-address/**"
-  steps:
+    - "src/infrastructure/services/user-address/\*\*"
+    - "src/infrastructure/repositories/user-address/\*\*"
+    - "src/infrastructure/dto/user-address/\*\*"
+    - "src/infrastructure/controllers/user-address/\*\*"
+    - "src/infrastructure/responses/user-address/\*\*"
+    - "src/infrastructure/common/decorators/swagger/user-address/\*\*"
+      steps:
     - проверить существование UserAddressController и UserAddressService (уже есть)
     - проверить наличие tenant_id в таблице user_addresses (если нет - добавить миграцию)
     - обновить db/models/user-address.ts с tenant_id (если нужно)
@@ -300,7 +300,7 @@ tasks:
     - обновить UserAddressController с tenant isolation проверками
     - написать тесты tenant isolation для адресов (unit + integration)
     - обновить Swagger документацию
-  dod:
+      dod:
     - tenant_id добавлен в таблицу user_addresses (если отсутствовал)
     - UserAddressModel содержит tenant_id
     - UserAddressRepository автоматически фильтрует по tenant_id
@@ -310,44 +310,44 @@ tasks:
     - UserAddressController содержит полный CRUD с tenant isolation
     - тесты покрывают все операции и tenant isolation
     - Swagger документация обновлена
-  pre_commit_workflow: "ОБЫЧНЫЙ"
-  pre_commit_steps:
+      pre_commit_workflow: "ОБЫЧНЫЙ"
+      pre_commit_steps:
     - "«Ревью» → address CRUD, validation, associations, tenant isolation"
     - "«Оптимизируй» → tenant scoping queries"
     - "«Автофикс» → linter/prettier"
     - "Тесты: address system tests (unit + integration + tenant isolation)"
     - "«Коммит» → feat(user): USER-001-07 complete"
-  gate:
+      gate:
     - require: "Одобряю USER-001-07"
 
 - id: USER-001-08
   title: Улучшить логику адресов по умолчанию с tenant isolation
   branch: "feature/user/USER-001/improve-default-address-tenant"
   files_scope:
-    - "src/infrastructure/services/user-address/**"
-    - "src/infrastructure/repositories/user-address/**"
-    - "src/infrastructure/controllers/user-address/**"
-  steps:
+    - "src/infrastructure/services/user-address/\*\*"
+    - "src/infrastructure/repositories/user-address/\*\*"
+    - "src/infrastructure/controllers/user-address/\*\*"
+      steps:
     - проверить существование логики is_default в UserAddressService (уже есть)
     - проверить наличие метода setDefaultAddress (уже есть)
     - обновить методы setDefaultAddress и getDefaultAddress с tenant isolation
     - убедиться, что логика "только один default адрес" работает в рамках tenant
     - обновить тесты для проверки tenant isolation (default адрес изолирован по tenant)
     - проверить, что Swagger документация обновлена (уже есть)
-  dod:
+      dod:
     - UserAddressModel содержит is_default с логикой
     - методы setDefaultAddress и getDefaultAddress работают корректно с tenant isolation
     - логика "только один default адрес" работает в рамках tenant (не между тенантами)
     - тесты покрывают логику default адресов с tenant isolation
     - Swagger документация актуальна
-  pre_commit_workflow: "ОБЫЧНЫЙ"
-  pre_commit_steps:
+      pre_commit_workflow: "ОБЫЧНЫЙ"
+      pre_commit_steps:
     - "«Ревью» → default address logic, uniqueness constraint, tenant isolation"
     - "«Оптимизируй» → tenant scoping for default addresses"
     - "«Автофикс» → linter/prettier"
     - "Тесты: default address logic tests (with tenant isolation)"
     - "«Коммит» → feat(user): USER-001-08 complete"
-  gate:
+      gate:
     - require: "Одобряю USER-001-08"
 
 # Фаза 4: Предпочтения пользователя
@@ -357,12 +357,12 @@ tasks:
   branch: "feature/user/USER-001/add-preferences-api"
   files_scope:
     - "src/domain/models/user.model.ts"
-    - "src/infrastructure/services/user/**"
-    - "src/infrastructure/dto/user/**"
-    - "src/infrastructure/controllers/user/**"
-    - "src/infrastructure/responses/user/**"
-    - "src/infrastructure/common/decorators/swagger/user/**"
-  steps:
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/dto/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+    - "src/infrastructure/responses/user/\*\*"
+    - "src/infrastructure/common/decorators/swagger/user/\*\*"
+      steps:
     - проверить существование полей theme_preference, preferred_language, timezone в БД (уже есть)
     - обновить UserModel (Domain) с предпочтениями (если нужно)
     - добавить методы для управления предпочтениями в UserService (если отсутствуют)
@@ -373,7 +373,7 @@ tasks:
     - добавить проверку tenant isolation
     - написать тесты управления предпочтениями (с tenant isolation)
     - обновить Swagger документацию
-  dod:
+      dod:
     - UserModel содержит предпочтения (theme, language, timezone)
     - API endpoint PATCH /users/preferences работает
     - Response класс создан с Swagger декораторами
@@ -381,12 +381,12 @@ tasks:
     - tenant isolation обеспечена
     - тесты покрывают управление предпочтениями
     - Swagger документация обновлена
-  pre_commit_workflow: "УПРОЩЕННЫЙ"
-  pre_commit_steps:
+      pre_commit_workflow: "УПРОЩЕННЫЙ"
+      pre_commit_steps:
     - "«Автофикс» → linter/prettier"
     - "Тесты: preferences management tests (with tenant isolation)"
     - "«Коммит» → feat(user): USER-001-09 complete"
-  gate:
+      gate:
     - require: "Одобряю USER-001-09"
 
 - id: USER-001-10
@@ -394,12 +394,12 @@ tasks:
   branch: "feature/user/USER-001/add-translations-api"
   files_scope:
     - "src/domain/models/user.model.ts"
-    - "src/infrastructure/services/user/**"
-    - "src/infrastructure/dto/user/**"
-    - "src/infrastructure/controllers/user/**"
-    - "src/infrastructure/responses/user/**"
-    - "src/infrastructure/common/decorators/swagger/user/**"
-  steps:
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/dto/user/\*\*"
+    - "src/infrastructure/controllers/user/\*\*"
+    - "src/infrastructure/responses/user/\*\*"
+    - "src/infrastructure/common/decorators/swagger/user/\*\*"
+      steps:
     - проверить существование поля translations (JSON) в БД (уже есть)
     - обновить UserModel (Domain) с переводами (JSON тип, если нужно)
     - добавить методы для работы с переводами в UserService (если отсутствуют)
@@ -410,7 +410,7 @@ tasks:
     - добавить проверку tenant isolation
     - написать тесты системы переводов (с tenant isolation)
     - обновить Swagger документацию
-  dod:
+      dod:
     - UserModel содержит translations (JSON)
     - API endpoints для переводов работают
     - Response классы созданы с Swagger декораторами
@@ -418,12 +418,12 @@ tasks:
     - tenant isolation обеспечена
     - тесты покрывают систему переводов
     - Swagger документация обновлена
-  pre_commit_workflow: "УПРОЩЕННЫЙ"
-  pre_commit_steps:
+      pre_commit_workflow: "УПРОЩЕННЫЙ"
+      pre_commit_steps:
     - "«Автофикс» → linter/prettier"
     - "Тесты: translations system tests (with tenant isolation)"
     - "«Коммит» → feat(user): USER-001-10 complete"
-  gate:
+      gate:
     - require: "Одобряю USER-001-10"
 
 # Фаза 5: Индексы и производительность
@@ -432,12 +432,12 @@ tasks:
   title: Добавить индексы для производительности запросов пользователей
   branch: "feature/user/USER-001/add-performance-indexes"
   files_scope:
-    - "db/migrations/**"
+    - "db/migrations/\*\*"
     - "db/models/user.ts"
     - "src/domain/models/user.model.ts"
-    - "src/infrastructure/services/user/**"
-    - "src/infrastructure/repositories/user/**"
-  steps:
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/repositories/user/\*\*"
+      steps:
     - проверить существующие индексы в таблице users
     - создать миграцию для добавления недостающих индексов для флагов (is_vip_customer, is_premium, is_beta_tester, is_newsletter_subscribed, is_marketing_consent, etc.)
     - добавить составные индексы для частых запросов (tenant_id + is_active, tenant_id + is_blocked, tenant_id + is_verified)
@@ -447,18 +447,18 @@ tasks:
     - оптимизировать методы в UserService и UserRepository с использованием индексов
     - написать тесты производительности (опционально, но рекомендуется)
     - проверить производительность запросов (EXPLAIN для критичных запросов)
-  dod:
+      dod:
     - миграция up/down успешна
     - индексы созданы для всех флагов и частых фильтров
     - составные индексы созданы для tenant-scoped запросов
     - производительность запросов улучшена (проверено через EXPLAIN)
     - тесты производительности проходят (если добавлены)
-  pre_commit_workflow: "УПРОЩЕННЫЙ"
-  pre_commit_steps:
+      pre_commit_workflow: "УПРОЩЕННЫЙ"
+      pre_commit_steps:
     - "«Ревью» → index strategy, query performance, tenant scoping"
     - "«Оптимизируй» → DB queries, index usage, EXPLAIN analysis"
     - "«Автофикс» → linter/prettier"
     - "Тесты: performance tests (optional but recommended)"
     - "«Коммит» → perf(user): USER-001-11 complete"
-  gate:
+      gate:
     - require: "Одобряю USER-001-11"
