@@ -41,6 +41,7 @@
 ### Текущий статус
 
 - ✅ **SAAS-001**: Multi-tenancy реализован
+- ✅ **SAAS-009**: Система уведомлений (Notification API, интеграционные тесты)
 - ⏳ **SAAS-002**: Очистка User модуля (удаление e-commerce хардкода)
 - ⏳ **SAAS-003**: Фильтрация каталога по тенантам
 
@@ -254,12 +255,36 @@ User ──┬── UserRole ── Role
 
 **Контроллер**: `NotificationController`
 
+**Endpoints для пользователей (CUSTOMER_ROLES)**:
+
+- `GET /notifications` - список уведомлений с пагинацией и фильтрацией (status, type)
+- `GET /notifications/unread-count` - количество непрочитанных уведомлений
+- `PUT /notifications/:id/read` - отметить уведомление как прочитанное
+- `GET /notifications/settings` - получить настройки уведомлений (auto-created)
+- `PUT /notifications/settings` - обновить настройки уведомлений
+
+**Endpoints для менеджеров (MANAGER_ROLES)**:
+
+- `GET /notifications/templates` - список шаблонов уведомлений
+- `POST /notifications/templates` - создать шаблон
+- `PUT /notifications/templates/:id` - обновить шаблон
+- `GET /notifications/statistics` - статистика уведомлений
+
+**Endpoints для администраторов тенанта (TENANT_ADMIN_ROLES)**:
+
+- `DELETE /notifications/templates/:id` - удалить шаблон
+
+**Особенности**:
+
 - Система уведомлений для пользователей
 - Email и SMS провайдеры
-- Шаблоны уведомлений
+- Шаблоны уведомлений с поддержкой переменных
 - Event-driven архитектура
 - Автоматические уведомления: регистрация, заказы, платежи, смена пароля
 - Батчевая обработка и кэширование шаблонов
+- Tenant isolation: все уведомления изолированы по тенантам
+- Settings blocking: уведомления не отправляются при отключенных настройках пользователя
+- Integration тесты: полное покрытие всех endpoints (18 тестов)
 
 ### 9. Файлы (File)
 
@@ -619,8 +644,19 @@ npm run test:cov          # Покрытие
 **Конфигурация проектов**:
 
 - **Unit**: быстрые тесты без БД, с моками
-- **Integration**: тесты с БД, последовательное выполнение
+- **Integration**: тесты с БД, последовательное выполнение, автоматический сброс БД через `globalSetup`/`globalTeardown`
 - **E2E**: сквозные сценарии, полная изоляция
+
+**Global Setup/Teardown для Integration тестов**:
+
+- **`globalSetup`**: автоматический сброс БД перед запуском всех integration тестов
+    - Использует `TestDatabaseSetup.resetDatabase('test')` для полной очистки
+    - Применяет миграции и сиды в правильном порядке
+    - Убирает предупреждения о дубликатах миграций/сидов
+    - Файл: `tests/setup/integration-global-setup.ts`
+- **`globalTeardown`**: опциональная очистка после тестов
+    - Файл: `tests/setup/integration-global-teardown.ts`
+- **Конфигурация**: в `jest.config.js` для проекта `integration`
 
 ---
 
@@ -943,6 +979,10 @@ npm run db:create     # Создать БД
 - **Индексы**: автоматическое создание индексов для производительности
 - **FK ограничения**: RESTRICT для предотвращения каскадного удаления
 - **Charset**: UTF8MB4 с collation `utf8mb4_0900_ai_ci`
+- **Порядок выполнения**: критичен для зависимостей между таблицами
+    - Миграция создания таблицы должна выполняться до миграций, добавляющих FK на неё
+    - Пример: `20251005090000-create-tenants.ts` должна выполняться раньше `20251006000000-add-tenant-id-to-notifications.ts`
+    - При переименовании миграций проверять зависимости и порядок timestamp
 
 **Сиды ролей** (14 ролей):
 
@@ -957,6 +997,13 @@ npm run db:create     # Создать БД
 - Хэшированные пароли: `Password123!`
 - Расширенные флаги: is_active, is_verified, is_email_verified, etc.
 - Локализация: preferred_language: 'ru', timezone: 'Europe/Moscow'
+
+**Сиды tenants**:
+
+- Дефолтный tenant с `id=1` для тестов и development
+- План: `'free'` (соответствует ENUM в миграции: 'free', 'starter', 'professional', 'enterprise')
+- Статус: `'active'` для корректной работы TenantMiddleware
+- Важно: при изменении ENUM планов в миграции обновлять соответствующий сидер
 
 ### Тестовые утилиты
 
@@ -989,6 +1036,15 @@ npm run db:create     # Создать БД
 - Быстрее cleanup для unit тестов
 - Полная изоляция без ручного cleanup
 - Не работает с вложенными транзакциями в коде
+
+**TestDatabaseSetup возможности**:
+
+- `applyMigrations(env)` - применение миграций для указанного окружения
+- `applySeeds(env)` - применение сидов для указанного окружения
+- `setupDatabase(env)` - полная настройка БД: миграции + сиды
+- `resetDatabase(env)` - полный сброс БД: drop → create → migrate → seed
+- Используется в `globalSetup` для автоматической инициализации тестовой БД
+- Обработка ошибок: предупреждения вместо падения тестов
 
 ### Производительность и мониторинг
 
