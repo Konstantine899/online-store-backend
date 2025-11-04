@@ -36,6 +36,8 @@ export interface IUserRepository {
 
     updatePhone(userId: number, phone: string): Promise<UserModel>;
 
+    updateDateOfBirth(userId: number, dateOfBirth: string): Promise<UserModel>;
+
     updateFlags(
         userId: number,
         dto: UpdateUserFlagsDto,

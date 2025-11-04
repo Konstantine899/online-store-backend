@@ -124,6 +124,7 @@ describe('UserService', () => {
                         findListUsers: jest.fn(),
                         updateUser: jest.fn(),
                         updatePhone: jest.fn(),
+                        updateDateOfBirth: jest.fn(),
                         updateUserProfile: jest.fn(),
                         removeUser: jest.fn(),
                         findRegisteredUser: jest.fn(),
@@ -670,6 +671,76 @@ describe('UserService', () => {
                     message: 'Конфликт данных: обновление телефона',
                 }),
             );
+        });
+    });
+
+    describe('updateDateOfBirth', () => {
+        it('должен успешно обновить дату рождения пользователя', async () => {
+            const validDateOfBirth = '1990-01-15';
+            const mockUser = {
+                id: 1,
+                email: 'test@example.com',
+                dateOfBirth: new Date(validDateOfBirth),
+            };
+
+            (userRepository.updateDateOfBirth as jest.Mock).mockResolvedValue(
+                mockUser,
+            );
+
+            const result = await service.updateDateOfBirth(1, validDateOfBirth);
+
+            expect(userRepository.updateDateOfBirth).toHaveBeenCalledWith(
+                1,
+                validDateOfBirth,
+            );
+            expect(result).toEqual(mockUser);
+        });
+
+        it('должен выбросить NotFoundException если пользователь не найден', async () => {
+            (userRepository.updateDateOfBirth as jest.Mock).mockResolvedValue(
+                null,
+            );
+
+            await expect(
+                service.updateDateOfBirth(1, '1990-01-15'),
+            ).rejects.toThrow(NotFoundException);
+        });
+
+        it('должен корректно обработать ошибку репозитория', async () => {
+            const dbError = new Error('Database error');
+            dbError.name = 'SequelizeDatabaseError';
+            (userRepository.updateDateOfBirth as jest.Mock).mockRejectedValue(
+                dbError,
+            );
+
+            await expect(
+                service.updateDateOfBirth(1, '1990-01-15'),
+            ).rejects.toThrow('Database error');
+        });
+
+        it('должен обработать ошибку валидации как BadRequestException', async () => {
+            const validationError = new Error('Validation error');
+            validationError.name = 'SequelizeValidationError';
+            (userRepository.updateDateOfBirth as jest.Mock).mockRejectedValue(
+                validationError,
+            );
+
+            await expect(
+                service.updateDateOfBirth(1, 'invalid-date'),
+            ).rejects.toThrow('Некорректные данные: обновление даты рождения');
+        });
+
+        it('должен выбросить BadRequestException при невалидном формате даты', async () => {
+            const badRequestError = new BadRequestException(
+                'Некорректный формат даты',
+            );
+            (userRepository.updateDateOfBirth as jest.Mock).mockRejectedValue(
+                badRequestError,
+            );
+
+            await expect(
+                service.updateDateOfBirth(1, 'not-a-date'),
+            ).rejects.toThrow(BadRequestException);
         });
     });
 

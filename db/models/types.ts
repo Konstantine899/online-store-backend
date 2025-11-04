@@ -28,6 +28,7 @@ export interface UserAttributes {
     phone?: string;
     first_name?: string;
     last_name?: string;
+    date_of_birth?: Date | null;
     created_at: Date;
     updated_at: Date;
 }

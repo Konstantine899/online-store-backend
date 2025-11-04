@@ -297,4 +297,105 @@ describe('User Profile Integration Tests', () => {
             expect(res.body?.id).toBeDefined();
         });
     });
+
+    describe('PATCH /user/profile/date-of-birth', () => {
+        it('200: updates date of birth with valid date (18+)', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const validDateOfBirth = '1990-01-15'; // 34 года
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/date-of-birth')
+                .set('Authorization', `Bearer ${token}`)
+                .send({ dateOfBirth: validDateOfBirth })
+                .expect(200)
+                .expect(({ body }) => {
+                    expect(body?.data?.dateOfBirth).toBe(validDateOfBirth);
+                });
+        });
+
+        it('400: rejects date for user younger than 18 years', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            // Дата 17 лет назад
+            const seventeenYearsAgo = new Date();
+            seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+            const invalidDateOfBirth = seventeenYearsAgo
+                .toISOString()
+                .split('T')[0];
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/date-of-birth')
+                .set('Authorization', `Bearer ${token}`)
+                .send({ dateOfBirth: invalidDateOfBirth })
+                .expect(400)
+                .expect(({ body }) => {
+                    expect(body.message).toContain(
+                        'Дата рождения должна соответствовать возрасту от 18 до 150 лет',
+                    );
+                });
+        });
+
+        it('400: rejects future date', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const futureDate = new Date();
+            futureDate.setFullYear(futureDate.getFullYear() + 1);
+            const futureDateString = futureDate.toISOString().split('T')[0];
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/date-of-birth')
+                .set('Authorization', `Bearer ${token}`)
+                .send({ dateOfBirth: futureDateString })
+                .expect(400);
+        });
+
+        it('400: rejects invalid date format', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/date-of-birth')
+                .set('Authorization', `Bearer ${token}`)
+                .send({ dateOfBirth: 'invalid-date' })
+                .expect(400);
+        });
+
+        it('401: requires auth', async () => {
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/date-of-birth')
+                .send({ dateOfBirth: '1990-01-15' })
+                .expect(401);
+        });
+
+        it('200: accepts date exactly 18 years ago', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            // Дата ровно 18 лет назад
+            const eighteenYearsAgo = new Date();
+            eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
+            const validDateOfBirth = eighteenYearsAgo
+                .toISOString()
+                .split('T')[0];
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/date-of-birth')
+                .set('Authorization', `Bearer ${token}`)
+                .send({ dateOfBirth: validDateOfBirth })
+                .expect(200)
+                .expect(({ body }) => {
+                    expect(body?.data?.dateOfBirth).toBe(validDateOfBirth);
+                });
+        });
+    });
 });

@@ -1,20 +1,20 @@
+import type { UserModel } from '@app/domain/models';
 import type {
-    CreateUserDto,
     AddRoleDto,
+    CreateUserDto,
     RemoveRoleDto,
     UpdateUserDto,
 } from '@app/infrastructure/dto';
 import type {
-    CreateUserResponse,
-    GetUserResponse,
-    CheckResponse,
-    UpdateUserResponse,
-    RemoveUserResponse,
     AddRoleResponse,
-    RemoveUserRoleResponse,
+    CheckResponse,
+    CreateUserResponse,
     GetPaginatedUsersResponse,
+    GetUserResponse,
+    RemoveUserResponse,
+    RemoveUserRoleResponse,
+    UpdateUserResponse,
 } from '@app/infrastructure/responses';
-import type { UserModel } from '@app/domain/models';
 
 export interface IUserService {
     createUser(dto: CreateUserDto): Promise<CreateUserResponse>;
@@ -41,6 +41,11 @@ export interface IUserService {
     removeUserRole(dto: RemoveRoleDto): Promise<RemoveUserRoleResponse>;
 
     updatePhone(userId: number, phone: string): Promise<UserModel>;
+
+    updateDateOfBirth(
+        userId: number,
+        dateOfBirth: string,
+    ): Promise<UserModel>;
 
     // User Statistics Methods
     getUserStats(): Promise<{

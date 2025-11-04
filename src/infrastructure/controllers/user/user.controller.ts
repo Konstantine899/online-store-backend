@@ -2,6 +2,7 @@ import {
     AddRoleDto,
     CreateUserDto,
     RemoveRoleDto,
+    UpdateDateOfBirthDto,
     UpdateUserProfileDto,
 } from '@app/infrastructure/dto';
 import { UpdateUserDto } from '@app/infrastructure/dto/user/update-user.dto';
@@ -36,6 +37,7 @@ import {
     UpdateUserSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
 import { ChangePasswordSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/change-password.swagger';
+import { UpdateDateOfBirthSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-date-of-birth.swagger';
 import {
     AuthGuard,
     BruteforceGuard,
@@ -64,6 +66,7 @@ import {
     GetUserResponse,
     RemoveUserResponse,
     RemoveUserRoleResponse,
+    UpdateDateOfBirthResponse,
     UpdateUserPhoneResponse,
     UpdateUserResponse,
 } from '@app/infrastructure/responses';
@@ -222,6 +225,29 @@ export class UserController implements IUserController {
         const user = await this.userService.updatePhone(userId, dto.phone);
         const ensuredPhone = user.phone ?? '';
         return this.createResponse({ id: user.id, phone: ensuredPhone });
+    }
+
+    @Roles(...USER_ROLES)
+    @UserGuards()
+    @UpdateDateOfBirthSwaggerDecorator()
+    @Patch('profile/date-of-birth')
+    @HttpCode(HttpStatus.OK)
+    async updateDateOfBirth(
+        @Req() req: AuthenticatedRequest,
+        @Body(validationPipe) dto: UpdateDateOfBirthDto,
+    ): Promise<{ data: UpdateDateOfBirthResponse }> {
+        const userId = this.extractUserId(req);
+        const user = await this.userService.updateDateOfBirth(
+            userId,
+            dto.dateOfBirth,
+        );
+        const ensuredDateOfBirth = user.dateOfBirth
+            ? user.dateOfBirth.toISOString().split('T')[0]
+            : null;
+        return this.createResponse({
+            id: user.id,
+            dateOfBirth: ensuredDateOfBirth,
+        });
     }
 
     @Roles(...USER_ROLES)

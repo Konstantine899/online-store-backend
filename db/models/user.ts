@@ -1,5 +1,5 @@
 import type { Sequelize } from 'sequelize';
-import { Model, DataTypes } from 'sequelize';
+import { DataTypes, Model } from 'sequelize';
 import { TABLE_NAMES } from '../consts';
 import type { UserAttributes, UserCreationAttributes } from './types';
 
@@ -13,6 +13,7 @@ class User
     declare phone?: string;
     declare first_name?: string;
     declare last_name?: string;
+    declare date_of_birth?: Date | null;
     // Flags
     declare is_active: boolean;
     declare is_newsletter_subscribed: boolean;
@@ -106,6 +107,10 @@ export default function defineUser(sequelize: Sequelize): typeof User {
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             last_name: {
                 type: DataTypes.STRING(100),
+                allowNull: true,
+            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+            date_of_birth: {
+                type: DataTypes.DATEONLY,
                 allowNull: true,
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             created_at: {

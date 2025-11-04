@@ -482,6 +482,55 @@ export class UserRepository implements IUserRepository {
         }) as Promise<UserModel>;
     }
 
+    public async updateDateOfBirth(
+        userId: number,
+        dateOfBirth: string,
+    ): Promise<UserModel> {
+        // Проверяем валидность даты
+        const date = new Date(dateOfBirth);
+        if (isNaN(date.getTime())) {
+            throw new BadRequestException('Некорректный формат даты');
+        }
+
+        // Проверяем существование пользователя перед обновлением
+        const existingUser = await this.userModel.findOne({
+            where: { id: userId },
+            attributes: ['id', 'email'],
+        });
+
+        if (!existingUser) {
+            throw new NotFoundException('Пользователь не найден');
+        }
+
+        // Обновляем дату рождения (MySQL не поддерживает returning: true)
+        // Sequelize-typescript автоматически конвертирует camelCase в snake_case для БД
+        const [affectedRows] = await this.userModel.update(
+            { dateOfBirth: date },
+            {
+                where: { id: userId },
+                fields: ['dateOfBirth'],
+            },
+        );
+
+        // Дополнительная проверка (на случай конкурентного доступа)
+        if (affectedRows === 0) {
+            throw new NotFoundException('Пользователь не найден');
+        }
+
+        // Возвращаем обновленную запись (оптимизированный запрос только нужных полей)
+        const updatedUser = await this.userModel.findByPk(userId, {
+            attributes: ['id', 'email', 'dateOfBirth'],
+        });
+
+        if (!updatedUser) {
+            throw new NotFoundException(
+                'Пользователь не найден после обновления',
+            );
+        }
+
+        return updatedUser;
+    }
+
     /**
      * Нормализует номер телефона для сохранения в БД (E.164 формат)
      * - Удаляет пробелы, дефисы, скобки

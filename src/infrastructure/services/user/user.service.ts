@@ -395,6 +395,28 @@ export class UserService implements IUserService {
         }
     }
 
+    async updateDateOfBirth(
+        userId: number,
+        dateOfBirth: string,
+    ): Promise<UserModel> {
+        try {
+            const user = await this.userRepository.updateDateOfBirth(
+                userId,
+                dateOfBirth,
+            );
+            if (!user) {
+                throw new NotFoundException('Пользователь не найден');
+            }
+
+            // Кэш пользователя будет обновлен автоматически
+
+            return user;
+        } catch (error: unknown) {
+            this.handleSequelizeError(error, 'обновление даты рождения');
+            throw error;
+        }
+    }
+
     async updateProfile(
         userId: number,
         dto: UpdateUserProfileDto,

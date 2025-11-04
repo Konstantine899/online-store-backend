@@ -33,6 +33,7 @@ interface IUserModel {
     phone?: string;
     firstName?: string;
     lastName?: string;
+    dateOfBirth?: Date | null;
     // flags
     isActive?: boolean;
     isNewsletterSubscribed?: boolean;
@@ -158,6 +159,17 @@ export class UserModel
         allowNull: true,
     })
     declare lastName?: string;
+
+    @Column({
+        type: DataType.DATEONLY,
+        allowNull: true,
+        validate: {
+            // Проверка возраста: дата не должна быть в будущем
+            isDate: true,
+            isBefore: new Date().toISOString().split('T')[0], // Только дата, без времени
+        },
+    })
+    declare dateOfBirth?: Date | null;
 
     // Флаги
     @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: true })
