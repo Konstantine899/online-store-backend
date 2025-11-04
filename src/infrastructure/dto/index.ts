@@ -20,6 +20,7 @@ export { AddRoleDto } from './user/add-role.dto';
 export { ChangePasswordDto } from './user/change-password.dto';
 export { CreateUserDto } from './user/create-user.dto';
 export { RemoveRoleDto } from './user/remove-role.dto';
+export { UpdateConsentsDto } from './user/update-consents.dto';
 export { UpdateDateOfBirthDto } from './user/update-date-of-birth.dto';
 export { UpdateUserPhoneDto } from './user/update-user-phone.dto';
 export { UpdateUserProfileDto } from './user/update-user-profile.dto';

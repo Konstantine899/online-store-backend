@@ -8,6 +8,7 @@ import {
     AddRoleDto,
     CreateUserDto,
     RemoveRoleDto,
+    UpdateConsentsDto,
     UpdateUserDto,
     UpdateUserProfileDto,
 } from '@app/infrastructure/dto';
@@ -413,6 +414,56 @@ export class UserService implements IUserService {
             return user;
         } catch (error: unknown) {
             this.handleSequelizeError(error, 'обновление даты рождения');
+            throw error;
+        }
+    }
+
+    async updateConsents(
+        userId: number,
+        dto: UpdateConsentsDto,
+    ): Promise<UserModel> {
+        try {
+            // Получаем текущие значения согласий для логирования изменений
+            const currentUser =
+                await this.userRepository.findUserByPkId(userId);
+            const oldConsents = {
+                isNewsletterSubscribed:
+                    currentUser?.isNewsletterSubscribed ?? false,
+                isMarketingConsent: currentUser?.isMarketingConsent ?? false,
+                isCookieConsent: currentUser?.isCookieConsent ?? false,
+            };
+
+            const user = await this.userRepository.updateConsents(userId, dto);
+            if (!user) {
+                throw new NotFoundException('Пользователь не найден');
+            }
+
+            // Формируем новые значения согласий (используем переданные значения или старые)
+            const newConsents = {
+                isNewsletterSubscribed:
+                    dto.isNewsletterSubscribed ??
+                    oldConsents.isNewsletterSubscribed,
+                isMarketingConsent:
+                    dto.isMarketingConsent ?? oldConsents.isMarketingConsent,
+                isCookieConsent:
+                    dto.isCookieConsent ?? oldConsents.isCookieConsent,
+            };
+
+            // Логируем изменения согласий для GDPR compliance (до/после)
+            this.logger.info({
+                message: 'Согласия пользователя обновлены',
+                userId: maskPII(userId.toString()),
+                changes: {
+                    before: oldConsents,
+                    after: newConsents,
+                },
+            });
+
+            // Кэш пользователя будет обновлен автоматически
+
+            return user;
+        } catch (error: unknown) {
+            this.handleSequelizeError(error, 'обновление согласий');
             throw error;
         }
     }

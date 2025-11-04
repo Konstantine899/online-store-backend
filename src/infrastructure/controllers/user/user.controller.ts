@@ -2,6 +2,7 @@ import {
     AddRoleDto,
     CreateUserDto,
     RemoveRoleDto,
+    UpdateConsentsDto,
     UpdateDateOfBirthDto,
     UpdateUserProfileDto,
 } from '@app/infrastructure/dto';
@@ -37,6 +38,7 @@ import {
     UpdateUserSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
 import { ChangePasswordSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/change-password.swagger';
+import { UpdateConsentsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-consents.swagger';
 import { UpdateDateOfBirthSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-date-of-birth.swagger';
 import {
     AuthGuard,
@@ -66,6 +68,7 @@ import {
     GetUserResponse,
     RemoveUserResponse,
     RemoveUserRoleResponse,
+    UpdateConsentsResponse,
     UpdateDateOfBirthResponse,
     UpdateUserPhoneResponse,
     UpdateUserResponse,
@@ -247,6 +250,25 @@ export class UserController implements IUserController {
         return this.createResponse({
             id: user.id,
             dateOfBirth: ensuredDateOfBirth,
+        });
+    }
+
+    @Roles(...USER_ROLES)
+    @UserGuards()
+    @UpdateConsentsSwaggerDecorator()
+    @Patch('consents')
+    @HttpCode(HttpStatus.OK)
+    async updateConsents(
+        @Req() req: AuthenticatedRequest,
+        @Body(validationPipe) dto: UpdateConsentsDto,
+    ): Promise<{ data: UpdateConsentsResponse }> {
+        const userId = this.extractUserId(req);
+        const user = await this.userService.updateConsents(userId, dto);
+        return this.createResponse({
+            id: user.id,
+            isNewsletterSubscribed: user.isNewsletterSubscribed ?? false,
+            isMarketingConsent: user.isMarketingConsent ?? false,
+            isCookieConsent: user.isCookieConsent ?? false,
         });
     }
 

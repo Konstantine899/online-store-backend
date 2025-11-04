@@ -3,6 +3,7 @@ import type {
     AddRoleDto,
     CreateUserDto,
     RemoveRoleDto,
+    UpdateConsentsDto,
     UpdateUserDto,
 } from '@app/infrastructure/dto';
 import type {
@@ -42,10 +43,9 @@ export interface IUserService {
 
     updatePhone(userId: number, phone: string): Promise<UserModel>;
 
-    updateDateOfBirth(
-        userId: number,
-        dateOfBirth: string,
-    ): Promise<UserModel>;
+    updateDateOfBirth(userId: number, dateOfBirth: string): Promise<UserModel>;
+
+    updateConsents(userId: number, dto: UpdateConsentsDto): Promise<UserModel>;
 
     // User Statistics Methods
     getUserStats(): Promise<{

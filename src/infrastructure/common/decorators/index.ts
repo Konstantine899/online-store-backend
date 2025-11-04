@@ -57,6 +57,7 @@ export { GetListUsersSwaggerDecorator } from './swagger/user/get-list-users-swag
 export { GetUserSwaggerDecorator } from './swagger/user/get-user-swagger-decorator';
 export { RemoveRoleUserSwaggerDecorator } from './swagger/user/remove-role-user-swagger-decorator';
 export { RemoveUserSwaggerDecorator } from './swagger/user/remove-user-swagger-decorator';
+export { UpdateConsentsSwaggerDecorator } from './swagger/user/update-consents.swagger';
 export { UpdateDateOfBirthSwaggerDecorator } from './swagger/user/update-date-of-birth.swagger';
 export { UpdateUserPhoneSwaggerDecorator } from './swagger/user/update-user-phone.swagger';
 export { UpdateUserSwaggerDecorator } from './swagger/user/update-user-swagger-decorator';

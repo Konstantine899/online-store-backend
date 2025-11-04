@@ -4,6 +4,7 @@ import type {
     AddRoleDto,
     CreateUserDto,
     RemoveRoleDto,
+    UpdateConsentsDto,
     UpdateUserDto,
     UpdateUserProfileDto,
 } from '@app/infrastructure/dto';
@@ -125,11 +126,12 @@ describe('UserService', () => {
                         updateUser: jest.fn(),
                         updatePhone: jest.fn(),
                         updateDateOfBirth: jest.fn(),
+                        updateConsents: jest.fn(),
+                        findUserByPkId: jest.fn(),
                         updateUserProfile: jest.fn(),
                         removeUser: jest.fn(),
                         findRegisteredUser: jest.fn(),
                         findListUsersPaginated: jest.fn(),
-                        findUserByPkId: jest.fn(),
                         updateFlags: jest.fn(),
                         updatePreferences: jest.fn(),
                         verifyEmail: jest.fn(),
@@ -741,6 +743,186 @@ describe('UserService', () => {
             await expect(
                 service.updateDateOfBirth(1, 'not-a-date'),
             ).rejects.toThrow(BadRequestException);
+        });
+    });
+
+    describe('updateConsents', () => {
+        it('должен успешно обновить все согласия пользователя', async () => {
+            const dto: UpdateConsentsDto = {
+                isNewsletterSubscribed: true,
+                isMarketingConsent: true,
+                isCookieConsent: true,
+            };
+            const currentUser = {
+                id: 1,
+                email: 'test@example.com',
+                isNewsletterSubscribed: false,
+                isMarketingConsent: false,
+                isCookieConsent: false,
+            };
+            const updatedUser = {
+                id: 1,
+                email: 'test@example.com',
+                isNewsletterSubscribed: true,
+                isMarketingConsent: true,
+                isCookieConsent: true,
+            };
+
+            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue(
+                currentUser,
+            );
+            (userRepository.updateConsents as jest.Mock).mockResolvedValue(
+                updatedUser,
+            );
+
+            const result = await service.updateConsents(1, dto);
+
+            expect(userRepository.findUserByPkId).toHaveBeenCalledWith(1);
+            expect(userRepository.updateConsents).toHaveBeenCalledWith(1, dto);
+            expect(result).toEqual(updatedUser);
+        });
+
+        it('должен успешно обновить только одно согласие', async () => {
+            const dto: UpdateConsentsDto = {
+                isNewsletterSubscribed: true,
+            };
+            const currentUser = {
+                id: 1,
+                email: 'test@example.com',
+                isNewsletterSubscribed: false,
+                isMarketingConsent: false,
+                isCookieConsent: false,
+            };
+            const updatedUser = {
+                id: 1,
+                email: 'test@example.com',
+                isNewsletterSubscribed: true,
+                isMarketingConsent: false,
+                isCookieConsent: false,
+            };
+
+            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue(
+                currentUser,
+            );
+            (userRepository.updateConsents as jest.Mock).mockResolvedValue(
+                updatedUser,
+            );
+
+            const result = await service.updateConsents(1, dto);
+
+            expect(userRepository.findUserByPkId).toHaveBeenCalledWith(1);
+            expect(userRepository.updateConsents).toHaveBeenCalledWith(1, dto);
+            expect(result).toEqual(updatedUser);
+        });
+
+        it('должен успешно обновить несколько согласий', async () => {
+            const dto: UpdateConsentsDto = {
+                isMarketingConsent: false,
+                isCookieConsent: true,
+            };
+            const currentUser = {
+                id: 1,
+                email: 'test@example.com',
+                isNewsletterSubscribed: true,
+                isMarketingConsent: true,
+                isCookieConsent: false,
+            };
+            const updatedUser = {
+                id: 1,
+                email: 'test@example.com',
+                isNewsletterSubscribed: true,
+                isMarketingConsent: false,
+                isCookieConsent: true,
+            };
+
+            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue(
+                currentUser,
+            );
+            (userRepository.updateConsents as jest.Mock).mockResolvedValue(
+                updatedUser,
+            );
+
+            const result = await service.updateConsents(1, dto);
+
+            expect(userRepository.findUserByPkId).toHaveBeenCalledWith(1);
+            expect(userRepository.updateConsents).toHaveBeenCalledWith(1, dto);
+            expect(result).toEqual(updatedUser);
+        });
+
+        it('должен выбросить NotFoundException если пользователь не найден при обновлении', async () => {
+            const dto: UpdateConsentsDto = {
+                isNewsletterSubscribed: true,
+            };
+            const currentUser = {
+                id: 1,
+                email: 'test@example.com',
+                isNewsletterSubscribed: false,
+                isMarketingConsent: false,
+                isCookieConsent: false,
+            };
+
+            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue(
+                currentUser,
+            );
+            (userRepository.updateConsents as jest.Mock).mockResolvedValue(
+                null,
+            );
+
+            await expect(service.updateConsents(1, dto)).rejects.toThrow(
+                NotFoundException,
+            );
+        });
+
+        it('должен корректно обработать ошибку репозитория', async () => {
+            const dto: UpdateConsentsDto = {
+                isNewsletterSubscribed: true,
+            };
+            const currentUser = {
+                id: 1,
+                email: 'test@example.com',
+                isNewsletterSubscribed: false,
+                isMarketingConsent: false,
+                isCookieConsent: false,
+            };
+            const dbError = new Error('Database error');
+            dbError.name = 'SequelizeDatabaseError';
+
+            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue(
+                currentUser,
+            );
+            (userRepository.updateConsents as jest.Mock).mockRejectedValue(
+                dbError,
+            );
+
+            await expect(service.updateConsents(1, dto)).rejects.toThrow(
+                'Database error',
+            );
+        });
+
+        it('должен обработать ошибку валидации как BadRequestException', async () => {
+            const dto: UpdateConsentsDto = {
+                isNewsletterSubscribed: true,
+            };
+            const currentUser = {
+                id: 1,
+                email: 'test@example.com',
+                isNewsletterSubscribed: false,
+                isMarketingConsent: false,
+                isCookieConsent: false,
+            };
+            const validationError = new Error('Validation error');
+            validationError.name = 'SequelizeValidationError';
+
+            (userRepository.findUserByPkId as jest.Mock).mockResolvedValue(
+                currentUser,
+            );
+            (userRepository.updateConsents as jest.Mock).mockRejectedValue(
+                validationError,
+            );
+
+            await expect(service.updateConsents(1, dto)).rejects.toThrow(
+                'Некорректные данные: обновление согласий',
+            );
         });
     });
 

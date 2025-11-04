@@ -398,4 +398,128 @@ describe('User Profile Integration Tests', () => {
                 });
         });
     });
+
+    // ===== CONSENTS ENDPOINTS =====
+    describe('PATCH /user/consents', () => {
+        it('200: updates all consents with valid data', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const consentsData = {
+                isNewsletterSubscribed: true,
+                isMarketingConsent: true,
+                isCookieConsent: true,
+            };
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/consents')
+                .set('Authorization', `Bearer ${token}`)
+                .send(consentsData)
+                .expect(200)
+                .expect(({ body }) => {
+                    expect(body?.data?.isNewsletterSubscribed).toBe(true);
+                    expect(body?.data?.isMarketingConsent).toBe(true);
+                    expect(body?.data?.isCookieConsent).toBe(true);
+                });
+        });
+
+        it('200: updates only one consent', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const consentsData = {
+                isNewsletterSubscribed: true,
+            };
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/consents')
+                .set('Authorization', `Bearer ${token}`)
+                .send(consentsData)
+                .expect(200)
+                .expect(({ body }) => {
+                    expect(body?.data?.isNewsletterSubscribed).toBe(true);
+                });
+        });
+
+        it('200: updates multiple consents', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const consentsData = {
+                isMarketingConsent: false,
+                isCookieConsent: true,
+            };
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/consents')
+                .set('Authorization', `Bearer ${token}`)
+                .send(consentsData)
+                .expect(200)
+                .expect(({ body }) => {
+                    expect(body?.data?.isMarketingConsent).toBe(false);
+                    expect(body?.data?.isCookieConsent).toBe(true);
+                });
+        });
+
+        it('400: rejects invalid data types (non-boolean)', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/consents')
+                .set('Authorization', `Bearer ${token}`)
+                .send({
+                    isNewsletterSubscribed: 'not-boolean',
+                })
+                .expect(400);
+        });
+
+        it('400: rejects invalid data types (string instead of boolean)', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/consents')
+                .set('Authorization', `Bearer ${token}`)
+                .send({
+                    isMarketingConsent: 'true',
+                })
+                .expect(400);
+        });
+
+        it('401: requires auth', async () => {
+            await request(app.getHttpServer())
+                .patch('/online-store/user/consents')
+                .send({
+                    isNewsletterSubscribed: true,
+                })
+                .expect(401);
+        });
+
+        it('200: accepts empty body (no changes)', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/consents')
+                .set('Authorization', `Bearer ${token}`)
+                .send({})
+                .expect(200)
+                .expect(({ body }) => {
+                    expect(body?.data).toHaveProperty('id');
+                    expect(body?.data).toHaveProperty('isNewsletterSubscribed');
+                    expect(body?.data).toHaveProperty('isMarketingConsent');
+                    expect(body?.data).toHaveProperty('isCookieConsent');
+                });
+        });
+    });
 });

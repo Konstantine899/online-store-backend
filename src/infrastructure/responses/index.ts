@@ -71,6 +71,7 @@ export { GetPaginatedUsersResponse } from './user/get-paginated-users-response';
 export { GetUserResponse } from './user/get-user-response';
 export { RemoveUserRoleResponse } from './user/remove-user-role-response';
 export { RemoveUserResponse } from './user/remove-user.response';
+export { UpdateConsentsResponse } from './user/update-consents.response';
 export { UpdateDateOfBirthResponse } from './user/update-date-of-birth.response';
 export { UpdateUserPhoneResponse } from './user/update-user-phone.response';
 export { UpdateUserResponse } from './user/update-user-response';

@@ -3,6 +3,7 @@ import { IUserRepository } from '@app/domain/repositories';
 import { normalizeRussianPhone } from '@app/infrastructure/common/utils/phone.utils';
 import {
     CreateUserDto,
+    UpdateConsentsDto,
     UpdateUserDto,
     UpdateUserProfileDto,
 } from '@app/infrastructure/dto';
@@ -529,6 +530,93 @@ export class UserRepository implements IUserRepository {
         }
 
         return updatedUser;
+    }
+
+    public async updateConsents(
+        userId: number,
+        dto: UpdateConsentsDto,
+    ): Promise<UserModel> {
+        try {
+            // Проверяем существование пользователя перед обновлением
+            const existingUser = await this.userModel.findOne({
+                where: { id: userId },
+                attributes: ['id', 'email'],
+            });
+
+            if (!existingUser) {
+                throw new NotFoundException('Пользователь не найден');
+            }
+
+            // Формируем объект обновлений только для consent полей
+            const updates: Partial<UserModel> = {};
+
+            if (dto.isNewsletterSubscribed !== undefined) {
+                updates.isNewsletterSubscribed = dto.isNewsletterSubscribed;
+            }
+            if (dto.isMarketingConsent !== undefined) {
+                updates.isMarketingConsent = dto.isMarketingConsent;
+            }
+            if (dto.isCookieConsent !== undefined) {
+                updates.isCookieConsent = dto.isCookieConsent;
+            }
+
+            // Если нет изменений, возвращаем текущего пользователя
+            if (Object.keys(updates).length === 0) {
+                const user = await this.userModel.findByPk(userId, {
+                    attributes: [
+                        'id',
+                        'email',
+                        'isNewsletterSubscribed',
+                        'isMarketingConsent',
+                        'isCookieConsent',
+                    ],
+                });
+                if (!user) {
+                    throw new NotFoundException('Пользователь не найден');
+                }
+                return user;
+            }
+
+            // Обновляем только consent поля
+            const [affectedRows] = await this.userModel.update(updates, {
+                where: { id: userId },
+                fields: [
+                    'isNewsletterSubscribed',
+                    'isMarketingConsent',
+                    'isCookieConsent',
+                ],
+            });
+
+            // Дополнительная проверка (на случай конкурентного доступа)
+            if (affectedRows === 0) {
+                throw new NotFoundException('Пользователь не найден');
+            }
+
+            // Возвращаем обновленную запись (оптимизированный запрос только нужных полей)
+            const updatedUser = await this.userModel.findByPk(userId, {
+                attributes: [
+                    'id',
+                    'email',
+                    'isNewsletterSubscribed',
+                    'isMarketingConsent',
+                    'isCookieConsent',
+                ],
+            });
+
+            if (!updatedUser) {
+                throw new NotFoundException(
+                    'Пользователь не найден после обновления',
+                );
+            }
+
+            return updatedUser;
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'обновление согласий пользователя',
+            );
+            throw error;
+        }
     }
 
     /**

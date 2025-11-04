@@ -1,5 +1,5 @@
 import type { UserModel } from '@app/domain/models';
-import type { CreateUserDto } from '@app/infrastructure/dto';
+import type { CreateUserDto, UpdateConsentsDto } from '@app/infrastructure/dto';
 import type { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import type { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
 import type {
@@ -37,6 +37,8 @@ export interface IUserRepository {
     updatePhone(userId: number, phone: string): Promise<UserModel>;
 
     updateDateOfBirth(userId: number, dateOfBirth: string): Promise<UserModel>;
+
+    updateConsents(userId: number, dto: UpdateConsentsDto): Promise<UserModel>;
 
     updateFlags(
         userId: number,
