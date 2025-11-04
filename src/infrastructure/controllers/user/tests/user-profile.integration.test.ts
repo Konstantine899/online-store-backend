@@ -53,13 +53,8 @@ describe('User Profile Integration Tests', () => {
             await request(app.getHttpServer())
                 .patch('/online-store/user/profile/phone')
                 .set('Authorization', `Bearer ${token}`)
-                .send({ phone: '8(999)123-45-67' })
-                .expect(400)
-                .expect(({ body }) => {
-                    expect(body.message).toBe(
-                        'Некорректные данные: обновление телефона',
-                    );
-                });
+                .send({ phone: 'invalid-phone' })
+                .expect(400);
         });
 
         it('401: requires auth', async () => {
@@ -67,6 +62,122 @@ describe('User Profile Integration Tests', () => {
                 .patch('/online-store/user/profile/phone')
                 .send({ phone: '+79991234567' })
                 .expect(401);
+        });
+
+        it('200: accepts Russian format with +7', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const uniquePhone = TestDataFactory.uniquePhone();
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/phone')
+                .set('Authorization', `Bearer ${token}`)
+                .send({ phone: uniquePhone })
+                .expect(200)
+                .expect(({ body }) => {
+                    expect(body?.data?.phone).toBe(uniquePhone);
+                });
+        });
+
+        it('200: accepts Russian format with 8', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            // Генерируем уникальный номер, начинающийся с 8
+            // uniquePhone() возвращает +799XXXXXXXXX (12 цифр), берем только цифры и обрезаем до 11
+            const uniquePhoneDigits = TestDataFactory.uniquePhone()
+                .slice(1)
+                .slice(0, 11); // убираем +, берем первые 11 цифр
+            const uniquePhone = `8${uniquePhoneDigits.slice(1)}`; // заменяем первую цифру на 8
+
+            // Проверяем, что номер валидный (11 цифр, начинается с 8)
+            expect(uniquePhone).toMatch(/^8\d{10}$/); // 8 + 10 цифр = 11 цифр всего
+            expect(uniquePhone).toHaveLength(11);
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/phone')
+                .set('Authorization', `Bearer ${token}`)
+                .send({ phone: uniquePhone })
+                .expect(200)
+                .expect(({ body }) => {
+                    // После нормализации номер будет сохранен как +7XXXXXXXXXX
+                    expect(body?.data?.phone).toMatch(/^\+7\d{10}$/);
+                });
+        });
+
+        it('200: accepts Russian format without prefix (7)', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            // Генерируем уникальный номер, начинающийся с 7 (без +)
+            // uniquePhone() возвращает +799XXXXXXXXX (12 цифр), берем только цифры и обрезаем до 11
+            const uniquePhone = TestDataFactory.uniquePhone()
+                .slice(1)
+                .slice(0, 11); // убираем +, берем первые 11 цифр
+
+            // Проверяем, что номер валидный (11 цифр, начинается с 7)
+            expect(uniquePhone).toMatch(/^7\d{10}$/); // 7 + 10 цифр = 11 цифр всего
+            expect(uniquePhone).toHaveLength(11);
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/phone')
+                .set('Authorization', `Bearer ${token}`)
+                .send({ phone: uniquePhone })
+                .expect(200)
+                .expect(({ body }) => {
+                    // После нормализации номер будет сохранен как +7XXXXXXXXXX
+                    expect(body?.data?.phone).toMatch(/^\+7\d{10}$/);
+                });
+        });
+
+        it('200: accepts Russian format with formatting (+7 with spaces)', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const uniquePhone = TestDataFactory.uniquePhone();
+            // Форматируем номер с пробелами и скобками
+            const formattedPhone = `+7 (${uniquePhone.slice(2, 5)}) ${uniquePhone.slice(5, 8)}-${uniquePhone.slice(8, 10)}-${uniquePhone.slice(10)}`;
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/phone')
+                .set('Authorization', `Bearer ${token}`)
+                .send({ phone: formattedPhone })
+                .expect(200)
+                .expect(({ body }) => {
+                    // После нормализации номер будет сохранен как +7XXXXXXXXXX
+                    expect(body?.data?.phone).toBe(uniquePhone);
+                });
+        });
+
+        it('400: rejects invalid Russian format (10 digits)', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/phone')
+                .set('Authorization', `Bearer ${token}`)
+                .send({ phone: '7999123456' })
+                .expect(400);
+        });
+
+        it('400: rejects invalid Russian format (wrong prefix)', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
+            await request(app.getHttpServer())
+                .patch('/online-store/user/profile/phone')
+                .set('Authorization', `Bearer ${token}`)
+                .send({ phone: '69991234567' })
+                .expect(400);
         });
 
         it('409: rejects duplicate phone for another user', async () => {

@@ -5,35 +5,64 @@ describe('IsValidPhoneConstraint (unit)', () => {
     const validator = new IsValidPhoneConstraint();
 
     // Оптимизация: тестовые данные вынесены в константы
-    const validPhones = [
+    const validRussianPhones = [
         '+79161234567', // российский с +7
-        '+375291234567', // белорусский с +375
         '+7 916 123 45 67', // с пробелами
-        '+375 29 123 45 67', // с пробелами
         '+7-916-123-45-67', // с дефисами
-        '916-123-45-67', // с дефисами без +
         '+7(916)123-45-67', // со скобками
-        '8(916)123-45-67', // со скобками
-        '79161234567', // без +
-        '375291234567', // без +
-        '1234567', // минимум 7 цифр
-        '+123456789012345', // максимум 15 цифр
-        '123456789012345', // 15 цифр без +
         '+7 (916) 123-45-67', // нормализация
+        '79161234567', // без +, начинается с 7
+        '89991234567', // начинается с 8
+        '8 (999) 123-45-67', // с пробелами и скобками
+        '7-999-123-45-67', // с дефисами
     ];
 
-    const invalidShortPhones = ['123456', '+7123'];
-    const invalidLongPhones = ['+1234567890123456'];
-    const invalidWithLetters = ['+7916abc4567', 'phone123'];
+    const validInternationalPhones = [
+        '+375291234567', // белорусский с +375
+        '+375 29 123 45 67', // с пробелами
+        '+123456789012345', // максимум 15 цифр (международный)
+        '+1234567', // минимум 7 цифр (международный)
+    ];
+
+    const validPhones = [...validRussianPhones, ...validInternationalPhones];
+
+    const invalidRussianPhones = [
+        '9161234567', // 10 цифр, не 11
+        '916-123-45-67', // 10 цифр после очистки
+        '61234567890', // 11 цифр, но не начинается с 7 или 8
+        '12345678901', // 11 цифр, но не начинается с 7 или 8
+        '7999123456', // 10 цифр, не 11
+        '8999123456', // 10 цифр, не 11
+    ];
+
+    const invalidShortPhones = ['123456', '+7123', '1234567']; // 7 цифр - не российский формат
+    const invalidLongPhones = ['+1234567890123456', '799912345678901']; // слишком длинные
+    const invalidWithLetters = ['+7916abc4567', 'phone123', '8999abc4567'];
     const invalidWithSpecialChars = [
         '+7916*123*45*67',
         '+7916#1234567',
         '+7916@1234567',
+        '8916*123*45*67',
+    ];
+    const invalidInternationalPhones = [
+        '123456789012345', // 15 цифр без + (не российский формат)
+        '375291234567', // без +, не российский формат
     ];
 
     describe('Валидные номера телефонов', () => {
+        it('должен принять все валидные российские форматы (+7, 8, 7)', () => {
+            validRussianPhones.forEach((phone) => {
+                expect(validator.validate(phone)).toBe(true);
+            });
+        });
+
+        it('должен принять все валидные международные форматы', () => {
+            validInternationalPhones.forEach((phone) => {
+                expect(validator.validate(phone)).toBe(true);
+            });
+        });
+
         it('должен принять все валидные форматы номеров', () => {
-            // Оптимизация: один тест вместо восьми
             validPhones.forEach((phone) => {
                 expect(validator.validate(phone)).toBe(true);
             });
@@ -41,6 +70,12 @@ describe('IsValidPhoneConstraint (unit)', () => {
     });
 
     describe('Невалидные номера телефонов', () => {
+        it('должен отклонить невалидные российские форматы', () => {
+            invalidRussianPhones.forEach((phone) => {
+                expect(validator.validate(phone)).toBe(false);
+            });
+        });
+
         it('должен отклонить номера короче 7 цифр', () => {
             invalidShortPhones.forEach((phone) => {
                 expect(validator.validate(phone)).toBe(false);
@@ -65,8 +100,13 @@ describe('IsValidPhoneConstraint (unit)', () => {
             });
         });
 
+        it('должен отклонить невалидные международные форматы', () => {
+            invalidInternationalPhones.forEach((phone) => {
+                expect(validator.validate(phone)).toBe(false);
+            });
+        });
+
         it('должен отклонить невалидные входные данные', () => {
-            // Оптимизация: объединяем пустую строку и не-строки
             expect(validator.validate('')).toBe(false);
             expect(validator.validate(123 as unknown as string)).toBe(false);
             expect(validator.validate(null as unknown as string)).toBe(false);
@@ -79,7 +119,7 @@ describe('IsValidPhoneConstraint (unit)', () => {
     describe('Сообщение об ошибке', () => {
         it('должен вернуть корректное сообщение по умолчанию', () => {
             expect(validator.defaultMessage()).toBe(
-                'Номер телефона должен содержать от 7 до 15 цифр и может начинаться с +',
+                'Номер телефона должен быть в формате: +7XXXXXXXXXX, 8XXXXXXXXXX, 7XXXXXXXXXX или международный формат',
             );
         });
     });

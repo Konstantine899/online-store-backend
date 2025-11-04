@@ -1,5 +1,6 @@
 import { UserModel } from '@app/domain/models';
 import { IUserRepository } from '@app/domain/repositories';
+import { normalizeRussianPhone } from '@app/infrastructure/common/utils/phone.utils';
 import {
     CreateUserDto,
     UpdateUserDto,
@@ -470,13 +471,41 @@ export class UserRepository implements IUserRepository {
         userId: number,
         phone: string,
     ): Promise<UserModel> {
+        // Нормализуем номер телефона для сохранения в БД (E.164 формат)
+        const normalizedPhone = this.normalizePhone(phone);
         await this.userModel.update(
-            { phone },
+            { phone: normalizedPhone },
             { where: { id: userId }, fields: ['phone'] },
         );
         return this.userModel.findByPk(userId, {
             attributes: ['id', 'email', 'phone'],
         }) as Promise<UserModel>;
+    }
+
+    /**
+     * Нормализует номер телефона для сохранения в БД (E.164 формат)
+     * - Удаляет пробелы, дефисы, скобки
+     * - Российские номера (8 или 7) приводятся к формату +7
+     * - Международные номера сохраняются с префиксом +
+     */
+    private normalizePhone(phone: string): string {
+        // Удаляем все нецифровые символы кроме +
+        const cleanPhone = phone.replace(/[^\d+]/g, '');
+
+        // Используем утилиту для проверки и нормализации российских номеров
+        const normalizedRussian = normalizeRussianPhone(cleanPhone);
+        if (normalizedRussian !== cleanPhone) {
+            // Номер был нормализован (российский формат)
+            return normalizedRussian;
+        }
+
+        // Если уже начинается с +, возвращаем как есть
+        if (cleanPhone.startsWith('+')) {
+            return cleanPhone;
+        }
+
+        // Если не российский и нет +, добавляем +
+        return `+${cleanPhone}`;
     }
 
     public async updateFlags(
