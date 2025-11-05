@@ -1,9 +1,9 @@
+import type { IDecodedAccessToken } from '@app/domain/jwt';
 import type {
-    UserModel,
     RefreshTokenModel,
     RoleModel,
+    UserModel,
 } from '@app/domain/models';
-import type { IDecodedAccessToken } from '@app/domain/jwt';
 import type { Request } from 'express';
 
 export interface ITokenService {
@@ -55,5 +55,6 @@ export interface IRefreshTokenPayload {
 
 export interface IAccessTokenPayload {
     id: number;
+    tenantId: number;
     roles: RoleModel[];
 }

@@ -9,6 +9,7 @@ import {
 } from '@app/infrastructure/dto';
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
+import { UpdateUserStatusDto } from '@app/infrastructure/dto/user/update-user-status.dto';
 import { MetaData } from '@app/infrastructure/paginate';
 import {
     CreateUserResponse,
@@ -341,6 +342,27 @@ export class UserRepository implements IUserRepository {
         }) as Promise<UserModel>;
     }
 
+    /**
+     * Поиск пользователя по ID с учётом tenant isolation
+     * Оптимизация: один запрос вместо двух для tenant-scoped операций
+     */
+    public async findUserByIdAndTenant(
+        userId: number,
+        tenantId: number,
+    ): Promise<UserModel | null> {
+        return this.userModel.findOne({
+            where: { id: userId, tenantId },
+            attributes: [
+                'id',
+                'tenantId',
+                'email',
+                'isVipCustomer',
+                'isPremium',
+                'isBetaTester',
+            ],
+        });
+    }
+
     // Используем scope withRoles
     public async findRegisteredUser(
         userId: number,
@@ -614,6 +636,78 @@ export class UserRepository implements IUserRepository {
             this.handleSequelizeError(
                 error,
                 'обновление согласий пользователя',
+            );
+            throw error;
+        }
+    }
+
+    public async updateUserStatus(
+        userId: number,
+        dto: UpdateUserStatusDto,
+        tenantId: number,
+    ): Promise<UserModel> {
+        try {
+            // Проверяем существование пользователя С УЧЁТОМ TENANT
+            const user = await this.userModel.findOne({
+                where: { id: userId, tenantId },
+            });
+            if (!user) {
+                throw new NotFoundException(
+                    `Пользователь с ID ${userId} не найден или не принадлежит вашему tenant`,
+                );
+            }
+
+            // Формируем объект обновлений только для переданных полей
+            const updates: Partial<UserModel> = {};
+
+            if (dto.isVipCustomer !== undefined) {
+                updates.isVipCustomer = dto.isVipCustomer;
+            }
+            if (dto.isPremium !== undefined) {
+                updates.isPremium = dto.isPremium;
+            }
+            if (dto.isBetaTester !== undefined) {
+                updates.isBetaTester = dto.isBetaTester;
+            }
+
+            // Если нет изменений, возвращаем пользователя
+            if (Object.keys(updates).length === 0) {
+                return user;
+            }
+
+            // Обновляем только статусные поля С УЧЁТОМ TENANT
+            const [affectedRows] = await this.userModel.update(updates, {
+                where: { id: userId, tenantId },
+                fields: ['isVipCustomer', 'isPremium', 'isBetaTester'],
+            });
+
+            // Дополнительная проверка (на случай конкурентного доступа)
+            if (affectedRows === 0) {
+                throw new NotFoundException('Пользователь не найден');
+            }
+
+            // Возвращаем обновленную запись (оптимизированный запрос только нужных полей)
+            const updatedUser = await this.userModel.findByPk(userId, {
+                attributes: [
+                    'id',
+                    'email',
+                    'isVipCustomer',
+                    'isPremium',
+                    'isBetaTester',
+                ],
+            });
+
+            if (!updatedUser) {
+                throw new NotFoundException(
+                    'Пользователь не найден после обновления',
+                );
+            }
+
+            return updatedUser;
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'обновление статусных флагов пользователя',
             );
             throw error;
         }

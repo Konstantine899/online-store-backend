@@ -6,6 +6,7 @@ import type {
     UpdateConsentsDto,
     UpdateUserDto,
 } from '@app/infrastructure/dto';
+import type { UpdateUserStatusDto } from '@app/infrastructure/dto/user/update-user-status.dto';
 import type {
     AddRoleResponse,
     CheckResponse,
@@ -46,6 +47,12 @@ export interface IUserService {
     updateDateOfBirth(userId: number, dateOfBirth: string): Promise<UserModel>;
 
     updateConsents(userId: number, dto: UpdateConsentsDto): Promise<UserModel>;
+
+    updateUserStatus(
+        userId: number,
+        dto: UpdateUserStatusDto,
+        tenantId: number,
+    ): Promise<UserModel>;
 
     // User Statistics Methods
     getUserStats(): Promise<{

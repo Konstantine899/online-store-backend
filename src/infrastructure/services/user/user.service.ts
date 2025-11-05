@@ -14,6 +14,7 @@ import {
 } from '@app/infrastructure/dto';
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
+import { UpdateUserStatusDto } from '@app/infrastructure/dto/user/update-user-status.dto';
 import {
     RefreshTokenRepository,
     UserRepository,
@@ -609,6 +610,102 @@ export class UserService implements IUserService {
         this.invalidateUserCache(userId);
 
         return user as UserModel;
+    }
+
+    /**
+     * Обновляет статусные флаги пользователя (VIP, Premium, Beta Tester)
+     * Только для администраторов
+     * Логирует изменения для аудита
+     * С TENANT ISOLATION: администратор может изменять только пользователей своего тенанта
+     */
+    public async updateUserStatus(
+        userId: number,
+        dto: UpdateUserStatusDto,
+        tenantId: number,
+    ): Promise<UserModel> {
+        try {
+            // Оптимизация: один запрос вместо двух
+            // Получаем пользователя с учётом tenant isolation
+            const beforeUser = await this.userRepository.findUserByIdAndTenant(
+                userId,
+                tenantId,
+            );
+
+            if (!beforeUser) {
+                // Логируем попытку доступа к несуществующему или чужому пользователю
+                this.logger.warn({
+                    message:
+                        'Попытка изменения несуществующего пользователя или пользователя из другого tenant',
+                    adminTenantId: tenantId,
+                    targetUserId: userId,
+                });
+                this.notFound(
+                    `Пользователь с ID ${userId} не найден или не принадлежит вашему tenant`,
+                );
+            }
+
+            // Обновляем статусные флаги С УЧЁТОМ TENANT
+            const user = await this.userRepository.updateUserStatus(
+                userId,
+                dto,
+                tenantId,
+            );
+
+            // Логируем изменения для аудита (важно для административных операций)
+            const before = {
+                isVipCustomer: beforeUser?.isVipCustomer ?? false,
+                isPremium: beforeUser?.isPremium ?? false,
+                isBetaTester: beforeUser?.isBetaTester ?? false,
+            };
+            const after = {
+                isVipCustomer: user.isVipCustomer ?? false,
+                isPremium: user.isPremium ?? false,
+                isBetaTester: user.isBetaTester ?? false,
+            };
+
+            this.logger.info(
+                {
+                    userId,
+                    before,
+                    after,
+                    changes: {
+                        isVipCustomer:
+                            before.isVipCustomer !== after.isVipCustomer
+                                ? {
+                                      from: before.isVipCustomer,
+                                      to: after.isVipCustomer,
+                                  }
+                                : undefined,
+                        isPremium:
+                            before.isPremium !== after.isPremium
+                                ? {
+                                      from: before.isPremium,
+                                      to: after.isPremium,
+                                  }
+                                : undefined,
+                        isBetaTester:
+                            before.isBetaTester !== after.isBetaTester
+                                ? {
+                                      from: before.isBetaTester,
+                                      to: after.isBetaTester,
+                                  }
+                                : undefined,
+                    },
+                },
+                `Обновление статусных флагов пользователя ${userId}`,
+            );
+
+            // Инвалидируем кэш пользователя
+            this.invalidateUserCache(userId);
+
+            return user;
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'обновление статусных флагов пользователя',
+            );
+            throw error;
+        }
     }
 
     // Admin actions

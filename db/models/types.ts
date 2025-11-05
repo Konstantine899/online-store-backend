@@ -23,6 +23,7 @@ export interface TenantModel
 // User types
 export interface UserAttributes {
     id: number;
+    tenant_id: number;
     email: string;
     password: string;
     phone?: string;
@@ -35,7 +36,7 @@ export interface UserAttributes {
 
 export type UserCreationAttributes = Optional<
     UserAttributes,
-    'id' | 'created_at' | 'updated_at'
+    'id' | 'tenant_id' | 'created_at' | 'updated_at'
 >;
 
 export interface UserAddressAttributes {

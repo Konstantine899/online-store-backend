@@ -74,4 +74,5 @@ export { RemoveUserResponse } from './user/remove-user.response';
 export { UpdateConsentsResponse } from './user/update-consents.response';
 export { UpdateDateOfBirthResponse } from './user/update-date-of-birth.response';
 export { UpdateUserPhoneResponse } from './user/update-user-phone.response';
+export { UpdateUserStatusResponse } from './user/update-user-status.response';
 export { UpdateUserResponse } from './user/update-user-response';

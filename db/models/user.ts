@@ -8,6 +8,7 @@ class User
     implements UserAttributes
 {
     declare id: number;
+    declare tenant_id: number;
     declare email: string;
     declare password: string;
     declare phone?: string;
@@ -53,6 +54,14 @@ class User
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static associate(models: Record<string, any>): void {
+        // Tenant association (multi-tenant support)
+        this.belongsTo(models.tenant, {
+            as: 'tenant',
+            foreignKey: 'tenant_id',
+            onDelete: 'CASCADE',
+            onUpdate: 'CASCADE',
+        });
+
         this.hasMany(models.refreshToken, {
             as: TABLE_NAMES.REFRESH_TOKEN,
             onDelete: 'CASCADE',
@@ -83,6 +92,16 @@ export default function defineUser(sequelize: Sequelize): typeof User {
                 primaryKey: true,
                 autoIncrement: true,
                 allowNull: false,
+            } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+            tenant_id: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                references: {
+                    model: 'tenants',
+                    key: 'id',
+                },
+                onUpdate: 'CASCADE',
+                onDelete: 'CASCADE',
             } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             email: {
                 type: DataTypes.STRING(255),

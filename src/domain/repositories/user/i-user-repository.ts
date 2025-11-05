@@ -2,6 +2,7 @@ import type { UserModel } from '@app/domain/models';
 import type { CreateUserDto, UpdateConsentsDto } from '@app/infrastructure/dto';
 import type { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import type { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
+import type { UpdateUserStatusDto } from '@app/infrastructure/dto/user/update-user-status.dto';
 import type {
     CreateUserResponse,
     GetPaginatedUsersResponse,
@@ -39,6 +40,12 @@ export interface IUserRepository {
     updateDateOfBirth(userId: number, dateOfBirth: string): Promise<UserModel>;
 
     updateConsents(userId: number, dto: UpdateConsentsDto): Promise<UserModel>;
+
+    updateUserStatus(
+        userId: number,
+        dto: UpdateUserStatusDto,
+        tenantId: number,
+    ): Promise<UserModel>;
 
     updateFlags(
         userId: number,

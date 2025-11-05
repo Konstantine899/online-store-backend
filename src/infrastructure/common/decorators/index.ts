@@ -60,4 +60,5 @@ export { RemoveUserSwaggerDecorator } from './swagger/user/remove-user-swagger-d
 export { UpdateConsentsSwaggerDecorator } from './swagger/user/update-consents.swagger';
 export { UpdateDateOfBirthSwaggerDecorator } from './swagger/user/update-date-of-birth.swagger';
 export { UpdateUserPhoneSwaggerDecorator } from './swagger/user/update-user-phone.swagger';
+export { UpdateUserStatusSwaggerDecorator } from './swagger/user/update-user-status.swagger';
 export { UpdateUserSwaggerDecorator } from './swagger/user/update-user-swagger-decorator';

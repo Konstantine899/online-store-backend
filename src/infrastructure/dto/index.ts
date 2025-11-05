@@ -23,5 +23,6 @@ export { RemoveRoleDto } from './user/remove-role.dto';
 export { UpdateConsentsDto } from './user/update-consents.dto';
 export { UpdateDateOfBirthDto } from './user/update-date-of-birth.dto';
 export { UpdateUserPhoneDto } from './user/update-user-phone.dto';
+export { UpdateUserStatusDto } from './user/update-user-status.dto';
 export { UpdateUserProfileDto } from './user/update-user-profile.dto';
 export { UpdateUserDto } from './user/update-user.dto';

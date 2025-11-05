@@ -6,6 +6,7 @@ import {
     UpdateDateOfBirthDto,
     UpdateUserProfileDto,
 } from '@app/infrastructure/dto';
+import { UpdateUserStatusDto } from '@app/infrastructure/dto/user/update-user-status.dto';
 import { UpdateUserDto } from '@app/infrastructure/dto/user/update-user.dto';
 import { UserService } from '@app/infrastructure/services';
 import {
@@ -23,6 +24,7 @@ import {
     Put,
     Query,
     Req,
+    UnauthorizedException,
     UseGuards,
 } from '@nestjs/common';
 
@@ -40,6 +42,7 @@ import {
 import { ChangePasswordSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/change-password.swagger';
 import { UpdateConsentsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-consents.swagger';
 import { UpdateDateOfBirthSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-date-of-birth.swagger';
+import { UpdateUserStatusSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-status.swagger';
 import {
     AuthGuard,
     BruteforceGuard,
@@ -72,6 +75,7 @@ import {
     UpdateDateOfBirthResponse,
     UpdateUserPhoneResponse,
     UpdateUserResponse,
+    UpdateUserStatusResponse,
 } from '@app/infrastructure/responses';
 
 import { IUserController } from '@app/domain/controllers';
@@ -497,6 +501,45 @@ export class UserController implements IUserController {
     async getUserStats(): Promise<{ data: unknown }> {
         const stats = await this.userService.getUserStats();
         return this.createResponse(stats);
+    }
+
+    // ===== Admin User Status Management =====
+    /**
+     * Обновляет статусные флаги пользователя (VIP, Premium, Beta Tester)
+     * Доступно только администраторам (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, TENANT_ADMIN, ADMIN)
+     * С TENANT ISOLATION: администратор может изменять только пользователей своего тенанта
+     */
+    @UpdateUserStatusSwaggerDecorator()
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Patch(':id/status')
+    @HttpCode(HttpStatus.OK)
+    async updateUserStatus(
+        @Param('id', ParseIntPipe) id: number,
+        @Body(validationPipe) dto: UpdateUserStatusDto,
+        @Req() req: AuthenticatedRequest,
+    ): Promise<UpdateUserStatusResponse> {
+        // Извлекаем tenantId из JWT токена
+        const currentUser = req.user as { tenantId?: number };
+        const tenantId = currentUser.tenantId;
+
+        if (!tenantId) {
+            throw new UnauthorizedException(
+                'Tenant ID не найден в токене авторизации',
+            );
+        }
+
+        const updatedUser = await this.userService.updateUserStatus(
+            id,
+            dto,
+            tenantId,
+        );
+        return {
+            id: updatedUser.id,
+            isVipCustomer: updatedUser.isVipCustomer ?? false,
+            isPremium: updatedUser.isPremium ?? false,
+            isBetaTester: updatedUser.isBetaTester ?? false,
+        };
     }
 
     // ===== Get User by ID (moved to end to avoid route conflicts) =====

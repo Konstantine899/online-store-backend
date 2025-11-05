@@ -64,6 +64,7 @@ export class TokenService implements ITokenService {
     public async generateAccessToken(user: UserModel): Promise<string> {
         const payload: IAccessTokenPayload = {
             id: user.id,
+            tenantId: user.tenantId,
             roles: user.roles,
         };
         const options: SignOptions = {

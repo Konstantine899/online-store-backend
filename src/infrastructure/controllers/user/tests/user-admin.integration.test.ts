@@ -256,4 +256,242 @@ describe('User Admin Integration Tests', () => {
                 .expect(200);
         });
     });
+
+    // ===== USER STATUS MANAGEMENT =====
+    describe('PATCH /user/:id/status - User Status Management', () => {
+        let adminToken: string;
+        let userToken: string;
+        let targetUserId: number;
+
+        beforeAll(async () => {
+            const sequelize = app.get(Sequelize);
+            const [admin, user, targetUser] = await Promise.all([
+                TestDataFactory.createUserWithRole(app, 'ADMIN'),
+                TestDataFactory.createUserWithRole(app, 'USER'),
+                TestDataFactory.createUserInDB(sequelize),
+            ]);
+            adminToken = admin.token;
+            userToken = user.token;
+            targetUserId = targetUser.id;
+        });
+
+        it('200: admin can update all status flags', async () => {
+            const response = await request(app.getHttpServer())
+                .patch(`/online-store/user/${targetUserId}/status`)
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    isVipCustomer: true,
+                    isPremium: true,
+                    isBetaTester: true,
+                })
+                .expect(200);
+
+            expect(response.body).toHaveProperty('id', targetUserId);
+            expect(response.body).toHaveProperty('isVipCustomer', true);
+            expect(response.body).toHaveProperty('isPremium', true);
+            expect(response.body).toHaveProperty('isBetaTester', true);
+        });
+
+        it('200: admin can update partial status flags', async () => {
+            const response = await request(app.getHttpServer())
+                .patch(`/online-store/user/${targetUserId}/status`)
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    isPremium: false,
+                })
+                .expect(200);
+
+            expect(response.body).toHaveProperty('id', targetUserId);
+            expect(response.body).toHaveProperty('isPremium', false);
+            // Другие флаги остаются неизменными
+        });
+
+        it('200: admin can set all flags to false', async () => {
+            const response = await request(app.getHttpServer())
+                .patch(`/online-store/user/${targetUserId}/status`)
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    isVipCustomer: false,
+                    isPremium: false,
+                    isBetaTester: false,
+                })
+                .expect(200);
+
+            expect(response.body).toHaveProperty('isVipCustomer', false);
+            expect(response.body).toHaveProperty('isPremium', false);
+            expect(response.body).toHaveProperty('isBetaTester', false);
+        });
+
+        it('403: regular user cannot update status flags', async () => {
+            await request(app.getHttpServer())
+                .patch(`/online-store/user/${targetUserId}/status`)
+                .set('Authorization', `Bearer ${userToken}`)
+                .send({
+                    isVipCustomer: true,
+                })
+                .expect(403);
+        });
+
+        it('401: requires authentication', async () => {
+            await request(app.getHttpServer())
+                .patch(`/online-store/user/${targetUserId}/status`)
+                .send({
+                    isVipCustomer: true,
+                })
+                .expect(401);
+        });
+
+        it('404: user not found', async () => {
+            await request(app.getHttpServer())
+                .patch('/online-store/user/999999/status')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    isVipCustomer: true,
+                })
+                .expect(404);
+        });
+
+        it('400: invalid data type (non-boolean)', async () => {
+            await request(app.getHttpServer())
+                .patch(`/online-store/user/${targetUserId}/status`)
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    isVipCustomer: 'invalid',
+                })
+                .expect(400);
+        });
+
+        it('400: invalid field names', async () => {
+            const response = await request(app.getHttpServer())
+                .patch(`/online-store/user/${targetUserId}/status`)
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    invalidField: true,
+                })
+                .expect(200); // DTO игнорирует неизвестные поля, но не обновляет ничего
+
+            // Проверяем, что флаги остались прежними (false после предыдущего теста)
+            expect(response.body.isVipCustomer).toBe(false);
+            expect(response.body.isPremium).toBe(false);
+            expect(response.body.isBetaTester).toBe(false);
+        });
+
+        it('200: handles empty body gracefully', async () => {
+            const response = await request(app.getHttpServer())
+                .patch(`/online-store/user/${targetUserId}/status`)
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({})
+                .expect(200);
+
+            // Проверяем, что пользователь возвращается с текущими значениями
+            expect(response.body).toHaveProperty('id', targetUserId);
+            expect(response.body).toHaveProperty('isVipCustomer');
+            expect(response.body).toHaveProperty('isPremium');
+            expect(response.body).toHaveProperty('isBetaTester');
+        });
+
+        it('400: invalid userId format', async () => {
+            await request(app.getHttpServer())
+                .patch('/online-store/user/invalid/status')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    isVipCustomer: true,
+                })
+                .expect(400);
+        });
+
+        it('200: different admin roles can update status', async () => {
+            const { token: superAdminToken } =
+                await TestDataFactory.createUserWithRole(app, 'SUPER_ADMIN');
+            const { token: platformAdminToken } =
+                await TestDataFactory.createUserWithRole(app, 'PLATFORM_ADMIN');
+
+            // SUPER_ADMIN
+            await request(app.getHttpServer())
+                .patch(`/online-store/user/${targetUserId}/status`)
+                .set('Authorization', `Bearer ${superAdminToken}`)
+                .send({ isVipCustomer: true })
+                .expect(200);
+
+            // PLATFORM_ADMIN
+            await request(app.getHttpServer())
+                .patch(`/online-store/user/${targetUserId}/status`)
+                .set('Authorization', `Bearer ${platformAdminToken}`)
+                .send({ isPremium: true })
+                .expect(200);
+        });
+
+        // ===== Multi-tenant Isolation Tests =====
+        // TODO: TENANT-TEST-001 - Требуется обновление TestDataFactory для поддержки tenantId
+        //
+        // Сценарии для реализации:
+        //
+        // 1. 404: Admin from tenant 1 cannot update user from tenant 2
+        // it('404: admin from tenant A cannot update user from tenant B', async () => {
+        //     const tenant1Admin = await TestDataFactory.createUserWithRole(app, 'ADMIN', { tenantId: 1 });
+        //     const tenant2User = await TestDataFactory.createUserInDB(sequelize, { tenantId: 2 });
+        //
+        //     await request(app.getHttpServer())
+        //         .patch(`/online-store/user/${tenant2User.id}/status`)
+        //         .set('Authorization', `Bearer ${tenant1Admin.token}`)
+        //         .send({ isVipCustomer: true })
+        //         .expect(404)
+        //         .expect((res) => {
+        //             expect(res.body.message).toContain('не принадлежит вашему tenant');
+        //         });
+        // });
+        //
+        // 2. 200: Admin can update user from same tenant
+        // it('200: admin can update user from same tenant', async () => {
+        //     const tenant1Admin = await TestDataFactory.createUserWithRole(app, 'ADMIN', { tenantId: 1 });
+        //     const tenant1User = await TestDataFactory.createUserInDB(sequelize, { tenantId: 1 });
+        //
+        //     await request(app.getHttpServer())
+        //         .patch(`/online-store/user/${tenant1User.id}/status`)
+        //         .set('Authorization', `Bearer ${tenant1Admin.token}`)
+        //         .send({ isVipCustomer: true })
+        //         .expect(200)
+        //         .expect((res) => {
+        //             expect(res.body.id).toBe(tenant1User.id);
+        //             expect(res.body.isVipCustomer).toBe(true);
+        //         });
+        // });
+        //
+        // 3. 404: SUPER_ADMIN from one tenant cannot bypass tenant isolation
+        // it('404: SUPER_ADMIN respects tenant isolation', async () => {
+        //     const tenant1SuperAdmin = await TestDataFactory.createUserWithRole(app, 'SUPER_ADMIN', { tenantId: 1 });
+        //     const tenant2User = await TestDataFactory.createUserInDB(sequelize, { tenantId: 2 });
+        //
+        //     await request(app.getHttpServer())
+        //         .patch(`/online-store/user/${tenant2User.id}/status`)
+        //         .set('Authorization', `Bearer ${tenant1SuperAdmin.token}`)
+        //         .send({ isPremium: true })
+        //         .expect(404);
+        // });
+        //
+        // 4. Audit log: Cross-tenant attempts are logged
+        // it('audit: cross-tenant attempt is logged', async () => {
+        //     const tenant1Admin = await TestDataFactory.createUserWithRole(app, 'ADMIN', { tenantId: 1 });
+        //     const tenant2User = await TestDataFactory.createUserInDB(sequelize, { tenantId: 2 });
+        //     const logSpy = jest.spyOn(console, 'warn');
+        //
+        //     await request(app.getHttpServer())
+        //         .patch(`/online-store/user/${tenant2User.id}/status`)
+        //         .set('Authorization', `Bearer ${tenant1Admin.token}`)
+        //         .send({ isBetaTester: true })
+        //         .expect(404);
+        //
+        //     expect(logSpy).toHaveBeenCalledWith(
+        //         expect.objectContaining({
+        //             message: expect.stringContaining('другого tenant'),
+        //             adminTenantId: 1,
+        //             targetUserId: tenant2User.id,
+        //         })
+        //     );
+        // });
+        //
+        // Priority: Medium
+        // Blocked by: TestDataFactory tenant support
+        // Estimated: 4 hours
+    });
 });

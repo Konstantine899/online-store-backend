@@ -16,6 +16,7 @@ import { UserRoleModel } from './user-role.model';
 interface IUserCreationAttributes {
     email: string;
     password: string;
+    tenantId?: number;
     phone?: string;
     firstName?: string;
     lastName?: string;
@@ -28,6 +29,7 @@ interface IUserCreationAttributes {
 
 interface IUserModel {
     id: number;
+    tenantId: number;
     email: string;
     password: string;
     phone?: string;
@@ -50,6 +52,10 @@ interface IUserModel {
     isTwoFactorEnabled?: boolean;
     isDeleted?: boolean;
     isSuspended?: boolean;
+    // status flags (admin-controlled)
+    isVipCustomer?: boolean;
+    isPremium?: boolean;
+    isBetaTester?: boolean;
     // preferences
     preferredLanguage?: string;
     timezone?: string;
@@ -78,7 +84,7 @@ interface IUserModel {
     scopes: {
         // Scope для аутентификации - только необходимые поля
         forAuth: {
-            attributes: ['id', 'email'],
+            attributes: ['id', 'tenantId', 'email'],
             include: [
                 {
                     model: RoleModel,
@@ -105,6 +111,10 @@ interface IUserModel {
         verified: {
             where: { isVerified: true },
         },
+        // Tenant isolation scope
+        byTenant: (tenantId: number) => ({
+            where: { tenantId },
+        }),
     },
 })
 export class UserModel
@@ -117,6 +127,12 @@ export class UserModel
         autoIncrement: true,
     })
     declare id: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    declare tenantId: number;
 
     @Column({
         type: DataType.STRING(255),
@@ -216,6 +232,16 @@ export class UserModel
 
     @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
     declare isSuspended?: boolean;
+
+    // Статусные флаги (управляются администраторами)
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isVipCustomer?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isPremium?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isBetaTester?: boolean;
 
     // Предпочтения
     @Column({ type: DataType.STRING(10), allowNull: false, defaultValue: 'ru' })

@@ -8,6 +8,7 @@ import type {
     UpdateUserDto,
     UpdateUserProfileDto,
 } from '@app/infrastructure/dto';
+import type { UpdateUserStatusDto } from '@app/infrastructure/dto/user/update-user-status.dto';
 import {
     RefreshTokenRepository,
     UserRepository,
@@ -127,7 +128,9 @@ describe('UserService', () => {
                         updatePhone: jest.fn(),
                         updateDateOfBirth: jest.fn(),
                         updateConsents: jest.fn(),
+                        updateUserStatus: jest.fn(),
                         findUserByPkId: jest.fn(),
+                        findUserByIdAndTenant: jest.fn(),
                         updateUserProfile: jest.fn(),
                         removeUser: jest.fn(),
                         findRegisteredUser: jest.fn(),
@@ -922,6 +925,222 @@ describe('UserService', () => {
 
             await expect(service.updateConsents(1, dto)).rejects.toThrow(
                 'Некорректные данные: обновление согласий',
+            );
+        });
+    });
+
+    describe('updateUserStatus', () => {
+        it('должен успешно обновить все статусные флаги', async () => {
+            const beforeUser = {
+                ...mockUser,
+                tenantId: 1,
+                isVipCustomer: false,
+                isPremium: false,
+                isBetaTester: false,
+            } as UserModel;
+            const updatedUser = {
+                ...mockUser,
+                tenantId: 1,
+                isVipCustomer: true,
+                isPremium: true,
+                isBetaTester: true,
+            } as UserModel;
+
+            (
+                userRepository.findUserByIdAndTenant as jest.Mock
+            ).mockResolvedValue(beforeUser);
+            (userRepository.updateUserStatus as jest.Mock).mockResolvedValue(
+                updatedUser,
+            );
+
+            const dto: UpdateUserStatusDto = {
+                isVipCustomer: true,
+                isPremium: true,
+                isBetaTester: true,
+            };
+
+            const result = await service.updateUserStatus(1, dto, 1);
+
+            expect(result).toBe(updatedUser);
+            expect(userRepository.findUserByIdAndTenant).toHaveBeenCalledWith(
+                1,
+                1,
+            );
+            expect(userRepository.updateUserStatus).toHaveBeenCalledWith(
+                1,
+                dto,
+                1,
+            );
+        });
+
+        it('должен успешно обновить только isVipCustomer', async () => {
+            const beforeUser = {
+                ...mockUser,
+                tenantId: 1,
+                isVipCustomer: false,
+                isPremium: false,
+                isBetaTester: false,
+            } as UserModel;
+            const updatedUser = {
+                ...mockUser,
+                tenantId: 1,
+                isVipCustomer: true,
+                isPremium: false,
+                isBetaTester: false,
+            } as UserModel;
+
+            (
+                userRepository.findUserByIdAndTenant as jest.Mock
+            ).mockResolvedValue(beforeUser);
+            (userRepository.updateUserStatus as jest.Mock).mockResolvedValue(
+                updatedUser,
+            );
+
+            const dto: UpdateUserStatusDto = {
+                isVipCustomer: true,
+            };
+
+            const result = await service.updateUserStatus(1, dto, 1);
+
+            expect(result).toBe(updatedUser);
+            expect(userRepository.updateUserStatus).toHaveBeenCalledWith(
+                1,
+                dto,
+                1,
+            );
+        });
+
+        it('должен успешно обновить только isPremium', async () => {
+            const beforeUser = {
+                ...mockUser,
+                tenantId: 1,
+                isVipCustomer: false,
+                isPremium: false,
+                isBetaTester: false,
+            } as UserModel;
+            const updatedUser = {
+                ...mockUser,
+                tenantId: 1,
+                isVipCustomer: false,
+                isPremium: true,
+                isBetaTester: false,
+            } as UserModel;
+
+            (
+                userRepository.findUserByIdAndTenant as jest.Mock
+            ).mockResolvedValue(beforeUser);
+            (userRepository.updateUserStatus as jest.Mock).mockResolvedValue(
+                updatedUser,
+            );
+
+            const dto: UpdateUserStatusDto = {
+                isPremium: true,
+            };
+
+            const result = await service.updateUserStatus(1, dto, 1);
+
+            expect(result).toBe(updatedUser);
+            expect(userRepository.updateUserStatus).toHaveBeenCalledWith(
+                1,
+                dto,
+                1,
+            );
+        });
+
+        it('должен успешно обновить только isBetaTester', async () => {
+            const beforeUser = {
+                ...mockUser,
+                tenantId: 1,
+                isVipCustomer: false,
+                isPremium: false,
+                isBetaTester: false,
+            } as UserModel;
+            const updatedUser = {
+                ...mockUser,
+                tenantId: 1,
+                isVipCustomer: false,
+                isPremium: false,
+                isBetaTester: true,
+            } as UserModel;
+
+            (
+                userRepository.findUserByIdAndTenant as jest.Mock
+            ).mockResolvedValue(beforeUser);
+            (userRepository.updateUserStatus as jest.Mock).mockResolvedValue(
+                updatedUser,
+            );
+
+            const dto: UpdateUserStatusDto = {
+                isBetaTester: true,
+            };
+
+            const result = await service.updateUserStatus(1, dto, 1);
+
+            expect(result).toBe(updatedUser);
+            expect(userRepository.updateUserStatus).toHaveBeenCalledWith(
+                1,
+                dto,
+                1,
+            );
+        });
+
+        it('должен выбросить NotFoundException если пользователь не найден', async () => {
+            (
+                userRepository.findUserByIdAndTenant as jest.Mock
+            ).mockResolvedValue(null);
+
+            const dto: UpdateUserStatusDto = {
+                isVipCustomer: true,
+            };
+
+            await expect(service.updateUserStatus(999, dto, 1)).rejects.toThrow(
+                new NotFoundException({
+                    status: HttpStatus.NOT_FOUND,
+                    message:
+                        'Пользователь с ID 999 не найден или не принадлежит вашему tenant',
+                }),
+            );
+        });
+
+        it('должен пробросить ошибку репозитория если она не обрабатывается', async () => {
+            const dbError = new Error('Database error') as NamedError;
+            dbError.name = 'SequelizeDatabaseError';
+            const beforeUser = { ...mockUser, tenantId: 1 };
+            (
+                userRepository.findUserByIdAndTenant as jest.Mock
+            ).mockResolvedValue(beforeUser);
+            (userRepository.updateUserStatus as jest.Mock).mockRejectedValue(
+                dbError,
+            );
+
+            const dto: UpdateUserStatusDto = {
+                isVipCustomer: true,
+            };
+
+            // handleSequelizeError не обрабатывает SequelizeDatabaseError,
+            // поэтому ошибка пробрасывается дальше
+            await expect(service.updateUserStatus(1, dto, 1)).rejects.toThrow(
+                dbError,
+            );
+        });
+
+        it('должен обработать ошибку валидации как BadRequestException', async () => {
+            const validationError = new Error('Validation error') as NamedError;
+            validationError.name = 'SequelizeValidationError';
+            const beforeUser = { ...mockUser, tenantId: 1 };
+            (
+                userRepository.findUserByIdAndTenant as jest.Mock
+            ).mockResolvedValue(beforeUser);
+            (userRepository.updateUserStatus as jest.Mock).mockRejectedValue(
+                validationError,
+            );
+
+            const dto: UpdateUserStatusDto = {
+                isVipCustomer: true,
+            };
+
+            await expect(service.updateUserStatus(1, dto, 1)).rejects.toThrow(
+                'Некорректные данные: обновление статусных флагов пользователя',
             );
         });
     });
