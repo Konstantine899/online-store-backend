@@ -770,6 +770,23 @@ export class UserService implements IUserService {
     }
 
     // ===== Self-service verification =====
+
+    /**
+     * Запрашивает код верификации для email или телефона с tenant isolation.
+     *
+     * Генерирует уникальный код, сохраняет хэш в БД и отправляет через email/SMS провайдер.
+     * Код действителен 10 минут, максимум 5 попыток ввода. Защищён cooldown (60 сек).
+     *
+     * @param {number} userId - ID пользователя
+     * @param {'email' | 'phone'} channel - Канал верификации
+     * @param {number} tenantId - ID тенанта для изоляции
+     *
+     * @throws {NotFoundException} Пользователь не найден или не принадлежит tenant
+     * @throws {BadRequestException} Cooldown не истёк или номер телефона отсутствует
+     * @throws {Error} Провайдер email/SMS вернул ошибку
+     *
+     * @returns {Promise<void>}
+     */
     public async requestVerificationCode(
         userId: number,
         channel: 'email' | 'phone',
@@ -794,6 +811,23 @@ export class UserService implements IUserService {
         }
     }
 
+    /**
+     * Подтверждает верификацию email или телефона по введённому коду.
+     *
+     * Проверяет код, срок действия, количество попыток и tenant isolation.
+     * При успехе обновляет is_email_verified/is_phone_verified, verified_at
+     * и инвалидирует кэш пользователя.
+     *
+     * @param {number} userId - ID пользователя
+     * @param {'email' | 'phone'} channel - Канал верификации
+     * @param {string} code - Введённый код (6 hex символов)
+     * @param {number} tenantId - ID тенанта для изоляции
+     *
+     * @throws {NotFoundException} Пользователь не найден или не принадлежит tenant
+     * @throws {BadRequestException} Код неверный, истёк или превышены попытки (5 max)
+     *
+     * @returns {Promise<void>}
+     */
     public async confirmVerificationCode(
         userId: number,
         channel: 'email' | 'phone',

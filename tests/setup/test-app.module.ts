@@ -50,6 +50,16 @@ import * as process from 'process';
                 ttl: 60 * 1000, // 1 минута
                 limit: 3, // 3 попытки регистрации в минуту
             },
+            {
+                name: 'verification-request',
+                ttl: 5 * 60 * 1000, // 5 минут
+                limit: 3, // 3 запроса кода за 5 минут
+            },
+            {
+                name: 'verification-confirm',
+                ttl: 5 * 60 * 1000, // 5 минут
+                limit: 5, // 5 попыток подтверждения за 5 минут
+            },
         ]),
         SequelizeModule.forRootAsync({
             imports: [ConfigModule],

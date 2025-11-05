@@ -20,3 +20,10 @@ export const VERIFICATION_CODE_MAX_ATTEMPTS = 5;
  * 3 байта = 6 hex символов
  */
 export const VERIFICATION_CODE_LENGTH_BYTES = 3;
+
+/**
+ * Cooldown период между запросами кодов верификации
+ * Пользователь не может запросить новый код, пока не истечет cooldown
+ * По умолчанию: 60 секунд (1 минута)
+ */
+export const VERIFICATION_CODE_COOLDOWN_MS = 60 * 1000;

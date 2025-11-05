@@ -29,4 +29,3 @@ export class UpdateUserStatusResponse {
     })
     declare readonly isBetaTester: boolean;
 }
-

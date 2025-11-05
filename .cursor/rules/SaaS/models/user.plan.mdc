@@ -233,6 +233,9 @@ tasks:
 
 - id: USER-001-06
   title: Добавить API endpoints для верификации email и телефона
+  status: COMPLETED
+  commit: "0cdeaadd48aaca3b1ddf88a65030c7ef903dc8bf"
+  completed_at: "2025-11-05T17:13:07Z"
   branch: "feature/user/USER-001/add-verification-api"
   files_scope:
     - "src/domain/models/user.model.ts"
@@ -243,34 +246,35 @@ tasks:
     - "src/infrastructure/responses/user/\*\*"
     - "src/infrastructure/common/decorators/swagger/user/\*\*"
       steps:
-    - проверить существование флагов is_email_verified, is_phone_verified, email_verified_at, phone_verified_at в БД (уже есть)
-    - обновить UserModel (Domain) с флагами верификации (если нужно)
-    - добавить методы для верификации в UserService
-    - интегрировать с NotificationService для отправки кодов верификации
-    - создать VerifyEmailDto, VerifyPhoneDto с валидацией кодов
-    - создать VerifyEmailResponse, VerifyPhoneResponse с Swagger декораторами
-    - создать кастомные Swagger декораторы @VerifyEmailSwaggerDecorator(), @VerifyPhoneSwaggerDecorator()
-    - добавить endpoints для верификации (POST /users/verify/email, POST /users/verify/phone)
-    - добавить проверку tenant isolation
-    - написать тесты процесса верификации (с интеграцией NotificationService и tenant isolation)
-    - обновить Swagger документацию
+    - ✅ проверить существование флагов is_email_verified, is_phone_verified, email_verified_at, phone_verified_at в БД (уже есть)
+    - ✅ обновить UserModel (Domain) с флагами верификации (если нужно)
+    - ✅ добавить методы для верификации в UserService
+    - ✅ интегрировать с NotificationService для отправки кодов верификации
+    - ✅ создать VerifyEmailDto, VerifyPhoneDto с валидацией кодов
+    - ✅ создать VerifyEmailResponse, VerifyPhoneResponse с Swagger декораторами
+    - ✅ создать кастомные Swagger декораторы @VerifyEmailSwaggerDecorator(), @VerifyPhoneSwaggerDecorator()
+    - ✅ добавить endpoints для верификации (POST /users/verify/email, POST /users/verify/phone)
+    - ✅ добавить проверку tenant isolation
+    - ✅ написать тесты процесса верификации (с интеграцией NotificationService и tenant isolation)
+    - ✅ обновить Swagger документацию
       dod:
-    - UserModel содержит флаги верификации
-    - интеграция с NotificationService для отправки кодов работает
-    - API endpoints для верификации работают
-    - Response классы созданы с Swagger декораторами
-    - кастомные Swagger декораторы созданы
-    - tenant isolation обеспечена
-    - тесты покрывают процесс верификации (с NotificationService и tenant isolation)
-    - Swagger документация обновлена
+    - ✅ UserModel содержит флаги верификации
+    - ✅ интеграция с NotificationService для отправки кодов работает
+    - ✅ API endpoints для верификации работают (4 endpoint: request/confirm для email & phone)
+    - ✅ Response классы созданы с Swagger декораторами (RequestVerificationCodeResponse, ConfirmVerificationCodeResponse)
+    - ✅ кастомные Swagger декораторы созданы (4 декоратора: request/confirm для email & phone)
+    - ✅ tenant isolation обеспечена на всех слоях (Repository/Service/Controller)
+    - ✅ тесты покрывают процесс верификации (12 unit + 7 integration с NotificationService и tenant isolation)
+    - ✅ Swagger документация обновлена
+    - ✅ код рефакторинг после ревью (DRY, config, cache, logging)
       pre_commit_workflow: "ОБЫЧНЫЙ"
       pre_commit_steps:
-    - "«Ревью» → verification logic, code validation, NotificationService integration, tenant isolation"
-    - "«Автофикс» → linter/prettier"
-    - "Тесты: verification flow tests (with NotificationService and tenant isolation)"
-    - "«Коммит» → feat(user): USER-001-06 complete"
+    - "✅ «Ревью» → verification logic, code validation, NotificationService integration, tenant isolation"
+    - "✅ «Автофикс» → linter/prettier"
+    - "✅ Тесты: verification flow tests (with NotificationService and tenant isolation)"
+    - "✅ «Коммит» → feat(user): USER-001-06 complete"
       gate:
-    - require: "Одобряю USER-001-06"
+    - ✅ require: "Одобряю USER-001-06"
 
 # Фаза 3: Адреса пользователей
 

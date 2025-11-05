@@ -3,6 +3,7 @@ import { IUserRepository } from '@app/domain/repositories';
 import type { IEmailProvider, ISmsProvider } from '@app/domain/services';
 import { normalizeRussianPhone } from '@app/infrastructure/common/utils/phone.utils';
 import {
+    VERIFICATION_CODE_COOLDOWN_MS,
     VERIFICATION_CODE_EXPIRY_MS,
     VERIFICATION_CODE_LENGTH_BYTES,
     VERIFICATION_CODE_MAX_ATTEMPTS,
@@ -35,6 +36,7 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import { hash } from 'bcrypt';
 import { createHash, randomBytes } from 'crypto';
+import { QueryTypes } from 'sequelize';
 
 // Типы для статистики пользователей
 export interface UserStats {
@@ -933,6 +935,24 @@ export class UserRepository implements IUserRepository {
         return createHash('sha256').update(code).digest('hex');
     }
 
+    /**
+     * Создаёт новый код верификации и отправляет его пользователю.
+     *
+     * Генерирует случайный 6-символьный hex код, сохраняет хэш (bcrypt) в БД,
+     * отправляет plain-text код через email или SMS провайдер.
+     * Включает tenant isolation, cooldown check (60 сек) и проверку наличия телефона.
+     *
+     * @param {number} userId - ID пользователя
+     * @param {'email' | 'phone'} channel - Канал отправки
+     * @param {number} tenantId - ID тенанта
+     *
+     * @throws {NotFoundException} Пользователь не найден или не принадлежит tenant
+     * @throws {BadRequestException} Cooldown период не истёк или номер телефона отсутствует
+     * @throws {Error} Провайдер email/SMS вернул ошибку
+     *
+     * @returns {Promise<void>}
+     * @private Вызывается только из UserService
+     */
     public async requestVerificationCode(
         userId: number,
         channel: 'email' | 'phone',
@@ -950,6 +970,42 @@ export class UserRepository implements IUserRepository {
             const sequelize = this.userModel.sequelize;
             if (!sequelize) {
                 throw new Error('Sequelize instance not available');
+            }
+
+            // Cooldown check: проверяем время последнего запроса кода
+            const [lastCodeResult] = await sequelize.query<{
+                created_at: Date;
+            }>(
+                'SELECT `created_at` FROM `user_verification_code` WHERE `user_id` = ? AND `channel` = ? ORDER BY `created_at` DESC LIMIT 1',
+                {
+                    replacements: [userId, channel],
+                    type: QueryTypes.SELECT,
+                },
+            );
+
+            if (lastCodeResult) {
+                const timeSinceLastRequest =
+                    Date.now() - new Date(lastCodeResult.created_at).getTime();
+
+                if (timeSinceLastRequest < VERIFICATION_CODE_COOLDOWN_MS) {
+                    const remainingSeconds = Math.ceil(
+                        (VERIFICATION_CODE_COOLDOWN_MS - timeSinceLastRequest) /
+                            1000,
+                    );
+
+                    this.logger.warn({
+                        message: 'Cooldown период не истёк',
+                        userId,
+                        channel,
+                        tenantId,
+                        timeSinceLastRequestMs: timeSinceLastRequest,
+                        remainingSeconds,
+                    });
+
+                    throw new BadRequestException(
+                        `Пожалуйста, подождите ${remainingSeconds} секунд перед повторным запросом кода`,
+                    );
+                }
             }
 
             const code = randomBytes(VERIFICATION_CODE_LENGTH_BYTES).toString(
@@ -1016,12 +1072,40 @@ export class UserRepository implements IUserRepository {
                     );
                 }
             }
+
+            // Audit logging: логируем успешную отправку кода
+            this.logger.log({
+                event:
+                    channel === 'email'
+                        ? 'email_verification_code_sent'
+                        : 'phone_verification_code_sent',
+                userId,
+                channel,
+                tenantId,
+                expiresAt: expiresAt.toISOString(),
+                message: `Код верификации отправлен пользователю ${userId} через ${channel}`,
+            });
         } catch (error: unknown) {
             this.handleSequelizeError(error, 'запрос кода верификации');
             throw error;
         }
     }
 
+    /**
+     * Проверяет и подтверждает код верификации.
+     *
+     * Выполняет проверки: tenant isolation, срок действия (10 мин), количество попыток (макс. 5),
+     * корректность кода (SHA256 hash comparison). При успехе обновляет is_email_verified/is_phone_verified
+     * и verified_at timestamp. Логирует успехи и ошибки для security monitoring.
+     *
+     * @param {number} userId - ID пользователя
+     * @param {'email' | 'phone'} channel - Канал верификации
+     * @param {string} code - Введённый код (plain-text, 6 hex символов)
+     * @param {number} tenantId - ID тенанта
+     *
+     * @returns {Promise<boolean>} true если код подтверждён, false если неверный/истёкший/превышены попытки
+     * @private Вызывается только из UserService
+     */
     public async confirmVerificationCode(
         userId: number,
         channel: 'email' | 'phone',
@@ -1110,6 +1194,17 @@ export class UserRepository implements IUserRepository {
                     { replacements: [now, now, userId, tenantId] },
                 );
             }
+
+            // Audit logging: логируем успешную верификацию
+            this.logger.log({
+                event:
+                    channel === 'email' ? 'email_verified' : 'phone_verified',
+                userId,
+                channel,
+                tenantId,
+                timestamp: now.toISOString(),
+                message: `Пользователь ${userId} успешно подтвердил ${channel}`,
+            });
 
             return true;
         } catch (error: unknown) {

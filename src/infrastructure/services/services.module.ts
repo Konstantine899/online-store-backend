@@ -29,6 +29,7 @@ import { RatingService } from './rating/rating.service';
 import { RoleService } from './role/role.service';
 import { TokenService } from './token/token.service';
 import { UserAddressService } from './user-address/user-address.service';
+import { UserCleanupService } from './user/user-cleanup.service';
 import { UserService } from './user/user.service';
 
 @Module({
@@ -59,6 +60,7 @@ import { UserService } from './user/user.service';
         TokenService,
         UserService,
         UserAddressService,
+        UserCleanupService,
         LoginHistoryService,
         NotificationService,
         NotificationEventHandler,
@@ -91,6 +93,7 @@ import { UserService } from './user/user.service';
         TokenService,
         UserService,
         UserAddressService,
+        UserCleanupService,
         LoginHistoryService,
         NotificationService,
         'IEmailProvider',

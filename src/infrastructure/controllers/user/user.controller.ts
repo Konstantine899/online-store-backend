@@ -27,6 +27,7 @@ import {
     UnauthorizedException,
     UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 
 import {
     AddRoleUserSwaggerDecorator,
@@ -387,10 +388,27 @@ export class UserController implements IUserController {
         return this.createResponse(user);
     }
 
-    // Self-service verification (USER)
+    /**
+     * Запрашивает код подтверждения email для текущего пользователя.
+     *
+     * Отправляет 6-значный hex код на email пользователя с временем жизни 10 минут.
+     * Защищён rate limiting (3 запроса за 5 минут) и cooldown (60 сек между запросами).
+     *
+     * @param {AuthenticatedRequest} req - HTTP запрос с JWT payload (userId, tenantId)
+     * @returns {Promise<RequestVerificationCodeResponse>} Сообщение об успешной отправке и время истечения кода
+     *
+     * @throws {UnauthorizedException} Токен JWT недействителен или отсутствует
+     * @throws {NotFoundException} Пользователь не найден или не принадлежит tenant
+     * @throws {BadRequestException} Cooldown период не истёк (< 60 сек с последнего запроса)
+     * @throws {TooManyRequestsException} Превышен rate limit (> 3 запросов за 5 минут)
+     *
+     * @endpoint POST /users/verify/email/request
+     * @auth JWT (USER роли)
+     */
     @RequestEmailCodeSwaggerDecorator()
     @Roles(...USER_ROLES)
     @UseGuards(AuthGuard, RoleGuard, BruteforceGuard)
+    @Throttle({ 'verification-request': { limit: 3, ttl: 300000 } })
     @Post('verify/email/request')
     @HttpCode(HttpStatus.OK)
     async requestEmailCode(
@@ -412,9 +430,27 @@ export class UserController implements IUserController {
         };
     }
 
+    /**
+     * Подтверждает email пользователя по введённому коду.
+     *
+     * Проверяет корректность кода, срок действия (10 мин) и количество попыток (макс. 5).
+     * При успехе обновляет is_email_verified=true и email_verified_at.
+     * Защищён rate limiting (5 попыток за 5 минут).
+     *
+     * @param {AuthenticatedRequest} req - HTTP запрос с JWT payload
+     * @param {ConfirmVerificationDto} dto - Объект с кодом подтверждения (6 hex символов)
+     * @returns {Promise<ConfirmVerificationCodeResponse>} Результат верификации (success message, verified flag)
+     *
+     * @throws {BadRequestException} Код неверный, истёк или превышены попытки (5 max)
+     * @throws {TooManyRequestsException} Превышен rate limit (> 5 попыток за 5 минут)
+     *
+     * @endpoint POST /users/verify/email/confirm
+     * @auth JWT (USER роли)
+     */
     @ConfirmEmailCodeSwaggerDecorator()
     @Roles(...USER_ROLES)
     @UseGuards(AuthGuard, RoleGuard, BruteforceGuard)
+    @Throttle({ 'verification-confirm': { limit: 5, ttl: 300000 } })
     @Post('verify/email/confirm')
     @HttpCode(HttpStatus.OK)
     async confirmEmailCode(
@@ -437,9 +473,27 @@ export class UserController implements IUserController {
         };
     }
 
+    /**
+     * Запрашивает код подтверждения телефона для текущего пользователя.
+     *
+     * Отправляет 6-значный hex код на телефон пользователя через SMS с временем жизни 10 минут.
+     * Защищён rate limiting (3 запроса за 5 минут) и cooldown (60 сек между запросами).
+     *
+     * @param {AuthenticatedRequest} req - HTTP запрос с JWT payload (userId, tenantId)
+     * @returns {Promise<RequestVerificationCodeResponse>} Сообщение об успешной отправке и время истечения кода
+     *
+     * @throws {UnauthorizedException} Токен JWT недействителен или отсутствует
+     * @throws {NotFoundException} Пользователь не найден или не принадлежит tenant
+     * @throws {BadRequestException} Cooldown период не истёк (< 60 сек) или номер телефона не указан
+     * @throws {TooManyRequestsException} Превышен rate limit (> 3 запросов за 5 минут)
+     *
+     * @endpoint POST /users/verify/phone/request
+     * @auth JWT (USER роли)
+     */
     @RequestPhoneCodeSwaggerDecorator()
     @Roles(...USER_ROLES)
     @UseGuards(AuthGuard, RoleGuard, BruteforceGuard)
+    @Throttle({ 'verification-request': { limit: 3, ttl: 300000 } })
     @Post('verify/phone/request')
     @HttpCode(HttpStatus.OK)
     async requestPhoneCode(
@@ -461,9 +515,27 @@ export class UserController implements IUserController {
         };
     }
 
+    /**
+     * Подтверждает телефон пользователя по введённому коду.
+     *
+     * Проверяет корректность кода, срок действия (10 мин) и количество попыток (макс. 5).
+     * При успехе обновляет is_phone_verified=true и phone_verified_at.
+     * Защищён rate limiting (5 попыток за 5 минут).
+     *
+     * @param {AuthenticatedRequest} req - HTTP запрос с JWT payload
+     * @param {ConfirmVerificationDto} dto - Объект с кодом подтверждения (6 hex символов)
+     * @returns {Promise<ConfirmVerificationCodeResponse>} Результат верификации (success message, verified flag)
+     *
+     * @throws {BadRequestException} Код неверный, истёк или превышены попытки (5 max)
+     * @throws {TooManyRequestsException} Превышен rate limit (> 5 попыток за 5 минут)
+     *
+     * @endpoint POST /users/verify/phone/confirm
+     * @auth JWT (USER роли)
+     */
     @ConfirmPhoneCodeSwaggerDecorator()
     @Roles(...USER_ROLES)
     @UseGuards(AuthGuard, RoleGuard, BruteforceGuard)
+    @Throttle({ 'verification-confirm': { limit: 5, ttl: 300000 } })
     @Post('verify/phone/confirm')
     @HttpCode(HttpStatus.OK)
     async confirmPhoneCode(

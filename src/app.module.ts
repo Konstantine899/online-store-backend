@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TenantContext } from './infrastructure/common/context';
@@ -115,6 +116,16 @@ import { ServicesModule } from './infrastructure/services/services.module';
                 ttl: 60 * 1000, // 1 минута
                 limit: 3, // 3 попытки регистрации в минуту
             },
+            {
+                name: 'verification-request',
+                ttl: 5 * 60 * 1000, // 5 минут
+                limit: 3, // 3 запроса кода за 5 минут
+            },
+            {
+                name: 'verification-confirm',
+                ttl: 5 * 60 * 1000, // 5 минут
+                limit: 5, // 5 попыток подтверждения за 5 минут
+            },
         ]),
 
         EventEmitterModule.forRoot({
@@ -127,6 +138,8 @@ import { ServicesModule } from './infrastructure/services/services.module';
             verboseMemoryLeak: false,
             ignoreErrors: false,
         }),
+
+        ScheduleModule.forRoot(),
 
         ControllersModule,
         ServicesModule,

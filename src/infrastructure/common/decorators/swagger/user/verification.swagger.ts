@@ -42,7 +42,7 @@ export const RequestEmailCodeSwaggerDecorator = (): MethodDecorator =>
             },
         }),
         ApiTooManyRequestsResponse({
-            description: 'Превышен лимит запросов (защита от спама)',
+            description: 'Превышен лимит запросов кода (3 запроса за 5 минут)',
             schema: {
                 example: {
                     statusCode: 429,
@@ -100,6 +100,16 @@ export const ConfirmEmailCodeSwaggerDecorator = (): MethodDecorator =>
                 },
             },
         }),
+        ApiTooManyRequestsResponse({
+            description:
+                'Превышен лимит попыток подтверждения (5 попыток за 5 минут)',
+            schema: {
+                example: {
+                    statusCode: 429,
+                    message: 'Слишком много попыток. Повторите попытку позже.',
+                },
+            },
+        }),
     );
 
 /**
@@ -130,7 +140,7 @@ export const RequestPhoneCodeSwaggerDecorator = (): MethodDecorator =>
             },
         }),
         ApiTooManyRequestsResponse({
-            description: 'Превышен лимит запросов (защита от спама)',
+            description: 'Превышен лимит запросов кода (3 запроса за 5 минут)',
             schema: {
                 example: {
                     statusCode: 429,
@@ -185,6 +195,16 @@ export const ConfirmPhoneCodeSwaggerDecorator = (): MethodDecorator =>
                 example: {
                     statusCode: 401,
                     message: 'Unauthorized',
+                },
+            },
+        }),
+        ApiTooManyRequestsResponse({
+            description:
+                'Превышен лимит попыток подтверждения (5 попыток за 5 минут)',
+            schema: {
+                example: {
+                    statusCode: 429,
+                    message: 'Слишком много попыток. Повторите попытку позже.',
                 },
             },
         }),
