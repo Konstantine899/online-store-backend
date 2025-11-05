@@ -1,15 +1,21 @@
 import { UserModel } from '@app/domain/models';
 import { IUserRepository } from '@app/domain/repositories';
+import type { IEmailProvider, ISmsProvider } from '@app/domain/services';
 import { normalizeRussianPhone } from '@app/infrastructure/common/utils/phone.utils';
+import {
+    VERIFICATION_CODE_EXPIRY_MS,
+    VERIFICATION_CODE_LENGTH_BYTES,
+    VERIFICATION_CODE_MAX_ATTEMPTS,
+} from '@app/infrastructure/config/verification.config';
 import {
     CreateUserDto,
     UpdateConsentsDto,
     UpdateUserDto,
     UpdateUserProfileDto,
+    UpdateUserStatusDto,
 } from '@app/infrastructure/dto';
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
-import { UpdateUserStatusDto } from '@app/infrastructure/dto/user/update-user-status.dto';
 import { MetaData } from '@app/infrastructure/paginate';
 import {
     CreateUserResponse,
@@ -21,7 +27,9 @@ import {
 import {
     BadRequestException,
     ConflictException,
+    Inject,
     Injectable,
+    Logger,
     NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -38,6 +46,7 @@ export interface UserStats {
 
 @Injectable()
 export class UserRepository implements IUserRepository {
+    private readonly logger = new Logger(UserRepository.name);
     private static readonly BCRYPT_ROUNDS = 10;
     private static readonly USER_FIELDS = [
         'email',
@@ -45,7 +54,13 @@ export class UserRepository implements IUserRepository {
         'phone',
     ] as const;
 
-    constructor(@InjectModel(UserModel) private userModel: typeof UserModel) {}
+    constructor(
+        @InjectModel(UserModel) private userModel: typeof UserModel,
+        @Inject('IEmailProvider')
+        private readonly emailProvider: IEmailProvider,
+        @Inject('ISmsProvider')
+        private readonly smsProvider: ISmsProvider,
+    ) {}
 
     // Централизованные методы обработки ошибок с structured logging
     private handleSequelizeError(error: unknown, context: string): void {
@@ -921,75 +936,186 @@ export class UserRepository implements IUserRepository {
     public async requestVerificationCode(
         userId: number,
         channel: 'email' | 'phone',
+        tenantId: number,
     ): Promise<void> {
-        const sequelize = this.userModel.sequelize;
-        if (!sequelize) return;
-        const code = randomBytes(3).toString('hex'); // 6 hex chars
-        const codeHash = this.hashCode(code);
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10m
-        await sequelize.query(
-            'INSERT INTO `user_verification_code` (`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES (?,?,?,?,0,?,?)',
-            {
-                replacements: [
-                    userId,
-                    channel,
-                    codeHash,
-                    expiresAt,
-                    new Date(),
-                    new Date(),
-                ],
-            },
-        );
-        // TODO: отправка по каналу (email/SMS) — интегрировать почту/SMS провайдер
-        // Для интеграции можно вернуть plaintext код через отдельный путь (dev only)
+        try {
+            // Tenant isolation: проверяем, что пользователь принадлежит тенанту
+            const user = await this.findUserByIdAndTenant(userId, tenantId);
+            if (!user) {
+                throw new NotFoundException(
+                    `Пользователь с ID ${userId} не найден или не принадлежит вашему tenant`,
+                );
+            }
+
+            const sequelize = this.userModel.sequelize;
+            if (!sequelize) {
+                throw new Error('Sequelize instance not available');
+            }
+
+            const code = randomBytes(VERIFICATION_CODE_LENGTH_BYTES).toString(
+                'hex',
+            );
+            const codeHash = this.hashCode(code);
+            const expiresAt = new Date(
+                Date.now() + VERIFICATION_CODE_EXPIRY_MS,
+            );
+
+            await sequelize.query(
+                'INSERT INTO `user_verification_code` (`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES (?,?,?,?,0,?,?)',
+                {
+                    replacements: [
+                        userId,
+                        channel,
+                        codeHash,
+                        expiresAt,
+                        new Date(),
+                        new Date(),
+                    ],
+                },
+            );
+
+            // Отправка кода через email/SMS
+            if (channel === 'email') {
+                const emailResult = await this.emailProvider.sendEmail({
+                    to: user.email,
+                    subject: 'Код подтверждения email',
+                    text: `Ваш код подтверждения: ${code}\n\nКод действителен 10 минут.\n\nЕсли вы не запрашивали этот код, проигнорируйте это письмо.`,
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                            <h2>Код подтверждения email</h2>
+                            <p>Ваш код подтверждения:</p>
+                            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 4px; margin: 20px 0;">
+                                ${code}
+                            </div>
+                            <p style="color: #666;">Код действителен <strong>10 минут</strong>.</p>
+                            <p style="color: #999; font-size: 12px;">Если вы не запрашивали этот код, проигнорируйте это письмо.</p>
+                        </div>
+                    `,
+                });
+
+                if (!emailResult.success) {
+                    throw new Error(
+                        `Не удалось отправить email: ${emailResult.error}`,
+                    );
+                }
+            } else {
+                if (!user.phone) {
+                    throw new BadRequestException(
+                        'Номер телефона не указан в профиле',
+                    );
+                }
+
+                const smsResult = await this.smsProvider.sendSms({
+                    to: user.phone,
+                    message: `Ваш код подтверждения: ${code}. Код действителен 10 минут.`,
+                });
+
+                if (!smsResult.success) {
+                    throw new Error(
+                        `Не удалось отправить SMS: ${smsResult.error}`,
+                    );
+                }
+            }
+        } catch (error: unknown) {
+            this.handleSequelizeError(error, 'запрос кода верификации');
+            throw error;
+        }
     }
 
     public async confirmVerificationCode(
         userId: number,
         channel: 'email' | 'phone',
         code: string,
+        tenantId: number,
     ): Promise<boolean> {
-        const sequelize = this.userModel.sequelize;
-        if (!sequelize) return false;
-        const [[row]] = await sequelize.query(
-            'SELECT `id`,`code_hash`,`expires_at`,`attempts` FROM `user_verification_code` WHERE `user_id` = ? AND `channel` = ? ORDER BY `created_at` DESC LIMIT 1',
-            { replacements: [userId, channel] },
-        );
-        // rows can be RowDataPacket[]
-        if (!row) return false;
-        const {
-            id,
-            code_hash: storedHash,
-            expires_at: expiresAt,
-            attempts,
-        } = row as {
-            id: number;
-            code_hash: string;
-            expires_at: string | Date;
-            attempts: number;
-        };
-        const now = new Date();
-        if (new Date(expiresAt) < now || attempts >= 5) {
+        try {
+            // Tenant isolation: проверяем, что пользователь принадлежит тенанту
+            const user = await this.findUserByIdAndTenant(userId, tenantId);
+            if (!user) {
+                // Возвращаем false вместо исключения для единообразия с другими fail-кейсами
+                return false;
+            }
+
+            const sequelize = this.userModel.sequelize;
+            if (!sequelize) {
+                return false;
+            }
+
+            const [[row]] = await sequelize.query(
+                'SELECT `id`,`code_hash`,`expires_at`,`attempts` FROM `user_verification_code` WHERE `user_id` = ? AND `channel` = ? ORDER BY `created_at` DESC LIMIT 1',
+                { replacements: [userId, channel] },
+            );
+
+            // rows can be RowDataPacket[]
+            if (!row) return false;
+
+            const {
+                id,
+                code_hash: storedHash,
+                expires_at: expiresAt,
+                attempts,
+            } = row as {
+                id: number;
+                code_hash: string;
+                expires_at: string | Date;
+                attempts: number;
+            };
+
+            const now = new Date();
+            const isExpired = new Date(expiresAt) < now;
+            const maxAttemptsReached =
+                attempts >= VERIFICATION_CODE_MAX_ATTEMPTS;
+
+            if (isExpired || maxAttemptsReached) {
+                this.logger.warn({
+                    message: 'Неудачная попытка верификации',
+                    userId,
+                    channel,
+                    tenantId,
+                    isExpired,
+                    maxAttemptsReached,
+                    attempts,
+                });
+                return false;
+            }
+
+            const ok = this.hashCode(code) === storedHash;
+
+            // Увеличиваем счётчик попыток
+            await sequelize.query(
+                'UPDATE `user_verification_code` SET `attempts` = `attempts` + 1, `updated_at` = ? WHERE `id` = ? LIMIT 1',
+                { replacements: [now, id] },
+            );
+
+            if (!ok) {
+                this.logger.warn({
+                    message: 'Неверный код верификации',
+                    userId,
+                    channel,
+                    tenantId,
+                    attempts: attempts + 1,
+                });
+                return false;
+            }
+
+            // Обновляем статус верификации с учётом tenant_id для дополнительной защиты
+            if (channel === 'email') {
+                await sequelize.query(
+                    'UPDATE `user` SET `is_email_verified` = 1, `email_verified_at` = ?, `updated_at` = ? WHERE `id` = ? AND `tenant_id` = ? LIMIT 1',
+                    { replacements: [now, now, userId, tenantId] },
+                );
+            } else {
+                await sequelize.query(
+                    'UPDATE `user` SET `is_phone_verified` = 1, `phone_verified_at` = ?, `updated_at` = ? WHERE `id` = ? AND `tenant_id` = ? LIMIT 1',
+                    { replacements: [now, now, userId, tenantId] },
+                );
+            }
+
+            return true;
+        } catch (error: unknown) {
+            this.handleSequelizeError(error, 'подтверждение кода верификации');
             return false;
         }
-        const ok = this.hashCode(code) === storedHash;
-        await sequelize.query(
-            'UPDATE `user_verification_code` SET `attempts` = `attempts` + 1, `updated_at` = ? WHERE `id` = ? LIMIT 1',
-            { replacements: [now, id] },
-        );
-        if (!ok) return false;
-        if (channel === 'email') {
-            await sequelize.query(
-                'UPDATE `user` SET `is_email_verified` = 1, `email_verified_at` = ?, `updated_at` = ? WHERE `id` = ? LIMIT 1',
-                { replacements: [now, now, userId] },
-            );
-        } else {
-            await sequelize.query(
-                'UPDATE `user` SET `is_phone_verified` = 1, `phone_verified_at` = ?, `updated_at` = ? WHERE `id` = ? LIMIT 1',
-                { replacements: [now, now, userId] },
-            );
-        }
-        return true;
     }
 
     async updateLastLoginAt(userId: number): Promise<void> {

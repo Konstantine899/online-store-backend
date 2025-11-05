@@ -1,8 +1,11 @@
 import type { UserModel } from '@app/domain/models';
-import type { CreateUserDto, UpdateConsentsDto } from '@app/infrastructure/dto';
+import type {
+    CreateUserDto,
+    UpdateConsentsDto,
+    UpdateUserStatusDto,
+} from '@app/infrastructure/dto';
 import type { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import type { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
-import type { UpdateUserStatusDto } from '@app/infrastructure/dto/user/update-user-status.dto';
 import type {
     CreateUserResponse,
     GetPaginatedUsersResponse,
@@ -57,6 +60,19 @@ export interface IUserRepository {
     ): Promise<UserModel | null>;
     verifyEmail(userId: number): Promise<UserModel | null>;
     verifyPhone(userId: number): Promise<UserModel | null>;
+
+    // Verification Code Methods (with tenant isolation)
+    requestVerificationCode(
+        userId: number,
+        channel: 'email' | 'phone',
+        tenantId: number,
+    ): Promise<void>;
+    confirmVerificationCode(
+        userId: number,
+        channel: 'email' | 'phone',
+        code: string,
+        tenantId: number,
+    ): Promise<boolean>;
 
     // User Statistics Methods
     getUserStats(): Promise<{

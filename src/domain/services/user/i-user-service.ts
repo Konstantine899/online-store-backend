@@ -5,8 +5,8 @@ import type {
     RemoveRoleDto,
     UpdateConsentsDto,
     UpdateUserDto,
+    UpdateUserStatusDto,
 } from '@app/infrastructure/dto';
-import type { UpdateUserStatusDto } from '@app/infrastructure/dto/user/update-user-status.dto';
 import type {
     AddRoleResponse,
     CheckResponse,
@@ -53,6 +53,19 @@ export interface IUserService {
         dto: UpdateUserStatusDto,
         tenantId: number,
     ): Promise<UserModel>;
+
+    // Verification Methods (with tenant isolation)
+    requestVerificationCode(
+        userId: number,
+        channel: 'email' | 'phone',
+        tenantId: number,
+    ): Promise<void>;
+    confirmVerificationCode(
+        userId: number,
+        channel: 'email' | 'phone',
+        code: string,
+        tenantId: number,
+    ): Promise<void>;
 
     // User Statistics Methods
     getUserStats(): Promise<{

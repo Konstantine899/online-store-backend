@@ -5,8 +5,8 @@ import {
     UpdateConsentsDto,
     UpdateDateOfBirthDto,
     UpdateUserProfileDto,
+    UpdateUserStatusDto,
 } from '@app/infrastructure/dto';
-import { UpdateUserStatusDto } from '@app/infrastructure/dto/user/update-user-status.dto';
 import { UpdateUserDto } from '@app/infrastructure/dto/user/update-user.dto';
 import { UserService } from '@app/infrastructure/services';
 import {
@@ -42,7 +42,7 @@ import {
 import { ChangePasswordSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/change-password.swagger';
 import { UpdateConsentsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-consents.swagger';
 import { UpdateDateOfBirthSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-date-of-birth.swagger';
-import { UpdateUserStatusSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-status.swagger';
+
 import {
     AuthGuard,
     BruteforceGuard,
@@ -53,7 +53,14 @@ import { ApiTags } from '@nestjs/swagger';
 import { UpdateUserFlagsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-flags.swagger';
 import { UpdateUserPreferencesSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-preferences.swagger';
 import { UpdateUserProfileSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-profile.swagger';
+import { UpdateUserStatusSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-status.swagger';
 import { GetUserStatsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/user-stats.swagger';
+import {
+    ConfirmEmailCodeSwaggerDecorator,
+    ConfirmPhoneCodeSwaggerDecorator,
+    RequestEmailCodeSwaggerDecorator,
+    RequestPhoneCodeSwaggerDecorator,
+} from '@app/infrastructure/common/decorators/swagger/user/verification.swagger';
 import {
     VerifyUserEmailSwaggerDecorator,
     VerifyUserPhoneSwaggerDecorator,
@@ -66,11 +73,13 @@ import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-us
 import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
 import {
     AddRoleResponse,
+    ConfirmVerificationCodeResponse,
     CreateUserResponse,
     GetPaginatedUsersResponse,
     GetUserResponse,
     RemoveUserResponse,
     RemoveUserRoleResponse,
+    RequestVerificationCodeResponse,
     UpdateConsentsResponse,
     UpdateDateOfBirthResponse,
     UpdateUserPhoneResponse,
@@ -79,6 +88,7 @@ import {
 } from '@app/infrastructure/responses';
 
 import { IUserController } from '@app/domain/controllers';
+import { VERIFICATION_CODE_EXPIRY_MS } from '@app/infrastructure/config/verification.config';
 
 // Оптимизированные типы для Request
 interface AuthenticatedRequest extends Request {
@@ -130,6 +140,17 @@ export class UserController implements IUserController {
     // Метод для извлечения userId с валидацией
     private extractUserId(req: AuthenticatedRequest): number {
         return req.user.id;
+    }
+
+    // Метод для извлечения tenantId с валидацией
+    private extractTenantId(req: AuthenticatedRequest): number {
+        const tenantId = (req.user as { tenantId?: number }).tenantId;
+        if (!tenantId) {
+            throw new UnauthorizedException(
+                'Tenant ID не найден в токене авторизации',
+            );
+        }
+        return tenantId;
     }
 
     // Метод для создания ответа
@@ -367,18 +388,31 @@ export class UserController implements IUserController {
     }
 
     // Self-service verification (USER)
+    @RequestEmailCodeSwaggerDecorator()
     @Roles(...USER_ROLES)
     @UseGuards(AuthGuard, RoleGuard, BruteforceGuard)
     @Post('verify/email/request')
     @HttpCode(HttpStatus.OK)
     async requestEmailCode(
         @Req() req: AuthenticatedRequest,
-    ): Promise<{ status: number; message: string }> {
+    ): Promise<RequestVerificationCodeResponse> {
         const userId = this.extractUserId(req);
-        await this.userService.requestVerificationCode(userId, 'email');
-        return { status: HttpStatus.OK, message: 'success' };
+        const tenantId = this.extractTenantId(req);
+
+        await this.userService.requestVerificationCode(
+            userId,
+            'email',
+            tenantId,
+        );
+
+        const expiresAt = new Date(Date.now() + VERIFICATION_CODE_EXPIRY_MS);
+        return {
+            message: 'Код подтверждения отправлен на ваш email',
+            expiresAt: expiresAt.toISOString(),
+        };
     }
 
+    @ConfirmEmailCodeSwaggerDecorator()
     @Roles(...USER_ROLES)
     @UseGuards(AuthGuard, RoleGuard, BruteforceGuard)
     @Post('verify/email/confirm')
@@ -386,28 +420,48 @@ export class UserController implements IUserController {
     async confirmEmailCode(
         @Req() req: AuthenticatedRequest,
         @Body(validationPipe) dto: ConfirmVerificationDto,
-    ): Promise<{ status: number; message: string }> {
+    ): Promise<ConfirmVerificationCodeResponse> {
         const userId = this.extractUserId(req);
+        const tenantId = this.extractTenantId(req);
+
         await this.userService.confirmVerificationCode(
             userId,
             'email',
             dto.code,
+            tenantId,
         );
-        return { status: HttpStatus.OK, message: 'success' };
+
+        return {
+            message: 'Email успешно подтверждён',
+            verified: true,
+        };
     }
 
+    @RequestPhoneCodeSwaggerDecorator()
     @Roles(...USER_ROLES)
     @UseGuards(AuthGuard, RoleGuard, BruteforceGuard)
     @Post('verify/phone/request')
     @HttpCode(HttpStatus.OK)
     async requestPhoneCode(
         @Req() req: AuthenticatedRequest,
-    ): Promise<{ status: number; message: string }> {
+    ): Promise<RequestVerificationCodeResponse> {
         const userId = this.extractUserId(req);
-        await this.userService.requestVerificationCode(userId, 'phone');
-        return { status: HttpStatus.OK, message: 'success' };
+        const tenantId = this.extractTenantId(req);
+
+        await this.userService.requestVerificationCode(
+            userId,
+            'phone',
+            tenantId,
+        );
+
+        const expiresAt = new Date(Date.now() + VERIFICATION_CODE_EXPIRY_MS);
+        return {
+            message: 'Код подтверждения отправлен на ваш телефон',
+            expiresAt: expiresAt.toISOString(),
+        };
     }
 
+    @ConfirmPhoneCodeSwaggerDecorator()
     @Roles(...USER_ROLES)
     @UseGuards(AuthGuard, RoleGuard, BruteforceGuard)
     @Post('verify/phone/confirm')
@@ -415,14 +469,21 @@ export class UserController implements IUserController {
     async confirmPhoneCode(
         @Req() req: AuthenticatedRequest,
         @Body(validationPipe) dto: ConfirmVerificationDto,
-    ): Promise<{ status: number; message: string }> {
+    ): Promise<ConfirmVerificationCodeResponse> {
         const userId = this.extractUserId(req);
+        const tenantId = this.extractTenantId(req);
+
         await this.userService.confirmVerificationCode(
             userId,
             'phone',
             dto.code,
+            tenantId,
         );
-        return { status: HttpStatus.OK, message: 'success' };
+
+        return {
+            message: 'Телефон успешно подтверждён',
+            verified: true,
+        };
     }
 
     // ADMIN actions: block/unblock, suspend/unsuspend, delete/restore, premium upgrade/downgrade, employee on/off

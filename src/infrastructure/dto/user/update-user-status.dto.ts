@@ -38,3 +38,4 @@ export class UpdateUserStatusDto {
     })
     declare readonly isBetaTester?: boolean;
 }
+

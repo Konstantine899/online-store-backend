@@ -25,6 +25,8 @@ describe('UserService', () => {
             updatePhone: jest.fn(),
             updateUserStatus: jest.fn(),
             findUserByIdAndTenant: jest.fn(),
+            requestVerificationCode: jest.fn(),
+            confirmVerificationCode: jest.fn(),
         } as unknown as jest.Mocked<UserRepository>;
 
         // Сброс всех моков перед каждым тестом
@@ -336,6 +338,132 @@ describe('UserService', () => {
 
             expect(result.tenantId).toBe(5);
             expect(result.isVipCustomer).toBe(true);
+        });
+    });
+
+    describe('Verification Methods (USER-001-06)', () => {
+        describe('requestVerificationCode', () => {
+            it('successfully requests email verification code', async () => {
+                (
+                    userRepository.requestVerificationCode as jest.Mock
+                ).mockResolvedValue(undefined);
+
+                await expect(
+                    service.requestVerificationCode(1, 'email', 1),
+                ).resolves.toBeUndefined();
+
+                expect(
+                    userRepository.requestVerificationCode,
+                ).toHaveBeenCalledWith(1, 'email', 1);
+            });
+
+            it('successfully requests phone verification code', async () => {
+                (
+                    userRepository.requestVerificationCode as jest.Mock
+                ).mockResolvedValue(undefined);
+
+                await expect(
+                    service.requestVerificationCode(1, 'phone', 1),
+                ).resolves.toBeUndefined();
+
+                expect(
+                    userRepository.requestVerificationCode,
+                ).toHaveBeenCalledWith(1, 'phone', 1);
+            });
+
+            it('throws error if user not found or wrong tenant', async () => {
+                const err = new NotFoundException('User not found');
+                (
+                    userRepository.requestVerificationCode as jest.Mock
+                ).mockRejectedValue(err);
+
+                await expect(
+                    service.requestVerificationCode(999, 'email', 1),
+                ).rejects.toBeInstanceOf(NotFoundException);
+            });
+
+            it('throws error if email provider fails', async () => {
+                const err = new Error('Email provider failed');
+                (
+                    userRepository.requestVerificationCode as jest.Mock
+                ).mockRejectedValue(err);
+
+                await expect(
+                    service.requestVerificationCode(1, 'email', 1),
+                ).rejects.toThrow('Email provider failed');
+            });
+
+            it('throws error if sms provider fails', async () => {
+                const err = new Error('SMS provider failed');
+                (
+                    userRepository.requestVerificationCode as jest.Mock
+                ).mockRejectedValue(err);
+
+                await expect(
+                    service.requestVerificationCode(1, 'phone', 1),
+                ).rejects.toThrow('SMS provider failed');
+            });
+        });
+
+        describe('confirmVerificationCode', () => {
+            it('successfully confirms email verification code', async () => {
+                (
+                    userRepository.confirmVerificationCode as jest.Mock
+                ).mockResolvedValue(true);
+
+                await expect(
+                    service.confirmVerificationCode(1, 'email', 'a1b2c3', 1),
+                ).resolves.toBeUndefined();
+
+                expect(
+                    userRepository.confirmVerificationCode,
+                ).toHaveBeenCalledWith(1, 'email', 'a1b2c3', 1);
+            });
+
+            it('successfully confirms phone verification code', async () => {
+                (
+                    userRepository.confirmVerificationCode as jest.Mock
+                ).mockResolvedValue(true);
+
+                await expect(
+                    service.confirmVerificationCode(1, 'phone', 'a1b2c3', 1),
+                ).resolves.toBeUndefined();
+
+                expect(
+                    userRepository.confirmVerificationCode,
+                ).toHaveBeenCalledWith(1, 'phone', 'a1b2c3', 1);
+            });
+
+            it('throws BadRequestException if code is invalid', async () => {
+                (
+                    userRepository.confirmVerificationCode as jest.Mock
+                ).mockResolvedValue(false);
+
+                await expect(
+                    service.confirmVerificationCode(1, 'email', 'wrong', 1),
+                ).rejects.toBeInstanceOf(BadRequestException);
+            });
+
+            it('throws BadRequestException if code is expired', async () => {
+                (
+                    userRepository.confirmVerificationCode as jest.Mock
+                ).mockResolvedValue(false);
+
+                await expect(
+                    service.confirmVerificationCode(1, 'phone', 'expired', 1),
+                ).rejects.toBeInstanceOf(BadRequestException);
+            });
+
+            it('blocks cross-tenant verification attempt', async () => {
+                // User from tenant 1 trying to verify user from tenant 2
+                (
+                    userRepository.confirmVerificationCode as jest.Mock
+                ).mockResolvedValue(false);
+
+                await expect(
+                    service.confirmVerificationCode(1, 'email', 'a1b2c3', 2),
+                ).rejects.toBeInstanceOf(BadRequestException);
+            });
         });
     });
 });

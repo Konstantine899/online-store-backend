@@ -11,10 +11,10 @@ import {
     UpdateConsentsDto,
     UpdateUserDto,
     UpdateUserProfileDto,
+    UpdateUserStatusDto,
 } from '@app/infrastructure/dto';
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
 import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
-import { UpdateUserStatusDto } from '@app/infrastructure/dto/user/update-user-status.dto';
 import {
     RefreshTokenRepository,
     UserRepository,
@@ -773,22 +773,57 @@ export class UserService implements IUserService {
     public async requestVerificationCode(
         userId: number,
         channel: 'email' | 'phone',
+        tenantId: number,
     ): Promise<void> {
-        await this.userRepository.requestVerificationCode(userId, channel);
+        try {
+            await this.userRepository.requestVerificationCode(
+                userId,
+                channel,
+                tenantId,
+            );
+
+            this.logger.info({
+                message: 'Запрошен код верификации',
+                userId,
+                channel,
+                tenantId,
+            });
+        } catch (error: unknown) {
+            this.handleSequelizeError(error, 'запрос кода верификации');
+            throw error;
+        }
     }
 
     public async confirmVerificationCode(
         userId: number,
         channel: 'email' | 'phone',
         code: string,
+        tenantId: number,
     ): Promise<void> {
-        const ok = await this.userRepository.confirmVerificationCode(
-            userId,
-            channel,
-            code,
-        );
-        if (!ok) {
-            this.badRequest('Неверный или просроченный код подтверждения');
+        try {
+            const ok = await this.userRepository.confirmVerificationCode(
+                userId,
+                channel,
+                code,
+                tenantId,
+            );
+
+            if (!ok) {
+                this.badRequest('Неверный или просроченный код подтверждения');
+            }
+
+            // Инвалидируем кэш пользователя после успешной верификации
+            this.invalidateUserCache(userId);
+
+            this.logger.info({
+                message: 'Код верификации подтверждён',
+                userId,
+                channel,
+                tenantId,
+            });
+        } catch (error: unknown) {
+            this.handleSequelizeError(error, 'подтверждение кода верификации');
+            throw error;
         }
     }
 

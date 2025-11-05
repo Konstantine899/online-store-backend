@@ -19,8 +19,9 @@ import {
     UserRoleModel,
 } from '@app/domain/models';
 import { TenantContext } from '@app/infrastructure/common/context';
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { ServicesModule } from '../services/services.module';
 import { BrandRepository } from './brand/brand.repository';
 import { CartRepository } from './cart/cart.repository';
 import { CategoryRepository } from './category/category.repository';
@@ -59,6 +60,7 @@ import { UserRepository } from './user/user.repository';
             LoginHistoryModel,
             PasswordResetTokenModel,
         ]),
+        forwardRef(() => ServicesModule),
     ],
     providers: [
         TenantContext,

@@ -6,7 +6,7 @@ import {
 } from '@app/domain/models';
 import { NotificationEventHandler } from '@app/infrastructure/common/events/notification.event-handler';
 import { jwtConfig } from '@app/infrastructure/config/jwt';
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { RepositoriesModule } from '../repositories/repositories.module';
@@ -34,7 +34,7 @@ import { UserService } from './user/user.service';
 @Module({
     imports: [
         JwtModule.registerAsync(jwtConfig()),
-        RepositoriesModule,
+        forwardRef(() => RepositoriesModule),
         SequelizeModule.forFeature([
             UserModel,
             NotificationModel,
@@ -93,6 +93,9 @@ import { UserService } from './user/user.service';
         UserAddressService,
         LoginHistoryService,
         NotificationService,
+        'IEmailProvider',
+        'ISmsProvider',
+        'ITemplateRenderer',
     ],
 })
 export class ServicesModule {}
