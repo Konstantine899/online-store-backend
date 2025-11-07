@@ -131,6 +131,7 @@ export class UserModel
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
+        defaultValue: 1, // Default tenant для тестов и legacy data
     })
     declare tenantId: number;
 

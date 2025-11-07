@@ -1433,30 +1433,32 @@ describe('UserService', () => {
         it('requestVerificationCode: вызывает репозиторий с корректными аргументами', async () => {
             userRepository.requestVerificationCode.mockResolvedValue(undefined);
             await expect(
-                service.requestVerificationCode(1, 'email'),
+                service.requestVerificationCode(1, 'email', 1),
             ).resolves.toBeUndefined();
             expect(userRepository.requestVerificationCode).toHaveBeenCalledWith(
                 1,
                 'email',
+                1,
             );
         });
 
         it('confirmVerificationCode: успех при true', async () => {
             userRepository.confirmVerificationCode.mockResolvedValue(true);
             await expect(
-                service.confirmVerificationCode(1, 'phone', '123456'),
+                service.confirmVerificationCode(1, 'phone', '123456', 1),
             ).resolves.toBeUndefined();
             expect(userRepository.confirmVerificationCode).toHaveBeenCalledWith(
                 1,
                 'phone',
                 '123456',
+                1,
             );
         });
 
         it('confirmVerificationCode: 400 при неверном/просроченном коде', async () => {
             userRepository.confirmVerificationCode.mockResolvedValue(false);
             await expect(
-                service.confirmVerificationCode(1, 'email', 'bad'),
+                service.confirmVerificationCode(1, 'email', 'bad', 1),
             ).rejects.toThrow(
                 new BadRequestException({
                     status: HttpStatus.BAD_REQUEST,

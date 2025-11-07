@@ -130,6 +130,7 @@ export class TestDataFactory {
             firstName: string;
             lastName: string;
             role: string;
+            tenantId: number;
         }> = {},
     ): Promise<{
         userId: number;
@@ -165,6 +166,9 @@ export class TestDataFactory {
             );
         }
 
+        // Гарантируем tenantId для тестов (не полагаемся на DEFAULT VALUE в БД)
+        const tenantId = overrides.tenantId ?? 1;
+
         // Создаём пользователя через Sequelize Model (безопаснее чем raw SQL)
         const user = await UserModel.create({
             email,
@@ -172,6 +176,7 @@ export class TestDataFactory {
             phone,
             firstName: overrides.firstName ?? undefined,
             lastName: overrides.lastName ?? undefined,
+            tenantId, // Явно передаем tenantId
         });
 
         // Проверяем наличие обязательных полей
@@ -286,6 +291,7 @@ export class TestDataFactory {
             password: string;
             firstName: string;
             lastName: string;
+            tenantId: number;
         }> = {},
     ): Promise<{
         userId: number;
