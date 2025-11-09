@@ -1,7 +1,14 @@
+import { UserModel } from '@app/domain/models';
+import type { IEmailProvider } from '@app/domain/services/notification/i-email-provider';
+import type { ISmsProvider } from '@app/domain/services/notification/i-sms-provider';
 import type { INestApplication } from '@nestjs/common';
+import * as jwt from 'jsonwebtoken';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
-import { setupTestApp } from '../../../../../tests/setup/app';
+import {
+    setupTestApp,
+    setupTestAppWithRateLimit,
+} from '../../../../../tests/setup/app';
 import { TestDataFactory } from '../../../../../tests/utils';
 
 describe('User Verification Integration Tests', () => {
@@ -885,6 +892,411 @@ describe('User Verification Integration Tests', () => {
                         'Номер телефона не указан',
                     );
                 });
+            });
+        });
+    });
+
+    // ============================================================
+    // VERIFY-06: NotificationService Integration Tests
+    // ============================================================
+    describe('NotificationService Integration (VERIFY-06)', () => {
+        let emailProvider: IEmailProvider;
+        let smsProvider: ISmsProvider;
+        let emailSpy: jest.SpyInstance;
+        let smsSpy: jest.SpyInstance;
+
+        beforeEach(() => {
+            // Получаем провайдеры из DI контейнера
+            emailProvider = app.get('IEmailProvider');
+            smsProvider = app.get('ISmsProvider');
+
+            // Создаем spy на методы провайдеров
+            emailSpy = jest.spyOn(emailProvider, 'sendEmail');
+            smsSpy = jest.spyOn(smsProvider, 'sendSms');
+        });
+
+        afterEach(() => {
+            // Восстанавливаем оригинальные методы
+            emailSpy.mockRestore();
+            smsSpy.mockRestore();
+        });
+
+        describe('Email Provider Integration', () => {
+            it('200: email provider is called with correct data on verification request', async () => {
+                const { user, token } =
+                    await TestDataFactory.createUserWithRole(app, 'USER');
+
+                await request(app.getHttpServer())
+                    .post('/online-store/user/verify/email/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(200);
+
+                // Проверяем, что провайдер был вызван
+                expect(emailSpy).toHaveBeenCalledTimes(1);
+
+                // Проверяем параметры вызова
+                const callArgs = emailSpy.mock.calls[0][0];
+                expect(callArgs).toMatchObject({
+                    to: user.email,
+                    subject: 'Код подтверждения email',
+                });
+                expect(callArgs.text).toContain('Ваш код подтверждения:');
+                expect(callArgs.text).toContain('Код действителен 10 минут.');
+                expect(callArgs.html).toContain('Код подтверждения');
+            });
+
+            it('200: email contains 6-digit code', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+
+                await request(app.getHttpServer())
+                    .post('/online-store/user/verify/email/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(200);
+
+                const callArgs = emailSpy.mock.calls[0][0];
+                const codeMatch = callArgs.text.match(/\d{6}/);
+
+                expect(codeMatch).not.toBeNull();
+                expect(codeMatch[0]).toHaveLength(6);
+            });
+
+            it('200: email HTML includes security warning', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+
+                await request(app.getHttpServer())
+                    .post('/online-store/user/verify/email/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(200);
+
+                const callArgs = emailSpy.mock.calls[0][0];
+
+                expect(callArgs.html).toContain('Если вы не запрашивали');
+                expect(callArgs.html).toContain('проигнорируйте');
+            });
+        });
+
+        describe('SMS Provider Integration', () => {
+            it('200: sms provider is called with correct data on verification request', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+
+                await request(app.getHttpServer())
+                    .post('/online-store/user/verify/phone/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(200);
+
+                // Проверяем, что провайдер был вызван
+                expect(smsSpy).toHaveBeenCalledTimes(1);
+
+                // Проверяем параметры вызова
+                const callArgs = smsSpy.mock.calls[0][0];
+                // Phone берется из БД, проверяем только наличие
+                expect(callArgs.to).toMatch(/^\+\d{10,15}$/);
+                expect(callArgs.message).toContain('Ваш код подтверждения:');
+                expect(callArgs.message).toContain(
+                    'Код действителен 10 минут.',
+                );
+            });
+
+            it('200: sms contains 6-digit code', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+
+                await request(app.getHttpServer())
+                    .post('/online-store/user/verify/phone/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(200);
+
+                const callArgs = smsSpy.mock.calls[0][0];
+                const codeMatch = callArgs.message.match(/\d{6}/);
+
+                expect(codeMatch).not.toBeNull();
+                expect(codeMatch[0]).toHaveLength(6);
+            });
+
+            it('200: sms message is concise (< 160 characters)', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+
+                await request(app.getHttpServer())
+                    .post('/online-store/user/verify/phone/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(200);
+
+                const callArgs = smsSpy.mock.calls[0][0];
+
+                // SMS должны быть короткими для избежания разделения на части
+                expect(callArgs.message.length).toBeLessThanOrEqual(160);
+            });
+        });
+
+        describe('Provider Failure Handling', () => {
+            it('400: handles email provider failure gracefully', async () => {
+                // Мокируем провайдер для возврата ошибки
+                emailSpy.mockResolvedValueOnce({
+                    success: false,
+                    error: 'Email service unavailable',
+                    provider: 'MockEmailProvider',
+                });
+
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+
+                const response = await request(app.getHttpServer())
+                    .post('/online-store/user/verify/email/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(400);
+
+                expect(response.body.message).toContain(
+                    'Не удалось отправить код подтверждения',
+                );
+            });
+
+            it('400: handles sms provider failure gracefully', async () => {
+                // Мокируем провайдер для возврата ошибки
+                smsSpy.mockResolvedValueOnce({
+                    success: false,
+                    error: 'SMS service unavailable',
+                    provider: 'MockSmsProvider',
+                });
+
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+
+                const response = await request(app.getHttpServer())
+                    .post('/online-store/user/verify/phone/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(400);
+
+                expect(response.body.message).toContain(
+                    'Не удалось отправить код подтверждения',
+                );
+            });
+        });
+
+        describe('No Duplicate Notifications', () => {
+            it('200: email provider called only once per request', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+
+                await request(app.getHttpServer())
+                    .post('/online-store/user/verify/email/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(200);
+
+                // Проверяем, что провайдер вызван ровно один раз
+                expect(emailSpy).toHaveBeenCalledTimes(1);
+            });
+
+            it('200: sms provider called only once per request', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+
+                await request(app.getHttpServer())
+                    .post('/online-store/user/verify/phone/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(200);
+
+                // Проверяем, что провайдер вызван ровно один раз
+                expect(smsSpy).toHaveBeenCalledTimes(1);
+            });
+        });
+    });
+
+    // ============================================================
+    // Rate Limiting Tests с реальным BruteforceGuard
+    // ============================================================
+    describe('Rate Limiting (Real BruteforceGuard)', () => {
+        let rateLimitApp: INestApplication;
+
+        beforeAll(async () => {
+            // Создаем отдельное приложение с РЕАЛЬНЫМ BruteforceGuard
+            rateLimitApp = await setupTestAppWithRateLimit();
+            await rateLimitApp.init();
+        });
+
+        afterAll(async () => {
+            // Очищаем БД и закрываем приложение
+            const sequelize = rateLimitApp.get(Sequelize);
+            await sequelize.query('DELETE FROM user_verification_code');
+            await rateLimitApp.close();
+        });
+
+        describe('429 Too Many Requests', () => {
+            it('429: email verification request exceeds rate limit (4th request)', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    rateLimitApp,
+                    'USER',
+                );
+
+                // Конфигурация: 3 запроса за 5 минут (app.module.ts:120-123)
+                // Первые 3 запроса должны пройти
+                for (let i = 0; i < 3; i++) {
+                    await request(rateLimitApp.getHttpServer())
+                        .post('/online-store/user/verify/email/request')
+                        .set('Authorization', `Bearer ${token}`)
+                        .expect(200);
+
+                    // Небольшая задержка между запросами для избежания race conditions
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                }
+
+                // 4-й запрос должен вернуть 429
+                const response = await request(rateLimitApp.getHttpServer())
+                    .post('/online-store/user/verify/email/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(429);
+
+                expect(response.body).toHaveProperty('message');
+            }, 20000); // Увеличен timeout из-за задержек
+
+            it('429: phone verification request exceeds rate limit (4th request)', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    rateLimitApp,
+                    'USER',
+                );
+
+                // Конфигурация: 3 запроса за 5 минут
+                for (let i = 0; i < 3; i++) {
+                    await request(rateLimitApp.getHttpServer())
+                        .post('/online-store/user/verify/phone/request')
+                        .set('Authorization', `Bearer ${token}`)
+                        .expect(200);
+
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                }
+
+                // 4-й запрос должен вернуть 429
+                const response = await request(rateLimitApp.getHttpServer())
+                    .post('/online-store/user/verify/phone/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(429);
+
+                expect(response.body).toHaveProperty('message');
+            }, 20000);
+
+            it('429: email confirmation exceeds rate limit (6th attempt)', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    rateLimitApp,
+                    'USER',
+                );
+
+                // Запрашиваем код
+                await request(rateLimitApp.getHttpServer())
+                    .post('/online-store/user/verify/email/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(200);
+
+                // Конфигурация: 5 попыток подтверждения за 5 минут
+                // Первые 5 попыток должны пройти (с неверным кодом)
+                for (let i = 0; i < 5; i++) {
+                    await request(rateLimitApp.getHttpServer())
+                        .post('/online-store/user/verify/email/confirm')
+                        .set('Authorization', `Bearer ${token}`)
+                        .send({ code: `wrong${i}` })
+                        .expect((res) => {
+                            // Может быть 400 (неверный код) или 429 (max attempts)
+                            expect([400, 429]).toContain(res.status);
+                        });
+
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                }
+
+                // 6-я попытка должна вернуть 429 (rate limit)
+                const response = await request(rateLimitApp.getHttpServer())
+                    .post('/online-store/user/verify/email/confirm')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send({ code: 'wrong6' })
+                    .expect(429);
+
+                expect(response.body).toHaveProperty('message');
+            }, 25000);
+
+            it('429: phone confirmation exceeds rate limit (6th attempt)', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    rateLimitApp,
+                    'USER',
+                );
+
+                // Запрашиваем код
+                await request(rateLimitApp.getHttpServer())
+                    .post('/online-store/user/verify/phone/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(200);
+
+                // Первые 5 попыток
+                for (let i = 0; i < 5; i++) {
+                    await request(rateLimitApp.getHttpServer())
+                        .post('/online-store/user/verify/phone/confirm')
+                        .set('Authorization', `Bearer ${token}`)
+                        .send({ code: `wrong${i}` })
+                        .expect((res) => {
+                            expect([400, 429]).toContain(res.status);
+                        });
+
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                }
+
+                // 6-я попытка — 429
+                const response = await request(rateLimitApp.getHttpServer())
+                    .post('/online-store/user/verify/phone/confirm')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send({ code: 'wrong6' })
+                    .expect(429);
+
+                expect(response.body).toHaveProperty('message');
+            }, 25000);
+        });
+
+        describe('Additional Edge Cases', () => {
+            it('400: phone verification without phone number', async () => {
+                // Создаем пользователя напрямую БЕЗ phone
+                const user = await UserModel.create({
+                    email: 'no-phone@test.com',
+                    password:
+                        '$2b$10$abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJ', // Хэшированный пароль
+                    firstName: 'Test',
+                    lastName: 'NoPhone',
+                    tenantId: 1,
+                    // phone: undefined, // ✅ НЕ указываем phone
+                });
+
+                // Генерируем токен вручную (TestDataFactory требует phone)
+                const token = jwt.sign(
+                    { userId: user.id, tenantId: 1, roles: ['USER'] },
+                    process.env.JWT_ACCESS_SECRET as string,
+                    { expiresIn: '15m' },
+                );
+
+                const response = await request(rateLimitApp.getHttpServer())
+                    .post('/online-store/user/verify/phone/request')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(400);
+
+                expect(response.body.message).toMatch(/номер телефона/i);
+
+                // Cleanup
+                await user.destroy();
             });
         });
     });

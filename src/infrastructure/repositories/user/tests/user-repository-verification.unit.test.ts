@@ -98,20 +98,18 @@ describe('UserRepository - Verification System (USER-001-06, VERIFY-03)', () => 
     // VERIFY-03.1: requestVerificationCode - Code Generation
     // ============================================================
     describe('requestVerificationCode - Code Generation', () => {
-        it('должен сгенерировать 6-символьный hex код', async () => {
+        it('должен сгенерировать 6-значный цифровой код', async () => {
             // Arrange
-            const mockCode = 'abc123';
-            const mockBuffer = {
-                toString: jest.fn().mockReturnValue(mockCode),
-            };
-            (randomBytes as jest.Mock).mockReturnValue(mockBuffer);
+            const mockRandomValue = 0.5; // 100000 + Math.floor(0.5 * 900000) = 550000
+            const expectedCode = '550000';
+            jest.spyOn(Math, 'random').mockReturnValue(mockRandomValue);
 
             mockUserModel.findOne.mockResolvedValue(mockUser);
             mockSequelize.query
                 .mockResolvedValueOnce([[], null]) // cooldown check: [results, metadata]
                 .mockResolvedValueOnce([undefined, null]); // INSERT
 
-            const mockHashedCode = 'hashed_abc123';
+            const mockHashedCode = 'hashed_550000';
             (createHash as jest.Mock).mockReturnValue({
                 update: jest.fn().mockReturnThis(),
                 digest: jest.fn().mockReturnValue(mockHashedCode),
@@ -123,8 +121,13 @@ describe('UserRepository - Verification System (USER-001-06, VERIFY-03)', () => 
             await repository.requestVerificationCode(1, 'email', 1);
 
             // Assert
-            expect(randomBytes).toHaveBeenCalledWith(
-                VERIFICATION_CODE_LENGTH_BYTES,
+            expect(mockEmailProvider.sendEmail).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    to: 'test@example.com',
+                    subject: 'Код подтверждения email',
+                    text: expect.stringContaining(expectedCode),
+                    html: expect.stringContaining(expectedCode),
+                }),
             );
             expect(mockSequelize.query).toHaveBeenCalledWith(
                 expect.stringContaining('INSERT INTO `user_verification_code`'),
@@ -555,7 +558,7 @@ describe('UserRepository - Verification System (USER-001-06, VERIFY-03)', () => 
             await expect(
                 repository.requestVerificationCode(1, 'email', 1),
             ).rejects.toThrow(
-                'Не удалось отправить email: SMTP connection failed',
+                'Не удалось отправить код подтверждения. Попробуйте позже',
             );
         });
 
@@ -569,7 +572,7 @@ describe('UserRepository - Verification System (USER-001-06, VERIFY-03)', () => 
             // Act & Assert
             await expect(
                 repository.requestVerificationCode(1, 'phone', 1),
-            ).rejects.toThrow('Не удалось отправить SMS: Invalid phone number');
+            ).rejects.toThrow('Не удалось отправить код подтверждения. Попробуйте позже');
         });
 
         it('должен выбросить BadRequestException если номер телефона отсутствует', async () => {

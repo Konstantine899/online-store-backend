@@ -971,9 +971,10 @@ export class UserRepository implements IUserRepository {
                 }
             }
 
-            const code = randomBytes(VERIFICATION_CODE_LENGTH_BYTES).toString(
-                'hex',
-            );
+            // Генерируем 6-значный цифровой код (100000-999999)
+            const codeNumber =
+                100000 + Math.floor(Math.random() * 900000);
+            const code = codeNumber.toString();
             const codeHash = this.hashCode(code);
             const expiresAt = new Date(
                 Date.now() + VERIFICATION_CODE_EXPIRY_MS,
@@ -1013,8 +1014,12 @@ export class UserRepository implements IUserRepository {
                 });
 
                 if (!emailResult.success) {
-                    throw new Error(
+                    this.logger.error(
                         `Не удалось отправить email: ${emailResult.error}`,
+                        { userId, channel, tenantId },
+                    );
+                    throw new BadRequestException(
+                        'Не удалось отправить код подтверждения. Попробуйте позже',
                     );
                 }
             } else {
@@ -1030,8 +1035,12 @@ export class UserRepository implements IUserRepository {
                 });
 
                 if (!smsResult.success) {
-                    throw new Error(
+                    this.logger.error(
                         `Не удалось отправить SMS: ${smsResult.error}`,
+                        { userId, channel, tenantId },
+                    );
+                    throw new BadRequestException(
+                        'Не удалось отправить код подтверждения. Попробуйте позже',
                     );
                 }
             }
