@@ -23,7 +23,6 @@ jest.mock('crypto', () => ({
 const VERIFICATION_CODE_COOLDOWN_MS = 60 * 1000; // 60 секунд (1 минута)
 const VERIFICATION_CODE_EXPIRY_MS = 10 * 60 * 1000; // 10 минут
 const VERIFICATION_CODE_MAX_ATTEMPTS = 5;
-const VERIFICATION_CODE_LENGTH_BYTES = 3; // 3 bytes = 6 hex символов
 
 describe('UserRepository - Verification System (USER-001-06, VERIFY-03)', () => {
     let repository: UserRepository;
@@ -572,7 +571,9 @@ describe('UserRepository - Verification System (USER-001-06, VERIFY-03)', () => 
             // Act & Assert
             await expect(
                 repository.requestVerificationCode(1, 'phone', 1),
-            ).rejects.toThrow('Не удалось отправить код подтверждения. Попробуйте позже');
+            ).rejects.toThrow(
+                'Не удалось отправить код подтверждения. Попробуйте позже',
+            );
         });
 
         it('должен выбросить BadRequestException если номер телефона отсутствует', async () => {
