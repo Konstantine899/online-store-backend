@@ -373,9 +373,7 @@ export class UserRepository implements IUserRepository {
                 'id',
                 'tenantId',
                 'email',
-                'isVipCustomer',
-                'isPremium',
-                'isBetaTester',
+                'phone', // Необходимо для отправки SMS verification кодов
             ],
         });
     }
@@ -675,52 +673,11 @@ export class UserRepository implements IUserRepository {
             }
 
             // Формируем объект обновлений только для переданных полей
-            const updates: Partial<UserModel> = {};
-
-            if (dto.isVipCustomer !== undefined) {
-                updates.isVipCustomer = dto.isVipCustomer;
-            }
-            if (dto.isPremium !== undefined) {
-                updates.isPremium = dto.isPremium;
-            }
-            if (dto.isBetaTester !== undefined) {
-                updates.isBetaTester = dto.isBetaTester;
-            }
-
-            // Если нет изменений, возвращаем пользователя
-            if (Object.keys(updates).length === 0) {
-                return user;
-            }
-
-            // Обновляем только статусные поля С УЧЁТОМ TENANT
-            const [affectedRows] = await this.userModel.update(updates, {
-                where: { id: userId, tenantId },
-                fields: ['isVipCustomer', 'isPremium', 'isBetaTester'],
-            });
-
-            // Дополнительная проверка (на случай конкурентного доступа)
-            if (affectedRows === 0) {
-                throw new NotFoundException('Пользователь не найден');
-            }
-
-            // Возвращаем обновленную запись (оптимизированный запрос только нужных полей)
-            const updatedUser = await this.userModel.findByPk(userId, {
-                attributes: [
-                    'id',
-                    'email',
-                    'isVipCustomer',
-                    'isPremium',
-                    'isBetaTester',
-                ],
-            });
-
-            if (!updatedUser) {
-                throw new NotFoundException(
-                    'Пользователь не найден после обновления',
-                );
-            }
-
-            return updatedUser;
+            // TODO: Статусные поля (isVipCustomer, isPremium, isBetaTester) были удалены миграцией 20251015135614
+            // Этот метод требует рефакторинга для работы с новой моделью ролей/подписок
+            throw new Error(
+                'updateUserStatus временно недоступен - поля isVipCustomer/isPremium/isBetaTester удалены из модели',
+            );
         } catch (error: unknown) {
             this.handleSequelizeError(
                 error,
@@ -845,20 +802,26 @@ export class UserRepository implements IUserRepository {
         }
     }
 
-    public async verifyEmail(userId: number): Promise<UserModel | null> {
-        // Оптимизированное обновление: прямое обновление без предварительного поиска
+    public async verifyEmail(
+        userId: number,
+        tenantId: number,
+    ): Promise<UserModel | null> {
+        // Обновление с проверкой tenant isolation
         const [affectedRows] = await this.userModel.update(
             { isEmailVerified: true, emailVerifiedAt: new Date() },
-            { where: { id: userId } },
+            { where: { id: userId, tenantId } },
         );
         return affectedRows > 0 ? this.userModel.findByPk(userId) : null;
     }
 
-    public async verifyPhone(userId: number): Promise<UserModel | null> {
-        // Оптимизированное обновление: прямое обновление без предварительного поиска
+    public async verifyPhone(
+        userId: number,
+        tenantId: number,
+    ): Promise<UserModel | null> {
+        // Обновление с проверкой tenant isolation
         const [affectedRows] = await this.userModel.update(
             { isPhoneVerified: true, phoneVerifiedAt: new Date() },
-            { where: { id: userId } },
+            { where: { id: userId, tenantId } },
         );
         return affectedRows > 0 ? this.userModel.findByPk(userId) : null;
     }

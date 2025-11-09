@@ -58,8 +58,8 @@ export interface IUserRepository {
         userId: number,
         dto: UpdateUserPreferencesDto,
     ): Promise<UserModel | null>;
-    verifyEmail(userId: number): Promise<UserModel | null>;
-    verifyPhone(userId: number): Promise<UserModel | null>;
+    verifyEmail(userId: number, tenantId: number): Promise<UserModel | null>;
+    verifyPhone(userId: number, tenantId: number): Promise<UserModel | null>;
 
     // Verification Code Methods (with tenant isolation)
     requestVerificationCode(

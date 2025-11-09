@@ -233,9 +233,8 @@ tasks:
 
 - id: USER-001-06
   title: Добавить API endpoints для верификации email и телефона
-  status: COMPLETED
-  commit: "0cdeaadd48aaca3b1ddf88a65030c7ef903dc8bf"
-  completed_at: "2025-11-05T17:13:07Z"
+  status: IN_PROGRESS
+  note: "Базовая реализация есть (commit 0cdeaadd48aa), но требуется комплексное покрытие тестами"
   branch: "feature/user/USER-001/add-verification-api"
   files_scope:
     - "src/domain/models/user.model.ts"
@@ -245,6 +244,9 @@ tasks:
     - "src/infrastructure/controllers/user/\*\*"
     - "src/infrastructure/responses/user/\*\*"
     - "src/infrastructure/common/decorators/swagger/user/\*\*"
+    - "src/infrastructure/repositories/user/\*\*"
+    - "src/infrastructure/services/user/tests/\*\*"
+    - "src/infrastructure/controllers/user/tests/\*\*"
       steps:
     - ✅ проверить существование флагов is_email_verified, is_phone_verified, email_verified_at, phone_verified_at в БД (уже есть)
     - ✅ обновить UserModel (Domain) с флагами верификации (если нужно)
@@ -255,7 +257,12 @@ tasks:
     - ✅ создать кастомные Swagger декораторы @VerifyEmailSwaggerDecorator(), @VerifyPhoneSwaggerDecorator()
     - ✅ добавить endpoints для верификации (POST /users/verify/email, POST /users/verify/phone)
     - ✅ добавить проверку tenant isolation
-    - ✅ написать тесты процесса верификации (с интеграцией NotificationService и tenant isolation)
+    - ⚠️ написать КОМПЛЕКСНЫЕ unit тесты для UserService (requestVerificationCode, confirmVerificationCode)
+    - ⚠️ написать unit тесты для UserRepository (код генерация, TTL, attempts, cooldown)
+    - ⚠️ написать ПОЛНЫЕ integration тесты с tenant isolation (multi-tenant сценарии)
+    - ⚠️ написать тесты интеграции с NotificationService (моки, провайдеры)
+    - ⚠️ написать тесты rate limiting и brute-force защиты
+    - ⚠️ написать тесты кэширования кодов (Redis)
     - ✅ обновить Swagger документацию
       dod:
     - ✅ UserModel содержит флаги верификации
@@ -264,17 +271,48 @@ tasks:
     - ✅ Response классы созданы с Swagger декораторами (RequestVerificationCodeResponse, ConfirmVerificationCodeResponse)
     - ✅ кастомные Swagger декораторы созданы (4 декоратора: request/confirm для email & phone)
     - ✅ tenant isolation обеспечена на всех слоях (Repository/Service/Controller)
-    - ✅ тесты покрывают процесс верификации (12 unit + 7 integration с NotificationService и tenant isolation)
+    - ❌ UNIT тесты покрывают ВСЕ сценарии (≥20 тестов):
+        - генерация кодов (успех, ошибки)
+        - валидация кодов (корректный, некорректный, истекший)
+        - TTL (10 минут)
+        - cooldown (60 секунд между запросами)
+        - attempts (максимум 5 попыток ввода кода)
+        - tenant isolation на уровне сервиса
+        - обработка ошибок репозитория
+        - инвалидация кэша после верификации
+    - ❌ INTEGRATION тесты покрывают ВСЕ flow (≥15 тестов):
+        - полный успешный flow (request → confirm)
+        - multi-tenant изоляция (пользователь из tenant A не может верифицировать код из tenant B)
+        - cross-tenant попытки блокируются и логируются
+        - admin может верифицировать только своих пользователей
+        - rate limiting (429 Too Many Requests)
+        - негативные кейсы (401, 403, 404, 400)
+        - структура Response валидна
+        - NotificationService интеграция (мок провайдеров)
+    - ❌ покрытие кода ≥80% для verification модулей
     - ✅ Swagger документация обновлена
     - ✅ код рефакторинг после ревью (DRY, config, cache, logging)
-      pre_commit_workflow: "ОБЫЧНЫЙ"
-      pre_commit_steps:
-    - "✅ «Ревью» → verification logic, code validation, NotificationService integration, tenant isolation"
-    - "✅ «Автофикс» → linter/prettier"
-    - "✅ Тесты: verification flow tests (with NotificationService and tenant isolation)"
-    - "✅ «Коммит» → feat(user): USER-001-06 complete"
+      testing_checklist:
+    - [ ] Unit тесты UserService.requestVerificationCode (успех, cooldown, tenant, ошибки)
+    - [ ] Unit тесты UserService.confirmVerificationCode (успех, неверный код, истекший, попытки)
+    - [ ] Unit тесты UserRepository (генерация, хэширование, TTL, attempts)
+    - [ ] Integration тесты успешного flow (email + phone)
+    - [ ] Integration тесты multi-tenant изоляции (cross-tenant блокировка)
+    - [ ] Integration тесты rate limiting (429)
+    - [ ] Integration тесты NotificationService (мок провайдеров email/SMS)
+    - [ ] Integration тесты админских прав (только свои пользователи)
+    - [ ] Integration тесты негативных кейсов (401, 403, 404, 400)
+    - [ ] Coverage report ≥80% для verification модулей
+          pre_commit_workflow: "КРИТИЧНЫЙ (security: verification system)"
+          pre_commit_steps:
+    - "«Ревью» → verification logic, security, tenant isolation, rate limiting"
+    - "«Оптимизируй» → code generation performance, cache strategy"
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: ≥35 unit + integration tests (100% DoD coverage)"
+    - "Coverage: проверить ≥80% для verification модулей"
+    - "«Коммит» → test(user): USER-001-06 comprehensive test coverage"
       gate:
-    - ✅ require: "Одобряю USER-001-06"
+    - require: "Одобряю USER-001-06"
 
 # Фаза 3: Адреса пользователей
 

@@ -1,4 +1,4 @@
-import { TenantModel, RatingModel } from '@app/domain/models';
+import { RatingModel, TenantModel, UserModel } from '@app/domain/models';
 import { TenantContext } from '@app/infrastructure/common/context';
 import { TenantMiddleware } from '@app/infrastructure/common/middleware';
 import {
@@ -65,7 +65,7 @@ import * as process from 'process';
             imports: [ConfigModule],
             useClass: SequelizeConfigService,
         }),
-        SequelizeModule.forFeature([TenantModel, RatingModel]), // Добавляем TenantModel и RatingModel для TenantMiddleware и RatingService
+        SequelizeModule.forFeature([TenantModel, RatingModel, UserModel]), // Регистрируем модели для тестов
         ConfigModule.forRoot({
             envFilePath: `.${process.env.NODE_ENV}.env`,
             load: [databaseConfig],

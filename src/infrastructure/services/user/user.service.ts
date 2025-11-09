@@ -588,10 +588,15 @@ export class UserService implements IUserService {
         return user as UserModel;
     }
 
-    public async verifyEmailFlag(userId: number): Promise<UserModel> {
-        const user = await this.userRepository.verifyEmail(userId);
+    public async verifyEmailFlag(
+        userId: number,
+        tenantId: number,
+    ): Promise<UserModel> {
+        const user = await this.userRepository.verifyEmail(userId, tenantId);
         if (!user) {
-            this.notFound('Пользователь не найден в БД');
+            this.notFound(
+                'Пользователь не найден или не принадлежит вашему tenant',
+            );
         }
 
         // Инвалидируем кэш пользователя
@@ -600,10 +605,15 @@ export class UserService implements IUserService {
         return user as UserModel;
     }
 
-    public async verifyPhoneFlag(userId: number): Promise<UserModel> {
-        const user = await this.userRepository.verifyPhone(userId);
+    public async verifyPhoneFlag(
+        userId: number,
+        tenantId: number,
+    ): Promise<UserModel> {
+        const user = await this.userRepository.verifyPhone(userId, tenantId);
         if (!user) {
-            this.notFound('Пользователь не найден в БД');
+            this.notFound(
+                'Пользователь не найден или не принадлежит вашему tenant',
+            );
         }
 
         // Инвалидируем кэш пользователя
@@ -651,48 +661,14 @@ export class UserService implements IUserService {
                 tenantId,
             );
 
-            // Логируем изменения для аудита (важно для административных операций)
-            const before = {
-                isVipCustomer: beforeUser?.isVipCustomer ?? false,
-                isPremium: beforeUser?.isPremium ?? false,
-                isBetaTester: beforeUser?.isBetaTester ?? false,
-            };
-            const after = {
-                isVipCustomer: user.isVipCustomer ?? false,
-                isPremium: user.isPremium ?? false,
-                isBetaTester: user.isBetaTester ?? false,
-            };
-
+            // TODO: Логирование изменений отключено, так как поля isVipCustomer/isPremium/isBetaTester удалены
+            // Метод updateUserStatus требует рефакторинга для работы с новой моделью ролей/подписок
             this.logger.info(
                 {
                     userId,
-                    before,
-                    after,
-                    changes: {
-                        isVipCustomer:
-                            before.isVipCustomer !== after.isVipCustomer
-                                ? {
-                                      from: before.isVipCustomer,
-                                      to: after.isVipCustomer,
-                                  }
-                                : undefined,
-                        isPremium:
-                            before.isPremium !== after.isPremium
-                                ? {
-                                      from: before.isPremium,
-                                      to: after.isPremium,
-                                  }
-                                : undefined,
-                        isBetaTester:
-                            before.isBetaTester !== after.isBetaTester
-                                ? {
-                                      from: before.isBetaTester,
-                                      to: after.isBetaTester,
-                                  }
-                                : undefined,
-                    },
+                    adminTenantId: tenantId,
                 },
-                `Обновление статусных флагов пользователя ${userId}`,
+                `Обновление статусных флагов пользователя ${userId} (логирование временно отключено)`,
             );
 
             // Инвалидируем кэш пользователя

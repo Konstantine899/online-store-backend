@@ -93,7 +93,7 @@ import { VERIFICATION_CODE_EXPIRY_MS } from '@app/infrastructure/config/verifica
 
 // Оптимизированные типы для Request
 interface AuthenticatedRequest extends Request {
-    user: { id: number };
+    user: { id: number; tenantId: number; roles: { role: string }[] };
 }
 
 // Оптимизированные константы ролей
@@ -370,9 +370,11 @@ export class UserController implements IUserController {
     @Patch('verify/email/:id')
     @HttpCode(HttpStatus.OK)
     async verifyEmail(
+        @Req() req: AuthenticatedRequest,
         @Param('id', ParseIntPipe) id: number,
     ): Promise<{ data: unknown }> {
-        const user = await this.userService.verifyEmailFlag(id);
+        const adminTenantId = req.user.tenantId;
+        const user = await this.userService.verifyEmailFlag(id, adminTenantId);
         return this.createResponse(user);
     }
 
@@ -382,9 +384,11 @@ export class UserController implements IUserController {
     @Patch('verify/phone/:id')
     @HttpCode(HttpStatus.OK)
     async verifyPhone(
+        @Req() req: AuthenticatedRequest,
         @Param('id', ParseIntPipe) id: number,
     ): Promise<{ data: unknown }> {
-        const user = await this.userService.verifyPhoneFlag(id);
+        const adminTenantId = req.user.tenantId;
+        const user = await this.userService.verifyPhoneFlag(id, adminTenantId);
         return this.createResponse(user);
     }
 
@@ -667,11 +671,10 @@ export class UserController implements IUserController {
             dto,
             tenantId,
         );
+        // TODO: Поля isVipCustomer/isPremium/isBetaTester удалены из модели
+        // Метод требует рефакторинга для работы с новой моделью ролей/подписок
         return {
             id: updatedUser.id,
-            isVipCustomer: updatedUser.isVipCustomer ?? false,
-            isPremium: updatedUser.isPremium ?? false,
-            isBetaTester: updatedUser.isBetaTester ?? false,
         };
     }
 

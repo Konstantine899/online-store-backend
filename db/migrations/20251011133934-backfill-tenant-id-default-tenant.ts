@@ -2,19 +2,13 @@ import type { QueryInterface } from 'sequelize';
 import { DataTypes } from 'sequelize';
 
 interface Migration {
-    up(
-        queryInterface: QueryInterface,
-        Sequelize: typeof DataTypes,
-    ): Promise<void>;
+    up(queryInterface: QueryInterface): Promise<void>;
 
     down(queryInterface: QueryInterface): Promise<void>;
 }
 
 const migration: Migration = {
-    async up(
-        queryInterface: QueryInterface,
-        Sequelize: typeof DataTypes,
-    ): Promise<void> {
+    async up(queryInterface: QueryInterface): Promise<void> {
         // Step 1: Create default tenant (deterministic) - safe insert
         const [tenants] = await queryInterface.sequelize.query(
             `SELECT id FROM tenants WHERE id = 1`,
@@ -39,6 +33,7 @@ const migration: Migration = {
 
         // Step 2: Backfill tenant_id = 1 for all existing records
         const tables = [
+            'user', // ✅ Added: Main user table
             'product',
             'category',
             'brand',
@@ -56,19 +51,33 @@ const migration: Migration = {
             console.log(`Backfilled ${table}: ${results} records updated`);
         }
 
-        // Step 3: Make tenant_id NOT NULL (enforce constraint)
+        // Step 3: Make tenant_id NOT NULL with DEFAULT 1 (enforce constraint)
+        // ⚠️ Используем прямой SQL, т.к. changeColumn не работает корректно с FK в MySQL
         for (const table of tables) {
-            await queryInterface.changeColumn(table, 'tenant_id', {
-                type: Sequelize.INTEGER,
-                allowNull: false, // Now required!
-                references: {
-                    model: 'tenants',
-                    key: 'id',
-                },
-                onUpdate: 'CASCADE',
-                onDelete: 'CASCADE',
-            });
-            console.log(`${table}.tenant_id is now NOT NULL`);
+            // Drop FK constraint temporarily (if exists)
+            try {
+                await queryInterface.sequelize.query(
+                    `ALTER TABLE \`${table}\` DROP FOREIGN KEY \`${table}_ibfk_1\``,
+                );
+            } catch {
+                // FK может не существовать или иметь другое имя - игнорируем
+            }
+
+            // Modify column to NOT NULL DEFAULT 1
+            await queryInterface.sequelize.query(
+                `ALTER TABLE \`${table}\`
+                 MODIFY COLUMN \`tenant_id\` INT NOT NULL DEFAULT 1`,
+            );
+
+            // Re-add FK constraint
+            await queryInterface.sequelize.query(
+                `ALTER TABLE \`${table}\`
+                 ADD CONSTRAINT \`fk_${table}_tenant_id\`
+                 FOREIGN KEY (\`tenant_id\`) REFERENCES \`tenants\` (\`id\`)
+                 ON DELETE CASCADE ON UPDATE CASCADE`,
+            );
+
+            console.log(`${table}.tenant_id is now NOT NULL with DEFAULT 1`);
         }
 
         console.log(
@@ -79,6 +88,7 @@ const migration: Migration = {
     async down(queryInterface: QueryInterface): Promise<void> {
         // Step 1: Make tenant_id nullable again
         const tables = [
+            'user', // ✅ Added: Main user table
             'product',
             'category',
             'brand',

@@ -52,10 +52,6 @@ interface IUserModel {
     isTwoFactorEnabled?: boolean;
     isDeleted?: boolean;
     isSuspended?: boolean;
-    // status flags (admin-controlled)
-    isVipCustomer?: boolean;
-    isPremium?: boolean;
-    isBetaTester?: boolean;
     // preferences
     preferredLanguage?: string;
     timezone?: string;
@@ -233,16 +229,6 @@ export class UserModel
 
     @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
     declare isSuspended?: boolean;
-
-    // Статусные флаги (управляются администраторами)
-    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
-    declare isVipCustomer?: boolean;
-
-    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
-    declare isPremium?: boolean;
-
-    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
-    declare isBetaTester?: boolean;
 
     // Предпочтения
     @Column({ type: DataType.STRING(10), allowNull: false, defaultValue: 'ru' })

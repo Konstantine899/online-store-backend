@@ -67,8 +67,8 @@ export class SequelizeConfigService implements SequelizeOptionsFactory {
                 collate: 'utf8mb4_0900_ai_ci',
             },
 
-            // Подавляем предупреждения в тестовом режиме
-            ...(process.env.NODE_ENV === 'test' && {
+            // Подавляем предупреждения в тестовом режиме (если не включен DEBUG)
+            ...(process.env.NODE_ENV === 'test' && process.env.DEBUG_SQL !== 'true' && {
                 logging: false,
                 benchmark: false,
                 logQueryParameters: false,
