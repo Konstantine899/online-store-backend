@@ -1,0 +1,2602 @@
+﻿
+> online-store-backend@0.0.1 test
+> cross-env NODE_ENV=test jest user-verification.integration.test.ts
+
+node.exe : ts-jest[config] (WARN) 
+C:\nvm4w\nodejs\npm.ps1:16 знак:5
++     & "$basedir/node$exe"  "$basedir/node_modules/npm/bin/npm-cli.js" ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ts-jest[config] (WARN) :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    The "ts-jest" config option "isolatedModules" is deprecated and will be removed in v30.0.0. Please use 
+"isolatedModules: true" in F:/git/online-store-backend/tsconfig.json instead, see 
+https://www.typescriptlang.org/tsconfig/#isolatedModules
+  
+[dotenv@17.2.2] injecting env (25) from .test.env -- tip: ЁЯФР prevent building .env in docker: https://dotenvx.com/prebuild
+ЁЯФД [Integration Global Setup] Resetting test database...
+тЬЕ Migrations applied for test environment
+тЬЕ Seeds applied for test environment
+тЬЕ [Integration Global Setup] Test database setup complete
+ts-jest[config] (WARN) 
+    The "ts-jest" config option "isolatedModules" is deprecated and will be removed in v30.0.0. Please use 
+"isolatedModules: true" in F:/git/online-store-backend/tsconfig.json instead, see 
+https://www.typescriptlang.org/tsconfig/#isolatedModules
+  
+{"level":30,"time":"2025-11-09T15:24:39.895Z","env":"test","pid":24788,"context":"AuthService","userId":15,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:40.031Z","env":"test","pid":24788,"context":"UserService","message":"╨Ч╨░╨┐╤А╨╛╤И╨╡╨╜ ╨║╨╛╨┤ ╨▓╨╡╤А╨╕╤Д╨╕╨║╨░╤Ж╨╕╨╕","userId":15,"channel":"email","tenantId":1}
+{"level":30,"time":"2025-11-09T15:24:40.244Z","env":"test","pid":24788,"context":"AuthService","userId":16,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:40.556Z","env":"test","pid":24788,"context":"AuthService","userId":17,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:40.768Z","env":"test","pid":24788,"context":"AuthService","userId":18,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:40.972Z","env":"test","pid":24788,"context":"AuthService","userId":19,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:41.259Z","env":"test","pid":24788,"context":"AuthService","userId":20,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:41.492Z","env":"test","pid":24788,"context":"AuthService","userId":21,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:41.630Z","env":"test","pid":24788,"context":"UserService","message":"╨Ч╨░╨┐╤А╨╛╤И╨╡╨╜ ╨║╨╛╨┤ ╨▓╨╡╤А╨╕╤Д╨╕╨║╨░╤Ж╨╕╨╕","userId":21,"channel":"email","tenantId":1}
+{"level":30,"time":"2025-11-09T15:24:41.832Z","env":"test","pid":24788,"context":"AuthService","userId":22,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:42.069Z","env":"test","pid":24788,"context":"AuthService","userId":23,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:42.200Z","env":"test","pid":24788,"context":"UserService","message":"╨Ч╨░╨┐╤А╨╛╤И╨╡╨╜ ╨║╨╛╨┤ ╨▓╨╡╤А╨╕╤Д╨╕╨║╨░╤Ж╨╕╨╕","userId":23,"channel":"email","tenantId":1}
+{"level":30,"time":"2025-11-09T15:24:42.425Z","env":"test","pid":24788,"context":"AuthService","userId":24,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:42.555Z","env":"test","pid":24788,"context":"UserService","message":"╨Ч╨░╨┐╤А╨╛╤И╨╡╨╜ ╨║╨╛╨┤ ╨▓╨╡╤А╨╕╤Д╨╕╨║╨░╤Ж╨╕╨╕","userId":24,"channel":"email","tenantId":1}
+{"level":30,"time":"2025-11-09T15:24:42.751Z","env":"test","pid":24788,"context":"AuthService","userId":25,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:43.056Z","env":"test","pid":24788,"context":"AuthService","userId":27,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:43.315Z","env":"test","pid":24788,"context":"AuthService","userId":29,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:43.494Z","env":"test","pid":24788,"context":"AuthService","userId":30,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:43.701Z","env":"test","pid":24788,"context":"AuthService","userId":31,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:43.878Z","env":"test","pid":24788,"context":"AuthService","userId":32,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:44.108Z","env":"test","pid":24788,"context":"AuthService","userId":33,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:44.238Z","env":"test","pid":24788,"context":"UserService","message":"╨Ч╨░╨┐╤А╨╛╤И╨╡╨╜ ╨║╨╛╨┤ ╨▓╨╡╤А╨╕╤Д╨╕╨║╨░╤Ж╨╕╨╕","userId":33,"channel":"email","tenantId":1}
+{"level":30,"time":"2025-11-09T15:24:44.487Z","env":"test","pid":24788,"context":"AuthService","userId":34,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:44.624Z","env":"test","pid":24788,"context":"UserService","message":"╨Ч╨░╨┐╤А╨╛╤И╨╡╨╜ ╨║╨╛╨┤ ╨▓╨╡╤А╨╕╤Д╨╕╨║╨░╤Ж╨╕╨╕","userId":34,"channel":"email","tenantId":1}
+{"level":30,"time":"2025-11-09T15:24:44.868Z","env":"test","pid":24788,"context":"AuthService","userId":35,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:45.129Z","env":"test","pid":24788,"context":"AuthService","userId":37,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:45.304Z","env":"test","pid":24788,"context":"AuthService","userId":38,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:45.485Z","env":"test","pid":24788,"context":"AuthService","userId":39,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:45.609Z","env":"test","pid":24788,"context":"UserService","message":"╨Ч╨░╨┐╤А╨╛╤И╨╡╨╜ ╨║╨╛╨┤ ╨▓╨╡╤А╨╕╤Д╨╕╨║╨░╤Ж╨╕╨╕","userId":39,"channel":"email","tenantId":1}
+{"level":30,"time":"2025-11-09T15:24:45.785Z","env":"test","pid":24788,"context":"AuthService","userId":40,"email":"[REDACTED]","roles":[null],"msg":"╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╛╤И╤С╨╗ ╨▓ ╤Б╨╕╤Б╤В╨╡╨╝╤Г"}
+{"level":30,"time":"2025-11-09T15:24:45.918Z","env":"test","pid":24788,"context":"UserService","message":"╨Ч╨░╨┐╤А╨╛╤И╨╡╨╜ ╨║╨╛╨┤ ╨▓╨╡╤А╨╕╤Д╨╕╨║╨░╤Ж╨╕╨╕","userId":40,"channel":"email","tenantId":1}
+FAIL integration src/infrastructure/controllers/user/tests/user-verification.integration.test.ts (9.662 s)
+  тЧП Console
+
+    console.log
+      [dotenv@17.2.2] injecting env (0) from .test.env -- tip: ЁЯФР prevent building .env in docker: 
+https://dotenvx.com/prebuild
+
+      at _log (node_modules/dotenv/lib/main.js:139:11)
+
+    console.log
+      тЬЕ Environment loaded from F:\git\online-store-backend\.test.env
+
+      at Object.<anonymous> (tests/jest-setup.ts:23:13)
+
+    console.log
+         NODE_ENV: test
+
+      at Object.<anonymous> (tests/jest-setup.ts:24:13)
+
+    console.log
+         DEBUG_SQL: true
+
+      at Object.<anonymous> (tests/jest-setup.ts:25:13)
+
+    console.log
+      Executing (default): SELECT 1+1 AS result
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.warn
+      (sequelize) Warning: Model "RoleModel" is declaring public class fields for attribute(s): "role", "description".
+      These class fields are shadowing Sequelize's attribute getters & setters.
+      See https://sequelize.org/main/manual/model-basics.html#caveat-with-public-class-fields
+
+      at Logger.warn (node_modules/sequelize/src/utils/logger.ts:41:13)
+      at Timeout._onTimeout (node_modules/sequelize/src/model.js:102:18)
+
+    console.log
+      Executing (3a544d95-f3d5-4300-8be8-3916102b35c0): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (3a544d95-f3d5-4300-8be8-3916102b35c0): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (15, 14, '2025-11-09 18:24:39', '2025-11-09 18:24:39')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (3a544d95-f3d5-4300-8be8-3916102b35c0): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701879657.q3ppul@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 15;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:39', `updated_at` = '2025-11-09 
+18:24:39' WHERE `id` = 15 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email` FROM `user` AS `UserModel` WHERE 
+`UserModel`.`id` = 15 AND `UserModel`.`tenant_id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `created_at` FROM `user_verification_code` WHERE `user_id` = 15 AND `channel` = 
+'email' ORDER BY `created_at` DESC LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user_verification_code` 
+(`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES 
+(15,'email','d8578aea80b39afdcdb8e111b115a2ca6f1888572f33750b6f61d4d2a9333762','2025-11-09 18:34:39',0,'2025-11-09 
+18:24:39','2025-11-09 18:24:39')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (0928b5ff-fa04-4c3d-8dff-e329f5b514ed): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (0928b5ff-fa04-4c3d-8dff-e329f5b514ed): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (16, 14, '2025-11-09 18:24:40', '2025-11-09 18:24:40')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (0928b5ff-fa04-4c3d-8dff-e329f5b514ed): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701880035.upfh2r@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 16;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:40', `updated_at` = '2025-11-09 
+18:24:40' WHERE `id` = 16 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email` FROM `user` AS `UserModel` WHERE 
+`UserModel`.`id` = 16 AND `UserModel`.`tenant_id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `created_at` FROM `user_verification_code` WHERE `user_id` = 16 AND `channel` = 
+'phone' ORDER BY `created_at` DESC LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user_verification_code` 
+(`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES 
+(16,'phone','32d1dcadaa1632574343251f888de60b4d97199768bd9450eb20072f7bba2ba9','2025-11-09 18:34:40',0,'2025-11-09 
+18:24:40','2025-11-09 18:24:40')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (f6531477-8811-449b-a581-10ab6c758976): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (f6531477-8811-449b-a581-10ab6c758976): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (17, 14, '2025-11-09 18:24:40', '2025-11-09 18:24:40')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (f6531477-8811-449b-a581-10ab6c758976): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701880326.5vi8wz@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 17;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:40', `updated_at` = '2025-11-09 
+18:24:40' WHERE `id` = 17 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'ADMIN';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (a7ff94c1-e4f0-444c-971e-35dcd82b7f5f): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (a7ff94c1-e4f0-444c-971e-35dcd82b7f5f): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (18, 13, '2025-11-09 18:24:40', '2025-11-09 18:24:40')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (a7ff94c1-e4f0-444c-971e-35dcd82b7f5f): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701880575.0vr3uk@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 18;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:40', `updated_at` = '2025-11-09 
+18:24:40' WHERE `id` = 18 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (c7b64e01-4d4c-4230-8cd7-5e3e56014c20): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (c7b64e01-4d4c-4230-8cd7-5e3e56014c20): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (19, 14, '2025-11-09 18:24:40', '2025-11-09 18:24:40')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (c7b64e01-4d4c-4230-8cd7-5e3e56014c20): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701880770.kicb5i@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 19;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:40', `updated_at` = '2025-11-09 
+18:24:40' WHERE `id` = 19 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `is_email_verified`=?,`email_verified_at`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email`, `phone`, `first_name` AS `firstName`, 
+`last_name` AS `lastName`, `date_of_birth` AS `dateOfBirth`, `is_active` AS `isActive`, `is_newsletter_subscribed` AS 
+`isNewsletterSubscribed`, `is_marketing_consent` AS `isMarketingConsent`, `is_cookie_consent` AS `isCookieConsent`, 
+`is_profile_completed` AS `isProfileCompleted`, `is_blocked` AS `isBlocked`, `is_verified` AS `isVerified`, 
+`is_email_verified` AS `isEmailVerified`, `is_phone_verified` AS `isPhoneVerified`, `is_terms_accepted` AS 
+`isTermsAccepted`, `is_privacy_accepted` AS `isPrivacyAccepted`, `is_age_verified` AS `isAgeVerified`, 
+`is_two_factor_enabled` AS `isTwoFactorEnabled`, `is_deleted` AS `isDeleted`, `is_suspended` AS `isSuspended`, 
+`preferred_language` AS `preferredLanguage`, `timezone`, `notification_preferences` AS `notificationPreferences`, 
+`theme_preference` AS `themePreference`, `default_language` AS `defaultLanguage`, `translations`, `email_verified_at` 
+AS `emailVerifiedAt`, `phone_verified_at` AS `phoneVerifiedAt`, `last_login_at` AS `lastLoginAt` FROM `user` AS 
+`UserModel` WHERE `UserModel`.`id` = 19;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `is_phone_verified`=?,`phone_verified_at`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email`, `phone`, `first_name` AS `firstName`, 
+`last_name` AS `lastName`, `date_of_birth` AS `dateOfBirth`, `is_active` AS `isActive`, `is_newsletter_subscribed` AS 
+`isNewsletterSubscribed`, `is_marketing_consent` AS `isMarketingConsent`, `is_cookie_consent` AS `isCookieConsent`, 
+`is_profile_completed` AS `isProfileCompleted`, `is_blocked` AS `isBlocked`, `is_verified` AS `isVerified`, 
+`is_email_verified` AS `isEmailVerified`, `is_phone_verified` AS `isPhoneVerified`, `is_terms_accepted` AS 
+`isTermsAccepted`, `is_privacy_accepted` AS `isPrivacyAccepted`, `is_age_verified` AS `isAgeVerified`, 
+`is_two_factor_enabled` AS `isTwoFactorEnabled`, `is_deleted` AS `isDeleted`, `is_suspended` AS `isSuspended`, 
+`preferred_language` AS `preferredLanguage`, `timezone`, `notification_preferences` AS `notificationPreferences`, 
+`theme_preference` AS `themePreference`, `default_language` AS `defaultLanguage`, `translations`, `email_verified_at` 
+AS `emailVerifiedAt`, `phone_verified_at` AS `phoneVerifiedAt`, `last_login_at` AS `lastLoginAt` FROM `user` AS 
+`UserModel` WHERE `UserModel`.`id` = 19;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'ADMIN';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (c4557c13-31b0-4761-8e97-03b4b46c6bc5): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (c4557c13-31b0-4761-8e97-03b4b46c6bc5): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (20, 13, '2025-11-09 18:24:41', '2025-11-09 18:24:41')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (c4557c13-31b0-4761-8e97-03b4b46c6bc5): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701881040.emabof@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 20;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:41', `updated_at` = '2025-11-09 
+18:24:41' WHERE `id` = 20 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `is_email_verified`=?,`email_verified_at`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ba831b36-67d9-4f09-bb6a-599207ed5619): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ba831b36-67d9-4f09-bb6a-599207ed5619): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (21, 14, '2025-11-09 18:24:41', '2025-11-09 18:24:41')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ba831b36-67d9-4f09-bb6a-599207ed5619): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701881277.y4g1bp@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 21;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:41', `updated_at` = '2025-11-09 
+18:24:41' WHERE `id` = 21 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email` FROM `user` AS `UserModel` WHERE 
+`UserModel`.`id` = 21 AND `UserModel`.`tenant_id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `created_at` FROM `user_verification_code` WHERE `user_id` = 21 AND `channel` = 
+'email' ORDER BY `created_at` DESC LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user_verification_code` 
+(`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES 
+(21,'email','8d9449c244a460db526b19547aed2b0a9e43361771120f3d0d9229adb256da11','2025-11-09 18:34:41',0,'2025-11-09 
+18:24:41','2025-11-09 18:24:41')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (d655f191-9e2d-4e92-8c9c-505dca3ad067): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (d655f191-9e2d-4e92-8c9c-505dca3ad067): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (22, 14, '2025-11-09 18:24:41', '2025-11-09 18:24:41')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (d655f191-9e2d-4e92-8c9c-505dca3ad067): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701881634.8r4gsu@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 22;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:41', `updated_at` = '2025-11-09 
+18:24:41' WHERE `id` = 22 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email` FROM `user` AS `UserModel` WHERE 
+`UserModel`.`id` = 22 AND `UserModel`.`tenant_id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `created_at` FROM `user_verification_code` WHERE `user_id` = 22 AND `channel` = 
+'phone' ORDER BY `created_at` DESC LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user_verification_code` 
+(`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES 
+(22,'phone','bccacdd001f755980db2db69f86d6c435ea0033ab1c485c28a48b1a920d3fb19','2025-11-09 18:34:41',0,'2025-11-09 
+18:24:41','2025-11-09 18:24:41')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (465fd1a0-35c5-4913-a60d-799581afc8a1): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (465fd1a0-35c5-4913-a60d-799581afc8a1): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (23, 14, '2025-11-09 18:24:41', '2025-11-09 18:24:41')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (465fd1a0-35c5-4913-a60d-799581afc8a1): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701881855.iq88r9@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 23;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:42', `updated_at` = '2025-11-09 
+18:24:42' WHERE `id` = 23 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email` FROM `user` AS `UserModel` WHERE 
+`UserModel`.`id` = 23 AND `UserModel`.`tenant_id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `created_at` FROM `user_verification_code` WHERE `user_id` = 23 AND `channel` = 
+'email' ORDER BY `created_at` DESC LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user_verification_code` 
+(`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES 
+(23,'email','45ba1cf800ee5f33f1a542e0aca908f66255b312b4c52c81b52b43781715a88f','2025-11-09 18:34:42',0,'2025-11-09 
+18:24:42','2025-11-09 18:24:42')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (fb5c3fd8-50fd-4783-abb0-18060e08695d): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (fb5c3fd8-50fd-4783-abb0-18060e08695d): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (24, 14, '2025-11-09 18:24:42', '2025-11-09 18:24:42')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (fb5c3fd8-50fd-4783-abb0-18060e08695d): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701882216.q514m7@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 24;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:42', `updated_at` = '2025-11-09 
+18:24:42' WHERE `id` = 24 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email` FROM `user` AS `UserModel` WHERE 
+`UserModel`.`id` = 24 AND `UserModel`.`tenant_id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `created_at` FROM `user_verification_code` WHERE `user_id` = 24 AND `channel` = 
+'email' ORDER BY `created_at` DESC LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user_verification_code` 
+(`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES 
+(24,'email','c7be4a6aa6ddae6be17256241ed13d3e120619314b8e5aecc75ab3958913423a','2025-11-09 18:34:42',0,'2025-11-09 
+18:24:42','2025-11-09 18:24:42')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'ADMIN';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (75819e02-438b-4af1-836e-03dbdd468d66): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (75819e02-438b-4af1-836e-03dbdd468d66): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (25, 13, '2025-11-09 18:24:42', '2025-11-09 18:24:42')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (75819e02-438b-4af1-836e-03dbdd468d66): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701882556.7si357@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 25;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:42', `updated_at` = '2025-11-09 
+18:24:42' WHERE `id` = 25 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'ADMIN';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (23028dd9-c9c0-47dd-825d-bf3a37f76fb3): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (23028dd9-c9c0-47dd-825d-bf3a37f76fb3): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (27, 13, '2025-11-09 18:24:42', '2025-11-09 18:24:42')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (23028dd9-c9c0-47dd-825d-bf3a37f76fb3): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701882866.b539wl@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 27;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:43', `updated_at` = '2025-11-09 
+18:24:43' WHERE `id` = 27 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'ADMIN';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (96ffaaca-18b0-4b84-a661-59730a298e12): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (96ffaaca-18b0-4b84-a661-59730a298e12): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (29, 13, '2025-11-09 18:24:43', '2025-11-09 18:24:43')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (96ffaaca-18b0-4b84-a661-59730a298e12): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701883138.kz66nn@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 29;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:43', `updated_at` = '2025-11-09 
+18:24:43' WHERE `id` = 29 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (fab41be2-949c-4a76-9ef8-b9cfa3be8ef7): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (fab41be2-949c-4a76-9ef8-b9cfa3be8ef7): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (30, 14, '2025-11-09 18:24:43', '2025-11-09 18:24:43')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (fab41be2-949c-4a76-9ef8-b9cfa3be8ef7): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701883316.846dc7@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 30;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:43', `updated_at` = '2025-11-09 
+18:24:43' WHERE `id` = 30 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `is_email_verified`=?,`email_verified_at`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email`, `phone`, `first_name` AS `firstName`, 
+`last_name` AS `lastName`, `date_of_birth` AS `dateOfBirth`, `is_active` AS `isActive`, `is_newsletter_subscribed` AS 
+`isNewsletterSubscribed`, `is_marketing_consent` AS `isMarketingConsent`, `is_cookie_consent` AS `isCookieConsent`, 
+`is_profile_completed` AS `isProfileCompleted`, `is_blocked` AS `isBlocked`, `is_verified` AS `isVerified`, 
+`is_email_verified` AS `isEmailVerified`, `is_phone_verified` AS `isPhoneVerified`, `is_terms_accepted` AS 
+`isTermsAccepted`, `is_privacy_accepted` AS `isPrivacyAccepted`, `is_age_verified` AS `isAgeVerified`, 
+`is_two_factor_enabled` AS `isTwoFactorEnabled`, `is_deleted` AS `isDeleted`, `is_suspended` AS `isSuspended`, 
+`preferred_language` AS `preferredLanguage`, `timezone`, `notification_preferences` AS `notificationPreferences`, 
+`theme_preference` AS `themePreference`, `default_language` AS `defaultLanguage`, `translations`, `email_verified_at` 
+AS `emailVerifiedAt`, `phone_verified_at` AS `phoneVerifiedAt`, `last_login_at` AS `lastLoginAt` FROM `user` AS 
+`UserModel` WHERE `UserModel`.`id` = 30;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'ADMIN';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ba328be4-39ee-4711-b16a-5f723bb6aeed): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ba328be4-39ee-4711-b16a-5f723bb6aeed): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (31, 13, '2025-11-09 18:24:43', '2025-11-09 18:24:43')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ba328be4-39ee-4711-b16a-5f723bb6aeed): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701883521.inh1so@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 31;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:43', `updated_at` = '2025-11-09 
+18:24:43' WHERE `id` = 31 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (d986fbfa-99a1-4418-8d2c-6e45a362479e): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (d986fbfa-99a1-4418-8d2c-6e45a362479e): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (32, 14, '2025-11-09 18:24:43', '2025-11-09 18:24:43')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (d986fbfa-99a1-4418-8d2c-6e45a362479e): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701883702.532l4o@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 32;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:43', `updated_at` = '2025-11-09 
+18:24:43' WHERE `id` = 32 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `is_phone_verified`=?,`phone_verified_at`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email`, `phone`, `first_name` AS `firstName`, 
+`last_name` AS `lastName`, `date_of_birth` AS `dateOfBirth`, `is_active` AS `isActive`, `is_newsletter_subscribed` AS 
+`isNewsletterSubscribed`, `is_marketing_consent` AS `isMarketingConsent`, `is_cookie_consent` AS `isCookieConsent`, 
+`is_profile_completed` AS `isProfileCompleted`, `is_blocked` AS `isBlocked`, `is_verified` AS `isVerified`, 
+`is_email_verified` AS `isEmailVerified`, `is_phone_verified` AS `isPhoneVerified`, `is_terms_accepted` AS 
+`isTermsAccepted`, `is_privacy_accepted` AS `isPrivacyAccepted`, `is_age_verified` AS `isAgeVerified`, 
+`is_two_factor_enabled` AS `isTwoFactorEnabled`, `is_deleted` AS `isDeleted`, `is_suspended` AS `isSuspended`, 
+`preferred_language` AS `preferredLanguage`, `timezone`, `notification_preferences` AS `notificationPreferences`, 
+`theme_preference` AS `themePreference`, `default_language` AS `defaultLanguage`, `translations`, `email_verified_at` 
+AS `emailVerifiedAt`, `phone_verified_at` AS `phoneVerifiedAt`, `last_login_at` AS `lastLoginAt` FROM `user` AS 
+`UserModel` WHERE `UserModel`.`id` = 32;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ab1e10e6-a48e-42ff-b288-6be893a824d1): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ab1e10e6-a48e-42ff-b288-6be893a824d1): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (33, 14, '2025-11-09 18:24:43', '2025-11-09 18:24:43')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ab1e10e6-a48e-42ff-b288-6be893a824d1): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701883908.rubodb@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 33;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:44', `updated_at` = '2025-11-09 
+18:24:44' WHERE `id` = 33 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email` FROM `user` AS `UserModel` WHERE 
+`UserModel`.`id` = 33 AND `UserModel`.`tenant_id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `created_at` FROM `user_verification_code` WHERE `user_id` = 33 AND `channel` = 
+'email' ORDER BY `created_at` DESC LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user_verification_code` 
+(`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES 
+(33,'email','badb0d560832d9cb836b107478edb66f17f868cf05f5c27e3b0aa38427c39413','2025-11-09 18:34:44',0,'2025-11-09 
+18:24:44','2025-11-09 18:24:44')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email` FROM `user` AS `UserModel` WHERE 
+`UserModel`.`id` = 33 AND `UserModel`.`tenant_id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `created_at` FROM `user_verification_code` WHERE `user_id` = 33 AND `channel` = 
+'phone' ORDER BY `created_at` DESC LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user_verification_code` 
+(`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES 
+(33,'phone','c87b2771ae1ae99c8dc49c40dec1cf7382ded478bb2f362d8cd8f16f9bd66942','2025-11-09 18:34:44',0,'2025-11-09 
+18:24:44','2025-11-09 18:24:44')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (8c376506-bd05-4bb1-9cbd-aea5528a9d81): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (8c376506-bd05-4bb1-9cbd-aea5528a9d81): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (34, 14, '2025-11-09 18:24:44', '2025-11-09 18:24:44')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (8c376506-bd05-4bb1-9cbd-aea5528a9d81): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701884270.ztakof@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 34;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:44', `updated_at` = '2025-11-09 
+18:24:44' WHERE `id` = 34 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email` FROM `user` AS `UserModel` WHERE 
+`UserModel`.`id` = 34 AND `UserModel`.`tenant_id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `created_at` FROM `user_verification_code` WHERE `user_id` = 34 AND `channel` = 
+'email' ORDER BY `created_at` DESC LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user_verification_code` 
+(`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES 
+(34,'email','95ebbd25b93d1affd88097dd3ac0ff952c2296af292af26d6d6c375e50adb163','2025-11-09 18:34:44',0,'2025-11-09 
+18:24:44','2025-11-09 18:24:44')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email` FROM `user` AS `UserModel` WHERE 
+`UserModel`.`id` = 34 AND `UserModel`.`tenant_id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`,`code_hash`,`expires_at`,`attempts` FROM `user_verification_code` WHERE 
+`user_id` = 34 AND `channel` = 'email' ORDER BY `created_at` DESC LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user_verification_code` SET `attempts` = `attempts` + 1, `updated_at` = '2025-11-09 
+18:24:44' WHERE `id` = 9 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (169c27cc-4d3f-4872-9581-d21c2022a15b): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (169c27cc-4d3f-4872-9581-d21c2022a15b): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (35, 14, '2025-11-09 18:24:44', '2025-11-09 18:24:44')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (169c27cc-4d3f-4872-9581-d21c2022a15b): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'user.tenant1@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 35;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:44', `updated_at` = '2025-11-09 
+18:24:44' WHERE `id` = 35 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (e41aaf50-eca9-4657-813f-0093f399f1a9): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (e41aaf50-eca9-4657-813f-0093f399f1a9): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (37, 14, '2025-11-09 18:24:45', '2025-11-09 18:24:45')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (e41aaf50-eca9-4657-813f-0093f399f1a9): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701884951.00gqx4@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 37;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:45', `updated_at` = '2025-11-09 
+18:24:45' WHERE `id` = 37 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (d08d497e-9080-44fb-a5d4-3e656667c944): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (d08d497e-9080-44fb-a5d4-3e656667c944): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (38, 14, '2025-11-09 18:24:45', '2025-11-09 18:24:45')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (d08d497e-9080-44fb-a5d4-3e656667c944): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701885130.6bnc3g@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 38;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:45', `updated_at` = '2025-11-09 
+18:24:45' WHERE `id` = 38 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ce076746-313c-45b8-a31a-7332356a9eb2): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ce076746-313c-45b8-a31a-7332356a9eb2): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (39, 14, '2025-11-09 18:24:45', '2025-11-09 18:24:45')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ce076746-313c-45b8-a31a-7332356a9eb2): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701885314.m0tu7o@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 39;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:45', `updated_at` = '2025-11-09 
+18:24:45' WHERE `id` = 39 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email` FROM `user` AS `UserModel` WHERE 
+`UserModel`.`id` = 39 AND `UserModel`.`tenant_id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `created_at` FROM `user_verification_code` WHERE `user_id` = 39 AND `channel` = 
+'email' ORDER BY `created_at` DESC LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user_verification_code` 
+(`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES 
+(39,'email','fd2bb372eb75999f22190f1079b97a7b79a08ed84c3926fba31abc4c8b963fa3','2025-11-09 18:34:45',0,'2025-11-09 
+18:24:45','2025-11-09 18:24:45')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `role`, `description` FROM `role` AS `RoleModel` WHERE `RoleModel`.`role` = 
+'USER';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user` (`id`,`tenant_id`,`email`,`password`,`phone`,`is_active`,`is_newsletter_s
+ubscribed`,`is_marketing_consent`,`is_cookie_consent`,`is_profile_completed`,`is_blocked`,`is_verified`,`is_email_verif
+ied`,`is_phone_verified`,`is_terms_accepted`,`is_privacy_accepted`,`is_age_verified`,`is_two_factor_enabled`,`is_delete
+d`,`is_suspended`,`preferred_language`,`timezone`,`theme_preference`,`default_language`,`created_at`,`updated_at`) 
+VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ed7a0d2b-d42a-437c-9ecc-724af542bbcb): START TRANSACTION;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ed7a0d2b-d42a-437c-9ecc-724af542bbcb): INSERT INTO `user_role` (`user_id`, `role_id`, `created_at`, 
+`updated_at`) VALUES (40, 14, '2025-11-09 18:24:45', '2025-11-09 18:24:45')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (ed7a0d2b-d42a-437c-9ecc-724af542bbcb): COMMIT;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `email`, `password` FROM `user` AS `UserModel` WHERE `UserModel`.`email` = 
+'test.user.1762701885613.tvi8q6@test.com';
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `UserModel`.`id`, `UserModel`.`tenant_id` AS `tenantId`, `UserModel`.`email`, 
+`roles`.`id` AS `roles.id`, `roles`.`role` AS `roles.role` FROM `user` AS `UserModel` LEFT OUTER JOIN ( `user_role` AS 
+`roles->UserRoleModel` INNER JOIN `role` AS `roles` ON `roles`.`id` = `roles->UserRoleModel`.`role_id`) ON 
+`UserModel`.`id` = `roles->UserRoleModel`.`user_id` WHERE `UserModel`.`id` = 40;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user` SET `last_login_at` = '2025-11-09 18:24:45', `updated_at` = '2025-11-09 
+18:24:45' WHERE `id` = 40 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `login_history` 
+(`id`,`user_id`,`ip_address`,`user_agent`,`success`,`failure_reason`,`login_at`,`created_at`,`updated_at`) VALUES 
+(DEFAULT,?,?,?,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `login_history` SET `tenant_id`=?,`updated_at`=? WHERE `id` = ?
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `refresh_token` 
+(`id`,`is_revoked`,`expires`,`user_id`,`created_at`,`updated_at`) VALUES (DEFAULT,?,?,?,?,?);
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email` FROM `user` AS `UserModel` WHERE 
+`UserModel`.`id` = 40 AND `UserModel`.`tenant_id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `created_at` FROM `user_verification_code` WHERE `user_id` = 40 AND `channel` = 
+'email' ORDER BY `created_at` DESC LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): INSERT INTO `user_verification_code` 
+(`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES 
+(40,'email','a28d266af5c08a875bc07a889dd5dc5f3514cb012f0bc794ec2d81a0077d0747','2025-11-09 18:34:45',0,'2025-11-09 
+18:24:45','2025-11-09 18:24:45')
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `name`, `subdomain`, `status`, `plan`, `created_at`, `updated_at`, 
+`created_at` AS `createdAt`, `updated_at` AS `updatedAt` FROM `tenants` AS `TenantModel` WHERE `TenantModel`.`id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`, `tenant_id` AS `tenantId`, `email` FROM `user` AS `UserModel` WHERE 
+`UserModel`.`id` = 40 AND `UserModel`.`tenant_id` = 1;
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): SELECT `id`,`code_hash`,`expires_at`,`attempts` FROM `user_verification_code` WHERE 
+`user_id` = 40 AND `channel` = 'email' ORDER BY `created_at` DESC LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+    console.log
+      Executing (default): UPDATE `user_verification_code` SET `attempts` = `attempts` + 1, `updated_at` = '2025-11-09 
+18:24:45' WHERE `id` = 11 LIMIT 1
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  тЧП User Verification Integration Tests тА║ Verification endpoints тА║ 200: phone verification request with auth
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      68 |                 .post('/online-store/user/verify/phone/request')
+      69 |                 .set('Authorization', `Bearer ${token}`)
+    > 70 |                 .expect(200);
+         |                  ^
+      71 |         });
+      72 |
+      73 |         it('400: invalid verification codes', async () => {
+
+      at Object.<anonymous> (src/infrastructure/controllers/user/tests/user-verification.integration.test.ts:70:18)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:309:14)
+      at node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (node_modules/supertest/lib/test.js:195:23)
+      at localAssert (node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (node_modules/supertest/lib/test.js:152:11)
+
+  тЧП User Verification Integration Tests тА║ Verification endpoints тА║ Multi-Tenant Isolation (USER-001-06, 
+VERIFY-04) тА║ 200: user can verify their own phone within tenant
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      142 |                     .post('/online-store/user/verify/phone/request')
+      143 |                     .set('Authorization', `Bearer ${token}`)
+    > 144 |                     .expect(200);
+          |                      ^
+      145 |
+      146 |                 expect(response.body).toHaveProperty('message');
+      147 |                 expect(response.body).toHaveProperty('expiresAt');
+
+      at Object.<anonymous> (src/infrastructure/controllers/user/tests/user-verification.integration.test.ts:144:22)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:309:14)
+      at node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (node_modules/supertest/lib/test.js:195:23)
+      at localAssert (node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (node_modules/supertest/lib/test.js:152:11)
+
+  тЧП User Verification Integration Tests тА║ Verification endpoints тА║ Multi-Tenant Isolation (USER-001-06, 
+VERIFY-04) тА║ 400: invalid verification code returns error
+
+    expect(received).toHaveProperty(path, value)
+
+    Expected path: "statusCode"
+    Received path: []
+
+    Expected value: 400
+    Received value: [{"messages": ["╨Ъ╨╛╨┤ ╨┤╨╛╨╗╨╢╨╡╨╜ ╤Б╨╛╨┤╨╡╤А╨╢╨░╤В╤М ╤В╨╛╨╗╤М╨║╨╛ ╨▒╤Г╨║╨▓╤Л ╨╕ ╤Ж╨╕╤Д╤А╤Л"], 
+"property": "code", "status": 400, "value": "wrong!"}]
+
+      167 |                     .expect(400);
+      168 |
+    > 169 |                 expect(response.body).toHaveProperty('statusCode', 400);
+          |                                       ^
+      170 |                 expect(response.body.message).toContain(
+      171 |                     '╨Э╨╡╨▓╨╡╤А╨╜╤Л╨╣ ╨╕╨╗╨╕ ╨┐╤А╨╛╤Б╤А╨╛╤З╨╡╨╜╨╜╤Л╨╣ ╨║╨╛╨┤ ╨┐╨╛╨┤╤В╨▓╨╡╤А╨╢╨┤╨╡╨╜╨╕╤П',
+      172 |                 );
+
+      at Object.<anonymous> (src/infrastructure/controllers/user/tests/user-verification.integration.test.ts:169:39)
+
+  тЧП User Verification Integration Tests тА║ Verification endpoints тА║ Multi-Tenant Isolation (USER-001-06, 
+VERIFY-04) тА║ 404: admin from tenant A cannot verify user from tenant B (email)
+
+
+
+      171 |
+      172 |         // ╨б╨╛╨╖╨┤╨░╤С╨╝ ╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤П ╤З╨╡╤А╨╡╨╖ Sequelize Model (╨▒╨╡╨╖╨╛╨┐╨░╤Б╨╜╨╡╨╡ ╤З╨╡╨╝ 
+raw SQL)
+    > 173 |         const user = await UserModel.create({
+          |                      ^
+      174 |             email,
+      175 |             password: passwordHash,
+      176 |             phone,
+
+      at Query.run (node_modules/sequelize/src/dialects/mysql/query.js:46:25)
+      at node_modules/sequelize/src/sequelize.js:650:28
+      at MySQLQueryInterface.insert (node_modules/sequelize/src/dialects/abstract/query-interface.js:795:21)
+      at UserModel.save (node_modules/sequelize/src/model.js:4154:35)
+      at Function.create (node_modules/sequelize/src/model.js:2305:12)
+      at Function.createUserInDB (tests/utils/test-data-factory.ts:173:22)
+      at Function.createUserWithRole (tests/utils/test-data-factory.ts:304:45)
+      at Object.<anonymous> (src/infrastructure/controllers/user/tests/user-verification.integration.test.ts:203:37)
+
+  тЧП User Verification Integration Tests тА║ Verification endpoints тА║ Multi-Tenant Isolation (USER-001-06, 
+VERIFY-04) тА║ 404: admin from tenant A cannot verify user from tenant B (phone)
+
+
+
+      171 |
+      172 |         // ╨б╨╛╨╖╨┤╨░╤С╨╝ ╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤П ╤З╨╡╤А╨╡╨╖ Sequelize Model (╨▒╨╡╨╖╨╛╨┐╨░╤Б╨╜╨╡╨╡ ╤З╨╡╨╝ 
+raw SQL)
+    > 173 |         const user = await UserModel.create({
+          |                      ^
+      174 |             email,
+      175 |             password: passwordHash,
+      176 |             phone,
+
+      at Query.run (node_modules/sequelize/src/dialects/mysql/query.js:46:25)
+      at node_modules/sequelize/src/sequelize.js:650:28
+      at MySQLQueryInterface.insert (node_modules/sequelize/src/dialects/abstract/query-interface.js:795:21)
+      at UserModel.save (node_modules/sequelize/src/model.js:4154:35)
+      at Function.create (node_modules/sequelize/src/model.js:2305:12)
+      at Function.createUserInDB (tests/utils/test-data-factory.ts:173:22)
+      at Function.createUserWithRole (tests/utils/test-data-factory.ts:304:45)
+      at Object.<anonymous> (src/infrastructure/controllers/user/tests/user-verification.integration.test.ts:233:37)
+
+  тЧП User Verification Integration Tests тА║ Verification endpoints тА║ Multi-Tenant Isolation (USER-001-06, 
+VERIFY-04) тА║ 200: admin from tenant A can verify user from tenant A (email)
+
+    expect(received).toHaveProperty(path)
+
+    Expected path: "message"
+    Received path: []
+
+    Received value: {"data": {"dateOfBirth": null, "defaultLanguage": "ru", "email": 
+"test.user.1762701883316.846dc7@test.com", "emailVerifiedAt": "2025-11-09T15:24:43.000Z", "firstName": null, "id": 30, 
+"isActive": true, "isAgeVerified": false, "isBlocked": false, "isCookieConsent": false, "isDeleted": false, 
+"isEmailVerified": true, "isMarketingConsent": false, "isNewsletterSubscribed": false, "isPhoneVerified": false, 
+"isPrivacyAccepted": false, "isProfileCompleted": false, "isSuspended": false, "isTermsAccepted": false, 
+"isTwoFactorEnabled": false, "isVerified": false, "lastLoginAt": "2025-11-09T18:24:43.000Z", "lastName": null, 
+"notificationPreferences": null, "phone": "+799701883378", "phoneVerifiedAt": null, "preferredLanguage": "ru", 
+"tenantId": 1, "themePreference": "light", "timezone": "Europe/Moscow", "translations": null}}
+
+      274 |                     .expect(200);
+      275 |
+    > 276 |                 expect(response.body).toHaveProperty('message');
+          |                                       ^
+      277 |                 expect(response.body.message).toContain('╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨┐╨╛╨┤╤В╨▓╨╡╤А╨╢╨┤╤С╨╜');
+      278 |             });
+      279 |
+
+      at Object.<anonymous> (src/infrastructure/controllers/user/tests/user-verification.integration.test.ts:276:39)
+
+  тЧП User Verification Integration Tests тА║ Verification endpoints тА║ Multi-Tenant Isolation (USER-001-06, 
+VERIFY-04) тА║ 200: admin from tenant A can verify user from tenant A (phone)
+
+    expect(received).toHaveProperty(path)
+
+    Expected path: "message"
+    Received path: []
+
+    Received value: {"data": {"dateOfBirth": null, "defaultLanguage": "ru", "email": 
+"test.user.1762701883702.532l4o@test.com", "emailVerifiedAt": null, "firstName": null, "id": 32, "isActive": true, 
+"isAgeVerified": false, "isBlocked": false, "isCookieConsent": false, "isDeleted": false, "isEmailVerified": false, 
+"isMarketingConsent": false, "isNewsletterSubscribed": false, "isPhoneVerified": true, "isPrivacyAccepted": false, 
+"isProfileCompleted": false, "isSuspended": false, "isTermsAccepted": false, "isTwoFactorEnabled": false, 
+"isVerified": false, "lastLoginAt": "2025-11-09T18:24:43.000Z", "lastName": null, "notificationPreferences": null, 
+"phone": "+799701883762", "phoneVerifiedAt": "2025-11-09T15:24:43.000Z", "preferredLanguage": "ru", "tenantId": 1, 
+"themePreference": "light", "timezone": "Europe/Moscow", "translations": null}}
+
+      300 |                     .expect(200);
+      301 |
+    > 302 |                 expect(response.body).toHaveProperty('message');
+          |                                       ^
+      303 |                 expect(response.body.message).toContain('╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨┐╨╛╨┤╤В╨▓╨╡╤А╨╢╨┤╤С╨╜');
+      304 |             });
+      305 |
+
+      at Object.<anonymous> (src/infrastructure/controllers/user/tests/user-verification.integration.test.ts:302:39)
+
+  тЧП User Verification Integration Tests тА║ Verification endpoints тА║ Multi-Tenant Isolation (USER-001-06, 
+VERIFY-04) тА║ 200: user from tenant A can request own verification code
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      326 |                     .post('/online-store/user/verify/phone/request')
+      327 |                     .set('Authorization', `Bearer ${userTenant1.token}`)
+    > 328 |                     .expect(200);
+          |                      ^
+      329 |
+      330 |                 // Assert: Response structure
+      331 |                 expect(phoneResponse.body).toHaveProperty('message');
+
+      at Object.<anonymous> (src/infrastructure/controllers/user/tests/user-verification.integration.test.ts:328:22)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:309:14)
+      at node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (node_modules/supertest/lib/test.js:195:23)
+      at localAssert (node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (node_modules/supertest/lib/test.js:152:11)
+
+  тЧП User Verification Integration Tests тА║ Verification endpoints тА║ Multi-Tenant Isolation (USER-001-06, 
+VERIFY-04) тА║ 400: user from tenant A cannot confirm verification with invalid code
+
+    expect(received).toHaveProperty(path, value)
+
+    Expected path: "statusCode"
+    Received path: []
+
+    Expected value: 400
+    Received value: {"message": "╨Э╨╡╨▓╨╡╤А╨╜╤Л╨╣ ╨╕╨╗╨╕ ╨┐╤А╨╛╤Б╤А╨╛╤З╨╡╨╜╨╜╤Л╨╣ ╨║╨╛╨┤ ╨┐╨╛╨┤╤В╨▓╨╡╤А╨╢╨┤╨╡╨╜╨╕╤П", 
+"status": 400}
+
+      354 |                     .expect(400);
+      355 |
+    > 356 |                 expect(response.body).toHaveProperty('statusCode', 400);
+          |                                       ^
+      357 |                 expect(response.body.message).toContain(
+      358 |                     '╨Э╨╡╨▓╨╡╤А╨╜╤Л╨╣ ╨╕╨╗╨╕ ╨┐╤А╨╛╤Б╤А╨╛╤З╨╡╨╜╨╜╤Л╨╣ ╨║╨╛╨┤ ╨┐╨╛╨┤╤В╨▓╨╡╤А╨╢╨┤╨╡╨╜╨╕╤П',
+      359 |                 );
+
+      at Object.<anonymous> (src/infrastructure/controllers/user/tests/user-verification.integration.test.ts:356:39)
+
+  тЧП User Verification Integration Tests тА║ Verification endpoints тА║ Multi-Tenant Isolation (USER-001-06, 
+VERIFY-04) тА║ 200: multiple users in different tenants can verify independently
+
+
+
+      171 |
+      172 |         // ╨б╨╛╨╖╨┤╨░╤С╨╝ ╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤П ╤З╨╡╤А╨╡╨╖ Sequelize Model (╨▒╨╡╨╖╨╛╨┐╨░╤Б╨╜╨╡╨╡ ╤З╨╡╨╝ 
+raw SQL)
+    > 173 |         const user = await UserModel.create({
+          |                      ^
+      174 |             email,
+      175 |             password: passwordHash,
+      176 |             phone,
+
+      at Query.run (node_modules/sequelize/src/dialects/mysql/query.js:46:25)
+      at node_modules/sequelize/src/sequelize.js:650:28
+      at MySQLQueryInterface.insert (node_modules/sequelize/src/dialects/abstract/query-interface.js:795:21)
+      at UserModel.save (node_modules/sequelize/src/model.js:4154:35)
+      at Function.create (node_modules/sequelize/src/model.js:2305:12)
+      at Function.createUserInDB (tests/utils/test-data-factory.ts:173:22)
+      at Function.createUserWithRole (tests/utils/test-data-factory.ts:304:45)
+      at Object.<anonymous> (src/infrastructure/controllers/user/tests/user-verification.integration.test.ts:370:37)
+
+  тЧП User Verification Integration Tests тА║ Verification endpoints тА║ Response Structure Validation (USER-001-06) 
+тА║ 200: confirm verification response has correct structure
+
+    expect(received).toHaveProperty(path)
+
+    Expected path: "statusCode"
+    Received path: []
+
+    Received value: {"message": "╨Э╨╡╨▓╨╡╤А╨╜╤Л╨╣ ╨╕╨╗╨╕ ╨┐╤А╨╛╤Б╤А╨╛╤З╨╡╨╜╨╜╤Л╨╣ ╨║╨╛╨┤ ╨┐╨╛╨┤╤В╨▓╨╡╤А╨╢╨┤╨╡╨╜╨╕╤П", 
+"status": 400}
+
+      453 |                     .expect(400);
+      454 |
+    > 455 |                 expect(response.body).toHaveProperty('statusCode');
+          |                                       ^
+      456 |                 expect(response.body).toHaveProperty('message');
+      457 |             });
+      458 |         });
+
+      at Object.<anonymous> (src/infrastructure/controllers/user/tests/user-verification.integration.test.ts:455:39)
+
+ЁЯУж report is created on: F:\git\online-store-backend\test-reports\test-report.html
+Test Suites: 1 failed, 1 total
+Tests:       11 failed, 9 passed, 20 total
+Snapshots:   0 total
+Time:        10.527 s
+Ran all test suites matching user-verification.integration.test.ts.
+тЬЕ [Integration Global Teardown] Test suite completed

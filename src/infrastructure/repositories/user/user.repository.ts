@@ -5,7 +5,6 @@ import { normalizeRussianPhone } from '@app/infrastructure/common/utils/phone.ut
 import {
     VERIFICATION_CODE_COOLDOWN_MS,
     VERIFICATION_CODE_EXPIRY_MS,
-    VERIFICATION_CODE_LENGTH_BYTES,
     VERIFICATION_CODE_MAX_ATTEMPTS,
 } from '@app/infrastructure/config/verification.config';
 import {
@@ -35,7 +34,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { hash } from 'bcrypt';
-import { createHash, randomBytes } from 'crypto';
+import { createHash } from 'crypto';
 import { QueryTypes } from 'sequelize';
 
 // Типы для статистики пользователей
@@ -972,8 +971,7 @@ export class UserRepository implements IUserRepository {
             }
 
             // Генерируем 6-значный цифровой код (100000-999999)
-            const codeNumber =
-                100000 + Math.floor(Math.random() * 900000);
+            const codeNumber = 100000 + Math.floor(Math.random() * 900000);
             const code = codeNumber.toString();
             const codeHash = this.hashCode(code);
             const expiresAt = new Date(
