@@ -25,5 +25,17 @@ export const VERIFICATION_CODE_LENGTH_BYTES = 3;
  * Cooldown период между запросами кодов верификации
  * Пользователь не может запросить новый код, пока не истечет cooldown
  * По умолчанию: 60 секунд (1 минута)
+ *
+ * Конфигурируется через переменную окружения VERIFICATION_CODE_COOLDOWN_MS
+ * Для тестов рекомендуется использовать 100ms для быстрого выполнения
+ *
+ * Реализовано как функция для поддержки динамического изменения в тестах
  */
-export const VERIFICATION_CODE_COOLDOWN_MS = 60 * 1000;
+export const getVerificationCodeCooldownMs = (): number => {
+    return parseInt(process.env.VERIFICATION_CODE_COOLDOWN_MS || '60000', 10);
+};
+
+/**
+ * @deprecated Используйте getVerificationCodeCooldownMs() для поддержки динамической конфигурации
+ */
+export const VERIFICATION_CODE_COOLDOWN_MS = getVerificationCodeCooldownMs();

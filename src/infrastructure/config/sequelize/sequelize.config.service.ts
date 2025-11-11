@@ -41,6 +41,7 @@ export class SequelizeConfigService implements SequelizeOptionsFactory {
             password,
             database,
             logging, // Используем настройку из ENV переменной SQL_LOGGING
+            timezone: '+00:00', // Используем UTC для всех timestamp (критично для тестов и multi-region)
             models: [
                 ProductModel,
                 CategoryModel,

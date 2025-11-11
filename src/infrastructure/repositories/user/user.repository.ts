@@ -3,7 +3,7 @@ import { IUserRepository } from '@app/domain/repositories';
 import type { IEmailProvider, ISmsProvider } from '@app/domain/services';
 import { normalizeRussianPhone } from '@app/infrastructure/common/utils/phone.utils';
 import {
-    VERIFICATION_CODE_COOLDOWN_MS,
+    getVerificationCodeCooldownMs,
     VERIFICATION_CODE_EXPIRY_MS,
     VERIFICATION_CODE_MAX_ATTEMPTS,
 } from '@app/infrastructure/config/verification.config';
@@ -946,27 +946,32 @@ export class UserRepository implements IUserRepository {
             );
 
             if (lastCodeResult) {
-                const timeSinceLastRequest =
-                    Date.now() - new Date(lastCodeResult.created_at).getTime();
+                const cooldownMs = getVerificationCodeCooldownMs();
 
-                if (timeSinceLastRequest < VERIFICATION_CODE_COOLDOWN_MS) {
-                    const remainingSeconds = Math.ceil(
-                        (VERIFICATION_CODE_COOLDOWN_MS - timeSinceLastRequest) /
-                            1000,
-                    );
+                // Пропускаем cooldown check если cooldown отключен (0ms)
+                // Это критично для тестов rate limiting
+                if (cooldownMs > 0) {
+                    const timeSinceLastRequest =
+                        Date.now() - new Date(lastCodeResult.created_at).getTime();
 
-                    this.logger.warn({
-                        message: 'Cooldown период не истёк',
-                        userId,
-                        channel,
-                        tenantId,
-                        timeSinceLastRequestMs: timeSinceLastRequest,
-                        remainingSeconds,
-                    });
+                    if (timeSinceLastRequest < cooldownMs) {
+                        const remainingSeconds = Math.ceil(
+                            (cooldownMs - timeSinceLastRequest) / 1000,
+                        );
 
-                    throw new BadRequestException(
-                        `Пожалуйста, подождите ${remainingSeconds} секунд перед повторным запросом кода`,
-                    );
+                        this.logger.warn({
+                            message: 'Cooldown период не истёк',
+                            userId,
+                            channel,
+                            tenantId,
+                            timeSinceLastRequestMs: timeSinceLastRequest,
+                            remainingSeconds,
+                        });
+
+                        throw new BadRequestException(
+                            `Пожалуйста, подождите ${remainingSeconds} секунд перед повторным запросом кода`,
+                        );
+                    }
                 }
             }
 
