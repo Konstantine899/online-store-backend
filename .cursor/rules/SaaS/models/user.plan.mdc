@@ -240,7 +240,7 @@ tasks:
   commits:
     - "b4a14b5: test(user): implement rate limiting tests with mocked Throttler"
     - "Previous commits: VERIFY-01 to VERIFY-06 (multi-tenant, notifications, security)"
-  files_scope:
+      files_scope:
     - "src/domain/models/user.model.ts"
     - "src/infrastructure/services/user/\*\*"
     - "src/infrastructure/services/notification/\*\*"
@@ -333,17 +333,17 @@ tasks:
   files_scope:
     - "src/infrastructure/repositories/user/tests/user-repository-verification.unit.test.ts"
     - "src/infrastructure/services/user/user.service.unit.test.ts"
-  steps:
+      steps:
     - [ ] обновить моки генерации кода (ожидать 6-значный цифровой код вместо "abc123")
     - [ ] обновить expectations для сообщений ошибок (tenant isolation messages)
     - [ ] обновить вызовы методов с новыми сигнатурами (tenantId параметр)
     - [ ] запустить unit тесты и проверить 100% прохождение
-  dod:
+          dod:
     - все unit тесты проходят (0 failed)
     - моки корректно отражают реальную генерацию 6-значного кода
     - сообщения ошибок соответствуют актуальной реализации
-  estimated_time: "2-3 часа"
-  blocking: false
+      estimated_time: "2-3 часа"
+      blocking: false
 
 # Фаза 3: Адреса пользователей
 
@@ -357,9 +357,9 @@ tasks:
     - "28dc1d6: test(user-address): add integration tests for tenant isolation and cross-user blocking"
     - "d6e448f: docs(user-address): add comprehensive documentation for tenant isolation"
     - "ee6861c: chore(user-address): fix TypeScript linter errors in tests"
-  note: |
-    USER-001-07 COMPLETED ✅
-    
+      note: |
+      USER-001-07 COMPLETED ✅
+
     Реализация:
     - tenant_id уже существовал в БД через миграцию 20251011133625-add-tenant-id-to-user-tables.ts
     - UserAddressModel (Domain) содержит tenant_id с FK на tenants.id
@@ -367,19 +367,19 @@ tasks:
     - UserAddressService делегирует tenant isolation репозиторию (корректная архитектура)
     - Response классы и 7 кастомных Swagger декораторов уже существовали
     - UserAddressController использует кастомные декораторы для всех 6 endpoints
-    
+
     Тесты:
     - 24 unit тестов для UserAddressRepository (create, findAll, findOne, update, remove, clearDefault, markDefault, setDefault)
     - Проверка tenant_id в WHERE clauses, fallback на tenant_id = 1, transaction handling
     - 13 integration тестов для UserAddressController (CRUD + tenant isolation + cross-user blocking)
     - Проверка независимости default address между пользователями, блокировка доступа к адресам других пользователей
-    
+
     Документация:
     - PROJECT_CONTEXT.md обновлен с разделом "Адреса пользователей (UserAddress)"
     - Описание tenant isolation, security features, database indexes, Swagger decorators, test coverage
-    
+
     Итог: Все 9 пунктов DoD выполнены, 37 тестов (24 unit + 13 integration) проходят успешно ✅
-  files_scope:
+    files_scope:
     - "db/migrations/\*\*"
     - "db/models/user-address.ts"
     - "db/models/types.ts"
