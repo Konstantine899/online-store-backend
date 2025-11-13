@@ -120,7 +120,7 @@ describe('UserAddressService', () => {
         expect(repo.setDefault).not.toHaveBeenCalled();
     });
 
-    it('createAddress: creates default address and returns refreshed entity', async () => {
+    it('createAddress: creates default address (is_default handled by repository)', async () => {
         const dto = createMockDto(TEST_DATA.DTO.DEFAULT);
         const created = createMockResponse<CreateUserAddressResponse>({
             id: TEST_DATA.DEFAULT_ADDRESS_ID,
@@ -130,28 +130,14 @@ describe('UserAddressService', () => {
             city: dto.city,
             is_default: true,
         });
-        const refreshed = createMockResponse<UpdateUserAddressResponse>({
-            id: TEST_DATA.DEFAULT_ADDRESS_ID,
-            title: dto.title,
-            street: dto.street,
-            house: dto.house,
-            city: dto.city,
-            is_default: true,
-        });
 
         repo.create.mockResolvedValue(created);
-        repo.clearDefault.mockResolvedValue(undefined);
-        repo.markDefault.mockResolvedValue(refreshed);
 
         const res = await service.createAddress(TEST_DATA.USER_ID, dto);
 
-        expect(repo.clearDefault).toHaveBeenCalledWith(TEST_DATA.USER_ID, {});
-        expect(repo.markDefault).toHaveBeenCalledWith(
-            TEST_DATA.USER_ID,
-            TEST_DATA.DEFAULT_ADDRESS_ID,
-            {},
-        );
-        expect(res).toEqual(refreshed);
+        // Сервис просто вызывает create(), is_default логика обрабатывается в репозитории
+        expect(repo.create).toHaveBeenCalledWith(TEST_DATA.USER_ID, dto, {});
+        expect(res).toEqual(created);
     });
 
     it('getAddresses: returns list', async () => {
@@ -210,25 +196,19 @@ describe('UserAddressService', () => {
         ).rejects.toThrow(NotFoundException);
     });
 
-    it('updateAddress: should return refreshed entity when is_default true', async () => {
+    it('updateAddress: updates with is_default true (handled by repository)', async () => {
         const dto: UpdateUserAddressDto = { is_default: true };
         const updated = createMockResponse<UpdateUserAddressResponse>({
-            id: 8,
-            is_default: false,
-        });
-        const refreshed = createMockResponse<UpdateUserAddressResponse>({
             id: 8,
             is_default: true,
         });
 
         repo.update.mockResolvedValue(updated);
-        repo.clearDefault.mockResolvedValue(undefined);
-        repo.markDefault.mockResolvedValue(refreshed);
 
         const res = await service.updateAddress(TEST_DATA.USER_ID, 8, dto);
 
-        expect(repo.clearDefault).toHaveBeenCalledWith(TEST_DATA.USER_ID, {});
-        expect(repo.markDefault).toHaveBeenCalledWith(TEST_DATA.USER_ID, 8, {});
+        // Сервис просто вызывает update(), is_default логика обрабатывается в репозитории
+        expect(repo.update).toHaveBeenCalledWith(TEST_DATA.USER_ID, 8, dto, {});
         expect(res.is_default).toBe(true);
     });
 

@@ -186,6 +186,140 @@ describe('UserAddressController (integration)', () => {
         });
     });
 
+    describe('Default Address Uniqueness Logic', () => {
+        it('должен сбросить предыдущий default при создании нового default адреса', async () => {
+            // Arrange: Создаём первый default адрес
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const firstAddressId = await createTestAddress(
+                token,
+                TEST_DATA.ADDRESSES.HOME, // is_default: true
+            );
+
+            // Act: Создаём второй default адрес
+            const secondAddressData = {
+                ...TEST_DATA.ADDRESSES.WORK,
+                is_default: true,
+            };
+            const res2 = await request(app.getHttpServer())
+                .post(TEST_DATA.ENDPOINTS.ADDRESSES)
+                .set('Authorization', `Bearer ${token}`)
+                .send(secondAddressData)
+                .expect(201);
+
+            const secondAddressId = (res2.body as TestResponse)?.data?.id;
+
+            // Assert: Проверяем что первый адрес больше не default
+            const listRes = await request(app.getHttpServer())
+                .get(TEST_DATA.ENDPOINTS.ADDRESSES)
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            const addresses = (listRes.body as TestResponse)
+                ?.data as unknown as Array<{
+                id: number;
+                is_default: boolean;
+            }>;
+
+            const firstAddress = addresses.find((a) => a.id === firstAddressId);
+            const secondAddress = addresses.find(
+                (a) => a.id === secondAddressId,
+            );
+
+            expect(firstAddress?.is_default).toBe(false); // Предыдущий сброшен
+            expect(secondAddress?.is_default).toBe(true); // Новый установлен
+        });
+
+        it('должен сбросить предыдущий default при обновлении существующего адреса', async () => {
+            // Arrange: Создаём два адреса, первый - default
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const firstAddressId = await createTestAddress(
+                token,
+                TEST_DATA.ADDRESSES.HOME, // is_default: true
+            );
+            const secondAddressId = await createTestAddress(token, {
+                ...TEST_DATA.ADDRESSES.WORK,
+                is_default: false,
+            });
+
+            // Act: Обновляем второй адрес с is_default: true
+            await request(app.getHttpServer())
+                .put(`${TEST_DATA.ENDPOINTS.ADDRESSES}/${secondAddressId}`)
+                .set('Authorization', `Bearer ${token}`)
+                .send({ is_default: true })
+                .expect(200);
+
+            // Assert: Проверяем что первый адрес больше не default
+            const listRes = await request(app.getHttpServer())
+                .get(TEST_DATA.ENDPOINTS.ADDRESSES)
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            const addresses = (listRes.body as TestResponse)
+                ?.data as unknown as Array<{
+                id: number;
+                is_default: boolean;
+            }>;
+
+            const firstAddress = addresses.find((a) => a.id === firstAddressId);
+            const secondAddress = addresses.find(
+                (a) => a.id === secondAddressId,
+            );
+
+            expect(firstAddress?.is_default).toBe(false); // Предыдущий сброшен
+            expect(secondAddress?.is_default).toBe(true); // Новый установлен
+        });
+
+        it('должен разрешить создание нескольких адресов с is_default: false', async () => {
+            // Arrange: Создаём пользователя
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
+            // Act: Создаём три адреса с is_default: false
+            const addr1Id = await createTestAddress(token, {
+                ...TEST_DATA.ADDRESSES.WORK,
+                is_default: false,
+            });
+            const addr2Id = await createTestAddress(token, {
+                ...TEST_DATA.ADDRESSES.DACHA,
+                is_default: false,
+            });
+            const addr3Id = await createTestAddress(token, {
+                ...TEST_DATA.ADDRESSES.TEMP,
+                is_default: false,
+            });
+
+            // Assert: Проверяем что все адреса НЕ default
+            const listRes = await request(app.getHttpServer())
+                .get(TEST_DATA.ENDPOINTS.ADDRESSES)
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            const addresses = (listRes.body as TestResponse)
+                ?.data as unknown as Array<{
+                id: number;
+                is_default: boolean;
+            }>;
+
+            expect(addresses.find((a) => a.id === addr1Id)?.is_default).toBe(
+                false,
+            );
+            expect(addresses.find((a) => a.id === addr2Id)?.is_default).toBe(
+                false,
+            );
+            expect(addresses.find((a) => a.id === addr3Id)?.is_default).toBe(
+                false,
+            );
+        });
+    });
+
     describe('Tenant Isolation & Cross-User Blocking', () => {
         it('должен блокировать доступ к адресу другого пользователя (GET one)', async () => {
             // Arrange: User A создает адрес

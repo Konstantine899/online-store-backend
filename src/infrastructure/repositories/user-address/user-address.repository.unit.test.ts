@@ -201,6 +201,87 @@ describe('UserAddressRepository (Unit)', () => {
                 transaction: mockTransaction,
             });
         });
+
+        it('должен вызвать clearDefault когда is_default=true', async () => {
+            // Arrange
+            const defaultDto: CreateUserAddressDto = {
+                ...createDto,
+                is_default: true,
+            };
+            mockTenantContext.getTenantIdOrNull.mockReturnValue(
+                TENANT_ID_DEFAULT,
+            );
+            mockModel.update.mockResolvedValue([1]); // clearDefault вызов
+            mockModel.create.mockResolvedValue({
+                ...mockAddress,
+                is_default: true,
+            });
+
+            // Act
+            await repository.create(USER_ID, defaultDto);
+
+            // Assert
+            // Проверяем что clearDefault был вызван (update с is_default: false)
+            expect(mockModel.update).toHaveBeenCalledWith(
+                { is_default: false },
+                expect.objectContaining({
+                    where: {
+                        user_id: USER_ID,
+                        tenant_id: TENANT_ID_DEFAULT,
+                    },
+                }),
+            );
+            // И после этого создался новый адрес
+            expect(mockModel.create).toHaveBeenCalled();
+        });
+
+        it('НЕ должен вызывать clearDefault когда is_default=false', async () => {
+            // Arrange
+            const nonDefaultDto: CreateUserAddressDto = {
+                ...createDto,
+                is_default: false,
+            };
+            mockTenantContext.getTenantIdOrNull.mockReturnValue(
+                TENANT_ID_DEFAULT,
+            );
+            mockModel.create.mockResolvedValue(mockAddress);
+
+            // Act
+            await repository.create(USER_ID, nonDefaultDto);
+
+            // Assert
+            // Проверяем что update (clearDefault) НЕ был вызван
+            expect(mockModel.update).not.toHaveBeenCalled();
+            // Но create был вызван
+            expect(mockModel.create).toHaveBeenCalled();
+        });
+
+        it('НЕ должен вызывать clearDefault когда is_default не передан (undefined)', async () => {
+            // Arrange
+            const dtoWithoutDefault: CreateUserAddressDto = {
+                title: 'Дом',
+                street: 'ул. Тестовая',
+                house: '1',
+                apartment: '10',
+                city: 'Москва',
+                postal_code: '101000',
+                country: 'Россия',
+                // is_default не указан (undefined)
+            };
+            mockTenantContext.getTenantIdOrNull.mockReturnValue(
+                TENANT_ID_DEFAULT,
+            );
+            mockModel.create.mockResolvedValue(mockAddress);
+
+            // Act
+            await repository.create(USER_ID, dtoWithoutDefault);
+
+            // Assert
+            // Проверяем что update (clearDefault) НЕ был вызван
+            expect(mockModel.update).not.toHaveBeenCalled();
+            // Но create был вызван
+            expect(mockModel.create).toHaveBeenCalled();
+        });
     });
 
     describe('findAll()', () => {
@@ -411,6 +492,75 @@ describe('UserAddressRepository (Unit)', () => {
 
             // Assert
             expect(mockModel.findOne).toHaveBeenCalledTimes(1);
+        });
+
+        it('должен вызвать clearDefault когда is_default=true', async () => {
+            // Arrange
+            const defaultDto: UpdateUserAddressDto = {
+                is_default: true,
+            };
+            mockTenantContext.getTenantIdOrNull.mockReturnValue(
+                TENANT_ID_DEFAULT,
+            );
+            mockModel.update
+                .mockResolvedValueOnce([1]) // clearDefault вызов
+                .mockResolvedValueOnce([1]); // update вызов
+            mockModel.findOne.mockResolvedValue({
+                ...mockAddress,
+                is_default: true,
+            });
+
+            // Act
+            await repository.update(USER_ID, ADDRESS_ID, defaultDto);
+
+            // Assert
+            // Первый вызов update - clearDefault с is_default: false
+            expect(mockModel.update).toHaveBeenNthCalledWith(
+                1,
+                { is_default: false },
+                expect.objectContaining({
+                    where: {
+                        user_id: USER_ID,
+                        tenant_id: TENANT_ID_DEFAULT,
+                    },
+                }),
+            );
+            // Второй вызов update - фактическое обновление с is_default: true
+            expect(mockModel.update).toHaveBeenNthCalledWith(
+                2,
+                { is_default: true },
+                expect.objectContaining({
+                    where: {
+                        id: ADDRESS_ID,
+                        user_id: USER_ID,
+                        tenant_id: TENANT_ID_DEFAULT,
+                    },
+                }),
+            );
+        });
+
+        it('НЕ должен вызывать clearDefault когда is_default=false', async () => {
+            // Arrange
+            const nonDefaultDto: UpdateUserAddressDto = {
+                street: 'ул. Новая',
+                is_default: false,
+            };
+            mockTenantContext.getTenantIdOrNull.mockReturnValue(
+                TENANT_ID_DEFAULT,
+            );
+            mockModel.update.mockResolvedValue([1]);
+            mockModel.findOne.mockResolvedValue(mockAddress);
+
+            // Act
+            await repository.update(USER_ID, ADDRESS_ID, nonDefaultDto);
+
+            // Assert
+            // Проверяем что update был вызван только ОДИН раз (без clearDefault)
+            expect(mockModel.update).toHaveBeenCalledTimes(1);
+            expect(mockModel.update).toHaveBeenCalledWith(
+                expect.objectContaining({ street: 'ул. Новая' }),
+                expect.anything(),
+            );
         });
     });
 

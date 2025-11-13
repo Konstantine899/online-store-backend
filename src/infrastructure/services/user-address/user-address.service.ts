@@ -22,21 +22,8 @@ export class UserAddressService {
         dto: CreateUserAddressDto,
     ): Promise<CreateUserAddressResponse> {
         return this.userAddressRepository.withTransaction(async (trx) => {
-            const created = await this.userAddressRepository.create(
-                userId,
-                dto,
-                trx,
-            );
-            if (dto.is_default === true) {
-                await this.userAddressRepository.clearDefault(userId, trx);
-                const refreshed = await this.userAddressRepository.markDefault(
-                    userId,
-                    created.id,
-                    trx,
-                );
-                return refreshed as CreateUserAddressResponse;
-            }
-            return created;
+            // Repository автоматически обрабатывает is_default логику (clearDefault перед созданием)
+            return await this.userAddressRepository.create(userId, dto, trx);
         });
     }
 
@@ -63,6 +50,7 @@ export class UserAddressService {
         dto: UpdateUserAddressDto,
     ): Promise<UpdateUserAddressResponse> {
         return this.userAddressRepository.withTransaction(async (trx) => {
+            // Repository автоматически обрабатывает is_default логику (clearDefault перед обновлением)
             const updated = await this.userAddressRepository.update(
                 userId,
                 id,
@@ -71,15 +59,6 @@ export class UserAddressService {
             );
             if (!updated) {
                 throw new NotFoundException('Адрес не найден');
-            }
-            if (dto.is_default === true) {
-                await this.userAddressRepository.clearDefault(userId, trx);
-                const refreshed = await this.userAddressRepository.markDefault(
-                    userId,
-                    id,
-                    trx,
-                );
-                return refreshed as UpdateUserAddressResponse;
             }
             return updated;
         });
