@@ -186,6 +186,217 @@ describe('UserAddressController (integration)', () => {
         });
     });
 
+    describe('Tenant Isolation & Cross-User Blocking', () => {
+        it('должен блокировать доступ к адресу другого пользователя (GET one)', async () => {
+            // Arrange: User A создает адрес
+            const { token: tokenA } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const addressId = await createTestAddress(
+                tokenA,
+                TEST_DATA.ADDRESSES.HOME,
+            );
+
+            // Act: User B пытается получить адрес User A
+            const { token: tokenB } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
+            // Assert: 404 (адрес не найден для User B)
+            await request(app.getHttpServer())
+                .get(`${TEST_DATA.ENDPOINTS.ADDRESSES}/${addressId}`)
+                .set('Authorization', `Bearer ${tokenB}`)
+                .expect(404);
+        });
+
+        it('должен блокировать изменение адреса другого пользователя (PUT)', async () => {
+            // Arrange: User A создает адрес
+            const { token: tokenA } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const addressId = await createTestAddress(
+                tokenA,
+                TEST_DATA.ADDRESSES.WORK,
+            );
+
+            // Act: User B пытается изменить адрес User A
+            const { token: tokenB } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
+            // Assert: 404 (адрес не найден для User B)
+            await request(app.getHttpServer())
+                .put(`${TEST_DATA.ENDPOINTS.ADDRESSES}/${addressId}`)
+                .set('Authorization', `Bearer ${tokenB}`)
+                .send({ street: 'Попытка взлома' })
+                .expect(404);
+        });
+
+        it('должен блокировать удаление адреса другого пользователя (DELETE)', async () => {
+            // Arrange: User A создает адрес
+            const { token: tokenA } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const addressId = await createTestAddress(
+                tokenA,
+                TEST_DATA.ADDRESSES.DACHA,
+            );
+
+            // Act: User B пытается удалить адрес User A
+            const { token: tokenB } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
+            // Assert: 404 (адрес не найден для User B)
+            await request(app.getHttpServer())
+                .delete(`${TEST_DATA.ENDPOINTS.ADDRESSES}/${addressId}`)
+                .set('Authorization', `Bearer ${tokenB}`)
+                .expect(404);
+
+            // Verify: адрес User A всё ещё существует
+            const verifyRes = await request(app.getHttpServer())
+                .get(`${TEST_DATA.ENDPOINTS.ADDRESSES}/${addressId}`)
+                .set('Authorization', `Bearer ${tokenA}`)
+                .expect(200);
+
+            expect((verifyRes.body as TestResponse)?.data?.id).toBe(addressId);
+        });
+
+        it('должен блокировать установку default для адреса другого пользователя (PATCH)', async () => {
+            // Arrange: User A создает адрес
+            const { token: tokenA } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const addressId = await createTestAddress(
+                tokenA,
+                TEST_DATA.ADDRESSES.HOME,
+            );
+
+            // Act: User B пытается установить default для адреса User A
+            const { token: tokenB } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
+            // Assert: 404 (адрес не найден для User B)
+            await request(app.getHttpServer())
+                .patch(
+                    `${TEST_DATA.ENDPOINTS.ADDRESSES}/${addressId}/set-default`,
+                )
+                .set('Authorization', `Bearer ${tokenB}`)
+                .expect(404);
+        });
+
+        it('GET /addresses должен возвращать только адреса текущего пользователя', async () => {
+            // Arrange: User A создает 2 адреса
+            const { token: tokenA } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            await createTestAddress(tokenA, TEST_DATA.ADDRESSES.HOME);
+            await createTestAddress(tokenA, TEST_DATA.ADDRESSES.WORK);
+
+            // User B создает 1 адрес
+            const { token: tokenB } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            await createTestAddress(tokenB, TEST_DATA.ADDRESSES.DACHA);
+
+            // Act & Assert: User A видит только свои 2 адреса
+            const resA = await request(app.getHttpServer())
+                .get(TEST_DATA.ENDPOINTS.ADDRESSES)
+                .set('Authorization', `Bearer ${tokenA}`)
+                .expect(200);
+
+            const dataA = (resA.body as TestResponse)?.data as unknown;
+            expect(Array.isArray(dataA)).toBe(true);
+            if (Array.isArray(dataA)) {
+                expect(dataA.length).toBe(2);
+            }
+
+            // Act & Assert: User B видит только свой 1 адрес
+            const resB = await request(app.getHttpServer())
+                .get(TEST_DATA.ENDPOINTS.ADDRESSES)
+                .set('Authorization', `Bearer ${tokenB}`)
+                .expect(200);
+
+            const dataB = (resB.body as TestResponse)?.data as unknown;
+            expect(Array.isArray(dataB)).toBe(true);
+            if (Array.isArray(dataB)) {
+                expect(dataB.length).toBe(1);
+            }
+        });
+
+        it('должен изолировать default address между пользователями', async () => {
+            // Arrange: User A устанавливает default адрес
+            const { token: tokenA } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const addressIdA = await createTestAddress(
+                tokenA,
+                TEST_DATA.ADDRESSES.HOME,
+            );
+            await request(app.getHttpServer())
+                .patch(
+                    `${TEST_DATA.ENDPOINTS.ADDRESSES}/${addressIdA}/set-default`,
+                )
+                .set('Authorization', `Bearer ${tokenA}`)
+                .expect(200);
+
+            // User B устанавливает свой default адрес
+            const { token: tokenB } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const addressIdB = await createTestAddress(
+                tokenB,
+                TEST_DATA.ADDRESSES.WORK,
+            );
+            await request(app.getHttpServer())
+                .patch(
+                    `${TEST_DATA.ENDPOINTS.ADDRESSES}/${addressIdB}/set-default`,
+                )
+                .set('Authorization', `Bearer ${tokenB}`)
+                .expect(200);
+
+            // Act & Assert: Проверяем что у каждого свой default
+            const listA = await request(app.getHttpServer())
+                .get(TEST_DATA.ENDPOINTS.ADDRESSES)
+                .set('Authorization', `Bearer ${tokenA}`)
+                .expect(200);
+
+            const addressesA = (listA.body as TestResponse)?.data as Array<{
+                id: number;
+                is_default: boolean;
+            }>;
+            expect(addressesA.find((a) => a.id === addressIdA)?.is_default).toBe(
+                true,
+            );
+
+            const listB = await request(app.getHttpServer())
+                .get(TEST_DATA.ENDPOINTS.ADDRESSES)
+                .set('Authorization', `Bearer ${tokenB}`)
+                .expect(200);
+
+            const addressesB = (listB.body as TestResponse)?.data as Array<{
+                id: number;
+                is_default: boolean;
+            }>;
+            expect(addressesB.find((a) => a.id === addressIdB)?.is_default).toBe(
+                true,
+            );
+        });
+    });
+
     describe('Error Handling', () => {
         it('should return 401 when no token', async () => {
             await request(app.getHttpServer())
