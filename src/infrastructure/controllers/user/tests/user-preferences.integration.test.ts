@@ -211,6 +211,60 @@ describe('User Preferences Integration Tests', () => {
             expect(response.body.data.timezone).toBe('America/New_York');
         });
 
+        it('200: supports extended timezone list (Asia/Kolkata)', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const preferencesData = {
+                timezone: 'Asia/Kolkata',
+            };
+
+            const response = await request(app.getHttpServer())
+                .patch('/online-store/user/profile/preferences')
+                .set('Authorization', `Bearer ${token}`)
+                .send(preferencesData)
+                .expect(200);
+
+            expect(response.body.data.timezone).toBe('Asia/Kolkata');
+        });
+
+        it('200: supports extended timezone list (America/Sao_Paulo)', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const preferencesData = {
+                timezone: 'America/Sao_Paulo',
+            };
+
+            const response = await request(app.getHttpServer())
+                .patch('/online-store/user/profile/preferences')
+                .set('Authorization', `Bearer ${token}`)
+                .send(preferencesData)
+                .expect(200);
+
+            expect(response.body.data.timezone).toBe('America/Sao_Paulo');
+        });
+
+        it('200: supports extended timezone list (Australia/Melbourne)', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+            const preferencesData = {
+                timezone: 'Australia/Melbourne',
+            };
+
+            const response = await request(app.getHttpServer())
+                .patch('/online-store/user/profile/preferences')
+                .set('Authorization', `Bearer ${token}`)
+                .send(preferencesData)
+                .expect(200);
+
+            expect(response.body.data.timezone).toBe('Australia/Melbourne');
+        });
+
         it('400: invalid timezone value', async () => {
             const { token } = await TestDataFactory.createUserWithRole(
                 app,
