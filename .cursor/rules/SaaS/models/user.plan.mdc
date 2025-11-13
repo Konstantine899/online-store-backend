@@ -349,12 +349,41 @@ tasks:
 
 - id: USER-001-07
   title: Улучшить систему адресов пользователей с tenant isolation
-  branch: "feature/user/USER-001/improve-address-system-tenant"
+  status: COMPLETED
+  branch: "feature/user/USER-001-07/improve-address-system-tenant-isolation"
+  completed_at: "2025-11-13"
+  commits:
+    - "76a22dc: test(user-address): add comprehensive repository unit tests with tenant isolation"
+    - "28dc1d6: test(user-address): add integration tests for tenant isolation and cross-user blocking"
+    - "d6e448f: docs(user-address): add comprehensive documentation for tenant isolation"
+    - "ee6861c: chore(user-address): fix TypeScript linter errors in tests"
+  note: |
+    USER-001-07 COMPLETED ✅
+    
+    Реализация:
+    - tenant_id уже существовал в БД через миграцию 20251011133625-add-tenant-id-to-user-tables.ts
+    - UserAddressModel (Domain) содержит tenant_id с FK на tenants.id
+    - UserAddressRepository автоматически фильтрует по tenant_id во всех 7 методах (getTenantIdOrNull() ?? 1)
+    - UserAddressService делегирует tenant isolation репозиторию (корректная архитектура)
+    - Response классы и 7 кастомных Swagger декораторов уже существовали
+    - UserAddressController использует кастомные декораторы для всех 6 endpoints
+    
+    Тесты:
+    - 24 unit тестов для UserAddressRepository (create, findAll, findOne, update, remove, clearDefault, markDefault, setDefault)
+    - Проверка tenant_id в WHERE clauses, fallback на tenant_id = 1, transaction handling
+    - 13 integration тестов для UserAddressController (CRUD + tenant isolation + cross-user blocking)
+    - Проверка независимости default address между пользователями, блокировка доступа к адресам других пользователей
+    
+    Документация:
+    - PROJECT_CONTEXT.md обновлен с разделом "Адреса пользователей (UserAddress)"
+    - Описание tenant isolation, security features, database indexes, Swagger decorators, test coverage
+    
+    Итог: Все 9 пунктов DoD выполнены, 37 тестов (24 unit + 13 integration) проходят успешно ✅
   files_scope:
     - "db/migrations/\*\*"
     - "db/models/user-address.ts"
     - "db/models/types.ts"
-    - "src/domain/models/user-address.model.ts"
+    - "src/domain/models/user-address.ts"
     - "src/infrastructure/services/user-address/\*\*"
     - "src/infrastructure/repositories/user-address/\*\*"
     - "src/infrastructure/dto/user-address/\*\*"
@@ -362,27 +391,27 @@ tasks:
     - "src/infrastructure/responses/user-address/\*\*"
     - "src/infrastructure/common/decorators/swagger/user-address/\*\*"
       steps:
-    - проверить существование UserAddressController и UserAddressService (уже есть)
-    - проверить наличие tenant_id в таблице user_addresses (если нет - добавить миграцию)
-    - обновить db/models/user-address.ts с tenant_id (если нужно)
-    - обновить UserAddressModel (Domain) с tenant_id и ассоциациями
-    - обновить UserAddressRepository с tenant isolation (автоматическая фильтрация по tenant_id)
-    - обновить UserAddressService с tenant isolation
-    - создать/обновить Response классы с Swagger декораторами
-    - создать кастомные Swagger декораторы для всех endpoints
-    - обновить UserAddressController с tenant isolation проверками
-    - написать тесты tenant isolation для адресов (unit + integration)
-    - обновить Swagger документацию
+    - ✅ проверить существование UserAddressController и UserAddressService (уже есть)
+    - ✅ проверить наличие tenant_id в таблице user_addresses (миграция 20251011133625)
+    - ✅ обновить db/models/user-address.ts с tenant_id (если нужно)
+    - ✅ обновить UserAddressModel (Domain) с tenant_id и ассоциациями
+    - ✅ обновить UserAddressRepository с tenant isolation (автоматическая фильтрация по tenant_id)
+    - ✅ обновить UserAddressService с tenant isolation
+    - ✅ создать/обновить Response классы с Swagger декораторами
+    - ✅ создать кастомные Swagger декораторы для всех endpoints (7 декораторов)
+    - ✅ обновить UserAddressController с tenant isolation проверками
+    - ✅ написать тесты tenant isolation для адресов (24 unit + 13 integration)
+    - ✅ обновить Swagger документацию (PROJECT_CONTEXT.md)
       dod:
-    - tenant_id добавлен в таблицу user_addresses (если отсутствовал)
-    - UserAddressModel содержит tenant_id
-    - UserAddressRepository автоматически фильтрует по tenant_id
-    - UserAddressService обеспечивает tenant isolation
-    - Response классы созданы с Swagger декораторами
-    - кастомные Swagger декораторы созданы
-    - UserAddressController содержит полный CRUD с tenant isolation
-    - тесты покрывают все операции и tenant isolation
-    - Swagger документация обновлена
+    - ✅ tenant_id добавлен в таблицу user_addresses (миграция существует)
+    - ✅ UserAddressModel содержит tenant_id (строки 108-114 в user-address.ts)
+    - ✅ UserAddressRepository автоматически фильтрует по tenant_id (7 методов)
+    - ✅ UserAddressService обеспечивает tenant isolation (делегирование репозиторию)
+    - ✅ Response классы созданы с Swagger декораторами
+    - ✅ кастомные Swagger декораторы созданы (7 файлов в decorators/swagger/user-address/)
+    - ✅ UserAddressController содержит полный CRUD с tenant isolation (6 endpoints)
+    - ✅ тесты покрывают все операции и tenant isolation (37 тестов: 24 unit + 13 integration)
+    - ✅ Swagger документация обновлена (раздел "Адреса пользователей" в PROJECT_CONTEXT.md)
       pre_commit_workflow: "ОБЫЧНЫЙ"
       pre_commit_steps:
     - "«Ревью» → address CRUD, validation, associations, tenant isolation"
