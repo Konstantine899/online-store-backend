@@ -1,5 +1,5 @@
-import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
+import request from 'supertest';
 import { setupTestApp } from '../../../../tests/setup/app';
 import { TestDataFactory } from '../../../../tests/utils';
 
@@ -374,26 +374,28 @@ describe('UserAddressController (integration)', () => {
                 .set('Authorization', `Bearer ${tokenA}`)
                 .expect(200);
 
-            const addressesA = (listA.body as TestResponse)?.data as Array<{
+            const addressesA = (listA.body as TestResponse)
+                ?.data as unknown as Array<{
                 id: number;
                 is_default: boolean;
             }>;
-            expect(addressesA.find((a) => a.id === addressIdA)?.is_default).toBe(
-                true,
-            );
+            expect(
+                addressesA.find((a) => a.id === addressIdA)?.is_default,
+            ).toBe(true);
 
             const listB = await request(app.getHttpServer())
                 .get(TEST_DATA.ENDPOINTS.ADDRESSES)
                 .set('Authorization', `Bearer ${tokenB}`)
                 .expect(200);
 
-            const addressesB = (listB.body as TestResponse)?.data as Array<{
+            const addressesB = (listB.body as TestResponse)
+                ?.data as unknown as Array<{
                 id: number;
                 is_default: boolean;
             }>;
-            expect(addressesB.find((a) => a.id === addressIdB)?.is_default).toBe(
-                true,
-            );
+            expect(
+                addressesB.find((a) => a.id === addressIdB)?.is_default,
+            ).toBe(true);
         });
     });
 

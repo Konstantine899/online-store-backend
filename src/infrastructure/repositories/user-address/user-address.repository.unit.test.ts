@@ -1,17 +1,19 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getModelToken } from '@nestjs/sequelize';
-import { UserAddressRepository } from './user-address.repository';
 import { UserAddressModel } from '@app/domain/models';
 import { TenantContext } from '@app/infrastructure/common/context';
-import {
+import type {
     CreateUserAddressDto,
     UpdateUserAddressDto,
 } from '@app/infrastructure/dto';
+import { getModelToken } from '@nestjs/sequelize';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import type { Transaction } from 'sequelize';
+import { UserAddressRepository } from './user-address.repository';
 
 /**
  * Unit тесты для UserAddressRepository
  * Цель: проверить корректную работу tenant isolation на уровне repository
- * 
+ *
  * Ключевые проверки:
  * - create() добавляет tenant_id из TenantContext
  * - findAll(), findOne(), update(), remove() фильтруют по tenant_id
@@ -19,9 +21,24 @@ import {
  * - fallback на tenant_id = 1 когда context возвращает null
  */
 
+interface MockSequelizeModel {
+    create: jest.Mock;
+    findAll: jest.Mock;
+    findOne: jest.Mock;
+    update: jest.Mock;
+    destroy: jest.Mock;
+    sequelize: {
+        transaction: jest.Mock;
+    } | null;
+}
+
+type MockTransaction = Partial<Transaction> & {
+    id: string;
+};
+
 describe('UserAddressRepository (Unit)', () => {
     let repository: UserAddressRepository;
-    let mockModel: any;
+    let mockModel: MockSequelizeModel;
     let mockTenantContext: jest.Mocked<TenantContext>;
 
     // Константы для тестов
@@ -54,15 +71,21 @@ describe('UserAddressRepository (Unit)', () => {
             update: jest.fn(),
             destroy: jest.fn(),
             sequelize: {
-                transaction: jest.fn((callback) => callback({})),
+                transaction: jest.fn((callback: (t: unknown) => unknown) =>
+                    callback({}),
+                ),
             },
         };
 
         // Мок TenantContext
         mockTenantContext = {
+            setTenantId: jest.fn(),
+            getTenantId: jest.fn(),
             getTenantIdOrNull: jest.fn(),
             getTenantIdOrFail: jest.fn(),
-        } as any;
+            hasTenantId: jest.fn(),
+            clear: jest.fn(),
+        } as unknown as jest.Mocked<TenantContext>;
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -78,9 +101,7 @@ describe('UserAddressRepository (Unit)', () => {
             ],
         }).compile();
 
-        repository = module.get<UserAddressRepository>(
-            UserAddressRepository,
-        );
+        repository = module.get<UserAddressRepository>(UserAddressRepository);
     });
 
     afterEach(() => {
@@ -162,20 +183,23 @@ describe('UserAddressRepository (Unit)', () => {
 
         it('должен передавать transaction в метод create', async () => {
             // Arrange
-            const mockTransaction = { id: 'trx-123' } as any;
+            const mockTransaction: MockTransaction = { id: 'trx-123' };
             mockTenantContext.getTenantIdOrNull.mockReturnValue(
                 TENANT_ID_DEFAULT,
             );
             mockModel.create.mockResolvedValue(mockAddress);
 
             // Act
-            await repository.create(USER_ID, createDto, mockTransaction);
+            await repository.create(
+                USER_ID,
+                createDto,
+                mockTransaction as Transaction,
+            );
 
             // Assert
-            expect(mockModel.create).toHaveBeenCalledWith(
-                expect.anything(),
-                { transaction: mockTransaction },
-            );
+            expect(mockModel.create).toHaveBeenCalledWith(expect.anything(), {
+                transaction: mockTransaction,
+            });
         });
     });
 
@@ -248,14 +272,14 @@ describe('UserAddressRepository (Unit)', () => {
 
         it('должен передавать transaction в findAll', async () => {
             // Arrange
-            const mockTransaction = { id: 'trx-456' } as any;
+            const mockTransaction: MockTransaction = { id: 'trx-456' };
             mockTenantContext.getTenantIdOrNull.mockReturnValue(
                 TENANT_ID_DEFAULT,
             );
             mockModel.findAll.mockResolvedValue([]);
 
             // Act
-            await repository.findAll(USER_ID, mockTransaction);
+            await repository.findAll(USER_ID, mockTransaction as Transaction);
 
             // Assert
             expect(mockModel.findAll).toHaveBeenCalledWith(
@@ -435,14 +459,17 @@ describe('UserAddressRepository (Unit)', () => {
 
         it('должен работать с transaction', async () => {
             // Arrange
-            const mockTransaction = { id: 'trx-789' } as any;
+            const mockTransaction: MockTransaction = { id: 'trx-789' };
             mockTenantContext.getTenantIdOrNull.mockReturnValue(
                 TENANT_ID_DEFAULT,
             );
             mockModel.update.mockResolvedValue([1]);
 
             // Act
-            await repository.clearDefault(USER_ID, mockTransaction);
+            await repository.clearDefault(
+                USER_ID,
+                mockTransaction as Transaction,
+            );
 
             // Assert
             expect(mockModel.update).toHaveBeenCalledWith(
@@ -556,7 +583,9 @@ describe('UserAddressRepository (Unit)', () => {
 
         it('должен работать с transaction', async () => {
             // Arrange
-            const mockTransaction = { id: 'trx-set-default' } as any;
+            const mockTransaction: MockTransaction = {
+                id: 'trx-set-default',
+            };
             mockTenantContext.getTenantIdOrNull.mockReturnValue(
                 TENANT_ID_DEFAULT,
             );
@@ -564,7 +593,11 @@ describe('UserAddressRepository (Unit)', () => {
             mockModel.findOne.mockResolvedValue(mockAddress);
 
             // Act
-            await repository.setDefault(USER_ID, ADDRESS_ID, mockTransaction);
+            await repository.setDefault(
+                USER_ID,
+                ADDRESS_ID,
+                mockTransaction as Transaction,
+            );
 
             // Assert
             // Оба вызова update должны получить transaction
@@ -636,14 +669,18 @@ describe('UserAddressRepository (Unit)', () => {
 
         it('должен передавать transaction в destroy', async () => {
             // Arrange
-            const mockTransaction = { id: 'trx-remove' } as any;
+            const mockTransaction: MockTransaction = { id: 'trx-remove' };
             mockTenantContext.getTenantIdOrNull.mockReturnValue(
                 TENANT_ID_DEFAULT,
             );
             mockModel.destroy.mockResolvedValue(1);
 
             // Act
-            await repository.remove(USER_ID, ADDRESS_ID, mockTransaction);
+            await repository.remove(
+                USER_ID,
+                ADDRESS_ID,
+                mockTransaction as Transaction,
+            );
 
             // Assert
             expect(mockModel.destroy).toHaveBeenCalledWith(
@@ -659,15 +696,20 @@ describe('UserAddressRepository (Unit)', () => {
             // Arrange
             const mockTransaction = { id: 'trx-test' };
             const callback = jest.fn().mockResolvedValue('result');
-            mockModel.sequelize.transaction.mockImplementation((cb) =>
-                cb(mockTransaction),
-            );
+
+            if (mockModel.sequelize) {
+                mockModel.sequelize.transaction.mockImplementation((cb) =>
+                    cb(mockTransaction),
+                );
+            }
 
             // Act
             const result = await repository.withTransaction(callback);
 
             // Assert
-            expect(mockModel.sequelize.transaction).toHaveBeenCalled();
+            if (mockModel.sequelize) {
+                expect(mockModel.sequelize.transaction).toHaveBeenCalled();
+            }
             expect(callback).toHaveBeenCalledWith(mockTransaction);
             expect(result).toBe('result');
         });
@@ -686,4 +728,3 @@ describe('UserAddressRepository (Unit)', () => {
         });
     });
 });
-
