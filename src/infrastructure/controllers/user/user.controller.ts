@@ -53,6 +53,7 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { UpdateUserFlagsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-flags.swagger';
 import { UpdateUserPreferencesSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-preferences.swagger';
+import { UpdateUserPreferencesResponse } from '@app/infrastructure/responses';
 import { UpdateUserProfileSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-profile.swagger';
 import { UpdateUserStatusSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-status.swagger';
 import { GetUserStatsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/user-stats.swagger';
@@ -356,12 +357,12 @@ export class UserController implements IUserController {
     async updatePreferences(
         @Req() req: AuthenticatedRequest,
         @Body(validationPipe) dto: UpdateUserPreferencesDto,
-    ): Promise<{ data: unknown }> {
-        console.log('updatePreferences method called');
+    ): Promise<{ data: UpdateUserPreferencesResponse }> {
         const userId = this.extractUserId(req);
         const user = await this.userService.updatePreferences(userId, dto);
-        console.log('updatePreferences returning:', user);
-        return this.createResponse(user.get({ plain: true }));
+        return this.createResponse(
+            user.get({ plain: true }),
+        ) as { data: UpdateUserPreferencesResponse };
     }
 
     @Roles(...ADMIN_ROLES)

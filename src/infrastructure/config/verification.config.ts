@@ -32,7 +32,7 @@ export const VERIFICATION_CODE_LENGTH_BYTES = 3;
  * Реализовано как функция для поддержки динамического изменения в тестах
  */
 export const getVerificationCodeCooldownMs = (): number => {
-    return parseInt(process.env.VERIFICATION_CODE_COOLDOWN_MS || '60000', 10);
+    return parseInt(process.env.VERIFICATION_CODE_COOLDOWN_MS ?? '60000', 10);
 };
 
 /**

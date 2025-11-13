@@ -1,6 +1,7 @@
 import { UserModel } from '@app/domain/models';
 import { IUserRepository } from '@app/domain/repositories';
 import type { IEmailProvider, ISmsProvider } from '@app/domain/services';
+import { TenantContext } from '@app/infrastructure/common/context';
 import { normalizeRussianPhone } from '@app/infrastructure/common/utils/phone.utils';
 import {
     getVerificationCodeCooldownMs,
@@ -61,6 +62,7 @@ export class UserRepository implements IUserRepository {
         private readonly emailProvider: IEmailProvider,
         @Inject('ISmsProvider')
         private readonly smsProvider: ISmsProvider,
+        private readonly tenantContext: TenantContext,
     ) {}
 
     // Централизованные методы обработки ошибок с structured logging
@@ -768,30 +770,40 @@ export class UserRepository implements IUserRepository {
         dto: UpdateUserPreferencesDto,
     ): Promise<UserModel | null> {
         try {
+            // Получаем tenant ID для изоляции данных
+            const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
+
             // Оптимизированное обновление: прямое обновление без предварительного поиска
             const updates: Partial<UserModel> = {};
 
             // Добавляем только измененные поля
             if (dto.themePreference !== undefined)
                 updates.themePreference = dto.themePreference;
+            if (dto.preferredLanguage !== undefined)
+                updates.preferredLanguage = dto.preferredLanguage;
             if (dto.defaultLanguage !== undefined)
                 updates.defaultLanguage = dto.defaultLanguage;
+            if (dto.timezone !== undefined) updates.timezone = dto.timezone;
             if (dto.notificationPreferences !== undefined)
                 updates.notificationPreferences = dto.notificationPreferences;
             if (dto.translations !== undefined)
                 updates.translations = dto.translations;
 
             if (Object.keys(updates).length === 0) {
-                // Если нет изменений, возвращаем пользователя
-                return this.userModel.findByPk(userId);
+                // Если нет изменений, возвращаем пользователя с учетом tenant
+                return this.userModel.findOne({
+                    where: { id: userId, tenantId },
+                });
             }
 
             // Прямое обновление с возвратом обновленной записи
             const [affectedRows] = await this.userModel.update(updates, {
-                where: { id: userId },
+                where: { id: userId, tenantId },
             });
 
-            return affectedRows > 0 ? this.userModel.findByPk(userId) : null;
+            return affectedRows > 0
+                ? this.userModel.findOne({ where: { id: userId, tenantId } })
+                : null;
         } catch (error: unknown) {
             this.handleSequelizeError(
                 error,

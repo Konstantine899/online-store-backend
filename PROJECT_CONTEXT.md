@@ -252,10 +252,10 @@ User ──┬── UserRole ── Role
 **Tenant Isolation реализация**:
 
 1. **Repository level**: автоматическая фильтрация по `tenant_id` во всех запросах
-   - `create()`: добавляет `tenant_id` из `TenantContext`
-   - `findAll()`, `findOne()`, `update()`, `remove()`: WHERE `tenant_id = ?`
-   - `clearDefault()`, `markDefault()`, `setDefault()`: tenant-scoped операции
-   - Fallback на `tenant_id = 1` когда context возвращает `null`
+    - `create()`: добавляет `tenant_id` из `TenantContext`
+    - `findAll()`, `findOne()`, `update()`, `remove()`: WHERE `tenant_id = ?`
+    - `clearDefault()`, `markDefault()`, `setDefault()`: tenant-scoped операции
+    - Fallback на `tenant_id = 1` когда context возвращает `null`
 
 2. **Service level**: делегирование tenant isolation в repository
 
@@ -286,28 +286,28 @@ User ──┬── UserRole ── Role
 **Тестовое покрытие**:
 
 - Unit тесты Repository: 31 тест (все проходят)
-  - Проверка tenant_id во всех операциях
-  - Fallback логика на `tenant_id = 1`
-  - Transaction handling
-  - Логика clearDefault при создании/обновлении с is_default=true
-  - Edge cases: is_default=false/undefined не вызывает clearDefault
+    - Проверка tenant_id во всех операциях
+    - Fallback логика на `tenant_id = 1`
+    - Transaction handling
+    - Логика clearDefault при создании/обновлении с is_default=true
+    - Edge cases: is_default=false/undefined не вызывает clearDefault
 - Integration тесты: 16 тестов (все проходят)
-  - CRUD операции
-  - Cross-user blocking (GET/PUT/DELETE/PATCH → 404)
-  - List filtering по пользователю
-  - Default address isolation между пользователями
-  - Уникальность default адреса (create/update автоматически сбрасывает предыдущий)
+    - CRUD операции
+    - Cross-user blocking (GET/PUT/DELETE/PATCH → 404)
+    - List filtering по пользователю
+    - Default address isolation между пользователями
+    - Уникальность default адреса (create/update автоматически сбрасывает предыдущий)
 
 **Особенности реализации**:
 
 - **Уникальность default адреса**: `create()`/`update()` автоматически вызывают `clearDefault()` при `is_default=true`
-  - Гарантирует что у пользователя всегда только один default адрес в рамках tenant
-  - Все операции выполняются в транзакции для атомарности (защита от race conditions)
-- **Производительность**: 
-  - `create()` с is_default=false: 1 запрос ~1-2ms
-  - `create()` с is_default=true: 2 запроса ~2-4ms  
-  - `update()` с is_default=false: 2 запроса ~2-3ms
-  - `update()` с is_default=true: 3 запроса ~3-5ms
+    - Гарантирует что у пользователя всегда только один default адрес в рамках tenant
+    - Все операции выполняются в транзакции для атомарности (защита от race conditions)
+- **Производительность**:
+    - `create()` с is_default=false: 1 запрос ~1-2ms
+    - `create()` с is_default=true: 2 запроса ~2-4ms
+    - `update()` с is_default=false: 2 запроса ~2-3ms
+    - `update()` с is_default=true: 3 запроса ~3-5ms
 - Транзакционная поддержка для `setDefault` (clearDefault + markDefault)
 - Автоматическая сортировка: default адрес первым, затем по дате создания
 - Валидация через DTO с кастомными валидаторами

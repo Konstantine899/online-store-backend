@@ -252,6 +252,82 @@ describe('UserService - Flags and Preferences', () => {
             );
             expect(result).toEqual(mockUser);
         });
+
+        it('должен успешно обновить preferredLanguage', async () => {
+            const preferencesDto: UpdateUserPreferencesDto = {
+                preferredLanguage: 'en',
+            };
+
+            const updatedUser = { ...mockUser, preferredLanguage: 'en' };
+            userRepository.findUser.mockResolvedValue(mockUser);
+            userRepository.updatePreferences.mockResolvedValue(
+                updatedUser as UserModel,
+            );
+
+            const result = await service.updatePreferences(1, preferencesDto);
+
+            expect(userRepository.updatePreferences).toHaveBeenCalledWith(
+                1,
+                preferencesDto,
+            );
+            expect(result.preferredLanguage).toBe('en');
+        });
+
+        it('должен успешно обновить timezone', async () => {
+            const preferencesDto: UpdateUserPreferencesDto = {
+                timezone: 'America/New_York',
+            };
+
+            const updatedUser = {
+                ...mockUser,
+                timezone: 'America/New_York',
+            };
+            userRepository.findUser.mockResolvedValue(mockUser);
+            userRepository.updatePreferences.mockResolvedValue(
+                updatedUser as UserModel,
+            );
+
+            const result = await service.updatePreferences(1, preferencesDto);
+
+            expect(userRepository.updatePreferences).toHaveBeenCalledWith(
+                1,
+                preferencesDto,
+            );
+            expect(result.timezone).toBe('America/New_York');
+        });
+
+        it('должен успешно обновить все предпочтения одновременно', async () => {
+            const preferencesDto: UpdateUserPreferencesDto = {
+                themePreference: 'auto',
+                preferredLanguage: 'es',
+                defaultLanguage: 'fr',
+                timezone: 'Asia/Tokyo',
+                notificationPreferences: { email: true, sms: true },
+                translations: { 'button.ok': 'OK' },
+            };
+
+            const updatedUser = { ...mockUser, ...preferencesDto };
+            userRepository.findUser.mockResolvedValue(mockUser);
+            userRepository.updatePreferences.mockResolvedValue(
+                updatedUser as UserModel,
+            );
+
+            const result = await service.updatePreferences(1, preferencesDto);
+
+            expect(userRepository.updatePreferences).toHaveBeenCalledWith(
+                1,
+                preferencesDto,
+            );
+            expect(result.themePreference).toBe('auto');
+            expect(result.preferredLanguage).toBe('es');
+            expect(result.defaultLanguage).toBe('fr');
+            expect(result.timezone).toBe('Asia/Tokyo');
+            expect(result.notificationPreferences).toEqual({
+                email: true,
+                sms: true,
+            });
+            expect(result.translations).toEqual({ 'button.ok': 'OK' });
+        });
     });
 
     describe('getUserStats', () => {
