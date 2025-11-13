@@ -43,9 +43,9 @@
 - ✅ **SAAS-001**: Multi-tenancy реализован
 - ✅ **SAAS-009**: Система уведомлений (Notification API, интеграционные тесты)
 - ✅ **USER-001-06**: Verification API (email/phone верификация, 43 integration теста)
+- ✅ **USER-001-07**: Улучшение системы адресов с tenant isolation (24 unit, 13 integration тестов)
 - ⏳ **SAAS-002**: Очистка User модуля (удаление e-commerce хардкода)
 - ⏳ **SAAS-003**: Фильтрация каталога по тенантам
-- ⏳ **USER-001-07**: Улучшение системы адресов с tenant isolation
 
 ---
 
@@ -222,6 +222,84 @@ User ──┬── UserRole ── Role
 - UTC timezone для корректной работы cooldown
 - Кэш инвалидация после верификации (UserService cache)
 - Integration тесты: 43 теста, coverage 85-95%
+
+#### Адреса пользователей (UserAddress)
+
+**Контроллер**: `UserAddressController`
+
+**Endpoints**:
+
+- `GET /user-addresses` - получение всех адресов пользователя
+- `GET /user-addresses/:id` - получение конкретного адреса
+- `POST /user-addresses` - создание нового адреса
+- `PUT /user-addresses/:id` - полное обновление адреса
+- `PATCH /user-addresses/:id/set-default` - установка адреса по умолчанию
+- `DELETE /user-addresses/:id` - удаление адреса
+
+**Модель данных**:
+
+- `title`: название адреса (например, "Дом", "Работа")
+- `street`: улица
+- `house`: номер дома
+- `apartment`: квартира (optional)
+- `city`: город
+- `postal_code`: почтовый индекс (optional)
+- `country`: страна (default: "Россия")
+- `is_default`: флаг основного адреса
+- `tenant_id`: идентификатор тенанта (для multi-tenant изоляции)
+
+**Tenant Isolation реализация**:
+
+1. **Repository level**: автоматическая фильтрация по `tenant_id` во всех запросах
+   - `create()`: добавляет `tenant_id` из `TenantContext`
+   - `findAll()`, `findOne()`, `update()`, `remove()`: WHERE `tenant_id = ?`
+   - `clearDefault()`, `markDefault()`, `setDefault()`: tenant-scoped операции
+   - Fallback на `tenant_id = 1` когда context возвращает `null`
+
+2. **Service level**: делегирование tenant isolation в repository
+
+3. **Controller level**: проверка прав доступа через `AuthGuard` и `RoleGuard`
+
+**Security features**:
+
+- Cross-user blocking: пользователь не может видеть/изменять/удалять адреса других пользователей
+- List filtering: `GET /addresses` возвращает только адреса текущего пользователя
+- Default address isolation: каждый пользователь имеет независимый default адрес
+- Tenant isolation: адреса полностью изолированы между тенантами
+
+**Индексы БД** (для производительности):
+
+- `idx_user_address_tenant_id`: поиск по tenant
+- `idx_user_address_tenant_id_id`: поиск конкретного адреса в tenant
+- `idx_user_address_tenant_id_user_id`: поиск адресов пользователя в tenant
+
+**Swagger декораторы**:
+
+- `@CreateUserAddressSwaggerDecorator()`
+- `@GetUserAddressSwaggerDecorator()`
+- `@GetUserAddressesSwaggerDecorator()`
+- `@UpdateUserAddressSwaggerDecorator()`
+- `@SetDefaultUserAddressSwaggerDecorator()`
+- `@RemoveUserAddressSwaggerDecorator()`
+
+**Тестовое покрытие**:
+
+- Unit тесты Repository: 24 теста (все проходят)
+  - Проверка tenant_id во всех операциях
+  - Fallback логика на `tenant_id = 1`
+  - Transaction handling
+- Integration тесты: 13 тестов (все проходят)
+  - CRUD операции
+  - Cross-user blocking (GET/PUT/DELETE/PATCH → 404)
+  - List filtering по пользователю
+  - Default address isolation между пользователями
+
+**Особенности реализации**:
+
+- Транзакционная поддержка для `setDefault` (clearDefault + markDefault)
+- Автоматическая сортировка: default адрес первым, затем по дате создания
+- Валидация через DTO с кастомными валидаторами
+- Response классы с полными Swagger декораторами
 
 **Роли системы**:
 
