@@ -1,20 +1,20 @@
+import { NotFoundException } from '@nestjs/common';
 import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
 import type { Transaction } from 'sequelize';
 
 // Внутренние импорты
-import { UserAddressService } from './user-address.service';
-import { UserAddressRepository } from '@app/infrastructure/repositories';
 import type {
     CreateUserAddressDto,
     UpdateUserAddressDto,
 } from '@app/infrastructure/dto';
+import { UserAddressRepository } from '@app/infrastructure/repositories';
 import type {
     CreateUserAddressResponse,
     GetUserAddressResponse,
     UpdateUserAddressResponse,
 } from '@app/infrastructure/responses';
+import { UserAddressService } from './user-address.service';
 
 // Типы для тестов
 type MockedUserAddressRepository = jest.Mocked<UserAddressRepository>;

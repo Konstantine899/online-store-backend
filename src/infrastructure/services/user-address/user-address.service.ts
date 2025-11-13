@@ -1,4 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+    CreateUserAddressDto,
+    UpdateUserAddressDto,
+} from '@app/infrastructure/dto';
 import { UserAddressRepository } from '@app/infrastructure/repositories';
 import {
     CreateUserAddressResponse,
@@ -6,10 +9,7 @@ import {
     RemoveUserAddressResponse,
     UpdateUserAddressResponse,
 } from '@app/infrastructure/responses';
-import {
-    CreateUserAddressDto,
-    UpdateUserAddressDto,
-} from '@app/infrastructure/dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 @Injectable()
 export class UserAddressService {

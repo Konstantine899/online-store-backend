@@ -44,6 +44,7 @@
 - ✅ **SAAS-009**: Система уведомлений (Notification API, интеграционные тесты)
 - ✅ **USER-001-06**: Verification API (email/phone верификация, 43 integration теста)
 - ✅ **USER-001-07**: Улучшение системы адресов с tenant isolation (24 unit, 13 integration тестов)
+- ✅ **USER-001-08**: Уникальность default адреса с tenant isolation (31 unit, 16 integration тестов)
 - ⏳ **SAAS-002**: Очистка User модуля (удаление e-commerce хардкода)
 - ⏳ **SAAS-003**: Фильтрация каталога по тенантам
 
@@ -245,7 +246,7 @@ User ──┬── UserRole ── Role
 - `city`: город
 - `postal_code`: почтовый индекс (optional)
 - `country`: страна (default: "Россия")
-- `is_default`: флаг основного адреса
+- `is_default`: флаг основного адреса (автоматически сбрасывает предыдущий default при установке)
 - `tenant_id`: идентификатор тенанта (для multi-tenant изоляции)
 
 **Tenant Isolation реализация**:
@@ -284,18 +285,29 @@ User ──┬── UserRole ── Role
 
 **Тестовое покрытие**:
 
-- Unit тесты Repository: 24 теста (все проходят)
+- Unit тесты Repository: 31 тест (все проходят)
   - Проверка tenant_id во всех операциях
   - Fallback логика на `tenant_id = 1`
   - Transaction handling
-- Integration тесты: 13 тестов (все проходят)
+  - Логика clearDefault при создании/обновлении с is_default=true
+  - Edge cases: is_default=false/undefined не вызывает clearDefault
+- Integration тесты: 16 тестов (все проходят)
   - CRUD операции
   - Cross-user blocking (GET/PUT/DELETE/PATCH → 404)
   - List filtering по пользователю
   - Default address isolation между пользователями
+  - Уникальность default адреса (create/update автоматически сбрасывает предыдущий)
 
 **Особенности реализации**:
 
+- **Уникальность default адреса**: `create()`/`update()` автоматически вызывают `clearDefault()` при `is_default=true`
+  - Гарантирует что у пользователя всегда только один default адрес в рамках tenant
+  - Все операции выполняются в транзакции для атомарности (защита от race conditions)
+- **Производительность**: 
+  - `create()` с is_default=false: 1 запрос ~1-2ms
+  - `create()` с is_default=true: 2 запроса ~2-4ms  
+  - `update()` с is_default=false: 2 запроса ~2-3ms
+  - `update()` с is_default=true: 3 запроса ~3-5ms
 - Транзакционная поддержка для `setDefault` (clearDefault + markDefault)
 - Автоматическая сортировка: default адрес первым, затем по дате создания
 - Валидация через DTO с кастомными валидаторами
