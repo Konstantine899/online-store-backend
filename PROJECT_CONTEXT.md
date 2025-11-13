@@ -42,8 +42,10 @@
 
 - ✅ **SAAS-001**: Multi-tenancy реализован
 - ✅ **SAAS-009**: Система уведомлений (Notification API, интеграционные тесты)
+- ✅ **USER-001-06**: Verification API (email/phone верификация, 43 integration теста)
 - ⏳ **SAAS-002**: Очистка User модуля (удаление e-commerce хардкода)
 - ⏳ **SAAS-003**: Фильтрация каталога по тенантам
+- ⏳ **USER-001-07**: Улучшение системы адресов с tenant isolation
 
 ---
 
@@ -81,6 +83,7 @@
 - `setTenantId(tenantId)` - установка tenant ID для текущего запроса
 - `getTenantId()` - получение tenant ID (throws если не установлен)
 - `getTenantIdOrNull()` - получение tenant ID или null
+- `getTenantIdOrFail()` - **РЕКОМЕНДУЕТСЯ** вместо `getTenantIdOrNull() ?? 1` для безопасности
 - `hasTenantId()` - проверка установлен ли tenant ID
 - `clear()` - очистка tenant ID (для тестов)
 
@@ -113,6 +116,11 @@
 - **LoginHistory**: история входов в систему
 - **PasswordResetToken**: токены сброса пароля
 - **UserVerificationCode**: коды верификации email/phone
+    - Поля: user_id, tenant_id, type ('email'|'phone'), code_hash (SHA256), expires_at, attempts
+    - Валидация: TTL 10 минут, cooldown 60 секунд, max 5 попыток ввода
+    - Tenant isolation: автоматическая фильтрация по tenant_id
+    - Индексы: (user_id, type, tenant_id) для производительности
+    - Security: хранение только хеша кода, никогда plain text
 
 #### Каталог товаров
 
@@ -179,6 +187,41 @@ User ──┬── UserRole ── Role
 - CRUD операции для пользователей
 - Управление ролями
 - Lifecycle операции (block/suspend/delete/verify)
+
+#### Верификация email и телефона
+
+**Endpoints верификации:**
+
+- `POST /users/verify/email/request` - запрос кода верификации email
+- `POST /users/verify/email/confirm` - подтверждение кода email
+- `POST /users/verify/phone/request` - запрос кода верификации phone
+- `POST /users/verify/phone/confirm` - подтверждение кода phone
+
+**Механизм работы:**
+
+1. **Генерация кода**: 6-значный цифровой код
+2. **Хранение**: SHA256 хеш в таблице `user_verification_code`
+3. **TTL**: 10 минут (600000 мс)
+4. **Cooldown**: 60 секунд между запросами (конфигурируемый через `VERIFICATION_CODE_COOLDOWN_MS`)
+5. **Max attempts**: 5 попыток ввода кода
+6. **Отправка**: через NotificationService (email/SMS провайдеры)
+
+**Security features:**
+
+- Tenant isolation на всех уровнях (Repository/Service/Controller)
+- Rate limiting: 3 запроса/5мин (request), 5 попыток/5мин (confirm)
+- Cooldown защита от спама запросов
+- Cross-tenant блокировка (пользователь tenant A не может использовать код из tenant B)
+- Автоматическая инвалидация после успешной верификации
+- Логирование всех критичных событий (генерация, попытки, успех/неудача)
+
+**Особенности реализации:**
+
+- Graceful degradation при сбое email/SMS провайдеров
+- Динамическая конфигурация через environment variables
+- UTC timezone для корректной работы cooldown
+- Кэш инвалидация после верификации (UserService cache)
+- Integration тесты: 43 теста, coverage 85-95%
 
 **Роли системы**:
 
@@ -398,7 +441,11 @@ User ──┬── UserRole ── Role
   'long': '100 запросов/мин',
   'login': '5 попыток/15мин',
   'refresh': '10 попыток/5мин',
-  'registration': '3 попытки/мин'
+  'registration': '3 попытки/мин',
+  'verify/email/request': '3 попытки/5мин',
+  'verify/phone/request': '3 попытки/5мин',
+  'verify/email/confirm': '5 попыток/5мин',
+  'verify/phone/confirm': '5 попыток/5мин'
 }
 ```
 
@@ -539,7 +586,7 @@ User ──┬── UserRole ── Role
 - **Автодокументация**: `/online-store/docs` с полным описанием API
 - **Оптимизация**: мемоизация общих ответов для производительности
 
-**Полный список декораторов** (60+ декораторов):
+**Полный список декораторов** (64+ декораторов):
 
 **Auth** (5): CheckUserAuth, Login, Logout, Registration, UpdateAccessToken
 **Brand** (5): Create, Get, GetListAll, Remove, Update
@@ -551,7 +598,7 @@ User ──┬── UserRole ── Role
 **ProductProperty** (5): Create, Get, GetList, Remove, Update
 **Rating** (2): Create, Get
 **Role** (3): Create, Get, GetList
-**User** (7): AddRole, Create, Get, GetList, Remove, RemoveRole, Update, UpdatePhone
+**User** (11): AddRole, Create, Get, GetList, Remove, RemoveRole, Update, UpdatePhone, RequestVerifyEmail, ConfirmVerifyEmail, RequestVerifyPhone, ConfirmVerifyPhone
 **UserAddress** (7): Create, Get, GetList, Remove, Update
 **Notification** (12): CreateTemplate, DeleteTemplate, GetStatistics, GetTemplates, GetUnreadCount, GetUserNotifications, GetUserSettings, MarkAsRead, UpdateTemplate, UpdateUserSettings
 
@@ -759,6 +806,11 @@ ALLOWED_ORIGINS=http://localhost:3000,https://your-domain.com
 COOKIE_PARSER_SECRET_KEY=your_min_10_char_secret
 SECURITY_HELMET_ENABLED=true
 SECURITY_CSP_ENABLED=true
+
+# Верификация email/phone
+VERIFICATION_CODE_COOLDOWN_MS=60000   # Кулдаун между запросами кодов (60 сек)
+VERIFICATION_CODE_TTL_MS=600000       # Время жизни кода верификации (10 мин)
+VERIFICATION_MAX_ATTEMPTS=5           # Максимум попыток ввода кода
 ```
 
 ### Конфигурация окружения
@@ -806,6 +858,7 @@ SECURITY_CSP_ENABLED=true
 - **Автозагрузка моделей**: все модели регистрируются автоматически
 - **Charset**: UTF8MB4 с collation `utf8mb4_0900_ai_ci`
 - **Синхронизация**: отключена в пользу миграций
+- **Timezone**: `'+00:00'` (UTC) для корректной работы timestamp операций (критично для cooldown/TTL)
 
 ### Скрипты
 
