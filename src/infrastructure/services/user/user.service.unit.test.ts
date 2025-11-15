@@ -937,14 +937,14 @@ describe('UserService', () => {
                 isVipCustomer: false,
                 isPremium: false,
                 isBetaTester: false,
-            } as UserModel;
+            } as unknown as UserModel;
             const updatedUser = {
                 ...mockUser,
                 tenantId: 1,
                 isVipCustomer: true,
                 isPremium: true,
                 isBetaTester: true,
-            } as UserModel;
+            } as unknown as UserModel;
 
             (
                 userRepository.findUserByIdAndTenant as jest.Mock
@@ -980,14 +980,14 @@ describe('UserService', () => {
                 isVipCustomer: false,
                 isPremium: false,
                 isBetaTester: false,
-            } as UserModel;
+            } as unknown as UserModel;
             const updatedUser = {
                 ...mockUser,
                 tenantId: 1,
                 isVipCustomer: true,
                 isPremium: false,
                 isBetaTester: false,
-            } as UserModel;
+            } as unknown as UserModel;
 
             (
                 userRepository.findUserByIdAndTenant as jest.Mock
@@ -1017,14 +1017,14 @@ describe('UserService', () => {
                 isVipCustomer: false,
                 isPremium: false,
                 isBetaTester: false,
-            } as UserModel;
+            } as unknown as UserModel;
             const updatedUser = {
                 ...mockUser,
                 tenantId: 1,
                 isVipCustomer: false,
                 isPremium: true,
                 isBetaTester: false,
-            } as UserModel;
+            } as unknown as UserModel;
 
             (
                 userRepository.findUserByIdAndTenant as jest.Mock
@@ -1054,14 +1054,14 @@ describe('UserService', () => {
                 isVipCustomer: false,
                 isPremium: false,
                 isBetaTester: false,
-            } as UserModel;
+            } as unknown as UserModel;
             const updatedUser = {
                 ...mockUser,
                 tenantId: 1,
                 isVipCustomer: false,
                 isPremium: false,
                 isBetaTester: true,
-            } as UserModel;
+            } as unknown as UserModel;
 
             (
                 userRepository.findUserByIdAndTenant as jest.Mock
@@ -1105,7 +1105,10 @@ describe('UserService', () => {
         it('должен пробросить ошибку репозитория если она не обрабатывается', async () => {
             const dbError = new Error('Database error') as NamedError;
             dbError.name = 'SequelizeDatabaseError';
-            const beforeUser = { ...mockUser, tenantId: 1 };
+            const beforeUser = {
+                ...mockUser,
+                tenantId: 1,
+            } as unknown as UserModel;
             (
                 userRepository.findUserByIdAndTenant as jest.Mock
             ).mockResolvedValue(beforeUser);
@@ -1127,7 +1130,10 @@ describe('UserService', () => {
         it('должен обработать ошибку валидации как BadRequestException', async () => {
             const validationError = new Error('Validation error') as NamedError;
             validationError.name = 'SequelizeValidationError';
-            const beforeUser = { ...mockUser, tenantId: 1 };
+            const beforeUser = {
+                ...mockUser,
+                tenantId: 1,
+            } as unknown as UserModel;
             (
                 userRepository.findUserByIdAndTenant as jest.Mock
             ).mockResolvedValue(beforeUser);
@@ -1298,31 +1304,33 @@ describe('UserService', () => {
     describe('verifyEmailFlag / verifyPhoneFlag', () => {
         it('verifyEmailFlag: успешно', async () => {
             userRepository.verifyEmail.mockResolvedValue(mockUser);
-            const result = await service.verifyEmailFlag(1);
+            const result = await service.verifyEmailFlag(1, 1);
             expect(result).toBe(mockUser);
-            expect(userRepository.verifyEmail).toHaveBeenCalledWith(1);
+            expect(userRepository.verifyEmail).toHaveBeenCalledWith(1, 1);
         });
         it('verifyEmailFlag: 404', async () => {
             (userRepository.verifyEmail as jest.Mock).mockResolvedValue(null);
-            await expect(service.verifyEmailFlag(999)).rejects.toThrow(
+            await expect(service.verifyEmailFlag(999, 1)).rejects.toThrow(
                 new NotFoundException({
                     status: HttpStatus.NOT_FOUND,
-                    message: 'Пользователь не найден в БД',
+                    message:
+                        'Пользователь не найден или не принадлежит вашему tenant',
                 }),
             );
         });
         it('verifyPhoneFlag: успешно', async () => {
             userRepository.verifyPhone.mockResolvedValue(mockUser);
-            const result = await service.verifyPhoneFlag(1);
+            const result = await service.verifyPhoneFlag(1, 1);
             expect(result).toBe(mockUser);
-            expect(userRepository.verifyPhone).toHaveBeenCalledWith(1);
+            expect(userRepository.verifyPhone).toHaveBeenCalledWith(1, 1);
         });
         it('verifyPhoneFlag: 404', async () => {
             (userRepository.verifyPhone as jest.Mock).mockResolvedValue(null);
-            await expect(service.verifyPhoneFlag(999)).rejects.toThrow(
+            await expect(service.verifyPhoneFlag(999, 1)).rejects.toThrow(
                 new NotFoundException({
                     status: HttpStatus.NOT_FOUND,
-                    message: 'Пользователь не найден в БД',
+                    message:
+                        'Пользователь не найден или не принадлежит вашему tenant',
                 }),
             );
         });

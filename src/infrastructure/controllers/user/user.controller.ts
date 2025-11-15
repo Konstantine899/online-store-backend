@@ -53,7 +53,6 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { UpdateUserFlagsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-flags.swagger';
 import { UpdateUserPreferencesSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-preferences.swagger';
-import { UpdateUserPreferencesResponse } from '@app/infrastructure/responses';
 import { UpdateUserProfileSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-profile.swagger';
 import { UpdateUserStatusSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-status.swagger';
 import { GetUserStatsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/user-stats.swagger';
@@ -85,6 +84,7 @@ import {
     UpdateConsentsResponse,
     UpdateDateOfBirthResponse,
     UpdateUserPhoneResponse,
+    UpdateUserPreferencesResponse,
     UpdateUserResponse,
     UpdateUserStatusResponse,
 } from '@app/infrastructure/responses';
@@ -359,11 +359,19 @@ export class UserController implements IUserController {
         @Body(validationPipe) dto: UpdateUserPreferencesDto,
     ): Promise<{ data: UpdateUserPreferencesResponse }> {
         const userId = this.extractUserId(req);
-        const user = await this.userService.updatePreferences(userId, dto);
+
+        // Обновляем preferences (инвалидирует кэш)
+        await this.userService.updatePreferences(userId, dto);
+
+        // Читаем обновлённые данные из кэша (или БД при cache miss)
+        const user = await this.userService.getPreferences(userId);
         const plainUser = user.get({ plain: true });
 
         // Преобразуем translations из Record<string, string> (БД) в массив TranslationEntryDto[] (API)
-        if (plainUser.translations && typeof plainUser.translations === 'object') {
+        if (
+            plainUser.translations &&
+            typeof plainUser.translations === 'object'
+        ) {
             plainUser.translations = Object.entries(plainUser.translations).map(
                 ([key, value]) => ({ key, value: String(value) }),
             );

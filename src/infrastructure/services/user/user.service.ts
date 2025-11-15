@@ -588,6 +588,22 @@ export class UserService implements IUserService {
         return user as UserModel;
     }
 
+    /**
+     * Получить preferences пользователя с кэшированием
+     * @param userId ID пользователя
+     * @returns user model с preference полями
+     */
+    public async getPreferences(userId: number): Promise<UserModel> {
+        await this.ensureUserExists(userId, 'получение настроек');
+
+        const user = await this.userRepository.getPreferences(userId);
+        if (!user) {
+            this.notFound('Пользователь не найден в БД');
+        }
+
+        return user as UserModel;
+    }
+
     public async verifyEmailFlag(
         userId: number,
         tenantId: number,

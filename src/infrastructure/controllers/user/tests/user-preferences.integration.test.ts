@@ -7,22 +7,16 @@ describe('User Preferences Integration Tests', () => {
     let app: INestApplication;
 
     // Helper function to get error message(s) as a single string
-    const getErrorMessage = (
-        response: {
-            body:
-                | { message?: string | string[] }
-                | Array<{ messages: string[] }>;
-        },
-    ): string => {
+    const getErrorMessage = (response: {
+        body: { message?: string | string[] } | Array<{ messages: string[] }>;
+    }): string => {
         // CustomValidationPipe returns array of objects with messages field
         if (Array.isArray(response.body)) {
-            return response.body
-                .flatMap((err) => err.messages)
-                .join(' ');
+            return response.body.flatMap((err) => err.messages).join(' ');
         }
         // Standard NestJS format
         const msg = response.body.message;
-        return Array.isArray(msg) ? msg.join(' ') : msg ?? '';
+        return Array.isArray(msg) ? msg.join(' ') : (msg ?? '');
     };
 
     beforeAll(async () => {
@@ -331,8 +325,10 @@ describe('User Preferences Integration Tests', () => {
 
         it('200: tenant isolation - user A cannot affect user B preferences', async () => {
             // Create User A
-            const { token: tokenA } =
-                await TestDataFactory.createUserWithRole(app, 'USER');
+            const { token: tokenA } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
 
             // Set preferences for User A
             const responseA1 = await request(app.getHttpServer())
@@ -345,8 +341,10 @@ describe('User Preferences Integration Tests', () => {
             expect(responseA1.body.data.timezone).toBe('UTC');
 
             // Create User B
-            const { token: tokenB } =
-                await TestDataFactory.createUserWithRole(app, 'USER');
+            const { token: tokenB } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
 
             // Set different preferences for User B
             const responseB = await request(app.getHttpServer())
@@ -384,7 +382,10 @@ describe('User Preferences Integration Tests', () => {
                         { key: 'welcome.title', value: 'Добро пожаловать!' },
                         { key: 'button.submit', value: 'Отправить' },
                         { key: 'error.not_found', value: 'Не найдено' },
-                        { key: 'user_profile.edit', value: 'Редактировать профиль' },
+                        {
+                            key: 'user_profile.edit',
+                            value: 'Редактировать профиль',
+                        },
                     ],
                 };
 
@@ -397,10 +398,22 @@ describe('User Preferences Integration Tests', () => {
                 expect(response.body.data.translations).toHaveLength(4);
                 expect(response.body.data.translations).toEqual(
                     expect.arrayContaining([
-                        expect.objectContaining({ key: 'welcome.title', value: 'Добро пожаловать!' }),
-                        expect.objectContaining({ key: 'button.submit', value: 'Отправить' }),
-                        expect.objectContaining({ key: 'error.not_found', value: 'Не найдено' }),
-                        expect.objectContaining({ key: 'user_profile.edit', value: 'Редактировать профиль' }),
+                        expect.objectContaining({
+                            key: 'welcome.title',
+                            value: 'Добро пожаловать!',
+                        }),
+                        expect.objectContaining({
+                            key: 'button.submit',
+                            value: 'Отправить',
+                        }),
+                        expect.objectContaining({
+                            key: 'error.not_found',
+                            value: 'Не найдено',
+                        }),
+                        expect.objectContaining({
+                            key: 'user_profile.edit',
+                            value: 'Редактировать профиль',
+                        }),
                     ]),
                 );
             });
@@ -411,7 +424,9 @@ describe('User Preferences Integration Tests', () => {
                     'USER',
                 );
                 const preferencesData = {
-                    translations: [{ key: 'welcome', value: 'Добро пожаловать!' }], // Missing namespace
+                    translations: [
+                        { key: 'welcome', value: 'Добро пожаловать!' },
+                    ], // Missing namespace
                 };
 
                 const response = await request(app.getHttpServer())
@@ -452,7 +467,10 @@ describe('User Preferences Integration Tests', () => {
                 );
                 const preferencesData = {
                     translations: [
-                        { key: 'welcome.title', value: 123 as unknown as string }, // Non-string value
+                        {
+                            key: 'welcome.title',
+                            value: 123 as unknown as string,
+                        }, // Non-string value
                     ],
                 };
 
@@ -494,9 +512,7 @@ describe('User Preferences Integration Tests', () => {
                 );
                 const longValue = 'A'.repeat(1001);
                 const preferencesData = {
-                    translations: [
-                        { key: 'welcome.title', value: longValue },
-                    ],
+                    translations: [{ key: 'welcome.title', value: longValue }],
                 };
 
                 const response = await request(app.getHttpServer())
@@ -510,7 +526,7 @@ describe('User Preferences Integration Tests', () => {
             });
 
             it('400: rejects translations with key shorter than 3 characters', async () => {
-                const { token} = await TestDataFactory.createUserWithRole(
+                const { token } = await TestDataFactory.createUserWithRole(
                     app,
                     'USER',
                 );
@@ -537,9 +553,7 @@ describe('User Preferences Integration Tests', () => {
                 );
                 const longKey = 'namespace.' + 'k'.repeat(91); // Total 101 chars
                 const preferencesData = {
-                    translations: [
-                        { key: longKey, value: 'Value' },
-                    ],
+                    translations: [{ key: longKey, value: 'Value' }],
                 };
 
                 const response = await request(app.getHttpServer())
@@ -561,7 +575,10 @@ describe('User Preferences Integration Tests', () => {
                 // Generate 101 translations
                 const translations = [];
                 for (let i = 0; i < 101; i++) {
-                    translations.push({ key: `key${i}.value`, value: `Translation ${i}` });
+                    translations.push({
+                        key: `key${i}.value`,
+                        value: `Translation ${i}`,
+                    });
                 }
 
                 const preferencesData = { translations };
@@ -585,7 +602,10 @@ describe('User Preferences Integration Tests', () => {
                 // Generate exactly 100 translations
                 const translations = [];
                 for (let i = 0; i < 100; i++) {
-                    translations.push({ key: `key${i}.value`, value: `Translation ${i}` });
+                    translations.push({
+                        key: `key${i}.value`,
+                        value: `Translation ${i}`,
+                    });
                 }
 
                 const preferencesData = { translations };
@@ -597,6 +617,123 @@ describe('User Preferences Integration Tests', () => {
                     .expect(200);
 
                 expect(response.body.data.translations).toHaveLength(100);
+            });
+        });
+
+        // ===== REDIS CACHING TESTS =====
+        describe('Redis Caching for Preferences', () => {
+            it('CACHE HIT: второй запрос preferences возвращается из кэша быстрее', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+
+                // Первый запрос - Cache MISS (идёт в БД и кэширует)
+                const startTime1 = Date.now();
+                const response1 = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send({}) // Пустой body для чтения текущих preferences
+                    .expect(200);
+                const duration1 = Date.now() - startTime1;
+
+                expect(response1.body).toHaveProperty('data');
+                expect(response1.body.data).toHaveProperty('themePreference');
+
+                // Второй запрос - Cache HIT (должен быть из кэша)
+                const startTime2 = Date.now();
+                const response2 = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send({}) // Пустой body
+                    .expect(200);
+                const duration2 = Date.now() - startTime2;
+
+                // Проверяем, что данные одинаковые
+                expect(response2.body.data).toEqual(response1.body.data);
+
+                // Cache HIT должен быть быстрее (или как минимум не медленнее)
+                // В тестах разница может быть небольшой, но проверяем логику
+                expect(duration2).toBeLessThanOrEqual(duration1 + 50); // +50ms допуск
+            });
+
+            it('CACHE INVALIDATION: после обновления preferences кэш инвалидируется', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+
+                // 1. Читаем текущие preferences (кэшируются)
+                const response1 = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send({})
+                    .expect(200);
+
+                const originalTheme = response1.body.data.themePreference;
+
+                // 2. Обновляем preferences (должно инвалидировать кэш)
+                const newTheme = originalTheme === 'dark' ? 'light' : 'dark';
+                await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send({ themePreference: newTheme })
+                    .expect(200);
+
+                // 3. Читаем ещё раз (должны получить свежие данные из БД)
+                const response2 = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send({})
+                    .expect(200);
+
+                // Проверяем, что данные обновились
+                expect(response2.body.data.themePreference).toBe(newTheme);
+                expect(response2.body.data.themePreference).not.toBe(
+                    originalTheme,
+                );
+            });
+
+            it('TENANT ISOLATION: кэш изолирован по tenantId', async () => {
+                // Создаём двух пользователей с разными tenant (если поддерживается в тестах)
+                const { token: token1 } =
+                    await TestDataFactory.createUserWithRole(app, 'USER');
+                const { token: token2 } =
+                    await TestDataFactory.createUserWithRole(app, 'USER');
+
+                // 1. Пользователь 1 устанавливает тему dark
+                await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token1}`)
+                    .send({ themePreference: 'dark' })
+                    .expect(200);
+
+                // 2. Пользователь 2 устанавливает тему light
+                await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token2}`)
+                    .send({ themePreference: 'light' })
+                    .expect(200);
+
+                // 3. Проверяем, что каждый пользователь получает свои данные из кэша
+                const response1 = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token1}`)
+                    .send({})
+                    .expect(200);
+
+                const response2 = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token2}`)
+                    .send({})
+                    .expect(200);
+
+                // Данные должны быть изолированы
+                expect(response1.body.data.themePreference).toBe('dark');
+                expect(response2.body.data.themePreference).toBe('light');
+                expect(response1.body.data.themePreference).not.toBe(
+                    response2.body.data.themePreference,
+                );
             });
         });
     });

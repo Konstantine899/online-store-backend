@@ -37,5 +37,3 @@ export class TranslationEntryDto {
     })
     declare readonly value: string;
 }
-
-

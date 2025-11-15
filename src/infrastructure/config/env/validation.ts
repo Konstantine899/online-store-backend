@@ -26,6 +26,14 @@ export interface ValidatedEnv {
     RATE_LIMIT_REFRESH_WINDOW: string; // e.g. "5m"
     RATE_LIMIT_REG_ATTEMPTS: number;
     RATE_LIMIT_REG_WINDOW: string; // e.g. "1m"
+    // Redis кэширование
+    REDIS_ENABLED: boolean;
+    REDIS_HOST: string;
+    REDIS_PORT: number;
+    REDIS_PASSWORD?: string;
+    REDIS_DB: number;
+    REDIS_KEY_PREFIX: string;
+    REDIS_TTL: number; // TTL в секундах (например, 900 = 15 минут)
     // Параметры ротации секретов (опционально)
     JWT_SECRET_ROTATION_DATE?: string; // ISO date когда секрет должен быть заменён
     JWT_SECRET_VERSION?: string; // версия секрета для отслеживания
@@ -233,6 +241,23 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         'RATE_LIMIT_REG_WINDOW',
     );
 
+    // Redis кэширование (опционально, по умолчанию выключено)
+    const REDIS_ENABLED = asBoolean(raw.REDIS_ENABLED, 'false');
+    const REDIS_HOST = raw.REDIS_HOST ?? 'localhost';
+    const REDIS_PORT = asNumber(raw.REDIS_PORT ?? '6379', 'REDIS_PORT', {
+        min: 1,
+        max: 65535,
+    });
+    const REDIS_PASSWORD = raw.REDIS_PASSWORD; // опционально
+    const REDIS_DB = asNumber(raw.REDIS_DB ?? '0', 'REDIS_DB', {
+        min: 0,
+        max: 15,
+    });
+    const REDIS_KEY_PREFIX = raw.REDIS_KEY_PREFIX ?? 'online-store:';
+    const REDIS_TTL = asNumber(raw.REDIS_TTL ?? '900', 'REDIS_TTL', {
+        min: 60,
+    }); // минимум 1 минута
+
     // Опциональные параметры ротации секретов
     const JWT_SECRET_ROTATION_DATE = raw.JWT_SECRET_ROTATION_DATE;
     const JWT_SECRET_VERSION = raw.JWT_SECRET_VERSION;
@@ -263,6 +288,13 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         RATE_LIMIT_REFRESH_WINDOW,
         RATE_LIMIT_REG_ATTEMPTS,
         RATE_LIMIT_REG_WINDOW,
+        REDIS_ENABLED,
+        REDIS_HOST,
+        REDIS_PORT,
+        REDIS_PASSWORD,
+        REDIS_DB,
+        REDIS_KEY_PREFIX,
+        REDIS_TTL,
         JWT_SECRET_ROTATION_DATE,
         JWT_SECRET_VERSION,
     };

@@ -25,6 +25,7 @@ import {
     GetUserResponse,
     UpdateUserResponse,
 } from '@app/infrastructure/responses';
+import { CacheService } from '@app/infrastructure/services/cache/cache.service';
 import {
     BadRequestException,
     ConflictException,
@@ -63,6 +64,7 @@ export class UserRepository implements IUserRepository {
         @Inject('ISmsProvider')
         private readonly smsProvider: ISmsProvider,
         private readonly tenantContext: TenantContext,
+        private readonly cacheService: CacheService,
     ) {}
 
     // Централизованные методы обработки ошибок с structured logging
@@ -765,6 +767,17 @@ export class UserRepository implements IUserRepository {
         }
     }
 
+    /**
+     * Формирует ключ кэша для user preferences
+     * Формат: user:{tenantId}:{userId}:preferences
+     */
+    private getUserPreferencesCacheKey(
+        userId: number,
+        tenantId: number,
+    ): string {
+        return `user:${tenantId}:${userId}:preferences`;
+    }
+
     public async updatePreferences(
         userId: number,
         dto: UpdateUserPreferencesDto,
@@ -805,6 +818,11 @@ export class UserRepository implements IUserRepository {
                 where: { id: userId, tenantId },
             });
 
+            // Инвалидация кэша после обновления preferences
+            // Удаляем кэш независимо от успеха обновления для consistency
+            const cacheKey = this.getUserPreferencesCacheKey(userId, tenantId);
+            await this.cacheService.del(cacheKey);
+
             return affectedRows > 0
                 ? this.userModel.findOne({ where: { id: userId, tenantId } })
                 : null;
@@ -812,6 +830,65 @@ export class UserRepository implements IUserRepository {
             this.handleSequelizeError(
                 error,
                 'обновление предпочтений пользователя',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Получить preferences пользователя с кэшированием
+     * Cache strategy: Read-through cache
+     * - Проверяет кэш, если есть - возвращает
+     * - Если нет - читает из БД и кэширует
+     * @returns user model с preference полями или null
+     */
+    public async getPreferences(userId: number): Promise<UserModel | null> {
+        try {
+            const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
+            const cacheKey = this.getUserPreferencesCacheKey(userId, tenantId);
+
+            // 1. Проверяем кэш
+            const cached = await this.cacheService.get<UserModel>(cacheKey);
+            if (cached) {
+                this.logger.log(
+                    `Cache HIT: preferences для user ${userId} (tenant ${tenantId})`,
+                );
+                return cached;
+            }
+
+            // 2. Кэш miss - читаем из БД
+            this.logger.log(
+                `Cache MISS: читаем preferences из БД для user ${userId}`,
+            );
+            const user = await this.userModel.findOne({
+                where: { id: userId, tenantId },
+                // Выбираем только необходимые поля для preferences
+                attributes: [
+                    'id',
+                    'email',
+                    'themePreference',
+                    'preferredLanguage',
+                    'defaultLanguage',
+                    'timezone',
+                    'notificationPreferences',
+                    'translations',
+                ],
+            });
+
+            // 3. Если пользователь найден - кэшируем
+            if (user) {
+                const plainUser = user.get({ plain: true });
+                await this.cacheService.set(cacheKey, plainUser);
+                this.logger.log(
+                    `Cache WRITE: preferences для user ${userId} закэшированы`,
+                );
+            }
+
+            return user;
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'получение предпочтений пользователя',
             );
             throw error;
         }
@@ -968,7 +1045,8 @@ export class UserRepository implements IUserRepository {
                 // Это критично для тестов rate limiting
                 if (cooldownMs > 0) {
                     const timeSinceLastRequest =
-                        Date.now() - new Date(lastCodeResult.created_at).getTime();
+                        Date.now() -
+                        new Date(lastCodeResult.created_at).getTime();
 
                     if (timeSinceLastRequest < cooldownMs) {
                         const remainingSeconds = Math.ceil(

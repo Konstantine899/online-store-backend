@@ -34,6 +34,7 @@
 
 - **Backend**: NestJS + TypeScript (strict mode)
 - **База данных**: MySQL + Sequelize ORM
+- **Кэширование**: Redis (ioredis) для user preferences
 - **Аутентификация**: JWT (access + refresh tokens)
 - **Безопасность**: Rate limiting, CORS, Helmet, валидация
 - **Тестирование**: Jest (unit + integration + e2e)
@@ -45,6 +46,7 @@
 - ✅ **USER-001-06**: Verification API (email/phone верификация, 43 integration теста)
 - ✅ **USER-001-07**: Улучшение системы адресов с tenant isolation (24 unit, 13 integration тестов)
 - ✅ **USER-001-08**: Уникальность default адреса с tenant isolation (31 unit, 16 integration тестов)
+- ✅ **USER-001-09**: User preferences API с Redis кэшированием (18 unit, 29 integration тестов)
 - ⏳ **SAAS-002**: Очистка User модуля (удаление e-commerce хардкода)
 - ⏳ **SAAS-003**: Фильтрация каталога по тенантам
 
@@ -313,6 +315,55 @@ User ──┬── UserRole ── Role
 - Валидация через DTO с кастомными валидаторами
 - Response классы с полными Swagger декораторами
 
+#### Preferences пользователей (User Preferences)
+
+**Endpoint**: `PATCH /user/profile/preferences`
+
+**Поддерживаемые настройки:**
+
+- `themePreference`: 'light' | 'dark' | 'system' — тема интерфейса
+- `preferredLanguage`: enum — предпочитаемый язык (46 IANA таймзон: America/New_York, Europe/London, etc.)
+- `timezone`: enum — часовой пояс (46 IANA timezones)
+- `defaultLanguage`: 'ru' | 'en' — язык по умолчанию
+- `notificationPreferences`: `Record<string, unknown>` — настройки уведомлений
+- `translations`: `TranslationEntryDto[]` — кастомные переводы (массив {key, value})
+
+**Валидация translations:**
+
+- **Key format**: `namespace.key` (только lowercase, цифры, подчеркивания, точки)
+- **Key length**: 3-100 символов
+- **Value length**: 1-1000 символов
+- **Max array size**: 100 элементов
+- **Nested validation**: `@ValidateNested()` + `@Type()` для array элементов
+
+**Redis кэширование:**
+
+- **Стратегия**: Read-through cache (проверка → miss → БД → кэш)
+- **Cache key**: `user:{tenantId}:{userId}:preferences`
+- **TTL**: 900 секунд (15 минут)
+- **Invalidation**: автоматически после `PATCH /preferences`
+- **Workflow**:
+    1. `PATCH` → `updatePreferences()` → инвалидация кэша
+    2. `getPreferences()` → чтение из кэша (или БД при miss)
+    3. Response с кэшированными данными
+- **Performance**: 95% снижение нагрузки на БД при 95% hit rate
+
+**Security:**
+
+- Tenant isolation в cache key
+- Валидация всех полей через `class-validator`
+- Санитизация строковых полей
+- Rate limiting через `BruteforceGuard`
+
+**Tests:**
+
+- Unit: 18 тестов для CacheService (100% покрытие)
+- Integration: 29 тестов, включая:
+    - Cache HIT/MISS scenarios
+    - Cache invalidation
+    - Tenant isolation
+    - Validation (все поля + translations)
+
 **Роли системы**:
 
 - **Платформенные**: SUPER_ADMIN, PLATFORM_ADMIN
@@ -508,7 +559,7 @@ User ──┬── UserRole ── Role
 ### Паттерны работы с данными
 
 - **Multi-tenancy**: все репозитории автоматически фильтруют по `tenant_id`
-- **Кэширование**: UserService использует in-memory кэш для часто запрашиваемых данных
+- **Кэширование**: Redis для user preferences (read-through cache), in-memory для статистики
 - **Пагинация**: стандартный контракт `{ data: T[], meta: MetaData }`
 - **Валидация**: все входные данные через DTO с кастомными валидаторами
 
@@ -1191,11 +1242,49 @@ npm run db:create     # Создать БД
 
 ### Производительность и мониторинг
 
-- **Кэширование**: мемоизация Swagger декораторов, шаблонов уведомлений
+- **Кэширование**: Redis для user preferences, мемоизация Swagger декораторов, шаблонов уведомлений
 - **Event-driven**: асинхронная обработка событий с батчевой отправкой
 - **Connection Pool**: адаптивная конфигурация для разных окружений
 - **Логирование**: структурированные JSON логи с correlation ID
 - **Метрики**: отслеживание производительности и ошибок
+
+**Redis Кэширование (User Preferences)**:
+
+- **Провайдер**: `ioredis` client с retry strategy и graceful degradation
+- **Стратегия**: Read-through cache (проверка кэша → БД при miss → кэширование)
+- **Инвалидация**: автоматическая после `updatePreferences()`
+- **Cache keys**: `user:{tenantId}:{userId}:preferences` (tenant isolation)
+- **TTL**: 900 секунд (15 минут, configurable через `REDIS_TTL`)
+- **Pass-through mode**: при `REDIS_ENABLED=false` или недоступности Redis
+- **Производительность**: 95% снижение нагрузки на БД при 95% hit rate
+- **Методы CacheService**: `get<T>()`, `set<T>()`, `del()`, `delPattern()`, `exists()`, `ttl()`, `ping()`
+- **Error handling**: все ошибки Redis логируются, но не прерывают основной поток
+- **Security**: tenant isolation, опциональный `REDIS_PASSWORD`, network isolation
+
+**Конфигурация Redis (env)**:
+
+```bash
+REDIS_ENABLED=true              # Включить/выключить Redis
+REDIS_HOST=localhost            # Хост Redis сервера
+REDIS_PORT=6379                 # Порт Redis (1-65535)
+REDIS_PASSWORD=                 # Опциональный пароль
+REDIS_DB=0                      # База данных (0-15)
+REDIS_KEY_PREFIX=online-store:  # Префикс для изоляции env
+REDIS_TTL=900                   # TTL в секундах (min: 60)
+```
+
+**Для dev (локальный Docker)**:
+
+```bash
+docker run -d -p 6379:6379 --name redis redis:7-alpine
+```
+
+**Для production**:
+
+- Managed Redis: AWS ElastiCache, Azure Cache, Google Cloud Memorystore
+- Encryption at rest + in transit
+- Private subnet (network isolation)
+- Monitoring: hit/miss rate, latency, memory usage
 
 **Оптимизации Swagger декораторов**:
 

@@ -6,7 +6,9 @@
  */
 
 import { UserModel } from '@app/domain/models/user.model';
+import { TenantContext } from '@app/infrastructure/common/context';
 import { UserRepository } from '@app/infrastructure/repositories/user/user.repository';
+import { CacheService } from '@app/infrastructure/services/cache/cache.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { getModelToken } from '@nestjs/sequelize';
 import type { TestingModule } from '@nestjs/testing';
@@ -68,6 +70,17 @@ describe('UserRepository - Verification System (USER-001-06, VERIFY-03)', () => 
             sendSms: jest.fn(),
         };
 
+        const mockTenantContext = {
+            getTenantIdOrNull: jest.fn().mockReturnValue(1),
+            getTenantIdOrFail: jest.fn().mockReturnValue(1),
+        };
+
+        const mockCacheService = {
+            get: jest.fn().mockResolvedValue(null),
+            set: jest.fn().mockResolvedValue(undefined),
+            del: jest.fn().mockResolvedValue(0),
+        };
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 UserRepository,
@@ -82,6 +95,14 @@ describe('UserRepository - Verification System (USER-001-06, VERIFY-03)', () => 
                 {
                     provide: 'ISmsProvider',
                     useValue: mockSmsProvider,
+                },
+                {
+                    provide: TenantContext,
+                    useValue: mockTenantContext,
+                },
+                {
+                    provide: CacheService,
+                    useValue: mockCacheService,
                 },
             ],
         }).compile();
@@ -235,6 +256,7 @@ describe('UserRepository - Verification System (USER-001-06, VERIFY-03)', () => 
                 call[0].includes('INSERT INTO `user_verification_code`'),
             );
             expect(insertCall).toBeDefined();
+            if (!insertCall) return; // Type guard after assertion
             // SQL: INSERT INTO `user_verification_code` (`user_id`,`channel`,`code_hash`,`expires_at`,`attempts`,`created_at`,`updated_at`) VALUES (?,?,?,?,0,?,?)
             expect(insertCall[0]).toContain('`attempts`');
             expect(insertCall[0]).toContain('VALUES (?,?,?,?,0,?,?)'); // attempts = 0 (hardcoded)

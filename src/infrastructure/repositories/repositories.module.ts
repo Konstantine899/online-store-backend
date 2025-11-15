@@ -19,6 +19,8 @@ import {
     UserRoleModel,
 } from '@app/domain/models';
 import { TenantContext } from '@app/infrastructure/common/context';
+import { RedisModule } from '@app/infrastructure/config/redis/redis.module';
+import { CacheService } from '@app/infrastructure/services/cache/cache.service';
 import { Module, forwardRef } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ServicesModule } from '../services/services.module';
@@ -40,6 +42,7 @@ import { UserRepository } from './user/user.repository';
 
 @Module({
     imports: [
+        RedisModule, // Redis кэширование
         SequelizeModule.forFeature([
             TenantModel,
             ProductModel,
@@ -64,6 +67,7 @@ import { UserRepository } from './user/user.repository';
     ],
     providers: [
         TenantContext,
+        CacheService, // Сервис для работы с Redis кэшем
         BrandRepository,
         CartRepository,
         CategoryRepository,
@@ -82,6 +86,7 @@ import { UserRepository } from './user/user.repository';
     ],
     exports: [
         TenantContext,
+        CacheService, // Экспортируем для использования в других модулях
         BrandRepository,
         CartRepository,
         CategoryRepository,

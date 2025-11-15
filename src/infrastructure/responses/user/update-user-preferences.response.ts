@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TranslationEntryDto } from '@app/infrastructure/dto/user/translation-entry.dto';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Response для обновления предпочтений пользователя
@@ -61,4 +61,3 @@ export class UpdateUserPreferencesResponse {
     })
     declare translations?: TranslationEntryDto[];
 }
-
