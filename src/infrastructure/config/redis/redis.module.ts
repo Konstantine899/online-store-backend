@@ -11,4 +11,3 @@ import { redisProvider } from './redis.provider';
     exports: [redisProvider],
 })
 export class RedisModule {}
-

@@ -1,7 +1,7 @@
+import { validateEnv } from '@app/infrastructure/config/env/validation';
+import { REDIS_CLIENT } from '@app/infrastructure/config/redis/redis.provider';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type Redis from 'ioredis';
-import { REDIS_CLIENT } from '@app/infrastructure/config/redis/redis.provider';
-import { validateEnv } from '@app/infrastructure/config/env/validation';
 
 /**
  * Сервис для работы с Redis кэшем
@@ -56,11 +56,7 @@ export class CacheService {
      * Установить значение в кэш с TTL
      * @param ttl TTL в секундах (если не указан - используется defaultTTL из env)
      */
-    async set<T = unknown>(
-        key: string,
-        value: T,
-        ttl?: number,
-    ): Promise<void> {
+    async set<T = unknown>(key: string, value: T, ttl?: number): Promise<void> {
         if (!this.isEnabled || !this.redisClient) {
             return; // Если кэш отключен - ничего не делаем
         }
@@ -199,4 +195,3 @@ export class CacheService {
         }
     }
 }
-
