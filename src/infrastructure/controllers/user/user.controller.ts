@@ -360,9 +360,18 @@ export class UserController implements IUserController {
     ): Promise<{ data: UpdateUserPreferencesResponse }> {
         const userId = this.extractUserId(req);
         const user = await this.userService.updatePreferences(userId, dto);
-        return this.createResponse(
-            user.get({ plain: true }),
-        ) as { data: UpdateUserPreferencesResponse };
+        const plainUser = user.get({ plain: true });
+
+        // Преобразуем translations из Record<string, string> (БД) в массив TranslationEntryDto[] (API)
+        if (plainUser.translations && typeof plainUser.translations === 'object') {
+            plainUser.translations = Object.entries(plainUser.translations).map(
+                ([key, value]) => ({ key, value: String(value) }),
+            );
+        }
+
+        return this.createResponse(plainUser) as {
+            data: UpdateUserPreferencesResponse;
+        };
     }
 
     @Roles(...ADMIN_ROLES)

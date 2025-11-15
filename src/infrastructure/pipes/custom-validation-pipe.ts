@@ -48,7 +48,12 @@ export class CustomValidationPipe
     private formatValidationErrors(
         errors: ValidationError[],
     ): ICustomValidationPipe[] {
-        return errors.map((error) => {
+        return errors.flatMap((error) => {
+            // Если есть дочерние ошибки (для @ValidateNested)
+            if (error.children && error.children.length > 0) {
+                return this.formatValidationErrors(error.children);
+            }
+
             const messages = error.constraints
                 ? Object.values(error.constraints)
                 : ['Ошибка валидации'];

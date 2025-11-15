@@ -786,8 +786,12 @@ export class UserRepository implements IUserRepository {
             if (dto.timezone !== undefined) updates.timezone = dto.timezone;
             if (dto.notificationPreferences !== undefined)
                 updates.notificationPreferences = dto.notificationPreferences;
-            if (dto.translations !== undefined)
-                updates.translations = dto.translations;
+            if (dto.translations !== undefined) {
+                // Преобразуем массив TranslationEntryDto в Record<string, string> для БД
+                updates.translations = Object.fromEntries(
+                    dto.translations.map((t) => [t.key, t.value]),
+                );
+            }
 
             if (Object.keys(updates).length === 0) {
                 // Если нет изменений, возвращаем пользователя с учетом tenant

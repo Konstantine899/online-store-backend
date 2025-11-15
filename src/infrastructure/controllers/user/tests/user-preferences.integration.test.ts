@@ -6,6 +6,25 @@ import { TestDataFactory } from '../../../../../tests/utils';
 describe('User Preferences Integration Tests', () => {
     let app: INestApplication;
 
+    // Helper function to get error message(s) as a single string
+    const getErrorMessage = (
+        response: {
+            body:
+                | { message?: string | string[] }
+                | Array<{ messages: string[] }>;
+        },
+    ): string => {
+        // CustomValidationPipe returns array of objects with messages field
+        if (Array.isArray(response.body)) {
+            return response.body
+                .flatMap((err) => err.messages)
+                .join(' ');
+        }
+        // Standard NestJS format
+        const msg = response.body.message;
+        return Array.isArray(msg) ? msg.join(' ') : msg ?? '';
+    };
+
     beforeAll(async () => {
         process.env.NODE_ENV = 'test';
         // Минимальные переменные для тестового запуска (подхватываются Joi)
@@ -298,7 +317,7 @@ describe('User Preferences Integration Tests', () => {
                 defaultLanguage: 'en',
                 timezone: 'Europe/Paris',
                 notificationPreferences: { email: true, push: false },
-                translations: { welcome: 'Bienvenue' },
+                translations: [{ key: 'welcome.title', value: 'Bienvenue' }], // Fixed: array format
             };
 
             const response = await request(app.getHttpServer())
@@ -351,6 +370,234 @@ describe('User Preferences Integration Tests', () => {
 
             expect(responseA2.body.data.themePreference).toBe('dark');
             expect(responseA2.body.data.timezone).toBe('UTC');
+        });
+
+        // ===== TRANSLATIONS VALIDATION TESTS =====
+        describe('Translations Validation', () => {
+            it('200: accepts valid translations with correct key format', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+                const preferencesData = {
+                    translations: [
+                        { key: 'welcome.title', value: 'Добро пожаловать!' },
+                        { key: 'button.submit', value: 'Отправить' },
+                        { key: 'error.not_found', value: 'Не найдено' },
+                        { key: 'user_profile.edit', value: 'Редактировать профиль' },
+                    ],
+                };
+
+                const response = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send(preferencesData)
+                    .expect(200);
+
+                expect(response.body.data.translations).toHaveLength(4);
+                expect(response.body.data.translations).toEqual(
+                    expect.arrayContaining([
+                        expect.objectContaining({ key: 'welcome.title', value: 'Добро пожаловать!' }),
+                        expect.objectContaining({ key: 'button.submit', value: 'Отправить' }),
+                        expect.objectContaining({ key: 'error.not_found', value: 'Не найдено' }),
+                        expect.objectContaining({ key: 'user_profile.edit', value: 'Редактировать профиль' }),
+                    ]),
+                );
+            });
+
+            it('400: rejects translations with invalid key format (no namespace)', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+                const preferencesData = {
+                    translations: [{ key: 'welcome', value: 'Добро пожаловать!' }], // Missing namespace
+                };
+
+                const response = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send(preferencesData)
+                    .expect(400);
+
+                const errorMessage = getErrorMessage(response);
+                expect(errorMessage).toContain('namespace.key');
+            });
+
+            it('400: rejects translations with uppercase in key', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+                const preferencesData = {
+                    translations: [
+                        { key: 'Welcome.Title', value: 'Добро пожаловать!' }, // Uppercase not allowed
+                    ],
+                };
+
+                const response = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send(preferencesData)
+                    .expect(400);
+
+                const errorMessage = getErrorMessage(response);
+                expect(errorMessage).toContain('lowercase');
+            });
+
+            it('400: rejects translations with non-string value', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+                const preferencesData = {
+                    translations: [
+                        { key: 'welcome.title', value: 123 as unknown as string }, // Non-string value
+                    ],
+                };
+
+                const response = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send(preferencesData)
+                    .expect(400);
+
+                const errorMessage = getErrorMessage(response);
+                expect(errorMessage).toContain('строкой');
+            });
+
+            it('400: rejects translations with empty string value', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+                const preferencesData = {
+                    translations: [
+                        { key: 'welcome.title', value: '' }, // Empty string
+                    ],
+                };
+
+                const response = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send(preferencesData)
+                    .expect(400);
+
+                const errorMessage = getErrorMessage(response);
+                expect(errorMessage).toContain('пустым');
+            });
+
+            it('400: rejects translations with value exceeding 1000 characters', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+                const longValue = 'A'.repeat(1001);
+                const preferencesData = {
+                    translations: [
+                        { key: 'welcome.title', value: longValue },
+                    ],
+                };
+
+                const response = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send(preferencesData)
+                    .expect(400);
+
+                const errorMessage = getErrorMessage(response);
+                expect(errorMessage).toContain('1000');
+            });
+
+            it('400: rejects translations with key shorter than 3 characters', async () => {
+                const { token} = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+                const preferencesData = {
+                    translations: [
+                        { key: 'ab', value: 'Value' }, // Key too short (2 chars)
+                    ],
+                };
+
+                const response = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send(preferencesData)
+                    .expect(400);
+
+                const errorMessage = getErrorMessage(response);
+                expect(errorMessage).toContain('минимум');
+            });
+
+            it('400: rejects translations with key exceeding 100 characters', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+                const longKey = 'namespace.' + 'k'.repeat(91); // Total 101 chars
+                const preferencesData = {
+                    translations: [
+                        { key: longKey, value: 'Value' },
+                    ],
+                };
+
+                const response = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send(preferencesData)
+                    .expect(400);
+
+                const errorMessage = getErrorMessage(response);
+                expect(errorMessage).toContain('100');
+            });
+
+            it('400: rejects more than 100 translation entries', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+
+                // Generate 101 translations
+                const translations = [];
+                for (let i = 0; i < 101; i++) {
+                    translations.push({ key: `key${i}.value`, value: `Translation ${i}` });
+                }
+
+                const preferencesData = { translations };
+
+                const response = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send(preferencesData)
+                    .expect(400);
+
+                const errorMessage = getErrorMessage(response);
+                expect(errorMessage).toContain('100');
+            });
+
+            it('200: accepts exactly 100 translation entries', async () => {
+                const { token } = await TestDataFactory.createUserWithRole(
+                    app,
+                    'USER',
+                );
+
+                // Generate exactly 100 translations
+                const translations = [];
+                for (let i = 0; i < 100; i++) {
+                    translations.push({ key: `key${i}.value`, value: `Translation ${i}` });
+                }
+
+                const preferencesData = { translations };
+
+                const response = await request(app.getHttpServer())
+                    .patch('/online-store/user/profile/preferences')
+                    .set('Authorization', `Bearer ${token}`)
+                    .send(preferencesData)
+                    .expect(200);
+
+                expect(response.body.data.translations).toHaveLength(100);
+            });
         });
     });
 });

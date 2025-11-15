@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { TranslationEntryDto } from '@app/infrastructure/dto/user/translation-entry.dto';
 
 /**
  * Response для обновления предпочтений пользователя
@@ -51,9 +52,13 @@ export class UpdateUserPreferencesResponse {
     declare notificationPreferences?: Record<string, unknown> | null;
 
     @ApiPropertyOptional({
-        example: { 'welcome.title': 'Привет!', 'button.submit': 'Отправить' },
+        type: [TranslationEntryDto],
+        example: [
+            { key: 'welcome.title', value: 'Привет!' },
+            { key: 'button.submit', value: 'Отправить' },
+        ],
         description: 'Персональные переводы пользователя',
     })
-    declare translations?: Record<string, unknown> | null;
+    declare translations?: TranslationEntryDto[];
 }
 

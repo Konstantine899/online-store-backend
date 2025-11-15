@@ -1,5 +1,15 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsObject, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+    ArrayMaxSize,
+    IsArray,
+    IsIn,
+    IsObject,
+    IsOptional,
+    IsString,
+    ValidateNested,
+} from 'class-validator';
+import { TranslationEntryDto } from './translation-entry.dto';
 
 export class UpdateUserPreferencesDto {
     @ApiPropertyOptional({
@@ -102,10 +112,20 @@ export class UpdateUserPreferencesDto {
     declare readonly notificationPreferences?: Record<string, unknown>;
 
     @ApiPropertyOptional({
-        description: 'Персональные переводы пользователя (произвольный объект)',
-        example: { 'welcome.title': 'Привет!', 'button.submit': 'Отправить' },
+        description:
+            'Персональные переводы пользователя (ключи: namespace.key, значения: строки до 1000 символов, макс. 100 записей)',
+        type: [TranslationEntryDto],
+        example: [
+            { key: 'welcome.title', value: 'Привет!' },
+            { key: 'button.submit', value: 'Отправить' },
+        ],
     })
     @IsOptional()
-    @IsObject({ message: 'Поле translations должно быть объектом' })
-    declare readonly translations?: Record<string, unknown>;
+    @IsArray({ message: 'Переводы должны быть массивом' })
+    @ValidateNested({ each: true })
+    @Type(() => TranslationEntryDto)
+    @ArrayMaxSize(100, {
+        message: 'Максимальное количество переводов: 100',
+    })
+    declare readonly translations?: TranslationEntryDto[];
 }

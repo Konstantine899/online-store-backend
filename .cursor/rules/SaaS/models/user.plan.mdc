@@ -498,8 +498,8 @@ tasks:
   commits:
     - "2534825: feat(user): add preferredLanguage and timezone to user preferences API"
     - "a4efe01: refactor(user): extend timezone list with 7 additional regions"
-  note: |
-    USER-001-09 COMPLETED ✅
+      note: |
+      USER-001-09 COMPLETED ✅
 
     Реализация:
     - Добавлены поля preferredLanguage и timezone в UpdateUserPreferencesDto с enum валидацией
@@ -508,31 +508,31 @@ tasks:
     - Добавлен TenantContext в UserRepository.constructor для tenant isolation
     - UserRepository.updatePreferences обрабатывает preferredLanguage, timezone с tenant_id фильтрацией
     - UserController возвращает типизированный UpdateUserPreferencesResponse
-    
+
     Валидация:
     - preferredLanguage: enum ['ru', 'en', 'es', 'de', 'fr']
     - timezone: 18 IANA timezones (расширено с 11 на основе рекомендаций ревью)
     - Русские сообщения об ошибках для всех валидаций
-    
+
     Тесты:
     - 7 unit тестов: preferredLanguage, timezone, комбинированные обновления
     - 16 integration тестов: валидация (400), tenant isolation, расширенный список таймзон
     - Все 23 теста проходят успешно ✅
-    
+
     Рекомендации ревью:
     - ✅ Расширен список таймзон: +7 новых регионов (Europe/Berlin, America/Sao_Paulo, Asia/Kolkata и др.)
     - ⏭️ Validation для translations - отложено на USER-001-10
     - ⏭️ Кэширование preferences - отложено как оптимизация
-    
+
     Итог: Все 7 пунктов DoD выполнены, tenant isolation работает, 23 теста проходят ✅
-  files_scope:
+    files_scope:
     - "src/domain/models/user.model.ts"
     - "src/infrastructure/services/user/\*\*"
     - "src/infrastructure/dto/user/\*\*"
     - "src/infrastructure/controllers/user/\*\*"
     - "src/infrastructure/responses/user/\*\*"
     - "src/infrastructure/common/decorators/swagger/user/\*\*"
-  steps:
+      steps:
     - ✅ проверить существование полей theme_preference, preferred_language, timezone в БД (уже есть)
     - ✅ обновить UserModel (Domain) с предпочтениями (если нужно)
     - ✅ добавить методы для управления предпочтениями в UserService (если отсутствуют)
@@ -543,7 +543,7 @@ tasks:
     - ✅ добавить проверку tenant isolation
     - ✅ написать тесты управления предпочтениями (с tenant isolation)
     - ✅ обновить Swagger документацию
-  dod:
+      dod:
     - ✅ UserModel содержит предпочтения (theme, language, timezone)
     - ✅ API endpoint PATCH /users/preferences работает
     - ✅ Response класс создан с Swagger декораторами
@@ -551,12 +551,12 @@ tasks:
     - ✅ tenant isolation обеспечена
     - ✅ тесты покрывают управление предпочтениями
     - ✅ Swagger документация обновлена
-  pre_commit_workflow: "УПРОЩЕННЫЙ"
-  pre_commit_steps:
+      pre_commit_workflow: "УПРОЩЕННЫЙ"
+      pre_commit_steps:
     - "«Автофикс» → linter/prettier"
     - "Тесты: preferences management tests (with tenant isolation)"
     - "«Коммит» → feat(user): USER-001-09 complete"
-  gate:
+      gate:
     - require: "Одобряю USER-001-09"
 
 - id: USER-001-10
