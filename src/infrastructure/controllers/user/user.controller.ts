@@ -57,11 +57,11 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 
+import { UserModel } from '@app/domain/models';
 import { UpdateUserFlagsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-flags.swagger';
 import { UpdateUserPreferencesSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-preferences.swagger';
 import { UpdateUserProfileSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-profile.swagger';
 import { UpdateUserStatusSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-status.swagger';
-import { GetUserStatsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/user-stats.swagger';
 import {
     ConfirmEmailCodeSwaggerDecorator,
     ConfirmPhoneCodeSwaggerDecorator,
@@ -215,7 +215,8 @@ export class UserController implements IUserController {
     @ApiQuery({
         name: 'limit',
         required: false,
-        description: 'Количество записей на странице (по умолчанию: 5, максимум: 100)',
+        description:
+            'Количество записей на странице (по умолчанию: 5, максимум: 100)',
         example: 5,
     })
     @ApiResponse({
@@ -378,8 +379,7 @@ export class UserController implements IUserController {
     @ApiQuery({
         name: 'ids',
         required: true,
-        description:
-            'Массив ID пользователей через запятую (максимум 100)',
+        description: 'Массив ID пользователей через запятую (максимум 100)',
         example: '1,2,3,4,5',
     })
     @ApiResponse({
@@ -401,7 +401,8 @@ export class UserController implements IUserController {
     })
     @ApiResponse({
         status: 400,
-        description: 'Некорректные ID (пустой массив, > 100, или не целые числа)',
+        description:
+            'Некорректные ID (пустой массив, > 100, или не целые числа)',
     })
     @ApiResponse({ status: 401, description: 'Не аутентифицирован' })
     @ApiResponse({
@@ -423,6 +424,164 @@ export class UserController implements IUserController {
             .filter((id) => !isNaN(id));
 
         return this.userService.findUsersByIds(ids);
+    }
+
+    /**
+     * Получить статистику пользователей по ролям
+     * GET /user/admin/stats/by-role
+     * Возвращает количество пользователей для каждой роли с процентами
+     * ⚠️ ВАЖНО: Этот маршрут ДОЛЖЕН быть объявлен ДО /admin/stats (более специфичный маршрут)
+     */
+    @ApiOperation({
+        summary: 'Получить статистику пользователей по ролям',
+        description:
+            'Возвращает статистику распределения пользователей по ролям с процентами от общего количества',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика по ролям успешно получена',
+        schema: {
+            type: 'object',
+            properties: {
+                roles: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            role: {
+                                type: 'string',
+                                example: 'USER',
+                            },
+                            count: {
+                                type: 'number',
+                                example: 1250,
+                            },
+                            percentage: {
+                                type: 'number',
+                                example: 85.5,
+                            },
+                        },
+                    },
+                },
+                totalUsers: {
+                    type: 'number',
+                    example: 1450,
+                },
+            },
+        },
+    })
+    @ApiBearerAuth('JWT-auth')
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Get('/admin/stats/by-role')
+    public async getUserStatsByRole(): Promise<{
+        roles: Array<{ role: string; count: number; percentage: number }>;
+        totalUsers: number;
+    }> {
+        return this.userService.getUserStatsByRole();
+    }
+
+    /**
+     * Получить статистику активности пользователей
+     * GET /user/admin/stats/activity
+     * Возвращает статистику последней активности: за 24ч, 7д, 30д, никогда не логинились
+     * ⚠️ ВАЖНО: Этот маршрут ДОЛЖЕН быть объявлен ДО /admin/stats (более специфичный маршрут)
+     */
+    @ApiOperation({
+        summary: 'Получить статистику активности пользователей',
+        description:
+            'Возвращает статистику последней активности пользователей: активные за 24 часа, 7 дней, 30 дней и те, кто никогда не заходил',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика активности успешно получена',
+        schema: {
+            type: 'object',
+            properties: {
+                activeInLast24Hours: {
+                    type: 'number',
+                    example: 340,
+                },
+                activeInLast7Days: {
+                    type: 'number',
+                    example: 890,
+                },
+                activeInLast30Days: {
+                    type: 'number',
+                    example: 1200,
+                },
+                neverLoggedIn: {
+                    type: 'number',
+                    example: 150,
+                },
+                totalUsers: {
+                    type: 'number',
+                    example: 1450,
+                },
+            },
+        },
+    })
+    @ApiBearerAuth('JWT-auth')
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Get('/admin/stats/activity')
+    public async getUserActivityStats(): Promise<{
+        activeInLast24Hours: number;
+        activeInLast7Days: number;
+        activeInLast30Days: number;
+        neverLoggedIn: number;
+        totalUsers: number;
+    }> {
+        return this.userService.getUserActivityStats();
+    }
+
+    /**
+     * Получить общую статистику пользователей
+     * GET /user/admin/stats
+     * Возвращает базовую статистику: всего, активных, заблокированных, подписчиков
+     * ⚠️ ВАЖНО: Этот маршрут ДОЛЖЕН быть объявлен ПОСЛЕ более специфичных (by-role, activity)
+     */
+    @ApiOperation({
+        summary: 'Получить общую статистику пользователей',
+        description:
+            'Возвращает базовую статистику пользователей: общее количество, активные, заблокированные, подписчики на рассылку',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика успешно получена',
+        schema: {
+            type: 'object',
+            properties: {
+                totalUsers: {
+                    type: 'number',
+                    example: 1450,
+                },
+                activeUsers: {
+                    type: 'number',
+                    example: 1200,
+                },
+                blockedUsers: {
+                    type: 'number',
+                    example: 50,
+                },
+                newsletterSubscribers: {
+                    type: 'number',
+                    example: 800,
+                },
+            },
+        },
+    })
+    @ApiBearerAuth('JWT-auth')
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Get('/admin/stats')
+    public async getUserStats(): Promise<{
+        totalUsers: number;
+        activeUsers: number;
+        blockedUsers: number;
+        newsletterSubscribers: number;
+    }> {
+        return this.userService.getUserStats();
     }
 
     @UpdateUserSwaggerDecorator()
@@ -890,16 +1049,6 @@ export class UserController implements IUserController {
     }
 
     // ===== Admin Statistics Endpoint =====
-    @Roles(...ADMIN_ROLES)
-    @AdminGuards()
-    @GetUserStatsSwaggerDecorator()
-    @Get('admin/stats')
-    @HttpCode(HttpStatus.OK)
-    async getUserStats(): Promise<{ data: unknown }> {
-        const stats = await this.userService.getUserStats();
-        return this.createResponse(stats);
-    }
-
     // ===== Admin User Status Management =====
     /**
      * Обновляет статусные флаги пользователя (VIP, Premium, Beta Tester)
@@ -931,8 +1080,9 @@ export class UserController implements IUserController {
             dto,
             tenantId,
         );
-        // TODO: Поля isVipCustomer/isPremium/isBetaTester удалены из модели
-        // Метод требует рефакторинга для работы с новой моделью ролей/подписок
+
+        // ⚠️ ВАЖНО: поле isBetaTester НЕ СУЩЕСТВУЕТ в UserModel
+        // Возвращаем только id, так как все статусные поля были удалены из модели
         return {
             id: updatedUser.id,
         };

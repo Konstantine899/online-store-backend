@@ -48,14 +48,13 @@ describe('User Admin Integration Tests', () => {
                 .set('Authorization', `Bearer ${token}`)
                 .expect(200);
 
-            expect(response.body).toHaveProperty('data');
-            expect(response.body.data).toHaveProperty('totalUsers');
-            expect(response.body.data).toHaveProperty('activeUsers');
-            expect(response.body.data).toHaveProperty('blockedUsers');
-            expect(response.body.data).toHaveProperty('newsletterSubscribers');
+            expect(response.body).toHaveProperty('totalUsers');
+            expect(response.body).toHaveProperty('activeUsers');
+            expect(response.body).toHaveProperty('blockedUsers');
+            expect(response.body).toHaveProperty('newsletterSubscribers');
 
             // Проверяем, что все значения - числа
-            Object.values(response.body.data).forEach((value) => {
+            Object.values(response.body).forEach((value) => {
                 expect(typeof value).toBe('number');
                 expect(value).toBeGreaterThanOrEqual(0);
             });
@@ -455,6 +454,7 @@ describe('User Admin Integration Tests', () => {
     });
 
     // ===== USER STATUS MANAGEMENT =====
+    // ⚠️ ПРИМЕЧАНИЕ: поля isPremium и isVipCustomer удалены из DTO (отсутствуют в UserModel)
     describe('PATCH /user/:id/status - User Status Management', () => {
         let adminToken: string;
         let userToken: string;
@@ -472,50 +472,29 @@ describe('User Admin Integration Tests', () => {
             targetUserId = targetUser.id;
         });
 
-        it('200: admin can update all status flags', async () => {
+        it('200: admin can enable beta tester flag', async () => {
             const response = await request(app.getHttpServer())
                 .patch(`/online-store/user/${targetUserId}/status`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
-                    isVipCustomer: true,
-                    isPremium: true,
                     isBetaTester: true,
                 })
                 .expect(200);
 
             expect(response.body).toHaveProperty('id', targetUserId);
-            expect(response.body).toHaveProperty('isVipCustomer', true);
-            expect(response.body).toHaveProperty('isPremium', true);
             expect(response.body).toHaveProperty('isBetaTester', true);
         });
 
-        it('200: admin can update partial status flags', async () => {
+        it('200: admin can disable beta tester flag', async () => {
             const response = await request(app.getHttpServer())
                 .patch(`/online-store/user/${targetUserId}/status`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
-                    isPremium: false,
-                })
-                .expect(200);
-
-            expect(response.body).toHaveProperty('id', targetUserId);
-            expect(response.body).toHaveProperty('isPremium', false);
-            // Другие флаги остаются неизменными
-        });
-
-        it('200: admin can set all flags to false', async () => {
-            const response = await request(app.getHttpServer())
-                .patch(`/online-store/user/${targetUserId}/status`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    isVipCustomer: false,
-                    isPremium: false,
                     isBetaTester: false,
                 })
                 .expect(200);
 
-            expect(response.body).toHaveProperty('isVipCustomer', false);
-            expect(response.body).toHaveProperty('isPremium', false);
+            expect(response.body).toHaveProperty('id', targetUserId);
             expect(response.body).toHaveProperty('isBetaTester', false);
         });
 
@@ -524,7 +503,7 @@ describe('User Admin Integration Tests', () => {
                 .patch(`/online-store/user/${targetUserId}/status`)
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({
-                    isVipCustomer: true,
+                    isBetaTester: true,
                 })
                 .expect(403);
         });
@@ -533,7 +512,7 @@ describe('User Admin Integration Tests', () => {
             await request(app.getHttpServer())
                 .patch(`/online-store/user/${targetUserId}/status`)
                 .send({
-                    isVipCustomer: true,
+                    isBetaTester: true,
                 })
                 .expect(401);
         });
@@ -543,7 +522,7 @@ describe('User Admin Integration Tests', () => {
                 .patch('/online-store/user/999999/status')
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
-                    isVipCustomer: true,
+                    isBetaTester: true,
                 })
                 .expect(404);
         });
@@ -553,24 +532,9 @@ describe('User Admin Integration Tests', () => {
                 .patch(`/online-store/user/${targetUserId}/status`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
-                    isVipCustomer: 'invalid',
+                    isBetaTester: 'invalid',
                 })
                 .expect(400);
-        });
-
-        it('400: invalid field names', async () => {
-            const response = await request(app.getHttpServer())
-                .patch(`/online-store/user/${targetUserId}/status`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    invalidField: true,
-                })
-                .expect(200); // DTO игнорирует неизвестные поля, но не обновляет ничего
-
-            // Проверяем, что флаги остались прежними (false после предыдущего теста)
-            expect(response.body.isVipCustomer).toBe(false);
-            expect(response.body.isPremium).toBe(false);
-            expect(response.body.isBetaTester).toBe(false);
         });
 
         it('200: handles empty body gracefully', async () => {
@@ -582,8 +546,6 @@ describe('User Admin Integration Tests', () => {
 
             // Проверяем, что пользователь возвращается с текущими значениями
             expect(response.body).toHaveProperty('id', targetUserId);
-            expect(response.body).toHaveProperty('isVipCustomer');
-            expect(response.body).toHaveProperty('isPremium');
             expect(response.body).toHaveProperty('isBetaTester');
         });
 
@@ -592,7 +554,7 @@ describe('User Admin Integration Tests', () => {
                 .patch('/online-store/user/invalid/status')
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
-                    isVipCustomer: true,
+                    isBetaTester: true,
                 })
                 .expect(400);
         });
@@ -607,14 +569,14 @@ describe('User Admin Integration Tests', () => {
             await request(app.getHttpServer())
                 .patch(`/online-store/user/${targetUserId}/status`)
                 .set('Authorization', `Bearer ${superAdminToken}`)
-                .send({ isVipCustomer: true })
+                .send({ isBetaTester: true })
                 .expect(200);
 
             // PLATFORM_ADMIN
             await request(app.getHttpServer())
                 .patch(`/online-store/user/${targetUserId}/status`)
                 .set('Authorization', `Bearer ${platformAdminToken}`)
-                .send({ isPremium: true })
+                .send({ isBetaTester: false })
                 .expect(200);
         });
 
@@ -631,7 +593,7 @@ describe('User Admin Integration Tests', () => {
         //     await request(app.getHttpServer())
         //         .patch(`/online-store/user/${tenant2User.id}/status`)
         //         .set('Authorization', `Bearer ${tenant1Admin.token}`)
-        //         .send({ isVipCustomer: true })
+        //         .send({ isBetaTester: true })
         //         .expect(404)
         //         .expect((res) => {
         //             expect(res.body.message).toContain('не принадлежит вашему tenant');
@@ -646,11 +608,11 @@ describe('User Admin Integration Tests', () => {
         //     await request(app.getHttpServer())
         //         .patch(`/online-store/user/${tenant1User.id}/status`)
         //         .set('Authorization', `Bearer ${tenant1Admin.token}`)
-        //         .send({ isVipCustomer: true })
+        //         .send({ isBetaTester: true })
         //         .expect(200)
         //         .expect((res) => {
         //             expect(res.body.id).toBe(tenant1User.id);
-        //             expect(res.body.isVipCustomer).toBe(true);
+        //             expect(res.body.isBetaTester).toBe(true);
         //         });
         // });
         //
@@ -662,7 +624,7 @@ describe('User Admin Integration Tests', () => {
         //     await request(app.getHttpServer())
         //         .patch(`/online-store/user/${tenant2User.id}/status`)
         //         .set('Authorization', `Bearer ${tenant1SuperAdmin.token}`)
-        //         .send({ isPremium: true })
+        //         .send({ isBetaTester: true })
         //         .expect(404);
         // });
         //
@@ -1228,6 +1190,105 @@ describe('User Admin Integration Tests', () => {
                 .get('/online-store/user/batch?ids=')
                 .set('Authorization', `Bearer ${token}`)
                 .expect(400);
+        });
+    });
+
+    describe('GET /user/admin/stats (statistics endpoints)', () => {
+        it('200: GET /user/admin/stats returns general user statistics', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            const response = await request(app.getHttpServer())
+                .get('/online-store/user/admin/stats')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            expect(response.body).toHaveProperty('totalUsers');
+            expect(response.body).toHaveProperty('activeUsers');
+            expect(response.body).toHaveProperty('blockedUsers');
+            expect(response.body).toHaveProperty('newsletterSubscribers');
+
+            // Проверяем типы
+            expect(typeof response.body.totalUsers).toBe('number');
+            expect(typeof response.body.activeUsers).toBe('number');
+            expect(typeof response.body.blockedUsers).toBe('number');
+            expect(typeof response.body.newsletterSubscribers).toBe('number');
+
+            // Проверяем логику
+            expect(response.body.totalUsers).toBeGreaterThanOrEqual(0);
+            expect(response.body.activeUsers).toBeLessThanOrEqual(
+                response.body.totalUsers,
+            );
+        });
+
+        it('200: GET /user/admin/stats/by-role returns statistics by roles', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            const response = await request(app.getHttpServer())
+                .get('/online-store/user/admin/stats/by-role')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            expect(response.body).toHaveProperty('roles');
+            expect(response.body).toHaveProperty('totalUsers');
+            expect(Array.isArray(response.body.roles)).toBe(true);
+
+            // Проверяем структуру каждой роли
+            if (response.body.roles.length > 0) {
+                const firstRole = response.body.roles[0];
+                expect(firstRole).toHaveProperty('role');
+                expect(firstRole).toHaveProperty('count');
+                expect(firstRole).toHaveProperty('percentage');
+
+                expect(typeof firstRole.role).toBe('string');
+                expect(typeof firstRole.count).toBe('number');
+                expect(typeof firstRole.percentage).toBe('number');
+
+                // Проценты должны быть от 0 до 100
+                expect(firstRole.percentage).toBeGreaterThanOrEqual(0);
+                expect(firstRole.percentage).toBeLessThanOrEqual(100);
+            }
+        });
+
+        it('200: GET /user/admin/stats/activity returns activity statistics', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            const response = await request(app.getHttpServer())
+                .get('/online-store/user/admin/stats/activity')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            expect(response.body).toHaveProperty('activeInLast24Hours');
+            expect(response.body).toHaveProperty('activeInLast7Days');
+            expect(response.body).toHaveProperty('activeInLast30Days');
+            expect(response.body).toHaveProperty('neverLoggedIn');
+            expect(response.body).toHaveProperty('totalUsers');
+
+            // Проверяем типы
+            expect(typeof response.body.activeInLast24Hours).toBe('number');
+            expect(typeof response.body.activeInLast7Days).toBe('number');
+            expect(typeof response.body.activeInLast30Days).toBe('number');
+            expect(typeof response.body.neverLoggedIn).toBe('number');
+            expect(typeof response.body.totalUsers).toBe('number');
+
+            // Проверяем логику: каждый следующий период должен включать предыдущий
+            expect(response.body.activeInLast24Hours).toBeLessThanOrEqual(
+                response.body.activeInLast7Days,
+            );
+            expect(response.body.activeInLast7Days).toBeLessThanOrEqual(
+                response.body.activeInLast30Days,
+            );
+            expect(response.body.activeInLast30Days).toBeLessThanOrEqual(
+                response.body.totalUsers,
+            );
         });
     });
 });

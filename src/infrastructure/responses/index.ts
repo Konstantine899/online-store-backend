@@ -79,3 +79,8 @@ export { UpdateUserPhoneResponse } from './user/update-user-phone.response';
 export { UpdateUserPreferencesResponse } from './user/update-user-preferences.response';
 export { UpdateUserResponse } from './user/update-user-response';
 export { UpdateUserStatusResponse } from './user/update-user-status.response';
+export {
+    RoleStats,
+    UserStatsByRoleResponse,
+} from './user/user-stats-by-role.response';
+export { UserActivityStatsResponse } from './user/user-activity-stats.response';

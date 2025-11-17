@@ -677,15 +677,17 @@ export class UserService implements IUserService {
                 tenantId,
             );
 
-            // TODO: Логирование изменений отключено, так как поля isVipCustomer/isPremium/isBetaTester удалены
-            // Метод updateUserStatus требует рефакторинга для работы с новой моделью ролей/подписок
-            this.logger.info(
-                {
-                    userId,
-                    adminTenantId: tenantId,
-                },
-                `Обновление статусных флагов пользователя ${userId} (логирование временно отключено)`,
-            );
+            // Логирование изменений статуса Beta Tester
+            if (dto.isBetaTester !== undefined) {
+                this.logger.info(
+                    {
+                        userId,
+                        adminTenantId: tenantId,
+                        isBetaTester: dto.isBetaTester,
+                    },
+                    `Обновлён статус Beta Tester для пользователя ${userId}`,
+                );
+            }
 
             // Инвалидируем кэш пользователя
             this.invalidateUserCache(userId);
@@ -1073,36 +1075,6 @@ export class UserService implements IUserService {
         }
     }
 
-    // ===== User Statistics Methods =====
-    public async getUserStats(): Promise<{
-        totalUsers: number;
-        activeUsers: number;
-        blockedUsers: number;
-        newsletterSubscribers: number;
-    }> {
-        const cacheKey = 'user_stats';
-
-        // Проверяем кэш
-        const cached = this.getCachedStats<{
-            totalUsers: number;
-            activeUsers: number;
-            blockedUsers: number;
-            newsletterSubscribers: number;
-        }>(cacheKey);
-
-        if (cached) {
-            console.log('Статистика пользователей получена из кэша');
-            return cached;
-        }
-
-        // Получаем данные из репозитория
-        const stats = await this.userRepository.getUserStats();
-
-        // Кэшируем результат
-        this.setCachedStats(cacheKey, stats);
-
-        return stats;
-    }
 
     // ==================== МЕТОДЫ ФИЛЬТРАЦИИ ====================
 
@@ -1322,5 +1294,45 @@ export class UserService implements IUserService {
             page,
             limit,
         );
+    }
+
+    // ==================== МЕТОДЫ СТАТИСТИКИ ====================
+
+    /**
+     * Получить общую статистику пользователей
+     * @returns базовая статистика: всего, активных, заблокированных, подписчиков
+     */
+    public async getUserStats(): Promise<{
+        totalUsers: number;
+        activeUsers: number;
+        blockedUsers: number;
+        newsletterSubscribers: number;
+    }> {
+        return this.userRepository.getUserStats();
+    }
+
+    /**
+     * Получить статистику пользователей по ролям
+     * @returns статистика: количество пользователей для каждой роли с процентами
+     */
+    public async getUserStatsByRole(): Promise<{
+        roles: Array<{ role: string; count: number; percentage: number }>;
+        totalUsers: number;
+    }> {
+        return this.userRepository.getUserStatsByRole();
+    }
+
+    /**
+     * Получить статистику активности пользователей
+     * @returns статистика: активные пользователи за 24ч, 7д, 30д, никогда не логинились
+     */
+    public async getUserActivityStats(): Promise<{
+        activeInLast24Hours: number;
+        activeInLast7Days: number;
+        activeInLast30Days: number;
+        neverLoggedIn: number;
+        totalUsers: number;
+    }> {
+        return this.userRepository.getUserActivityStats();
     }
 }

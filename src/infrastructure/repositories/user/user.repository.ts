@@ -685,11 +685,22 @@ export class UserRepository implements IUserRepository {
             }
 
             // Формируем объект обновлений только для переданных полей
-            // TODO: Статусные поля (isVipCustomer, isPremium, isBetaTester) были удалены миграцией 20251015135614
-            // Этот метод требует рефакторинга для работы с новой моделью ролей/подписок
-            throw new Error(
-                'updateUserStatus временно недоступен - поля isVipCustomer/isPremium/isBetaTester удалены из модели',
-            );
+            // ⚠️ ВАЖНО: только isBetaTester существует в UserModel (isPremium/isVipCustomer удалены)
+            const updateData: Partial<UserModel> = {};
+
+            if (dto.isBetaTester !== undefined) {
+                updateData.isBetaTester = dto.isBetaTester;
+            }
+
+            // Если нет данных для обновления, просто возвращаем пользователя
+            if (Object.keys(updateData).length === 0) {
+                return user;
+            }
+
+            // Обновляем пользователя
+            await user.update(updateData);
+
+            return user;
         } catch (error: unknown) {
             this.handleSequelizeError(
                 error,
@@ -1890,6 +1901,184 @@ export class UserRepository implements IUserRepository {
             this.handleSequelizeError(
                 error,
                 'полнотекстовый поиск пользователей',
+            );
+            throw error;
+        }
+    }
+
+    // ==================== МЕТОДЫ СТАТИСТИКИ ====================
+
+    /**
+     * Получить статистику пользователей по ролям
+     * @returns статистика: количество пользователей для каждой роли с процентами
+     * @example getUserStatsByRole() // { roles: [{ role: 'USER', count: 100, percentage: 80 }], totalUsers: 125 }
+     */
+    public async getUserStatsByRole(): Promise<{
+        roles: Array<{ role: string; count: number; percentage: number }>;
+        totalUsers: number;
+    }> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const sequelize = this.userModel.sequelize;
+            if (!sequelize) {
+                throw new Error('Sequelize instance not available');
+            }
+
+            // Получаем статистику по ролям с процентами
+            const results = (await sequelize.query(
+                `
+                SELECT
+                    r.role,
+                    COUNT(DISTINCT u.id) as count,
+                    ROUND((COUNT(DISTINCT u.id) * 100.0) / (
+                        SELECT COUNT(DISTINCT id)
+                        FROM user
+                        WHERE tenant_id = ? AND is_deleted = 0
+                    ), 2) as percentage
+                FROM user u
+                INNER JOIN user_role ur ON u.id = ur.user_id
+                INNER JOIN role r ON ur.role_id = r.id
+                WHERE u.tenant_id = ? AND u.is_deleted = 0
+                GROUP BY r.role
+                ORDER BY count DESC
+            `,
+                {
+                    replacements: [tenantId, tenantId],
+                    type: QueryTypes.SELECT,
+                },
+            )) as Array<{
+                role: string;
+                count: string | number;
+                percentage: string | number;
+            }>;
+
+            // ⚠️ ВАЖНО: SQL ROUND() возвращает DECIMAL/string, преобразуем в число
+            const roles = results.map((row) => ({
+                role: row.role,
+                count: Number(row.count) || 0,
+                percentage: Number(row.percentage) || 0, // "44.87" → 44.87
+            }));
+
+            // Получаем общее количество пользователей
+            const totalResult = (await sequelize.query(
+                `
+                SELECT COUNT(DISTINCT id) as total
+                FROM user
+                WHERE tenant_id = ? AND is_deleted = 0
+            `,
+                {
+                    replacements: [tenantId],
+                    type: QueryTypes.SELECT,
+                },
+            )) as Array<{ total: string | number }>;
+
+            const totalUsers = Number(totalResult[0]?.total) || 0;
+
+            return {
+                roles,
+                totalUsers,
+            };
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'получение статистики пользователей по ролям',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Получить статистику активности пользователей
+     * @returns статистика: активные пользователи за 24ч, 7д, 30д, никогда не логинились
+     * @example getUserActivityStats() // { activeInLast24Hours: 50, activeInLast7Days: 200, ... }
+     */
+    public async getUserActivityStats(): Promise<{
+        activeInLast24Hours: number;
+        activeInLast7Days: number;
+        activeInLast30Days: number;
+        neverLoggedIn: number;
+        totalUsers: number;
+    }> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const sequelize = this.userModel.sequelize;
+            if (!sequelize) {
+                throw new Error('Sequelize instance not available');
+            }
+
+            // Получаем статистику активности за разные периоды
+            const [results] = await sequelize.query(
+                `
+                SELECT
+                    COUNT(*) as totalUsers,
+                    SUM(CASE
+                        WHEN last_login_at IS NOT NULL
+                        AND last_login_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                        THEN 1 ELSE 0
+                    END) as activeInLast24Hours,
+                    SUM(CASE
+                        WHEN last_login_at IS NOT NULL
+                        AND last_login_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                        THEN 1 ELSE 0
+                    END) as activeInLast7Days,
+                    SUM(CASE
+                        WHEN last_login_at IS NOT NULL
+                        AND last_login_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                        THEN 1 ELSE 0
+                    END) as activeInLast30Days,
+                    SUM(CASE
+                        WHEN last_login_at IS NULL
+                        THEN 1 ELSE 0
+                    END) as neverLoggedIn
+                FROM user
+                WHERE tenant_id = ? AND is_deleted = 0
+            `,
+                {
+                    replacements: [tenantId],
+                    type: QueryTypes.SELECT,
+                },
+            );
+
+            const stats = (
+                results as Array<{
+                    totalUsers: number;
+                    activeInLast24Hours: number;
+                    activeInLast7Days: number;
+                    activeInLast30Days: number;
+                    neverLoggedIn: number;
+                }>
+            )[0];
+
+            // Защита: если SQL не вернул строк
+            if (!stats) {
+                return {
+                    activeInLast24Hours: 0,
+                    activeInLast7Days: 0,
+                    activeInLast30Days: 0,
+                    neverLoggedIn: 0,
+                    totalUsers: 0,
+                };
+            }
+
+            return {
+                activeInLast24Hours: Number(stats.activeInLast24Hours) || 0,
+                activeInLast7Days: Number(stats.activeInLast7Days) || 0,
+                activeInLast30Days: Number(stats.activeInLast30Days) || 0,
+                neverLoggedIn: Number(stats.neverLoggedIn) || 0,
+                totalUsers: Number(stats.totalUsers) || 0,
+            };
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'получение статистики активности пользователей',
             );
             throw error;
         }
