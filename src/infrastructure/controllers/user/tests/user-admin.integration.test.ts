@@ -703,20 +703,26 @@ describe('User Admin Integration Tests', () => {
             );
 
             // Создаём 2 активных пользователей
-            const activeUser1 = await TestDataFactory.createUserInDB(sequelize, {
-                email: TestDataFactory.uniqueEmail(),
-                tenantId: 1,
-                isActive: true,
-                isBlocked: false,
-                isDeleted: false,
-            } as never);
-            const activeUser2 = await TestDataFactory.createUserInDB(sequelize, {
-                email: TestDataFactory.uniqueEmail(),
-                tenantId: 1,
-                isActive: true,
-                isBlocked: false,
-                isDeleted: false,
-            } as never);
+            const activeUser1 = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    email: TestDataFactory.uniqueEmail(),
+                    tenantId: 1,
+                    isActive: true,
+                    isBlocked: false,
+                    isDeleted: false,
+                } as never,
+            );
+            const activeUser2 = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    email: TestDataFactory.uniqueEmail(),
+                    tenantId: 1,
+                    isActive: true,
+                    isBlocked: false,
+                    isDeleted: false,
+                } as never,
+            );
 
             // Создаём заблокированного пользователя (НЕ должен попасть в результат)
             await TestDataFactory.createUserInDB(sequelize, {
@@ -728,7 +734,9 @@ describe('User Admin Integration Tests', () => {
             } as never);
 
             const response = await request(app.getHttpServer())
-                .get('/online-store/user/list?filterType=active&page=1&limit=100')
+                .get(
+                    '/online-store/user/list?filterType=active&page=1&limit=100',
+                )
                 .set('Authorization', `Bearer ${token}`)
                 .expect(200);
 
@@ -743,10 +751,12 @@ describe('User Admin Integration Tests', () => {
             expect(userIds).toContain(activeUser2.id);
 
             // Проверяем, что все пользователи в результате - активные
-            response.body.data.forEach((user: { isActive: boolean; isBlocked: boolean }) => {
-                expect(user.isActive).toBe(true);
-                expect(user.isBlocked).toBe(false);
-            });
+            response.body.data.forEach(
+                (user: { isActive: boolean; isBlocked: boolean }) => {
+                    expect(user.isActive).toBe(true);
+                    expect(user.isBlocked).toBe(false);
+                },
+            );
         });
 
         it('200: GET /user/list?filterType=blocked returns only blocked users', async () => {
@@ -758,13 +768,16 @@ describe('User Admin Integration Tests', () => {
             );
 
             // Создаём заблокированного пользователя
-            const blockedUser = await TestDataFactory.createUserInDB(sequelize, {
-                email: TestDataFactory.uniqueEmail(),
-                tenantId: 1,
-                isActive: true,
-                isBlocked: true,
-                isDeleted: false,
-            } as never);
+            const blockedUser = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    email: TestDataFactory.uniqueEmail(),
+                    tenantId: 1,
+                    isActive: true,
+                    isBlocked: true,
+                    isDeleted: false,
+                } as never,
+            );
 
             // Создаём активного пользователя (НЕ должен попасть в результат)
             await TestDataFactory.createUserInDB(sequelize, {
@@ -776,7 +789,9 @@ describe('User Admin Integration Tests', () => {
             } as never);
 
             const response = await request(app.getHttpServer())
-                .get('/online-store/user/list?filterType=blocked&page=1&limit=100')
+                .get(
+                    '/online-store/user/list?filterType=blocked&page=1&limit=100',
+                )
                 .set('Authorization', `Bearer ${token}`)
                 .expect(200);
 
@@ -801,12 +816,15 @@ describe('User Admin Integration Tests', () => {
             );
 
             // Создаём верифицированного пользователя
-            const verifiedUser = await TestDataFactory.createUserInDB(sequelize, {
-                email: TestDataFactory.uniqueEmail(),
-                tenantId: 1,
-                isVerified: true,
-                isDeleted: false,
-            } as never);
+            const verifiedUser = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    email: TestDataFactory.uniqueEmail(),
+                    tenantId: 1,
+                    isVerified: true,
+                    isDeleted: false,
+                } as never,
+            );
 
             // Создаём неверифицированного пользователя (НЕ должен попасть в результат)
             await TestDataFactory.createUserInDB(sequelize, {
@@ -817,7 +835,9 @@ describe('User Admin Integration Tests', () => {
             } as never);
 
             const response = await request(app.getHttpServer())
-                .get('/online-store/user/list?filterType=verified&page=1&limit=100')
+                .get(
+                    '/online-store/user/list?filterType=verified&page=1&limit=100',
+                )
                 .set('Authorization', `Bearer ${token}`)
                 .expect(200);
 
@@ -840,12 +860,15 @@ describe('User Admin Integration Tests', () => {
             );
 
             // Создаём неверифицированного пользователя
-            const unverifiedUser = await TestDataFactory.createUserInDB(sequelize, {
-                email: TestDataFactory.uniqueEmail(),
-                tenantId: 1,
-                isVerified: false,
-                isDeleted: false,
-            } as never);
+            const unverifiedUser = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    email: TestDataFactory.uniqueEmail(),
+                    tenantId: 1,
+                    isVerified: false,
+                    isDeleted: false,
+                } as never,
+            );
 
             // Создаём верифицированного пользователя (НЕ должен попасть в результат)
             await TestDataFactory.createUserInDB(sequelize, {
@@ -856,7 +879,9 @@ describe('User Admin Integration Tests', () => {
             } as never);
 
             const response = await request(app.getHttpServer())
-                .get('/online-store/user/list?filterType=unverified&page=1&limit=100')
+                .get(
+                    '/online-store/user/list?filterType=unverified&page=1&limit=100',
+                )
                 .set('Authorization', `Bearer ${token}`)
                 .expect(200);
 
@@ -879,12 +904,15 @@ describe('User Admin Integration Tests', () => {
             );
 
             // Создаём подписчика на рассылку
-            const subscribedUser = await TestDataFactory.createUserInDB(sequelize, {
-                email: TestDataFactory.uniqueEmail(),
-                tenantId: 1,
-                isNewsletterSubscribed: true,
-                isDeleted: false,
-            } as never);
+            const subscribedUser = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    email: TestDataFactory.uniqueEmail(),
+                    tenantId: 1,
+                    isNewsletterSubscribed: true,
+                    isDeleted: false,
+                } as never,
+            );
 
             // Создаём не подписанного пользователя (НЕ должен попасть в результат)
             await TestDataFactory.createUserInDB(sequelize, {
@@ -895,7 +923,9 @@ describe('User Admin Integration Tests', () => {
             } as never);
 
             const response = await request(app.getHttpServer())
-                .get('/online-store/user/list?filterType=newsletter&page=1&limit=100')
+                .get(
+                    '/online-store/user/list?filterType=newsletter&page=1&limit=100',
+                )
                 .set('Authorization', `Bearer ${token}`)
                 .expect(200);
 
