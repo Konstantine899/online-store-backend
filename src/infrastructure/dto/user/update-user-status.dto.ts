@@ -6,8 +6,3 @@
 export class UpdateUserStatusDto {
     // Все поля удалены - endpoint deprecated, оставлен для обратной совместимости
 }
-
-
-
-
-

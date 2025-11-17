@@ -17,4 +17,3 @@ export class BulkOperationResponse {
     })
     declare readonly message: string;
 }
-

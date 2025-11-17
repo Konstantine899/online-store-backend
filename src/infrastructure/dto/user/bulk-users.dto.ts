@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsInt, ArrayMinSize, ArrayMaxSize } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsInt } from 'class-validator';
 
 /**
  * DTO для массовых операций с пользователями
@@ -28,4 +28,3 @@ export class BulkUsersDto {
     })
     declare readonly userIds: number[];
 }
-

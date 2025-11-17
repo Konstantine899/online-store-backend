@@ -17,7 +17,8 @@ import {
 export const BulkActivateUsersSwaggerDecorator = (): MethodDecorator =>
     applyDecorators(
         ApiOperation({
-            summary: 'Массовая активация пользователей (только для администраторов)',
+            summary:
+                'Массовая активация пользователей (только для администраторов)',
             description:
                 'Позволяет администраторам активировать нескольких пользователей одновременно (до 100). ' +
                 'Применяется только к пользователям своего тенанта (tenant isolation). ' +
@@ -48,11 +49,14 @@ export const BulkActivateUsersSwaggerDecorator = (): MethodDecorator =>
             },
         }),
         ApiBadRequestResponse({
-            description: 'Некорректные данные (пустой массив, не числа, превышен лимит)',
+            description:
+                'Некорректные данные (пустой массив, не числа, превышен лимит)',
             schema: {
                 example: {
                     statusCode: 400,
-                    message: ['Массив userIds должен содержать минимум 1 элемент'],
+                    message: [
+                        'Массив userIds должен содержать минимум 1 элемент',
+                    ],
                     error: 'Bad Request',
                 },
             },
@@ -83,7 +87,8 @@ export const BulkActivateUsersSwaggerDecorator = (): MethodDecorator =>
 export const BulkDeactivateUsersSwaggerDecorator = (): MethodDecorator =>
     applyDecorators(
         ApiOperation({
-            summary: 'Массовая деактивация пользователей (только для администраторов)',
+            summary:
+                'Массовая деактивация пользователей (только для администраторов)',
             description:
                 'Позволяет администраторам деактивировать нескольких пользователей одновременно (до 100). ' +
                 'Применяется только к пользователям своего тенанта (tenant isolation). ' +
@@ -93,7 +98,8 @@ export const BulkDeactivateUsersSwaggerDecorator = (): MethodDecorator =>
         ApiBearerAuth('JWT-auth'),
         ApiBody({
             type: BulkUsersDto,
-            description: 'Массив ID пользователей для деактивации (от 1 до 100)',
+            description:
+                'Массив ID пользователей для деактивации (от 1 до 100)',
         }),
         ApiOkResponse({
             description: 'Пользователи успешно деактивированы',
@@ -116,7 +122,8 @@ export const BulkDeactivateUsersSwaggerDecorator = (): MethodDecorator =>
 export const BulkBlockUsersSwaggerDecorator = (): MethodDecorator =>
     applyDecorators(
         ApiOperation({
-            summary: 'Массовая блокировка пользователей (только для администраторов)',
+            summary:
+                'Массовая блокировка пользователей (только для администраторов)',
             description:
                 'Позволяет администраторам блокировать нескольких пользователей одновременно (до 100). ' +
                 'Применяется только к пользователям своего тенанта (tenant isolation). ' +
@@ -150,7 +157,8 @@ export const BulkBlockUsersSwaggerDecorator = (): MethodDecorator =>
 export const BulkUnblockUsersSwaggerDecorator = (): MethodDecorator =>
     applyDecorators(
         ApiOperation({
-            summary: 'Массовая разблокировка пользователей (только для администраторов)',
+            summary:
+                'Массовая разблокировка пользователей (только для администраторов)',
             description:
                 'Позволяет администраторам разблокировать нескольких пользователей одновременно (до 100). ' +
                 'Применяется только к пользователям своего тенанта (tenant isolation). ' +
@@ -160,7 +168,8 @@ export const BulkUnblockUsersSwaggerDecorator = (): MethodDecorator =>
         ApiBearerAuth('JWT-auth'),
         ApiBody({
             type: BulkUsersDto,
-            description: 'Массив ID пользователей для разблокировки (от 1 до 100)',
+            description:
+                'Массив ID пользователей для разблокировки (от 1 до 100)',
         }),
         ApiOkResponse({
             description: 'Пользователи успешно разблокированы',
@@ -183,7 +192,8 @@ export const BulkUnblockUsersSwaggerDecorator = (): MethodDecorator =>
 export const BulkDeleteUsersSwaggerDecorator = (): MethodDecorator =>
     applyDecorators(
         ApiOperation({
-            summary: 'Массовое удаление пользователей (только для администраторов)',
+            summary:
+                'Массовое удаление пользователей (только для администраторов)',
             description:
                 'Позволяет администраторам выполнить soft delete для нескольких пользователей одновременно (до 100). ' +
                 'Применяется только к пользователям своего тенанта (tenant isolation). ' +
@@ -217,7 +227,8 @@ export const BulkDeleteUsersSwaggerDecorator = (): MethodDecorator =>
 export const BulkVerifyUsersSwaggerDecorator = (): MethodDecorator =>
     applyDecorators(
         ApiOperation({
-            summary: 'Массовая верификация пользователей (только для администраторов)',
+            summary:
+                'Массовая верификация пользователей (только для администраторов)',
             description:
                 'Позволяет администраторам верифицировать нескольких пользователей одновременно (до 100). ' +
                 'Применяется только к пользователям своего тенанта (tenant isolation). ' +
@@ -227,7 +238,8 @@ export const BulkVerifyUsersSwaggerDecorator = (): MethodDecorator =>
         ApiBearerAuth('JWT-auth'),
         ApiBody({
             type: BulkUsersDto,
-            description: 'Массив ID пользователей для верификации (от 1 до 100)',
+            description:
+                'Массив ID пользователей для верификации (от 1 до 100)',
         }),
         ApiOkResponse({
             description: 'Пользователи успешно верифицированы',
@@ -243,4 +255,3 @@ export const BulkVerifyUsersSwaggerDecorator = (): MethodDecorator =>
             description: 'Недостаточно прав',
         }),
     );
-

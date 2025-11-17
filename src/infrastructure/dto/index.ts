@@ -26,7 +26,7 @@ export { UpdateConsentsDto } from './user/update-consents.dto';
 export { UpdateDateOfBirthDto } from './user/update-date-of-birth.dto';
 export { UpdateUserPhoneDto } from './user/update-user-phone.dto';
 export { UpdateUserPreferencesDto } from './user/update-user-preferences.dto';
-export { UpdateUserStatusDto } from './user/update-user-status.dto';
 export { UpdateUserProfileDto } from './user/update-user-profile.dto';
+export { UpdateUserStatusDto } from './user/update-user-status.dto';
 export { UpdateUserDto } from './user/update-user.dto';
 export { UserFiltersDto, UserFilterType } from './user/user-filters.dto';
