@@ -40,6 +40,14 @@ import {
     UpdateUserPhoneSwaggerDecorator,
     UpdateUserSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
+import {
+    BulkActivateUsersSwaggerDecorator,
+    BulkBlockUsersSwaggerDecorator,
+    BulkDeactivateUsersSwaggerDecorator,
+    BulkDeleteUsersSwaggerDecorator,
+    BulkUnblockUsersSwaggerDecorator,
+    BulkVerifyUsersSwaggerDecorator,
+} from '@app/infrastructure/common/decorators/swagger/user/bulk-operations.swagger';
 import { ChangePasswordSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/change-password.swagger';
 import { UpdateConsentsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-consents.swagger';
 import { UpdateDateOfBirthSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-date-of-birth.swagger';
@@ -73,6 +81,7 @@ import {
     VerifyUserPhoneSwaggerDecorator,
 } from '@app/infrastructure/common/decorators/swagger/user/verify-user.swagger';
 import { UpdateUserPhoneDto } from '@app/infrastructure/dto';
+import { BulkUsersDto } from '@app/infrastructure/dto/user/bulk-users.dto';
 import { ChangePasswordDto } from '@app/infrastructure/dto/user/change-password.dto';
 import { ConfirmVerificationDto } from '@app/infrastructure/dto/user/confirm-verification.dto';
 import { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
@@ -80,6 +89,7 @@ import { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-us
 import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
 import {
     AddRoleResponse,
+    BulkOperationResponse,
     ConfirmVerificationCodeResponse,
     CreateUserResponse,
     GetPaginatedUsersResponse,
@@ -1085,6 +1095,140 @@ export class UserController implements IUserController {
         // Возвращаем только id, так как все статусные поля были удалены из модели
         return {
             id: updatedUser.id,
+        };
+    }
+
+    // ===== BULK OPERATIONS =====
+
+    /**
+     * Массовая активация пользователей (только для администраторов)
+     * Активирует несколько пользователей одновременно (до 100)
+     */
+    @BulkActivateUsersSwaggerDecorator()
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Post('bulk/activate')
+    @HttpCode(HttpStatus.OK)
+    async bulkActivateUsers(
+        @Body(validationPipe) dto: BulkUsersDto,
+    ): Promise<BulkOperationResponse> {
+        const affectedCount = await this.userService.bulkActivateUsers(
+            dto.userIds,
+        );
+
+        return {
+            affectedCount,
+            message: `Успешно активировано ${affectedCount} пользователей`,
+        };
+    }
+
+    /**
+     * Массовая деактивация пользователей (только для администраторов)
+     * Деактивирует несколько пользователей одновременно (до 100)
+     */
+    @BulkDeactivateUsersSwaggerDecorator()
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Post('bulk/deactivate')
+    @HttpCode(HttpStatus.OK)
+    async bulkDeactivateUsers(
+        @Body(validationPipe) dto: BulkUsersDto,
+    ): Promise<BulkOperationResponse> {
+        const affectedCount = await this.userService.bulkDeactivateUsers(
+            dto.userIds,
+        );
+
+        return {
+            affectedCount,
+            message: `Успешно деактивировано ${affectedCount} пользователей`,
+        };
+    }
+
+    /**
+     * Массовая блокировка пользователей (только для администраторов)
+     * Блокирует несколько пользователей одновременно (до 100)
+     */
+    @BulkBlockUsersSwaggerDecorator()
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Post('bulk/block')
+    @HttpCode(HttpStatus.OK)
+    async bulkBlockUsers(
+        @Body(validationPipe) dto: BulkUsersDto,
+    ): Promise<BulkOperationResponse> {
+        const affectedCount = await this.userService.bulkBlockUsers(
+            dto.userIds,
+        );
+
+        return {
+            affectedCount,
+            message: `Успешно заблокировано ${affectedCount} пользователей`,
+        };
+    }
+
+    /**
+     * Массовая разблокировка пользователей (только для администраторов)
+     * Разблокирует несколько пользователей одновременно (до 100)
+     */
+    @BulkUnblockUsersSwaggerDecorator()
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Post('bulk/unblock')
+    @HttpCode(HttpStatus.OK)
+    async bulkUnblockUsers(
+        @Body(validationPipe) dto: BulkUsersDto,
+    ): Promise<BulkOperationResponse> {
+        const affectedCount = await this.userService.bulkUnblockUsers(
+            dto.userIds,
+        );
+
+        return {
+            affectedCount,
+            message: `Успешно разблокировано ${affectedCount} пользователей`,
+        };
+    }
+
+    /**
+     * Массовое удаление пользователей (только для администраторов)
+     * Выполняет soft delete для нескольких пользователей одновременно (до 100)
+     */
+    @BulkDeleteUsersSwaggerDecorator()
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Delete('bulk/delete')
+    @HttpCode(HttpStatus.OK)
+    async bulkDeleteUsers(
+        @Body(validationPipe) dto: BulkUsersDto,
+    ): Promise<BulkOperationResponse> {
+        const affectedCount = await this.userService.bulkDeleteUsers(
+            dto.userIds,
+        );
+
+        return {
+            affectedCount,
+            message: `Успешно удалено ${affectedCount} пользователей`,
+        };
+    }
+
+    /**
+     * Массовая верификация пользователей (только для администраторов)
+     * Верифицирует несколько пользователей одновременно (до 100)
+     */
+    @BulkVerifyUsersSwaggerDecorator()
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Post('bulk/verify')
+    @HttpCode(HttpStatus.OK)
+    async bulkVerifyUsers(
+        @Body(validationPipe) dto: BulkUsersDto,
+    ): Promise<BulkOperationResponse> {
+        const affectedCount = await this.userService.bulkVerifyUsers(
+            dto.userIds,
+        );
+
+        return {
+            affectedCount,
+            message: `Успешно верифицировано ${affectedCount} пользователей`,
         };
     }
 

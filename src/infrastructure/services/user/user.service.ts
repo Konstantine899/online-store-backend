@@ -670,26 +670,15 @@ export class UserService implements IUserService {
                 );
             }
 
-            // Обновляем статусные флаги С УЧЁТОМ TENANT
+            // ⚠️ ВАЖНО: все статусные поля (isPremium, isVipCustomer, isBetaTester) удалены из UserModel
+            // Endpoint оставлен для обратной совместимости, но не выполняет реальных обновлений
             const user = await this.userRepository.updateUserStatus(
                 userId,
                 dto,
                 tenantId,
             );
 
-            // Логирование изменений статуса Beta Tester
-            if (dto.isBetaTester !== undefined) {
-                this.logger.info(
-                    {
-                        userId,
-                        adminTenantId: tenantId,
-                        isBetaTester: dto.isBetaTester,
-                    },
-                    `Обновлён статус Beta Tester для пользователя ${userId}`,
-                );
-            }
-
-            // Инвалидируем кэш пользователя
+            // Инвалидируем кэш пользователя (на всякий случай)
             this.invalidateUserCache(userId);
 
             return user;
@@ -1075,7 +1064,6 @@ export class UserService implements IUserService {
         }
     }
 
-
     // ==================== МЕТОДЫ ФИЛЬТРАЦИИ ====================
 
     /**
@@ -1182,9 +1170,7 @@ export class UserService implements IUserService {
         limit: number,
     ): Promise<GetPaginatedUsersResponse> {
         if (!searchTerm || searchTerm.trim().length === 0) {
-            throw new BadRequestException(
-                'Строка поиска не может быть пустой',
-            );
+            throw new BadRequestException('Строка поиска не может быть пустой');
         }
 
         if (searchTerm.trim().length < 2) {
@@ -1220,9 +1206,7 @@ export class UserService implements IUserService {
      * @param phonePrefix - префикс номера телефона
      * @returns список пользователей (до 20)
      */
-    public async searchUsersByPhone(
-        phonePrefix: string,
-    ): Promise<UserModel[]> {
+    public async searchUsersByPhone(phonePrefix: string): Promise<UserModel[]> {
         if (!phonePrefix || phonePrefix.trim().length === 0) {
             throw new BadRequestException(
                 'Префикс телефона не может быть пустым',
@@ -1278,9 +1262,7 @@ export class UserService implements IUserService {
         limit: number,
     ): Promise<GetPaginatedUsersResponse> {
         if (!query || query.trim().length === 0) {
-            throw new BadRequestException(
-                'Строка поиска не может быть пустой',
-            );
+            throw new BadRequestException('Строка поиска не может быть пустой');
         }
 
         if (query.trim().length < 3) {
@@ -1334,5 +1316,184 @@ export class UserService implements IUserService {
         totalUsers: number;
     }> {
         return this.userRepository.getUserActivityStats();
+    }
+
+    // ==================== BULK ОПЕРАЦИИ ====================
+
+    /**
+     * Массовая активация пользователей
+     * @param userIds - массив ID пользователей для активации
+     * @returns количество обновлённых пользователей
+     */
+    public async bulkActivateUsers(userIds: number[]): Promise<number> {
+        try {
+            const affectedCount =
+                await this.userRepository.bulkActivateUsers(userIds);
+
+            // Инвалидируем кэш для всех затронутых пользователей
+            for (const userId of userIds) {
+                this.invalidateUserCache(userId);
+            }
+
+            this.logger.info(
+                { userIds, affectedCount },
+                `Массовая активация ${affectedCount} пользователей`,
+            );
+
+            return affectedCount;
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'массовая активация пользователей',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Массовая деактивация пользователей
+     * @param userIds - массив ID пользователей для деактивации
+     * @returns количество обновлённых пользователей
+     */
+    public async bulkDeactivateUsers(userIds: number[]): Promise<number> {
+        try {
+            const affectedCount =
+                await this.userRepository.bulkDeactivateUsers(userIds);
+
+            // Инвалидируем кэш для всех затронутых пользователей
+            for (const userId of userIds) {
+                this.invalidateUserCache(userId);
+            }
+
+            this.logger.info(
+                { userIds, affectedCount },
+                `Массовая деактивация ${affectedCount} пользователей`,
+            );
+
+            return affectedCount;
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'массовая деактивация пользователей',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Массовая блокировка пользователей
+     * @param userIds - массив ID пользователей для блокировки
+     * @returns количество обновлённых пользователей
+     */
+    public async bulkBlockUsers(userIds: number[]): Promise<number> {
+        try {
+            const affectedCount =
+                await this.userRepository.bulkBlockUsers(userIds);
+
+            // Инвалидируем кэш для всех затронутых пользователей
+            for (const userId of userIds) {
+                this.invalidateUserCache(userId);
+            }
+
+            this.logger.info(
+                { userIds, affectedCount },
+                `Массовая блокировка ${affectedCount} пользователей`,
+            );
+
+            return affectedCount;
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'массовая блокировка пользователей',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Массовая разблокировка пользователей
+     * @param userIds - массив ID пользователей для разблокировки
+     * @returns количество обновлённых пользователей
+     */
+    public async bulkUnblockUsers(userIds: number[]): Promise<number> {
+        try {
+            const affectedCount =
+                await this.userRepository.bulkUnblockUsers(userIds);
+
+            // Инвалидируем кэш для всех затронутых пользователей
+            for (const userId of userIds) {
+                this.invalidateUserCache(userId);
+            }
+
+            this.logger.info(
+                { userIds, affectedCount },
+                `Массовая разблокировка ${affectedCount} пользователей`,
+            );
+
+            return affectedCount;
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'массовая разблокировка пользователей',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Массовое soft delete пользователей
+     * @param userIds - массив ID пользователей для удаления
+     * @returns количество обновлённых пользователей
+     */
+    public async bulkDeleteUsers(userIds: number[]): Promise<number> {
+        try {
+            const affectedCount =
+                await this.userRepository.bulkDeleteUsers(userIds);
+
+            // Инвалидируем кэш для всех затронутых пользователей
+            for (const userId of userIds) {
+                this.invalidateUserCache(userId);
+            }
+
+            this.logger.info(
+                { userIds, affectedCount },
+                `Массовое soft delete ${affectedCount} пользователей`,
+            );
+
+            return affectedCount;
+        } catch (error: unknown) {
+            this.handleSequelizeError(error, 'массовое удаление пользователей');
+            throw error;
+        }
+    }
+
+    /**
+     * Массовая верификация пользователей
+     * @param userIds - массив ID пользователей для верификации
+     * @returns количество обновлённых пользователей
+     */
+    public async bulkVerifyUsers(userIds: number[]): Promise<number> {
+        try {
+            const affectedCount =
+                await this.userRepository.bulkVerifyUsers(userIds);
+
+            // Инвалидируем кэш для всех затронутых пользователей
+            for (const userId of userIds) {
+                this.invalidateUserCache(userId);
+            }
+
+            this.logger.info(
+                { userIds, affectedCount },
+                `Массовая верификация ${affectedCount} пользователей`,
+            );
+
+            return affectedCount;
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'массовая верификация пользователей',
+            );
+            throw error;
+        }
     }
 }

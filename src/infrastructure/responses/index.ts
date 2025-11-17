@@ -64,6 +64,7 @@ export {
     UpdateUserAddressResponse,
 } from './user-address/user-address.response';
 export { AddRoleResponse } from './user/add-role.response';
+export { BulkOperationResponse } from './user/bulk-operation.response';
 export { ConfirmVerificationCodeResponse } from './user/confirm-verification-code.response';
 export { CreateUserResponse } from './user/create-user.response';
 export { GetListUsersResponse } from './user/get-list-users.response';

@@ -454,205 +454,10 @@ describe('User Admin Integration Tests', () => {
     });
 
     // ===== USER STATUS MANAGEMENT =====
-    // ⚠️ ПРИМЕЧАНИЕ: поля isPremium и isVipCustomer удалены из DTO (отсутствуют в UserModel)
-    describe('PATCH /user/:id/status - User Status Management', () => {
-        let adminToken: string;
-        let userToken: string;
-        let targetUserId: number;
-
-        beforeAll(async () => {
-            const sequelize = app.get(Sequelize);
-            const [admin, user, targetUser] = await Promise.all([
-                TestDataFactory.createUserWithRole(app, 'ADMIN'),
-                TestDataFactory.createUserWithRole(app, 'USER'),
-                TestDataFactory.createUserInDB(sequelize),
-            ]);
-            adminToken = admin.token;
-            userToken = user.token;
-            targetUserId = targetUser.id;
-        });
-
-        it('200: admin can enable beta tester flag', async () => {
-            const response = await request(app.getHttpServer())
-                .patch(`/online-store/user/${targetUserId}/status`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    isBetaTester: true,
-                })
-                .expect(200);
-
-            expect(response.body).toHaveProperty('id', targetUserId);
-            expect(response.body).toHaveProperty('isBetaTester', true);
-        });
-
-        it('200: admin can disable beta tester flag', async () => {
-            const response = await request(app.getHttpServer())
-                .patch(`/online-store/user/${targetUserId}/status`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    isBetaTester: false,
-                })
-                .expect(200);
-
-            expect(response.body).toHaveProperty('id', targetUserId);
-            expect(response.body).toHaveProperty('isBetaTester', false);
-        });
-
-        it('403: regular user cannot update status flags', async () => {
-            await request(app.getHttpServer())
-                .patch(`/online-store/user/${targetUserId}/status`)
-                .set('Authorization', `Bearer ${userToken}`)
-                .send({
-                    isBetaTester: true,
-                })
-                .expect(403);
-        });
-
-        it('401: requires authentication', async () => {
-            await request(app.getHttpServer())
-                .patch(`/online-store/user/${targetUserId}/status`)
-                .send({
-                    isBetaTester: true,
-                })
-                .expect(401);
-        });
-
-        it('404: user not found', async () => {
-            await request(app.getHttpServer())
-                .patch('/online-store/user/999999/status')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    isBetaTester: true,
-                })
-                .expect(404);
-        });
-
-        it('400: invalid data type (non-boolean)', async () => {
-            await request(app.getHttpServer())
-                .patch(`/online-store/user/${targetUserId}/status`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    isBetaTester: 'invalid',
-                })
-                .expect(400);
-        });
-
-        it('200: handles empty body gracefully', async () => {
-            const response = await request(app.getHttpServer())
-                .patch(`/online-store/user/${targetUserId}/status`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({})
-                .expect(200);
-
-            // Проверяем, что пользователь возвращается с текущими значениями
-            expect(response.body).toHaveProperty('id', targetUserId);
-            expect(response.body).toHaveProperty('isBetaTester');
-        });
-
-        it('400: invalid userId format', async () => {
-            await request(app.getHttpServer())
-                .patch('/online-store/user/invalid/status')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    isBetaTester: true,
-                })
-                .expect(400);
-        });
-
-        it('200: different admin roles can update status', async () => {
-            const { token: superAdminToken } =
-                await TestDataFactory.createUserWithRole(app, 'SUPER_ADMIN');
-            const { token: platformAdminToken } =
-                await TestDataFactory.createUserWithRole(app, 'PLATFORM_ADMIN');
-
-            // SUPER_ADMIN
-            await request(app.getHttpServer())
-                .patch(`/online-store/user/${targetUserId}/status`)
-                .set('Authorization', `Bearer ${superAdminToken}`)
-                .send({ isBetaTester: true })
-                .expect(200);
-
-            // PLATFORM_ADMIN
-            await request(app.getHttpServer())
-                .patch(`/online-store/user/${targetUserId}/status`)
-                .set('Authorization', `Bearer ${platformAdminToken}`)
-                .send({ isBetaTester: false })
-                .expect(200);
-        });
-
-        // ===== Multi-tenant Isolation Tests =====
-        // TODO: TENANT-TEST-001 - Требуется обновление TestDataFactory для поддержки tenantId
-        //
-        // Сценарии для реализации:
-        //
-        // 1. 404: Admin from tenant 1 cannot update user from tenant 2
-        // it('404: admin from tenant A cannot update user from tenant B', async () => {
-        //     const tenant1Admin = await TestDataFactory.createUserWithRole(app, 'ADMIN', { tenantId: 1 });
-        //     const tenant2User = await TestDataFactory.createUserInDB(sequelize, { tenantId: 2 });
-        //
-        //     await request(app.getHttpServer())
-        //         .patch(`/online-store/user/${tenant2User.id}/status`)
-        //         .set('Authorization', `Bearer ${tenant1Admin.token}`)
-        //         .send({ isBetaTester: true })
-        //         .expect(404)
-        //         .expect((res) => {
-        //             expect(res.body.message).toContain('не принадлежит вашему tenant');
-        //         });
-        // });
-        //
-        // 2. 200: Admin can update user from same tenant
-        // it('200: admin can update user from same tenant', async () => {
-        //     const tenant1Admin = await TestDataFactory.createUserWithRole(app, 'ADMIN', { tenantId: 1 });
-        //     const tenant1User = await TestDataFactory.createUserInDB(sequelize, { tenantId: 1 });
-        //
-        //     await request(app.getHttpServer())
-        //         .patch(`/online-store/user/${tenant1User.id}/status`)
-        //         .set('Authorization', `Bearer ${tenant1Admin.token}`)
-        //         .send({ isBetaTester: true })
-        //         .expect(200)
-        //         .expect((res) => {
-        //             expect(res.body.id).toBe(tenant1User.id);
-        //             expect(res.body.isBetaTester).toBe(true);
-        //         });
-        // });
-        //
-        // 3. 404: SUPER_ADMIN from one tenant cannot bypass tenant isolation
-        // it('404: SUPER_ADMIN respects tenant isolation', async () => {
-        //     const tenant1SuperAdmin = await TestDataFactory.createUserWithRole(app, 'SUPER_ADMIN', { tenantId: 1 });
-        //     const tenant2User = await TestDataFactory.createUserInDB(sequelize, { tenantId: 2 });
-        //
-        //     await request(app.getHttpServer())
-        //         .patch(`/online-store/user/${tenant2User.id}/status`)
-        //         .set('Authorization', `Bearer ${tenant1SuperAdmin.token}`)
-        //         .send({ isBetaTester: true })
-        //         .expect(404);
-        // });
-        //
-        // 4. Audit log: Cross-tenant attempts are logged
-        // it('audit: cross-tenant attempt is logged', async () => {
-        //     const tenant1Admin = await TestDataFactory.createUserWithRole(app, 'ADMIN', { tenantId: 1 });
-        //     const tenant2User = await TestDataFactory.createUserInDB(sequelize, { tenantId: 2 });
-        //     const logSpy = jest.spyOn(console, 'warn');
-        //
-        //     await request(app.getHttpServer())
-        //         .patch(`/online-store/user/${tenant2User.id}/status`)
-        //         .set('Authorization', `Bearer ${tenant1Admin.token}`)
-        //         .send({ isBetaTester: true })
-        //         .expect(404);
-        //
-        //     expect(logSpy).toHaveBeenCalledWith(
-        //         expect.objectContaining({
-        //             message: expect.stringContaining('другого tenant'),
-        //             adminTenantId: 1,
-        //             targetUserId: tenant2User.id,
-        //         })
-        //     );
-        // });
-        //
-        // Priority: Medium
-        // Blocked by: TestDataFactory tenant support
-        // Estimated: 4 hours
-    });
+    // ⚠️ DEPRECATED: Endpoint /user/:id/status больше не используется
+    // Поля isPremium, isVipCustomer, isBetaTester удалены из БД миграцией 20251015135614-drop-is-beta-tester-saas-002.js
+    // Endpoint оставлен только для обратной совместимости (возвращает только id пользователя)
+    // Тесты удалены, так как функциональность deprecated
 
     // ===== USER FILTERING ENDPOINT =====
     describe('GET /user/list (filtering)', () => {
@@ -1289,6 +1094,213 @@ describe('User Admin Integration Tests', () => {
             expect(response.body.activeInLast30Days).toBeLessThanOrEqual(
                 response.body.totalUsers,
             );
+        });
+    });
+
+    // ===== BULK OPERATIONS =====
+    describe('POST /user/bulk/* - Bulk User Operations', () => {
+        let adminToken: string;
+        let userToken: string;
+        let testUserIds: number[];
+
+        beforeAll(async () => {
+            const sequelize = app.get(Sequelize);
+            const [admin, user] = await Promise.all([
+                TestDataFactory.createUserWithRole(app, 'ADMIN'),
+                TestDataFactory.createUserWithRole(app, 'USER'),
+            ]);
+            adminToken = admin.token;
+            userToken = user.token;
+
+            // Создаём 5 тестовых пользователей для bulk операций
+            const testUsers = await Promise.all([
+                TestDataFactory.createUserInDB(sequelize, {
+                    email: TestDataFactory.uniqueEmail(),
+                    firstName: 'BulkTest1',
+                }),
+                TestDataFactory.createUserInDB(sequelize, {
+                    email: TestDataFactory.uniqueEmail(),
+                    firstName: 'BulkTest2',
+                }),
+                TestDataFactory.createUserInDB(sequelize, {
+                    email: TestDataFactory.uniqueEmail(),
+                    firstName: 'BulkTest3',
+                }),
+                TestDataFactory.createUserInDB(sequelize, {
+                    email: TestDataFactory.uniqueEmail(),
+                    firstName: 'BulkTest4',
+                }),
+                TestDataFactory.createUserInDB(sequelize, {
+                    email: TestDataFactory.uniqueEmail(),
+                    firstName: 'BulkTest5',
+                }),
+            ]);
+
+            testUserIds = testUsers.map((u) => u.id);
+        });
+
+        // 1. Bulk Activate
+        describe('POST /user/bulk/activate', () => {
+            it('200: admin can bulk activate users', async () => {
+                const response = await request(app.getHttpServer())
+                    .post('/online-store/user/bulk/activate')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({ userIds: [testUserIds[0], testUserIds[1]] })
+                    .expect(200);
+
+                expect(response.body).toHaveProperty('affectedCount');
+                expect(response.body.affectedCount).toBeGreaterThanOrEqual(1);
+                expect(response.body).toHaveProperty('message');
+                expect(response.body.message).toContain('активировано');
+            });
+
+            it('403: regular user cannot bulk activate', async () => {
+                await request(app.getHttpServer())
+                    .post('/online-store/user/bulk/activate')
+                    .set('Authorization', `Bearer ${userToken}`)
+                    .send({ userIds: [testUserIds[0]] })
+                    .expect(403);
+            });
+
+            it('400: empty array validation', async () => {
+                await request(app.getHttpServer())
+                    .post('/online-store/user/bulk/activate')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({ userIds: [] })
+                    .expect(400);
+            });
+
+            it('400: exceeds maximum limit (101 users)', async () => {
+                const tooManyIds = Array.from({ length: 101 }, (_, i) => i + 1);
+                await request(app.getHttpServer())
+                    .post('/online-store/user/bulk/activate')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({ userIds: tooManyIds })
+                    .expect(400);
+            });
+        });
+
+        // 2. Bulk Deactivate
+        describe('POST /user/bulk/deactivate', () => {
+            it('200: admin can bulk deactivate users', async () => {
+                const response = await request(app.getHttpServer())
+                    .post('/online-store/user/bulk/deactivate')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({ userIds: [testUserIds[1], testUserIds[2]] })
+                    .expect(200);
+
+                expect(response.body).toHaveProperty('affectedCount');
+                expect(response.body.affectedCount).toBeGreaterThanOrEqual(1);
+                expect(response.body.message).toContain('деактивировано');
+            });
+
+            it('403: regular user cannot bulk deactivate', async () => {
+                await request(app.getHttpServer())
+                    .post('/online-store/user/bulk/deactivate')
+                    .set('Authorization', `Bearer ${userToken}`)
+                    .send({ userIds: [testUserIds[0]] })
+                    .expect(403);
+            });
+        });
+
+        // 3. Bulk Block
+        describe('POST /user/bulk/block', () => {
+            it('200: admin can bulk block users', async () => {
+                const response = await request(app.getHttpServer())
+                    .post('/online-store/user/bulk/block')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({ userIds: [testUserIds[2], testUserIds[3]] })
+                    .expect(200);
+
+                expect(response.body).toHaveProperty('affectedCount');
+                expect(response.body.affectedCount).toBeGreaterThanOrEqual(1);
+                expect(response.body.message).toContain('заблокировано');
+            });
+
+            it('403: regular user cannot bulk block', async () => {
+                await request(app.getHttpServer())
+                    .post('/online-store/user/bulk/block')
+                    .set('Authorization', `Bearer ${userToken}`)
+                    .send({ userIds: [testUserIds[0]] })
+                    .expect(403);
+            });
+        });
+
+        // 4. Bulk Unblock
+        describe('POST /user/bulk/unblock', () => {
+            it('200: admin can bulk unblock users', async () => {
+                const response = await request(app.getHttpServer())
+                    .post('/online-store/user/bulk/unblock')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({ userIds: [testUserIds[2], testUserIds[3]] })
+                    .expect(200);
+
+                expect(response.body).toHaveProperty('affectedCount');
+                expect(response.body).toHaveProperty('message');
+                expect(response.body.message).toContain('разблокировано');
+            });
+
+            it('403: regular user cannot bulk unblock', async () => {
+                await request(app.getHttpServer())
+                    .post('/online-store/user/bulk/unblock')
+                    .set('Authorization', `Bearer ${userToken}`)
+                    .send({ userIds: [testUserIds[0]] })
+                    .expect(403);
+            });
+        });
+
+        // 5. Bulk Verify
+        describe('POST /user/bulk/verify', () => {
+            it('200: admin can bulk verify users', async () => {
+                const response = await request(app.getHttpServer())
+                    .post('/online-store/user/bulk/verify')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({ userIds: [testUserIds[3], testUserIds[4]] })
+                    .expect(200);
+
+                expect(response.body).toHaveProperty('affectedCount');
+                expect(response.body.affectedCount).toBeGreaterThanOrEqual(1);
+                expect(response.body.message).toContain('верифицировано');
+            });
+
+            it('403: regular user cannot bulk verify', async () => {
+                await request(app.getHttpServer())
+                    .post('/online-store/user/bulk/verify')
+                    .set('Authorization', `Bearer ${userToken}`)
+                    .send({ userIds: [testUserIds[0]] })
+                    .expect(403);
+            });
+        });
+
+        // 6. Bulk Delete
+        describe('DELETE /user/bulk/delete', () => {
+            it('200: admin can bulk delete users (soft delete)', async () => {
+                const response = await request(app.getHttpServer())
+                    .delete('/online-store/user/bulk/delete')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({ userIds: [testUserIds[4]] })
+                    .expect(200);
+
+                expect(response.body).toHaveProperty('affectedCount');
+                expect(response.body).toHaveProperty('message');
+                expect(response.body.message).toContain('удалено');
+            });
+
+            it('403: regular user cannot bulk delete', async () => {
+                await request(app.getHttpServer())
+                    .delete('/online-store/user/bulk/delete')
+                    .set('Authorization', `Bearer ${userToken}`)
+                    .send({ userIds: [testUserIds[0]] })
+                    .expect(403);
+            });
+
+            it('400: invalid userIds type (not array)', async () => {
+                await request(app.getHttpServer())
+                    .delete('/online-store/user/bulk/delete')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({ userIds: 'not-an-array' })
+                    .expect(400);
+            });
         });
     });
 });

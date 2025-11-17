@@ -49,13 +49,15 @@ const order_item_1 = __importDefault(require("./order-item"));
 const password_reset_token_1 = __importDefault(require("./password-reset-token"));
 const product_1 = __importDefault(require("./product"));
 const product_property_1 = __importDefault(require("./product-property"));
+const promo_code_1 = __importDefault(require("./promo-code"));
 const rating_1 = __importDefault(require("./rating"));
 const refresh_token_1 = __importDefault(require("./refresh-token"));
 const role_1 = __importDefault(require("./role"));
+const tenant_1 = __importDefault(require("./tenant"));
 const user_1 = __importDefault(require("./user"));
 const user_address_1 = __importDefault(require("./user-address"));
 const user_role_1 = __importDefault(require("./user-role"));
-const env = process.env.NODE_ENV || 'development';
+const env = process.env.NODE_ENV ?? 'development';
 const dbConfig = database_1.default[env];
 const db = {};
 let sequelize;
@@ -65,6 +67,7 @@ if (dbConfig.use_env_variable) {
 else {
     sequelize = new sequelize_1.Sequelize(dbConfig.database, dbConfig.username, dbConfig.password, dbConfig);
 }
+db.tenant = (0, tenant_1.default)(sequelize);
 db.user = (0, user_1.default)(sequelize);
 db.role = (0, role_1.default)(sequelize);
 db.category = (0, category_1.default)(sequelize);
@@ -81,6 +84,7 @@ db.refreshToken = (0, refresh_token_1.default)(sequelize);
 db.userAddress = (0, user_address_1.default)(sequelize);
 db.loginHistory = (0, login_history_1.default)(sequelize);
 db.passwordResetToken = (0, password_reset_token_1.default)(sequelize);
+db.promoCode = (0, promo_code_1.default)(sequelize);
 Object.keys(db).forEach((modelName) => {
     if (db[modelName] &&
         typeof db[modelName] === 'function') {

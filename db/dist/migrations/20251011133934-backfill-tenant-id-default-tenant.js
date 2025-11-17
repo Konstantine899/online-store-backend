@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const sequelize_1 = require("sequelize");
 const migration = {
-    async up(queryInterface, Sequelize) {
+    async up(queryInterface) {
         const [tenants] = await queryInterface.sequelize.query(`SELECT id FROM tenants WHERE id = 1`);
         if (tenants.length === 0) {
             await queryInterface.bulkInsert('tenants', [
@@ -22,6 +22,7 @@ const migration = {
             console.log('Default tenant (id=1) already exists - skipping');
         }
         const tables = [
+            'user',
             'product',
             'category',
             'brand',
@@ -36,22 +37,24 @@ const migration = {
             console.log(`Backfilled ${table}: ${results} records updated`);
         }
         for (const table of tables) {
-            await queryInterface.changeColumn(table, 'tenant_id', {
-                type: Sequelize.INTEGER,
-                allowNull: false,
-                references: {
-                    model: 'tenants',
-                    key: 'id',
-                },
-                onUpdate: 'CASCADE',
-                onDelete: 'CASCADE',
-            });
-            console.log(`${table}.tenant_id is now NOT NULL`);
+            try {
+                await queryInterface.sequelize.query(`ALTER TABLE \`${table}\` DROP FOREIGN KEY \`${table}_ibfk_1\``);
+            }
+            catch {
+            }
+            await queryInterface.sequelize.query(`ALTER TABLE \`${table}\`
+                 MODIFY COLUMN \`tenant_id\` INT NOT NULL DEFAULT 1`);
+            await queryInterface.sequelize.query(`ALTER TABLE \`${table}\`
+                 ADD CONSTRAINT \`fk_${table}_tenant_id\`
+                 FOREIGN KEY (\`tenant_id\`) REFERENCES \`tenants\` (\`id\`)
+                 ON DELETE CASCADE ON UPDATE CASCADE`);
+            console.log(`${table}.tenant_id is now NOT NULL with DEFAULT 1`);
         }
         console.log('Backfill complete: all records assigned to default tenant');
     },
     async down(queryInterface) {
         const tables = [
+            'user',
             'product',
             'category',
             'brand',

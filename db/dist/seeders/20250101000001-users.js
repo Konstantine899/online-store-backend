@@ -33,8 +33,8 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-const sequelize_1 = require("sequelize");
 const bcrypt = __importStar(require("bcrypt"));
+const sequelize_1 = require("sequelize");
 const seeder = {
     async up(queryInterface) {
         await queryInterface.bulkDelete('user_role', {}, {});
@@ -46,11 +46,8 @@ const seeder = {
             is_marketing_consent: false,
             is_cookie_consent: false,
             is_profile_completed: false,
-            is_vip_customer: false,
-            is_beta_tester: false,
             is_blocked: false,
             is_verified: false,
-            is_premium: false,
             is_email_verified: false,
             is_phone_verified: false,
             is_terms_accepted: false,
@@ -59,10 +56,6 @@ const seeder = {
             is_two_factor_enabled: false,
             is_deleted: false,
             is_suspended: false,
-            is_affiliate: false,
-            is_employee: false,
-            is_high_value: false,
-            is_wholesale: false,
             preferred_language: 'ru',
             timezone: 'Europe/Moscow',
             notification_preferences: '{}',
@@ -161,7 +154,6 @@ const seeder = {
                 phone: '+79990000008',
                 first_name: 'VIP',
                 last_name: 'Customer',
-                is_vip_customer: true,
                 is_newsletter_subscribed: true,
                 is_verified: true,
                 is_email_verified: true,
@@ -175,7 +167,6 @@ const seeder = {
                 phone: '+79990000009',
                 first_name: 'Wholesale',
                 last_name: 'Buyer',
-                is_wholesale: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,
@@ -200,7 +191,6 @@ const seeder = {
                 phone: '+79990000011',
                 first_name: 'Affiliate',
                 last_name: 'Partner',
-                is_affiliate: true,
                 is_verified: true,
                 is_email_verified: true,
                 is_phone_verified: true,

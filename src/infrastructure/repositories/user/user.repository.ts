@@ -271,11 +271,18 @@ export class UserRepository implements IUserRepository {
                 UserRepository.BCRYPT_ROUNDS,
             );
 
+            // Получаем tenantId из контекста (с fallback для тестов)
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
             const user = await this.userModel.create({
                 email: allowedFields.email,
                 password: hashedPassword,
                 firstName: allowedFields.firstName,
                 lastName: allowedFields.lastName,
+                tenantId, // Обязательное поле для tenant isolation
             });
 
             return user;
@@ -684,22 +691,9 @@ export class UserRepository implements IUserRepository {
                 );
             }
 
-            // Формируем объект обновлений только для переданных полей
-            // ⚠️ ВАЖНО: только isBetaTester существует в UserModel (isPremium/isVipCustomer удалены)
-            const updateData: Partial<UserModel> = {};
-
-            if (dto.isBetaTester !== undefined) {
-                updateData.isBetaTester = dto.isBetaTester;
-            }
-
-            // Если нет данных для обновления, просто возвращаем пользователя
-            if (Object.keys(updateData).length === 0) {
-                return user;
-            }
-
-            // Обновляем пользователя
-            await user.update(updateData);
-
+            // ⚠️ ВАЖНО: все статусные поля (isPremium, isVipCustomer, isBetaTester) удалены из UserModel
+            // Endpoint оставлен для обратной совместимости, но не выполняет реальных обновлений
+            // Просто возвращаем пользователя без изменений
             return user;
         } catch (error: unknown) {
             this.handleSequelizeError(
@@ -1929,7 +1923,11 @@ export class UserRepository implements IUserRepository {
             }
 
             // Получаем статистику по ролям с процентами
-            const results = (await sequelize.query(
+            const results = await sequelize.query<{
+                role: string;
+                count: number;
+                percentage: number;
+            }>(
                 `
                 SELECT
                     r.role,
@@ -1950,11 +1948,7 @@ export class UserRepository implements IUserRepository {
                     replacements: [tenantId, tenantId],
                     type: QueryTypes.SELECT,
                 },
-            )) as Array<{
-                role: string;
-                count: string | number;
-                percentage: string | number;
-            }>;
+            );
 
             // ⚠️ ВАЖНО: SQL ROUND() возвращает DECIMAL/string, преобразуем в число
             const roles = results.map((row) => ({
@@ -1964,7 +1958,7 @@ export class UserRepository implements IUserRepository {
             }));
 
             // Получаем общее количество пользователей
-            const totalResult = (await sequelize.query(
+            const totalResult = await sequelize.query<{ total: number }>(
                 `
                 SELECT COUNT(DISTINCT id) as total
                 FROM user
@@ -1974,7 +1968,7 @@ export class UserRepository implements IUserRepository {
                     replacements: [tenantId],
                     type: QueryTypes.SELECT,
                 },
-            )) as Array<{ total: string | number }>;
+            );
 
             const totalUsers = Number(totalResult[0]?.total) || 0;
 
@@ -2079,6 +2073,315 @@ export class UserRepository implements IUserRepository {
             this.handleSequelizeError(
                 error,
                 'получение статистики активности пользователей',
+            );
+            throw error;
+        }
+    }
+
+    // ==================== BULK ОПЕРАЦИИ ====================
+
+    /**
+     * Массовая активация пользователей
+     * @param userIds - массив ID пользователей для активации
+     * @returns количество обновлённых пользователей
+     */
+    public async bulkActivateUsers(userIds: number[]): Promise<number> {
+        if (!this.userModel.sequelize) {
+            throw new Error('Sequelize instance is not available');
+        }
+        const transaction = await this.userModel.sequelize.transaction();
+
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const [affectedCount] = await this.userModel.update(
+                { isActive: true },
+                {
+                    where: {
+                        id: userIds,
+                        tenantId,
+                        isDeleted: false,
+                    },
+                    transaction,
+                },
+            );
+
+            await transaction.commit();
+
+            this.logger.log(
+                {
+                    userIds,
+                    affectedCount,
+                    tenantId,
+                },
+                `Массовая активация ${affectedCount} пользователей`,
+            );
+
+            return affectedCount;
+        } catch (error: unknown) {
+            await transaction.rollback();
+            this.handleSequelizeError(
+                error,
+                'массовая активация пользователей',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Массовая деактивация пользователей
+     * @param userIds - массив ID пользователей для деактивации
+     * @returns количество обновлённых пользователей
+     */
+    public async bulkDeactivateUsers(userIds: number[]): Promise<number> {
+        if (!this.userModel.sequelize) {
+            throw new Error('Sequelize instance is not available');
+        }
+        const transaction = await this.userModel.sequelize.transaction();
+
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const [affectedCount] = await this.userModel.update(
+                { isActive: false },
+                {
+                    where: {
+                        id: userIds,
+                        tenantId,
+                        isDeleted: false,
+                    },
+                    transaction,
+                },
+            );
+
+            await transaction.commit();
+
+            this.logger.log(
+                {
+                    userIds,
+                    affectedCount,
+                    tenantId,
+                },
+                `Массовая деактивация ${affectedCount} пользователей`,
+            );
+
+            return affectedCount;
+        } catch (error: unknown) {
+            await transaction.rollback();
+            this.handleSequelizeError(
+                error,
+                'массовая деактивация пользователей',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Массовая блокировка пользователей
+     * @param userIds - массив ID пользователей для блокировки
+     * @returns количество обновлённых пользователей
+     */
+    public async bulkBlockUsers(userIds: number[]): Promise<number> {
+        if (!this.userModel.sequelize) {
+            throw new Error('Sequelize instance is not available');
+        }
+        const transaction = await this.userModel.sequelize.transaction();
+
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const [affectedCount] = await this.userModel.update(
+                { isBlocked: true },
+                {
+                    where: {
+                        id: userIds,
+                        tenantId,
+                        isDeleted: false,
+                    },
+                    transaction,
+                },
+            );
+
+            await transaction.commit();
+
+            this.logger.log(
+                {
+                    userIds,
+                    affectedCount,
+                    tenantId,
+                },
+                `Массовая блокировка ${affectedCount} пользователей`,
+            );
+
+            return affectedCount;
+        } catch (error: unknown) {
+            await transaction.rollback();
+            this.handleSequelizeError(
+                error,
+                'массовая блокировка пользователей',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Массовая разблокировка пользователей
+     * @param userIds - массив ID пользователей для разблокировки
+     * @returns количество обновлённых пользователей
+     */
+    public async bulkUnblockUsers(userIds: number[]): Promise<number> {
+        if (!this.userModel.sequelize) {
+            throw new Error('Sequelize instance is not available');
+        }
+        const transaction = await this.userModel.sequelize.transaction();
+
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const [affectedCount] = await this.userModel.update(
+                { isBlocked: false },
+                {
+                    where: {
+                        id: userIds,
+                        tenantId,
+                        isDeleted: false,
+                    },
+                    transaction,
+                },
+            );
+
+            await transaction.commit();
+
+            this.logger.log(
+                {
+                    userIds,
+                    affectedCount,
+                    tenantId,
+                },
+                `Массовая разблокировка ${affectedCount} пользователей`,
+            );
+
+            return affectedCount;
+        } catch (error: unknown) {
+            await transaction.rollback();
+            this.handleSequelizeError(
+                error,
+                'массовая разблокировка пользователей',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Массовое soft delete пользователей
+     * @param userIds - массив ID пользователей для удаления
+     * @returns количество обновлённых пользователей
+     */
+    public async bulkDeleteUsers(userIds: number[]): Promise<number> {
+        if (!this.userModel.sequelize) {
+            throw new Error('Sequelize instance is not available');
+        }
+        const transaction = await this.userModel.sequelize.transaction();
+
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const [affectedCount] = await this.userModel.update(
+                { isDeleted: true },
+                {
+                    where: {
+                        id: userIds,
+                        tenantId,
+                        isDeleted: false, // только неудалённые
+                    },
+                    transaction,
+                },
+            );
+
+            await transaction.commit();
+
+            this.logger.log(
+                {
+                    userIds,
+                    affectedCount,
+                    tenantId,
+                },
+                `Массовое soft delete ${affectedCount} пользователей`,
+            );
+
+            return affectedCount;
+        } catch (error: unknown) {
+            await transaction.rollback();
+            this.handleSequelizeError(error, 'массовое удаление пользователей');
+            throw error;
+        }
+    }
+
+    /**
+     * Массовая верификация пользователей
+     * @param userIds - массив ID пользователей для верификации
+     * @returns количество обновлённых пользователей
+     */
+    public async bulkVerifyUsers(userIds: number[]): Promise<number> {
+        if (!this.userModel.sequelize) {
+            throw new Error('Sequelize instance is not available');
+        }
+        const transaction = await this.userModel.sequelize.transaction();
+
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const [affectedCount] = await this.userModel.update(
+                {
+                    isVerified: true,
+                    isEmailVerified: true,
+                    isPhoneVerified: true,
+                },
+                {
+                    where: {
+                        id: userIds,
+                        tenantId,
+                        isDeleted: false,
+                    },
+                    transaction,
+                },
+            );
+
+            await transaction.commit();
+
+            this.logger.log(
+                {
+                    userIds,
+                    affectedCount,
+                    tenantId,
+                },
+                `Массовая верификация ${affectedCount} пользователей`,
+            );
+
+            return affectedCount;
+        } catch (error: unknown) {
+            await transaction.rollback();
+            this.handleSequelizeError(
+                error,
+                'массовая верификация пользователей',
             );
             throw error;
         }

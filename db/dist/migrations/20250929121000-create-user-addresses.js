@@ -69,6 +69,9 @@ const up = async (queryInterface) => {
     await queryInterface.addIndex('user_address', ['user_id', 'is_default'], {
         name: 'idx_user_address_user_default',
     });
+    await queryInterface.addIndex('user_address', ['user_id', 'is_default', 'created_at'], {
+        name: 'idx_user_address_user_default_created_at',
+    });
 };
 exports.up = up;
 const down = async (queryInterface) => {

@@ -126,8 +126,8 @@ async function up(queryInterface) {
     });
     await queryInterface.addColumn('user', 'notification_preferences', {
         type: sequelize_1.DataTypes.JSON,
-        allowNull: false,
-        defaultValue: {},
+        allowNull: true,
+        defaultValue: null,
     });
     await queryInterface.addColumn('user', 'theme_preference', {
         type: sequelize_1.DataTypes.STRING(20),
@@ -142,7 +142,7 @@ async function up(queryInterface) {
     await queryInterface.addColumn('user', 'translations', {
         type: sequelize_1.DataTypes.JSON,
         allowNull: true,
-        defaultValue: {},
+        defaultValue: null,
     });
     await queryInterface.addColumn('user', 'email_verified_at', {
         type: sequelize_1.DataTypes.DATE,

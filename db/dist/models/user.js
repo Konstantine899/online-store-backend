@@ -5,6 +5,12 @@ const sequelize_1 = require("sequelize");
 const consts_1 = require("../consts");
 class User extends sequelize_1.Model {
     static associate(models) {
+        this.belongsTo(models.tenant, {
+            as: 'tenant',
+            foreignKey: 'tenant_id',
+            onDelete: 'CASCADE',
+            onUpdate: 'CASCADE',
+        });
         this.hasMany(models.refreshToken, {
             as: consts_1.TABLE_NAMES.REFRESH_TOKEN,
             onDelete: 'CASCADE',
@@ -34,6 +40,16 @@ function defineUser(sequelize) {
             autoIncrement: true,
             allowNull: false,
         },
+        tenant_id: {
+            type: sequelize_1.DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'tenants',
+                key: 'id',
+            },
+            onUpdate: 'CASCADE',
+            onDelete: 'CASCADE',
+        },
         email: {
             type: sequelize_1.DataTypes.STRING(255),
             allowNull: false,
@@ -56,6 +72,10 @@ function defineUser(sequelize) {
         },
         last_name: {
             type: sequelize_1.DataTypes.STRING(100),
+            allowNull: true,
+        },
+        date_of_birth: {
+            type: sequelize_1.DataTypes.DATEONLY,
             allowNull: true,
         },
         created_at: {

@@ -17,6 +17,7 @@ export { CreateRoleDto } from './role/create-role.dto';
 export { CreateUserAddressDto } from './user-address/create-user-address.dto';
 export { UpdateUserAddressDto } from './user-address/update-user-address.dto';
 export { AddRoleDto } from './user/add-role.dto';
+export { BulkUsersDto } from './user/bulk-users.dto';
 export { ChangePasswordDto } from './user/change-password.dto';
 export { CreateUserDto } from './user/create-user.dto';
 export { RemoveRoleDto } from './user/remove-role.dto';

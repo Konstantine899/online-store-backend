@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = {
     up: async (queryInterface) => {
+        await queryInterface.bulkDelete('category', { id: [1, 2] }, {});
         await queryInterface.bulkInsert('category', [
             {
                 id: 1,

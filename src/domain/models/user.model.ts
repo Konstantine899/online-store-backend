@@ -16,7 +16,7 @@ import { UserRoleModel } from './user-role.model';
 interface IUserCreationAttributes {
     email: string;
     password: string;
-    tenantId?: number;
+    tenantId: number; // Обязательное поле для tenant isolation
     phone?: string;
     firstName?: string;
     lastName?: string;

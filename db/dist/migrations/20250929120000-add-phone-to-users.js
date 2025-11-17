@@ -11,7 +11,8 @@ const up = async (queryInterface) => {
             comment: 'E.164 phone',
         }, { transaction });
         await queryInterface.addIndex('user', ['phone'], {
-            name: 'idx_user_phone',
+            name: 'user_phone_unique',
+            unique: true,
             using: 'BTREE',
             transaction,
         });
@@ -26,7 +27,7 @@ exports.up = up;
 const down = async (queryInterface) => {
     const transaction = await queryInterface.sequelize.transaction();
     try {
-        await queryInterface.removeIndex('user', 'idx_user_phone', {
+        await queryInterface.removeIndex('user', 'user_phone_unique', {
             transaction,
         });
         await queryInterface.removeColumn('user', 'phone', { transaction });
