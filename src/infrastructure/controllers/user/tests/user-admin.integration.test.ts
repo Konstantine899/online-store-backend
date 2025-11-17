@@ -968,4 +968,266 @@ describe('User Admin Integration Tests', () => {
                 .expect(403);
         });
     });
+
+    // ===== USER SEARCH ENDPOINTS =====
+    describe('GET /user/search (search endpoints)', () => {
+        it('200: GET /user/search?q=Иван finds users by name', async () => {
+            const sequelize = app.get(Sequelize);
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            // Создаём пользователей с разными именами
+            const userIvan = await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                firstName: 'Иван',
+                lastName: 'Петров',
+                tenantId: 1,
+            } as never);
+
+            const userIvanova = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    email: TestDataFactory.uniqueEmail(),
+                    firstName: 'Мария',
+                    lastName: 'Иванова',
+                    tenantId: 1,
+                } as never,
+            );
+
+            // Создаём пользователя без "Иван" в имени (не должен попасть)
+            await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                firstName: 'Петр',
+                lastName: 'Сидоров',
+                tenantId: 1,
+            } as never);
+
+            const response = await request(app.getHttpServer())
+                .get('/online-store/user/search?q=Иван&page=1&limit=10')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            expect(response.body).toHaveProperty('data');
+            expect(response.body).toHaveProperty('meta');
+            expect(Array.isArray(response.body.data)).toBe(true);
+
+            const userIds = response.body.data.map((u: { id: number }) => u.id);
+
+            // Проверяем, что найдены пользователи с "Иван" в имени/фамилии
+            expect(userIds).toContain(userIvan.id);
+            expect(userIds).toContain(userIvanova.id);
+
+            // Проверяем, что все найденные пользователи содержат "Иван"
+            response.body.data.forEach(
+                (user: { firstName: string; lastName: string }) => {
+                    const fullName = `${user.firstName} ${user.lastName}`;
+                    expect(fullName.toLowerCase()).toContain('иван');
+                },
+            );
+        });
+
+        it('200: GET /user/search/phone?phone=+7999 autocomplete by phone prefix', async () => {
+            const sequelize = app.get(Sequelize);
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            // Создаём пользователей с телефонами начинающимися с +7999
+            const user1 = await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                phone: '+79991234567',
+                tenantId: 1,
+            } as never);
+
+            const user2 = await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                phone: '+79998887766',
+                tenantId: 1,
+            } as never);
+
+            // Создаём пользователя с другим префиксом (не должен попасть)
+            await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                phone: '+79881234567',
+                tenantId: 1,
+            } as never);
+
+            const response = await request(app.getHttpServer())
+                .get('/online-store/user/search/phone?phone=+7999')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            expect(Array.isArray(response.body)).toBe(true);
+
+            const userIds = response.body.map((u: { id: number }) => u.id);
+
+            // Проверяем, что найдены пользователи с префиксом +7999
+            expect(userIds).toContain(user1.id);
+            expect(userIds).toContain(user2.id);
+
+            // Проверяем, что все телефоны начинаются с +7999
+            response.body.forEach((user: { phone: string }) => {
+                expect(user.phone).toMatch(/^\+7999/);
+            });
+        });
+
+        it('200: GET /user/batch?ids=1,2,3 returns users by IDs', async () => {
+            const sequelize = app.get(Sequelize);
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            // Создаём 3 пользователей
+            const user1 = await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                tenantId: 1,
+            });
+            const user2 = await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                tenantId: 1,
+            });
+            const user3 = await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                tenantId: 1,
+            });
+
+            const idsString = `${user1.id},${user2.id},${user3.id}`;
+
+            const response = await request(app.getHttpServer())
+                .get(`/online-store/user/batch?ids=${idsString}`)
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            expect(Array.isArray(response.body)).toBe(true);
+            expect(response.body).toHaveLength(3);
+
+            const returnedIds = response.body.map((u: { id: number }) => u.id);
+            expect(returnedIds).toContain(user1.id);
+            expect(returnedIds).toContain(user2.id);
+            expect(returnedIds).toContain(user3.id);
+        });
+
+        it('🔒 SECURITY: search endpoints respect tenant isolation', async () => {
+            const sequelize = app.get(Sequelize);
+
+            // Создаём администратора в tenant 1
+            const tenant1Admin = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    role: 'ADMIN',
+                    tenantId: 1,
+                },
+            );
+
+            // Создаём пользователя в tenant 1
+            const tenant1User = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    email: TestDataFactory.uniqueEmail(),
+                    firstName: 'TenantOneUser',
+                    phone: '+79991111111',
+                    tenantId: 1,
+                },
+            );
+
+            // Создаём пользователя в tenant 2 (НЕ должен попасть в результаты)
+            const tenant2User = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    email: TestDataFactory.uniqueEmail(),
+                    firstName: 'TenantTwoUser',
+                    phone: '+79992222222',
+                    tenantId: 2,
+                },
+            );
+
+            // Логинимся как админ tenant 1
+            const loginRes = await request(app.getHttpServer())
+                .post('/online-store/auth/login')
+                .send({
+                    email: tenant1Admin.email,
+                    password: tenant1Admin.password,
+                })
+                .expect(200);
+
+            const token = loginRes.body.accessToken;
+
+            // 1. Проверяем tenant isolation для /user/search
+            const searchRes = await request(app.getHttpServer())
+                .get('/online-store/user/search?q=Tenant')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            const searchIds = searchRes.body.data.map(
+                (u: { id: number }) => u.id,
+            );
+            expect(searchIds).toContain(tenant1User.id);
+            expect(searchIds).not.toContain(tenant2User.id);
+
+            // 2. Проверяем tenant isolation для /user/search/phone
+            const phoneRes = await request(app.getHttpServer())
+                .get('/online-store/user/search/phone?phone=+7999')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            const phoneIds = phoneRes.body.map((u: { id: number }) => u.id);
+            expect(phoneIds).toContain(tenant1User.id);
+            expect(phoneIds).not.toContain(tenant2User.id);
+
+            // 3. Проверяем tenant isolation для /user/batch
+            // Пытаемся запросить пользователей из обоих tenants
+            const batchRes = await request(app.getHttpServer())
+                .get(
+                    `/online-store/user/batch?ids=${tenant1User.id},${tenant2User.id}`,
+                )
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            const batchIds = batchRes.body.map((u: { id: number }) => u.id);
+            // ✅ Должен вернуться ТОЛЬКО tenant1User (tenant isolation)
+            expect(batchIds).toContain(tenant1User.id);
+            expect(batchIds).not.toContain(tenant2User.id);
+            expect(batchRes.body).toHaveLength(1); // Только 1 пользователь из tenant 1
+        });
+
+        it('400: GET /user/search?q= returns error for empty query', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            await request(app.getHttpServer())
+                .get('/online-store/user/search?q=')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(400);
+        });
+
+        it('400: GET /user/search?q=ab returns error for short query', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            await request(app.getHttpServer())
+                .get('/online-store/user/search?q=ab')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(400);
+        });
+
+        it('400: GET /user/batch?ids= returns error for empty IDs', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            await request(app.getHttpServer())
+                .get('/online-store/user/batch?ids=')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(400);
+        });
+    });
 });

@@ -1194,4 +1194,133 @@ export class UserService implements IUserService {
             limit,
         );
     }
+
+    // ==================== МЕТОДЫ ПОИСКА ====================
+
+    /**
+     * Поиск пользователей по имени (firstName или lastName)
+     * @param searchTerm - строка поиска
+     * @param page - номер страницы
+     * @param limit - количество записей на странице
+     * @returns список найденных пользователей с пагинацией
+     */
+    public async searchUsersByName(
+        searchTerm: string,
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        if (!searchTerm || searchTerm.trim().length === 0) {
+            throw new BadRequestException(
+                'Строка поиска не может быть пустой',
+            );
+        }
+
+        if (searchTerm.trim().length < 2) {
+            throw new BadRequestException(
+                'Строка поиска должна содержать минимум 2 символа',
+            );
+        }
+
+        return this.userRepository.searchUsersByName(
+            searchTerm.trim(),
+            page,
+            limit,
+        );
+    }
+
+    /**
+     * Найти пользователя по точному номеру телефона
+     * @param phone - полный номер телефона
+     * @returns пользователь или null
+     */
+    public async findUserByPhone(phone: string): Promise<UserModel | null> {
+        if (!phone || phone.trim().length === 0) {
+            throw new BadRequestException(
+                'Номер телефона не может быть пустым',
+            );
+        }
+
+        return this.userRepository.findUserByPhone(phone.trim());
+    }
+
+    /**
+     * Поиск пользователей по префиксу телефона (для автодополнения)
+     * @param phonePrefix - префикс номера телефона
+     * @returns список пользователей (до 20)
+     */
+    public async searchUsersByPhone(
+        phonePrefix: string,
+    ): Promise<UserModel[]> {
+        if (!phonePrefix || phonePrefix.trim().length === 0) {
+            throw new BadRequestException(
+                'Префикс телефона не может быть пустым',
+            );
+        }
+
+        if (phonePrefix.trim().length < 3) {
+            throw new BadRequestException(
+                'Префикс телефона должен содержать минимум 3 символа',
+            );
+        }
+
+        return this.userRepository.searchUsersByPhone(phonePrefix.trim());
+    }
+
+    /**
+     * Найти пользователей по массиву ID (batch запрос)
+     * @param ids - массив ID пользователей
+     * @returns список найденных пользователей (только из текущего tenant)
+     */
+    public async findUsersByIds(ids: number[]): Promise<UserModel[]> {
+        if (!ids || ids.length === 0) {
+            throw new BadRequestException('Массив ID не может быть пустым');
+        }
+
+        if (ids.length > 100) {
+            throw new BadRequestException(
+                'Максимальное количество ID в одном запросе: 100',
+            );
+        }
+
+        // Проверяем, что все элементы - положительные числа
+        const invalidIds = ids.filter((id) => !Number.isInteger(id) || id <= 0);
+        if (invalidIds.length > 0) {
+            throw new BadRequestException(
+                `Некорректные ID: ${invalidIds.join(', ')}`,
+            );
+        }
+
+        return this.userRepository.findUsersByIds(ids);
+    }
+
+    /**
+     * Полнотекстовый поиск пользователей по email, имени, фамилии и телефону
+     * @param query - строка поиска
+     * @param page - номер страницы
+     * @param limit - количество записей на странице
+     * @returns список найденных пользователей с пагинацией
+     */
+    public async fullTextSearchUsers(
+        query: string,
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        if (!query || query.trim().length === 0) {
+            throw new BadRequestException(
+                'Строка поиска не может быть пустой',
+            );
+        }
+
+        if (query.trim().length < 3) {
+            throw new BadRequestException(
+                'Строка поиска должна содержать минимум 3 символа',
+            );
+        }
+
+        return this.userRepository.fullTextSearchUsers(
+            query.trim(),
+            page,
+            limit,
+        );
+    }
 }

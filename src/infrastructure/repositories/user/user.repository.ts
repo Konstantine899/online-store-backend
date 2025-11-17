@@ -37,7 +37,7 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import { hash } from 'bcrypt';
 import { createHash } from 'crypto';
-import { QueryTypes } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 
 // Типы для статистики пользователей
 export interface UserStats {
@@ -1643,6 +1643,236 @@ export class UserRepository implements IUserRepository {
                 error,
                 'получение списка подписчиков на рассылку',
             );
+            throw error;
+        }
+    }
+
+    // ==================== МЕТОДЫ ПОИСКА ====================
+
+    /**
+     * Поиск пользователей по имени (firstName или lastName) с пагинацией
+     * @param searchTerm - строка поиска (ищет в first_name и last_name)
+     * @param page - номер страницы
+     * @param limit - количество записей на странице
+     * @returns список найденных пользователей с метаданными пагинации
+     * @example searchUsersByName('Иван', 1, 10) // найдёт "Иван Петров", "Петров Иван"
+     */
+    public async searchUsersByName(
+        searchTerm: string,
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const offset = (page - 1) * limit;
+            const searchPattern = `%${searchTerm}%`;
+
+            const result = await this.userModel.findAndCountAll({
+                where: {
+                    tenantId,
+                    isDeleted: false,
+                    [Op.or]: [
+                        { firstName: { [Op.like]: searchPattern } },
+                        { lastName: { [Op.like]: searchPattern } },
+                    ],
+                },
+                attributes: { exclude: ['password'] },
+                limit,
+                offset,
+                order: [
+                    ['firstName', 'ASC'],
+                    ['lastName', 'ASC'],
+                ],
+            });
+
+            const totalCount = result.count;
+            const lastPage = Math.ceil(totalCount / limit);
+            const nextPage = page < lastPage ? page + 1 : 0;
+            const previousPage = page > 1 ? page - 1 : 0;
+
+            const meta: MetaData = {
+                totalCount,
+                lastPage,
+                currentPage: page,
+                nextPage,
+                previousPage,
+                limit,
+            };
+
+            return { data: result.rows, meta };
+        } catch (error: unknown) {
+            this.handleSequelizeError(error, 'поиск пользователей по имени');
+            throw error;
+        }
+    }
+
+    /**
+     * Найти пользователя по точному номеру телефона
+     * @param phone - полный номер телефона (например: "+79991234567")
+     * @returns пользователь или null если не найден
+     */
+    public async findUserByPhone(phone: string): Promise<UserModel | null> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const user = await this.userModel.findOne({
+                where: {
+                    tenantId,
+                    phone,
+                    isDeleted: false,
+                },
+                attributes: { exclude: ['password'] },
+            });
+
+            return user;
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'поиск пользователя по телефону',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Поиск пользователей по префиксу телефона (для автодополнения)
+     * @param phonePrefix - префикс номера телефона (например: "+7999", "8999")
+     * @returns список пользователей, номера которых начинаются с префикса
+     * @example searchUsersByPhone('+7999') // найдёт "+79991234567", "+79998887766"
+     */
+    public async searchUsersByPhone(
+        phonePrefix: string,
+    ): Promise<UserModel[]> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const users = await this.userModel.findAll({
+                where: {
+                    tenantId,
+                    phone: { [Op.like]: `${phonePrefix}%` },
+                    isDeleted: false,
+                },
+                attributes: { exclude: ['password'] },
+                limit: 20, // Ограничение для автодополнения
+                order: [['phone', 'ASC']],
+            });
+
+            return users;
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'поиск пользователей по префиксу телефона',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Найти пользователей по массиву ID (batch запрос)
+     * @param ids - массив ID пользователей
+     * @returns список найденных пользователей (только из текущего tenant)
+     */
+    public async findUsersByIds(ids: number[]): Promise<UserModel[]> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            if (ids.length === 0) {
+                return [];
+            }
+
+            const users = await this.userModel.findAll({
+                where: {
+                    tenantId, // 🔒 Критично: tenant isolation
+                    id: { [Op.in]: ids },
+                    isDeleted: false,
+                },
+                attributes: { exclude: ['password'] },
+                order: [['id', 'ASC']],
+            });
+
+            return users;
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'поиск пользователей по массиву ID',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Полнотекстовый поиск пользователей по email, имени, фамилии и телефону
+     * @param query - строка поиска
+     * @param page - номер страницы
+     * @param limit - количество записей на странице
+     * @returns список найденных пользователей с метаданными пагинации
+     * @example fullTextSearchUsers('ivan@mail.ru', 1, 10) // найдёт по email
+     * @example fullTextSearchUsers('Иван Петров', 1, 10) // найдёт по имени/фамилии
+     */
+    public async fullTextSearchUsers(
+        query: string,
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const offset = (page - 1) * limit;
+            const searchPattern = `%${query}%`;
+
+            const result = await this.userModel.findAndCountAll({
+                where: {
+                    tenantId,
+                    isDeleted: false,
+                    [Op.or]: [
+                        { email: { [Op.like]: searchPattern } },
+                        { firstName: { [Op.like]: searchPattern } },
+                        { lastName: { [Op.like]: searchPattern } },
+                        { phone: { [Op.like]: searchPattern } },
+                    ],
+                },
+                attributes: { exclude: ['password'] },
+                limit,
+                offset,
+                order: [
+                    ['firstName', 'ASC'],
+                    ['lastName', 'ASC'],
+                ],
+            });
+
+            const totalCount = result.count;
+            const lastPage = Math.ceil(totalCount / limit);
+            const nextPage = page < lastPage ? page + 1 : 0;
+            const previousPage = page > 1 ? page - 1 : 0;
+
+            const meta: MetaData = {
+                totalCount,
+                lastPage,
+                currentPage: page,
+                nextPage,
+                previousPage,
+                limit,
+            };
+
+            return { data: result.rows, meta };
+        } catch (error: unknown) {
+            this.handleSequelizeError(error, 'полнотекстовый поиск пользователей');
             throw error;
         }
     }

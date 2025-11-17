@@ -253,6 +253,178 @@ export class UserController implements IUserController {
         );
     }
 
+    /**
+     * Полнотекстовый поиск пользователей
+     * GET /user/search?q=Иван Петров&page=1&limit=10
+     * Ищет по email, имени, фамилии и телефону
+     */
+    @ApiOperation({
+        summary: 'Полнотекстовый поиск пользователей',
+        description:
+            'Ищет пользователей по email, имени, фамилии и телефону. Минимальная длина запроса: 3 символа',
+    })
+    @ApiQuery({
+        name: 'q',
+        required: true,
+        description: 'Строка поиска (минимум 3 символа)',
+        example: 'Иван Петров',
+    })
+    @ApiQuery({
+        name: 'page',
+        required: false,
+        description: 'Номер страницы (по умолчанию: 1)',
+        example: 1,
+    })
+    @ApiQuery({
+        name: 'limit',
+        required: false,
+        description: 'Количество записей на странице (по умолчанию: 10)',
+        example: 10,
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Список найденных пользователей',
+        type: GetPaginatedUsersResponse,
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Некорректные параметры (пустая строка или < 3 символов)',
+    })
+    @ApiResponse({ status: 401, description: 'Не аутентифицирован' })
+    @ApiResponse({
+        status: 403,
+        description: 'Доступ запрещен (требуется роль администратора)',
+    })
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Get('/search')
+    public async searchUsers(
+        @Query('q') query: string,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
+        @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit?: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        return this.userService.fullTextSearchUsers(
+            query,
+            page ?? 1,
+            limit ?? 10,
+        );
+    }
+
+    /**
+     * Поиск пользователей по префиксу телефона (автодополнение)
+     * GET /user/search/phone?phone=+7999
+     * Возвращает до 20 пользователей
+     */
+    @ApiOperation({
+        summary: 'Поиск пользователей по префиксу телефона',
+        description:
+            'Ищет пользователей по началу номера телефона (автодополнение). Возвращает до 20 результатов. Минимальная длина: 3 символа',
+    })
+    @ApiQuery({
+        name: 'phone',
+        required: true,
+        description: 'Префикс номера телефона (минимум 3 символа)',
+        example: '+7999',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Список найденных пользователей (до 20)',
+        schema: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    id: { type: 'number', example: 1 },
+                    email: { type: 'string', example: 'user@example.com' },
+                    phone: { type: 'string', example: '+79991234567' },
+                    firstName: { type: 'string', example: 'Иван' },
+                    lastName: { type: 'string', example: 'Петров' },
+                },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Некорректный префикс (пустой или < 3 символов)',
+    })
+    @ApiResponse({ status: 401, description: 'Не аутентифицирован' })
+    @ApiResponse({
+        status: 403,
+        description: 'Доступ запрещен (требуется роль администратора)',
+    })
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Get('/search/phone')
+    public async searchUsersByPhone(
+        @Query('phone') phonePrefix: string,
+    ): Promise<UserModel[]> {
+        return this.userService.searchUsersByPhone(phonePrefix);
+    }
+
+    /**
+     * Получить пользователей по массиву ID (batch запрос)
+     * GET /user/batch?ids=1,2,3,4,5
+     * Максимум 100 ID за раз
+     */
+    @ApiOperation({
+        summary: 'Получить пользователей по массиву ID (batch)',
+        description:
+            'Возвращает список пользователей по массиву ID. Максимум 100 ID за один запрос. Возвращает только пользователей из текущего tenant',
+    })
+    @ApiQuery({
+        name: 'ids',
+        required: true,
+        description:
+            'Массив ID пользователей через запятую (максимум 100)',
+        example: '1,2,3,4,5',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Список найденных пользователей',
+        schema: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    id: { type: 'number', example: 1 },
+                    email: { type: 'string', example: 'user@example.com' },
+                    phone: { type: 'string', example: '+79991234567' },
+                    firstName: { type: 'string', example: 'Иван' },
+                    lastName: { type: 'string', example: 'Петров' },
+                },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Некорректные ID (пустой массив, > 100, или не целые числа)',
+    })
+    @ApiResponse({ status: 401, description: 'Не аутентифицирован' })
+    @ApiResponse({
+        status: 403,
+        description: 'Доступ запрещен (требуется роль администратора)',
+    })
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Get('/batch')
+    public async getUsersBatch(
+        @Query('ids') idsString: string,
+    ): Promise<UserModel[]> {
+        // Парсим строку "1,2,3" в массив чисел
+        const ids = idsString
+            .split(',')
+            .map((id) => parseInt(id.trim(), 10))
+            .filter((id) => !isNaN(id));
+
+        return this.userService.findUsersByIds(ids);
+    }
+
     @UpdateUserSwaggerDecorator()
     @HttpCode(200)
     @Roles(...ADMIN_ROLES)
