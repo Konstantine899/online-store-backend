@@ -1373,4 +1373,277 @@ export class UserRepository implements IUserRepository {
             throw error;
         }
     }
+
+    // ==================== МЕТОДЫ ФИЛЬТРАЦИИ ====================
+
+    /**
+     * Получить список активных пользователей с пагинацией
+     * @param page - номер страницы
+     * @param limit - количество записей на странице
+     * @returns список активных пользователей с метаданными пагинации
+     */
+    public async findActiveUsersPaginated(
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const offset = (page - 1) * limit;
+
+            const result = await this.userModel.findAndCountAll({
+                where: {
+                    tenantId,
+                    isActive: true,
+                    isBlocked: false,
+                    isDeleted: false,
+                },
+                attributes: { exclude: ['password'] },
+                limit,
+                offset,
+                order: [['created_at', 'DESC']],
+            });
+
+            const totalCount = result.count;
+            const lastPage = Math.ceil(totalCount / limit);
+            const nextPage = page < lastPage ? page + 1 : 0;
+            const previousPage = page > 1 ? page - 1 : 0;
+
+            const meta: MetaData = {
+                totalCount,
+                lastPage,
+                currentPage: page,
+                nextPage,
+                previousPage,
+                limit,
+            };
+
+            return { data: result.rows, meta };
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'получение списка активных пользователей',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Получить список заблокированных пользователей с пагинацией
+     * @param page - номер страницы
+     * @param limit - количество записей на странице
+     * @returns список заблокированных пользователей с метаданными пагинации
+     */
+    public async findBlockedUsersPaginated(
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const offset = (page - 1) * limit;
+
+            const result = await this.userModel.findAndCountAll({
+                where: {
+                    tenantId,
+                    isBlocked: true,
+                    isDeleted: false,
+                },
+                attributes: { exclude: ['password'] },
+                limit,
+                offset,
+                order: [['created_at', 'DESC']],
+            });
+
+            const totalCount = result.count;
+            const lastPage = Math.ceil(totalCount / limit);
+            const nextPage = page < lastPage ? page + 1 : 0;
+            const previousPage = page > 1 ? page - 1 : 0;
+
+            const meta: MetaData = {
+                totalCount,
+                lastPage,
+                currentPage: page,
+                nextPage,
+                previousPage,
+                limit,
+            };
+
+            return { data: result.rows, meta };
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'получение списка заблокированных пользователей',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Получить список верифицированных пользователей с пагинацией
+     * @param page - номер страницы
+     * @param limit - количество записей на странице
+     * @returns список верифицированных пользователей с метаданными пагинации
+     */
+    public async findVerifiedUsersPaginated(
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const offset = (page - 1) * limit;
+
+            const result = await this.userModel.findAndCountAll({
+                where: {
+                    tenantId,
+                    isVerified: true,
+                    isDeleted: false,
+                },
+                attributes: { exclude: ['password'] },
+                limit,
+                offset,
+                order: [['created_at', 'DESC']],
+            });
+
+            const totalCount = result.count;
+            const lastPage = Math.ceil(totalCount / limit);
+            const nextPage = page < lastPage ? page + 1 : 0;
+            const previousPage = page > 1 ? page - 1 : 0;
+
+            const meta: MetaData = {
+                totalCount,
+                lastPage,
+                currentPage: page,
+                nextPage,
+                previousPage,
+                limit,
+            };
+
+            return { data: result.rows, meta };
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'получение списка верифицированных пользователей',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Получить список неверифицированных пользователей с пагинацией
+     * @param page - номер страницы
+     * @param limit - количество записей на странице
+     * @returns список неверифицированных пользователей с метаданными пагинации
+     */
+    public async findUnverifiedUsersPaginated(
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const offset = (page - 1) * limit;
+
+            const result = await this.userModel.findAndCountAll({
+                where: {
+                    tenantId,
+                    isVerified: false,
+                    isDeleted: false,
+                },
+                attributes: { exclude: ['password'] },
+                limit,
+                offset,
+                order: [['created_at', 'DESC']],
+            });
+
+            const totalCount = result.count;
+            const lastPage = Math.ceil(totalCount / limit);
+            const nextPage = page < lastPage ? page + 1 : 0;
+            const previousPage = page > 1 ? page - 1 : 0;
+
+            const meta: MetaData = {
+                totalCount,
+                lastPage,
+                currentPage: page,
+                nextPage,
+                previousPage,
+                limit,
+            };
+
+            return { data: result.rows, meta };
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'получение списка неверифицированных пользователей',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Получить список подписчиков на рассылку с пагинацией
+     * @param page - номер страницы
+     * @param limit - количество записей на странице
+     * @returns список подписчиков с метаданными пагинации
+     */
+    public async findNewsletterSubscribersPaginated(
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const offset = (page - 1) * limit;
+
+            const result = await this.userModel.findAndCountAll({
+                where: {
+                    tenantId,
+                    isNewsletterSubscribed: true,
+                    isDeleted: false,
+                },
+                attributes: { exclude: ['password'] },
+                limit,
+                offset,
+                order: [['created_at', 'DESC']],
+            });
+
+            const totalCount = result.count;
+            const lastPage = Math.ceil(totalCount / limit);
+            const nextPage = page < lastPage ? page + 1 : 0;
+            const previousPage = page > 1 ? page - 1 : 0;
+
+            const meta: MetaData = {
+                totalCount,
+                lastPage,
+                currentPage: page,
+                nextPage,
+                previousPage,
+                limit,
+            };
+
+            return { data: result.rows, meta };
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'получение списка подписчиков на рассылку',
+            );
+            throw error;
+        }
+    }
 }

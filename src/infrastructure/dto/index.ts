@@ -28,3 +28,4 @@ export { UpdateUserPreferencesDto } from './user/update-user-preferences.dto';
 export { UpdateUserStatusDto } from './user/update-user-status.dto';
 export { UpdateUserProfileDto } from './user/update-user-profile.dto';
 export { UpdateUserDto } from './user/update-user.dto';
+export { UserFiltersDto, UserFilterType } from './user/user-filters.dto';

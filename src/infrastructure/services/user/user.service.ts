@@ -1103,4 +1103,95 @@ export class UserService implements IUserService {
 
         return stats;
     }
+
+    // ==================== МЕТОДЫ ФИЛЬТРАЦИИ ====================
+
+    /**
+     * Универсальный метод для фильтрации пользователей
+     * Роутит запрос на соответствующий метод репозитория в зависимости от filterType
+     * @param filterType - тип фильтра (active, blocked, verified, unverified, newsletter)
+     * @param page - номер страницы
+     * @param limit - количество записей на странице
+     * @returns список пользователей с метаданными пагинации
+     */
+    public async getFilteredUsers(
+        filterType: string | undefined,
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        // Если filterType не указан - возвращаем всех пользователей
+        if (!filterType) {
+            return this.userRepository.findListUsersPaginated(page, limit);
+        }
+
+        switch (filterType) {
+            case 'active':
+                return this.findActiveUsers(page, limit);
+            case 'blocked':
+                return this.findBlockedUsers(page, limit);
+            case 'verified':
+                return this.findVerifiedUsers(page, limit);
+            case 'unverified':
+                return this.findUnverifiedUsers(page, limit);
+            case 'newsletter':
+                return this.findNewsletterSubscribers(page, limit);
+            default:
+                throw new BadRequestException(
+                    `Неизвестный тип фильтра: ${filterType}`,
+                );
+        }
+    }
+
+    /**
+     * Получить список активных пользователей с пагинацией
+     */
+    public async findActiveUsers(
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        return this.userRepository.findActiveUsersPaginated(page, limit);
+    }
+
+    /**
+     * Получить список заблокированных пользователей с пагинацией
+     */
+    public async findBlockedUsers(
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        return this.userRepository.findBlockedUsersPaginated(page, limit);
+    }
+
+    /**
+     * Получить список верифицированных пользователей с пагинацией
+     */
+    public async findVerifiedUsers(
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        return this.userRepository.findVerifiedUsersPaginated(page, limit);
+    }
+
+    /**
+     * Получить список неверифицированных пользователей с пагинацией
+     */
+    public async findUnverifiedUsers(
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        return this.userRepository.findUnverifiedUsersPaginated(page, limit);
+    }
+
+    /**
+     * Получить список подписчиков на рассылку с пагинацией
+     */
+    public async findNewsletterSubscribers(
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        return this.userRepository.findNewsletterSubscribersPaginated(
+            page,
+            limit,
+        );
+    }
 }

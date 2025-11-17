@@ -691,4 +691,251 @@ describe('User Admin Integration Tests', () => {
         // Blocked by: TestDataFactory tenant support
         // Estimated: 4 hours
     });
+
+    // ===== USER FILTERING ENDPOINT =====
+    describe('GET /user/list (filtering)', () => {
+        it('200: GET /user/list?filterType=active returns only active users', async () => {
+            const sequelize = app.get(Sequelize);
+
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            // Создаём 2 активных пользователей
+            const activeUser1 = await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                tenantId: 1,
+                isActive: true,
+                isBlocked: false,
+                isDeleted: false,
+            } as never);
+            const activeUser2 = await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                tenantId: 1,
+                isActive: true,
+                isBlocked: false,
+                isDeleted: false,
+            } as never);
+
+            // Создаём заблокированного пользователя (НЕ должен попасть в результат)
+            await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                tenantId: 1,
+                isActive: false,
+                isBlocked: true,
+                isDeleted: false,
+            } as never);
+
+            const response = await request(app.getHttpServer())
+                .get('/online-store/user/list?filterType=active&page=1&limit=100')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            expect(response.body).toHaveProperty('data');
+            expect(response.body).toHaveProperty('meta');
+            expect(Array.isArray(response.body.data)).toBe(true);
+
+            const userIds = response.body.data.map((u: { id: number }) => u.id);
+
+            // Проверяем, что активные пользователи в списке
+            expect(userIds).toContain(activeUser1.id);
+            expect(userIds).toContain(activeUser2.id);
+
+            // Проверяем, что все пользователи в результате - активные
+            response.body.data.forEach((user: { isActive: boolean; isBlocked: boolean }) => {
+                expect(user.isActive).toBe(true);
+                expect(user.isBlocked).toBe(false);
+            });
+        });
+
+        it('200: GET /user/list?filterType=blocked returns only blocked users', async () => {
+            const sequelize = app.get(Sequelize);
+
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            // Создаём заблокированного пользователя
+            const blockedUser = await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                tenantId: 1,
+                isActive: true,
+                isBlocked: true,
+                isDeleted: false,
+            } as never);
+
+            // Создаём активного пользователя (НЕ должен попасть в результат)
+            await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                tenantId: 1,
+                isActive: true,
+                isBlocked: false,
+                isDeleted: false,
+            } as never);
+
+            const response = await request(app.getHttpServer())
+                .get('/online-store/user/list?filterType=blocked&page=1&limit=100')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            expect(response.body).toHaveProperty('data');
+            expect(response.body).toHaveProperty('meta');
+
+            const userIds = response.body.data.map((u: { id: number }) => u.id);
+            expect(userIds).toContain(blockedUser.id);
+
+            // Все пользователи в результате - заблокированы
+            response.body.data.forEach((user: { isBlocked: boolean }) => {
+                expect(user.isBlocked).toBe(true);
+            });
+        });
+
+        it('200: GET /user/list?filterType=verified returns only verified users', async () => {
+            const sequelize = app.get(Sequelize);
+
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            // Создаём верифицированного пользователя
+            const verifiedUser = await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                tenantId: 1,
+                isVerified: true,
+                isDeleted: false,
+            } as never);
+
+            // Создаём неверифицированного пользователя (НЕ должен попасть в результат)
+            await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                tenantId: 1,
+                isVerified: false,
+                isDeleted: false,
+            } as never);
+
+            const response = await request(app.getHttpServer())
+                .get('/online-store/user/list?filterType=verified&page=1&limit=100')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            expect(response.body).toHaveProperty('data');
+            const userIds = response.body.data.map((u: { id: number }) => u.id);
+            expect(userIds).toContain(verifiedUser.id);
+
+            // Все пользователи в результате - верифицированы
+            response.body.data.forEach((user: { isVerified: boolean }) => {
+                expect(user.isVerified).toBe(true);
+            });
+        });
+
+        it('200: GET /user/list?filterType=unverified returns only unverified users', async () => {
+            const sequelize = app.get(Sequelize);
+
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            // Создаём неверифицированного пользователя
+            const unverifiedUser = await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                tenantId: 1,
+                isVerified: false,
+                isDeleted: false,
+            } as never);
+
+            // Создаём верифицированного пользователя (НЕ должен попасть в результат)
+            await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                tenantId: 1,
+                isVerified: true,
+                isDeleted: false,
+            } as never);
+
+            const response = await request(app.getHttpServer())
+                .get('/online-store/user/list?filterType=unverified&page=1&limit=100')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            expect(response.body).toHaveProperty('data');
+            const userIds = response.body.data.map((u: { id: number }) => u.id);
+            expect(userIds).toContain(unverifiedUser.id);
+
+            // Все пользователи в результате - неверифицированы
+            response.body.data.forEach((user: { isVerified: boolean }) => {
+                expect(user.isVerified).toBe(false);
+            });
+        });
+
+        it('200: GET /user/list?filterType=newsletter returns only newsletter subscribers', async () => {
+            const sequelize = app.get(Sequelize);
+
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            // Создаём подписчика на рассылку
+            const subscribedUser = await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                tenantId: 1,
+                isNewsletterSubscribed: true,
+                isDeleted: false,
+            } as never);
+
+            // Создаём не подписанного пользователя (НЕ должен попасть в результат)
+            await TestDataFactory.createUserInDB(sequelize, {
+                email: TestDataFactory.uniqueEmail(),
+                tenantId: 1,
+                isNewsletterSubscribed: false,
+                isDeleted: false,
+            } as never);
+
+            const response = await request(app.getHttpServer())
+                .get('/online-store/user/list?filterType=newsletter&page=1&limit=100')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            expect(response.body).toHaveProperty('data');
+            const userIds = response.body.data.map((u: { id: number }) => u.id);
+            expect(userIds).toContain(subscribedUser.id);
+
+            // Все пользователи в результате - подписаны на рассылку
+            response.body.data.forEach(
+                (user: { isNewsletterSubscribed: boolean }) => {
+                    expect(user.isNewsletterSubscribed).toBe(true);
+                },
+            );
+        });
+
+        it('400: GET /user/list?filterType=invalid returns error for invalid filter type', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+
+            const response = await request(app.getHttpServer())
+                .get('/online-store/user/list?filterType=invalid')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(400);
+
+            expect(response.body).toHaveProperty('message');
+            expect(response.body.message).toContain('Неизвестный тип фильтра');
+        });
+
+        it('403: regular user cannot access filtered list', async () => {
+            const { token } = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
+            await request(app.getHttpServer())
+                .get('/online-store/user/list?filterType=active')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(403);
+        });
+    });
 });

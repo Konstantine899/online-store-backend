@@ -49,7 +49,13 @@ import {
     BruteforceGuard,
     RoleGuard,
 } from '@app/infrastructure/common/guards';
-import { ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiQuery,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 
 import { UpdateUserFlagsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-flags.swagger';
 import { UpdateUserPreferencesSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-preferences.swagger';
@@ -181,6 +187,70 @@ export class UserController implements IUserController {
         @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
     ): Promise<GetPaginatedUsersResponse> {
         return this.userService.getListUsers(page, limit);
+    }
+
+    /**
+     * Универсальный endpoint для фильтрации пользователей
+     * GET /user/list?filterType=active&page=1&limit=5
+     * Доступен только для администраторов
+     */
+    @ApiOperation({
+        summary: 'Получить список пользователей с фильтрацией',
+        description:
+            'Универсальный endpoint для получения списка пользователей с различными фильтрами (активные, заблокированные, верифицированные и т.д.)',
+    })
+    @ApiQuery({
+        name: 'filterType',
+        required: false,
+        description:
+            'Тип фильтра (active, blocked, verified, unverified, newsletter). Если не указан - возвращаются все пользователи',
+        enum: ['active', 'blocked', 'verified', 'unverified', 'newsletter'],
+    })
+    @ApiQuery({
+        name: 'page',
+        required: false,
+        description: 'Номер страницы (по умолчанию: 1)',
+        example: 1,
+    })
+    @ApiQuery({
+        name: 'limit',
+        required: false,
+        description: 'Количество записей на странице (по умолчанию: 5, максимум: 100)',
+        example: 5,
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Список пользователей успешно получен',
+        type: GetPaginatedUsersResponse,
+    })
+    @ApiResponse({
+        status: 400,
+        description:
+            'Некорректные параметры запроса (неизвестный тип фильтра, неверный page/limit)',
+    })
+    @ApiResponse({
+        status: 401,
+        description: 'Пользователь не аутентифицирован',
+    })
+    @ApiResponse({
+        status: 403,
+        description: 'Доступ запрещен (требуется роль администратора)',
+    })
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Get('/list')
+    public async getFilteredUsers(
+        @Query('filterType') filterType?: string,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
+        @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit?: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        return this.userService.getFilteredUsers(
+            filterType,
+            page ?? 1,
+            limit ?? 5,
+        );
     }
 
     @UpdateUserSwaggerDecorator()
