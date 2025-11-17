@@ -135,7 +135,7 @@ describe('User Admin Integration Tests', () => {
                 .set('Authorization', `Bearer ${token}`)
                 .expect(200);
 
-            const stats = statsRes.body.data;
+            const stats = statsRes.body; // Direct response, не обернут в { data: ... }
 
             // Проверяем, что в статистике ТОЛЬКО пользователи из tenant 1
             // totalUsers >= 3 (tenant1Admin + 2 созданных) + возможно другие пользователи из сидов
@@ -540,20 +540,20 @@ describe('User Admin Integration Tests', () => {
                 {
                     email: TestDataFactory.uniqueEmail(),
                     tenantId: 1,
-                    isActive: true,
-                    isBlocked: true,
-                    isDeleted: false,
-                } as never,
+                },
+            );
+
+            // Обновляем флаг isBlocked через прямой SQL
+            await sequelize.query(
+                `UPDATE user SET is_blocked = 1 WHERE id = ?`,
+                { replacements: [blockedUser.id] },
             );
 
             // Создаём активного пользователя (НЕ должен попасть в результат)
             await TestDataFactory.createUserInDB(sequelize, {
                 email: TestDataFactory.uniqueEmail(),
                 tenantId: 1,
-                isActive: true,
-                isBlocked: false,
-                isDeleted: false,
-            } as never);
+            });
 
             const response = await request(app.getHttpServer())
                 .get(
@@ -588,18 +588,20 @@ describe('User Admin Integration Tests', () => {
                 {
                     email: TestDataFactory.uniqueEmail(),
                     tenantId: 1,
-                    isVerified: true,
-                    isDeleted: false,
-                } as never,
+                },
+            );
+
+            // Обновляем флаг isVerified через прямой SQL
+            await sequelize.query(
+                `UPDATE user SET is_verified = 1 WHERE id = ?`,
+                { replacements: [verifiedUser.id] },
             );
 
             // Создаём неверифицированного пользователя (НЕ должен попасть в результат)
             await TestDataFactory.createUserInDB(sequelize, {
                 email: TestDataFactory.uniqueEmail(),
                 tenantId: 1,
-                isVerified: false,
-                isDeleted: false,
-            } as never);
+            });
 
             const response = await request(app.getHttpServer())
                 .get(
@@ -676,18 +678,20 @@ describe('User Admin Integration Tests', () => {
                 {
                     email: TestDataFactory.uniqueEmail(),
                     tenantId: 1,
-                    isNewsletterSubscribed: true,
-                    isDeleted: false,
-                } as never,
+                },
+            );
+
+            // Обновляем флаг isNewsletterSubscribed через прямой SQL
+            await sequelize.query(
+                `UPDATE user SET is_newsletter_subscribed = 1 WHERE id = ?`,
+                { replacements: [subscribedUser.id] },
             );
 
             // Создаём не подписанного пользователя (НЕ должен попасть в результат)
             await TestDataFactory.createUserInDB(sequelize, {
                 email: TestDataFactory.uniqueEmail(),
                 tenantId: 1,
-                isNewsletterSubscribed: false,
-                isDeleted: false,
-            } as never);
+            });
 
             const response = await request(app.getHttpServer())
                 .get(
@@ -1137,6 +1141,12 @@ describe('User Admin Integration Tests', () => {
             ]);
 
             testUserIds = testUsers.map((u) => u.id);
+
+            // Деактивируем первых двух пользователей для теста bulk activate
+            await sequelize.query(
+                `UPDATE user SET is_active = 0 WHERE id IN (?, ?)`,
+                { replacements: [testUserIds[0], testUserIds[1]] },
+            );
         });
 
         // 1. Bulk Activate

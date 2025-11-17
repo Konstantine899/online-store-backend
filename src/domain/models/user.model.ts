@@ -128,6 +128,7 @@ export class UserModel
         type: DataType.INTEGER,
         allowNull: false,
         defaultValue: 1, // Default tenant для тестов и legacy data
+        field: 'tenant_id', // Явное указание имени колонки в БД
     })
     declare tenantId: number;
 
