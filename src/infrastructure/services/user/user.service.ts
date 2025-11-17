@@ -1496,4 +1496,184 @@ export class UserService implements IUserService {
             throw error;
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // СПЕЦИАЛИЗИРОВАННЫЕ ЗАПРОСЫ
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Поиск неактивных пользователей (без логина N дней)
+     * @param days - количество дней без активности
+     * @param page - номер страницы (по умолчанию 1)
+     * @param limit - размер страницы (по умолчанию 5)
+     * @returns Promise<GetPaginatedUsersResponse>
+     */
+    public async findInactiveUsers(
+        days: number,
+        page: number = 1,
+        limit: number = 5,
+    ): Promise<GetPaginatedUsersResponse> {
+        try {
+            // Валидация параметров
+            if (days <= 0) {
+                throw new BadRequestException(
+                    'Количество дней должно быть больше 0',
+                );
+            }
+
+            if (page < 1) {
+                throw new BadRequestException(
+                    'Номер страницы должен быть больше 0',
+                );
+            }
+
+            if (limit < 1 || limit > 100) {
+                throw new BadRequestException(
+                    'Размер страницы должен быть от 1 до 100',
+                );
+            }
+
+            const result = await this.userRepository.findInactiveUsers(
+                days,
+                page,
+                limit,
+            );
+
+            this.logger.info(
+                {
+                    days,
+                    page,
+                    limit,
+                    totalCount: result.meta.totalCount,
+                },
+                `Поиск неактивных пользователей (${days} дней)`,
+            );
+
+            return result;
+        } catch (error: unknown) {
+            this.handleSequelizeError(error, 'поиск неактивных пользователей');
+            throw error;
+        }
+    }
+
+    /**
+     * Поиск пользователей с неполным профилем
+     * @param page - номер страницы (по умолчанию 1)
+     * @param limit - размер страницы (по умолчанию 5)
+     * @returns Promise<GetPaginatedUsersResponse>
+     */
+    public async findUsersWithIncompleteProfile(
+        page: number = 1,
+        limit: number = 5,
+    ): Promise<GetPaginatedUsersResponse> {
+        try {
+            // Валидация параметров
+            if (page < 1) {
+                throw new BadRequestException(
+                    'Номер страницы должен быть больше 0',
+                );
+            }
+
+            if (limit < 1 || limit > 100) {
+                throw new BadRequestException(
+                    'Размер страницы должен быть от 1 до 100',
+                );
+            }
+
+            const result =
+                await this.userRepository.findUsersWithIncompleteProfile(
+                    page,
+                    limit,
+                );
+
+            this.logger.info(
+                {
+                    page,
+                    limit,
+                    totalCount: result.meta.totalCount,
+                },
+                `Поиск пользователей с неполным профилем`,
+            );
+
+            return result;
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'поиск пользователей с неполным профилем',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Поиск пользователей по диапазону дат
+     * @param field - поле для фильтрации ('createdAt' | 'lastLoginAt')
+     * @param startDate - начальная дата
+     * @param endDate - конечная дата
+     * @param page - номер страницы (по умолчанию 1)
+     * @param limit - размер страницы (по умолчанию 5)
+     * @returns Promise<GetPaginatedUsersResponse>
+     */
+    public async findUsersByDateRange(
+        field: 'createdAt' | 'lastLoginAt',
+        startDate: Date,
+        endDate: Date,
+        page: number = 1,
+        limit: number = 5,
+    ): Promise<GetPaginatedUsersResponse> {
+        try {
+            // Валидация параметров
+            if (!['createdAt', 'lastLoginAt'].includes(field)) {
+                throw new BadRequestException(
+                    'Поле должно быть "createdAt" или "lastLoginAt"',
+                );
+            }
+
+            if (startDate >= endDate) {
+                throw new BadRequestException(
+                    'Начальная дата должна быть меньше конечной',
+                );
+            }
+
+            if (page < 1) {
+                throw new BadRequestException(
+                    'Номер страницы должен быть больше 0',
+                );
+            }
+
+            if (limit < 1 || limit > 100) {
+                throw new BadRequestException(
+                    'Размер страницы должен быть от 1 до 100',
+                );
+            }
+
+            const result = await this.userRepository.findUsersByDateRange(
+                field,
+                startDate,
+                endDate,
+                page,
+                limit,
+            );
+
+            this.logger.info(
+                {
+                    field,
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString(),
+                    page,
+                    limit,
+                    totalCount: result.meta.totalCount,
+                },
+                `Поиск пользователей по диапазону дат (${field})`,
+            );
+
+            return result;
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'поиск пользователей по диапазону дат',
+            );
+            throw error;
+        }
+    }
 }

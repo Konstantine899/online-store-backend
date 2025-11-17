@@ -49,6 +49,11 @@ import {
     BulkVerifyUsersSwaggerDecorator,
 } from '@app/infrastructure/common/decorators/swagger/user/bulk-operations.swagger';
 import { ChangePasswordSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/change-password.swagger';
+import {
+    GetInactiveUsersSwaggerDecorator,
+    GetIncompleteProfilesSwaggerDecorator,
+    GetUsersByDateRangeSwaggerDecorator,
+} from '@app/infrastructure/common/decorators/swagger/user/specialized-queries.swagger';
 import { UpdateConsentsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-consents.swagger';
 import { UpdateDateOfBirthSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-date-of-birth.swagger';
 
@@ -652,6 +657,72 @@ export class UserController implements IUserController {
             return { id: userId };
         }
     }
+
+    // ===== SPECIALIZED QUERIES (moved to top to avoid route conflicts) =====
+
+    /**
+     * Поиск неактивных пользователей (не логинились N дней)
+     * Только для администраторов и staff
+     */
+    @GetInactiveUsersSwaggerDecorator()
+    @Roles(...STAFF_ROLES)
+    @StaffGuards()
+    @Get('/inactive')
+    @HttpCode(HttpStatus.OK)
+    async getInactiveUsers(
+        @Query('days', ParseIntPipe) days: number,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        return this.userService.findInactiveUsers(days, page, limit);
+    }
+
+    /**
+     * Поиск пользователей с неполным профилем
+     * Только для администраторов и staff
+     */
+    @GetIncompleteProfilesSwaggerDecorator()
+    @Roles(...STAFF_ROLES)
+    @StaffGuards()
+    @Get('/incomplete-profiles')
+    @HttpCode(HttpStatus.OK)
+    async getIncompleteProfiles(
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        return this.userService.findUsersWithIncompleteProfile(page, limit);
+    }
+
+    /**
+     * Поиск пользователей по диапазону дат
+     * Только для администраторов и staff
+     */
+    @GetUsersByDateRangeSwaggerDecorator()
+    @Roles(...STAFF_ROLES)
+    @StaffGuards()
+    @Get('/date-range')
+    @HttpCode(HttpStatus.OK)
+    async getUsersByDateRange(
+        @Query('field') field: 'createdAt' | 'lastLoginAt',
+        @Query('startDate') startDate: string,
+        @Query('endDate') endDate: string,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        // Парсим даты из строк
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        return this.userService.findUsersByDateRange(
+            field,
+            start,
+            end,
+            page,
+            limit,
+        );
+    }
+
+    // ===== END SPECIALIZED QUERIES =====
 
     @Roles(...USER_ROLES)
     @UserGuards()

@@ -37,7 +37,7 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import { hash } from 'bcrypt';
 import { createHash } from 'crypto';
-import { Op, QueryTypes } from 'sequelize';
+import { Op, QueryTypes, Sequelize } from 'sequelize';
 
 // Типы для статистики пользователей
 export interface UserStats {
@@ -2382,6 +2382,226 @@ export class UserRepository implements IUserRepository {
             this.handleSequelizeError(
                 error,
                 'массовая верификация пользователей',
+            );
+            throw error;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // СПЕЦИАЛИЗИРОВАННЫЕ ЗАПРОСЫ
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Поиск неактивных пользователей (без логина N дней)
+     * @param days - количество дней без активности
+     * @param page - номер страницы
+     * @param limit - размер страницы
+     * @returns Promise<GetPaginatedUsersResponse>
+     * @description Находит пользователей, которые не логинились последние N дней
+     *              или у которых last_login_at = NULL
+     */
+    public async findInactiveUsers(
+        days: number,
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const offset = (page - 1) * limit;
+
+            // Вычисляем дату N дней назад
+            const inactiveSince = new Date();
+            inactiveSince.setDate(inactiveSince.getDate() - days);
+
+            const result = await this.userModel.findAndCountAll({
+                where: {
+                    tenantId,
+                    isDeleted: false,
+                    [Op.or]: [
+                        { lastLoginAt: { [Op.lt]: inactiveSince } },
+                        { lastLoginAt: null },
+                    ],
+                },
+                attributes: { exclude: ['password'] },
+                order: [
+                    Sequelize.literal(
+                        'last_login_at IS NULL DESC, last_login_at ASC',
+                    ),
+                ], // NULL первыми, затем старые
+                limit,
+                offset,
+            });
+
+            const totalCount = result.count;
+            const lastPage = Math.ceil(totalCount / limit);
+            const nextPage = page < lastPage ? page + 1 : 0;
+            const previousPage = page > 1 ? page - 1 : 0;
+
+            this.logger.log(
+                { days, page, limit, totalCount, tenantId },
+                `Найдено ${totalCount} неактивных пользователей (${days} дней)`,
+            );
+
+            const meta: MetaData = {
+                totalCount,
+                lastPage,
+                currentPage: page,
+                nextPage,
+                previousPage,
+                limit,
+            };
+
+            return {
+                data: result.rows,
+                meta,
+            };
+        } catch (error: unknown) {
+            this.handleSequelizeError(error, 'поиск неактивных пользователей');
+            throw error;
+        }
+    }
+
+    /**
+     * Поиск пользователей с неполным профилем
+     * @param page - номер страницы
+     * @param limit - размер страницы
+     * @returns Promise<GetPaginatedUsersResponse>
+     * @description Находит пользователей с is_profile_completed = false
+     */
+    public async findUsersWithIncompleteProfile(
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const offset = (page - 1) * limit;
+
+            const result = await this.userModel.findAndCountAll({
+                where: {
+                    tenantId,
+                    isDeleted: false,
+                    isProfileCompleted: false,
+                },
+                attributes: { exclude: ['password'] },
+                order: [['createdAt', 'DESC']],
+                limit,
+                offset,
+            });
+
+            const totalCount = result.count;
+            const lastPage = Math.ceil(totalCount / limit);
+            const nextPage = page < lastPage ? page + 1 : 0;
+            const previousPage = page > 1 ? page - 1 : 0;
+
+            this.logger.log(
+                { page, limit, totalCount, tenantId },
+                `Найдено ${totalCount} пользователей с неполным профилем`,
+            );
+
+            const meta: MetaData = {
+                totalCount,
+                lastPage,
+                currentPage: page,
+                nextPage,
+                previousPage,
+                limit,
+            };
+
+            return {
+                data: result.rows,
+                meta,
+            };
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'поиск пользователей с неполным профилем',
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Поиск пользователей по диапазону дат
+     * @param field - поле для фильтрации ('createdAt' | 'lastLoginAt')
+     * @param startDate - начальная дата
+     * @param endDate - конечная дата
+     * @param page - номер страницы
+     * @param limit - размер страницы
+     * @returns Promise<GetPaginatedUsersResponse>
+     * @description Находит пользователей, у которых указанное поле попадает в диапазон дат
+     */
+    public async findUsersByDateRange(
+        field: 'createdAt' | 'lastLoginAt',
+        startDate: Date,
+        endDate: Date,
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse> {
+        try {
+            const tenantId =
+                process.env.NODE_ENV === 'test'
+                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+                    : this.tenantContext.getTenantId();
+
+            const offset = (page - 1) * limit;
+
+            const result = await this.userModel.findAndCountAll({
+                where: {
+                    tenantId,
+                    isDeleted: false,
+                    [field]: {
+                        [Op.between]: [startDate, endDate],
+                    },
+                },
+                attributes: { exclude: ['password'] },
+                order: [[field, 'DESC']],
+                limit,
+                offset,
+            });
+
+            const totalCount = result.count;
+            const lastPage = Math.ceil(totalCount / limit);
+            const nextPage = page < lastPage ? page + 1 : 0;
+            const previousPage = page > 1 ? page - 1 : 0;
+
+            this.logger.log(
+                {
+                    field,
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString(),
+                    page,
+                    limit,
+                    totalCount,
+                    tenantId,
+                },
+                `Найдено ${totalCount} пользователей по диапазону дат (${field})`,
+            );
+
+            const meta: MetaData = {
+                totalCount,
+                lastPage,
+                currentPage: page,
+                nextPage,
+                previousPage,
+                limit,
+            };
+
+            return {
+                data: result.rows,
+                meta,
+            };
+        } catch (error: unknown) {
+            this.handleSequelizeError(
+                error,
+                'поиск пользователей по диапазону дат',
             );
             throw error;
         }

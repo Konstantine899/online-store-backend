@@ -1313,4 +1313,133 @@ describe('User Admin Integration Tests', () => {
             });
         });
     });
+
+    // ===== SPECIALIZED QUERIES =====
+    describe('GET /user/inactive - Inactive Users', () => {
+        let adminToken: string;
+        let userToken: string;
+
+        beforeAll(async () => {
+            const [admin, user] = await Promise.all([
+                TestDataFactory.createUserWithRole(app, 'ADMIN'),
+                TestDataFactory.createUserWithRole(app, 'USER'),
+            ]);
+            adminToken = admin.token;
+            userToken = user.token;
+        });
+
+        it('200: admin can get inactive users (30 days)', async () => {
+            const response = await request(app.getHttpServer())
+                .get('/online-store/user/inactive?days=30&page=1&limit=5')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .expect(200);
+
+            expect(response.body).toHaveProperty('data');
+            expect(response.body).toHaveProperty('meta');
+            expect(Array.isArray(response.body.data)).toBe(true);
+            expect(response.body.meta).toHaveProperty('totalCount');
+        });
+
+        it('403: regular user cannot access inactive users', async () => {
+            await request(app.getHttpServer())
+                .get('/online-store/user/inactive?days=30')
+                .set('Authorization', `Bearer ${userToken}`)
+                .expect(403);
+        });
+
+        it('400: invalid days parameter (0 days)', async () => {
+            await request(app.getHttpServer())
+                .get('/online-store/user/inactive?days=0')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .expect(400);
+        });
+    });
+
+    describe('GET /user/incomplete-profiles - Incomplete Profiles', () => {
+        let adminToken: string;
+        let userToken: string;
+
+        beforeAll(async () => {
+            const [admin, user] = await Promise.all([
+                TestDataFactory.createUserWithRole(app, 'ADMIN'),
+                TestDataFactory.createUserWithRole(app, 'USER'),
+            ]);
+            adminToken = admin.token;
+            userToken = user.token;
+        });
+
+        it('200: admin can get users with incomplete profiles', async () => {
+            const response = await request(app.getHttpServer())
+                .get('/online-store/user/incomplete-profiles?page=1&limit=5')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .expect(200);
+
+            expect(response.body).toHaveProperty('data');
+            expect(response.body).toHaveProperty('meta');
+            expect(Array.isArray(response.body.data)).toBe(true);
+            expect(response.body.meta).toHaveProperty('totalCount');
+        });
+
+        it('403: regular user cannot access incomplete profiles', async () => {
+            await request(app.getHttpServer())
+                .get('/online-store/user/incomplete-profiles')
+                .set('Authorization', `Bearer ${userToken}`)
+                .expect(403);
+        });
+    });
+
+    describe('GET /user/date-range - Users by Date Range', () => {
+        let adminToken: string;
+        let userToken: string;
+
+        beforeAll(async () => {
+            const [admin, user] = await Promise.all([
+                TestDataFactory.createUserWithRole(app, 'ADMIN'),
+                TestDataFactory.createUserWithRole(app, 'USER'),
+            ]);
+            adminToken = admin.token;
+            userToken = user.token;
+        });
+
+        it('200: admin can get users by date range (createdAt)', async () => {
+            const startDate = new Date('2024-01-01').toISOString();
+            const endDate = new Date('2025-12-31').toISOString();
+
+            const response = await request(app.getHttpServer())
+                .get(
+                    `/online-store/user/date-range?field=createdAt&startDate=${startDate}&endDate=${endDate}&page=1&limit=5`,
+                )
+                .set('Authorization', `Bearer ${adminToken}`)
+                .expect(200);
+
+            expect(response.body).toHaveProperty('data');
+            expect(response.body).toHaveProperty('meta');
+            expect(Array.isArray(response.body.data)).toBe(true);
+            expect(response.body.meta).toHaveProperty('totalCount');
+        });
+
+        it('403: regular user cannot access date range query', async () => {
+            const startDate = new Date('2024-01-01').toISOString();
+            const endDate = new Date('2025-12-31').toISOString();
+
+            await request(app.getHttpServer())
+                .get(
+                    `/online-store/user/date-range?field=createdAt&startDate=${startDate}&endDate=${endDate}`,
+                )
+                .set('Authorization', `Bearer ${userToken}`)
+                .expect(403);
+        });
+
+        it('400: invalid date range (startDate >= endDate)', async () => {
+            const startDate = new Date('2025-12-31').toISOString();
+            const endDate = new Date('2024-01-01').toISOString();
+
+            await request(app.getHttpServer())
+                .get(
+                    `/online-store/user/date-range?field=createdAt&startDate=${startDate}&endDate=${endDate}`,
+                )
+                .set('Authorization', `Bearer ${adminToken}`)
+                .expect(400);
+        });
+    });
 });

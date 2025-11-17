@@ -174,9 +174,9 @@ export class TestDataFactory {
             email,
             password: passwordHash,
             phone,
+            tenantId, // Явно передаем tenantId (обязательное поле)
             firstName: overrides.firstName ?? undefined,
             lastName: overrides.lastName ?? undefined,
-            tenantId, // Явно передаем tenantId
         });
 
         // Проверяем наличие обязательных полей
