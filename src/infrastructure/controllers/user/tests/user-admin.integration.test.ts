@@ -27,6 +27,15 @@ describe('User Admin Integration Tests', () => {
         await app.close();
     });
 
+    afterEach(async () => {
+        // Cleanup: удаляем тестовых пользователей из tenant 2 после каждого теста
+        const sequelize = app.get(Sequelize);
+        await sequelize.query(
+            `DELETE FROM user_role WHERE user_id IN (SELECT id FROM user WHERE tenant_id = 2)`,
+        );
+        await sequelize.query(`DELETE FROM user WHERE tenant_id = 2`);
+    });
+
     // ===== ADMIN STATS ENDPOINT =====
     describe('GET /user/admin/stats', () => {
         it('200: returns user statistics for admin', async () => {
@@ -67,6 +76,93 @@ describe('User Admin Integration Tests', () => {
             await request(app.getHttpServer())
                 .get('/online-store/user/admin/stats')
                 .expect(401);
+        });
+
+        // 🔒 USER-001-11-E1: TENANT ISOLATION TEST
+        it('🔒 SECURITY: getUserStats returns only same tenant users (tenant isolation)', async () => {
+            const sequelize = app.get(Sequelize);
+
+            // Создаём администратора в tenant 1
+            const tenant1Admin = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    role: 'ADMIN',
+                    tenantId: 1,
+                },
+            );
+
+            // Создаём 2 пользователей в tenant 1
+            await Promise.all([
+                TestDataFactory.createUserInDB(sequelize, {
+                    email: TestDataFactory.uniqueEmail(),
+                    tenantId: 1,
+                }),
+                TestDataFactory.createUserInDB(sequelize, {
+                    email: TestDataFactory.uniqueEmail(),
+                    tenantId: 1,
+                }),
+            ]);
+
+            // Создаём 3 пользователей в tenant 2 (НЕ должны попасть в статистику)
+            await Promise.all([
+                TestDataFactory.createUserInDB(sequelize, {
+                    email: TestDataFactory.uniqueEmail(),
+                    tenantId: 2,
+                }),
+                TestDataFactory.createUserInDB(sequelize, {
+                    email: TestDataFactory.uniqueEmail(),
+                    tenantId: 2,
+                }),
+                TestDataFactory.createUserInDB(sequelize, {
+                    email: TestDataFactory.uniqueEmail(),
+                    tenantId: 2,
+                }),
+            ]);
+
+            // Логинимся как админ tenant 1
+            const loginRes = await request(app.getHttpServer())
+                .post('/online-store/auth/login')
+                .send({
+                    email: tenant1Admin.email,
+                    password: tenant1Admin.password,
+                })
+                .expect(200);
+
+            const token = loginRes.body.accessToken;
+
+            // Запрашиваем статистику
+            const statsRes = await request(app.getHttpServer())
+                .get('/online-store/user/admin/stats')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            const stats = statsRes.body.data;
+
+            // Проверяем, что в статистике ТОЛЬКО пользователи из tenant 1
+            // totalUsers >= 3 (tenant1Admin + 2 созданных) + возможно другие пользователи из сидов
+            expect(stats.totalUsers).toBeGreaterThanOrEqual(3);
+
+            // ❌ ВАЖНО: Если бы tenant isolation НЕ работал, totalUsers был бы >= 6 (tenant1 + tenant2)
+            // Проверка: запросим напрямую БД для tenant 2
+            const [tenant2Users] = await sequelize.query(
+                `SELECT COUNT(*) as count FROM user WHERE tenant_id = 2 AND is_deleted = 0`,
+            );
+            const tenant2Count = (tenant2Users as Array<{ count: number }>)[0]
+                .count;
+
+            // Убеждаемся, что в tenant 2 есть пользователи (иначе тест бессмысленный)
+            expect(tenant2Count).toBeGreaterThanOrEqual(3);
+
+            // Убеждаемся, что stats.totalUsers НЕ включает пользователей из tenant 2
+            // Если бы tenant isolation НЕ работал, stats.totalUsers был бы больше
+            const [tenant1Users] = await sequelize.query(
+                `SELECT COUNT(*) as count FROM user WHERE tenant_id = 1 AND is_deleted = 0`,
+            );
+            const tenant1Count = (tenant1Users as Array<{ count: number }>)[0]
+                .count;
+
+            // ✅ КРИТИЧНАЯ ПРОВЕРКА: stats.totalUsers === tenant1Count (не больше!)
+            expect(stats.totalUsers).toBe(tenant1Count);
         });
     });
 
@@ -167,6 +263,107 @@ describe('User Admin Integration Tests', () => {
                 .get('/online-store/user/get-list-users?page=abc&limit=NaN')
                 .set('Authorization', `Bearer ${token}`)
                 .expect(400);
+        });
+
+        // 🔒 USER-001-11-E1: TENANT ISOLATION TEST
+        it('🔒 SECURITY: getListUsers returns only same tenant users (tenant isolation)', async () => {
+            const sequelize = app.get(Sequelize);
+
+            // Создаём администратора в tenant 1
+            const tenant1Admin = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    role: 'ADMIN',
+                    tenantId: 1,
+                },
+            );
+
+            // Создаём 2 пользователей в tenant 1
+            const tenant1User1 = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    email: TestDataFactory.uniqueEmail(),
+                    firstName: 'Tenant1User1',
+                    tenantId: 1,
+                },
+            );
+            const tenant1User2 = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    email: TestDataFactory.uniqueEmail(),
+                    firstName: 'Tenant1User2',
+                    tenantId: 1,
+                },
+            );
+
+            // Создаём 3 пользователей в tenant 2 (НЕ должны попасть в список)
+            const tenant2User1 = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    email: TestDataFactory.uniqueEmail(),
+                    firstName: 'Tenant2User1',
+                    tenantId: 2,
+                },
+            );
+            const tenant2User2 = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    email: TestDataFactory.uniqueEmail(),
+                    firstName: 'Tenant2User2',
+                    tenantId: 2,
+                },
+            );
+            const tenant2User3 = await TestDataFactory.createUserInDB(
+                sequelize,
+                {
+                    email: TestDataFactory.uniqueEmail(),
+                    firstName: 'Tenant2User3',
+                    tenantId: 2,
+                },
+            );
+
+            // Логинимся как админ tenant 1
+            const loginRes = await request(app.getHttpServer())
+                .post('/online-store/auth/login')
+                .send({
+                    email: tenant1Admin.email,
+                    password: tenant1Admin.password,
+                })
+                .expect(200);
+
+            const token = loginRes.body.accessToken;
+
+            // Запрашиваем список пользователей (большой limit, чтобы получить всех)
+            const listRes = await request(app.getHttpServer())
+                .get('/online-store/user/get-list-users?page=1&limit=100')
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200);
+
+            const users = listRes.body.data;
+            const userIds = users.map((u: { id: number }) => u.id);
+
+            // ✅ КРИТИЧНАЯ ПРОВЕРКА 1: В списке ЕСТЬ пользователи из tenant 1
+            expect(userIds).toContain(tenant1Admin.id);
+            expect(userIds).toContain(tenant1User1.id);
+            expect(userIds).toContain(tenant1User2.id);
+
+            // ✅ КРИТИЧНАЯ ПРОВЕРКА 2: В списке НЕТ пользователей из tenant 2
+            expect(userIds).not.toContain(tenant2User1.id);
+            expect(userIds).not.toContain(tenant2User2.id);
+            expect(userIds).not.toContain(tenant2User3.id);
+
+            // ✅ КРИТИЧНАЯ ПРОВЕРКА 3: Все user IDs в списке принадлежат tenant 1
+            const tenant1UserIds = new Set<number>();
+            const [tenant1UsersRaw] = await sequelize.query(
+                `SELECT id FROM user WHERE tenant_id = 1 AND is_deleted = 0`,
+            );
+            (tenant1UsersRaw as Array<{ id: number }>).forEach((u) =>
+                tenant1UserIds.add(u.id),
+            );
+
+            userIds.forEach((userId: number) => {
+                expect(tenant1UserIds.has(userId)).toBe(true);
+            });
         });
 
         it('200: admin can create and delete users', async () => {
