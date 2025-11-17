@@ -804,7 +804,7 @@ tasks:
 
 - id: USER-001-11
   title: "Полная оптимизация User Module: багфиксы, индексы, фильтрация, поиск, статистика"
-  status: NOT_STARTED
+  status: COMPLETED
   branch: "feature/user/USER-001-11/full-optimization"
   description: |
   Комплексная оптимизация модуля пользователей включает:
@@ -1462,3 +1462,215 @@ tasks:
 
     gate:
     - require: "Одобряю USER-001-11"
+
+- id: USER-001-12
+  title: "Post-merge улучшения User Module (рефакторинг, мониторинг, документация)"
+  priority: SHOULD HAVE
+  status: pending
+  branch: "chore/user/USER-001-12/post-merge-improvements"
+  estimated_hours: 12
+  complexity: medium
+  dependencies: [USER-001-11]
+  files_scope:
+    - "src/infrastructure/repositories/user/\*\*"
+    - "src/infrastructure/services/user/\*\*"
+    - "src/infrastructure/common/guards/\*\*"
+    - "src/infrastructure/common/decorators/\*\*"
+    - "tests/unit/repositories/user/\*\*"
+    - "docs/\*\*"
+    - "README.md"
+
+    context: |
+    После успешного завершения USER-001-11 (полная оптимизация User Module)
+    выявлены возможности для дальнейших улучшений:
+    - Рефакторинг длинных файлов (user.repository.ts - 2390 строк)
+    - Вынесение дублирующейся логики tenant isolation
+    - Добавление мониторинга slow queries
+    - Unit тесты для utils функций
+    - Обновление документации
+
+    Эти улучшения не критичны и могут быть выполнены в отдельных PR
+    для упрощения code review и снижения рисков.
+
+    tasks:
+
+    # ═══════════════════════════════════════════════════════════════════════════════
+
+    # ПРИОРИТЕТ: MEDIUM (рекомендуется выполнить в ближайшее время)
+
+    # ═══════════════════════════════════════════════════════════════════════════════
+    - category: "МОНИТОРИНГ И АЛЕРТЫ"
+      priority: MEDIUM
+      estimated_hours: 4
+      tasks:
+        - Добавить middleware для замера времени выполнения запросов
+        - Создать logger для slow queries (> 500ms warning, > 1000ms error)
+        - Добавить метрики для bulk операций (количество, время выполнения)
+        - Создать dashboard endpoint GET /user/admin/metrics (ADMIN only)
+        - Добавить алерт на Prometheus/Grafana для slow queries (если есть)
+        - Интеграционные тесты для metrics endpoint
+          files:
+        - src/infrastructure/common/middleware/query-performance.middleware.ts (new)
+        - src/infrastructure/repositories/user/user.repository.ts (metrics)
+        - src/infrastructure/controllers/user/user.controller.ts (metrics endpoint)
+        - tests/integration/user/user-metrics.integration.test.ts (new)
+          dod:
+        - Slow queries логируются с query text, execution time, correlation ID
+        - Bulk операции логируются с метриками (affectedCount, duration)
+        - Metrics endpoint возвращает статистику за последние 24 часа
+        - Тесты покрывают metrics collection и endpoint
+
+    # ═══════════════════════════════════════════════════════════════════════════════
+
+    # ПРИОРИТЕТ: LOW (можно отложить, не влияет на функциональность)
+
+    # ═══════════════════════════════════════════════════════════════════════════════
+    - category: "РЕФАКТОРИНГ: Разбиение длинных файлов"
+      priority: LOW
+      estimated_hours: 3
+      tasks:
+        - Создать UserSearchRepository с методами searchUsersByName, searchUsersByPhone, fullTextSearchUsers
+        - Создать UserStatsRepository с методами getUserStats, getUserStatsByRole, getUserActivityStats
+        - Создать UserBulkRepository с методами bulkActivateUsers, bulkDeactivateUsers и др.
+        - Обновить UserRepository для делегирования в новые репозитории
+        - Обновить DI в UserModule для новых репозиториев
+        - Обновить тесты (refactoring тестов не требуется, только импорты)
+          files:
+        - src/infrastructure/repositories/user/user-search.repository.ts (new)
+        - src/infrastructure/repositories/user/user-stats.repository.ts (new)
+        - src/infrastructure/repositories/user/user-bulk.repository.ts (new)
+        - src/infrastructure/repositories/user/user.repository.ts (refactor)
+        - src/infrastructure/modules/user.module.ts (DI update)
+          dod:
+        - user.repository.ts уменьшен до ~1000 строк
+        - Новые репозитории содержат специализированную логику
+        - Все тесты проходят без изменений (только импорты)
+        - Публичный API не изменился
+          note: |
+          Рефакторинг не меняет публичный API, только внутреннюю структуру.
+          Тесты могут остаться без изменений (только импорты обновятся).
+
+    - category: "РЕФАКТОРИНГ: Вынос tenant isolation логики"
+      priority: LOW
+      estimated_hours: 2
+      tasks:
+        - Создать приватный метод getTenantIdSafe() в UserRepository
+        - Заменить дублирующийся код во всех bulk методах
+        - Рассмотреть создание @TenantIsolated() декоратора для методов
+        - Обновить тесты (если требуется)
+          files:
+        - src/infrastructure/repositories/user/user.repository.ts
+        - src/infrastructure/common/decorators/tenant-isolated.decorator.ts (optional, new)
+          dod:
+        - Дублирующийся код tenant isolation вынесен в метод/декоратор
+        - Все bulk методы используют getTenantIdSafe()
+        - Тесты проходят без изменений
+          example: |
+          // До:
+          const tenantId = process.env.NODE_ENV === 'test'
+          ? (this.tenantContext.getTenantIdOrNull() ?? 1)
+          : this.tenantContext.getTenantId();
+
+        // После:
+        const tenantId = this.getTenantIdSafe();
+
+    - category: "UNIT ТЕСТЫ: Utils функции"
+      priority: LOW
+      estimated_hours: 2
+      tasks:
+        - Создать unit тесты для escapeLikeWildcards (SQL injection защита)
+        - Создать unit тесты для normalizeRussianPhone (E.164 format)
+        - Создать unit тесты для @IsValidName валидатора
+        - Создать unit тесты для @IsValidPhone валидатора
+          files:
+        - tests/unit/repositories/user/escape-like-wildcards.unit.test.ts (new)
+        - tests/unit/common/utils/phone-normalization.unit.test.ts (new)
+        - tests/unit/common/validators/is-valid-name.unit.test.ts (new)
+        - tests/unit/common/validators/is-valid-phone.unit.test.ts (new)
+          dod:
+        - escapeLikeWildcards покрыт тестами (%, \_, \, комбинации)
+        - normalizeRussianPhone покрыт тестами (+7, 8, без префикса)
+        - Валидаторы покрыты тестами (positive/negative cases)
+        - Coverage для utils функций ≥ 90%
+
+    - category: "ДОКУМЕНТАЦИЯ"
+      priority: LOW
+      estimated_hours: 1
+      tasks:
+        - Обновить README.md с новыми endpoints (фильтрация, поиск, статистика, bulk)
+        - Добавить примеры bulk операций в docs/api/user-bulk-operations.md
+        - Добавить описание индексов в docs/database/indexes.md
+        - Обновить CHANGELOG.md с новыми фичами USER-001-11
+          files:
+        - README.md
+        - docs/api/user-bulk-operations.md (new)
+        - docs/database/indexes.md
+        - CHANGELOG.md
+          dod:
+        - README содержит список всех user endpoints
+        - Bulk operations задокументированы с примерами
+        - Индексы описаны с обоснованием
+        - CHANGELOG обновлен
+
+    notes: |
+    ═══════════════════════════════════════════════════════════════════════════════
+    СТРАТЕГИЯ ВЫПОЛНЕНИЯ:
+    ═══════════════════════════════════════════════════════════════════════════════
+
+    Задачи разделены по приоритетам:
+    - MEDIUM (4ч): Мониторинг и алерты - рекомендуется для production
+    - LOW (8ч): Рефакторинг, unit тесты, документация - можно отложить
+
+    Рекомендуется выполнять в отдельных PR:
+    1. PR #1: Мониторинг (MEDIUM) - 4 часа
+    2. PR #2: Рефакторинг файлов (LOW) - 3 часа
+    3. PR #3: Рефакторинг tenant isolation (LOW) - 2 часа
+    4. PR #4: Unit тесты (LOW) - 2 часа
+    5. PR #5: Документация (LOW) - 1 час
+
+    Преимущества разделения на PR:
+    - Легче code review (меньше изменений)
+    - Можно выполнять параллельно разными разработчиками
+    - Можно отложить LOW приоритет без блокировки других задач
+    - Снижение рисков (меньше затронутых файлов)
+
+    ═══════════════════════════════════════════════════════════════════════════════
+    МЕТРИКИ ПОСЛЕ ЗАВЕРШЕНИЯ:
+    ═══════════════════════════════════════════════════════════════════════════════
+
+    Рефакторинг:
+    - user.repository.ts: 2390 → ~1000 строк (-58%)
+    - Новые репозитории: 3 (search, stats, bulk)
+    - Дублирование кода: -30 строк (tenant isolation)
+
+    Тестирование:
+    - Unit тесты: +4 файла (~80 тестов)
+    - Coverage utils: 0% → 90%
+
+    Мониторинг:
+    - Slow queries: логирование + алерты
+    - Bulk operations: метрики + dashboard
+    - Metrics endpoint: GET /user/admin/metrics
+
+    Документация:
+    - README обновлен (15 новых endpoints)
+    - Bulk operations: примеры + best practices
+    - Database indexes: описание + обоснование
+
+    pre_commit_workflow: "ОБЫЧНЫЙ (для каждого PR отдельно)"
+    pre_commit_steps:
+    - "«Ревью» → refactoring, code quality, test coverage"
+    - "«Автофикс» → eslint --fix, prettier --write"
+    - "Тесты: npm run test:unit + npm run test:integration"
+    - "«Коммит» → chore(user): <конкретная задача>"
+
+    commit_strategy:
+    pr_1: "feat(user): add query performance monitoring and slow query alerts"
+    pr_2: "refactor(user): split user repository into specialized modules"
+    pr_3: "refactor(user): extract tenant isolation logic to reusable method"
+    pr_4: "test(user): add unit tests for utils and validators"
+    pr_5: "docs(user): update documentation for new user endpoints and bulk operations"
+
+    gate:
+    - require: "Одобряю USER-001-12"
+    - note: "Можно выполнять по частям (отдельные PR для каждого приоритета)"
