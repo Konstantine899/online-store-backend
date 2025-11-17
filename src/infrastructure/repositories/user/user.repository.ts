@@ -1663,13 +1663,18 @@ export class UserRepository implements IUserRepository {
         limit: number,
     ): Promise<GetPaginatedUsersResponse> {
         try {
+            // Защита: trim на уровне Repository
+            searchTerm = searchTerm.trim();
+
             const tenantId =
                 process.env.NODE_ENV === 'test'
                     ? (this.tenantContext.getTenantIdOrNull() ?? 1)
                     : this.tenantContext.getTenantId();
 
             const offset = (page - 1) * limit;
-            const searchPattern = `%${searchTerm}%`;
+            // Защита: экранируем LIKE спецсимволы (% и _) для предотвращения SQL injection
+            const escapedTerm = searchTerm.replace(/[%_]/g, '\\$&');
+            const searchPattern = `%${escapedTerm}%`;
 
             const result = await this.userModel.findAndCountAll({
                 where: {
@@ -1717,6 +1722,9 @@ export class UserRepository implements IUserRepository {
      */
     public async findUserByPhone(phone: string): Promise<UserModel | null> {
         try {
+            // Защита: trim на уровне Repository
+            phone = phone.trim();
+
             const tenantId =
                 process.env.NODE_ENV === 'test'
                     ? (this.tenantContext.getTenantIdOrNull() ?? 1)
@@ -1733,10 +1741,7 @@ export class UserRepository implements IUserRepository {
 
             return user;
         } catch (error: unknown) {
-            this.handleSequelizeError(
-                error,
-                'поиск пользователя по телефону',
-            );
+            this.handleSequelizeError(error, 'поиск пользователя по телефону');
             throw error;
         }
     }
@@ -1747,19 +1752,24 @@ export class UserRepository implements IUserRepository {
      * @returns список пользователей, номера которых начинаются с префикса
      * @example searchUsersByPhone('+7999') // найдёт "+79991234567", "+79998887766"
      */
-    public async searchUsersByPhone(
-        phonePrefix: string,
-    ): Promise<UserModel[]> {
+    public async searchUsersByPhone(phonePrefix: string): Promise<UserModel[]> {
         try {
+            // Защита: trim на уровне Repository
+            phonePrefix = phonePrefix.trim();
+
             const tenantId =
                 process.env.NODE_ENV === 'test'
                     ? (this.tenantContext.getTenantIdOrNull() ?? 1)
                     : this.tenantContext.getTenantId();
 
+            // Нормализация: убираем всё кроме цифр для универсального поиска
+            // Это позволит найти "+79991234567" при поиске по "7999" или "+7999"
+            const normalizedPrefix = phonePrefix.replace(/\D/g, '');
+
             const users = await this.userModel.findAll({
                 where: {
                     tenantId,
-                    phone: { [Op.like]: `${phonePrefix}%` },
+                    phone: { [Op.like]: `%${normalizedPrefix}%` },
                     isDeleted: false,
                 },
                 attributes: { exclude: ['password'] },
@@ -1828,13 +1838,18 @@ export class UserRepository implements IUserRepository {
         limit: number,
     ): Promise<GetPaginatedUsersResponse> {
         try {
+            // Защита: trim на уровне Repository
+            query = query.trim();
+
             const tenantId =
                 process.env.NODE_ENV === 'test'
                     ? (this.tenantContext.getTenantIdOrNull() ?? 1)
                     : this.tenantContext.getTenantId();
 
             const offset = (page - 1) * limit;
-            const searchPattern = `%${query}%`;
+            // Защита: экранируем LIKE спецсимволы (% и _) для предотвращения SQL injection
+            const escapedQuery = query.replace(/[%_]/g, '\\$&');
+            const searchPattern = `%${escapedQuery}%`;
 
             const result = await this.userModel.findAndCountAll({
                 where: {
@@ -1872,7 +1887,10 @@ export class UserRepository implements IUserRepository {
 
             return { data: result.rows, meta };
         } catch (error: unknown) {
-            this.handleSequelizeError(error, 'полнотекстовый поиск пользователей');
+            this.handleSequelizeError(
+                error,
+                'полнотекстовый поиск пользователей',
+            );
             throw error;
         }
     }
