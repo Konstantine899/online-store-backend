@@ -2090,6 +2090,7 @@ export class UserRepository implements IUserRepository {
             throw new Error('Sequelize instance is not available');
         }
         const transaction = await this.userModel.sequelize.transaction();
+        const start = Date.now(); // Начало измерения времени
 
         try {
             const tenantId =
@@ -2111,13 +2112,17 @@ export class UserRepository implements IUserRepository {
 
             await transaction.commit();
 
+            const duration = Date.now() - start; // Конец измерения времени
+
             this.logger.log(
                 {
-                    userIds,
+                    operation: 'bulkActivateUsers',
+                    userIdsCount: userIds.length,
                     affectedCount,
+                    duration: `${duration}ms`,
                     tenantId,
                 },
-                `Массовая активация ${affectedCount} пользователей`,
+                `Массовая активация ${affectedCount} пользователей за ${duration}ms`,
             );
 
             return affectedCount;
@@ -2141,6 +2146,7 @@ export class UserRepository implements IUserRepository {
             throw new Error('Sequelize instance is not available');
         }
         const transaction = await this.userModel.sequelize.transaction();
+        const start = Date.now();
 
         try {
             const tenantId =
@@ -2162,13 +2168,17 @@ export class UserRepository implements IUserRepository {
 
             await transaction.commit();
 
+            const duration = Date.now() - start;
+
             this.logger.log(
                 {
-                    userIds,
+                    operation: 'bulkDeactivateUsers',
+                    userIdsCount: userIds.length,
                     affectedCount,
+                    duration: `${duration}ms`,
                     tenantId,
                 },
-                `Массовая деактивация ${affectedCount} пользователей`,
+                `Массовая деактивация ${affectedCount} пользователей за ${duration}ms`,
             );
 
             return affectedCount;
@@ -2192,6 +2202,7 @@ export class UserRepository implements IUserRepository {
             throw new Error('Sequelize instance is not available');
         }
         const transaction = await this.userModel.sequelize.transaction();
+        const start = Date.now();
 
         try {
             const tenantId =
@@ -2213,13 +2224,17 @@ export class UserRepository implements IUserRepository {
 
             await transaction.commit();
 
+            const duration = Date.now() - start;
+
             this.logger.log(
                 {
-                    userIds,
+                    operation: 'bulkBlockUsers',
+                    userIdsCount: userIds.length,
                     affectedCount,
+                    duration: `${duration}ms`,
                     tenantId,
                 },
-                `Массовая блокировка ${affectedCount} пользователей`,
+                `Массовая блокировка ${affectedCount} пользователей за ${duration}ms`,
             );
 
             return affectedCount;
@@ -2243,6 +2258,7 @@ export class UserRepository implements IUserRepository {
             throw new Error('Sequelize instance is not available');
         }
         const transaction = await this.userModel.sequelize.transaction();
+        const start = Date.now();
 
         try {
             const tenantId =
@@ -2264,13 +2280,17 @@ export class UserRepository implements IUserRepository {
 
             await transaction.commit();
 
+            const duration = Date.now() - start;
+
             this.logger.log(
                 {
-                    userIds,
+                    operation: 'bulkUnblockUsers',
+                    userIdsCount: userIds.length,
                     affectedCount,
+                    duration: `${duration}ms`,
                     tenantId,
                 },
-                `Массовая разблокировка ${affectedCount} пользователей`,
+                `Массовая разблокировка ${affectedCount} пользователей за ${duration}ms`,
             );
 
             return affectedCount;
@@ -2294,6 +2314,7 @@ export class UserRepository implements IUserRepository {
             throw new Error('Sequelize instance is not available');
         }
         const transaction = await this.userModel.sequelize.transaction();
+        const start = Date.now();
 
         try {
             const tenantId =
@@ -2315,13 +2336,17 @@ export class UserRepository implements IUserRepository {
 
             await transaction.commit();
 
+            const duration = Date.now() - start;
+
             this.logger.log(
                 {
-                    userIds,
+                    operation: 'bulkDeleteUsers',
+                    userIdsCount: userIds.length,
                     affectedCount,
+                    duration: `${duration}ms`,
                     tenantId,
                 },
-                `Массовое soft delete ${affectedCount} пользователей`,
+                `Массовое soft delete ${affectedCount} пользователей за ${duration}ms`,
             );
 
             return affectedCount;
@@ -2342,6 +2367,7 @@ export class UserRepository implements IUserRepository {
             throw new Error('Sequelize instance is not available');
         }
         const transaction = await this.userModel.sequelize.transaction();
+        const start = Date.now();
 
         try {
             const tenantId =
@@ -2367,13 +2393,17 @@ export class UserRepository implements IUserRepository {
 
             await transaction.commit();
 
+            const duration = Date.now() - start;
+
             this.logger.log(
                 {
-                    userIds,
+                    operation: 'bulkVerifyUsers',
+                    userIdsCount: userIds.length,
                     affectedCount,
+                    duration: `${duration}ms`,
                     tenantId,
                 },
-                `Массовая верификация ${affectedCount} пользователей`,
+                `Массовая верификация ${affectedCount} пользователей за ${duration}ms`,
             );
 
             return affectedCount;

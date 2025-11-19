@@ -54,6 +54,7 @@ import {
     GetIncompleteProfilesSwaggerDecorator,
     GetUsersByDateRangeSwaggerDecorator,
 } from '@app/infrastructure/common/decorators/swagger/user/specialized-queries.swagger';
+import { GetUserMetricsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/metrics.swagger';
 import { UpdateConsentsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-consents.swagger';
 import { UpdateDateOfBirthSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-date-of-birth.swagger';
 
@@ -71,6 +72,7 @@ import {
 } from '@nestjs/swagger';
 
 import { UserModel } from '@app/domain/models';
+import { UserMetricsResponse } from '@app/infrastructure/responses';
 import { UpdateUserFlagsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-flags.swagger';
 import { UpdateUserPreferencesSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-preferences.swagger';
 import { UpdateUserProfileSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-profile.swagger';
@@ -548,6 +550,19 @@ export class UserController implements IUserController {
         totalUsers: number;
     }> {
         return this.userService.getUserActivityStats();
+    }
+
+    /**
+     * Получение метрик производительности пользовательского модуля
+     * Только для администраторов
+     */
+    @GetUserMetricsSwaggerDecorator()
+    @Roles(...ADMIN_ROLES)
+    @AdminGuards()
+    @Get('/admin/metrics')
+    @HttpCode(HttpStatus.OK)
+    public async getUserMetrics(): Promise<UserMetricsResponse> {
+        return this.userService.getUserMetrics();
     }
 
     /**

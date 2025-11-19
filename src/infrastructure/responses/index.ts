@@ -81,6 +81,7 @@ export { UpdateUserPreferencesResponse } from './user/update-user-preferences.re
 export { UpdateUserResponse } from './user/update-user-response';
 export { UpdateUserStatusResponse } from './user/update-user-status.response';
 export { UserActivityStatsResponse } from './user/user-activity-stats.response';
+export { UserMetricsResponse } from './user/user-metrics.response';
 export {
     RoleStats,
     UserStatsByRoleResponse,

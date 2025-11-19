@@ -1676,4 +1676,64 @@ export class UserService implements IUserService {
             throw error;
         }
     }
+
+    /**
+     * Получение метрик производительности пользовательского модуля
+     * Возвращает статистику за последние 24 часа
+     *
+     * ЗАМЕТКА: Для MVP возвращаются mock данные. Для production требуется:
+     * - Интеграция с Prometheus/Grafana для сбора метрик
+     * - Отдельная таблица для логирования метрик
+     * - Redis для агрегации в реальном времени
+     *
+     * @returns объект с метриками производительности
+     */
+    public async getUserMetrics(): Promise<{
+        slowQueriesCount: number;
+        avgBulkOperationTime: number;
+        totalBulkOperations: number;
+        bulkOperationsByType: {
+            bulkActivateUsers: number;
+            bulkDeactivateUsers: number;
+            bulkBlockUsers: number;
+            bulkUnblockUsers: number;
+            bulkDeleteUsers: number;
+            bulkVerifyUsers: number;
+        };
+        errorRate: number;
+        timestamp: string;
+    }> {
+        try {
+            // TODO: Заменить на реальную агрегацию логов из Prometheus/БД
+            // Для MVP возвращаем mock данные
+            const metrics = {
+                slowQueriesCount: 0,
+                avgBulkOperationTime: 0,
+                totalBulkOperations: 0,
+                bulkOperationsByType: {
+                    bulkActivateUsers: 0,
+                    bulkDeactivateUsers: 0,
+                    bulkBlockUsers: 0,
+                    bulkUnblockUsers: 0,
+                    bulkDeleteUsers: 0,
+                    bulkVerifyUsers: 0,
+                },
+                errorRate: 0,
+                timestamp: new Date().toISOString(),
+            };
+
+            this.logger.log(
+                {
+                    action: 'get_user_metrics',
+                    metricsTimestamp: metrics.timestamp,
+                },
+                'Получение метрик производительности пользовательского модуля',
+            );
+
+            return metrics;
+        } catch (error: unknown) {
+            this.handleSequelizeError(error, 'получение метрик пользователей');
+            throw error;
+        }
+    }
 }

@@ -1442,4 +1442,104 @@ describe('User Admin Integration Tests', () => {
                 .expect(400);
         });
     });
+
+    // ===== METRICS ENDPOINT =====
+    describe('GET /user/admin/metrics', () => {
+        let adminToken: string;
+        let userToken: string;
+
+        beforeAll(async () => {
+            // Создаём admin пользователя для тестирования metrics
+            const [admin] = await TestDataFactory.createUserWithRole(
+                app,
+                'ADMIN',
+            );
+            const [regularUser] = await TestDataFactory.createUserWithRole(
+                app,
+                'USER',
+            );
+
+            // Логинимся за admin
+            const adminLoginResponse = await request(app.getHttpServer())
+                .post('/online-store/auth/login')
+                .send({
+                    email: admin.email,
+                    password: 'Test123!@#',
+                })
+                .expect(200);
+            adminToken = adminLoginResponse.body.accessToken;
+
+            // Логинимся за user
+            const userLoginResponse = await request(app.getHttpServer())
+                .post('/online-store/auth/login')
+                .send({
+                    email: regularUser.email,
+                    password: 'Test123!@#',
+                })
+                .expect(200);
+            userToken = userLoginResponse.body.accessToken;
+        });
+
+        it('200: admin can get user module performance metrics', async () => {
+            const response = await request(app.getHttpServer())
+                .get('/online-store/user/admin/metrics')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .expect(200);
+
+            // Проверка структуры ответа
+            expect(response.body).toHaveProperty('slowQueriesCount');
+            expect(response.body).toHaveProperty('avgBulkOperationTime');
+            expect(response.body).toHaveProperty('totalBulkOperations');
+            expect(response.body).toHaveProperty('bulkOperationsByType');
+            expect(response.body).toHaveProperty('errorRate');
+            expect(response.body).toHaveProperty('timestamp');
+
+            // Проверка типов данных
+            expect(typeof response.body.slowQueriesCount).toBe('number');
+            expect(typeof response.body.avgBulkOperationTime).toBe('number');
+            expect(typeof response.body.totalBulkOperations).toBe('number');
+            expect(typeof response.body.errorRate).toBe('number');
+            expect(typeof response.body.timestamp).toBe('string');
+
+            // Проверка bulkOperationsByType
+            expect(response.body.bulkOperationsByType).toHaveProperty(
+                'bulkActivateUsers',
+            );
+            expect(response.body.bulkOperationsByType).toHaveProperty(
+                'bulkDeactivateUsers',
+            );
+            expect(response.body.bulkOperationsByType).toHaveProperty(
+                'bulkBlockUsers',
+            );
+            expect(response.body.bulkOperationsByType).toHaveProperty(
+                'bulkUnblockUsers',
+            );
+            expect(response.body.bulkOperationsByType).toHaveProperty(
+                'bulkDeleteUsers',
+            );
+            expect(response.body.bulkOperationsByType).toHaveProperty(
+                'bulkVerifyUsers',
+            );
+
+            // Проверка валидности данных
+            expect(response.body.slowQueriesCount).toBeGreaterThanOrEqual(0);
+            expect(response.body.avgBulkOperationTime).toBeGreaterThanOrEqual(0);
+            expect(response.body.totalBulkOperations).toBeGreaterThanOrEqual(0);
+            expect(response.body.errorRate).toBeGreaterThanOrEqual(0);
+            expect(response.body.errorRate).toBeLessThanOrEqual(1);
+        });
+
+        it('403: regular user cannot access metrics endpoint', async () => {
+            await request(app.getHttpServer())
+                .get('/online-store/user/admin/metrics')
+                .set('Authorization', `Bearer ${userToken}`)
+                .expect(403);
+        });
+
+        it('401: unauthorized request to metrics endpoint', async () => {
+            await request(app.getHttpServer())
+                .get('/online-store/user/admin/metrics')
+                .expect(401);
+        });
+    });
 });
