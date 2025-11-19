@@ -1469,9 +1469,16 @@ tasks:
   status: pending
   branch: "chore/user/USER-001-12/post-merge-improvements"
   estimated_hours: 12
+  actual_hours_breakdown: "3ч (MEDIUM) + 9ч (LOW) = 12ч"
   complexity: medium
   dependencies: [USER-001-11]
-  files_scope:
+  changelog: |
+  2025-11-19: План актуализирован
+    - ✅ Убрано дублирование: HTTP middleware УЖЕ создан в USER-001-11
+    - ⚠️ Добавлено: escapeLikeWildcards нужно СОЗДАТЬ (не существует)
+    - 📊 Обновлен размер: user.repository.ts 2390 → 2609 строк (+219 за USER-001-11)
+    - ⏱️ Оценка скорректирована: MEDIUM 4ч → 3ч, LOW 8ч → 9ч
+      files_scope:
     - "src/infrastructure/repositories/user/\*\*"
     - "src/infrastructure/services/user/\*\*"
     - "src/infrastructure/common/guards/\*\*"
@@ -1483,11 +1490,11 @@ tasks:
     context: |
     После успешного завершения USER-001-11 (полная оптимизация User Module)
     выявлены возможности для дальнейших улучшений:
-    - Рефакторинг длинных файлов (user.repository.ts - 2390 строк)
-    - Вынесение дублирующейся логики tenant isolation
-    - Добавление мониторинга slow queries
-    - Unit тесты для utils функций
-    - Обновление документации
+    - Рефакторинг длинных файлов (user.repository.ts - 2609 строк, было 2390)
+    - Вынесение дублирующейся логики tenant isolation (~40 методов с дублированием)
+    - Расширение мониторинга slow queries (HTTP ✅, нужно добавить SQL-level)
+    - Unit тесты для utils функций (normalizeRussianPhone, escapeLikeWildcards, validators)
+    - Обновление документации (README, bulk operations, indexes, CHANGELOG)
 
     Эти улучшения не критичны и могут быть выполнены в отдельных PR
     для упрощения code review и снижения рисков.
@@ -1501,24 +1508,27 @@ tasks:
     # ═══════════════════════════════════════════════════════════════════════════════
     - category: "МОНИТОРИНГ И АЛЕРТЫ"
       priority: MEDIUM
-      estimated_hours: 4
+      estimated_hours: 3
       tasks:
-        - Добавить middleware для замера времени выполнения запросов
-        - Создать logger для slow queries (> 500ms warning, > 1000ms error)
-        - Добавить метрики для bulk операций (количество, время выполнения)
-        - Создать dashboard endpoint GET /user/admin/metrics (ADMIN only)
-        - Добавить алерт на Prometheus/Grafana для slow queries (если есть)
-        - Интеграционные тесты для metrics endpoint
+        - ✅ ВЫПОЛНЕНО в USER-001-11: QueryPerformanceMiddleware для HTTP requests (>500ms warn, >1000ms error)
+        - Добавить SQL-level logging в Sequelize config (логирование медленных SQL запросов >100ms)
+        - Добавить timing метрики в bulk операции (измерение времени выполнения + логирование)
+        - Создать dashboard endpoint GET /user/admin/metrics (ADMIN only, статистика за 24ч)
+        - Добавить алерт на Prometheus/Grafana для slow queries (опционально, если инфра готова)
+        - Интеграционные тесты для metrics endpoint (3 теста: 200, 403, метрики валидны)
           files:
-        - src/infrastructure/common/middleware/query-performance.middleware.ts (new)
-        - src/infrastructure/repositories/user/user.repository.ts (metrics)
-        - src/infrastructure/controllers/user/user.controller.ts (metrics endpoint)
+        - src/infrastructure/common/middleware/query-performance.middleware.ts (✅ уже создан в USER-001-11)
+        - src/config/database/sequelize.config.ts (добавить SQL logging)
+        - src/infrastructure/repositories/user/user.repository.ts (добавить timing в bulk методы)
+        - src/infrastructure/controllers/user/user.controller.ts (новый endpoint /admin/metrics)
+        - src/infrastructure/responses/user/user-metrics.response.ts (new)
         - tests/integration/user/user-metrics.integration.test.ts (new)
           dod:
-        - Slow queries логируются с query text, execution time, correlation ID
+        - ✅ HTTP requests логируются через QueryPerformanceMiddleware (уже есть)
+        - SQL queries >100ms логируются с query text, execution time, correlation ID
         - Bulk операции логируются с метриками (affectedCount, duration)
         - Metrics endpoint возвращает статистику за последние 24 часа
-        - Тесты покрывают metrics collection и endpoint
+        - Тесты покрывают metrics collection и endpoint (200/403 + валидация данных)
 
     # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1576,22 +1586,36 @@ tasks:
 
     - category: "UNIT ТЕСТЫ: Utils функции"
       priority: LOW
-      estimated_hours: 2
+      estimated_hours: 3
       tasks:
-        - Создать unit тесты для escapeLikeWildcards (SQL injection защита)
-        - Создать unit тесты для normalizeRussianPhone (E.164 format)
-        - Создать unit тесты для @IsValidName валидатора
-        - Создать unit тесты для @IsValidPhone валидатора
+        - ⚠️ ВАЖНО: Сначала СОЗДАТЬ функцию escapeLikeWildcards (не существует!)
+        - Создать unit тесты для escapeLikeWildcards (SQL injection защита: %, \_, \)
+        - Создать unit тесты для normalizeRussianPhone (E.164 format: +7, 8, без префикса)
+        - Создать unit тесты для @IsValidName валидатора (кириллица, длина, пробелы)
+        - Создать unit тесты для @IsValidPhone валидатора (российские номера, международные)
           files:
-        - tests/unit/repositories/user/escape-like-wildcards.unit.test.ts (new)
+        - src/infrastructure/common/utils/escape-like-wildcards.utils.ts (new - СОЗДАТЬ СНАЧАЛА!)
+        - tests/unit/common/utils/escape-like-wildcards.unit.test.ts (new)
         - tests/unit/common/utils/phone-normalization.unit.test.ts (new)
         - tests/unit/common/validators/is-valid-name.unit.test.ts (new)
         - tests/unit/common/validators/is-valid-phone.unit.test.ts (new)
           dod:
-        - escapeLikeWildcards покрыт тестами (%, \_, \, комбинации)
-        - normalizeRussianPhone покрыт тестами (+7, 8, без префикса)
-        - Валидаторы покрыты тестами (positive/negative cases)
+        - escapeLikeWildcards РЕАЛИЗОВАНА и покрыта тестами (%, \_, \, комбинации)
+        - normalizeRussianPhone покрыт тестами (+7, 8, без префикса, невалидные)
+        - Валидаторы покрыты тестами (positive/negative cases, граничные значения)
         - Coverage для utils функций ≥ 90%
+        - Функция escapeLikeWildcards используется в searchUsersByName и fullTextSearchUsers
+          note: |
+          ⚠️ КРИТИЧНО: escapeLikeWildcards НЕ СУЩЕСТВУЕТ в кодебазе!
+          Нужно СОЗДАТЬ перед написанием тестов.
+          Функция должна экранировать спец. символы SQL LIKE: %, \_, \
+
+            Пример реализации:
+            export function escapeLikeWildcards(str: string): string {
+            return str.replace(/\\/g, '\\\\')
+            .replace(/%/g, '\\%')
+            .replace(/_/g, '\\_');
+            }
 
     - category: "ДОКУМЕНТАЦИЯ"
       priority: LOW
@@ -1618,14 +1642,16 @@ tasks:
     ═══════════════════════════════════════════════════════════════════════════════
 
     Задачи разделены по приоритетам:
-    - MEDIUM (4ч): Мониторинг и алерты - рекомендуется для production
-    - LOW (8ч): Рефакторинг, unit тесты, документация - можно отложить
+    - MEDIUM (3ч): Мониторинг и алерты - рекомендуется для production
+      ✅ HTTP middleware УЖЕ создан в USER-001-11 (QueryPerformanceMiddleware)
+      ⏳ Осталось: SQL logging + bulk metrics + dashboard endpoint
+    - LOW (9ч): Рефакторинг, unit тесты, документация - можно отложить
 
     Рекомендуется выполнять в отдельных PR:
-    1. PR #1: Мониторинг (MEDIUM) - 4 часа
+    1. PR #1: Мониторинг (MEDIUM) - 3 часа (было 4ч, HTTP middleware УЖЕ готов)
     2. PR #2: Рефакторинг файлов (LOW) - 3 часа
     3. PR #3: Рефакторинг tenant isolation (LOW) - 2 часа
-    4. PR #4: Unit тесты (LOW) - 2 часа
+    4. PR #4: Unit тесты (LOW) - 3 часа (было 2ч, добавлена реализация escapeLikeWildcards)
     5. PR #5: Документация (LOW) - 1 час
 
     Преимущества разделения на PR:
@@ -1639,13 +1665,14 @@ tasks:
     ═══════════════════════════════════════════════════════════════════════════════
 
     Рефакторинг:
-    - user.repository.ts: 2390 → ~1000 строк (-58%)
-    - Новые репозитории: 3 (search, stats, bulk)
-    - Дублирование кода: -30 строк (tenant isolation)
+    - user.repository.ts: 2609 → ~1000 строк (-61%, было 2390 → выросло на 219 строк за время USER-001-11)
+    - Новые репозитории: 3 (search ~300 строк, stats ~400 строк, bulk ~500 строк)
+    - Дублирование кода tenant isolation: -30 строк (40 методов → 1 метод getTenantIdSafe())
 
     Тестирование:
-    - Unit тесты: +4 файла (~80 тестов)
-    - Coverage utils: 0% → 90%
+    - Utils реализация: +1 файл (escapeLikeWildcards - СОЗДАТЬ!)
+    - Unit тесты: +4 файла (~100 тестов, было ~80)
+    - Coverage utils: 0% → 90%+
 
     Мониторинг:
     - Slow queries: логирование + алерты
