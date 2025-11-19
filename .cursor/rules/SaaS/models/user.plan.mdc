@@ -1466,18 +1466,21 @@ tasks:
 - id: USER-001-12
   title: "Post-merge улучшения User Module (рефакторинг, мониторинг, документация)"
   priority: SHOULD HAVE
-  status: pending
+  status: in_progress
   branch: "chore/user/USER-001-12/post-merge-improvements"
-  estimated_hours: 12
-  actual_hours_breakdown: "3ч (MEDIUM) + 9ч (LOW) = 12ч"
+  estimated_hours: 10.5
+  actual_hours_breakdown: "3ч (MEDIUM) + 7.5ч (LOW) = 10.5ч"
   complexity: medium
   dependencies: [USER-001-11]
+  selected_strategy: "Стратегия A (Полное выполнение) - 10.5ч за 5 PR"
   changelog: |
-  2025-11-19: План актуализирован
+  2025-11-19: План актуализирован и стратегия выбрана
     - ✅ Убрано дублирование: HTTP middleware УЖЕ создан в USER-001-11
     - ⚠️ Добавлено: escapeLikeWildcards нужно СОЗДАТЬ (не существует)
     - 📊 Обновлен размер: user.repository.ts 2390 → 2609 строк (+219 за USER-001-11)
-    - ⏱️ Оценка скорректирована: MEDIUM 4ч → 3ч, LOW 8ч → 9ч
+    - ⏱️ Оценка скорректирована: MEDIUM 4ч → 3ч, LOW 9ч → 7.5ч
+    - 🎯 Обнаружено: Unit тесты для validators УЖЕ ЕСТЬ (-1.5ч экономия)
+    - ✅ Выбрана стратегия A: Полное выполнение (5 PR, 10.5ч)
       files_scope:
     - "src/infrastructure/repositories/user/\*\*"
     - "src/infrastructure/services/user/\*\*"
@@ -1586,23 +1589,22 @@ tasks:
 
     - category: "UNIT ТЕСТЫ: Utils функции"
       priority: LOW
-      estimated_hours: 3
+      estimated_hours: 1.5
       tasks:
+        - ✅ ПРОПУСТИТЬ: @IsValidName и @IsValidPhone УЖЕ протестированы (239 строк тестов в validators/tests/)
         - ⚠️ ВАЖНО: Сначала СОЗДАТЬ функцию escapeLikeWildcards (не существует!)
-        - Создать unit тесты для escapeLikeWildcards (SQL injection защита: %, \_, \)
+        - Создать unit тесты для escapeLikeWildcards (SQL injection защита: %, _, \)
         - Создать unit тесты для normalizeRussianPhone (E.164 format: +7, 8, без префикса)
-        - Создать unit тесты для @IsValidName валидатора (кириллица, длина, пробелы)
-        - Создать unit тесты для @IsValidPhone валидатора (российские номера, международные)
           files:
         - src/infrastructure/common/utils/escape-like-wildcards.utils.ts (new - СОЗДАТЬ СНАЧАЛА!)
         - tests/unit/common/utils/escape-like-wildcards.unit.test.ts (new)
         - tests/unit/common/utils/phone-normalization.unit.test.ts (new)
-        - tests/unit/common/validators/is-valid-name.unit.test.ts (new)
-        - tests/unit/common/validators/is-valid-phone.unit.test.ts (new)
+        - ✅ ПРОПУСТИТЬ: tests/unit/common/validators/is-valid-name.unit.test.ts (УЖЕ ЕСТЬ - 113 строк)
+        - ✅ ПРОПУСТИТЬ: tests/unit/common/validators/is-valid-phone.unit.test.ts (УЖЕ ЕСТЬ - 126 строк)
           dod:
-        - escapeLikeWildcards РЕАЛИЗОВАНА и покрыта тестами (%, \_, \, комбинации)
+        - escapeLikeWildcards РЕАЛИЗОВАНА и покрыта тестами (%, _, \, комбинации)
         - normalizeRussianPhone покрыт тестами (+7, 8, без префикса, невалидные)
-        - Валидаторы покрыты тестами (positive/negative cases, граничные значения)
+        - ✅ Валидаторы УЖЕ покрыты (name: 113 строк, phone: 126 строк)
         - Coverage для utils функций ≥ 90%
         - Функция escapeLikeWildcards используется в searchUsersByName и fullTextSearchUsers
           note: |
@@ -1645,14 +1647,17 @@ tasks:
     - MEDIUM (3ч): Мониторинг и алерты - рекомендуется для production
       ✅ HTTP middleware УЖЕ создан в USER-001-11 (QueryPerformanceMiddleware)
       ⏳ Осталось: SQL logging + bulk metrics + dashboard endpoint
-    - LOW (9ч): Рефакторинг, unit тесты, документация - можно отложить
+    - LOW (7.5ч): Рефакторинг, unit тесты, документация - можно отложить
+      ✅ Validators УЖЕ протестированы (-1.5ч экономия)
 
     Рекомендуется выполнять в отдельных PR:
-    1. PR #1: Мониторинг (MEDIUM) - 3 часа (было 4ч, HTTP middleware УЖЕ готов)
+    1. PR #1: Мониторинг (MEDIUM) - 3 часа ⭐ НАЧАТЬ С ЭТОГО
     2. PR #2: Рефакторинг файлов (LOW) - 3 часа
-    3. PR #3: Рефакторинг tenant isolation (LOW) - 2 часа
-    4. PR #4: Unit тесты (LOW) - 3 часа (было 2ч, добавлена реализация escapeLikeWildcards)
-    5. PR #5: Документация (LOW) - 1 час
+    3. PR #3: Рефакторинг tenant isolation (LOW) - 2 часа ⭐ Быстрая победа
+    4. PR #4: Unit тесты (LOW) - 1.5 часа (было 3ч, validators УЖЕ протестированы)
+    5. PR #5: Документация (LOW) - 1 час ⭐ Быстрая победа
+    
+    ИТОГО: 10.5 часов (было 12ч, экономия 1.5ч)
 
     Преимущества разделения на PR:
     - Легче code review (меньше изменений)
@@ -1671,8 +1676,9 @@ tasks:
 
     Тестирование:
     - Utils реализация: +1 файл (escapeLikeWildcards - СОЗДАТЬ!)
-    - Unit тесты: +4 файла (~100 тестов, было ~80)
-    - Coverage utils: 0% → 90%+
+    - Unit тесты: +2 файла (~50 тестов, было планировалось ~100)
+    - ✅ Validators: УЖЕ ЕСТЬ (+239 строк, не требуется)
+    - Coverage utils: 0% → 90%+ (только escapeLike и normalizePhone)
 
     Мониторинг:
     - Slow queries: логирование + алерты
