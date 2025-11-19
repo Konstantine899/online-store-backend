@@ -37,7 +37,10 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import { hash } from 'bcrypt';
 import { createHash } from 'crypto';
-import { Op, QueryTypes, Sequelize } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
+import { UserBulkRepository } from './user-bulk.repository';
+import { UserSearchRepository } from './user-search.repository';
+import { UserStatsRepository } from './user-stats.repository';
 
 // Типы для статистики пользователей
 export interface UserStats {
@@ -65,6 +68,9 @@ export class UserRepository implements IUserRepository {
         private readonly smsProvider: ISmsProvider,
         private readonly tenantContext: TenantContext,
         private readonly cacheService: CacheService,
+        private readonly userSearchRepository: UserSearchRepository,
+        private readonly userStatsRepository: UserStatsRepository,
+        private readonly userBulkRepository: UserBulkRepository,
     ) {}
 
     // Централизованные методы обработки ошибок с structured logging
@@ -1310,73 +1316,12 @@ export class UserRepository implements IUserRepository {
     }
 
     // ===== User Statistics Methods =====
+    /**
+     * Получить общую статистику пользователей
+     * Делегирует в UserStatsRepository
+     */
     public async getUserStats(): Promise<UserStats> {
-        try {
-            const sequelize = this.userModel.sequelize;
-            if (!sequelize) {
-                throw new Error('Sequelize instance not available');
-            }
-
-            // 🔒 SECURITY: Получаем tenant_id для изоляции данных
-            // В тестах используем fallback на tenant 1, в production - строгая проверка (getTenantId() бросит исключение)
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const startTime = Date.now();
-            this.logger.log(
-                `Запрос статистики пользователей для tenant ${tenantId}`,
-            );
-
-            // Оптимизированный запрос: универсальные метрики для любого типа бизнеса
-            // ✅ FIXED: Добавлен WHERE tenant_id = ? для tenant isolation
-            const [results] = await sequelize.query(
-                `
-                SELECT
-                    COUNT(*) as totalUsers,
-                    SUM(CASE WHEN is_active = 1 AND is_blocked = 0 AND is_deleted = 0 THEN 1 ELSE 0 END) as activeUsers,
-                    SUM(CASE WHEN is_blocked = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as blockedUsers,
-                    SUM(CASE WHEN is_newsletter_subscribed = 1 AND is_deleted = 0 THEN 1 ELSE 0 END) as newsletterSubscribers
-                FROM user
-                WHERE is_deleted = 0 AND tenant_id = ?
-            `,
-                {
-                    replacements: [tenantId],
-                },
-            );
-
-            const executionTime = Date.now() - startTime;
-            this.logger.log(
-                `Статистика пользователей получена за ${executionTime}ms`,
-            );
-
-            const stats = (
-                results as Array<{
-                    totalUsers: number;
-                    activeUsers: number;
-                    blockedUsers: number;
-                    newsletterSubscribers: number;
-                }>
-            )[0];
-
-            return {
-                totalUsers: Number(stats.totalUsers) || 0,
-                activeUsers: Number(stats.activeUsers) || 0,
-                blockedUsers: Number(stats.blockedUsers) || 0,
-                newsletterSubscribers: Number(stats.newsletterSubscribers) || 0,
-            };
-        } catch (error: unknown) {
-            console.error(
-                'Ошибка при получении статистики пользователей:',
-                error,
-            );
-            this.handleSequelizeError(
-                error,
-                'получение статистики пользователей',
-            );
-            throw error;
-        }
+        return this.userStatsRepository.getUserStats();
     }
 
     // ==================== МЕТОДЫ ФИЛЬТРАЦИИ ====================
@@ -1662,62 +1607,20 @@ export class UserRepository implements IUserRepository {
      * @returns список найденных пользователей с метаданными пагинации
      * @example searchUsersByName('Иван', 1, 10) // найдёт "Иван Петров", "Петров Иван"
      */
+    /**
+     * Поиск пользователей по имени/фамилии с пагинацией
+     * Делегирует в UserSearchRepository
+     */
     public async searchUsersByName(
         searchTerm: string,
         page: number,
         limit: number,
     ): Promise<GetPaginatedUsersResponse> {
-        try {
-            // Защита: trim на уровне Repository
-            searchTerm = searchTerm.trim();
-
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const offset = (page - 1) * limit;
-            // Защита: экранируем LIKE спецсимволы (% и _) для предотвращения SQL injection
-            const escapedTerm = searchTerm.replace(/[%_]/g, '\\$&');
-            const searchPattern = `%${escapedTerm}%`;
-
-            const result = await this.userModel.findAndCountAll({
-                where: {
-                    tenantId,
-                    isDeleted: false,
-                    [Op.or]: [
-                        { firstName: { [Op.like]: searchPattern } },
-                        { lastName: { [Op.like]: searchPattern } },
-                    ],
-                },
-                attributes: { exclude: ['password'] },
-                limit,
-                offset,
-                order: [
-                    ['firstName', 'ASC'],
-                    ['lastName', 'ASC'],
-                ],
-            });
-
-            const totalCount = result.count;
-            const lastPage = Math.ceil(totalCount / limit);
-            const nextPage = page < lastPage ? page + 1 : 0;
-            const previousPage = page > 1 ? page - 1 : 0;
-
-            const meta: MetaData = {
-                totalCount,
-                lastPage,
-                currentPage: page,
-                nextPage,
-                previousPage,
-                limit,
-            };
-
-            return { data: result.rows, meta };
-        } catch (error: unknown) {
-            this.handleSequelizeError(error, 'поиск пользователей по имени');
-            throw error;
-        }
+        return this.userSearchRepository.searchUsersByName(
+            searchTerm,
+            page,
+            limit,
+        );
     }
 
     /**
@@ -1725,30 +1628,12 @@ export class UserRepository implements IUserRepository {
      * @param phone - полный номер телефона (например: "+79991234567")
      * @returns пользователь или null если не найден
      */
+    /**
+     * Найти пользователя по точному номеру телефона
+     * Делегирует в UserSearchRepository
+     */
     public async findUserByPhone(phone: string): Promise<UserModel | null> {
-        try {
-            // Защита: trim на уровне Repository
-            phone = phone.trim();
-
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const user = await this.userModel.findOne({
-                where: {
-                    tenantId,
-                    phone,
-                    isDeleted: false,
-                },
-                attributes: { exclude: ['password'] },
-            });
-
-            return user;
-        } catch (error: unknown) {
-            this.handleSequelizeError(error, 'поиск пользователя по телефону');
-            throw error;
-        }
+        return this.userSearchRepository.findUserByPhone(phone);
     }
 
     /**
@@ -1757,39 +1642,12 @@ export class UserRepository implements IUserRepository {
      * @returns список пользователей, номера которых начинаются с префикса
      * @example searchUsersByPhone('+7999') // найдёт "+79991234567", "+79998887766"
      */
+    /**
+     * Поиск пользователей по префиксу телефона (для автодополнения)
+     * Делегирует в UserSearchRepository
+     */
     public async searchUsersByPhone(phonePrefix: string): Promise<UserModel[]> {
-        try {
-            // Защита: trim на уровне Repository
-            phonePrefix = phonePrefix.trim();
-
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            // Нормализация: убираем всё кроме цифр для универсального поиска
-            // Это позволит найти "+79991234567" при поиске по "7999" или "+7999"
-            const normalizedPrefix = phonePrefix.replace(/\D/g, '');
-
-            const users = await this.userModel.findAll({
-                where: {
-                    tenantId,
-                    phone: { [Op.like]: `%${normalizedPrefix}%` },
-                    isDeleted: false,
-                },
-                attributes: { exclude: ['password'] },
-                limit: 20, // Ограничение для автодополнения
-                order: [['phone', 'ASC']],
-            });
-
-            return users;
-        } catch (error: unknown) {
-            this.handleSequelizeError(
-                error,
-                'поиск пользователей по префиксу телефона',
-            );
-            throw error;
-        }
+        return this.userSearchRepository.searchUsersByPhone(phonePrefix);
     }
 
     /**
@@ -1837,67 +1695,20 @@ export class UserRepository implements IUserRepository {
      * @example fullTextSearchUsers('ivan@mail.ru', 1, 10) // найдёт по email
      * @example fullTextSearchUsers('Иван Петров', 1, 10) // найдёт по имени/фамилии
      */
+    /**
+     * Полнотекстовый поиск пользователей по email, имени, фамилии и телефону
+     * Делегирует в UserSearchRepository
+     */
     public async fullTextSearchUsers(
         query: string,
         page: number,
         limit: number,
     ): Promise<GetPaginatedUsersResponse> {
-        try {
-            // Защита: trim на уровне Repository
-            query = query.trim();
-
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const offset = (page - 1) * limit;
-            // Защита: экранируем LIKE спецсимволы (% и _) для предотвращения SQL injection
-            const escapedQuery = query.replace(/[%_]/g, '\\$&');
-            const searchPattern = `%${escapedQuery}%`;
-
-            const result = await this.userModel.findAndCountAll({
-                where: {
-                    tenantId,
-                    isDeleted: false,
-                    [Op.or]: [
-                        { email: { [Op.like]: searchPattern } },
-                        { firstName: { [Op.like]: searchPattern } },
-                        { lastName: { [Op.like]: searchPattern } },
-                        { phone: { [Op.like]: searchPattern } },
-                    ],
-                },
-                attributes: { exclude: ['password'] },
-                limit,
-                offset,
-                order: [
-                    ['firstName', 'ASC'],
-                    ['lastName', 'ASC'],
-                ],
-            });
-
-            const totalCount = result.count;
-            const lastPage = Math.ceil(totalCount / limit);
-            const nextPage = page < lastPage ? page + 1 : 0;
-            const previousPage = page > 1 ? page - 1 : 0;
-
-            const meta: MetaData = {
-                totalCount,
-                lastPage,
-                currentPage: page,
-                nextPage,
-                previousPage,
-                limit,
-            };
-
-            return { data: result.rows, meta };
-        } catch (error: unknown) {
-            this.handleSequelizeError(
-                error,
-                'полнотекстовый поиск пользователей',
-            );
-            throw error;
-        }
+        return this.userSearchRepository.fullTextSearchUsers(
+            query,
+            page,
+            limit,
+        );
     }
 
     // ==================== МЕТОДЫ СТАТИСТИКИ ====================
@@ -1907,88 +1718,25 @@ export class UserRepository implements IUserRepository {
      * @returns статистика: количество пользователей для каждой роли с процентами
      * @example getUserStatsByRole() // { roles: [{ role: 'USER', count: 100, percentage: 80 }], totalUsers: 125 }
      */
+    /**
+     * Получить статистику пользователей по ролям
+     * Делегирует в UserStatsRepository
+     */
     public async getUserStatsByRole(): Promise<{
         roles: Array<{ role: string; count: number; percentage: number }>;
         totalUsers: number;
     }> {
-        try {
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const sequelize = this.userModel.sequelize;
-            if (!sequelize) {
-                throw new Error('Sequelize instance not available');
-            }
-
-            // Получаем статистику по ролям с процентами
-            const results = await sequelize.query<{
-                role: string;
-                count: number;
-                percentage: number;
-            }>(
-                `
-                SELECT
-                    r.role,
-                    COUNT(DISTINCT u.id) as count,
-                    ROUND((COUNT(DISTINCT u.id) * 100.0) / (
-                        SELECT COUNT(DISTINCT id)
-                        FROM user
-                        WHERE tenant_id = ? AND is_deleted = 0
-                    ), 2) as percentage
-                FROM user u
-                INNER JOIN user_role ur ON u.id = ur.user_id
-                INNER JOIN role r ON ur.role_id = r.id
-                WHERE u.tenant_id = ? AND u.is_deleted = 0
-                GROUP BY r.role
-                ORDER BY count DESC
-            `,
-                {
-                    replacements: [tenantId, tenantId],
-                    type: QueryTypes.SELECT,
-                },
-            );
-
-            // ⚠️ ВАЖНО: SQL ROUND() возвращает DECIMAL/string, преобразуем в число
-            const roles = results.map((row) => ({
-                role: row.role,
-                count: Number(row.count) || 0,
-                percentage: Number(row.percentage) || 0, // "44.87" → 44.87
-            }));
-
-            // Получаем общее количество пользователей
-            const totalResult = await sequelize.query<{ total: number }>(
-                `
-                SELECT COUNT(DISTINCT id) as total
-                FROM user
-                WHERE tenant_id = ? AND is_deleted = 0
-            `,
-                {
-                    replacements: [tenantId],
-                    type: QueryTypes.SELECT,
-                },
-            );
-
-            const totalUsers = Number(totalResult[0]?.total) || 0;
-
-            return {
-                roles,
-                totalUsers,
-            };
-        } catch (error: unknown) {
-            this.handleSequelizeError(
-                error,
-                'получение статистики пользователей по ролям',
-            );
-            throw error;
-        }
+        return this.userStatsRepository.getUserStatsByRole();
     }
 
     /**
      * Получить статистику активности пользователей
      * @returns статистика: активные пользователи за 24ч, 7д, 30д, никогда не логинились
      * @example getUserActivityStats() // { activeInLast24Hours: 50, activeInLast7Days: 200, ... }
+     */
+    /**
+     * Получить статистику активности пользователей
+     * Делегирует в UserStatsRepository
      */
     public async getUserActivityStats(): Promise<{
         activeInLast24Hours: number;
@@ -1997,85 +1745,7 @@ export class UserRepository implements IUserRepository {
         neverLoggedIn: number;
         totalUsers: number;
     }> {
-        try {
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const sequelize = this.userModel.sequelize;
-            if (!sequelize) {
-                throw new Error('Sequelize instance not available');
-            }
-
-            // Получаем статистику активности за разные периоды
-            const [results] = await sequelize.query(
-                `
-                SELECT
-                    COUNT(*) as totalUsers,
-                    SUM(CASE
-                        WHEN last_login_at IS NOT NULL
-                        AND last_login_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                        THEN 1 ELSE 0
-                    END) as activeInLast24Hours,
-                    SUM(CASE
-                        WHEN last_login_at IS NOT NULL
-                        AND last_login_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-                        THEN 1 ELSE 0
-                    END) as activeInLast7Days,
-                    SUM(CASE
-                        WHEN last_login_at IS NOT NULL
-                        AND last_login_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-                        THEN 1 ELSE 0
-                    END) as activeInLast30Days,
-                    SUM(CASE
-                        WHEN last_login_at IS NULL
-                        THEN 1 ELSE 0
-                    END) as neverLoggedIn
-                FROM user
-                WHERE tenant_id = ? AND is_deleted = 0
-            `,
-                {
-                    replacements: [tenantId],
-                    type: QueryTypes.SELECT,
-                },
-            );
-
-            const stats = (
-                results as Array<{
-                    totalUsers: number;
-                    activeInLast24Hours: number;
-                    activeInLast7Days: number;
-                    activeInLast30Days: number;
-                    neverLoggedIn: number;
-                }>
-            )[0];
-
-            // Защита: если SQL не вернул строк
-            if (!stats) {
-                return {
-                    activeInLast24Hours: 0,
-                    activeInLast7Days: 0,
-                    activeInLast30Days: 0,
-                    neverLoggedIn: 0,
-                    totalUsers: 0,
-                };
-            }
-
-            return {
-                activeInLast24Hours: Number(stats.activeInLast24Hours) || 0,
-                activeInLast7Days: Number(stats.activeInLast7Days) || 0,
-                activeInLast30Days: Number(stats.activeInLast30Days) || 0,
-                neverLoggedIn: Number(stats.neverLoggedIn) || 0,
-                totalUsers: Number(stats.totalUsers) || 0,
-            };
-        } catch (error: unknown) {
-            this.handleSequelizeError(
-                error,
-                'получение статистики активности пользователей',
-            );
-            throw error;
-        }
+        return this.userStatsRepository.getUserActivityStats();
     }
 
     // ==================== BULK ОПЕРАЦИИ ====================
@@ -2085,55 +1755,12 @@ export class UserRepository implements IUserRepository {
      * @param userIds - массив ID пользователей для активации
      * @returns количество обновлённых пользователей
      */
+    /**
+     * Массовая активация пользователей
+     * Делегирует в UserBulkRepository
+     */
     public async bulkActivateUsers(userIds: number[]): Promise<number> {
-        if (!this.userModel.sequelize) {
-            throw new Error('Sequelize instance is not available');
-        }
-        const transaction = await this.userModel.sequelize.transaction();
-        const start = Date.now(); // Начало измерения времени
-
-        try {
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const [affectedCount] = await this.userModel.update(
-                { isActive: true },
-                {
-                    where: {
-                        id: userIds,
-                        tenantId,
-                        isDeleted: false,
-                    },
-                    transaction,
-                },
-            );
-
-            await transaction.commit();
-
-            const duration = Date.now() - start; // Конец измерения времени
-
-            this.logger.log(
-                {
-                    operation: 'bulkActivateUsers',
-                    userIdsCount: userIds.length,
-                    affectedCount,
-                    duration: `${duration}ms`,
-                    tenantId,
-                },
-                `Массовая активация ${affectedCount} пользователей за ${duration}ms`,
-            );
-
-            return affectedCount;
-        } catch (error: unknown) {
-            await transaction.rollback();
-            this.handleSequelizeError(
-                error,
-                'массовая активация пользователей',
-            );
-            throw error;
-        }
+        return this.userBulkRepository.bulkActivateUsers(userIds);
     }
 
     /**
@@ -2141,55 +1768,12 @@ export class UserRepository implements IUserRepository {
      * @param userIds - массив ID пользователей для деактивации
      * @returns количество обновлённых пользователей
      */
+    /**
+     * Массовая деактивация пользователей
+     * Делегирует в UserBulkRepository
+     */
     public async bulkDeactivateUsers(userIds: number[]): Promise<number> {
-        if (!this.userModel.sequelize) {
-            throw new Error('Sequelize instance is not available');
-        }
-        const transaction = await this.userModel.sequelize.transaction();
-        const start = Date.now();
-
-        try {
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const [affectedCount] = await this.userModel.update(
-                { isActive: false },
-                {
-                    where: {
-                        id: userIds,
-                        tenantId,
-                        isDeleted: false,
-                    },
-                    transaction,
-                },
-            );
-
-            await transaction.commit();
-
-            const duration = Date.now() - start;
-
-            this.logger.log(
-                {
-                    operation: 'bulkDeactivateUsers',
-                    userIdsCount: userIds.length,
-                    affectedCount,
-                    duration: `${duration}ms`,
-                    tenantId,
-                },
-                `Массовая деактивация ${affectedCount} пользователей за ${duration}ms`,
-            );
-
-            return affectedCount;
-        } catch (error: unknown) {
-            await transaction.rollback();
-            this.handleSequelizeError(
-                error,
-                'массовая деактивация пользователей',
-            );
-            throw error;
-        }
+        return this.userBulkRepository.bulkDeactivateUsers(userIds);
     }
 
     /**
@@ -2197,55 +1781,12 @@ export class UserRepository implements IUserRepository {
      * @param userIds - массив ID пользователей для блокировки
      * @returns количество обновлённых пользователей
      */
+    /**
+     * Массовая блокировка пользователей
+     * Делегирует в UserBulkRepository
+     */
     public async bulkBlockUsers(userIds: number[]): Promise<number> {
-        if (!this.userModel.sequelize) {
-            throw new Error('Sequelize instance is not available');
-        }
-        const transaction = await this.userModel.sequelize.transaction();
-        const start = Date.now();
-
-        try {
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const [affectedCount] = await this.userModel.update(
-                { isBlocked: true },
-                {
-                    where: {
-                        id: userIds,
-                        tenantId,
-                        isDeleted: false,
-                    },
-                    transaction,
-                },
-            );
-
-            await transaction.commit();
-
-            const duration = Date.now() - start;
-
-            this.logger.log(
-                {
-                    operation: 'bulkBlockUsers',
-                    userIdsCount: userIds.length,
-                    affectedCount,
-                    duration: `${duration}ms`,
-                    tenantId,
-                },
-                `Массовая блокировка ${affectedCount} пользователей за ${duration}ms`,
-            );
-
-            return affectedCount;
-        } catch (error: unknown) {
-            await transaction.rollback();
-            this.handleSequelizeError(
-                error,
-                'массовая блокировка пользователей',
-            );
-            throw error;
-        }
+        return this.userBulkRepository.bulkBlockUsers(userIds);
     }
 
     /**
@@ -2253,55 +1794,12 @@ export class UserRepository implements IUserRepository {
      * @param userIds - массив ID пользователей для разблокировки
      * @returns количество обновлённых пользователей
      */
+    /**
+     * Массовая разблокировка пользователей
+     * Делегирует в UserBulkRepository
+     */
     public async bulkUnblockUsers(userIds: number[]): Promise<number> {
-        if (!this.userModel.sequelize) {
-            throw new Error('Sequelize instance is not available');
-        }
-        const transaction = await this.userModel.sequelize.transaction();
-        const start = Date.now();
-
-        try {
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const [affectedCount] = await this.userModel.update(
-                { isBlocked: false },
-                {
-                    where: {
-                        id: userIds,
-                        tenantId,
-                        isDeleted: false,
-                    },
-                    transaction,
-                },
-            );
-
-            await transaction.commit();
-
-            const duration = Date.now() - start;
-
-            this.logger.log(
-                {
-                    operation: 'bulkUnblockUsers',
-                    userIdsCount: userIds.length,
-                    affectedCount,
-                    duration: `${duration}ms`,
-                    tenantId,
-                },
-                `Массовая разблокировка ${affectedCount} пользователей за ${duration}ms`,
-            );
-
-            return affectedCount;
-        } catch (error: unknown) {
-            await transaction.rollback();
-            this.handleSequelizeError(
-                error,
-                'массовая разблокировка пользователей',
-            );
-            throw error;
-        }
+        return this.userBulkRepository.bulkUnblockUsers(userIds);
     }
 
     /**
@@ -2309,52 +1807,12 @@ export class UserRepository implements IUserRepository {
      * @param userIds - массив ID пользователей для удаления
      * @returns количество обновлённых пользователей
      */
+    /**
+     * Массовое soft delete пользователей
+     * Делегирует в UserBulkRepository
+     */
     public async bulkDeleteUsers(userIds: number[]): Promise<number> {
-        if (!this.userModel.sequelize) {
-            throw new Error('Sequelize instance is not available');
-        }
-        const transaction = await this.userModel.sequelize.transaction();
-        const start = Date.now();
-
-        try {
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const [affectedCount] = await this.userModel.update(
-                { isDeleted: true },
-                {
-                    where: {
-                        id: userIds,
-                        tenantId,
-                        isDeleted: false, // только неудалённые
-                    },
-                    transaction,
-                },
-            );
-
-            await transaction.commit();
-
-            const duration = Date.now() - start;
-
-            this.logger.log(
-                {
-                    operation: 'bulkDeleteUsers',
-                    userIdsCount: userIds.length,
-                    affectedCount,
-                    duration: `${duration}ms`,
-                    tenantId,
-                },
-                `Массовое soft delete ${affectedCount} пользователей за ${duration}ms`,
-            );
-
-            return affectedCount;
-        } catch (error: unknown) {
-            await transaction.rollback();
-            this.handleSequelizeError(error, 'массовое удаление пользователей');
-            throw error;
-        }
+        return this.userBulkRepository.bulkDeleteUsers(userIds);
     }
 
     /**
@@ -2362,59 +1820,12 @@ export class UserRepository implements IUserRepository {
      * @param userIds - массив ID пользователей для верификации
      * @returns количество обновлённых пользователей
      */
+    /**
+     * Массовая верификация пользователей
+     * Делегирует в UserBulkRepository
+     */
     public async bulkVerifyUsers(userIds: number[]): Promise<number> {
-        if (!this.userModel.sequelize) {
-            throw new Error('Sequelize instance is not available');
-        }
-        const transaction = await this.userModel.sequelize.transaction();
-        const start = Date.now();
-
-        try {
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const [affectedCount] = await this.userModel.update(
-                {
-                    isVerified: true,
-                    isEmailVerified: true,
-                    isPhoneVerified: true,
-                },
-                {
-                    where: {
-                        id: userIds,
-                        tenantId,
-                        isDeleted: false,
-                    },
-                    transaction,
-                },
-            );
-
-            await transaction.commit();
-
-            const duration = Date.now() - start;
-
-            this.logger.log(
-                {
-                    operation: 'bulkVerifyUsers',
-                    userIdsCount: userIds.length,
-                    affectedCount,
-                    duration: `${duration}ms`,
-                    tenantId,
-                },
-                `Массовая верификация ${affectedCount} пользователей за ${duration}ms`,
-            );
-
-            return affectedCount;
-        } catch (error: unknown) {
-            await transaction.rollback();
-            this.handleSequelizeError(
-                error,
-                'массовая верификация пользователей',
-            );
-            throw error;
-        }
+        return this.userBulkRepository.bulkVerifyUsers(userIds);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════
@@ -2430,69 +1841,16 @@ export class UserRepository implements IUserRepository {
      * @description Находит пользователей, которые не логинились последние N дней
      *              или у которых last_login_at = NULL
      */
+    /**
+     * Поиск неактивных пользователей (без логина N дней)
+     * Делегирует в UserSearchRepository
+     */
     public async findInactiveUsers(
         days: number,
         page: number,
         limit: number,
     ): Promise<GetPaginatedUsersResponse> {
-        try {
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const offset = (page - 1) * limit;
-
-            // Вычисляем дату N дней назад
-            const inactiveSince = new Date();
-            inactiveSince.setDate(inactiveSince.getDate() - days);
-
-            const result = await this.userModel.findAndCountAll({
-                where: {
-                    tenantId,
-                    isDeleted: false,
-                    [Op.or]: [
-                        { lastLoginAt: { [Op.lt]: inactiveSince } },
-                        { lastLoginAt: null },
-                    ],
-                },
-                attributes: { exclude: ['password'] },
-                order: [
-                    Sequelize.literal(
-                        'last_login_at IS NULL DESC, last_login_at ASC',
-                    ),
-                ], // NULL первыми, затем старые
-                limit,
-                offset,
-            });
-
-            const totalCount = result.count;
-            const lastPage = Math.ceil(totalCount / limit);
-            const nextPage = page < lastPage ? page + 1 : 0;
-            const previousPage = page > 1 ? page - 1 : 0;
-
-            this.logger.log(
-                { days, page, limit, totalCount, tenantId },
-                `Найдено ${totalCount} неактивных пользователей (${days} дней)`,
-            );
-
-            const meta: MetaData = {
-                totalCount,
-                lastPage,
-                currentPage: page,
-                nextPage,
-                previousPage,
-                limit,
-            };
-
-            return {
-                data: result.rows,
-                meta,
-            };
-        } catch (error: unknown) {
-            this.handleSequelizeError(error, 'поиск неактивных пользователей');
-            throw error;
-        }
+        return this.userSearchRepository.findInactiveUsers(days, page, limit);
     }
 
     /**
@@ -2502,60 +1860,18 @@ export class UserRepository implements IUserRepository {
      * @returns Promise<GetPaginatedUsersResponse>
      * @description Находит пользователей с is_profile_completed = false
      */
+    /**
+     * Поиск пользователей с неполным профилем
+     * Делегирует в UserSearchRepository
+     */
     public async findUsersWithIncompleteProfile(
         page: number,
         limit: number,
     ): Promise<GetPaginatedUsersResponse> {
-        try {
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const offset = (page - 1) * limit;
-
-            const result = await this.userModel.findAndCountAll({
-                where: {
-                    tenantId,
-                    isDeleted: false,
-                    isProfileCompleted: false,
-                },
-                attributes: { exclude: ['password'] },
-                order: [['createdAt', 'DESC']],
-                limit,
-                offset,
-            });
-
-            const totalCount = result.count;
-            const lastPage = Math.ceil(totalCount / limit);
-            const nextPage = page < lastPage ? page + 1 : 0;
-            const previousPage = page > 1 ? page - 1 : 0;
-
-            this.logger.log(
-                { page, limit, totalCount, tenantId },
-                `Найдено ${totalCount} пользователей с неполным профилем`,
-            );
-
-            const meta: MetaData = {
-                totalCount,
-                lastPage,
-                currentPage: page,
-                nextPage,
-                previousPage,
-                limit,
-            };
-
-            return {
-                data: result.rows,
-                meta,
-            };
-        } catch (error: unknown) {
-            this.handleSequelizeError(
-                error,
-                'поиск пользователей с неполным профилем',
-            );
-            throw error;
-        }
+        return this.userSearchRepository.findUsersWithIncompleteProfile(
+            page,
+            limit,
+        );
     }
 
     /**
@@ -2568,6 +1884,10 @@ export class UserRepository implements IUserRepository {
      * @returns Promise<GetPaginatedUsersResponse>
      * @description Находит пользователей, у которых указанное поле попадает в диапазон дат
      */
+    /**
+     * Поиск пользователей по диапазону дат
+     * Делегирует в UserSearchRepository
+     */
     public async findUsersByDateRange(
         field: 'createdAt' | 'lastLoginAt',
         startDate: Date,
@@ -2575,65 +1895,12 @@ export class UserRepository implements IUserRepository {
         page: number,
         limit: number,
     ): Promise<GetPaginatedUsersResponse> {
-        try {
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
-
-            const offset = (page - 1) * limit;
-
-            const result = await this.userModel.findAndCountAll({
-                where: {
-                    tenantId,
-                    isDeleted: false,
-                    [field]: {
-                        [Op.between]: [startDate, endDate],
-                    },
-                },
-                attributes: { exclude: ['password'] },
-                order: [[field, 'DESC']],
-                limit,
-                offset,
-            });
-
-            const totalCount = result.count;
-            const lastPage = Math.ceil(totalCount / limit);
-            const nextPage = page < lastPage ? page + 1 : 0;
-            const previousPage = page > 1 ? page - 1 : 0;
-
-            this.logger.log(
-                {
-                    field,
-                    startDate: startDate.toISOString(),
-                    endDate: endDate.toISOString(),
-                    page,
-                    limit,
-                    totalCount,
-                    tenantId,
-                },
-                `Найдено ${totalCount} пользователей по диапазону дат (${field})`,
-            );
-
-            const meta: MetaData = {
-                totalCount,
-                lastPage,
-                currentPage: page,
-                nextPage,
-                previousPage,
-                limit,
-            };
-
-            return {
-                data: result.rows,
-                meta,
-            };
-        } catch (error: unknown) {
-            this.handleSequelizeError(
-                error,
-                'поиск пользователей по диапазону дат',
-            );
-            throw error;
-        }
+        return this.userSearchRepository.findUsersByDateRange(
+            field,
+            startDate,
+            endDate,
+            page,
+            limit,
+        );
     }
 }

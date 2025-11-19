@@ -38,6 +38,9 @@ import { RatingRepository } from './rating/rating.repository';
 import { RefreshTokenRepository } from './refresh-token/refresh-token.repository';
 import { RoleRepository } from './role/role.repository';
 import { UserAddressRepository } from './user-address/user-address.repository';
+import { UserBulkRepository } from './user/user-bulk.repository';
+import { UserSearchRepository } from './user/user-search.repository';
+import { UserStatsRepository } from './user/user-stats.repository';
 import { UserRepository } from './user/user.repository';
 
 @Module({
@@ -80,6 +83,9 @@ import { UserRepository } from './user/user.repository';
         RoleRepository,
         RefreshTokenRepository,
         UserRepository,
+        UserSearchRepository, // Специализированный репозиторий для поиска пользователей
+        UserStatsRepository, // Специализированный репозиторий для статистики пользователей
+        UserBulkRepository, // Специализированный репозиторий для bulk операций
         UserAddressRepository,
         LoginHistoryRepository,
         PasswordResetTokenRepository,
@@ -99,6 +105,9 @@ import { UserRepository } from './user/user.repository';
         RoleRepository,
         RefreshTokenRepository,
         UserRepository,
+        UserSearchRepository, // Экспортируем для использования в тестах
+        UserStatsRepository, // Экспортируем для использования в тестах
+        UserBulkRepository, // Экспортируем для использования в тестах
         UserAddressRepository,
         LoginHistoryRepository,
         PasswordResetTokenRepository,
