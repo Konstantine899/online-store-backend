@@ -32,16 +32,9 @@ export class UserMetricsResponse {
             bulkDeleteUsers: 3,
             bulkVerifyUsers: 7,
         },
-        description: 'Разбивка по типам bulk операций',
+        description: 'Разбивка по типам bulk операций (динамический Record)',
     })
-    declare bulkOperationsByType: {
-        bulkActivateUsers: number;
-        bulkDeactivateUsers: number;
-        bulkBlockUsers: number;
-        bulkUnblockUsers: number;
-        bulkDeleteUsers: number;
-        bulkVerifyUsers: number;
-    };
+    declare bulkOperationsByType: Record<string, number>;
 
     @ApiProperty({
         example: 0.02,

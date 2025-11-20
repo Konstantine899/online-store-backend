@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 
 /**
  * MetricsCollector
@@ -8,11 +8,17 @@ import { Injectable, Logger } from '@nestjs/common';
  * Для production: рекомендуется заменить на Prometheus + Grafana
  *
  * Метрики сохраняются в памяти на 24 часа, затем автоматически удаляются
+ *
+ * Ограничения:
+ * - Максимум 10K записей каждого типа (для предотвращения memory leak)
+ * - Не работает при horizontal scaling (каждый instance имеет свои метрики)
  */
 @Injectable()
-export class MetricsCollector {
+export class MetricsCollector implements OnModuleDestroy {
     private readonly logger = new Logger(MetricsCollector.name);
     private readonly METRICS_TTL_MS = 24 * 60 * 60 * 1000; // 24 часа
+    private readonly MAX_METRICS_SIZE = 10000; // Максимум 10K записей каждого типа
+    private cleanupInterval?: NodeJS.Timeout;
 
     // Хранилище метрик bulk операций
     private bulkOperations: Array<{
@@ -37,18 +43,39 @@ export class MetricsCollector {
     }> = [];
 
     constructor() {
-        // Автоматическая очистка старых метрик каждый час
-        setInterval(() => this.cleanupOldMetrics(), 60 * 60 * 1000);
+        // Автоматическая очистка старых метрик каждый час (только в production)
+        if (process.env.NODE_ENV !== 'test') {
+            this.cleanupInterval = setInterval(
+                () => this.cleanupOldMetrics(),
+                60 * 60 * 1000,
+            );
+        }
+    }
+
+    /**
+     * Lifecycle hook для очистки resources при уничтожении модуля
+     */
+    onModuleDestroy(): void {
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
+            this.logger.debug('MetricsCollector cleanup interval cleared');
+        }
     }
 
     /**
      * Записать метрику bulk операции
+     * FIFO: При достижении лимита удаляются самые старые записи
      */
     public recordBulkOperation(
         operation: string,
         duration: number,
         affectedCount: number,
     ): void {
+        // Проверяем размер перед добавлением (FIFO)
+        if (this.bulkOperations.length >= this.MAX_METRICS_SIZE) {
+            this.bulkOperations.shift(); // Удаляем самую старую запись
+        }
+
         this.bulkOperations.push({
             operation,
             duration,
@@ -59,8 +86,14 @@ export class MetricsCollector {
 
     /**
      * Записать метрику медленного SQL запроса
+     * FIFO: При достижении лимита удаляются самые старые записи
      */
     public recordSlowQuery(sql: string, duration: number): void {
+        // Проверяем размер перед добавлением (FIFO)
+        if (this.slowQueries.length >= this.MAX_METRICS_SIZE) {
+            this.slowQueries.shift(); // Удаляем самую старую запись
+        }
+
         this.slowQueries.push({
             sql: sql.substring(0, 200), // Truncate для экономии памяти
             duration,
@@ -70,8 +103,14 @@ export class MetricsCollector {
 
     /**
      * Записать ошибку
+     * FIFO: При достижении лимита удаляются самые старые записи
      */
     public recordError(context: string, error: string): void {
+        // Проверяем размер перед добавлением (FIFO)
+        if (this.errors.length >= this.MAX_METRICS_SIZE) {
+            this.errors.shift(); // Удаляем самую старую запись
+        }
+
         this.errors.push({
             context,
             error: error.substring(0, 500),
@@ -166,15 +205,23 @@ export class MetricsCollector {
             errors: this.errors.length,
         };
 
+        const removed = {
+            bulkOps: beforeCleanup.bulkOps - afterCleanup.bulkOps,
+            slowQueries: beforeCleanup.slowQueries - afterCleanup.slowQueries,
+            errors: beforeCleanup.errors - afterCleanup.errors,
+        };
+
+        // Логируем для мониторинга memory usage
         this.logger.debug(
             {
                 before: beforeCleanup,
                 after: afterCleanup,
-                removed: {
-                    bulkOps: beforeCleanup.bulkOps - afterCleanup.bulkOps,
-                    slowQueries:
-                        beforeCleanup.slowQueries - afterCleanup.slowQueries,
-                    errors: beforeCleanup.errors - afterCleanup.errors,
+                removed,
+                maxSize: this.MAX_METRICS_SIZE,
+                memoryPressure: {
+                    bulkOps: `${((afterCleanup.bulkOps / this.MAX_METRICS_SIZE) * 100).toFixed(1)}%`,
+                    slowQueries: `${((afterCleanup.slowQueries / this.MAX_METRICS_SIZE) * 100).toFixed(1)}%`,
+                    errors: `${((afterCleanup.errors / this.MAX_METRICS_SIZE) * 100).toFixed(1)}%`,
                 },
             },
             'Очистка старых метрик (>24ч)',

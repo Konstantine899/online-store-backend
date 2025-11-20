@@ -8,7 +8,9 @@ describe('String Utils (unit)', () => {
             });
 
             it('должен экранировать множественные символы %', () => {
-                expect(escapeLikeWildcards('%%test%%')).toBe('\\%\\%test\\%\\%');
+                expect(escapeLikeWildcards('%%test%%')).toBe(
+                    '\\%\\%test\\%\\%',
+                );
             });
 
             it('должен экранировать % в середине строки', () => {
@@ -30,7 +32,9 @@ describe('String Utils (unit)', () => {
             });
 
             it('должен экранировать множественные символы _', () => {
-                expect(escapeLikeWildcards('__test__')).toBe('\\_\\_test\\_\\_');
+                expect(escapeLikeWildcards('__test__')).toBe(
+                    '\\_\\_test\\_\\_',
+                );
             });
 
             it('должен экранировать _ в середине строки', () => {
@@ -52,11 +56,15 @@ describe('String Utils (unit)', () => {
             });
 
             it('должен экранировать множественные символы \\', () => {
-                expect(escapeLikeWildcards('\\\\test\\\\')).toBe('\\\\\\\\test\\\\\\\\');
+                expect(escapeLikeWildcards('\\\\test\\\\')).toBe(
+                    '\\\\\\\\test\\\\\\\\',
+                );
             });
 
             it('должен экранировать \\ в середине строки', () => {
-                expect(escapeLikeWildcards('test\\value')).toBe('test\\\\value');
+                expect(escapeLikeWildcards('test\\value')).toBe(
+                    'test\\\\value',
+                );
             });
 
             it('должен обработать строку только из \\', () => {
@@ -187,4 +195,3 @@ describe('String Utils (unit)', () => {
         });
     });
 });
-

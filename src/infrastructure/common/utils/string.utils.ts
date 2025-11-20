@@ -34,4 +34,3 @@ export function escapeLikeWildcards(input: string): string {
         .replace(/%/g, '\\%') // % -> \%
         .replace(/_/g, '\\_'); // _ -> \_
 }
-

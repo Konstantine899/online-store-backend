@@ -165,11 +165,14 @@ export class UserSearchRepository {
             // Нормализация: убираем всё кроме цифр для универсального поиска
             // Это позволит найти "+79991234567" при поиске по "7999" или "+7999"
             const normalizedPrefix = phonePrefix.replace(/\D/g, '');
+            
+            // Защита: экранируем LIKE спецсимволы (хотя после нормализации остаются только цифры)
+            const escapedPrefix = escapeLikeWildcards(normalizedPrefix);
 
             const users = await this.userModel.findAll({
                 where: {
                     tenantId,
-                    phone: { [Op.like]: `%${normalizedPrefix}%` },
+                    phone: { [Op.like]: `%${escapedPrefix}%` },
                     isDeleted: false,
                 },
                 attributes: { exclude: ['password'] },

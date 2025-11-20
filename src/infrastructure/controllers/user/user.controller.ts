@@ -1,3 +1,4 @@
+import { MetricsCollector } from '@app/infrastructure/common/services';
 import {
     AddRoleDto,
     CreateUserDto,
@@ -49,12 +50,12 @@ import {
     BulkVerifyUsersSwaggerDecorator,
 } from '@app/infrastructure/common/decorators/swagger/user/bulk-operations.swagger';
 import { ChangePasswordSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/change-password.swagger';
+import { GetUserMetricsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/metrics.swagger';
 import {
     GetInactiveUsersSwaggerDecorator,
     GetIncompleteProfilesSwaggerDecorator,
     GetUsersByDateRangeSwaggerDecorator,
 } from '@app/infrastructure/common/decorators/swagger/user/specialized-queries.swagger';
-import { GetUserMetricsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/metrics.swagger';
 import { UpdateConsentsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-consents.swagger';
 import { UpdateDateOfBirthSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-date-of-birth.swagger';
 
@@ -72,7 +73,6 @@ import {
 } from '@nestjs/swagger';
 
 import { UserModel } from '@app/domain/models';
-import { UserMetricsResponse } from '@app/infrastructure/responses';
 import { UpdateUserFlagsSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-flags.swagger';
 import { UpdateUserPreferencesSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-preferences.swagger';
 import { UpdateUserProfileSwaggerDecorator } from '@app/infrastructure/common/decorators/swagger/user/update-user-profile.swagger';
@@ -110,6 +110,7 @@ import {
     UpdateUserPreferencesResponse,
     UpdateUserResponse,
     UpdateUserStatusResponse,
+    UserMetricsResponse,
 } from '@app/infrastructure/responses';
 
 import { IUserController } from '@app/domain/controllers';
@@ -160,7 +161,10 @@ const StaffGuards = (): ReturnType<typeof UseGuards> =>
 @ApiTags('Пользователи')
 @Controller('user')
 export class UserController implements IUserController {
-    constructor(private readonly userService: UserService) {}
+    constructor(
+        private readonly userService: UserService,
+        private readonly metricsCollector: MetricsCollector,
+    ) {}
 
     // Метод для извлечения userId с валидацией
     private extractUserId(req: AuthenticatedRequest): number {
@@ -562,7 +566,8 @@ export class UserController implements IUserController {
     @Get('/admin/metrics')
     @HttpCode(HttpStatus.OK)
     public async getUserMetrics(): Promise<UserMetricsResponse> {
-        return this.userService.getUserMetrics();
+        // Получаем реальные метрики из MetricsCollector (in-memory aggregation)
+        return this.metricsCollector.getMetrics();
     }
 
     /**

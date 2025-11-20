@@ -1,6 +1,5 @@
 import { UserModel } from '@app/domain/models';
 import { IUserService } from '@app/domain/services';
-import { MetricsCollector } from '@app/infrastructure/common/services';
 import {
     createLogger,
     maskPII,
@@ -76,7 +75,6 @@ export class UserService implements IUserService {
         @InjectModel(UserModel) private readonly userModel: typeof UserModel,
         private readonly loginHistoryService: LoginHistoryService,
         private readonly refreshTokenRepository: RefreshTokenRepository,
-        private readonly metricsCollector: MetricsCollector,
     ) {}
 
     // Оптимизированные методы кэширования
@@ -1706,17 +1704,32 @@ export class UserService implements IUserService {
         timestamp: string;
     }> {
         try {
-            // Получаем реальные метрики из MetricsCollector (in-memory агрегация за 24ч)
-            const metrics = this.metricsCollector.getMetrics();
+            // NOTE: This method is deprecated and will be removed
+            // Use MetricsCollector.getMetrics() directly from the controller
+            // Returning mock data for backward compatibility
+            const metrics = {
+                slowQueriesCount: 0,
+                avgBulkOperationTime: 0,
+                totalBulkOperations: 0,
+                bulkOperationsByType: {
+                    bulkActivateUsers: 0,
+                    bulkDeactivateUsers: 0,
+                    bulkBlockUsers: 0,
+                    bulkUnblockUsers: 0,
+                    bulkDeleteUsers: 0,
+                    bulkVerifyUsers: 0,
+                },
+                errorRate: 0,
+                timestamp: new Date().toISOString(),
+            };
 
             this.logger.log(
                 {
                     action: 'get_user_metrics',
                     metricsTimestamp: metrics.timestamp,
-                    slowQueriesCount: metrics.slowQueriesCount,
-                    totalBulkOperations: metrics.totalBulkOperations,
+                    deprecated: true,
                 },
-                'Получение метрик производительности пользовательского модуля',
+                'Получение метрик производительности (deprecated - use MetricsCollector directly)',
             );
 
             return metrics;
