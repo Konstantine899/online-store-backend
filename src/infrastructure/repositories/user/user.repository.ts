@@ -122,6 +122,17 @@ export class UserRepository implements IUserRepository {
         throw error;
     }
 
+    /**
+     * Централизованный метод получения tenant ID с поддержкой тестового режима
+     * @returns tenant ID для production или fallback значение для тестов
+     */
+    private getTenantIdSafe(): number {
+        if (process.env.NODE_ENV === 'test') {
+            return this.tenantContext.getTenantIdOrNull() ?? 1;
+        }
+        return this.tenantContext.getTenantId();
+    }
+
     private ensureUserExists(
         user: UserModel | null,
         context: string = 'операция',
@@ -278,10 +289,7 @@ export class UserRepository implements IUserRepository {
             );
 
             // Получаем tenantId из контекста (с fallback для тестов)
-            const tenantId =
-                process.env.NODE_ENV === 'test'
-                    ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                    : this.tenantContext.getTenantId();
+            const tenantId = this.getTenantIdSafe();
 
             const user = await this.userModel.create({
                 email: allowedFields.email,
@@ -454,10 +462,7 @@ export class UserRepository implements IUserRepository {
     ): Promise<GetPaginatedUsersResponse> {
         // 🔒 SECURITY: Получаем tenant_id для изоляции данных
         // В тестах используем fallback на tenant 1, в production - строгая проверка (getTenantId() бросит исключение)
-        const tenantId =
-            process.env.NODE_ENV === 'test'
-                ? (this.tenantContext.getTenantIdOrNull() ?? 1)
-                : this.tenantContext.getTenantId();
+        const tenantId = this.getTenantIdSafe();
 
         const offset = (page - 1) * limit;
 
