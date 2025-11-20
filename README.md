@@ -570,11 +570,45 @@ CI pipeline **полностью настроен** и автоматическ�
 
 #### Users
 
+**Базовые операции:**
 - `GET /user/profile` - Профиль пользователя
 - `PATCH /user/profile` - Обновление профиля
 - `PATCH /user/profile/password` - Смена пароля
 - `POST /user/verify/email/request` - Запросить код верификации email
 - `POST /user/verify/email/confirm` - Подтвердить email
+
+**Фильтрация пользователей (ADMIN):**
+- `GET /user/active` - Активные пользователи (с пагинацией)
+- `GET /user/blocked` - Заблокированные пользователи
+- `GET /user/vip` - VIP клиенты (высокий приоритет)
+- `GET /user/premium` - Premium пользователи
+- `GET /user/verified` - Верифицированные пользователи
+
+**Поиск пользователей (ADMIN):**
+- `GET /user/search/name` - Поиск по имени/фамилии (с пагинацией)
+- `GET /user/search/phone` - Поиск по номеру телефона
+- `GET /user/full-text-search` - Полнотекстовый поиск по всем полям
+
+**Специализированные запросы (ADMIN):**
+- `GET /user/inactive` - Неактивные пользователи (не заходили >90 дней)
+- `GET /user/incomplete-profiles` - Незаполненные профили
+- `GET /user/date-range` - Фильтр по дате регистрации
+
+**Статистика (ADMIN):**
+- `GET /user/stats` - Общая статистика пользователей
+- `GET /user/stats/role` - Статистика по ролям с процентами
+- `GET /user/stats/activity` - Статистика активности (24ч/7д/30д)
+
+**Bulk операции (ADMIN):**
+- `POST /user/bulk/activate` - Массовая активация пользователей
+- `POST /user/bulk/deactivate` - Массовая деактивация
+- `POST /user/bulk/block` - Массовая блокировка
+- `POST /user/bulk/unblock` - Массовая разблокировка
+- `POST /user/bulk/delete` - Массовое мягкое удаление (soft delete)
+- `POST /user/bulk/verify` - Массовая верификация пользователей
+
+**Мониторинг (ADMIN):**
+- `GET /user/admin/metrics` - Метрики производительности модуля пользователей
 
 ### Формат ответа (Pagination)
 
