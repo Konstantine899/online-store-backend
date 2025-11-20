@@ -1608,30 +1608,30 @@ tasks:
     related_limitation: "getUserMetrics() возвращает mock данные"
     approach: "Создать MetricsRepository + интеграция с pino-http"
 
-                - task: "Исправить memory leak в MetricsCollector"
-                  estimated: "30 минут"
-                  related_limitation: "MetricsCollector memory leak"
-                  approach: "Добавить onModuleDestroy() + clearInterval()"
+                    - task: "Исправить memory leak в MetricsCollector"
+                      estimated: "30 минут"
+                      related_limitation: "MetricsCollector memory leak"
+                      approach: "Добавить onModuleDestroy() + clearInterval()"
 
-                - task: "Добавить size limits в MetricsCollector"
-                  estimated: "1 час"
-                  related_limitation: "Отсутствие size limits"
-                  approach: "MAX_METRICS_SIZE + FIFO logic + monitoring"
+                    - task: "Добавить size limits в MetricsCollector"
+                      estimated: "1 час"
+                      related_limitation: "Отсутствие size limits"
+                      approach: "MAX_METRICS_SIZE + FIFO logic + monitoring"
 
     priority_low: - task: "Заменить inline replace() на escapeLikeWildcards() в UserSearchRepository"
     estimated: "15 минут"
     locations: "2 места в searchUsersByName и fullTextSearchUsers"
     note: "Осталось после рефакторинга PR#6"
 
-                - task: "Добавить unit тесты для normalizeRussianPhone"
-                  estimated: "1 час"
-                  coverage_goal: "≥90%"
-                  test_cases: "+7, 8, без префикса, невалидные форматы"
+                    - task: "Добавить unit тесты для normalizeRussianPhone"
+                      estimated: "1 час"
+                      coverage_goal: "≥90%"
+                      test_cases: "+7, 8, без префикса, невалидные форматы"
 
-                - task: "Добавить repository-level integration tests"
-                  estimated: "2-3 часа"
-                  scope: "UserSearchRepository, UserStatsRepository, UserBulkRepository"
-                  note: "Есть controller integration tests, но нет прямых repository tests"
+                    - task: "Добавить repository-level integration tests"
+                      estimated: "2-3 часа"
+                      scope: "UserSearchRepository, UserStatsRepository, UserBulkRepository"
+                      note: "Есть controller integration tests, но нет прямых repository tests"
 
     files_scope:
     - "src/infrastructure/repositories/user/\*\*"
@@ -1696,7 +1696,7 @@ tasks:
         limitations:
         - "getUserMetrics() возвращает hardcoded значения (slowQueriesCount: 5, etc.)"
         - "Horizontal scaling не поддерживается (in-memory storage)"
-        
+
         fixed_in_cleanup:
         - "✅ MetricsCollector memory leak ИСПРАВЛЕН (onModuleDestroy + clearInterval)"
         - "✅ Size limits ДОБАВЛЕНЫ (MAX_METRICS_SIZE = 10,000 + FIFO logic)"
@@ -1833,7 +1833,7 @@ tasks:
 
         note: |
         ✅ УСПЕШНО: Все utils функции полностью протестированы!
-        
+
         escapeLikeWildcards (PR#4):
         - 38 строк реализации (экранирование %, \_, \)
         - 208 строк тестов (105+ test cases)
@@ -1979,36 +1979,36 @@ tasks:
     changes: "SQL logging, bulk metrics, GET /admin/metrics, 3 integration tests"
     hours: 3
 
-                - commit: "d2b28ea"
-                  pr: "#2"
-                  message: "refactor(user): split repository into specialized modules"
-                  changes: "UserRepository 2609→1710 lines, +3 specialized repos (SRP), DI config"
-                  hours: 4
+                    - commit: "d2b28ea"
+                      pr: "#2"
+                      message: "refactor(user): split repository into specialized modules"
+                      changes: "UserRepository 2609→1710 lines, +3 specialized repos (SRP), DI config"
+                      hours: 4
 
-                - commit: "f0d88c1"
-                  pr: "#3"
-                  message: "refactor(user): extract tenant isolation logic"
-                  changes: "getTenantIdSafe(), убрано 8 дублирований, -32 lines (DRY)"
-                  hours: 2
+                    - commit: "f0d88c1"
+                      pr: "#3"
+                      message: "refactor(user): extract tenant isolation logic"
+                      changes: "getTenantIdSafe(), убрано 8 дублирований, -32 lines (DRY)"
+                      hours: 2
 
-                - commit: "ea8e6cd"
-                  pr: "#4"
-                  message: "test(user): add string.utils with SQL LIKE wildcard escaping"
-                  changes: "escapeLikeWildcards (38 lines) + 105+ unit tests (208 lines)"
-                  hours: 1.5
+                    - commit: "ea8e6cd"
+                      pr: "#4"
+                      message: "test(user): add string.utils with SQL LIKE wildcard escaping"
+                      changes: "escapeLikeWildcards (38 lines) + 105+ unit tests (208 lines)"
+                      hours: 1.5
 
-                - commit: "621f305"
-                  pr: "#5"
-                  message: "docs(user): comprehensive documentation update for USER-001-11/12"
-                  changes: "1,256 lines docs (README, bulk ops, indexes, CHANGELOG)"
-                  hours: 1
+                    - commit: "621f305"
+                      pr: "#5"
+                      message: "docs(user): comprehensive documentation update for USER-001-11/12"
+                      changes: "1,256 lines docs (README, bulk ops, indexes, CHANGELOG)"
+                      hours: 1
 
-                - commit: "bde2823"
-                  pr: "#6 (hotfix)"
-                  message: "refactor(user): minor improvements for code quality"
-                  changes: "MetricsCollector (193 lines), DRY escapeLikeWildcards, 12 integration tests"
-                  hours: 1
-                  note: "Незапланированный hotfix после code review для устранения найденных проблем"
+                    - commit: "bde2823"
+                      pr: "#6 (hotfix)"
+                      message: "refactor(user): minor improvements for code quality"
+                      changes: "MetricsCollector (193 lines), DRY escapeLikeWildcards, 12 integration tests"
+                      hours: 1
+                      note: "Незапланированный hotfix после code review для устранения найденных проблем"
 
     gate:
     - require: "Одобряю USER-001-12"
