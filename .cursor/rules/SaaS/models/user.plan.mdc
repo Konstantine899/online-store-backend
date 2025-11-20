@@ -36,15 +36,15 @@ tasks:
   commits:
     - hash: "6e1c343"
       message: "feat(user): USER-001-01 complete - improve name fields validation and add profile endpoint"
-  actual_hours: ~4
-  deliverables:
+      actual_hours: ~4
+      deliverables:
     - "✅ UpdateUserProfileDto with @IsValidName validation"
     - "✅ PATCH /users/profile endpoint"
     - "✅ UpdateUserProfileResponse with Swagger"
     - "✅ @UpdateUserProfileSwaggerDecorator()"
     - "✅ Tenant isolation in UserService"
     - "✅ Unit tests for name validation"
-  files_scope:
+      files_scope:
     - "src/domain/models/user.model.ts"
     - "src/infrastructure/services/user/\*\*"
     - "src/infrastructure/dto/user/\*\*"
@@ -90,8 +90,8 @@ tasks:
       message: "feat(user): USER-001-02 complete - improve phone validation for Russian formats"
     - hash: "149cbaa"
       message: "docs(user): update USER-001-02 plan documentation"
-  actual_hours: ~5
-  deliverables:
+      actual_hours: ~5
+      deliverables:
     - "✅ @IsValidPhone validator for Russian formats (+7, 8, без префикса)"
     - "✅ PATCH /users/profile/phone endpoint"
     - "✅ UpdateUserPhoneDto with phone validation"
@@ -99,7 +99,7 @@ tasks:
     - "✅ @UpdateUserPhoneSwaggerDecorator()"
     - "✅ Tenant isolation"
     - "✅ Phone validation tests (all Russian formats)"
-  files_scope:
+      files_scope:
     - "src/domain/models/user.model.ts"
     - "src/infrastructure/services/user/\*\*"
     - "src/infrastructure/dto/user/\*\*"
@@ -147,8 +147,8 @@ tasks:
       message: "fix(user): USER-001-03 fix dateOfBirth handling and validation error format in tests"
     - hash: "c7b890d"
       message: "Merge branch 'feature/user/USER-001/add-birth-date-field' into dev"
-  actual_hours: ~6
-  deliverables:
+      actual_hours: ~6
+      deliverables:
     - "✅ Migration: 20251104230000-add-date-of-birth-to-users.ts"
     - "✅ PATCH /users/profile/date-of-birth endpoint"
     - "✅ UpdateDateOfBirthDto with age 18+ validation"
@@ -156,7 +156,7 @@ tasks:
     - "✅ @UpdateDateOfBirthSwaggerDecorator()"
     - "✅ Tenant isolation"
     - "✅ Age validation tests (18+, invalid dates, future dates)"
-  files_scope:
+      files_scope:
     - "db/migrations/\*\*"
     - "db/models/user.ts"
     - "db/models/types.ts"
@@ -207,8 +207,8 @@ tasks:
   commits:
     - hash: "3008012"
       message: "feat(user): USER-001-04 add consent management API with GDPR compliance"
-  actual_hours: ~4
-  deliverables:
+      actual_hours: ~4
+      deliverables:
     - "✅ PATCH /users/consents endpoint"
     - "✅ UpdateConsentsDto with boolean validation"
     - "✅ UpdateConsentsResponse with Swagger"
@@ -216,7 +216,7 @@ tasks:
     - "✅ GDPR compliance (newsletter, marketing, cookies)"
     - "✅ Tenant isolation"
     - "✅ Consent management tests"
-  files_scope:
+      files_scope:
     - "src/domain/models/user.model.ts"
     - "src/infrastructure/services/user/\*\*"
     - "src/infrastructure/dto/user/\*\*"
@@ -259,8 +259,8 @@ tasks:
   commits:
     - hash: "28192c5"
       message: "feat(user): add admin status management API with full tenant isolation"
-  actual_hours: ~5
-  deliverables:
+      actual_hours: ~5
+      deliverables:
     - "✅ PATCH /users/:id/status endpoint (ADMIN only)"
     - "✅ UpdateUserStatusDto with status flags validation"
     - "✅ UpdateUserStatusResponse with Swagger"
@@ -268,7 +268,7 @@ tasks:
     - "✅ RoleGuard with @Roles(...ADMIN_ROLES)"
     - "✅ Tenant isolation (admin only manages own tenant users)"
     - "✅ RBAC tests + tenant isolation tests"
-  files_scope:
+      files_scope:
     - "src/domain/models/user.model.ts"
     - "src/infrastructure/services/user/\*\*"
     - "src/infrastructure/dto/user/\*\*"
@@ -410,15 +410,15 @@ tasks:
       message: "test(user): add UserRepository verification unit tests (VERIFY-03)"
     - hash: "fab66a2"
       message: "docs(user): mark USER-001-06.1 as completed"
-  actual_hours: ~3
-  deliverables:
+      actual_hours: ~3
+      deliverables:
     - "✅ user-verification.unit.test.ts (comprehensive tests)"
     - "✅ user-repository-verification.unit.test.ts (repository tests)"
     - "✅ All verification unit tests passing"
-  note: "Integration тесты проходят (43/44), но 6 unit тестов требуют обновления моков после изменения генерации кодов"
-  branch: "fix/user/USER-001-06/update-unit-test-mocks"
-  parent_task: "USER-001-06"
-  files_scope:
+      note: "Integration тесты проходят (43/44), но 6 unit тестов требуют обновления моков после изменения генерации кодов"
+      branch: "fix/user/USER-001-06/update-unit-test-mocks"
+      parent_task: "USER-001-06"
+      files_scope:
     - "src/infrastructure/repositories/user/tests/user-repository-verification.unit.test.ts"
     - "src/infrastructure/services/user/user.service.unit.test.ts"
       steps:
@@ -1696,30 +1696,30 @@ tasks:
     related_limitation: "getUserMetrics() возвращает mock данные"
     approach: "Создать MetricsRepository + интеграция с pino-http"
 
-                    - task: "Исправить memory leak в MetricsCollector"
-                      estimated: "30 минут"
-                      related_limitation: "MetricsCollector memory leak"
-                      approach: "Добавить onModuleDestroy() + clearInterval()"
+                        - task: "Исправить memory leak в MetricsCollector"
+                          estimated: "30 минут"
+                          related_limitation: "MetricsCollector memory leak"
+                          approach: "Добавить onModuleDestroy() + clearInterval()"
 
-                    - task: "Добавить size limits в MetricsCollector"
-                      estimated: "1 час"
-                      related_limitation: "Отсутствие size limits"
-                      approach: "MAX_METRICS_SIZE + FIFO logic + monitoring"
+                        - task: "Добавить size limits в MetricsCollector"
+                          estimated: "1 час"
+                          related_limitation: "Отсутствие size limits"
+                          approach: "MAX_METRICS_SIZE + FIFO logic + monitoring"
 
     priority_low: - task: "Заменить inline replace() на escapeLikeWildcards() в UserSearchRepository"
     estimated: "15 минут"
     locations: "2 места в searchUsersByName и fullTextSearchUsers"
     note: "Осталось после рефакторинга PR#6"
 
-                    - task: "Добавить unit тесты для normalizeRussianPhone"
-                      estimated: "1 час"
-                      coverage_goal: "≥90%"
-                      test_cases: "+7, 8, без префикса, невалидные форматы"
+                        - task: "Добавить unit тесты для normalizeRussianPhone"
+                          estimated: "1 час"
+                          coverage_goal: "≥90%"
+                          test_cases: "+7, 8, без префикса, невалидные форматы"
 
-                    - task: "Добавить repository-level integration tests"
-                      estimated: "2-3 часа"
-                      scope: "UserSearchRepository, UserStatsRepository, UserBulkRepository"
-                      note: "Есть controller integration tests, но нет прямых repository tests"
+                        - task: "Добавить repository-level integration tests"
+                          estimated: "2-3 часа"
+                          scope: "UserSearchRepository, UserStatsRepository, UserBulkRepository"
+                          note: "Есть controller integration tests, но нет прямых repository tests"
 
     files_scope:
     - "src/infrastructure/repositories/user/\*\*"
@@ -2067,36 +2067,36 @@ tasks:
     changes: "SQL logging, bulk metrics, GET /admin/metrics, 3 integration tests"
     hours: 3
 
-                    - commit: "d2b28ea"
-                      pr: "#2"
-                      message: "refactor(user): split repository into specialized modules"
-                      changes: "UserRepository 2609→1710 lines, +3 specialized repos (SRP), DI config"
-                      hours: 4
+                        - commit: "d2b28ea"
+                          pr: "#2"
+                          message: "refactor(user): split repository into specialized modules"
+                          changes: "UserRepository 2609→1710 lines, +3 specialized repos (SRP), DI config"
+                          hours: 4
 
-                    - commit: "f0d88c1"
-                      pr: "#3"
-                      message: "refactor(user): extract tenant isolation logic"
-                      changes: "getTenantIdSafe(), убрано 8 дублирований, -32 lines (DRY)"
-                      hours: 2
+                        - commit: "f0d88c1"
+                          pr: "#3"
+                          message: "refactor(user): extract tenant isolation logic"
+                          changes: "getTenantIdSafe(), убрано 8 дублирований, -32 lines (DRY)"
+                          hours: 2
 
-                    - commit: "ea8e6cd"
-                      pr: "#4"
-                      message: "test(user): add string.utils with SQL LIKE wildcard escaping"
-                      changes: "escapeLikeWildcards (38 lines) + 105+ unit tests (208 lines)"
-                      hours: 1.5
+                        - commit: "ea8e6cd"
+                          pr: "#4"
+                          message: "test(user): add string.utils with SQL LIKE wildcard escaping"
+                          changes: "escapeLikeWildcards (38 lines) + 105+ unit tests (208 lines)"
+                          hours: 1.5
 
-                    - commit: "621f305"
-                      pr: "#5"
-                      message: "docs(user): comprehensive documentation update for USER-001-11/12"
-                      changes: "1,256 lines docs (README, bulk ops, indexes, CHANGELOG)"
-                      hours: 1
+                        - commit: "621f305"
+                          pr: "#5"
+                          message: "docs(user): comprehensive documentation update for USER-001-11/12"
+                          changes: "1,256 lines docs (README, bulk ops, indexes, CHANGELOG)"
+                          hours: 1
 
-                    - commit: "bde2823"
-                      pr: "#6 (hotfix)"
-                      message: "refactor(user): minor improvements for code quality"
-                      changes: "MetricsCollector (193 lines), DRY escapeLikeWildcards, 12 integration tests"
-                      hours: 1
-                      note: "Незапланированный hotfix после code review для устранения найденных проблем"
+                        - commit: "bde2823"
+                          pr: "#6 (hotfix)"
+                          message: "refactor(user): minor improvements for code quality"
+                          changes: "MetricsCollector (193 lines), DRY escapeLikeWildcards, 12 integration tests"
+                          hours: 1
+                          note: "Незапланированный hotfix после code review для устранения найденных проблем"
 
     gate:
     - require: "Одобряю USER-001-12"
