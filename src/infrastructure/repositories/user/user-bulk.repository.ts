@@ -1,5 +1,6 @@
 import { UserModel } from '@app/domain/models';
 import { TenantContext } from '@app/infrastructure/common/context';
+import { MetricsCollector } from '@app/infrastructure/common/services';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 
@@ -28,6 +29,7 @@ export class UserBulkRepository {
     constructor(
         @InjectModel(UserModel) private userModel: typeof UserModel,
         private readonly tenantContext: TenantContext,
+        private readonly metricsCollector: MetricsCollector,
     ) {}
 
     /**
@@ -90,6 +92,13 @@ export class UserBulkRepository {
 
             const duration = Date.now() - start; // Конец измерения времени
 
+            // Записываем метрики
+            this.metricsCollector.recordBulkOperation(
+                'bulkActivateUsers',
+                duration,
+                affectedCount,
+            );
+
             this.logger.log(
                 {
                     operation: 'bulkActivateUsers',
@@ -142,6 +151,13 @@ export class UserBulkRepository {
             await transaction.commit();
 
             const duration = Date.now() - start;
+
+            // Записываем метрики
+            this.metricsCollector.recordBulkOperation(
+                'bulkDeactivateUsers',
+                duration,
+                affectedCount,
+            );
 
             this.logger.log(
                 {
@@ -196,6 +212,13 @@ export class UserBulkRepository {
 
             const duration = Date.now() - start;
 
+            // Записываем метрики
+            this.metricsCollector.recordBulkOperation(
+                'bulkBlockUsers',
+                duration,
+                affectedCount,
+            );
+
             this.logger.log(
                 {
                     operation: 'bulkBlockUsers',
@@ -248,6 +271,13 @@ export class UserBulkRepository {
             await transaction.commit();
 
             const duration = Date.now() - start;
+
+            // Записываем метрики
+            this.metricsCollector.recordBulkOperation(
+                'bulkUnblockUsers',
+                duration,
+                affectedCount,
+            );
 
             this.logger.log(
                 {
@@ -302,6 +332,13 @@ export class UserBulkRepository {
 
             const duration = Date.now() - start;
 
+            // Записываем метрики
+            this.metricsCollector.recordBulkOperation(
+                'bulkDeleteUsers',
+                duration,
+                affectedCount,
+            );
+
             this.logger.log(
                 {
                     operation: 'bulkDeleteUsers',
@@ -355,6 +392,13 @@ export class UserBulkRepository {
             await transaction.commit();
 
             const duration = Date.now() - start;
+
+            // Записываем метрики
+            this.metricsCollector.recordBulkOperation(
+                'bulkVerifyUsers',
+                duration,
+                affectedCount,
+            );
 
             this.logger.log(
                 {

@@ -1,5 +1,6 @@
 import { UserModel } from '@app/domain/models';
 import { TenantContext } from '@app/infrastructure/common/context';
+import { escapeLikeWildcards } from '@app/infrastructure/common/utils/string.utils';
 import { MetaData } from '@app/infrastructure/paginate';
 import { GetPaginatedUsersResponse } from '@app/infrastructure/responses';
 import { Injectable, Logger } from '@nestjs/common';
@@ -74,12 +75,12 @@ export class UserSearchRepository {
             // Защита: trim на уровне Repository
             searchTerm = searchTerm.trim();
 
-            const tenantId = this.getTenantIdSafe();
+        const tenantId = this.getTenantIdSafe();
 
-            const offset = (page - 1) * limit;
-            // Защита: экранируем LIKE спецсимволы (% и _) для предотвращения SQL injection
-            const escapedTerm = searchTerm.replace(/[%_]/g, '\\$&');
-            const searchPattern = `%${escapedTerm}%`;
+        const offset = (page - 1) * limit;
+        // Защита: экранируем LIKE спецсимволы (%, _, \) для предотвращения SQL injection
+        const escapedTerm = escapeLikeWildcards(searchTerm);
+        const searchPattern = `%${escapedTerm}%`;
 
             const result = await this.userModel.findAndCountAll({
                 where: {
@@ -203,12 +204,12 @@ export class UserSearchRepository {
             // Защита: trim на уровне Repository
             query = query.trim();
 
-            const tenantId = this.getTenantIdSafe();
+        const tenantId = this.getTenantIdSafe();
 
-            const offset = (page - 1) * limit;
-            // Защита: экранируем LIKE спецсимволы (% и _) для предотвращения SQL injection
-            const escapedQuery = query.replace(/[%_]/g, '\\$&');
-            const searchPattern = `%${escapedQuery}%`;
+        const offset = (page - 1) * limit;
+        // Защита: экранируем LIKE спецсимволы (%, _, \) для предотвращения SQL injection
+        const escapedQuery = escapeLikeWildcards(query);
+        const searchPattern = `%${escapedQuery}%`;
 
             const result = await this.userModel.findAndCountAll({
                 where: {

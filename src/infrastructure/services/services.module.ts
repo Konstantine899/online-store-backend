@@ -5,6 +5,7 @@ import {
     UserNotificationSettingsModel,
 } from '@app/domain/models';
 import { NotificationEventHandler } from '@app/infrastructure/common/events/notification.event-handler';
+import { MetricsCollector } from '@app/infrastructure/common/services';
 import { jwtConfig } from '@app/infrastructure/config/jwt';
 import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
@@ -45,6 +46,7 @@ import { UserService } from './user/user.service';
         JwtModule,
     ],
     providers: [
+        MetricsCollector,
         AuthService,
         BrandService,
         CartService,
@@ -78,6 +80,7 @@ import { UserService } from './user/user.service';
         },
     ],
     exports: [
+        MetricsCollector,
         AuthService,
         BrandService,
         CartService,

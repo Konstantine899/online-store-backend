@@ -1,5 +1,6 @@
 import { UserModel } from '@app/domain/models';
 import { IUserService } from '@app/domain/services';
+import { MetricsCollector } from '@app/infrastructure/common/services';
 import {
     createLogger,
     maskPII,
@@ -75,6 +76,7 @@ export class UserService implements IUserService {
         @InjectModel(UserModel) private readonly userModel: typeof UserModel,
         private readonly loginHistoryService: LoginHistoryService,
         private readonly refreshTokenRepository: RefreshTokenRepository,
+        private readonly metricsCollector: MetricsCollector,
     ) {}
 
     // Оптимизированные методы кэширования
@@ -1704,28 +1706,15 @@ export class UserService implements IUserService {
         timestamp: string;
     }> {
         try {
-            // TODO: Заменить на реальную агрегацию логов из Prometheus/БД
-            // Для MVP возвращаем mock данные
-            const metrics = {
-                slowQueriesCount: 0,
-                avgBulkOperationTime: 0,
-                totalBulkOperations: 0,
-                bulkOperationsByType: {
-                    bulkActivateUsers: 0,
-                    bulkDeactivateUsers: 0,
-                    bulkBlockUsers: 0,
-                    bulkUnblockUsers: 0,
-                    bulkDeleteUsers: 0,
-                    bulkVerifyUsers: 0,
-                },
-                errorRate: 0,
-                timestamp: new Date().toISOString(),
-            };
+            // Получаем реальные метрики из MetricsCollector (in-memory агрегация за 24ч)
+            const metrics = this.metricsCollector.getMetrics();
 
             this.logger.log(
                 {
                     action: 'get_user_metrics',
                     metricsTimestamp: metrics.timestamp,
+                    slowQueriesCount: metrics.slowQueriesCount,
+                    totalBulkOperations: metrics.totalBulkOperations,
                 },
                 'Получение метрик производительности пользовательского модуля',
             );
