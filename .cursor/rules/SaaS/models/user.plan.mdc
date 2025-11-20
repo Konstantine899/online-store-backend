@@ -30,7 +30,20 @@ tasks:
 
 - id: USER-001-01
   title: Улучшить валидацию полей имени и фамилии и добавить API endpoint
+  status: COMPLETED
+  completed_at: "2024-11-05"
   branch: "feature/user/USER-001/improve-name-fields-validation"
+  commits:
+    - hash: "6e1c343"
+      message: "feat(user): USER-001-01 complete - improve name fields validation and add profile endpoint"
+  actual_hours: ~4
+  deliverables:
+    - "✅ UpdateUserProfileDto with @IsValidName validation"
+    - "✅ PATCH /users/profile endpoint"
+    - "✅ UpdateUserProfileResponse with Swagger"
+    - "✅ @UpdateUserProfileSwaggerDecorator()"
+    - "✅ Tenant isolation in UserService"
+    - "✅ Unit tests for name validation"
   files_scope:
     - "src/domain/models/user.model.ts"
     - "src/infrastructure/services/user/\*\*"
@@ -69,7 +82,23 @@ tasks:
 
 - id: USER-001-02
   title: Улучшить валидацию телефона для российских номеров
+  status: COMPLETED
+  completed_at: "2024-11-06"
   branch: "feature/user/USER-001/improve-phone-validation"
+  commits:
+    - hash: "1369bed"
+      message: "feat(user): USER-001-02 complete - improve phone validation for Russian formats"
+    - hash: "149cbaa"
+      message: "docs(user): update USER-001-02 plan documentation"
+  actual_hours: ~5
+  deliverables:
+    - "✅ @IsValidPhone validator for Russian formats (+7, 8, без префикса)"
+    - "✅ PATCH /users/profile/phone endpoint"
+    - "✅ UpdateUserPhoneDto with phone validation"
+    - "✅ UpdateUserPhoneResponse with Swagger"
+    - "✅ @UpdateUserPhoneSwaggerDecorator()"
+    - "✅ Tenant isolation"
+    - "✅ Phone validation tests (all Russian formats)"
   files_scope:
     - "src/domain/models/user.model.ts"
     - "src/infrastructure/services/user/\*\*"
@@ -108,7 +137,25 @@ tasks:
 
 - id: USER-001-03
   title: Добавить поле даты рождения с валидацией возраста
+  status: COMPLETED
+  completed_at: "2024-11-07"
   branch: "feature/user/USER-001/add-birth-date-field"
+  commits:
+    - hash: "a104ea8"
+      message: "feat(user): USER-001-03 add date of birth field with age validation"
+    - hash: "d939824"
+      message: "fix(user): USER-001-03 fix dateOfBirth handling and validation error format in tests"
+    - hash: "c7b890d"
+      message: "Merge branch 'feature/user/USER-001/add-birth-date-field' into dev"
+  actual_hours: ~6
+  deliverables:
+    - "✅ Migration: 20251104230000-add-date-of-birth-to-users.ts"
+    - "✅ PATCH /users/profile/date-of-birth endpoint"
+    - "✅ UpdateDateOfBirthDto with age 18+ validation"
+    - "✅ UpdateDateOfBirthResponse with Swagger"
+    - "✅ @UpdateDateOfBirthSwaggerDecorator()"
+    - "✅ Tenant isolation"
+    - "✅ Age validation tests (18+, invalid dates, future dates)"
   files_scope:
     - "db/migrations/\*\*"
     - "db/models/user.ts"
@@ -154,7 +201,21 @@ tasks:
 
 - id: USER-001-04
   title: Добавить API endpoint для управления флагами согласий
+  status: COMPLETED
+  completed_at: "2024-11-08"
   branch: "feature/user/USER-001/add-consent-management-api"
+  commits:
+    - hash: "3008012"
+      message: "feat(user): USER-001-04 add consent management API with GDPR compliance"
+  actual_hours: ~4
+  deliverables:
+    - "✅ PATCH /users/consents endpoint"
+    - "✅ UpdateConsentsDto with boolean validation"
+    - "✅ UpdateConsentsResponse with Swagger"
+    - "✅ @UpdateConsentsSwaggerDecorator()"
+    - "✅ GDPR compliance (newsletter, marketing, cookies)"
+    - "✅ Tenant isolation"
+    - "✅ Consent management tests"
   files_scope:
     - "src/domain/models/user.model.ts"
     - "src/infrastructure/services/user/\*\*"
@@ -192,7 +253,21 @@ tasks:
 
 - id: USER-001-05
   title: Добавить API endpoint для управления статусными флагами с админскими контролами
+  status: COMPLETED
+  completed_at: "2024-11-09"
   branch: "feature/user/USER-001/add-status-management-api"
+  commits:
+    - hash: "28192c5"
+      message: "feat(user): add admin status management API with full tenant isolation"
+  actual_hours: ~5
+  deliverables:
+    - "✅ PATCH /users/:id/status endpoint (ADMIN only)"
+    - "✅ UpdateUserStatusDto with status flags validation"
+    - "✅ UpdateUserStatusResponse with Swagger"
+    - "✅ @UpdateUserStatusSwaggerDecorator()"
+    - "✅ RoleGuard with @Roles(...ADMIN_ROLES)"
+    - "✅ Tenant isolation (admin only manages own tenant users)"
+    - "✅ RBAC tests + tenant isolation tests"
   files_scope:
     - "src/domain/models/user.model.ts"
     - "src/infrastructure/services/user/\*\*"
@@ -325,8 +400,21 @@ tasks:
 
 - id: USER-001-06.1
   title: "Follow-up: Исправить устаревшие unit тесты для verification"
-  status: TODO
+  status: COMPLETED
+  completed_at: "2024-11-12"
   priority: LOW
+  commits:
+    - hash: "04110a0"
+      message: "test(user): add comprehensive unit tests for verification system"
+    - hash: "1fbc4a9"
+      message: "test(user): add UserRepository verification unit tests (VERIFY-03)"
+    - hash: "fab66a2"
+      message: "docs(user): mark USER-001-06.1 as completed"
+  actual_hours: ~3
+  deliverables:
+    - "✅ user-verification.unit.test.ts (comprehensive tests)"
+    - "✅ user-repository-verification.unit.test.ts (repository tests)"
+    - "✅ All verification unit tests passing"
   note: "Integration тесты проходят (43/44), но 6 unit тестов требуют обновления моков после изменения генерации кодов"
   branch: "fix/user/USER-001-06/update-unit-test-mocks"
   parent_task: "USER-001-06"
