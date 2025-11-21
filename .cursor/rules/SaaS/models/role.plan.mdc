@@ -31,8 +31,14 @@ tasks:
 
 - id: SAAS-017-00
   title: Создать контроллер ролей с полной системой ролей
+  status: COMPLETED
   branch: "feature/role/SAAS-017/role-controller-roles"
-  files_scope:
+  completed_at: "2024-11-21"
+  commits:
+    - hash: "d93097c"
+      message: "feat(role): SAAS-017-00 - implement role controller with full hierarchy system"
+      actual_hours: ~4.5
+      files_scope:
     - ".cursor/rules/models/role.mdc"
     - "src/infrastructure/controllers/role/\*\*"
       steps:
@@ -44,6 +50,26 @@ tasks:
     - контроллер создан с полной системой ролей
     - роли соответствуют новой иерархии (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, etc.)
     - тенантская изоляция ролей обеспечена
+      deliverables:
+    - "✅ role-constants.ts с 14 ролями (уровни 5-100)"
+    - "✅ ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, CUSTOMER_ROLES, ALL_ROLES"
+    - "✅ Helper функции: getRoleLevel, canManageRole, isSystemRole, isTenantRole, isCustomerRole"
+    - "✅ 4 новых DTO: AssignRoleDto, RevokeRoleDto, AssignPermissionDto, RevokePermissionDto"
+    - "✅ 7 новых Response: AssignRoleResponse, RevokeRoleResponse, AssignPermissionResponse, RevokePermissionResponse, GetUserRolesResponse, GetRolePermissionsResponse, GetRoleHierarchyResponse, GetRoleLevelResponse"
+    - "✅ RoleController с 8 новыми endpoints (permissions, assign/revoke, hierarchy)"
+    - "✅ Tenant isolation через IDecodedAccessToken"
+    - "✅ Документация Controller API в role.mdc (+270 строк)"
+      metrics:
+      files_created: 13
+      files_updated: 4
+      lines_added: 1359
+      lines_removed: 9
+      endpoints_added: 8
+      notes: |
+      Контроллер готов к интеграции. Следующие задачи:
+    - SAAS-017-06: Реализация методов RoleService
+    - SAAS-017-05: Swagger декораторы для новых endpoints
+    - SAAS-017-10: Финализация API endpoints с полной документацией
       gate:
     - require: "Одобряю SAAS-017-00"
 
