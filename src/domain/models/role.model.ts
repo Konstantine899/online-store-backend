@@ -11,6 +11,7 @@ import {
     Table,
     UpdatedAt,
 } from 'sequelize-typescript';
+import { canManageRole } from '@app/infrastructure/controllers/role/role-constants';
 import { TenantModel } from './tenant.model';
 import { UserRoleModel } from './user-role.model';
 import { UserModel } from './user.model';
@@ -216,4 +217,166 @@ export class RoleModel
         field: 'updated_at',
     })
     declare updatedAt: Date;
+
+    // ============================================================================
+    // INSTANCE METHODS: Методы работы с иерархией и разрешениями
+    // ============================================================================
+
+    /**
+     * Проверить наличие разрешения у роли
+     * @param resource - Название ресурса (users, products, orders)
+     * @param action - Действие (create, read, update, delete)
+     * @returns true если роль имеет указанное разрешение
+     *
+     * @example
+     * const role = await RoleModel.findByPk(1);
+     * if (role.hasPermission('products', 'create')) {
+     *   // Разрешено создание продуктов
+     * }
+     */
+    public hasPermission(resource: string, action: string): boolean {
+        if (!this.permissions || !Array.isArray(this.permissions)) {
+            return false;
+        }
+
+        return this.permissions.some(
+            (permission: unknown) =>
+                typeof permission === 'object' &&
+                permission !== null &&
+                'resource' in permission &&
+                'action' in permission &&
+                (permission as { resource: string; action: string }).resource ===
+                    resource &&
+                (permission as { resource: string; action: string }).action ===
+                    action,
+        );
+    }
+
+    /**
+     * Проверить, может ли роль получить доступ к указанному уровню иерархии
+     * @param targetLevel - Целевой уровень (0-100)
+     * @returns true если роль может получить доступ (уровень роли >= целевого)
+     *
+     * @example
+     * const adminRole = await RoleModel.findOne({ where: { role: 'TENANT_ADMIN' } });
+     * if (adminRole.canAccessLevel(50)) {
+     *   // TENANT_ADMIN (level 60) может управлять MANAGER (level 50)
+     * }
+     */
+    public canAccessLevel(targetLevel: number): boolean {
+        return this.level >= targetLevel;
+    }
+
+    /**
+     * Проверить, может ли роль управлять другой ролью
+     * @param targetRole - Целевая роль для управления
+     * @returns true если роль может управлять целевой ролью
+     *
+     * @example
+     * const adminRole = await RoleModel.findOne({ where: { role: 'TENANT_ADMIN' } });
+     * const managerRole = await RoleModel.findOne({ where: { role: 'MANAGER' } });
+     * if (adminRole.canManage(managerRole)) {
+     *   // TENANT_ADMIN может управлять MANAGER
+     * }
+     */
+    public canManage(targetRole: RoleModel): boolean {
+        return canManageRole(this.role, targetRole.role);
+    }
+
+    /**
+     * Проверить, является ли роль неактивной (истекшей)
+     * @returns true если роль неактивна
+     *
+     * @example
+     * const role = await RoleModel.findByPk(1);
+     * if (role.isExpired()) {
+     *   // Роль неактивна
+     * }
+     */
+    public isExpired(): boolean {
+        return !this.isActive;
+    }
+
+    /**
+     * Получить все эффективные разрешения роли
+     * @returns Массив разрешений с типизацией
+     *
+     * @example
+     * const role = await RoleModel.findByPk(1);
+     * const permissions = role.getEffectivePermissions();
+     * // [{ resource: 'products', action: 'create' }, ...]
+     */
+    public getEffectivePermissions(): Array<{
+        resource: string;
+        action: string;
+    }> {
+        if (!this.permissions || !Array.isArray(this.permissions)) {
+            return [];
+        }
+
+        return this.permissions
+            .filter(
+                (permission: unknown) =>
+                    typeof permission === 'object' &&
+                    permission !== null &&
+                    'resource' in permission &&
+                    'action' in permission &&
+                    typeof (permission as { resource: unknown }).resource ===
+                        'string' &&
+                    typeof (permission as { action: unknown }).action ===
+                        'string',
+            )
+            .map(
+                (permission) =>
+                    permission as { resource: string; action: string },
+            );
+    }
+
+    // ============================================================================
+    // STATIC METHODS: Утилитарные функции для работы с ролями
+    // ============================================================================
+
+    /**
+     * Сравнить две роли по уровню иерархии
+     * @param role1 - Первая роль
+     * @param role2 - Вторая роль
+     * @returns -1 если role1 < role2, 0 если равны, 1 если role1 > role2
+     *
+     * @example
+     * const comparison = RoleModel.compareHierarchy(adminRole, managerRole);
+     * if (comparison > 0) {
+     *   // adminRole выше в иерархии
+     * }
+     */
+    public static compareHierarchy(
+        role1: RoleModel,
+        role2: RoleModel,
+    ): number {
+        if (role1.level < role2.level) {
+            return -1;
+        } else if (role1.level > role2.level) {
+            return 1;
+        }
+        return 0;
+    }
+
+    /**
+     * Получить роль с максимальным уровнем из массива ролей
+     * @param roles - Массив ролей
+     * @returns Роль с максимальным уровнем или null если массив пустой
+     *
+     * @example
+     * const userRoles = [adminRole, managerRole, customerRole];
+     * const highestRole = RoleModel.getHighestRole(userRoles);
+     * // Вернёт adminRole (level 60)
+     */
+    public static getHighestRole(roles: RoleModel[]): RoleModel | null {
+        if (!roles || roles.length === 0) {
+            return null;
+        }
+
+        return roles.reduce((highest, current) => {
+            return current.level > highest.level ? current : highest;
+        });
+    }
 }
