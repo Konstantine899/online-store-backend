@@ -81,22 +81,22 @@ tasks:
     - "src/domain/models/role.model.ts"
     - "src/domain/models/user-role.model.ts"
     - "src/domain/models/role-permission.model.ts"
-      architectural_decisions:
-      table_naming:
+  architectural_decisions:
+    table_naming:
       decision: "Переименовать role → roles, user_role → user_roles"
       rationale: "Соответствие спецификации и соглашению (множественное число)"
       action: "Удалить старые таблицы, создать новые"
-      tenant_id_nullability:
+    tenant_id_nullability:
       decision: "tenant_id INTEGER NULL с CHECK constraint"
       rationale: "Системные роли (SUPER_ADMIN) работают вне контекста тенанта"
       constraint: "(is_system_role = TRUE AND tenant_id IS NULL) OR (is_system_role = FALSE AND tenant_id IS NOT NULL)"
-      unique_constraint:
+    unique_constraint:
       decision: "UNIQUE(user_id, role_id, tenant_id)"
       rationale: "Один пользователь может иметь одну роль в разных тенантах"
-      migration_order:
+    migration_order:
       sequence: ["roles", "user_roles", "role_permissions"]
       rationale: "Соблюдение порядка из-за FK зависимостей"
-      steps:
+  steps:
     - "Миграция 1: DROP старые таблицы (user_role, role)"
     - "Миграция 1: CREATE TABLE roles с полями: id, role, description, level, permissions, is_system_role, is_active, tenant_id"
     - "Миграция 1: ADD CHECK constraint chk_roles_tenant_logic"
@@ -110,7 +110,7 @@ tasks:
     - "Обновить RoleModel: tableName='roles', добавить 5 полей"
     - "Обновить UserRoleModel: tableName='user_roles', добавить 6 полей"
     - "Создать RolePermissionModel с ассоциациями"
-      dod:
+  dod:
     - "3 миграции созданы (create-roles, create-user-roles, create-role-permissions)"
     - "Старые таблицы (role, user_role) удалены"
     - "Новые таблицы (roles, user_roles, role_permissions) созданы"
@@ -123,19 +123,19 @@ tasks:
     - "Ассоциации FK → TenantModel настроены"
     - "Миграции up/down успешно проходят"
     - "Линтеры пройдены"
-      estimated_hours: "~3-4"
-      metrics:
-      migrations: 3
-      tables_dropped: 2
-      tables_created: 3
-      new_fields_roles: 5
-      new_fields_user_roles: 6
-      check_constraints: 1
-      unique_constraints: 2
-      indexes: 14
-      models_updated: 2
-      models_created: 1
-      gate:
+  estimated_hours: "~3-4"
+  metrics:
+    migrations: 3
+    tables_dropped: 2
+    tables_created: 3
+    new_fields_roles: 5
+    new_fields_user_roles: 6
+    check_constraints: 1
+    unique_constraints: 2
+    indexes: 14
+    models_updated: 2
+    models_created: 1
+  gate:
     - require: "Одобряю SAAS-017-01"
 
 - id: SAAS-017-02
