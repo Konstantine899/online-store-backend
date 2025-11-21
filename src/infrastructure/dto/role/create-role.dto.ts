@@ -1,21 +1,21 @@
-import {
-    IsNotEmpty,
-    IsString,
-    MaxLength,
-    IsInt,
-    Min,
-    Max,
-    IsBoolean,
-    IsOptional,
-    IsArray,
-} from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ICreateRoleDto } from '@app/domain/dto';
 import {
     IsSanitizedString,
     IsValidRoleTenant,
 } from '@app/infrastructure/common/validators';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import {
+    IsArray,
+    IsBoolean,
+    IsInt,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
+    Max,
+    MaxLength,
+    Min,
+} from 'class-validator';
 
 export class CreateRoleDto implements ICreateRoleDto {
     @ApiProperty({
