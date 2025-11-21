@@ -77,22 +77,65 @@ tasks:
   title: Создать миграции для таблиц roles, user_roles, role_permissions
   branch: "feature/role/SAAS-017/role-core-tables"
   files_scope:
-    - "db/migrations/\*\*"
-    - "src/domain/models/role.ts"
-    - "src/domain/models/user-role.ts"
-    - "src/domain/models/role-permission.ts"
-      steps:
-    - создать таблицу roles с полями role, description, level, permissions, is_system_role, tenant_id
-    - создать расширенную таблицу user_roles с полями user_id, role_id, tenant_id, granted_by, expires_at, metadata
-    - создать таблицу role_permissions для детального управления разрешениями
-    - добавить индексы для производительности
-    - обновить соответствующие модели
-      dod:
-    - миграции up/down успешны
-    - все модели содержат необходимые поля
-    - индексы созданы для производительности
-    - ассоциации между моделями настроены
-      gate:
+    - "db/migrations/**"
+    - "src/domain/models/role.model.ts"
+    - "src/domain/models/user-role.model.ts"
+    - "src/domain/models/role-permission.model.ts"
+  architectural_decisions:
+    table_naming:
+      decision: "Переименовать role → roles, user_role → user_roles"
+      rationale: "Соответствие спецификации и соглашению (множественное число)"
+      action: "Удалить старые таблицы, создать новые"
+    tenant_id_nullability:
+      decision: "tenant_id INTEGER NULL с CHECK constraint"
+      rationale: "Системные роли (SUPER_ADMIN) работают вне контекста тенанта"
+      constraint: "(is_system_role = TRUE AND tenant_id IS NULL) OR (is_system_role = FALSE AND tenant_id IS NOT NULL)"
+    unique_constraint:
+      decision: "UNIQUE(user_id, role_id, tenant_id)"
+      rationale: "Один пользователь может иметь одну роль в разных тенантах"
+    migration_order:
+      sequence: ["roles", "user_roles", "role_permissions"]
+      rationale: "Соблюдение порядка из-за FK зависимостей"
+  steps:
+    - "Миграция 1: DROP старые таблицы (user_role, role)"
+    - "Миграция 1: CREATE TABLE roles с полями: id, role, description, level, permissions, is_system_role, is_active, tenant_id"
+    - "Миграция 1: ADD CHECK constraint chk_roles_tenant_logic"
+    - "Миграция 1: CREATE 5 индексов (level, tenant_id, is_system_role, is_active, role)"
+    - "Миграция 2: CREATE TABLE user_roles с полями: id, user_id, role_id, tenant_id, granted_by, granted_at, expires_at, is_active, metadata"
+    - "Миграция 2: ADD UNIQUE constraint uq_user_roles_user_role_tenant"
+    - "Миграция 2: CREATE 6 индексов (user_id, role_id, tenant_id, expires_at, is_active, granted_by)"
+    - "Миграция 3: CREATE TABLE role_permissions с полями: id, role_id, resource, action, conditions"
+    - "Миграция 3: ADD UNIQUE constraint uq_role_permissions_role_resource_action"
+    - "Миграция 3: CREATE 3 индекса (role_id, resource, action)"
+    - "Обновить RoleModel: tableName='roles', добавить 5 полей"
+    - "Обновить UserRoleModel: tableName='user_roles', добавить 6 полей"
+    - "Создать RolePermissionModel с ассоциациями"
+  dod:
+    - "3 миграции созданы (create-roles, create-user-roles, create-role-permissions)"
+    - "Старые таблицы (role, user_role) удалены"
+    - "Новые таблицы (roles, user_roles, role_permissions) созданы"
+    - "CHECK constraint для tenant_id добавлен в roles"
+    - "UNIQUE(user_id, role_id, tenant_id) добавлен в user_roles"
+    - "14 индексов созданы (5 + 6 + 3)"
+    - "RoleModel обновлён (tableName='roles', +5 полей)"
+    - "UserRoleModel обновлён (tableName='user_roles', +6 полей)"
+    - "RolePermissionModel создан"
+    - "Ассоциации FK → TenantModel настроены"
+    - "Миграции up/down успешно проходят"
+    - "Линтеры пройдены"
+  estimated_hours: "~3-4"
+  metrics:
+    migrations: 3
+    tables_dropped: 2
+    tables_created: 3
+    new_fields_roles: 5
+    new_fields_user_roles: 6
+    check_constraints: 1
+    unique_constraints: 2
+    indexes: 14
+    models_updated: 2
+    models_created: 1
+  gate:
     - require: "Одобряю SAAS-017-01"
 
 - id: SAAS-017-02
