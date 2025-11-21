@@ -37,4 +37,3 @@ export interface IUpdateRoleDto {
      */
     tenantId?: number | null;
 }
-

@@ -109,4 +109,3 @@ export class UpdateRoleDto implements IUpdateRoleDto {
     @IsValidRoleTenant()
     declare readonly tenantId?: number | null;
 }
-
