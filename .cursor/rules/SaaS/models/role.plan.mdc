@@ -195,9 +195,9 @@ tasks:
     - hash: "2b45027"
       message: "feat(role): SAAS-017-03 - create roles seed with full hierarchy"
       actual_hours: ~1
-  files_scope:
+      files_scope:
     - "db/seeders/20250101000000-roles.ts"
-  deliverables:
+      deliverables:
     - "✅ Полностью переписан seed файл для таблицы 'roles'"
     - "✅ 14 ролей с полной иерархией (уровни 5-100)"
     - "✅ 4 системные роли: SUPER_ADMIN (100), PLATFORM_ADMIN (90), BILLING_ADMIN (85), SUPPORT (80)"
@@ -208,43 +208,43 @@ tasks:
     - "✅ Идемпотентность: безопасное удаление только системных ролей"
     - "✅ Откат (down): удаление только созданных 14 ролей"
     - "✅ 0 linter errors"
-  metrics:
-    files_changed: 1
-    lines_added: 246
-    lines_removed: 33
-    roles_created: 14
-    permission_matrix_size: 53
-    estimated_hours: "~3-3.5"
-    actual_hours: "~1"
-  notes: |
-    Seed готов к использованию. Полностью переписан с нуля.
-    
+      metrics:
+      files_changed: 1
+      lines_added: 246
+      lines_removed: 33
+      roles_created: 14
+      permission_matrix_size: 53
+      estimated_hours: "~3-3.5"
+      actual_hours: "~1"
+      notes: |
+      Seed готов к использованию. Полностью переписан с нуля.
+
     Изменения:
     - Таблица: 'role' → 'roles'
     - Роли: 12 → 14 (добавлены SUPPORT, BILLING_ADMIN)
     - Поля: 4 → 10 (level, permissions, is_system_role, is_active, tenant_id)
     - Удалены legacy роли (ADMIN, USER)
-    
+
     Permission matrix (53 разрешения):
-    - SUPER_ADMIN: wildcard (*/*) полный доступ
+    - SUPER*ADMIN: wildcard (*/\_) полный доступ
     - Platform roles: tenants, billing, analytics, support
     - Tenant roles: users, roles, products, categories, orders, cart, analytics
     - Customer roles: products (read), cart (manage), orders (create/read)
     - GUEST: products, categories (read only)
-    
+
     Идемпотентность:
     - up: удаляет только is_system_role = true
     - down: удаляет только созданные 14 ролей по имени
-    
+
     Для тестирования (требуется запущенная БД):
     - npm run db:seed:all
     - npm run db:seed:undo:all
-    
+
     Следующие задачи:
     - SAAS-017-04: Можно пропустить (DTO уже созданы в SAAS-017-00)
     - SAAS-017-05: Swagger декораторы
     - SAAS-017-06: RoleService (критично, использует seeds)
-  gate:
+      gate:
     - require: "Одобряю SAAS-017-03"
 
 - id: SAAS-017-04
