@@ -82,9 +82,9 @@ describe('RoleModel - hasPermission()', () => {
         });
 
         expect(roleWithNull.hasPermission('products', 'create')).toBe(false);
-        expect(
-            roleWithUndefined.hasPermission('products', 'create'),
-        ).toBe(false);
+        expect(roleWithUndefined.hasPermission('products', 'create')).toBe(
+            false,
+        );
     });
 
     it('должен игнорировать невалидные объекты в permissions', () => {
@@ -339,4 +339,3 @@ describe('RoleModel - getHighestRole() (static)', () => {
         );
     });
 });
-

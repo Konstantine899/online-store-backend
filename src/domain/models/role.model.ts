@@ -1,3 +1,4 @@
+import { canManageRole } from '@app/infrastructure/controllers/role/role-constants';
 import { ApiProperty } from '@nestjs/swagger';
 import { Op } from 'sequelize';
 import {
@@ -11,7 +12,6 @@ import {
     Table,
     UpdatedAt,
 } from 'sequelize-typescript';
-import { canManageRole } from '@app/infrastructure/controllers/role/role-constants';
 import { TenantModel } from './tenant.model';
 import { UserRoleModel } from './user-role.model';
 import { UserModel } from './user.model';
@@ -245,8 +245,8 @@ export class RoleModel
                 permission !== null &&
                 'resource' in permission &&
                 'action' in permission &&
-                (permission as { resource: string; action: string }).resource ===
-                    resource &&
+                (permission as { resource: string; action: string })
+                    .resource === resource &&
                 (permission as { resource: string; action: string }).action ===
                     action,
         );
@@ -348,10 +348,7 @@ export class RoleModel
      *   // adminRole выше в иерархии
      * }
      */
-    public static compareHierarchy(
-        role1: RoleModel,
-        role2: RoleModel,
-    ): number {
+    public static compareHierarchy(role1: RoleModel, role2: RoleModel): number {
         if (role1.level < role2.level) {
             return -1;
         } else if (role1.level > role2.level) {
