@@ -79,33 +79,33 @@ tasks:
   completed_at: "2024-11-21"
   branch: "feature/role/SAAS-017/role-core-tables"
   commits:
-    - hash: "TBD"
-      message: "feat(role): SAAS-017-01 - create migrations for roles, user_roles, role_permissions tables"
-  actual_hours: ~4
-  files_scope:
+    - hash: "4c8ccf3"
+      message: "feat(role): SAAS-017-01 - create migrations and models for role system"
+      actual_hours: ~4
+      files_scope:
     - "db/migrations/\*\*"
     - "src/domain/models/role.model.ts"
     - "src/domain/models/user-role.model.ts"
     - "src/domain/models/role-permission.model.ts"
-  architectural_decisions:
-    table_naming:
+      architectural_decisions:
+      table_naming:
       decision: "Переименовать role → roles, user_role → user_roles"
       rationale: "Соответствие спецификации и соглашению (множественное число)"
       action: "Удалить старые таблицы, создать новые"
-    tenant_id_nullability:
+      tenant_id_nullability:
       decision: "tenant_id INTEGER NULL без CHECK constraint"
       rationale: "Системные роли (SUPER_ADMIN) работают вне контекста тенанта"
       constraint_status: "CHECK constraint НЕ реализован из-за ограничения MySQL (FK + CHECK несовместимы). Валидация переносится на уровень приложения (DTO/модели)"
-    unique_constraint:
+      unique_constraint:
       decision: "UNIQUE(user_id, role_id, tenant_id)"
       rationale: "Один пользователь может иметь одну роль в разных тенантах"
-    migration_order:
+      migration_order:
       sequence: ["roles", "user_roles", "role_permissions"]
       rationale: "Соблюдение порядка из-за FK зависимостей"
-    json_type:
+      json_type:
       decision: "Использовать JSON вместо JSONB"
       rationale: "MySQL не поддерживает JSONB (это PostgreSQL тип)"
-  deliverables:
+      deliverables:
     - "✅ 3 миграции созданы (20241121140000, 20241121140100, 20241121140200)"
     - "✅ Старые таблицы (role, user_role) удалены в first migration"
     - "✅ Новые таблицы (roles, user_roles, role_permissions) созданы"
@@ -119,21 +119,21 @@ tasks:
     - "✅ Миграции up успешно выполнены (3 миграции за 0.715s)"
     - "✅ Линтеры пройдены (0 errors)"
     - "✅ RolePermissionModel экспортирован в src/domain/models/index.ts"
-  metrics:
-    migrations_created: 3
-    tables_dropped: 2
-    tables_created: 3
-    new_fields_roles: 5
-    new_fields_user_roles: 6
-    unique_constraints: 2
-    indexes_created: 14
-    models_updated: 2
-    models_created: 1
-    lines_added: 520
-    lines_changed: 180
-    migration_time: "0.715s"
-  estimated_hours: "~3-4"
-  gate:
+      metrics:
+      migrations_created: 3
+      tables_dropped: 2
+      tables_created: 3
+      new_fields_roles: 5
+      new_fields_user_roles: 6
+      unique_constraints: 2
+      indexes_created: 14
+      models_updated: 2
+      models_created: 1
+      lines_added: 520
+      lines_changed: 180
+      migration_time: "0.715s"
+      estimated_hours: "~3-4"
+      gate:
     - require: "Одобряю SAAS-017-01"
 
 - id: SAAS-017-02
