@@ -289,7 +289,7 @@ export class RoleModel extends Model<RoleModel> implements IRoleModel {
     // Methods
     public hasPermission(resource: string, action: string): boolean {
         const rolePermissions = this.permissions as Record<string, string[]>;
-        return rolePermissions['*']?.includes('*') || 
+        return rolePermissions['*']?.includes('*') ||
                rolePermissions[resource]?.includes(action) ||
                rolePermissions[resource]?.includes('*');
     }
@@ -718,7 +718,7 @@ export class TenantRoleGuard implements CanActivate {
 async autoAssignVipRole(userId: number, tenantId: number): Promise<void> {
     const totalSpent = await this.orderService.getUserTotalSpent(userId, tenantId);
     const vipThreshold = await this.tenantService.getVipThreshold(tenantId);
-    
+
     if (totalSpent >= vipThreshold) {
         const vipRole = await this.roleService.getRoleByName('VIP_CUSTOMER', tenantId);
         await this.roleService.assignRoleToUser({
@@ -734,7 +734,7 @@ async autoAssignVipRole(userId: number, tenantId: number): Promise<void> {
 async autoAssignWholesaleRole(userId: number, tenantId: number): Promise<void> {
     const orderCount = await this.orderService.getUserOrderCount(userId, tenantId);
     const wholesaleThreshold = await this.tenantService.getWholesaleThreshold(tenantId);
-    
+
     if (orderCount >= wholesaleThreshold) {
         const wholesaleRole = await this.roleService.getRoleByName('WHOLESALE', tenantId);
         await this.roleService.assignRoleToUser({
@@ -746,6 +746,295 @@ async autoAssignWholesaleRole(userId: number, tenantId: number): Promise<void> {
     }
 }
 ```
+
+## Controller API
+
+### RoleController
+**Path**: `/role`
+**Auth**: Bearer JWT (все endpoints требуют авторизации)
+**Tenant Isolation**: YES (для тенантских операций)
+
+#### CRUD операций с ролями (ADMIN_ROLES)
+
+##### POST /role/create
+**Описание**: Создать новую роль
+**Access**: `ADMIN_ROLES` (SUPER_ADMIN, PLATFORM_ADMIN, TENANT_OWNER, TENANT_ADMIN)
+**Body**: `CreateRoleDto`
+```typescript
+{
+  role: string;          // Название роли (max 50 символов)
+  description: string;   // Описание роли (max 200 символов)
+}
+```
+**Response**: `CreateRoleResponse` (201)
+```typescript
+{
+  message: string;
+  roleId: number;
+}
+```
+
+##### GET /role/one/:role
+**Описание**: Получить информацию о роли
+**Access**: `ADMIN_ROLES`
+**Params**: `role` - название роли
+**Response**: `GetRoleResponse` (200)
+
+##### GET /role/list
+**Описание**: Получить список всех ролей
+**Access**: `ADMIN_ROLES`
+**Response**: `GetListRoleResponse[]` (200)
+
+---
+
+#### Управление разрешениями ролей (ADMIN_ROLES)
+
+##### POST /role/permissions/assign
+**Описание**: Назначить разрешение роли
+**Access**: `ADMIN_ROLES`
+**Tenant Isolation**: YES
+**Body**: `AssignPermissionDto`
+```typescript
+{
+  roleId: number;           // ID роли
+  resource: string;         // Ресурс (products, orders, users, etc.)
+  action: string;           // Действие (create, read, update, delete, manage)
+  conditions?: object;      // Условия доступа (JSONB)
+}
+```
+**Response**: `AssignPermissionResponse` (201)
+```typescript
+{
+  message: string;
+  permissionId: number;
+  roleId: number;
+  resource: string;
+  action: string;
+}
+```
+
+##### DELETE /role/permissions/revoke
+**Описание**: Отозвать разрешение у роли
+**Access**: `ADMIN_ROLES`
+**Tenant Isolation**: YES
+**Body**: `RevokePermissionDto`
+```typescript
+{
+  roleId: number;
+  resource: string;
+  action: string;
+}
+```
+**Response**: `RevokePermissionResponse` (200)
+
+##### GET /role/permissions/:roleId
+**Описание**: Получить все разрешения роли
+**Access**: `MANAGER_ROLES` (ADMIN_ROLES + MANAGER, CONTENT_MANAGER)
+**Tenant Isolation**: YES
+**Params**: `roleId` - ID роли
+**Response**: `GetRolePermissionsResponse` (200)
+```typescript
+{
+  roleId: number;
+  roleName: string;
+  permissions: [
+    {
+      id: number;
+      resource: string;
+      action: string;
+      conditions?: object;
+    }
+  ];
+  totalCount: number;
+}
+```
+
+---
+
+#### Назначение ролей пользователям (MANAGER_ROLES)
+
+##### POST /role/assign
+**Описание**: Назначить роль пользователю
+**Access**: `MANAGER_ROLES`
+**Tenant Isolation**: YES - нельзя назначать роли пользователям из других тенантов
+**Validation**: Проверка иерархии - можно назначать только роли ниже своего уровня
+**Body**: `AssignRoleDto`
+```typescript
+{
+  userId: number;           // ID пользователя
+  roleId: number;           // ID роли
+  tenantId?: number;        // ID тенанта (опционально для системных ролей)
+  expiresAt?: string;       // Дата истечения в ISO формате (NULL = бессрочно)
+  metadata?: object;        // Дополнительные метаданные
+}
+```
+**Response**: `AssignRoleResponse` (201)
+```typescript
+{
+  message: string;
+  userRoleId: number;
+  userId: number;
+  roleId: number;
+  tenantId?: number;
+}
+```
+
+##### DELETE /role/revoke
+**Описание**: Отозвать роль у пользователя
+**Access**: `MANAGER_ROLES`
+**Tenant Isolation**: YES - нельзя отзывать роли у пользователей из других тенантов
+**Validation**: Проверка иерархии - можно отзывать только роли ниже своего уровня
+**Body**: `RevokeRoleDto`
+```typescript
+{
+  userId: number;
+  roleId: number;
+  tenantId?: number;
+}
+```
+**Response**: `RevokeRoleResponse` (200)
+
+##### GET /role/user/:userId
+**Описание**: Получить все роли пользователя
+**Access**: `MANAGER_ROLES`
+**Tenant Isolation**: YES - только роли пользователей своего тенанта
+**Params**: `userId` - ID пользователя
+**Response**: `GetUserRolesResponse` (200)
+```typescript
+{
+  userId: number;
+  roles: [
+    {
+      id: number;
+      roleName: string;
+      roleDescription: string;
+      roleLevel: number;
+      tenantId?: number;
+      grantedAt: string;
+      expiresAt?: string;
+      isActive: boolean;
+    }
+  ];
+  totalCount: number;
+}
+```
+
+---
+
+#### Просмотр иерархии ролей (MANAGER_ROLES)
+
+##### GET /role/hierarchy
+**Описание**: Получить полную иерархию ролей
+**Access**: `MANAGER_ROLES`
+**Response**: `GetRoleHierarchyResponse` (200)
+```typescript
+{
+  systemRoles: [        // Системные роли (Platform)
+    {
+      role: string;
+      level: number;
+      description: string;
+      isSystemRole: true;
+    }
+  ];
+  tenantRoles: [        // Тенантские роли (Store)
+    { ... }
+  ];
+  customerRoles: [      // Клиентские роли (User)
+    { ... }
+  ];
+  totalCount: number;
+}
+```
+
+##### GET /role/level/:role
+**Описание**: Получить уровень роли и список управляемых ролей
+**Access**: `MANAGER_ROLES`
+**Params**: `role` - название роли
+**Response**: `GetRoleLevelResponse` (200)
+```typescript
+{
+  role: string;
+  level: number;                    // Уровень в иерархии (0-100)
+  category: 'system' | 'tenant' | 'customer';
+  manageableRoles: string[];        // Роли, которыми можно управлять
+}
+```
+
+---
+
+### Role Constants
+**Path**: `src/infrastructure/controllers/role/role-constants.ts`
+
+Все роли организованы в иерархические константы:
+
+```typescript
+// Системные роли (Platform Level)
+export const SYSTEM_ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN'];
+export const SYSTEM_ROLES = [...SYSTEM_ADMIN_ROLES, 'BILLING_ADMIN', 'SUPPORT'];
+
+// Тенантские роли (Store Level)
+export const TENANT_OWNER_ROLES = ['TENANT_OWNER'];
+export const TENANT_ADMIN_ROLES = [...TENANT_OWNER_ROLES, 'TENANT_ADMIN'];
+export const MANAGER_ROLES = [...TENANT_ADMIN_ROLES, 'MANAGER', 'CONTENT_MANAGER'];
+export const STAFF_ROLES = [...MANAGER_ROLES, 'CUSTOMER_SERVICE'];
+
+// Клиентские роли (User Level)
+export const CUSTOMER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE'];
+export const GUEST_ROLES = ['GUEST'];
+
+// Агрегированные роли
+export const ADMIN_ROLES = [...SYSTEM_ADMIN_ROLES, ...TENANT_ADMIN_ROLES];
+export const ALL_ROLES = [...SYSTEM_ROLES, ...STAFF_ROLES, ...CUSTOMER_ROLES, ...GUEST_ROLES];
+
+// Маппинг уровней
+export const ROLE_LEVELS: Record<string, number> = {
+  SUPER_ADMIN: 100,
+  PLATFORM_ADMIN: 90,
+  BILLING_ADMIN: 85,
+  SUPPORT: 80,
+  TENANT_OWNER: 70,
+  TENANT_ADMIN: 60,
+  MANAGER: 50,
+  CONTENT_MANAGER: 40,
+  CUSTOMER_SERVICE: 35,
+  VIP_CUSTOMER: 30,
+  WHOLESALE: 25,
+  CUSTOMER: 20,
+  AFFILIATE: 15,
+  GUEST: 5,
+};
+```
+
+**Helper Functions**:
+- `getRoleLevel(role: string): number` - получить уровень роли
+- `canManageRole(managerRole: string, targetRole: string): boolean` - проверить право управления
+- `isSystemRole(role: string): boolean` - проверить системную роль
+- `isTenantRole(role: string): boolean` - проверить тенантскую роль
+- `isCustomerRole(role: string): boolean` - проверить клиентскую роль
+- `getManageableRoles(managerRole: string): string[]` - получить список управляемых ролей
+
+---
+
+### Tenant Isolation Logic
+
+**Принципы**:
+1. **System Roles** (SUPER_ADMIN, PLATFORM_ADMIN) - доступ ко всем тенантам
+2. **Tenant Roles** (TENANT_OWNER, TENANT_ADMIN, MANAGER, etc.) - только свой тенант
+3. **tenantId** извлекается из JWT токена (`request.user.tenantId`)
+4. Все операции с тенантскими ролями проверяют `tenantId`
+
+**Проверки**:
+- При назначении роли: проверка, что целевой пользователь принадлежит тому же тенанту
+- При отзыве роли: проверка, что роль принадлежит тому же тенанту
+- При просмотре ролей: фильтрация по tenantId
+
+**Исключения**:
+- System Roles могут работать с любыми тенантами
+- SUPER_ADMIN не имеет ограничений
+- PLATFORM_ADMIN может управлять тенантами, но не пользователями напрямую
+
+---
 
 ## Readiness Criteria
 
