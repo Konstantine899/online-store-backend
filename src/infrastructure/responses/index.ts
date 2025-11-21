@@ -54,26 +54,28 @@ export { RemoveProductResponse } from './product/remove-product.response';
 export { UpdateProductResponse } from './product/update-product.response';
 export { GetRatingResponse } from './rating/get-rating.response';
 export { RatingResponse } from './rating/rating.response';
+export { AssignPermissionResponse } from './role/assign-permission.response';
+export { AssignRoleResponse } from './role/assign-role.response';
 export { CreateRoleResponse } from './role/create-role.response';
 export { GetListRoleResponse } from './role/get-list-role.response';
-export { GetRoleResponse } from './role/get-role.response';
-export { AssignRoleResponse } from './role/assign-role.response';
-export { RevokeRoleResponse } from './role/revoke-role.response';
-export { AssignPermissionResponse } from './role/assign-permission.response';
-export { RevokePermissionResponse } from './role/revoke-permission.response';
-export {
-    GetUserRolesResponse,
-    UserRoleInfo,
-} from './role/user-roles.response';
-export {
-    GetRolePermissionsResponse,
-    RolePermissionInfo,
-} from './role/role-permissions.response';
+export { GetPaginatedRolesResponse } from './role/get-paginated-roles.response';
 export {
     GetRoleHierarchyResponse,
     RoleNode,
 } from './role/role-hierarchy.response';
 export { GetRoleLevelResponse } from './role/role-level.response';
+export {
+    GetRolePermissionsResponse,
+    RolePermissionInfo,
+} from './role/role-permissions.response';
+export { GetRoleResponse } from './role/get-role.response';
+export {
+    GetUserRolesResponse,
+    UserRoleInfo,
+} from './role/user-roles.response';
+export { RevokePermissionResponse } from './role/revoke-permission.response';
+export { RevokeRoleResponse } from './role/revoke-role.response';
+export { UpdateRoleResponse } from './role/update-role.response';
 export {
     CreateUserAddressResponse,
     GetUserAddressResponse,
