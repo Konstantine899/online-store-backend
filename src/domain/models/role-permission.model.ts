@@ -1,16 +1,16 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
     BelongsTo,
     Column,
+    CreatedAt,
     DataType,
     ForeignKey,
     Model,
     PrimaryKey,
     Table,
-    CreatedAt,
     UpdatedAt,
 } from 'sequelize-typescript';
 import { RoleModel } from './role.model';
-import { ApiProperty } from '@nestjs/swagger';
 
 interface IRolePermissionModel {
     id: number;
@@ -114,4 +114,3 @@ export class RolePermissionModel
     })
     declare updatedAt: Date;
 }
-

@@ -1,18 +1,18 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
     BelongsTo,
     Column,
+    CreatedAt,
     DataType,
     ForeignKey,
     Model,
     PrimaryKey,
     Table,
-    CreatedAt,
     UpdatedAt,
 } from 'sequelize-typescript';
-import { UserModel } from './user.model';
 import { RoleModel } from './role.model';
 import { TenantModel } from './tenant.model';
-import { ApiProperty } from '@nestjs/swagger';
+import { UserModel } from './user.model';
 
 interface IUserRoleModel {
     id: number;
