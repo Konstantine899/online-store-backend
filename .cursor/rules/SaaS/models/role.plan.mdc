@@ -148,42 +148,42 @@ tasks:
     - hash: "37fce53"
       message: "test(role): SAAS-017-02 - add unit tests for role models"
       actual_hours: ~2
-  files_scope:
+      files_scope:
     - "src/domain/models/role.ts"
     - "src/domain/models/user-role.ts"
     - "src/domain/models/role-permission.ts"
     - "tests/unit/models/role.model.unit.test.ts"
     - "tests/unit/models/user-role.model.unit.test.ts"
     - "tests/unit/models/role-permission.model.unit.test.ts"
-  deliverables:
+      deliverables:
     - "✅ RoleModel: 7 методов (hasPermission, canAccessLevel, canManage, isExpired, getEffectivePermissions, compareHierarchy, getHighestRole)"
     - "✅ UserRoleModel: 4 метода (isExpired, isValid, getRemainingTime, extend) + 8 scopes"
     - "✅ RolePermissionModel: 3 метода (matches, evaluateConditions, isWildcard) + 5 scopes"
     - "✅ Unit тесты: 67 тестов (24 RoleModel, 21 UserRoleModel, 22 RolePermissionModel)"
     - "✅ Test coverage: 100% pass rate, 0 failures, 0 linter errors"
-  metrics:
-    models_updated: 3
-    methods_added: 14
-    static_methods_added: 2
-    scopes_added: 13
-    test_files_created: 3
-    tests_written: 67
-    tests_passed: 67
-    tests_failed: 0
-    pass_rate: "100%"
-    lines_added_models: 405
-    lines_added_tests: 916
-    estimated_hours: "~8"
-    actual_hours: "~4.5"
-  notes: |
-    Задача выполнена успешно. Все бизнес-методы и scopes реализованы.
-    Unit тесты покрывают все методы с edge cases и негативными сценариями.
-    Scopes проверяются TypeScript на compile-time, integration тесты будут в SAAS-017-12.
-    
+      metrics:
+      models_updated: 3
+      methods_added: 14
+      static_methods_added: 2
+      scopes_added: 13
+      test_files_created: 3
+      tests_written: 67
+      tests_passed: 67
+      tests_failed: 0
+      pass_rate: "100%"
+      lines_added_models: 405
+      lines_added_tests: 916
+      estimated_hours: "~8"
+      actual_hours: "~4.5"
+      notes: |
+      Задача выполнена успешно. Все бизнес-методы и scopes реализованы.
+      Unit тесты покрывают все методы с edge cases и негативными сценариями.
+      Scopes проверяются TypeScript на compile-time, integration тесты будут в SAAS-017-12.
+
     Следующие задачи:
     - SAAS-017-03: Создать seeds с системными и тенантскими ролями
     - SAAS-017-06: Реализовать RoleService с использованием новых методов моделей
-  gate:
+      gate:
     - require: "Одобряю SAAS-017-02"
 
 - id: SAAS-017-03
