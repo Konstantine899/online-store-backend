@@ -1,3 +1,5 @@
+import { AssignRoleDto } from '@app/infrastructure/dto';
+import { AssignRoleResponse } from '@app/infrastructure/responses';
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
     ApiBadRequestResponse,
@@ -8,8 +10,6 @@ import {
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
-import { AssignRoleDto } from '@app/infrastructure/dto';
-import { AssignRoleResponse } from '@app/infrastructure/responses';
 
 export function AssignRoleSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
@@ -63,4 +63,3 @@ export function AssignRoleSwaggerDecorator(): MethodDecorator {
         }),
     );
 }
-

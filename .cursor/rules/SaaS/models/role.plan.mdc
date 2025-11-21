@@ -328,11 +328,11 @@ tasks:
     - hash: "7499afb"
       message: "refactor(role): improve Swagger schemas and error responses"
       actual_hours: ~0.5
-  files_scope:
-    - "src/infrastructure/responses/role/*.response.ts"
-    - "src/infrastructure/common/decorators/swagger/role/*.ts"
+      files_scope:
+    - "src/infrastructure/responses/role/\*.response.ts"
+    - "src/infrastructure/common/decorators/swagger/role/\*.ts"
     - "src/infrastructure/responses/index.ts"
-  deliverables:
+      deliverables:
     - "✅ CreateRoleResponse - обновлён (добавлено 7 новых полей + улучшенная схема permissions)"
     - "✅ GetRoleResponse - обновлён (добавлено 7 новых полей + улучшенная схема permissions)"
     - "✅ GetListRoleResponse - обновлён (добавлено 7 новых полей + улучшенная схема permissions)"
@@ -352,31 +352,31 @@ tasks:
     - "✅ swagger/role/index.ts - создан (экспорт 11 декораторов)"
     - "✅ responses/index.ts - обновлён (добавлено 2 экспорта)"
     - "✅ 0 linter errors"
-  metrics:
-    files_changed: 15
-    new_files: 10
-    updated_files: 15
-    lines_added: 889
-    lines_removed: 46
-    response_classes_created: 2
-    response_classes_updated: 7
-    swagger_decorators_created: 8
-    swagger_decorators_improved: 11
-    estimated_hours: "~1.5-2"
-    actual_hours: "~1.5"
-  notes: |
-    Задача выполнена полностью (вариант A - все декораторы + улучшения).
-    
+      metrics:
+      files_changed: 15
+      new_files: 10
+      updated_files: 15
+      lines_added: 889
+      lines_removed: 46
+      response_classes_created: 2
+      response_classes_updated: 7
+      swagger_decorators_created: 8
+      swagger_decorators_improved: 11
+      estimated_hours: "~1.5-2"
+      actual_hours: "~1.5"
+      notes: |
+      Задача выполнена полностью (вариант A - все декораторы + улучшения).
+
     COMMIT 1 (c3d1d6c): Основная реализация
     =======================================
     Response классы обновлены:
     - Старые (3 поля): id, role, description
     - Новые (9 полей): + level, permissions, isSystemRole, isActive, tenantId, createdAt, updatedAt
-    
+
     Новые Response классы:
     - UpdateRoleResponse: для PATCH /roles/:id (с message полем)
     - GetPaginatedRolesResponse: пагинация { data: T[], meta: MetaData }
-    
+
     Swagger декораторы (8 новых):
     - UpdateRoleSwaggerDecorator: PATCH /roles/:id
     - AssignRoleSwaggerDecorator: POST /roles/assign
@@ -386,46 +386,46 @@ tasks:
     - GetUserRolesSwaggerDecorator: GET /users/:userId/roles
     - GetRolePermissionsSwaggerDecorator: GET /roles/:roleId/permissions
     - GetRoleHierarchySwaggerDecorator: GET /roles/hierarchy
-    
+
     Уже существующие декораторы (3):
     - CreateRoleSwaggerDecorator: POST /roles
     - GetRoleSwaggerDecorator: GET /roles/:id
     - GetListRoleSwaggerDecorator: GET /roles
-    
+
     COMMIT 2 (7499afb): Улучшения по ревью
     =======================================
     1. Улучшена типизация permissions (4 Response класса):
-       - Добавлена явная схема: type: 'array', items: { object с properties }
-       - Определены поля: resource (string), action (string), conditions (object)
-       - Указаны обязательные поля: required: ['resource', 'action']
-       - Улучшает генерацию Swagger схемы
-    
+        - Добавлена явная схема: type: 'array', items: { object с properties }
+        - Определены поля: resource (string), action (string), conditions (object)
+        - Указаны обязательные поля: required: ['resource', 'action']
+        - Улучшает генерацию Swagger схемы
+
     2. Добавлены ApiBadRequestResponse (6 декораторов):
-       - Create, Update, Assign, Revoke, AssignPermission, RevokePermission
-       - Документируют ошибки валидации (400)
-       - Примеры: "Укажите название роли", "Уровень не может быть больше 100"
-    
+        - Create, Update, Assign, Revoke, AssignPermission, RevokePermission
+        - Документируют ошибки валидации (400)
+        - Примеры: "Укажите название роли", "Уровень не может быть больше 100"
+
     3. Добавлены ApiForbiddenResponse (11 декораторов - все):
-       - Документируют ошибки авторизации (403)
-       - Примеры: "У вас недостаточно прав для..."
-       - Покрыты все endpoints
-    
+        - Документируют ошибки авторизации (403)
+        - Примеры: "У вас недостаточно прав для..."
+        - Покрыты все endpoints
+
     4. Улучшены descriptions в ApiOperation:
-       - Более детальные описания для всех декораторов
-       - Понятные summary и description
-    
+        - Более детальные описания для всех декораторов
+        - Понятные summary и description
+
     Итого: 11 endpoints полностью задокументированы в Swagger
     - 200/201: успешные ответы
     - 400: ошибки валидации (6 endpoints)
     - 403: ошибки авторизации (11 endpoints)
     - 404: ресурс не найден (где применимо)
-    
+
     Пагинация:
     - Контракт { data, meta } реализован
     - MetaData: totalCount, lastPage, currentPage, nextPage, previousPage, limit
-    
+
     Все готово для использования в RoleController.
-  gate:
+    gate:
     - require: "Одобряю SAAS-017-05"
 
 # Фаза 2: Сервисы и бизнес-логика
