@@ -43,10 +43,16 @@
 
 - ✅ **SAAS-001**: Multi-tenancy реализован
 - ✅ **SAAS-009**: Система уведомлений (Notification API, интеграционные тесты)
-- ✅ **USER-001-06**: Verification API (email/phone верификация, 43 integration теста)
-- ✅ **USER-001-07**: Улучшение системы адресов с tenant isolation (24 unit, 13 integration тестов)
-- ✅ **USER-001-08**: Уникальность default адреса с tenant isolation (31 unit, 16 integration тестов)
-- ✅ **USER-001-09**: User preferences API с Redis кэшированием (18 unit, 29 integration тестов)
+- ✅ **USER-001**: User Module полностью оптимизирован (задачи 01-12)
+    - ✅ USER-001-01 до 05: Профиль, валидация имени/телефона/даты рождения, флаги согласий и статусов
+    - ✅ USER-001-06: Email/Phone верификация (43 integration теста)
+    - ✅ USER-001-07-08: Система адресов с tenant isolation (24 unit, 29 integration тестов)
+    - ✅ USER-001-09: User preferences с Redis кэшированием (18 unit, 29 integration тестов)
+    - ✅ USER-001-11: Полная оптимизация (21 endpoint, 10 индексов, 2 security fixes, 65 integration тестов)
+    - ✅ USER-001-12: Рефакторинг и мониторинг (+42 unit теста, -34% кода, +1,256 строк docs)
+- ✅ **SAAS-017**: Role Management System
+    - ✅ SAAS-017-00: RoleController с иерархией ролей (11 endpoints, 14 ролей, уровни 0-100)
+    - ✅ SAAS-017-01: Миграции и модели (3 таблицы, 14 индексов, кастомные валидаторы)
 - ⏳ **SAAS-002**: Очистка User модуля (удаление e-commerce хардкода)
 - ⏳ **SAAS-003**: Фильтрация каталога по тенантам
 
@@ -107,14 +113,26 @@
 #### Пользователи и безопасность
 
 - **User**: основная модель пользователя с расширенными флагами
-    - Базовые поля: email, phone, password_hash, first_name, last_name
+    - Базовые поля: email, phone, password_hash, first_name, last_name, date_of_birth (USER-001-03)
     - Флаги состояния: is_active, is_blocked, is_verified, is_email_verified
     - Настройки: is_newsletter_subscribed, is_marketing_consent, is_cookie_consent
     - Профиль: is_profile_completed, is_vip_customer, is_beta_tester
     - Безопасность: is_two_factor_enabled, is_terms_accepted, is_privacy_accepted
     - Локализация: preferred_language, timezone, theme_preference
-- **Role**: роли системы (USER, ADMIN, TENANT_OWNER, etc.)
-- **UserRole**: связь пользователей с ролями
+- **Role** (SAAS-017-01): роли системы с иерархией
+    - Поля: id, role, description, level (0-100), permissions (JSON), is_system_role, is_active, tenant_id (nullable)
+    - Индексы: 5 индексов (role UNIQUE, level, is_system_role, tenant_id, is_active)
+    - Типы: системные (tenant_id = NULL) и tenant-специфичные (tenant_id != NULL)
+    - Иерархия: 14 ролей от BLOCKED (0) до SUPER_ADMIN (100)
+- **UserRole** (SAAS-017-01): связь пользователей с ролями
+    - Поля: id, user_id (FK), role_id (FK), tenant_id (FK), granted_by (FK), granted_at, expires_at, is_active, metadata (JSON)
+    - Индексы: 6 индексов + UNIQUE(user_id, role_id, tenant_id)
+    - Поддержка временных ролей через expires_at
+    - Аудит: granted_by (кто назначил), granted_at (когда назначено)
+- **RolePermission** (SAAS-017-01): детальные разрешения для ролей
+    - Поля: id, role_id (FK), resource, action, conditions (JSON)
+    - Индексы: 3 индекса + UNIQUE(role_id, resource, action)
+    - Гранулярный контроль доступа на уровне ресурсов и действий
 - **RefreshToken**: токены обновления (HttpOnly cookies)
 - **LoginHistory**: история входов в систему
 - **PasswordResetToken**: токены сброса пароля
@@ -183,7 +201,89 @@ User ──┬── UserRole ── Role
 - Компрометация токенов: автоматическая инвалидация при подозрительной активности
 - История входов: отслеживание всех сессий пользователя
 
-### 2. Пользователи (User)
+### 2. Role Management System (SAAS-017)
+
+**Контроллер**: `RoleController`
+
+**Иерархия ролей** (14 ролей, уровни 0-100):
+
+| Роль               | Уровень | Тип       | Описание                      |
+| ------------------ | ------- | --------- | ----------------------------- |
+| `SUPER_ADMIN`      | 100     | Системная | Супер-администратор платформы |
+| `PLATFORM_ADMIN`   | 90      | Системная | Администратор платформы       |
+| `TENANT_OWNER`     | 80      | Tenant    | Владелец тенанта              |
+| `TENANT_ADMIN`     | 70      | Tenant    | Администратор тенанта         |
+| `MANAGER`          | 60      | Tenant    | Менеджер                      |
+| `STAFF`            | 50      | Tenant    | Сотрудник                     |
+| `CUSTOMER_VIP`     | 40      | Customer  | VIP-клиент                    |
+| `CUSTOMER_PREMIUM` | 30      | Customer  | Премиум-клиент                |
+| `CUSTOMER`         | 20      | Customer  | Обычный клиент                |
+| `GUEST`            | 10      | Системная | Гость                         |
+| `BLOCKED`          | 0       | Системная | Заблокированный пользователь  |
+
+**Endpoints**:
+
+- `POST /role` - создание роли (ADMIN_ROLES)
+- `GET /role/:id` - получение роли (MANAGER_ROLES)
+- `GET /role` - список ролей с пагинацией (MANAGER_ROLES)
+- `POST /role/permissions/assign` - назначить разрешение роли (ADMIN_ROLES)
+- `DELETE /role/permissions/revoke` - отозвать разрешение (ADMIN_ROLES)
+- `GET /role/permissions/:roleId` - получить разрешения роли (MANAGER_ROLES)
+- `POST /role/assign` - назначить роль пользователю (MANAGER_ROLES)
+- `DELETE /role/revoke` - отозвать роль у пользователя (MANAGER_ROLES)
+- `GET /role/user/:userId` - получить роли пользователя (MANAGER_ROLES)
+- `GET /role/hierarchy` - получить иерархию ролей (MANAGER_ROLES)
+- `GET /role/level/:role` - получить уровень роли (MANAGER_ROLES)
+
+**Особенности**:
+
+- **Иерархия**: роли имеют числовые уровни (0-100), высший уровень может управлять низшим
+- **Системные роли**: `tenant_id = NULL` (SUPER_ADMIN, PLATFORM_ADMIN, GUEST, BLOCKED)
+- **Tenant-роли**: `tenant_id != NULL` (изолированы по тенантам)
+- **Временные роли**: поддержка истечения через `expiresAt` в `user_roles`
+- **Разграничение доступа**: проверка `canManageRole(managerRole, targetRole)` по уровню
+- **Детальные разрешения**: таблица `role_permissions` для ресурсов и действий
+- **Tenant isolation**: автоматическая фильтрация по `tenant_id` на всех уровнях
+
+**Таблицы БД**:
+
+- **`roles`**: определение ролей
+    - Поля: `id`, `role`, `description`, `level`, `permissions` (JSON), `is_system_role`, `is_active`, `tenant_id` (nullable FK)
+    - Индексы: 5 индексов (role UNIQUE, level, is_system_role, tenant_id, is_active)
+- **`user_roles`**: связь пользователей с ролями
+    - Поля: `id`, `user_id` (FK), `role_id` (FK), `tenant_id` (FK), `granted_by` (FK), `granted_at`, `expires_at`, `is_active`, `metadata` (JSON)
+    - Индексы: 6 индексов + UNIQUE(user_id, role_id, tenant_id)
+- **`role_permissions`**: детальные разрешения
+    - Поля: `id`, `role_id` (FK), `resource`, `action`, `conditions` (JSON)
+    - Индексы: 3 индекса + UNIQUE(role_id, resource, action)
+
+**Helper функции** (`role-constants.ts`):
+
+- `getRoleLevel(role)` - получить уровень иерархии роли (0-100)
+- `canManageRole(managerRole, targetRole)` - проверка прав управления (сравнение уровней)
+- `isSystemRole(role)` - проверка системной роли
+- `isTenantRole(role)` - проверка tenant-роли
+- `isCustomerRole(role)` - проверка клиентской роли
+- `getManageableRoles(userRole)` - список ролей, которыми может управлять пользователь
+
+**Константы ролей**:
+
+- `SYSTEM_ADMIN_ROLES`: ['SUPER_ADMIN', 'PLATFORM_ADMIN']
+- `TENANT_OWNER_ROLES`: ['TENANT_OWNER']
+- `TENANT_ADMIN_ROLES`: ['TENANT_ADMIN']
+- `MANAGER_ROLES`: ['MANAGER', 'TENANT_ADMIN', 'TENANT_OWNER']
+- `ADMIN_ROLES`: ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN']
+- `CUSTOMER_ROLES`: ['CUSTOMER', 'CUSTOMER_PREMIUM', 'CUSTOMER_VIP']
+- `ALL_ROLES`: все 14 ролей
+
+**Валидация**:
+
+- `@IsValidRoleTenant`: кастомный валидатор для `tenantId`
+    - Системные роли (`isSystemRole = true`): `tenantId` должен быть `null`
+    - Tenant-роли (`isSystemRole = false`): `tenantId` должен быть числом (не null)
+    - Сообщения: "Системная роль не может быть привязана к тенанту" / "Роль тенанта должна быть привязана к тенанту"
+
+### 3. Пользователи (User)
 
 **Контроллер**: `UserController`
 
@@ -364,14 +464,104 @@ User ──┬── UserRole ── Role
     - Tenant isolation
     - Validation (все поля + translations)
 
-**Роли системы**:
+#### Административные endpoints (USER-001-11)
 
-- **Платформенные**: SUPER_ADMIN, PLATFORM_ADMIN
-- **Тенантские**: TENANT_OWNER, TENANT_ADMIN, MANAGER, CONTENT_MANAGER, CUSTOMER_SERVICE
-- **Пользователи**: VIP_CUSTOMER, WHOLESALE, CUSTOMER, AFFILIATE, GUEST
-- **Legacy**: ADMIN, USER (для обратной совместимости)
+**Фильтрация пользователей:**
 
-### 3. Каталог товаров (Catalog)
+- `GET /users/active` - список активных пользователей (page, limit)
+- `GET /users/blocked` - заблокированные пользователи
+- `GET /users/verified` - верифицированные пользователи
+- `GET /users/vip` - VIP клиенты
+- `GET /users/premium` - Premium пользователи
+- `GET /users/date-range?start=YYYY-MM-DD&end=YYYY-MM-DD` - фильтр по дате регистрации
+
+**Поиск пользователей:**
+
+- `GET /users/search/name?search=term` - поиск по имени и фамилии
+- `GET /users/search/phone?phone=79161234567` - поиск по телефону
+- `GET /users/search/full?search=term` - полнотекстовый поиск (email, имя, фамилия)
+
+**Статистика:**
+
+- `GET /users/statistics` - статистика по статусам
+    - Response: `{ totalUsers, activeUsers, blockedUsers, verifiedUsers, vipCustomers, premiumUsers }`
+
+**Массовые операции (Bulk Operations):**
+
+- `POST /users/bulk/activate` - массовая активация пользователей
+    - Body: `{ userIds: number[] }`
+    - Response: `{ affectedCount: number, message: string }`
+- `POST /users/bulk/block` - массовая блокировка
+- `POST /users/bulk/unblock` - массовая разблокировка
+- `POST /users/bulk/verify` - массовая верификация email
+- `POST /users/bulk/premium` - массовое назначение Premium статуса
+- `POST /users/bulk/vip` - массовое назначение VIP статуса
+
+**Мониторинг производительности (USER-001-12):**
+
+- `GET /user/admin/metrics` - метрики производительности
+    - Response: `{ slowQueriesCount, avgBulkOperationTime, bulkOperationsCount, errorsCount, timestamp }`
+    - Источник: `MetricsCollector` service (in-memory metrics)
+
+#### Оптимизация и производительность (USER-001-11, USER-001-12)
+
+**Индексы БД** (10 composite indexes для tenant-scoped запросов):
+
+- `idx_user_tenant_id_is_active` - фильтрация активных пользователей
+- `idx_user_tenant_id_is_blocked` - фильтрация заблокированных
+- `idx_user_tenant_id_is_verified` - фильтрация верифицированных
+- `idx_user_tenant_id_is_premium` - фильтрация Premium
+- `idx_user_tenant_id_is_vip_customer` - фильтрация VIP
+- `idx_user_tenant_id_is_deleted_is_active` - комплексная фильтрация (is_deleted=0, is_active, is_blocked)
+- `idx_user_tenant_id_first_name` - поиск по имени
+- `idx_user_tenant_id_last_name` - поиск по фамилии
+- `idx_user_tenant_id_phone` - поиск по телефону
+- `idx_user_tenant_id_full_name` - полнотекстовый поиск (first_name, last_name)
+
+**Специализированные репозитории (USER-001-12):**
+
+- **`UserSearchRepository`** (463 строки):
+    - 7 методов поиска и фильтрации
+    - `searchUsersByName()`, `searchUsersByPhone()`, `fullTextSearchUsers()`
+    - `findUsersByDateRange()`, `findActiveUsersPaginated()`, `findBlockedUsersPaginated()`, `findVipUsersPaginated()`
+    - Защита от SQL injection: `escapeLikeWildcards()` для всех LIKE запросов
+    - Tenant isolation: `getTenantIdSafe()` во всех запросах
+
+- **`UserStatsRepository`** (298 строк):
+    - 3 метода статистики
+    - `getUserStatistics()` - общая статистика по статусам
+    - `getUsersByStatusCount()` - подсчет пользователей по условию
+    - Tenant isolation и оптимизированные COUNT запросы
+
+- **`UserBulkRepository`** (381 строка):
+    - 6 bulk операций с транзакциями
+    - `bulkActivateUsers()`, `bulkBlockUsers()`, `bulkUnblockUsers()`
+    - `bulkVerifyUsers()`, `bulkSetPremiumStatus()`, `bulkSetVipStatus()`
+    - Timing metrics через `MetricsCollector`
+    - Tenant isolation и rollback при ошибках
+
+**Security & Performance:**
+
+- **Tenant isolation**: централизованный метод `getTenantIdSafe()` (убрано 8 дублирований кода)
+- **SQL injection защита**: `escapeLikeWildcards()` для всех LIKE запросов (экранирование `\`, `%`, `_`)
+- **Мониторинг**: `MetricsCollector` service для отслеживания:
+    - Медленных запросов (>100ms)
+    - Bulk операций (timing, affected count)
+    - Ошибок (с TTL 24 часа, FIFO cleanup)
+- **Рефакторинг**: UserRepository сокращен с 2609 до 1710 строк (-34%), делегирование в специализированные репозитории
+- **Rate limiting**: BruteforceGuard для всех bulk операций
+- **Валидация**: массивы userIds ограничены (max 1000 элементов), проверка прав доступа
+
+**Тестовое покрытие:**
+
+- **USER-001-11**: 65 integration тестов (все endpoints, tenant isolation, cross-user blocking)
+- **USER-001-12**: 42 unit теста
+    - 18 тестов для MetricsCollector (FIFO, TTL, memory management)
+    - 20 тестов для normalizeRussianPhone (edge cases, boundary values)
+    - 105+ тестов для escapeLikeWildcards (SQL injection patterns)
+    - 12 integration тестов для новых репозиториев
+
+### 4. Каталог товаров (Catalog)
 
 **Контроллеры**: `ProductController`, `CategoryController`, `BrandController`, `ProductPropertyController`
 
@@ -389,7 +579,7 @@ User ──┬── UserRole ── Role
 - По бренду: `GET /products?brand_id=1`
 - Комбинированная: `GET /products?category_id=1&brand_id=1`
 
-### 4. Корзина (Cart)
+### 5. Корзина (Cart)
 
 **Контроллер**: `CartController`
 
@@ -400,7 +590,7 @@ User ──┬── UserRole ── Role
 - `DELETE /cart/remove` - удаление товара
 - `DELETE /cart/clear` - очистка корзины
 
-### 5. Заказы (Order)
+### 6. Заказы (Order)
 
 **Контроллер**: `OrderController`
 
@@ -421,21 +611,21 @@ User ──┬── UserRole ── Role
 
 - `POST /guest/orders` - создание заказа без регистрации
 
-### 6. Платежи (Payment)
+### 7. Платежи (Payment)
 
 **Контроллер**: `PaymentController`
 
 - `POST /payment/user` - оплата для авторизованных
 - `POST /payment/guest` - оплата для гостей
 
-### 7. Рейтинги (Rating)
+### 8. Рейтинги (Rating)
 
 **Контроллер**: `RatingController`
 
 - `POST /ratings` - создание оценки
 - `GET /ratings/product/:productId` - рейтинг товара
 
-### 8. Уведомления (Notification)
+### 9. Уведомления (Notification)
 
 **Контроллер**: `NotificationController`
 
@@ -470,7 +660,7 @@ User ──┬── UserRole ── Role
 - Settings blocking: уведомления не отправляются при отключенных настройках пользователя
 - Integration тесты: полное покрытие всех endpoints (18 тестов)
 
-### 9. Файлы (File)
+### 10. Файлы (File)
 
 **Сервис**: `FileService`
 
@@ -478,7 +668,7 @@ User ──┬── UserRole ── Role
 - Валидация типов и размеров
 - Безопасное хранение
 
-### 10. Промокоды (PromoCode)
+### 11. Промокоды (PromoCode)
 
 **Сервис**: `PromoCodeService`
 
@@ -486,7 +676,7 @@ User ──┬── UserRole ── Role
 - Применение скидок к заказам
 - Валидация сроков действия
 
-### 11. Health Checks (Мониторинг)
+### 12. Health Checks (Мониторинг)
 
 **Контроллер**: `HealthController`
 
@@ -513,16 +703,31 @@ User ──┬── UserRole ── Role
 - **`TokenService`**: работа с JWT токенами
 - **`LoginHistoryService`**: история входов в систему
 - **`UserAddressService`**: управление адресами пользователей
+- **`MetricsCollector`** (USER-001-12): мониторинг производительности
+    - In-memory сбор метрик: bulk operations, slow queries (>100ms), errors
+    - TTL 24 часа, FIFO cleanup при превышении MAX_METRICS_SIZE (10K)
+    - Memory management: `onModuleDestroy()` для cleanup interval
+    - Methods: `recordBulkOperation()`, `recordSlowQuery()`, `recordError()`, `getMetrics()`, `reset()`
 
 ### Основные репозитории
 
-- **`UserRepository`**: CRUD пользователей, статистика, кэширование
+- **`UserRepository`**: CRUD пользователей, делегирование в специализированные репозитории (USER-001-12: 2609 → 1710 строк, -34%)
+- **`UserSearchRepository`** (USER-001-12): поиск и фильтрация пользователей
+    - 7 методов: searchByName, searchByPhone, fullTextSearch, findByDateRange, findActive/Blocked/Vip
+    - SQL injection защита: `escapeLikeWildcards()` для всех LIKE запросов
+    - Tenant isolation: `getTenantIdSafe()` во всех методах
+- **`UserStatsRepository`** (USER-001-12): статистика пользователей
+    - 3 метода: getUserStatistics, getUsersByStatusCount
+    - Оптимизированные COUNT запросы с tenant isolation
+- **`UserBulkRepository`** (USER-001-12): массовые операции
+    - 6 методов: bulkActivate, bulkBlock, bulkUnblock, bulkVerify, bulkSetPremium, bulkSetVip
+    - Транзакции с rollback, timing metrics, tenant isolation
 - **`ProductRepository`**: товары с фильтрацией по tenant_id
 - **`OrderRepository`**: заказы с изоляцией по тенантам
 - **`CartRepository`**: корзины пользователей
 - **`BrandRepository`**: бренды с пагинацией и поиском
 - **`CategoryRepository`**: категории товаров
-- **`RoleRepository`**: роли системы
+- **`RoleRepository`**: роли системы с иерархией и tenant isolation (SAAS-017)
 - **`RefreshTokenRepository`**: токены обновления
 - **`RatingRepository`**: оценки товаров
 - **`PromoCodeRepository`**: промокоды и скидки
@@ -547,6 +752,18 @@ User ──┬── UserRole ── Role
 - **`sanitizeForLogging`**: автоматическое удаление PII полей
 - **`buildRefreshCookieOptions`**: безопасные настройки cookies
 - **`PaginationValidator`**: валидация параметров пагинации
+- **`escapeLikeWildcards`** (USER-001-12): защита от SQL injection в LIKE запросах
+    - Экранирование специальных символов: `\` → `\\`, `%` → `\%`, `_` → `\_`
+    - Используется в UserSearchRepository для безопасного поиска
+    - 105+ unit тестов (injection patterns, edge cases)
+- **`normalizeRussianPhone`** (USER-001-02): нормализация российских номеров
+    - Поддержка форматов: `+7XXXXXXXXXX`, `8XXXXXXXXXX`, `7XXXXXXXXXX`
+    - Нормализация к единому формату: `+7XXXXXXXXXX`
+    - 20 unit тестов (boundary values, edge cases)
+- **`getTenantIdSafe`** (USER-001-12): централизованная логика tenant isolation
+    - Используется в UserRepository и специализированных репозиториях
+    - Убрано 8 дублирований кода (-32 строки)
+    - Fallback на `tenant_id = 1` в development режиме
 
 ### Domain интерфейсы
 
@@ -612,19 +829,30 @@ User ──┬── UserRole ── Role
 - Запрет простых паролей (password, 123456, qwerty, etc.)
 - Сообщение: "Пароль должен содержать минимум 8 символов, включая заглавные и строчные буквы, цифры и специальные символы. Простые пароли запрещены"
 
-**IsValidPhone**:
+**IsValidPhone** (USER-001-02):
 
 - От 7 до 15 цифр
 - Поддержка префикса `+`
 - Нормализация пробелов, дефисов, скобок
+- **Российские номера**: поддержка форматов `+7XXXXXXXXXX`, `8XXXXXXXXXX`, `7XXXXXXXXXX`
+- **Нормализация**: автоматическое преобразование в `+7XXXXXXXXXX`
 - Сообщение: "Номер телефона должен содержать от 7 до 15 цифр и может начинаться с +"
 
-**IsValidName**:
+**IsValidName** (USER-001-01):
 
 - От 2 до 100 символов
 - Только буквы, пробелы, дефисы, апострофы
 - Поддержка кириллицы и латиницы
 - Сообщение: "Имя должно содержать от 2 до 100 символов, только буквы, пробелы, дефисы и апострофы"
+
+**IsValidRoleTenant** (SAAS-017-01):
+
+- Валидация `tenantId` в зависимости от `isSystemRole`
+- **Системные роли** (`isSystemRole = true`): `tenantId` должен быть `null`
+- **Tenant-роли** (`isSystemRole = false`): `tenantId` должен быть числом (не `null`)
+- Сообщения:
+    - "Системная роль не может быть привязана к тенанту (tenantId должен быть NULL)"
+    - "Роль тенанта должна быть привязана к тенанту (tenantId не может быть NULL)"
 
 ### Guards (защитники)
 
@@ -738,9 +966,9 @@ User ──┬── UserRole ── Role
 **Product** (8): Create, Get, GetListV2, GetListByBrandIdV2, GetListByCategoryIdV2, GetAllByBrandIdAndCategoryIdV2, Remove, Update
 **ProductProperty** (5): Create, Get, GetList, Remove, Update
 **Rating** (2): Create, Get
-**Role** (3): Create, Get, GetList
-**User** (11): AddRole, Create, Get, GetList, Remove, RemoveRole, Update, UpdatePhone, RequestVerifyEmail, ConfirmVerifyEmail, RequestVerifyPhone, ConfirmVerifyPhone
-**UserAddress** (7): Create, Get, GetList, Remove, Update
+**Role** (11): Create, Get, GetList, AssignPermission, RevokePermission, GetPermissions, AssignRole, RevokeRole, GetUserRoles, GetHierarchy, GetRoleLevel
+**User** (32+): AddRole, Create, Get, GetList, Remove, RemoveRole, Update, UpdatePhone, UpdateProfile, UpdateDateOfBirth, UpdateConsents, UpdateStatuses, RequestVerifyEmail, ConfirmVerifyEmail, RequestVerifyPhone, ConfirmVerifyPhone + [21 admin endpoints: фильтрация, поиск, статистика, bulk операции, метрики]
+**UserAddress** (7): Create, Get, GetList, Remove, Update, SetDefault
 **Notification** (12): CreateTemplate, DeleteTemplate, GetStatistics, GetTemplates, GetUnreadCount, GetUserNotifications, GetUserSettings, MarkAsRead, UpdateTemplate, UpdateUserSettings
 
 ---
@@ -1161,9 +1389,9 @@ npm run db:create     # Создать БД
 
 ### Миграции и сиды
 
-- **Миграции**: 37+ миграций с индексами для производительности
+- **Миграции**: 40+ миграций с индексами для производительности
 - **Сиды**: детерминированные данные для ролей и пользователей
-- **Индексы**: оптимизированные индексы для FK, поиска, сортировки
+- **Индексы**: оптимизированные индексы для FK, поиска, сортировки, tenant-scoped запросов
 - **Версионирование**: четкая схема именования миграций
 - **Rollback**: полная поддержка отката изменений
 
@@ -1178,12 +1406,23 @@ npm run db:create     # Создать БД
     - Пример: `20251005090000-create-tenants.ts` должна выполняться раньше `20251006000000-add-tenant-id-to-notifications.ts`
     - При переименовании миграций проверять зависимости и порядок timestamp
 
-**Сиды ролей** (14 ролей):
+**Ключевые миграции**:
 
-- **Платформенные**: SUPER_ADMIN, PLATFORM_ADMIN
-- **Тенантские**: TENANT_OWNER, TENANT_ADMIN, MANAGER, CONTENT_MANAGER, CUSTOMER_SERVICE
-- **Пользователи**: VIP_CUSTOMER, WHOLESALE, CUSTOMER, AFFILIATE, GUEST
-- **Legacy**: ADMIN, USER (для обратной совместимости)
+- **USER-001-03**: `20251104230000-add-date-of-birth-to-users.ts` - поле даты рождения
+- **USER-001-11**: `20241119000000-add-user-composite-indexes.ts` - 10 composite индексов для tenant-scoped запросов
+- **SAAS-017-01**: 3 миграции для role system
+    - `20241121140000-create-roles-table.ts` - таблица roles (5 индексов)
+    - `20241121140100-create-user-roles-table.ts` - таблица user_roles (6 индексов + UNIQUE)
+    - `20241121140200-create-role-permissions-table.ts` - таблица role_permissions (3 индекса + UNIQUE)
+
+**Сиды ролей** (14 ролей с иерархией, SAAS-017):
+
+- **Системные** (tenant_id = NULL):
+    - SUPER_ADMIN (100), PLATFORM_ADMIN (90), GUEST (10), BLOCKED (0)
+- **Tenant-специфичные**:
+    - TENANT_OWNER (80), TENANT_ADMIN (70), MANAGER (60), STAFF (50)
+    - CUSTOMER_VIP (40), CUSTOMER_PREMIUM (30), CUSTOMER (20)
+- **Legacy** (для обратной совместимости): ADMIN, USER
 
 **Сиды пользователей**:
 
