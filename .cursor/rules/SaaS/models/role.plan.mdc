@@ -474,58 +474,56 @@ tasks:
       notes: |
       Задача выполнена полностью. Все методы RoleService и RoleRepository реализованы.
 
-      RoleService методы (11):
-      ========================
-      CRUD (3):
-      - createRole(dto) - создание роли
-      - getRole(role) - получение роли по названию
-      - getListRole() - список всех ролей
+        # RoleService методы (11):
 
-      Управление разрешениями (3):
-      - assignPermission(dto, tenantId) - назначение разрешения роли
-      - revokePermission(dto, tenantId) - отзыв разрешения у роли
-      - getRolePermissions(roleId, tenantId) - получение всех разрешений роли
+        CRUD (3):
+        - createRole(dto) - создание роли
+        - getRole(role) - получение роли по названию
+        - getListRole() - список всех ролей
 
-      Назначение ролей пользователям (3):
-      - assignRoleToUser(dto, tenantId, userRoles) - назначение роли пользователю
-      - revokeRoleFromUser(dto, tenantId, userRoles) - отзыв роли у пользователя
-      - getUserRoles(userId, tenantId) - получение всех ролей пользователя
+        Управление разрешениями (3):
+        - assignPermission(dto, tenantId) - назначение разрешения роли
+        - revokePermission(dto, tenantId) - отзыв разрешения у роли
+        - getRolePermissions(roleId, tenantId) - получение всех разрешений роли
 
-      Иерархия ролей (2):
-      - getRoleHierarchy() - полная иерархия (system, tenant, customer)
-      - getRoleLevel(role) - уровень роли и управляемые роли
+        Назначение ролей пользователям (3):
+        - assignRoleToUser(dto, tenantId, userRoles) - назначение роли пользователю
+        - revokeRoleFromUser(dto, tenantId, userRoles) - отзыв роли у пользователя
+        - getUserRoles(userId, tenantId) - получение всех ролей пользователя
 
-      RoleRepository методы (10):
-      ===========================
-      Вспомогательные (3):
-      - findRoleById(id, tenantId?) - поиск роли по ID с tenant isolation
-      - findRoleByName(role) - поиск роли по названию
-      - findAllRolesGrouped() - все роли, отсортированные по level
+        Иерархия ролей (2):
+        - getRoleHierarchy() - полная иерархия (system, tenant, customer)
+        - getRoleLevel(role) - уровень роли и управляемые роли
 
-      Управление разрешениями (3):
-      - createRolePermission(roleId, resource, action, conditions?) - создание разрешения
-      - deleteRolePermission(roleId, resource, action) - удаление разрешения
-      - findRolePermissions(roleId) - получение всех разрешений роли
+        # RoleRepository методы (10):
 
-      Назначение ролей пользователям (3):
-      - assignRoleToUser(userId, roleId, tenantId, grantedBy, expiresAt?, metadata?) - назначение роли
-      - revokeRoleFromUser(userId, roleId, tenantId) - отзыв роли
-      - findUserRoles(userId, tenantId?) - получение ролей пользователя
+        Вспомогательные (3):
+        - findRoleById(id, tenantId?) - поиск роли по ID с tenant isolation
+        - findRoleByName(role) - поиск роли по названию
+        - findAllRolesGrouped() - все роли, отсортированные по level
 
-      Security & Validation:
-      ======================
-      - Tenant isolation: все операции фильтруются по tenantId
-      - Hierarchy enforcement: проверка через canManageRole() перед назначением
-      - Data validation: проверка активности роли, валидация даты истечения
-      - User validation: проверка существования пользователя и принадлежности к тенанту
-      - Error handling: все сообщения на русском языке
+        Управление разрешениями (3):
+        - createRolePermission(roleId, resource, action, conditions?) - создание разрешения
+        - deleteRolePermission(roleId, resource, action) - удаление разрешения
+        - findRolePermissions(roleId) - получение всех разрешений роли
 
-      Module Updates:
-      ===============
-      - RepositoriesModule: добавлен RolePermissionModel в SequelizeModule.forFeature
-      - ServicesModule: UserModel уже зарегистрирован (для проверки пользователей)
+        Назначение ролей пользователям (3):
+        - assignRoleToUser(userId, roleId, tenantId, grantedBy, expiresAt?, metadata?) - назначение роли
+        - revokeRoleFromUser(userId, roleId, tenantId) - отзыв роли
+        - findUserRoles(userId, tenantId?) - получение ролей пользователя
 
-      Примечание: Автоматическое назначение ролей (VIP, WHOLESALE) - это отдельная задача SAAS-017-07.
+        # Security & Validation:
+        - Tenant isolation: все операции фильтруются по tenantId
+        - Hierarchy enforcement: проверка через canManageRole() перед назначением
+        - Data validation: проверка активности роли, валидация даты истечения
+        - User validation: проверка существования пользователя и принадлежности к тенанту
+        - Error handling: все сообщения на русском языке
+
+        # Module Updates:
+        - RepositoriesModule: добавлен RolePermissionModel в SequelizeModule.forFeature
+        - ServicesModule: UserModel уже зарегистрирован (для проверки пользователей)
+
+        Примечание: Автоматическое назначение ролей (VIP, WHOLESALE) - это отдельная задача SAAS-017-07.
 
 - id: SAAS-017-07
   title: Реализовать автоматическое назначение ролей
