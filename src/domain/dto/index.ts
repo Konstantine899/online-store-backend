@@ -12,6 +12,7 @@ export { ISearchDto } from './product/i-search-dto';
 export { ISortingDto, SortingEnum } from './product/i-sorting-dto';
 export { ICreateProductPropertyDto } from './product-property/i-create-product-property-dto';
 export { ICreateRoleDto } from './role/i-create-role-dto';
+export { IUpdateRoleDto } from './role/i-update-role-dto';
 export { IAddRoleDto } from './user/i-add-role-dto';
 export { ICreateUserDto } from './user/i-create-user-dto';
 export { IRemoveRoleDto } from './user/i-remove-role-dto';

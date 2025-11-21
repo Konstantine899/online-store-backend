@@ -16,6 +16,7 @@ export { SortingDto } from './product/sorting-dto';
 export { AssignPermissionDto } from './role/assign-permission.dto';
 export { AssignRoleDto } from './role/assign-role.dto';
 export { CreateRoleDto } from './role/create-role.dto';
+export { UpdateRoleDto } from './role/update-role.dto';
 export { RevokePermissionDto } from './role/revoke-permission.dto';
 export { RevokeRoleDto } from './role/revoke-role.dto';
 export { CreateUserAddressDto } from './user-address/create-user-address.dto';
