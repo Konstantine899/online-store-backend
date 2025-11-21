@@ -1,7 +1,9 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
+    ApiBadRequestResponse,
     ApiBearerAuth,
     ApiBody,
+    ApiForbiddenResponse,
     ApiNotFoundResponse,
     ApiOperation,
     ApiResponse,
@@ -24,6 +26,29 @@ export function RevokeRoleSwaggerDecorator(): MethodDecorator {
             status: HttpStatus.OK,
             description: 'Роль успешно отозвана у пользователя',
             type: RevokeRoleResponse,
+        }),
+        ApiBadRequestResponse({
+            description: 'Некорректные данные',
+            schema: {
+                title: 'Ошибка валидации',
+                example: {
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    message: [
+                        'userId должен быть целым числом',
+                        'roleId должен быть положительным числом',
+                    ],
+                },
+            },
+        }),
+        ApiForbiddenResponse({
+            description: 'Недостаточно прав',
+            schema: {
+                title: 'Доступ запрещён',
+                example: {
+                    statusCode: HttpStatus.FORBIDDEN,
+                    message: 'У вас недостаточно прав для отзыва ролей',
+                },
+            },
         }),
         ApiNotFoundResponse({
             description: 'Пользователь, роль или назначение не найдены',

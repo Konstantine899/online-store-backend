@@ -1,6 +1,7 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
     ApiBearerAuth,
+    ApiForbiddenResponse,
     ApiNotFoundResponse,
     ApiOperation,
     ApiParam,
@@ -26,6 +27,17 @@ export function GetUserRolesSwaggerDecorator(): MethodDecorator {
             status: HttpStatus.OK,
             description: 'Список ролей пользователя успешно получен',
             type: GetUserRolesResponse,
+        }),
+        ApiForbiddenResponse({
+            description: 'Недостаточно прав',
+            schema: {
+                title: 'Доступ запрещён',
+                example: {
+                    statusCode: HttpStatus.FORBIDDEN,
+                    message:
+                        'У вас недостаточно прав для просмотра ролей пользователя',
+                },
+            },
         }),
         ApiNotFoundResponse({
             description: 'Пользователь не найден',

@@ -34,6 +34,16 @@ export class CreateRoleResponse {
             { resource: 'orders', action: 'read' },
         ],
         description: 'Разрешения роли (массив объектов)',
+        type: 'array',
+        items: {
+            type: 'object',
+            properties: {
+                resource: { type: 'string', example: 'products' },
+                action: { type: 'string', example: 'manage' },
+                conditions: { type: 'object' },
+            },
+            required: ['resource', 'action'],
+        },
     })
     declare permissions: unknown[];
 

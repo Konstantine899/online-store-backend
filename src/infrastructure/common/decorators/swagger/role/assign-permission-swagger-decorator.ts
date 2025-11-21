@@ -1,7 +1,9 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
+    ApiBadRequestResponse,
     ApiBearerAuth,
     ApiBody,
+    ApiForbiddenResponse,
     ApiNotFoundResponse,
     ApiOperation,
     ApiResponse,
@@ -24,6 +26,30 @@ export function AssignPermissionSwaggerDecorator(): MethodDecorator {
             status: HttpStatus.CREATED,
             description: 'Разрешение успешно назначено роли',
             type: AssignPermissionResponse,
+        }),
+        ApiBadRequestResponse({
+            description: 'Некорректные данные',
+            schema: {
+                title: 'Ошибка валидации',
+                example: {
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    message: [
+                        'resource не может быть пустым',
+                        'action не может быть длиннее 50 символов',
+                    ],
+                },
+            },
+        }),
+        ApiForbiddenResponse({
+            description: 'Недостаточно прав',
+            schema: {
+                title: 'Доступ запрещён',
+                example: {
+                    statusCode: HttpStatus.FORBIDDEN,
+                    message:
+                        'У вас недостаточно прав для управления разрешениями',
+                },
+            },
         }),
         ApiNotFoundResponse({
             description: 'Роль не найдена',

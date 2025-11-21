@@ -1,6 +1,7 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import {
     ApiBearerAuth,
+    ApiForbiddenResponse,
     ApiOperation,
     ApiResponse,
 } from '@nestjs/swagger';
@@ -18,6 +19,17 @@ export function GetRoleHierarchySwaggerDecorator(): MethodDecorator {
             status: HttpStatus.OK,
             description: 'Иерархия ролей успешно получена',
             type: GetRoleHierarchyResponse,
+        }),
+        ApiForbiddenResponse({
+            description: 'Недостаточно прав',
+            schema: {
+                title: 'Доступ запрещён',
+                example: {
+                    statusCode: HttpStatus.FORBIDDEN,
+                    message:
+                        'У вас недостаточно прав для просмотра иерархии ролей',
+                },
+            },
         }),
     );
 }
