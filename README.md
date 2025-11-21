@@ -25,6 +25,7 @@
 - [Quick Start](#quick-start)
 - [Testing](#тестирование)
 - [API Documentation](#api-documentation)
+- [Role Management System](#-role-management-system)
 - [Database](#database)
 - [Security](#security)
 - [Project Structure](#project-structure)
@@ -59,7 +60,15 @@
 
 - ✅ JWT-based authentication (access + refresh tokens)
 - ✅ Refresh token rotation (single-use, automatic invalidation)
-- ✅ Role-Based Access Control (RBAC): ADMIN, USER, CUSTOMER
+- ✅ **Advanced RBAC System** с иерархией ролей (14 ролей, 100-уровневая иерархия):
+  - 🏢 **System Roles**: SUPER_ADMIN, PLATFORM_ADMIN (уровни 90-100)
+  - 🏪 **Tenant Roles**: TENANT_OWNER, TENANT_ADMIN, MANAGER, STAFF (уровни 50-80)
+  - 👤 **Customer Roles**: CUSTOMER, PREMIUM_CUSTOMER, VIP_CUSTOMER (уровни 10-20)
+  - 👻 **Guest Roles**: GUEST, ANONYMOUS (уровни 0-5)
+- ✅ **Granular Permissions**: Resource-based access control (products, orders, users, catalog)
+- ✅ **Tenant Isolation**: Multi-tenancy с полной изоляцией данных
+- ✅ **Role Audit Trail**: Tracking назначений ролей (who, when, expires_at)
+- ✅ **Temporary Roles**: Роли с истечением срока действия
 - ✅ Password reset flow с email verification
 - ✅ Brute force protection (rate limiting)
 - ✅ Secure cookies (HttpOnly, SameSite)
@@ -627,6 +636,187 @@ CI pipeline **полностью настроен** и автоматическ�
     }
 }
 ```
+
+---
+
+## 👥 Role Management System
+
+Проект включает **enterprise-grade RBAC** с 14 ролями, иерархией, разрешениями и tenant-isolation.
+
+### 🏗️ Архитектура ролей
+
+#### Иерархия ролей (100-уровневая система)
+
+```typescript
+// Уровень роли определяет её приоритет в иерархии
+SUPER_ADMIN         // 100 - Полный доступ ко всей платформе
+PLATFORM_ADMIN      //  90 - Управление платформой
+TENANT_OWNER        //  80 - Владелец тенанта
+TENANT_ADMIN        //  70 - Администратор тенанта
+MANAGER             //  60 - Менеджер
+SENIOR_STAFF        //  55 - Старший сотрудник
+STAFF               //  50 - Сотрудник
+VIP_CUSTOMER        //  20 - VIP клиент
+PREMIUM_CUSTOMER    //  15 - Premium клиент
+CUSTOMER            //  10 - Обычный клиент
+GUEST               //   5 - Гость
+ANONYMOUS           //   0 - Анонимный пользователь
+```
+
+#### Типы ролей
+
+1. **System Roles** (`tenant_id = NULL`)
+   - Работают на уровне всей платформы
+   - Примеры: `SUPER_ADMIN`, `PLATFORM_ADMIN`
+
+2. **Tenant Roles** (`tenant_id NOT NULL`)
+   - Привязаны к конкретному тенанту
+   - Изоляция данных между тенантами
+   - Примеры: `TENANT_OWNER`, `MANAGER`, `STAFF`
+
+### 🔑 Основные таблицы
+
+```sql
+-- Таблица ролей
+roles (
+  id, role, description, level, permissions,
+  is_system_role, is_active, tenant_id
+)
+
+-- Назначения ролей пользователям
+user_roles (
+  id, user_id, role_id, tenant_id,
+  granted_by, granted_at, expires_at,
+  is_active, metadata
+)
+
+-- Детальные разрешения ролей
+role_permissions (
+  id, role_id, resource, action, conditions
+)
+```
+
+### 📝 Примеры использования
+
+#### 1. Создание роли
+
+```typescript
+// POST /online-store/role
+{
+  "role": "TENANT_MANAGER",
+  "description": "Менеджер тенанта",
+  "level": 60,
+  "isSystemRole": false,
+  "tenantId": 1,
+  "permissions": [
+    { "resource": "products", "action": "read" },
+    { "resource": "products", "action": "update" }
+  ]
+}
+```
+
+#### 2. Назначение роли пользователю
+
+```typescript
+// POST /online-store/role/assign
+{
+  "userId": 123,
+  "roleId": 5,
+  "tenantId": 1,
+  "expiresAt": "2025-12-31T23:59:59Z",  // Опционально
+  "metadata": {
+    "department": "Sales",
+    "region": "Europe"
+  }
+}
+```
+
+#### 3. Проверка разрешений
+
+```typescript
+// Использование @Roles декоратора
+@Roles('TENANT_ADMIN', 'MANAGER')
+@UseGuards(AuthGuard, RoleGuard)
+async updateProduct(@Req() request: Request) {
+  // Доступ только для TENANT_ADMIN и MANAGER
+}
+```
+
+#### 4. Иерархия ролей
+
+```typescript
+// Проверка уровня роли
+import { getRoleLevel, canManageRole } from './role-constants';
+
+const adminLevel = getRoleLevel('TENANT_ADMIN'); // 70
+const managerLevel = getRoleLevel('MANAGER');     // 60
+
+// Администратор может управлять менеджером
+canManageRole('TENANT_ADMIN', 'MANAGER'); // true
+canManageRole('MANAGER', 'TENANT_ADMIN'); // false
+```
+
+### 🔒 Валидация и безопасность
+
+#### Автоматическая валидация через DTO
+
+```typescript
+// Системная роль БЕЗ tenant_id
+{
+  "role": "PLATFORM_ADMIN",
+  "isSystemRole": true,
+  "tenantId": null  // ✅ Валидация пройдена
+}
+
+// Tenant роль С tenant_id
+{
+  "role": "MANAGER",
+  "isSystemRole": false,
+  "tenantId": 1     // ✅ Валидация пройдена
+}
+
+// ❌ ОШИБКА: Системная роль с tenant_id
+{
+  "role": "SUPER_ADMIN",
+  "isSystemRole": true,
+  "tenantId": 1     // ❌ Ошибка валидации
+}
+```
+
+#### Кастомный валидатор `@IsValidRoleTenant`
+
+```typescript
+export class CreateRoleDto {
+  @IsValidRoleTenant()  // Проверяет is_system_role + tenant_id
+  declare readonly tenantId?: number | null;
+}
+```
+
+### 📊 Миграции
+
+```bash
+# Применить миграции системы ролей
+npm run db:migrate
+
+# 3 миграции будут применены:
+# 1. 20241121140000-create-roles-table.ts
+# 2. 20241121140100-create-user-roles-table.ts
+# 3. 20241121140200-create-role-permissions-table.ts
+```
+
+### 🎯 Best Practices
+
+1. **Всегда указывайте уровень роли** при создании
+2. **Используйте временные роли** (`expires_at`) для временного доступа
+3. **Логируйте назначения** через `granted_by` и `granted_at`
+4. **Используйте метаданные** для дополнительного контекста
+5. **Проверяйте иерархию** перед назначением ролей
+
+### 📚 Дополнительная документация
+
+- [Role Model Documentation](./.cursor/rules/SaaS/models/role.mdc)
+- [Role Plan](./.cursor/rules/SaaS/models/role.plan.mdc)
+- [Database Migrations](./db/README.md)
 
 ---
 

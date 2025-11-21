@@ -1,4 +1,8 @@
 export { IsValidAge, IsValidAgeConstraint } from './age.validator';
+export {
+    IsValidRoleTenant,
+    IsValidRoleTenantConstraint,
+} from './is-valid-role-tenant.validator';
 export { IsValidName, IsValidNameConstraint } from './name.validator';
 export {
     IsPasswordStrong,
