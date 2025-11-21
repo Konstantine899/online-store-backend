@@ -19,9 +19,7 @@ import { UserRoleModel } from '@app/domain/models/user-role.model';
 // MOCK DATA: Тестовые данные для назначений ролей
 // ============================================================================
 
-const createMockUserRole = (
-    partial: Partial<UserRoleModel>,
-): UserRoleModel => {
+const createMockUserRole = (partial: Partial<UserRoleModel>): UserRoleModel => {
     const now = new Date();
 
     return {
@@ -266,4 +264,3 @@ describe('UserRoleModel - extend()', () => {
 // Scopes (active, expired, valid, byUser, byRole, byTenant, withRole, withUsers)
 // определены в декораторе @Table и проверяются TypeScript на compile-time.
 // Реальное поведение scopes будет проверено в integration тестах с БД.
-

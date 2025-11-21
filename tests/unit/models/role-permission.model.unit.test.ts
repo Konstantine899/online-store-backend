@@ -29,8 +29,7 @@ const createMockPermission = (
         ...partial,
         // Mock методов модели
         matches: RolePermissionModel.prototype.matches,
-        evaluateConditions:
-            RolePermissionModel.prototype.evaluateConditions,
+        evaluateConditions: RolePermissionModel.prototype.evaluateConditions,
         isWildcard: RolePermissionModel.prototype.isWildcard,
     } as RolePermissionModel;
 };
@@ -302,4 +301,3 @@ describe('RolePermissionModel - isWildcard()', () => {
 // Scopes (byRole, byResource, byAction, byResourceAndAction, withRole)
 // определены в декораторе @Table и проверяются TypeScript на compile-time.
 // Реальное поведение scopes будет проверено в integration тестах с БД.
-
