@@ -18,6 +18,7 @@ export { PromoCodeModel } from './promo-code.model';
 export { RatingModel } from './rating.model';
 export { RefreshTokenModel } from './refresh-token.model';
 export { RoleModel } from './role.model';
+export { RolePermissionModel } from './role-permission.model';
 export { TenantModel } from './tenant.model';
 export { UserAddressModel } from './user-address';
 export { UserNotificationSettingsModel } from './user-notification-settings.model';
