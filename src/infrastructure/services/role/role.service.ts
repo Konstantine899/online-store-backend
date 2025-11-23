@@ -1,10 +1,13 @@
 import { UserModel } from '@app/domain/models';
 import { IRoleService } from '@app/domain/services';
+import { MetricsCollector } from '@app/infrastructure/common/services';
 import {
     canManageRole,
     CUSTOMER_ROLES,
     getManageableRoles,
     getRoleLevel,
+    getVipRoleThreshold,
+    getWholesaleRoleThreshold,
     GUEST_ROLES,
     isCustomerRole,
     isSystemRole,
@@ -19,7 +22,10 @@ import {
     RevokePermissionDto,
     RevokeRoleDto,
 } from '@app/infrastructure/dto';
-import { RoleRepository } from '@app/infrastructure/repositories';
+import {
+    OrderRepository,
+    RoleRepository,
+} from '@app/infrastructure/repositories';
 import {
     AssignPermissionResponse,
     AssignRoleResponse,
@@ -38,15 +44,20 @@ import {
     ForbiddenException,
     HttpStatus,
     Injectable,
+    Logger,
     NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 
 @Injectable()
 export class RoleService implements IRoleService {
+    private readonly logger = new Logger(RoleService.name);
+
     constructor(
         private readonly roleRepository: RoleRepository,
+        private readonly orderRepository: OrderRepository,
         @InjectModel(UserModel) private userModel: typeof UserModel,
+        private readonly metricsCollector: MetricsCollector,
     ) {}
 
     public async createRole(dto: CreateRoleDto): Promise<CreateRoleResponse> {
@@ -452,6 +463,272 @@ export class RoleService implements IRoleService {
             level,
             category,
             manageableRoles,
+        };
+    }
+
+    // ============================================================================
+    // АВТОМАТИЧЕСКОЕ НАЗНАЧЕНИЕ РОЛЕЙ
+    // ============================================================================
+
+    /**
+     * Автоматически назначить VIP роль пользователю, если сумма покупок превышает порог
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Результат назначения роли
+     */
+    public async autoAssignVipRole(
+        userId: number,
+        tenantId: number,
+    ): Promise<{ assigned: boolean; roleId?: number }> {
+        try {
+            // 1. Проверка существования пользователя и принадлежности к тенанту
+            const user = await this.userModel.findByPk(userId);
+            if (!user || user.tenantId !== tenantId) {
+                this.logger.warn(
+                    { userId, tenantId },
+                    'Пользователь не найден или не принадлежит тенанту',
+                );
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'VIP_CUSTOMER',
+                    'user_not_found_or_wrong_tenant',
+                    false,
+                );
+                return { assigned: false };
+            }
+
+            // 2. Получение суммы покупок пользователя
+            const totalSpent = await this.orderRepository.getUserTotalSpent(
+                userId,
+                tenantId,
+            );
+            const vipThreshold = getVipRoleThreshold();
+
+            // 3. Проверка порога
+            if (totalSpent < vipThreshold) {
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'VIP_CUSTOMER',
+                    'threshold_not_met',
+                    false,
+                );
+                return { assigned: false };
+            }
+
+            // 4. Поиск VIP роли
+            const vipRole =
+                await this.roleRepository.findRoleByName('VIP_CUSTOMER');
+            if (!vipRole?.isActive) {
+                this.logger.warn(
+                    { userId, tenantId },
+                    'Роль VIP_CUSTOMER не найдена или неактивна',
+                );
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'VIP_CUSTOMER',
+                    'role_not_found_or_inactive',
+                    false,
+                );
+                return { assigned: false };
+            }
+
+            // 5. Проверка идемпотентности (роль уже назначена)
+            const userRoles = await this.roleRepository.findUserRoles(
+                userId,
+                tenantId,
+            );
+            const hasVipRole = userRoles.some((ur) => ur.roleId === vipRole.id);
+            if (hasVipRole) {
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'VIP_CUSTOMER',
+                    'already_assigned',
+                    false,
+                );
+                return { assigned: false, roleId: vipRole.id };
+            }
+
+            // 6. Назначение роли
+            await this.roleRepository.assignRoleToUser(
+                userId,
+                vipRole.id,
+                tenantId,
+                null,
+                null,
+                {
+                    auto_assigned: true,
+                    total_spent: totalSpent,
+                    threshold: vipThreshold,
+                    assigned_at: new Date().toISOString(),
+                },
+            );
+
+            this.logger.log(
+                `Автоматически назначена VIP роль пользователю: userId=${userId}, tenantId=${tenantId}, roleId=${vipRole.id}, roleName=VIP_CUSTOMER, totalSpent=${totalSpent}, threshold=${vipThreshold}`,
+            );
+            this.metricsCollector.recordRoleAutoAssignment(
+                'VIP_CUSTOMER',
+                'assigned',
+                true,
+            );
+            return { assigned: true, roleId: vipRole.id };
+        } catch (error: unknown) {
+            this.logger.error(
+                {
+                    userId,
+                    tenantId,
+                    error:
+                        error instanceof Error
+                            ? error.message
+                            : 'Unknown error',
+                },
+                'Ошибка при автоматическом назначении VIP роли',
+            );
+            this.metricsCollector.recordRoleAutoAssignment(
+                'VIP_CUSTOMER',
+                'error',
+                false,
+            );
+            return { assigned: false };
+        }
+    }
+
+    /**
+     * Автоматически назначить WHOLESALE роль пользователю, если количество заказов превышает порог
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Результат назначения роли
+     */
+    public async autoAssignWholesaleRole(
+        userId: number,
+        tenantId: number,
+    ): Promise<{ assigned: boolean; roleId?: number }> {
+        try {
+            // 1. Проверка существования пользователя и принадлежности к тенанту
+            const user = await this.userModel.findByPk(userId);
+            if (!user || user.tenantId !== tenantId) {
+                this.logger.warn(
+                    { userId, tenantId },
+                    'Пользователь не найден или не принадлежит тенанту',
+                );
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'WHOLESALE',
+                    'user_not_found_or_wrong_tenant',
+                    false,
+                );
+                return { assigned: false };
+            }
+
+            // 2. Получение количества заказов пользователя
+            const orderCount = await this.orderRepository.getUserOrderCount(
+                userId,
+                tenantId,
+            );
+            const wholesaleThreshold = getWholesaleRoleThreshold();
+
+            // 3. Проверка порога
+            if (orderCount < wholesaleThreshold) {
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'WHOLESALE',
+                    'threshold_not_met',
+                    false,
+                );
+                return { assigned: false };
+            }
+
+            // 4. Поиск WHOLESALE роли
+            const wholesaleRole =
+                await this.roleRepository.findRoleByName('WHOLESALE');
+            if (!wholesaleRole?.isActive) {
+                this.logger.warn(
+                    { userId, tenantId },
+                    'Роль WHOLESALE не найдена или неактивна',
+                );
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'WHOLESALE',
+                    'role_not_found_or_inactive',
+                    false,
+                );
+                return { assigned: false };
+            }
+
+            // 5. Проверка идемпотентности (роль уже назначена)
+            const userRoles = await this.roleRepository.findUserRoles(
+                userId,
+                tenantId,
+            );
+            const hasWholesaleRole = userRoles.some(
+                (ur) => ur.roleId === wholesaleRole.id,
+            );
+            if (hasWholesaleRole) {
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'WHOLESALE',
+                    'already_assigned',
+                    false,
+                );
+                return { assigned: false, roleId: wholesaleRole.id };
+            }
+
+            // 6. Назначение роли
+            await this.roleRepository.assignRoleToUser(
+                userId,
+                wholesaleRole.id,
+                tenantId,
+                null,
+                null,
+                {
+                    auto_assigned: true,
+                    order_count: orderCount,
+                    threshold: wholesaleThreshold,
+                    assigned_at: new Date().toISOString(),
+                },
+            );
+
+            this.logger.log(
+                `Автоматически назначена WHOLESALE роль пользователю: userId=${userId}, tenantId=${tenantId}, roleId=${wholesaleRole.id}, roleName=WHOLESALE, orderCount=${orderCount}, threshold=${wholesaleThreshold}`,
+            );
+            this.metricsCollector.recordRoleAutoAssignment(
+                'WHOLESALE',
+                'assigned',
+                true,
+            );
+            return { assigned: true, roleId: wholesaleRole.id };
+        } catch (error: unknown) {
+            this.logger.error(
+                {
+                    userId,
+                    tenantId,
+                    error:
+                        error instanceof Error
+                            ? error.message
+                            : 'Unknown error',
+                },
+                'Ошибка при автоматическом назначении WHOLESALE роли',
+            );
+            this.metricsCollector.recordRoleAutoAssignment(
+                'WHOLESALE',
+                'error',
+                false,
+            );
+            return { assigned: false };
+        }
+    }
+
+    /**
+     * Оценить и обновить клиентские роли пользователя (VIP и WHOLESALE)
+     * Выполняет проверку порогов и назначение ролей параллельно
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Результаты назначения ролей
+     */
+    public async evaluateAndUpdateCustomerRoles(
+        userId: number,
+        tenantId: number,
+    ): Promise<{ vipAssigned: boolean; wholesaleAssigned: boolean }> {
+        const [vipResult, wholesaleResult] = await Promise.all([
+            this.autoAssignVipRole(userId, tenantId),
+            this.autoAssignWholesaleRole(userId, tenantId),
+        ]);
+
+        return {
+            vipAssigned: vipResult.assigned,
+            wholesaleAssigned: wholesaleResult.assigned,
         };
     }
 

@@ -11,7 +11,7 @@ import {
 } from '@app/infrastructure/responses';
 import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, Transaction } from 'sequelize';
+import { Op, QueryTypes, Transaction } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { OrderItemRepository } from '../order-item/order-item-repository';
 
@@ -294,5 +294,56 @@ export class OrderRepository implements IOrderRepository {
                 }) as Promise<OrderModel>;
             },
         );
+    }
+
+    // ============================================================================
+    // МЕТОДЫ ДЛЯ АВТОМАТИЧЕСКОГО НАЗНАЧЕНИЯ РОЛЕЙ
+    // ============================================================================
+
+    /**
+     * Получить общую сумму покупок пользователя
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Сумма всех заказов пользователя в рублях
+     * @performance Использует прямой SQL запрос для оптимизации (индексы: idx_order_user_id, idx_order_tenant_id_user_id)
+     */
+    public async getUserTotalSpent(
+        userId: number,
+        tenantId: number,
+    ): Promise<number> {
+        const result = await this.sequelize.query<{ totalSpent: string }>(
+            `SELECT COALESCE(SUM(amount), 0) as totalSpent
+             FROM \`order\`
+             WHERE user_id = :userId AND tenant_id = :tenantId`,
+            {
+                replacements: { userId, tenantId },
+                type: QueryTypes.SELECT,
+                plain: true,
+            },
+        );
+
+        // Sequelize возвращает DECIMAL как string, преобразуем в number
+        // При plain: true результат - это объект или null, не массив
+        return result?.totalSpent ? Number.parseFloat(result.totalSpent) : 0;
+    }
+
+    /**
+     * Получить количество заказов пользователя
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Количество заказов пользователя
+     */
+    public async getUserOrderCount(
+        userId: number,
+        tenantId: number,
+    ): Promise<number> {
+        const count = await this.orderModel.count({
+            where: {
+                user_id: userId,
+                tenant_id: tenantId,
+            },
+        });
+
+        return count;
     }
 }

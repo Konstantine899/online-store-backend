@@ -42,6 +42,14 @@ export class MetricsCollector implements OnModuleDestroy {
         timestamp: number;
     }> = [];
 
+    // Хранилище метрик автоматического назначения ролей
+    private roleAutoAssignments: Array<{
+        roleName: string;
+        reason: string; // e.g., 'assigned', 'already_assigned', 'threshold_not_met', 'error'
+        assigned: boolean;
+        timestamp: number;
+    }> = [];
+
     constructor() {
         // Автоматическая очистка старых метрик каждый час (только в production)
         if (process.env.NODE_ENV !== 'test') {
@@ -119,6 +127,31 @@ export class MetricsCollector implements OnModuleDestroy {
     }
 
     /**
+     * Записать метрику автоматического назначения роли
+     * FIFO: При достижении лимита удаляются самые старые записи
+     * @param roleName - Название роли (VIP_CUSTOMER, WHOLESALE)
+     * @param reason - Причина (assigned, already_assigned, threshold_not_met, error, etc.)
+     * @param assigned - true если роль была назначена, false в противном случае
+     */
+    public recordRoleAutoAssignment(
+        roleName: string,
+        reason: string,
+        assigned: boolean,
+    ): void {
+        // Проверяем размер перед добавлением (FIFO)
+        if (this.roleAutoAssignments.length >= this.MAX_METRICS_SIZE) {
+            this.roleAutoAssignments.shift(); // Удаляем самую старую запись
+        }
+
+        this.roleAutoAssignments.push({
+            roleName,
+            reason,
+            assigned,
+            timestamp: Date.now(),
+        });
+    }
+
+    /**
      * Получить метрики за последние 24 часа
      */
     public getMetrics(): {
@@ -127,6 +160,11 @@ export class MetricsCollector implements OnModuleDestroy {
         totalBulkOperations: number;
         bulkOperationsByType: Record<string, number>;
         errorRate: number;
+        totalRoleAutoAssignments: number;
+        roleAutoAssignmentsByType: Record<
+            string,
+            { total: number; assigned: number; failed: number }
+        >;
         timestamp: string;
     } {
         const now = Date.now();
@@ -140,6 +178,9 @@ export class MetricsCollector implements OnModuleDestroy {
             (q) => q.timestamp > cutoff,
         );
         const recentErrors = this.errors.filter((e) => e.timestamp > cutoff);
+        const recentRoleAutoAssignments = this.roleAutoAssignments.filter(
+            (item) => item.timestamp > cutoff,
+        );
 
         // Вычисляем среднее время bulk операций
         const avgBulkTime =
@@ -169,12 +210,36 @@ export class MetricsCollector implements OnModuleDestroy {
         const errorRate =
             totalOperations > 0 ? recentErrors.length / totalOperations : 0;
 
+        // Группируем автоматические назначения ролей по типу
+        const roleAutoAssignmentsByType: Record<
+            string,
+            { total: number; assigned: number; failed: number }
+        > = {};
+
+        recentRoleAutoAssignments.forEach((item) => {
+            if (!roleAutoAssignmentsByType[item.roleName]) {
+                roleAutoAssignmentsByType[item.roleName] = {
+                    total: 0,
+                    assigned: 0,
+                    failed: 0,
+                };
+            }
+            roleAutoAssignmentsByType[item.roleName].total++;
+            if (item.assigned) {
+                roleAutoAssignmentsByType[item.roleName].assigned++;
+            } else {
+                roleAutoAssignmentsByType[item.roleName].failed++;
+            }
+        });
+
         return {
             slowQueriesCount: recentSlowQueries.length,
             avgBulkOperationTime: Math.round(avgBulkTime * 100) / 100, // 2 знака после запятой
             totalBulkOperations: recentBulkOps.length,
             bulkOperationsByType: bulkOpsByType,
             errorRate: Math.round(errorRate * 10000) / 10000, // 4 знака после запятой
+            totalRoleAutoAssignments: recentRoleAutoAssignments.length,
+            roleAutoAssignmentsByType: roleAutoAssignmentsByType,
             timestamp: new Date().toISOString(),
         };
     }
@@ -191,6 +256,7 @@ export class MetricsCollector implements OnModuleDestroy {
             bulkOps: this.bulkOperations.length,
             slowQueries: this.slowQueries.length,
             errors: this.errors.length,
+            roleAutoAssignments: this.roleAutoAssignments.length,
         };
 
         this.bulkOperations = this.bulkOperations.filter(
@@ -198,6 +264,9 @@ export class MetricsCollector implements OnModuleDestroy {
         );
         this.slowQueries = this.slowQueries.filter((q) => q.timestamp > cutoff);
         this.errors = this.errors.filter((e) => e.timestamp > cutoff);
+        this.roleAutoAssignments = this.roleAutoAssignments.filter(
+            (item) => item.timestamp > cutoff,
+        );
 
         const afterCleanup = {
             bulkOps: this.bulkOperations.length,

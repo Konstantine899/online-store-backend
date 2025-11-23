@@ -5,6 +5,7 @@ import {
     OrderRepository,
     UserRepository,
 } from '@app/infrastructure/repositories';
+import { RoleService } from '../role/role.service';
 import { UserService } from '../user/user.service';
 import {
     AdminGetStoreOrderListResponse,
@@ -32,6 +33,7 @@ export class OrderService implements IOrderService {
         private readonly cartRepository: CartRepository,
         private readonly userService: UserService,
         private readonly userRepository: UserRepository,
+        private readonly roleService: RoleService,
     ) {}
 
     public async adminGetStoreOrderList(): Promise<
@@ -183,6 +185,27 @@ export class OrderService implements IOrderService {
 
         // После оформления заказа корзину нужно очистить
         await this.cartRepository.clearCart(cartId);
+
+        // Автоматическое назначение ролей (VIP, WHOLESALE) - асинхронно, не блокируем создание заказа
+        if (userId && order.tenant_id) {
+            this.roleService
+                .evaluateAndUpdateCustomerRoles(userId, order.tenant_id)
+                .catch((error: unknown) => {
+                    this.logger.warn(
+                        {
+                            userId,
+                            tenantId: order.tenant_id,
+                            orderId: order.id,
+                            error:
+                                error instanceof Error
+                                    ? error.message
+                                    : 'Unknown error',
+                        },
+                        'Ошибка при автоматическом назначении ролей после создания заказа',
+                    );
+                });
+        }
+
         return order;
     }
 

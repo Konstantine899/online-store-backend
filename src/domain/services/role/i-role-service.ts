@@ -61,4 +61,38 @@ export interface IRoleService {
     getRoleHierarchy(): Promise<GetRoleHierarchyResponse>;
 
     getRoleLevel(role: string): Promise<GetRoleLevelResponse>;
+
+    /**
+     * Автоматически назначить VIP роль пользователю, если сумма покупок превышает порог
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Результат назначения роли (assigned: true если роль была назначена)
+     */
+    autoAssignVipRole(
+        userId: number,
+        tenantId: number,
+    ): Promise<{ assigned: boolean; roleId?: number }>;
+
+    /**
+     * Автоматически назначить WHOLESALE роль пользователю, если количество заказов превышает порог
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Результат назначения роли (assigned: true если роль была назначена)
+     */
+    autoAssignWholesaleRole(
+        userId: number,
+        tenantId: number,
+    ): Promise<{ assigned: boolean; roleId?: number }>;
+
+    /**
+     * Оценить и обновить клиентские роли пользователя (VIP и WHOLESALE)
+     * Выполняет проверку порогов и назначение ролей параллельно
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Результаты назначения ролей
+     */
+    evaluateAndUpdateCustomerRoles(
+        userId: number,
+        tenantId: number,
+    ): Promise<{ vipAssigned: boolean; wholesaleAssigned: boolean }>;
 }

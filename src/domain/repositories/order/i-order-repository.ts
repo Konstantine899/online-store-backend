@@ -36,4 +36,26 @@ export interface IOrderRepository {
         dto: Omit<OrderDto, 'userId'>,
         userId: number,
     ): Promise<OrderModel>;
+
+    /**
+     * Получить общую сумму покупок пользователя
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Сумма всех заказов пользователя в рублях
+     */
+    getUserTotalSpent(
+        userId: number,
+        tenantId: number,
+    ): Promise<number>;
+
+    /**
+     * Получить количество заказов пользователя
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Количество заказов пользователя
+     */
+    getUserOrderCount(
+        userId: number,
+        tenantId: number,
+    ): Promise<number>;
 }

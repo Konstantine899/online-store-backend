@@ -239,3 +239,69 @@ export function getManageableRoles(managerRole: string): string[] {
         return targetLevel < managerLevel;
     });
 }
+
+// ============================================================================
+// AUTO ROLE ASSIGNMENT THRESHOLDS
+// ============================================================================
+
+/**
+ * Порог суммы покупок для автоматического назначения VIP роли (в рублях)
+ * По умолчанию: 50,000 рублей
+ */
+export const DEFAULT_VIP_ROLE_THRESHOLD = 50000;
+
+/**
+ * Порог количества заказов для автоматического назначения WHOLESALE роли
+ * По умолчанию: 10 заказов
+ */
+export const DEFAULT_WHOLESALE_ROLE_THRESHOLD = 10;
+
+// Кэш для порогов (избегаем повторных чтений process.env)
+let cachedVipThreshold: number | null = null;
+let cachedWholesaleThreshold: number | null = null;
+
+/**
+ * Получить порог суммы покупок для VIP роли
+ * Читает из env переменной VIP_ROLE_THRESHOLD или использует значение по умолчанию
+ * @returns Порог в рублях (положительное число)
+ */
+export function getVipRoleThreshold(): number {
+    if (cachedVipThreshold !== null) {
+        return cachedVipThreshold;
+    }
+
+    const envValue = process.env.VIP_ROLE_THRESHOLD;
+    if (envValue) {
+        const parsed = Number.parseInt(envValue, 10);
+        if (!Number.isNaN(parsed) && parsed > 0) {
+            cachedVipThreshold = parsed;
+            return parsed;
+        }
+    }
+
+    cachedVipThreshold = DEFAULT_VIP_ROLE_THRESHOLD;
+    return DEFAULT_VIP_ROLE_THRESHOLD;
+}
+
+/**
+ * Получить порог количества заказов для WHOLESALE роли
+ * Читает из env переменной WHOLESALE_ROLE_THRESHOLD или использует значение по умолчанию
+ * @returns Порог количества заказов (положительное число)
+ */
+export function getWholesaleRoleThreshold(): number {
+    if (cachedWholesaleThreshold !== null) {
+        return cachedWholesaleThreshold;
+    }
+
+    const envValue = process.env.WHOLESALE_ROLE_THRESHOLD;
+    if (envValue) {
+        const parsed = Number.parseInt(envValue, 10);
+        if (!Number.isNaN(parsed) && parsed > 0) {
+            cachedWholesaleThreshold = parsed;
+            return parsed;
+        }
+    }
+
+    cachedWholesaleThreshold = DEFAULT_WHOLESALE_ROLE_THRESHOLD;
+    return DEFAULT_WHOLESALE_ROLE_THRESHOLD;
+}
