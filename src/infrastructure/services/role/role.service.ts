@@ -728,13 +728,17 @@ export class RoleService implements IRoleService {
         vipRevoked: boolean;
         wholesaleRevoked: boolean;
     }> {
-        const [vipAssignResult, wholesaleAssignResult, vipRevokeResult, wholesaleRevokeResult] =
-            await Promise.all([
-                this.autoAssignVipRole(userId, tenantId),
-                this.autoAssignWholesaleRole(userId, tenantId),
-                this.autoRevokeVipRole(userId, tenantId),
-                this.autoRevokeWholesaleRole(userId, tenantId),
-            ]);
+        const [
+            vipAssignResult,
+            wholesaleAssignResult,
+            vipRevokeResult,
+            wholesaleRevokeResult,
+        ] = await Promise.all([
+            this.autoAssignVipRole(userId, tenantId),
+            this.autoAssignWholesaleRole(userId, tenantId),
+            this.autoRevokeVipRole(userId, tenantId),
+            this.autoRevokeWholesaleRole(userId, tenantId),
+        ]);
 
         return {
             vipAssigned: vipAssignResult.assigned,
@@ -783,7 +787,9 @@ export class RoleService implements IRoleService {
                 userId,
                 tenantId,
             );
-            const userVipRole = userRoles.find((ur) => ur.roleId === vipRole.id);
+            const userVipRole = userRoles.find(
+                (ur) => ur.roleId === vipRole.id,
+            );
             if (!userVipRole) {
                 // Роль не назначена, нечего понижать
                 return { revoked: false };
@@ -802,7 +808,7 @@ export class RoleService implements IRoleService {
                 return { revoked: false };
             }
 
-            const metadata = (userRoleRecord.metadata as Record<string, unknown>) ?? {};
+            const metadata = userRoleRecord.metadata ?? {};
             const isAutoAssigned = metadata.auto_assigned === true;
 
             if (!isAutoAssigned) {
@@ -937,7 +943,7 @@ export class RoleService implements IRoleService {
                 return { revoked: false };
             }
 
-            const metadata = (userRoleRecord.metadata as Record<string, unknown>) ?? {};
+            const metadata = userRoleRecord.metadata ?? {};
             const isAutoAssigned = metadata.auto_assigned === true;
 
             if (!isAutoAssigned) {
