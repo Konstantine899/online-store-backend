@@ -1,4 +1,3 @@
-import type { Request } from 'express';
 import type { CreateRoleDto, UpdateRoleDto } from '@app/infrastructure/dto';
 import type {
     CreateRoleResponse,
@@ -7,6 +6,7 @@ import type {
     GetRoleResponse,
     UpdateRoleResponse,
 } from '@app/infrastructure/responses';
+import type { Request } from 'express';
 
 export interface IRoleController {
     createRole(dto: CreateRoleDto): Promise<CreateRoleResponse>;
