@@ -1,4 +1,13 @@
-export { ROLES_KEY, Roles } from './roles-auth.decorator';
+export {
+    REQUIRED_LEVEL_KEY,
+    REQUIRED_PERMISSION_KEY,
+    RequiredLevel,
+    REQUIRES_TENANT_KEY,
+    RequiresPermission,
+    RequiresTenant,
+    type IRequiredPermission,
+} from './role-hierarchy.decorator';
+export { Roles, ROLES_KEY } from './roles-auth.decorator';
 export { CheckUserAuthSwaggerDecorator } from './swagger/auth/check-user-auth-swagger-decorator';
 export { LoginSwaggerDecorator } from './swagger/auth/login.swagger.decorator';
 export { LogoutSwaggerDecorator } from './swagger/auth/logout.swagger.decorator';
