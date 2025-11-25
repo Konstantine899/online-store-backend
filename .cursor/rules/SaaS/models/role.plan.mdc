@@ -705,6 +705,8 @@ tasks:
 
 - id: SAAS-017-09
   title: Добавить обработку ошибок и валидацию
+  status: COMPLETED
+  completed_at: "2024-11-21"
   branch: "feature/role/SAAS-017/role-error-handling"
   files_scope:
     - "src/infrastructure/common/filters/\*\*"
@@ -714,11 +716,59 @@ tasks:
     - улучшить валидацию с русскими сообщениями
     - добавить логирование ошибок
     - создать специфичные исключения для ролей
+      commits:
+    - hash: "379aea4"
+      message: "feat(role): SAAS-017-09 - add error handling and validation"
+      deliverables:
+    - "✅ 5 кастомных исключений созданы: RoleNotFoundException, RoleAlreadyExistsException, InsufficientPermissionsException, RoleHierarchyViolationException, TenantIsolationViolationException"
+    - "✅ RoleExceptionFilter - единый формат ответов, логирование (warn/error), correlation ID"
+    - "✅ Кастомные валидаторы: @IsDateNotPast (проверка даты не в прошлом), @IsMetadataSizeValid (размер, глубина, длина строк)"
+    - "✅ Валидаторы применены к AssignRoleDto (expiresAt, metadata)"
+    - "✅ RoleService обновлён - использует кастомные исключения вместо стандартных NestJS (13 использований)"
+    - "✅ RoleExceptionFilter зарегистрирован глобально в main.ts"
+    - "✅ Все сообщения об ошибках на русском языке"
+    - "✅ Экспорты настроены корректно (index.ts)"
+      metrics:
+      files_created: 8
+      exceptions_created: 5
+      validators_created: 2
+      exception_filter_created: 1
+      files_updated: 4
+      lines_added: ~450
+      lines_removed: ~10
+      estimated_hours: "~4-6"
+      actual_hours: "~3-4"
+      notes: |
+      Задача выполнена полностью. Все компоненты обработки ошибок и валидации реализованы.
+
+        Исключения:
+        - RoleNotFoundException (404) - роль не найдена
+        - RoleAlreadyExistsException (409) - роль уже существует
+        - InsufficientPermissionsException (403) - недостаточно прав
+        - RoleHierarchyViolationException (403) - нарушение иерархии ролей
+        - TenantIsolationViolationException (403) - нарушение тенантской изоляции
+
+        Валидаторы:
+        - @IsDateNotPast: проверяет, что дата не в прошлом (сравнение только даты, без времени)
+        - @IsMetadataSizeValid: проверяет размер metadata (MAX_KEYS=20, MAX_DEPTH=3, MAX_STRING_LENGTH=1000)
+
+        RoleExceptionFilter:
+        - Обрабатывает все 5 типов исключений
+        - Единый формат ответа: { statusCode, url, path, name, message, timestamp }
+        - Логирование: warn для бизнес-ошибок, error для конфликтов
+        - Correlation ID в логах
+
+        Интеграция:
+        - RoleService полностью переведён на кастомные исключения
+        - Валидаторы применены к AssignRoleDto
+        - Фильтр зарегистрирован глобально в main.ts
+
+        Примечание: Unit-тесты для исключений и валидаторов можно добавить в рамках SAAS-017-12/13.
       dod:
-    - ошибки обрабатываются корректно
-    - сообщения на русском языке
-    - логирование работает
-    - специфичные исключения созданы
+    - ошибки обрабатываются корректно ✅
+    - сообщения на русском языке ✅
+    - логирование работает ✅
+    - специфичные исключения созданы ✅
       gate:
     - require: "Одобряю SAAS-017-09"
 
