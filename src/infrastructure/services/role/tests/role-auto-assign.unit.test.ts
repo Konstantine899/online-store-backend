@@ -748,9 +748,10 @@ describe('RoleService - Auto Role Assignment', () => {
                 wholesaleThreshold - 1,
             );
             (roleRepository.findRoleByName as jest.Mock)
-                .mockResolvedValueOnce(mockVipRole)
-                .mockResolvedValueOnce(mockWholesaleRole)
-                .mockResolvedValueOnce(mockVipRole);
+                .mockResolvedValueOnce(mockVipRole) // autoAssignVipRole
+                .mockResolvedValueOnce(mockWholesaleRole) // autoAssignWholesaleRole
+                .mockResolvedValueOnce(mockVipRole) // autoRevokeVipRole
+                .mockResolvedValueOnce(mockWholesaleRole); // autoRevokeWholesaleRole
             (roleRepository.findUserRoles as jest.Mock)
                 .mockResolvedValueOnce([])
                 .mockResolvedValueOnce([])

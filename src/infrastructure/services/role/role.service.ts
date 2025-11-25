@@ -21,6 +21,7 @@ import {
     CreateRoleDto,
     RevokePermissionDto,
     RevokeRoleDto,
+    UpdateRoleDto,
 } from '@app/infrastructure/dto';
 import {
     RoleHierarchyViolationException,
@@ -35,6 +36,7 @@ import {
     AssignPermissionResponse,
     AssignRoleResponse,
     CreateRoleResponse,
+    DeleteRoleResponse,
     GetListRoleResponse,
     GetRoleHierarchyResponse,
     GetRoleLevelResponse,
@@ -43,6 +45,7 @@ import {
     GetUserRolesResponse,
     RevokePermissionResponse,
     RevokeRoleResponse,
+    UpdateRoleResponse,
 } from '@app/infrastructure/responses';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -78,6 +81,71 @@ export class RoleService implements IRoleService {
             this.notFound('Роли не найдены');
         }
         return roles;
+    }
+
+    /**
+     * Обновить роль
+     * @param id - ID роли
+     * @param dto - Данные для обновления
+     * @param tenantId - ID тенанта (null для системных ролей)
+     * @returns UpdateRoleResponse
+     */
+    public async updateRole(
+        id: number,
+        dto: UpdateRoleDto,
+        tenantId: number | null,
+    ): Promise<UpdateRoleResponse> {
+        const role = await this.roleRepository.updateRole(id, dto, tenantId);
+
+        // Получить разрешения роли
+        const permissions = await this.roleRepository.findRolePermissions(
+            role.id,
+        );
+
+        return {
+            message: 'Роль успешно обновлена',
+            id: role.id,
+            role: role.role,
+            description: role.description,
+            level: role.level,
+            permissions: permissions.map((p) => ({
+                resource: p.resource,
+                action: p.action,
+                conditions: p.conditions,
+            })),
+            isSystemRole: role.isSystemRole,
+            isActive: role.isActive,
+            tenantId: role.tenantId,
+            updatedAt: role.updatedAt,
+        };
+    }
+
+    /**
+     * Удалить роль
+     * @param id - ID роли
+     * @param tenantId - ID тенанта (null для системных ролей)
+     * @returns DeleteRoleResponse
+     */
+    public async deleteRole(
+        id: number,
+        tenantId: number | null,
+    ): Promise<DeleteRoleResponse> {
+        // Проверить существование роли перед удалением
+        const role = await this.roleRepository.findRoleById(id, tenantId);
+        if (!role) {
+            throw new RoleNotFoundException(id);
+        }
+
+        const deleted = await this.roleRepository.deleteRole(id, tenantId);
+        if (!deleted) {
+            throw new RoleNotFoundException(id);
+        }
+
+        return {
+            message: 'Роль успешно удалена',
+            id: role.id,
+            role: role.role,
+        };
     }
 
     // ============================================================================

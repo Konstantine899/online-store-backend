@@ -72,29 +72,55 @@ export class TenantRoleGuard implements CanActivate {
             if (!tenantId) {
                 const headerTenantId = request.headers['x-tenant-id'];
                 if (headerTenantId) {
-                    tenantId = Number.parseInt(
+                    const parsedHeaderId = Number.parseInt(
                         Array.isArray(headerTenantId)
                             ? headerTenantId[0]
                             : headerTenantId,
                         10,
                     );
+                    // Немедленная валидация после парсинга header
+                    if (Number.isNaN(parsedHeaderId) || parsedHeaderId <= 0) {
+                        this.logger.warn(
+                            { userId: user.id, headerTenantId },
+                            'TenantRoleGuard: Невалидный tenantId в заголовке x-tenant-id',
+                        );
+                        throw new BadRequestException({
+                            statusCode: HttpStatus.BAD_REQUEST,
+                            message:
+                                'Невалидный tenantId в заголовке x-tenant-id. Ожидается положительное число',
+                        });
+                    }
+                    tenantId = parsedHeaderId;
                 }
             }
 
             if (!tenantId) {
                 const queryTenantId = request.query?.tenant_id;
                 if (queryTenantId) {
-                    tenantId = Number.parseInt(
+                    const parsedQueryId = Number.parseInt(
                         Array.isArray(queryTenantId)
                             ? queryTenantId[0]
                             : queryTenantId,
                         10,
                     );
+                    // Немедленная валидация после парсинга query
+                    if (Number.isNaN(parsedQueryId) || parsedQueryId <= 0) {
+                        this.logger.warn(
+                            { userId: user.id, queryTenantId },
+                            'TenantRoleGuard: Невалидный tenantId в query параметре tenant_id',
+                        );
+                        throw new BadRequestException({
+                            statusCode: HttpStatus.BAD_REQUEST,
+                            message:
+                                'Невалидный tenantId в query параметре tenant_id. Ожидается положительное число',
+                        });
+                    }
+                    tenantId = parsedQueryId;
                 }
             }
 
             // Если tenantId не найден, выбрасываем ошибку
-            if (!tenantId || Number.isNaN(tenantId)) {
+            if (!tenantId) {
                 this.logger.warn(
                     { userId: user.id },
                     'TenantRoleGuard: Тенант не указан',

@@ -4,11 +4,13 @@ import type {
     CreateRoleDto,
     RevokePermissionDto,
     RevokeRoleDto,
+    UpdateRoleDto,
 } from '@app/infrastructure/dto';
 import type {
     AssignPermissionResponse,
     AssignRoleResponse,
     CreateRoleResponse,
+    DeleteRoleResponse,
     GetListRoleResponse,
     GetRoleHierarchyResponse,
     GetRoleLevelResponse,
@@ -17,6 +19,7 @@ import type {
     GetUserRolesResponse,
     RevokePermissionResponse,
     RevokeRoleResponse,
+    UpdateRoleResponse,
 } from '@app/infrastructure/responses';
 
 export interface IRoleService {
@@ -25,6 +28,17 @@ export interface IRoleService {
     getRole(role: string): Promise<GetRoleResponse>;
 
     getListRole(): Promise<GetListRoleResponse[]>;
+
+    updateRole(
+        id: number,
+        dto: UpdateRoleDto,
+        tenantId: number | null,
+    ): Promise<UpdateRoleResponse>;
+
+    deleteRole(
+        id: number,
+        tenantId: number | null,
+    ): Promise<DeleteRoleResponse>;
 
     assignPermission(
         dto: AssignPermissionDto,

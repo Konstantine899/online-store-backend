@@ -73,6 +73,7 @@ export {
     GetUserRolesResponse,
     UserRoleInfo,
 } from './role/user-roles.response';
+export { DeleteRoleResponse } from './role/delete-role.response';
 export { RevokePermissionResponse } from './role/revoke-permission.response';
 export { RevokeRoleResponse } from './role/revoke-role.response';
 export { UpdateRoleResponse } from './role/update-role.response';

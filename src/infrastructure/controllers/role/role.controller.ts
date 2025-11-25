@@ -6,6 +6,7 @@ import {
     HttpCode,
     Param,
     ParseIntPipe,
+    Patch,
     Post,
     Req,
     UseGuards,
@@ -17,6 +18,7 @@ import { IDecodedAccessToken } from '@app/domain/jwt';
 import { RoleService } from '@app/infrastructure/services';
 import {
     CreateRoleDto,
+    UpdateRoleDto,
     AssignRoleDto,
     RevokeRoleDto,
     AssignPermissionDto,
@@ -24,15 +26,19 @@ import {
 } from '@app/infrastructure/dto';
 import {
     CreateRoleSwaggerDecorator,
+    DeleteRoleSwaggerDecorator,
     Roles,
     GetListRoleSwaggerDecorator,
     GetRoleSwaggerDecorator,
+    UpdateRoleSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
 import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
 import {
     CreateRoleResponse,
+    DeleteRoleResponse,
     GetRoleResponse,
     GetListRoleResponse,
+    UpdateRoleResponse,
     AssignRoleResponse,
     RevokeRoleResponse,
     AssignPermissionResponse,
@@ -108,6 +114,46 @@ export class RoleController implements IRoleController {
     @Get('/list')
     public async getListRole(): Promise<GetListRoleResponse[]> {
         return this.roleService.getListRole();
+    }
+
+    /**
+     * Обновить роль
+     * @access ADMIN_ROLES
+     * @tenant_isolation YES - нельзя обновлять роли других тенантов
+     */
+    @UpdateRoleSwaggerDecorator()
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Patch('/:id')
+    public async updateRole(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() dto: UpdateRoleDto,
+        @Req() request: Request,
+    ): Promise<UpdateRoleResponse> {
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        return this.roleService.updateRole(id, dto, tenantId);
+    }
+
+    /**
+     * Удалить роль
+     * @access ADMIN_ROLES
+     * @tenant_isolation YES - нельзя удалять роли других тенантов
+     * @note Системные роли не могут быть удалены
+     */
+    @DeleteRoleSwaggerDecorator()
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Delete('/:id')
+    public async deleteRole(
+        @Param('id', ParseIntPipe) id: number,
+        @Req() request: Request,
+    ): Promise<DeleteRoleResponse> {
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        return this.roleService.deleteRole(id, tenantId);
     }
 
     // ========================================================================

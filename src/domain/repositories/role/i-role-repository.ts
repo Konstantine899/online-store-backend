@@ -85,4 +85,18 @@ export interface IRoleRepository {
             isActive: boolean;
         }>
     >;
+
+    updateRole(
+        id: number,
+        dto: {
+            role?: string;
+            description?: string;
+            level?: number;
+            isActive?: boolean;
+            tenantId?: number | null;
+        },
+        tenantId?: number | null,
+    ): Promise<RoleModel>;
+
+    deleteRole(id: number, tenantId?: number | null): Promise<boolean>;
 }

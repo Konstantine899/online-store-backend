@@ -107,6 +107,64 @@ export class RoleRepository implements IRoleRepository {
         });
     }
 
+    /**
+     * Обновить роль
+     * @param id - ID роли
+     * @param dto - Данные для обновления
+     * @param tenantId - ID тенанта (для проверки изоляции)
+     * @returns Обновлённая роль
+     */
+    public async updateRole(
+        id: number,
+        dto: {
+            role?: string;
+            description?: string;
+            level?: number;
+            isActive?: boolean;
+            tenantId?: number | null;
+        },
+        tenantId?: number | null,
+    ): Promise<RoleModel> {
+        const role = await this.findRoleById(id, tenantId);
+        if (!role) {
+            throw new ConflictException('Роль не найдена');
+        }
+
+        // Проверка: нельзя обновлять системные роли, если это не системный пользователь
+        if (role.isSystemRole && tenantId !== null) {
+            throw new ConflictException(
+                'Нельзя обновлять системные роли из тенантского контекста',
+            );
+        }
+
+        await role.update(dto);
+        return role;
+    }
+
+    /**
+     * Удалить роль
+     * @param id - ID роли
+     * @param tenantId - ID тенанта (для проверки изоляции)
+     * @returns true если удалено, false если не найдено
+     */
+    public async deleteRole(
+        id: number,
+        tenantId?: number | null,
+    ): Promise<boolean> {
+        const role = await this.findRoleById(id, tenantId);
+        if (!role) {
+            return false;
+        }
+
+        // Проверка: нельзя удалять системные роли
+        if (role.isSystemRole) {
+            throw new ConflictException('Нельзя удалять системные роли');
+        }
+
+        await role.destroy();
+        return true;
+    }
+
     // ============================================================================
     // МЕТОДЫ УПРАВЛЕНИЯ РАЗРЕШЕНИЯМИ
     // ============================================================================

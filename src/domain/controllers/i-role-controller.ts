@@ -1,8 +1,10 @@
-import type { CreateRoleDto } from '@app/infrastructure/dto';
+import type { CreateRoleDto, UpdateRoleDto } from '@app/infrastructure/dto';
 import type {
     CreateRoleResponse,
-    GetRoleResponse,
+    DeleteRoleResponse,
     GetListRoleResponse,
+    GetRoleResponse,
+    UpdateRoleResponse,
 } from '@app/infrastructure/responses';
 
 export interface IRoleController {
@@ -11,4 +13,8 @@ export interface IRoleController {
     getRole(role: string): Promise<GetRoleResponse>;
 
     getListRole(): Promise<GetListRoleResponse[]>;
+
+    updateRole(id: number, dto: UpdateRoleDto): Promise<UpdateRoleResponse>;
+
+    deleteRole(id: number): Promise<DeleteRoleResponse>;
 }
