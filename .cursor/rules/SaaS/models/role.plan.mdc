@@ -622,6 +622,8 @@ tasks:
 
 - id: SAAS-017-08
   title: Создать Guards для проверки ролей и иерархии
+  status: COMPLETED
+  completed_at: "2024-11-21"
   branch: "feature/role/SAAS-017/role-guards"
   files_scope:
     - "src/infrastructure/common/guards/\*\*"
@@ -631,11 +633,73 @@ tasks:
     - создать TenantRoleGuard для тенантской изоляции
     - создать PermissionGuard для проверки разрешений
     - добавить декораторы для уровней доступа
-      dod:
-    - RoleHierarchyGuard работает корректно
-    - TenantRoleGuard функционален
-    - PermissionGuard проверяет разрешения
-    - декораторы работают правильно
+      commits:
+    - hash: "b34f608"
+      message: "feat(role): SAAS-017-08 - implement role hierarchy, tenant and permission guards"
+      actual_hours: ~4-5
+      deliverables:
+    - "✅ Декораторы созданы: @RequiredLevel(level), @RequiresPermission(resource, action), @RequiresTenant()"
+    - "✅ RoleHierarchyGuard - проверка иерархии ролей (уровень пользователя >= требуемого уровня)"
+    - "✅ TenantRoleGuard - проверка тенантской изоляции (пользователь имеет роль в тенанте)"
+    - "✅ PermissionGuard - проверка разрешений (resource + action через RoleModel.hasPermission())"
+    - "✅ Экспорт всех guards и декораторов в index.ts"
+    - "✅ Unit тесты для всех guards (RoleHierarchyGuard: 12 тестов, TenantRoleGuard: 14 тестов, PermissionGuard: 13 тестов)"
+    - "✅ Обработка ошибок - все исключения на русском языке"
+    - "✅ Логирование - структурированные логи с контекстом"
+    - "✅ Интеграция с AuthGuard - все guards работают после AuthGuard"
+      metrics:
+      files_created: 7
+      guards_implemented: 3
+      decorators_created: 3
+      unit_tests_written: 39
+      lines_added: 1483
+      lines_removed: 2
+      estimated_hours: "~11-15"
+      actual_hours: "~4-5"
+      notes: |
+      Задача выполнена полностью. Все guards реализованы и протестированы.
+
+        Реализованные guards:
+        - RoleHierarchyGuard: проверяет уровень роли пользователя >= требуемого уровня из @RequiredLevel()
+        - TenantRoleGuard: проверяет наличие роли пользователя в указанном тенанте (использует RoleService.getUserRoles())
+        - PermissionGuard: проверяет наличие разрешения (resource + action) у ролей пользователя
+
+        Декораторы:
+        - @RequiredLevel(level: number) - минимальный уровень роли (0-100)
+        - @RequiresPermission(resource: string, action: string) - требуемое разрешение
+        - @RequiresTenant() - обязательность наличия тенанта
+
+        Особенности реализации:
+        - Все guards работают после AuthGuard (используют request.user)
+        - TenantRoleGuard получает tenantId из user.tenantId > header x-tenant-id > query tenant_id
+        - PermissionGuard проверяет все роли пользователя через RoleModel.hasPermission()
+        - RoleHierarchyGuard использует getRoleLevel() из role-constants.ts
+        - Все guards логируют блокировки доступа (warn level)
+        - Graceful degradation: если guard не может проверить - блокирует доступ
+
+        Unit тесты покрывают:
+        - Публичные endpoints (без декораторов)
+        - Пользователь не авторизован
+        - Пользователь без ролей
+        - Недостаточные права/уровень/разрешения
+        - Успешная авторизация
+        - Граничные случаи
+        - Обработка ошибок
+
+        Интеграция:
+        - Guards экспортированы в src/infrastructure/common/guards/index.ts
+        - Декораторы экспортированы в src/infrastructure/common/decorators/index.ts
+        - Готовы к использованию в контроллерах
+
+        Следующие шаги:
+        - SAAS-017-10: Использовать guards в RoleController endpoints
+        - SAAS-017-12: Integration тесты для проверки guards в реальных запросах
+          dod:
+
+    - RoleHierarchyGuard работает корректно ✅
+    - TenantRoleGuard функционален ✅
+    - PermissionGuard проверяет разрешения ✅
+    - декораторы работают правильно ✅
       gate:
     - require: "Одобряю SAAS-017-08"
 
