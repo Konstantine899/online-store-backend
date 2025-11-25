@@ -51,14 +51,48 @@ export class RoleRepository implements IRoleRepository {
         }
     }
 
-    public async findRole(role: string): Promise<GetRoleResponse> {
-        return this.roleModel.findOne({
-            where: { role },
-        }) as Promise<GetRoleResponse>;
+    /**
+     * Найти роль по названию с проверкой tenant isolation
+     * @param role - Название роли
+     * @param tenantId - ID тенанта (null для системных ролей, undefined для всех)
+     * @returns GetRoleResponse или null
+     */
+    public async findRole(
+        role: string,
+        tenantId?: number | null,
+    ): Promise<GetRoleResponse> {
+        const where: WhereOptions = { role };
+
+        // Tenant isolation: системные роли доступны всем, тенантские - только своему тенанту
+        if (tenantId !== undefined && tenantId !== null) {
+            where[Op.or as keyof WhereOptions] = [
+                { role, tenantId, isSystemRole: false }, // Роли тенанта
+                { role, isSystemRole: true, tenantId: null }, // Системные роли
+            ];
+        }
+
+        return this.roleModel.findOne({ where }) as Promise<GetRoleResponse>;
     }
 
-    public async findListRole(): Promise<GetListRoleResponse[]> {
-        return this.roleModel.findAll();
+    /**
+     * Найти список ролей с проверкой tenant isolation
+     * @param tenantId - ID тенанта (null для системных ролей, undefined для всех)
+     * @returns Список ролей (тенантские + системные)
+     */
+    public async findListRole(
+        tenantId?: number | null,
+    ): Promise<GetListRoleResponse[]> {
+        const where: WhereOptions = {};
+
+        // Tenant isolation: системные роли доступны всем, тенантские - только своему тенанту
+        if (tenantId !== undefined && tenantId !== null) {
+            where[Op.or as keyof WhereOptions] = [
+                { tenantId, isSystemRole: false }, // Роли тенанта
+                { isSystemRole: true, tenantId: null }, // Системные роли
+            ];
+        }
+
+        return this.roleModel.findAll({ where });
     }
 
     // ============================================================================

@@ -67,19 +67,61 @@ export class RoleService implements IRoleService {
         return this.roleRepository.createRole(dto);
     }
 
-    public async getRole(role: string): Promise<GetRoleResponse> {
-        const foundRole = await this.roleRepository.findRole(role);
+    /**
+     * Получить роль по названию с проверкой tenant isolation
+     * @param role - Название роли
+     * @param tenantId - ID тенанта (null для системных ролей)
+     * @returns GetRoleResponse
+     */
+    public async getRole(
+        role: string,
+        tenantId?: number | null,
+    ): Promise<GetRoleResponse> {
+        this.logger.log(
+            { role, tenantId },
+            'Запрос роли с проверкой tenant isolation',
+        );
+
+        const foundRole = await this.roleRepository.findRole(role, tenantId);
         if (!foundRole) {
+            this.logger.warn(
+                { role, tenantId },
+                'Роль не найдена или недоступна для тенанта',
+            );
             throw new RoleNotFoundException(role);
         }
+
+        this.logger.log(
+            { role, roleId: foundRole.id, tenantId },
+            'Роль успешно получена',
+        );
+
         return foundRole;
     }
 
-    public async getListRole(): Promise<GetListRoleResponse[]> {
-        const roles = await this.roleRepository.findListRole();
+    /**
+     * Получить список ролей с проверкой tenant isolation
+     * @param tenantId - ID тенанта (null для системных ролей)
+     * @returns Список ролей (тенантские + системные)
+     */
+    public async getListRole(
+        tenantId?: number | null,
+    ): Promise<GetListRoleResponse[]> {
+        this.logger.log(
+            { tenantId },
+            'Запрос списка ролей с проверкой tenant isolation',
+        );
+
+        const roles = await this.roleRepository.findListRole(tenantId);
         if (!roles) {
             this.notFound('Роли не найдены');
         }
+
+        this.logger.log(
+            { tenantId, rolesCount: roles.length },
+            'Список ролей успешно получен',
+        );
+
         return roles;
     }
 
@@ -95,11 +137,21 @@ export class RoleService implements IRoleService {
         dto: UpdateRoleDto,
         tenantId: number | null,
     ): Promise<UpdateRoleResponse> {
+        this.logger.log(
+            { roleId: id, tenantId, updatedFields: Object.keys(dto) },
+            'Запрос обновления роли с проверкой tenant isolation',
+        );
+
         const role = await this.roleRepository.updateRole(id, dto, tenantId);
 
         // Получить разрешения роли
         const permissions = await this.roleRepository.findRolePermissions(
             role.id,
+        );
+
+        this.logger.log(
+            { roleId: id, roleName: role.role, tenantId },
+            'Роль успешно обновлена',
         );
 
         return {
@@ -130,16 +182,34 @@ export class RoleService implements IRoleService {
         id: number,
         tenantId: number | null,
     ): Promise<DeleteRoleResponse> {
+        this.logger.log(
+            { roleId: id, tenantId },
+            'Запрос удаления роли с проверкой tenant isolation',
+        );
+
         // Проверить существование роли перед удалением
         const role = await this.roleRepository.findRoleById(id, tenantId);
         if (!role) {
+            this.logger.warn(
+                { roleId: id, tenantId },
+                'Роль не найдена или недоступна для тенанта при удалении',
+            );
             throw new RoleNotFoundException(id);
         }
 
         const deleted = await this.roleRepository.deleteRole(id, tenantId);
         if (!deleted) {
+            this.logger.warn(
+                { roleId: id, tenantId },
+                'Не удалось удалить роль',
+            );
             throw new RoleNotFoundException(id);
         }
+
+        this.logger.log(
+            { roleId: id, roleName: role.role, tenantId },
+            'Роль успешно удалена',
+        );
 
         return {
             message: 'Роль успешно удалена',
@@ -162,12 +232,21 @@ export class RoleService implements IRoleService {
         dto: AssignPermissionDto,
         tenantId: number | null,
     ): Promise<AssignPermissionResponse> {
+        this.logger.log(
+            { roleId: dto.roleId, resource: dto.resource, action: dto.action, tenantId },
+            'Запрос назначения разрешения роли с проверкой tenant isolation',
+        );
+
         // Проверить существование роли и tenant isolation
         const role = await this.roleRepository.findRoleById(
             dto.roleId,
             tenantId,
         );
         if (!role) {
+            this.logger.warn(
+                { roleId: dto.roleId, tenantId },
+                'Роль не найдена или недоступна для тенанта при назначении разрешения',
+            );
             this.notFound('Роль не найдена');
         }
 
@@ -177,6 +256,11 @@ export class RoleService implements IRoleService {
             dto.resource,
             dto.action,
             dto.conditions,
+        );
+
+        this.logger.log(
+            { roleId: dto.roleId, permissionId: permission.id, resource: dto.resource, action: dto.action, tenantId },
+            'Разрешение успешно назначено роли',
         );
 
         return {
@@ -198,12 +282,21 @@ export class RoleService implements IRoleService {
         dto: RevokePermissionDto,
         tenantId: number | null,
     ): Promise<RevokePermissionResponse> {
+        this.logger.log(
+            { roleId: dto.roleId, resource: dto.resource, action: dto.action, tenantId },
+            'Запрос отзыва разрешения роли с проверкой tenant isolation',
+        );
+
         // Проверить существование роли и tenant isolation
         const role = await this.roleRepository.findRoleById(
             dto.roleId,
             tenantId,
         );
         if (!role) {
+            this.logger.warn(
+                { roleId: dto.roleId, tenantId },
+                'Роль не найдена или недоступна для тенанта при отзыве разрешения',
+            );
             this.notFound('Роль не найдена');
         }
 
@@ -215,8 +308,17 @@ export class RoleService implements IRoleService {
         );
 
         if (!deleted) {
+            this.logger.warn(
+                { roleId: dto.roleId, resource: dto.resource, action: dto.action, tenantId },
+                'Разрешение не найдено при отзыве',
+            );
             this.notFound('Разрешение не найдено');
         }
+
+        this.logger.log(
+            { roleId: dto.roleId, resource: dto.resource, action: dto.action, tenantId },
+            'Разрешение успешно отозвано у роли',
+        );
 
         return {
             message: 'Разрешение успешно отозвано у роли',
@@ -236,15 +338,29 @@ export class RoleService implements IRoleService {
         roleId: number,
         tenantId: number | null,
     ): Promise<GetRolePermissionsResponse> {
+        this.logger.log(
+            { roleId, tenantId },
+            'Запрос разрешений роли с проверкой tenant isolation',
+        );
+
         // Проверить существование роли и tenant isolation
         const role = await this.roleRepository.findRoleById(roleId, tenantId);
         if (!role) {
+            this.logger.warn(
+                { roleId, tenantId },
+                'Роль не найдена или недоступна для тенанта при запросе разрешений',
+            );
             throw new RoleNotFoundException(roleId);
         }
 
         // Получить разрешения
         const permissions =
             await this.roleRepository.findRolePermissions(roleId);
+
+        this.logger.log(
+            { roleId, tenantId, permissionsCount: permissions.length },
+            'Разрешения роли успешно получены',
+        );
 
         // TypeScript guard: role уже проверен выше
         if (!role) {
@@ -280,6 +396,11 @@ export class RoleService implements IRoleService {
         tenantId: number | null,
         userRoles: string[],
     ): Promise<AssignRoleResponse> {
+        this.logger.log(
+            { userId: dto.userId, roleId: dto.roleId, tenantId },
+            'Запрос назначения роли пользователю с проверкой tenant isolation',
+        );
+
         // Проверить существование пользователя
         const user = await this.userModel.findByPk(dto.userId);
         if (!user) {
@@ -288,6 +409,10 @@ export class RoleService implements IRoleService {
 
         // Проверить tenant isolation: пользователь должен быть из того же тенанта
         if (tenantId !== null && user.tenantId !== tenantId) {
+            this.logger.warn(
+                { userId: dto.userId, userTenantId: user.tenantId, requestTenantId: tenantId },
+                'Нарушение tenant isolation при назначении роли',
+            );
             throw new TenantIsolationViolationException(
                 'назначение роли',
                 user.tenantId ?? undefined,
@@ -342,6 +467,11 @@ export class RoleService implements IRoleService {
             dto.metadata,
         );
 
+        this.logger.log(
+            { userId: dto.userId, roleId: dto.roleId, userRoleId: userRole.id, tenantId: assignmentTenantId },
+            'Роль успешно назначена пользователю',
+        );
+
         return {
             message: 'Роль успешно назначена пользователю',
             userRoleId: userRole.id,
@@ -363,6 +493,11 @@ export class RoleService implements IRoleService {
         tenantId: number | null,
         userRoles: string[],
     ): Promise<RevokeRoleResponse> {
+        this.logger.log(
+            { userId: dto.userId, roleId: dto.roleId, tenantId },
+            'Запрос отзыва роли у пользователя с проверкой tenant isolation',
+        );
+
         // Проверить существование пользователя
         const user = await this.userModel.findByPk(dto.userId);
         if (!user) {
@@ -371,6 +506,10 @@ export class RoleService implements IRoleService {
 
         // Проверить tenant isolation
         if (tenantId !== null && user.tenantId !== tenantId) {
+            this.logger.warn(
+                { userId: dto.userId, userTenantId: user.tenantId, requestTenantId: tenantId },
+                'Нарушение tenant isolation при отзыве роли',
+            );
             throw new TenantIsolationViolationException(
                 'отзыв роли',
                 user.tenantId ?? undefined,
@@ -410,8 +549,17 @@ export class RoleService implements IRoleService {
         );
 
         if (!deleted) {
+            this.logger.warn(
+                { userId: dto.userId, roleId: dto.roleId, tenantId: assignmentTenantId },
+                'Назначение роли не найдено при отзыве',
+            );
             this.notFound('Назначение роли не найдено');
         }
+
+        this.logger.log(
+            { userId: dto.userId, roleId: dto.roleId, tenantId: assignmentTenantId },
+            'Роль успешно отозвана у пользователя',
+        );
 
         return {
             message: 'Роль успешно отозвана у пользователя',
@@ -430,6 +578,11 @@ export class RoleService implements IRoleService {
         userId: number,
         tenantId: number | null,
     ): Promise<GetUserRolesResponse> {
+        this.logger.log(
+            { userId, tenantId },
+            'Запрос ролей пользователя с проверкой tenant isolation',
+        );
+
         // Проверить существование пользователя
         const user = await this.userModel.findByPk(userId);
         if (!user) {
@@ -438,6 +591,10 @@ export class RoleService implements IRoleService {
 
         // Проверить tenant isolation
         if (tenantId !== null && user.tenantId !== tenantId) {
+            this.logger.warn(
+                { userId, userTenantId: user.tenantId, requestTenantId: tenantId },
+                'Нарушение tenant isolation при получении ролей пользователя',
+            );
             throw new TenantIsolationViolationException(
                 'получение ролей пользователя',
                 user.tenantId ?? undefined,
@@ -449,6 +606,11 @@ export class RoleService implements IRoleService {
         const userRoles = await this.roleRepository.findUserRoles(
             userId,
             tenantId,
+        );
+
+        this.logger.log(
+            { userId, tenantId, rolesCount: userRoles.length },
+            'Роли пользователя успешно получены',
         );
 
         return {

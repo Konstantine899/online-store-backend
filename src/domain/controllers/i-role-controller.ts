@@ -1,3 +1,4 @@
+import type { Request } from 'express';
 import type { CreateRoleDto, UpdateRoleDto } from '@app/infrastructure/dto';
 import type {
     CreateRoleResponse,
@@ -10,11 +11,15 @@ import type {
 export interface IRoleController {
     createRole(dto: CreateRoleDto): Promise<CreateRoleResponse>;
 
-    getRole(role: string): Promise<GetRoleResponse>;
+    getRole(role: string, request: Request): Promise<GetRoleResponse>;
 
-    getListRole(): Promise<GetListRoleResponse[]>;
+    getListRole(request: Request): Promise<GetListRoleResponse[]>;
 
-    updateRole(id: number, dto: UpdateRoleDto): Promise<UpdateRoleResponse>;
+    updateRole(
+        id: number,
+        dto: UpdateRoleDto,
+        request: Request,
+    ): Promise<UpdateRoleResponse>;
 
-    deleteRole(id: number): Promise<DeleteRoleResponse>;
+    deleteRole(id: number, request: Request): Promise<DeleteRoleResponse>;
 }

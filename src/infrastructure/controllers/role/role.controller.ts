@@ -11,43 +11,43 @@ import {
     Req,
     UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 
 import { IDecodedAccessToken } from '@app/domain/jwt';
-import { RoleService } from '@app/infrastructure/services';
-import {
-    CreateRoleDto,
-    UpdateRoleDto,
-    AssignRoleDto,
-    RevokeRoleDto,
-    AssignPermissionDto,
-    RevokePermissionDto,
-} from '@app/infrastructure/dto';
 import {
     CreateRoleSwaggerDecorator,
     DeleteRoleSwaggerDecorator,
-    Roles,
     GetListRoleSwaggerDecorator,
     GetRoleSwaggerDecorator,
+    Roles,
     UpdateRoleSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
-import { RoleGuard, AuthGuard } from '@app/infrastructure/common/guards';
+import { AuthGuard, RoleGuard } from '@app/infrastructure/common/guards';
 import {
+    AssignPermissionDto,
+    AssignRoleDto,
+    CreateRoleDto,
+    RevokePermissionDto,
+    RevokeRoleDto,
+    UpdateRoleDto,
+} from '@app/infrastructure/dto';
+import {
+    AssignPermissionResponse,
+    AssignRoleResponse,
     CreateRoleResponse,
     DeleteRoleResponse,
-    GetRoleResponse,
     GetListRoleResponse,
-    UpdateRoleResponse,
-    AssignRoleResponse,
-    RevokeRoleResponse,
-    AssignPermissionResponse,
-    RevokePermissionResponse,
-    GetUserRolesResponse,
-    GetRolePermissionsResponse,
     GetRoleHierarchyResponse,
     GetRoleLevelResponse,
+    GetRolePermissionsResponse,
+    GetRoleResponse,
+    GetUserRolesResponse,
+    RevokePermissionResponse,
+    RevokeRoleResponse,
+    UpdateRoleResponse,
 } from '@app/infrastructure/responses';
+import { RoleService } from '@app/infrastructure/services';
 
 import { IRoleController } from '@app/domain/controllers';
 import { ADMIN_ROLES, MANAGER_ROLES } from './role-constants';
@@ -91,6 +91,7 @@ export class RoleController implements IRoleController {
     /**
      * Получить информацию о роли
      * @access ADMIN_ROLES
+     * @tenant_isolation YES - можно получить только роли своего тенанта + системные
      */
     @GetRoleSwaggerDecorator()
     @HttpCode(200)
@@ -99,21 +100,29 @@ export class RoleController implements IRoleController {
     @Get('/one/:role')
     public async getRole(
         @Param('role') role: string,
+        @Req() request: Request,
     ): Promise<GetRoleResponse> {
-        return this.roleService.getRole(role);
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        return this.roleService.getRole(role, tenantId);
     }
 
     /**
      * Получить список всех ролей
      * @access ADMIN_ROLES
+     * @tenant_isolation YES - возвращает только роли своего тенанта + системные
      */
     @GetListRoleSwaggerDecorator()
     @HttpCode(200)
     @Roles(...ADMIN_ROLES)
     @UseGuards(AuthGuard, RoleGuard)
     @Get('/list')
-    public async getListRole(): Promise<GetListRoleResponse[]> {
-        return this.roleService.getListRole();
+    public async getListRole(
+        @Req() request: Request,
+    ): Promise<GetListRoleResponse[]> {
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        return this.roleService.getListRole(tenantId);
     }
 
     /**
@@ -172,7 +181,8 @@ export class RoleController implements IRoleController {
         @Body() dto: AssignPermissionDto,
         @Req() request: Request,
     ): Promise<AssignPermissionResponse> {
-        const tenantId = (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
         return this.roleService.assignPermission(dto, tenantId);
     }
 
@@ -188,7 +198,8 @@ export class RoleController implements IRoleController {
         @Body() dto: RevokePermissionDto,
         @Req() request: Request,
     ): Promise<RevokePermissionResponse> {
-        const tenantId = (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
         return this.roleService.revokePermission(dto, tenantId);
     }
 
@@ -204,7 +215,8 @@ export class RoleController implements IRoleController {
         @Param('roleId', ParseIntPipe) roleId: number,
         @Req() request: Request,
     ): Promise<GetRolePermissionsResponse> {
-        const tenantId = (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
         return this.roleService.getRolePermissions(roleId, tenantId);
     }
 
@@ -227,12 +239,8 @@ export class RoleController implements IRoleController {
     ): Promise<AssignRoleResponse> {
         const user = request.user as IDecodedAccessToken;
         const tenantId = user?.tenantId ?? null;
-        const userRoles = (user?.roles || []).map((role) => role.role);
-        return this.roleService.assignRoleToUser(
-            dto,
-            tenantId,
-            userRoles,
-        );
+        const userRoles = (user?.roles ?? []).map((role) => role.role);
+        return this.roleService.assignRoleToUser(dto, tenantId, userRoles);
     }
 
     /**
@@ -250,12 +258,8 @@ export class RoleController implements IRoleController {
     ): Promise<RevokeRoleResponse> {
         const user = request.user as IDecodedAccessToken;
         const tenantId = user?.tenantId ?? null;
-        const userRoles = (user?.roles || []).map((role) => role.role);
-        return this.roleService.revokeRoleFromUser(
-            dto,
-            tenantId,
-            userRoles,
-        );
+        const userRoles = (user?.roles ?? []).map((role) => role.role);
+        return this.roleService.revokeRoleFromUser(dto, tenantId, userRoles);
     }
 
     /**
@@ -271,7 +275,8 @@ export class RoleController implements IRoleController {
         @Param('userId', ParseIntPipe) userId: number,
         @Req() request: Request,
     ): Promise<GetUserRolesResponse> {
-        const tenantId = (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
         return this.roleService.getUserRoles(userId, tenantId);
     }
 

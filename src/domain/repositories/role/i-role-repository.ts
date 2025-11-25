@@ -9,9 +9,9 @@ import type {
 export interface IRoleRepository {
     createRole(dto: CreateRoleDto): Promise<CreateRoleResponse>;
 
-    findRole(role: string): Promise<GetRoleResponse>;
+    findRole(role: string, tenantId?: number | null): Promise<GetRoleResponse>;
 
-    findListRole(): Promise<GetListRoleResponse[]>;
+    findListRole(tenantId?: number | null): Promise<GetListRoleResponse[]>;
 
     findRoleById(
         id: number,

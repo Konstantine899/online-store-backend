@@ -25,9 +25,9 @@ import type {
 export interface IRoleService {
     createRole(dto: CreateRoleDto): Promise<CreateRoleResponse>;
 
-    getRole(role: string): Promise<GetRoleResponse>;
+    getRole(role: string, tenantId?: number | null): Promise<GetRoleResponse>;
 
-    getListRole(): Promise<GetListRoleResponse[]>;
+    getListRole(tenantId?: number | null): Promise<GetListRoleResponse[]>;
 
     updateRole(
         id: number,
