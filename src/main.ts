@@ -134,7 +134,27 @@ async function bootstrap(): Promise<void> {
         const CLEANUP_INTERVAL = 5 * 60 * 1000; // Очистка каждые 5 минут
         let lastCleanup = Date.now();
 
+        // Пути, исключенные из rate limiting
+        const RATE_LIMIT_EXCLUDED_PATHS = new Set([
+            '/health',
+            '/live',
+            '/ready',
+            '/online-store/health',
+            '/online-store/docs',
+        ]);
+
         app.use((req: Request, res: Response, next: NextFunction) => {
+            const url = req.url;
+            // Исключаем Swagger docs и health checks из rate limiting
+            if (
+                url &&
+                (RATE_LIMIT_EXCLUDED_PATHS.has(url) ||
+                    url.startsWith('/online-store/docs/') ||
+                    url.startsWith('/online-store/static/'))
+            ) {
+                return next();
+            }
+
             const ts = Date.now();
 
             // Периодическая очистка старых записей для предотвращения утечки памяти

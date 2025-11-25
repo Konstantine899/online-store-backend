@@ -240,9 +240,9 @@ describe('UserService', () => {
                 1,
             );
 
-            expect(result.isPremium).toBe(true);
-            expect(result.isVipCustomer).toBe(true);
-            expect(result.isBetaTester).toBe(true);
+            expect((result as unknown as { isPremium: boolean }).isPremium).toBe(true);
+            expect((result as unknown as { isVipCustomer: boolean }).isVipCustomer).toBe(true);
+            expect((result as unknown as { isBetaTester: boolean }).isBetaTester).toBe(true);
         });
 
         it('handles all status flags set to false', async () => {
@@ -278,9 +278,9 @@ describe('UserService', () => {
                 1,
             );
 
-            expect(result.isVipCustomer).toBe(false);
-            expect(result.isPremium).toBe(false);
-            expect(result.isBetaTester).toBe(false);
+            expect((result as unknown as { isVipCustomer: boolean }).isVipCustomer).toBe(false);
+            expect((result as unknown as { isPremium: boolean }).isPremium).toBe(false);
+            expect((result as unknown as { isBetaTester: boolean }).isBetaTester).toBe(false);
         });
 
         it('maps SequelizeValidationError to BadRequestException', async () => {
@@ -337,7 +337,7 @@ describe('UserService', () => {
             );
 
             expect(result.tenantId).toBe(5);
-            expect(result.isVipCustomer).toBe(true);
+            expect((result as unknown as { isVipCustomer: boolean }).isVipCustomer).toBe(true);
         });
     });
 

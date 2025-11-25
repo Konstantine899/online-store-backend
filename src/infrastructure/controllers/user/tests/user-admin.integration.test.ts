@@ -1450,11 +1450,11 @@ describe('User Admin Integration Tests', () => {
 
         beforeAll(async () => {
             // Создаём admin пользователя для тестирования metrics
-            const [admin] = await TestDataFactory.createUserWithRole(
+            const admin = await TestDataFactory.createUserWithRole(
                 app,
                 'ADMIN',
             );
-            const [regularUser] = await TestDataFactory.createUserWithRole(
+            const regularUser = await TestDataFactory.createUserWithRole(
                 app,
                 'USER',
             );

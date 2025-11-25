@@ -14,13 +14,13 @@ describe('RoleService - Auto Role Assignment', () => {
     let userModel: jest.Mocked<typeof UserModelType>;
     let metricsCollector: jest.Mocked<MetricsCollector>;
 
-    const mockUser: UserModel = {
+    const mockUser = {
         id: 1,
         userId: 1,
         email: 'test@example.com',
         tenantId: 1,
         isActive: true,
-    } as UserModel;
+    } as unknown as UserModel;
 
     const mockVipRole = {
         id: 10,

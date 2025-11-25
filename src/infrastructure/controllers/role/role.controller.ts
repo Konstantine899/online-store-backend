@@ -126,7 +126,7 @@ export class RoleController implements IRoleController {
         @Body() dto: AssignPermissionDto,
         @Req() request: Request,
     ): Promise<AssignPermissionResponse> {
-        const tenantId = (request.user as IDecodedAccessToken)?.tenantId;
+        const tenantId = (request.user as IDecodedAccessToken)?.tenantId ?? null;
         return this.roleService.assignPermission(dto, tenantId);
     }
 
@@ -142,7 +142,7 @@ export class RoleController implements IRoleController {
         @Body() dto: RevokePermissionDto,
         @Req() request: Request,
     ): Promise<RevokePermissionResponse> {
-        const tenantId = (request.user as IDecodedAccessToken)?.tenantId;
+        const tenantId = (request.user as IDecodedAccessToken)?.tenantId ?? null;
         return this.roleService.revokePermission(dto, tenantId);
     }
 
@@ -158,7 +158,7 @@ export class RoleController implements IRoleController {
         @Param('roleId', ParseIntPipe) roleId: number,
         @Req() request: Request,
     ): Promise<GetRolePermissionsResponse> {
-        const tenantId = (request.user as IDecodedAccessToken)?.tenantId;
+        const tenantId = (request.user as IDecodedAccessToken)?.tenantId ?? null;
         return this.roleService.getRolePermissions(roleId, tenantId);
     }
 
@@ -180,8 +180,8 @@ export class RoleController implements IRoleController {
         @Req() request: Request,
     ): Promise<AssignRoleResponse> {
         const user = request.user as IDecodedAccessToken;
-        const tenantId = user?.tenantId;
-        const userRoles = user?.roles || [];
+        const tenantId = user?.tenantId ?? null;
+        const userRoles = (user?.roles || []).map((role) => role.role);
         return this.roleService.assignRoleToUser(
             dto,
             tenantId,
@@ -203,8 +203,8 @@ export class RoleController implements IRoleController {
         @Req() request: Request,
     ): Promise<RevokeRoleResponse> {
         const user = request.user as IDecodedAccessToken;
-        const tenantId = user?.tenantId;
-        const userRoles = user?.roles || [];
+        const tenantId = user?.tenantId ?? null;
+        const userRoles = (user?.roles || []).map((role) => role.role);
         return this.roleService.revokeRoleFromUser(
             dto,
             tenantId,
@@ -225,7 +225,7 @@ export class RoleController implements IRoleController {
         @Param('userId', ParseIntPipe) userId: number,
         @Req() request: Request,
     ): Promise<GetUserRolesResponse> {
-        const tenantId = (request.user as IDecodedAccessToken)?.tenantId;
+        const tenantId = (request.user as IDecodedAccessToken)?.tenantId ?? null;
         return this.roleService.getUserRoles(userId, tenantId);
     }
 

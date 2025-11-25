@@ -12,6 +12,7 @@ import {
     RatingModel,
     RefreshTokenModel,
     RoleModel,
+    TenantModel,
     UserAddressModel,
     UserModel,
     UserRoleModel,
@@ -98,6 +99,7 @@ export class SequelizeConfigService implements SequelizeOptionsFactory {
             logging: sqlLoggingFn, // Custom logger с timing
             timezone: '+00:00', // Используем UTC для всех timestamp (критично для тестов и multi-region)
             models: [
+                TenantModel,
                 ProductModel,
                 CategoryModel,
                 BrandModel,

@@ -303,7 +303,7 @@ describe('UserService - Flags and Preferences', () => {
                 defaultLanguage: 'fr',
                 timezone: 'Asia/Tokyo',
                 notificationPreferences: { email: true, sms: true },
-                translations: { 'button.ok': 'OK' },
+                translations: [{ key: 'button.ok', value: 'OK' }],
             };
 
             const updatedUser = { ...mockUser, ...preferencesDto };
@@ -439,7 +439,7 @@ describe('UserService - Flags and Preferences', () => {
                 themePreference: 'dark',
                 defaultLanguage: 'en',
                 notificationPreferences: { email: true, sms: false },
-                translations: { button: 'Save' },
+                translations: [{ key: 'button', value: 'Save' }],
             };
 
             const updatedUser = { ...mockUser, ...allPreferencesDto };

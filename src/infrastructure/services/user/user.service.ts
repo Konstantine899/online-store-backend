@@ -914,6 +914,7 @@ export class UserService implements IUserService {
                 role = await this.roleService.createRole({
                     role: 'ADMIN',
                     description: 'Администратор',
+                    isSystemRole: false,
                 });
                 this.setCachedRole('ADMIN', role);
             }
@@ -925,6 +926,7 @@ export class UserService implements IUserService {
             role = await this.roleService.createRole({
                 role: UserService.DEFAULT_ROLE,
                 description: 'Покупатель',
+                isSystemRole: false,
             });
             this.setCachedRole(UserService.DEFAULT_ROLE, role);
         }
@@ -1723,7 +1725,7 @@ export class UserService implements IUserService {
                 timestamp: new Date().toISOString(),
             };
 
-            this.logger.log(
+            this.logger.debug(
                 {
                     action: 'get_user_metrics',
                     metricsTimestamp: metrics.timestamp,

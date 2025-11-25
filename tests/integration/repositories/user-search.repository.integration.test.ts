@@ -43,11 +43,16 @@ describe('UserSearchRepository (integration)', () => {
     });
 
     describe('searchUsersByName', () => {
-        let testUser: UserModel;
+        let testUser: {
+            id: number;
+            userId: number;
+            email: string;
+            password: string;
+        };
 
         beforeEach(async () => {
             // Создаём тестового пользователя
-            testUser = await TestDataFactory.createUserInDB({
+            testUser = await TestDataFactory.createUserInDB(sequelize, {
                 firstName: 'Иван',
                 lastName: 'Петров',
                 email: `ivan.petrov.${Date.now()}@test.com`,
@@ -85,7 +90,7 @@ describe('UserSearchRepository (integration)', () => {
 
         it('должен экранировать wildcard символы в поиске', async () => {
             // Создаём пользователя с % в имени
-            const userWithWildcard = await TestDataFactory.createUserInDB({
+            const userWithWildcard = await TestDataFactory.createUserInDB(sequelize, {
                 firstName: 'Test%User',
                 lastName: 'Wildcard',
                 email: `wildcard.${Date.now()}@test.com`,
@@ -125,10 +130,15 @@ describe('UserSearchRepository (integration)', () => {
     });
 
     describe('findUserByPhone', () => {
-        let testUser: UserModel;
+        let testUser: {
+            id: number;
+            userId: number;
+            email: string;
+            password: string;
+        };
 
         beforeEach(async () => {
-            testUser = await TestDataFactory.createUserInDB({
+            testUser = await TestDataFactory.createUserInDB(sequelize, {
                 firstName: 'Тест',
                 lastName: 'Телефон',
                 email: `phone.test.${Date.now()}@test.com`,
@@ -160,11 +170,16 @@ describe('UserSearchRepository (integration)', () => {
     });
 
     describe('findInactiveUsers', () => {
-        let inactiveUser: UserModel;
+        let inactiveUser: {
+            id: number;
+            userId: number;
+            email: string;
+            password: string;
+        };
 
         beforeEach(async () => {
             // Создаём пользователя с lastLoginAt = null (никогда не логинился)
-            inactiveUser = await TestDataFactory.createUserInDB({
+            inactiveUser = await TestDataFactory.createUserInDB(sequelize, {
                 firstName: 'Неактивный',
                 lastName: 'Пользователь',
                 email: `inactive.${Date.now()}@test.com`,
@@ -196,10 +211,15 @@ describe('UserSearchRepository (integration)', () => {
     });
 
     describe('findUsersWithIncompleteProfile', () => {
-        let incompleteUser: UserModel;
+        let incompleteUser: {
+            id: number;
+            userId: number;
+            email: string;
+            password: string;
+        };
 
         beforeEach(async () => {
-            incompleteUser = await TestDataFactory.createUserInDB({
+            incompleteUser = await TestDataFactory.createUserInDB(sequelize, {
                 firstName: 'Неполный',
                 lastName: 'Профиль',
                 email: `incomplete.${Date.now()}@test.com`,

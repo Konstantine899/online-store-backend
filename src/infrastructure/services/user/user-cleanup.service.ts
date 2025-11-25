@@ -43,7 +43,7 @@ export class UserCleanupService {
             // Удаляем коды старше 24 часов
             const cutoffDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-            const result = await sequelize.query<{ affectedRows: number }>(
+            const result = await sequelize.query(
                 'DELETE FROM `user_verification_code` WHERE `expires_at` < ?',
                 {
                     replacements: [cutoffDate],

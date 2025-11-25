@@ -1,5 +1,7 @@
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { INestApplication } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ControllersModule } from '@app/infrastructure/controllers/controllers.module';
+import { HealthModule } from '@app/infrastructure/controllers/health/health.module';
 
 export function swaggerConfig(app: INestApplication): void {
     const config = new DocumentBuilder()
@@ -36,6 +38,15 @@ export function swaggerConfig(app: INestApplication): void {
         )
         .build();
 
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('/online-store/docs', app, document);
+    const document = SwaggerModule.createDocument(app, config, {
+        include: [ControllersModule, HealthModule],
+        deepScanRoutes: true, // Глубокое сканирование маршрутов
+    });
+    SwaggerModule.setup('/online-store/docs', app, document, {
+        swaggerOptions: {
+            persistAuthorization: true, // Сохранять авторизацию при обновлении страницы
+            tagsSorter: 'alpha', // Сортировка тегов по алфавиту
+            operationsSorter: 'alpha', // Сортировка операций по алфавиту
+        },
+    });
 }

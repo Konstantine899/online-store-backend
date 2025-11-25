@@ -50,18 +50,12 @@ describe('UserStatsRepository (integration)', () => {
             expect(result.totalUsers).toBeGreaterThanOrEqual(0);
             expect(result.activeUsers).toBeGreaterThanOrEqual(0);
             expect(result.blockedUsers).toBeGreaterThanOrEqual(0);
-            expect(result.verifiedUsers).toBeGreaterThanOrEqual(0);
-            expect(result.premiumUsers).toBeGreaterThanOrEqual(0);
-            expect(result.vipUsers).toBeGreaterThanOrEqual(0);
-
-            // Проверяем процентные соотношения
-            expect(result.activeUsersPercentage).toBeGreaterThanOrEqual(0);
-            expect(result.activeUsersPercentage).toBeLessThanOrEqual(100);
+            expect(result.newsletterSubscribers).toBeGreaterThanOrEqual(0);
         });
 
         it('должен корректно считать активных пользователей', async () => {
             // Создаём 2 тестовых пользователя
-            const user1 = await TestDataFactory.createUserInDB({
+            const user1 = await TestDataFactory.createUserInDB(sequelize, {
                 firstName: 'Активный1',
                 lastName: 'Юзер',
                 email: `active1.${Date.now()}@test.com`,
@@ -69,7 +63,7 @@ describe('UserStatsRepository (integration)', () => {
                 tenantId: 1,
             });
 
-            const user2 = await TestDataFactory.createUserInDB({
+            const user2 = await TestDataFactory.createUserInDB(sequelize, {
                 firstName: 'Активный2',
                 lastName: 'Юзер',
                 email: `active2.${Date.now()}@test.com`,
@@ -100,9 +94,9 @@ describe('UserStatsRepository (integration)', () => {
             const result = await repository.getUserActivityStats();
 
             expect(result).toBeDefined();
-            expect(result.activeIn24h).toBeGreaterThanOrEqual(0);
-            expect(result.activeIn7d).toBeGreaterThanOrEqual(0);
-            expect(result.activeIn30d).toBeGreaterThanOrEqual(0);
+            expect(result.activeInLast24Hours).toBeGreaterThanOrEqual(0);
+            expect(result.activeInLast7Days).toBeGreaterThanOrEqual(0);
+            expect(result.activeInLast30Days).toBeGreaterThanOrEqual(0);
             expect(result.neverLoggedIn).toBeGreaterThanOrEqual(0);
         });
     });

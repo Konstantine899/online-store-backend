@@ -44,6 +44,7 @@ const mockRefreshToken: RefreshTokenModel = {
 
 const mockAccessTokenPayload: IAccessTokenPayload = {
     id: 1,
+    tenantId: 1,
     roles: [{ role: 'USER' }] as unknown as RoleModel[],
 };
 

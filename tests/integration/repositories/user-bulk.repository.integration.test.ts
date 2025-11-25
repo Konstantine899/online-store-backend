@@ -52,26 +52,31 @@ describe('UserBulkRepository (integration)', () => {
     });
 
     describe('bulkActivateUsers', () => {
-        let testUsers: UserModel[];
+        let testUsers: Array<{
+            id: number;
+            userId: number;
+            email: string;
+            password: string;
+        }>;
 
         beforeEach(async () => {
             // Создаём 3 неактивных пользователей
             testUsers = await Promise.all([
-                TestDataFactory.createUserInDB({
+                TestDataFactory.createUserInDB(sequelize, {
                     firstName: 'Bulk1',
                     lastName: 'User',
                     email: `bulk1.${Date.now()}@test.com`,
                     password: 'Password123!',
                     tenantId: 1,
                 }),
-                TestDataFactory.createUserInDB({
+                TestDataFactory.createUserInDB(sequelize, {
                     firstName: 'Bulk2',
                     lastName: 'User',
                     email: `bulk2.${Date.now()}@test.com`,
                     password: 'Password123!',
                     tenantId: 1,
                 }),
-                TestDataFactory.createUserInDB({
+                TestDataFactory.createUserInDB(sequelize, {
                     firstName: 'Bulk3',
                     lastName: 'User',
                     email: `bulk3.${Date.now()}@test.com`,
@@ -128,7 +133,7 @@ describe('UserBulkRepository (integration)', () => {
 
         it('должен соблюдать tenant isolation', async () => {
             // Создаём пользователя в другом tenant
-            const otherTenantUser = await TestDataFactory.createUserInDB({
+            const otherTenantUser = await TestDataFactory.createUserInDB(sequelize, {
                 firstName: 'OtherTenant',
                 lastName: 'User',
                 email: `other.tenant.${Date.now()}@test.com`,
@@ -162,18 +167,23 @@ describe('UserBulkRepository (integration)', () => {
     });
 
     describe('bulkBlockUsers', () => {
-        let testUsers: UserModel[];
+        let testUsers: Array<{
+            id: number;
+            userId: number;
+            email: string;
+            password: string;
+        }>;
 
         beforeEach(async () => {
             testUsers = await Promise.all([
-                TestDataFactory.createUserInDB({
+                TestDataFactory.createUserInDB(sequelize, {
                     firstName: 'Block1',
                     lastName: 'User',
                     email: `block1.${Date.now()}@test.com`,
                     password: 'Password123!',
                     tenantId: 1,
                 }),
-                TestDataFactory.createUserInDB({
+                TestDataFactory.createUserInDB(sequelize, {
                     firstName: 'Block2',
                     lastName: 'User',
                     email: `block2.${Date.now()}@test.com`,
@@ -216,11 +226,16 @@ describe('UserBulkRepository (integration)', () => {
     });
 
     describe('bulkDeleteUsers', () => {
-        let testUsers: UserModel[];
+        let testUsers: Array<{
+            id: number;
+            userId: number;
+            email: string;
+            password: string;
+        }>;
 
         beforeEach(async () => {
             testUsers = await Promise.all([
-                TestDataFactory.createUserInDB({
+                TestDataFactory.createUserInDB(sequelize, {
                     firstName: 'Delete1',
                     lastName: 'User',
                     email: `delete1.${Date.now()}@test.com`,
