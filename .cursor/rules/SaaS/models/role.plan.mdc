@@ -869,7 +869,7 @@ tasks:
     - настроить фильтрацию ролей по тенанту
     - добавить логирование доступа к ролям
       commits:
-    - hash: "TBD"
+    - hash: "d6ca8ee"
       message: "feat(role): SAAS-017-11 - implement tenant isolation for roles"
       deliverables:
     - "✅ Tenant isolation в RoleRepository: findRole() и findListRole() фильтруют по tenantId"
@@ -908,7 +908,7 @@ tasks:
 
         Следующие шаги:
         - SAAS-017-12: Создать тесты для API ролей (integration tests)
-      dod:
+          dod:
 
     - тенантская изоляция работает корректно ✅
     - проверка доступа функциональна ✅
