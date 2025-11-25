@@ -1,7 +1,7 @@
-import type { INestApplication } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ControllersModule } from '@app/infrastructure/controllers/controllers.module';
 import { HealthModule } from '@app/infrastructure/controllers/health/health.module';
+import type { INestApplication } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 export function swaggerConfig(app: INestApplication): void {
     const config = new DocumentBuilder()
