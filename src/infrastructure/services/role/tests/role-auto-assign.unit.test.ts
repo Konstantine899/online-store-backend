@@ -1,17 +1,18 @@
-import type { UserModel } from '@app/domain/models';
+import type { UserModel, UserRoleModel } from '@app/domain/models';
 import { OrderRepository, RoleRepository } from '@app/infrastructure/repositories';
 import { MetricsCollector } from '@app/infrastructure/common/services';
 import { RoleService } from '../role.service';
 import { getVipRoleThreshold, getWholesaleRoleThreshold } from '@app/infrastructure/controllers/role/role-constants';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/sequelize';
-import { UserModel as UserModelType } from '@app/domain/models';
+import { UserModel as UserModelType, UserRoleModel as UserRoleModelType } from '@app/domain/models';
 
 describe('RoleService - Auto Role Assignment', () => {
     let service: RoleService;
     let roleRepository: jest.Mocked<RoleRepository>;
     let orderRepository: jest.Mocked<OrderRepository>;
     let userModel: jest.Mocked<typeof UserModelType>;
+    let userRoleModel: jest.Mocked<typeof UserRoleModelType>;
     let metricsCollector: jest.Mocked<MetricsCollector>;
 
     const mockUser = {
@@ -44,6 +45,7 @@ describe('RoleService - Auto Role Assignment', () => {
                         findRoleByName: jest.fn(),
                         findUserRoles: jest.fn(),
                         assignRoleToUser: jest.fn(),
+                        revokeRoleFromUser: jest.fn(),
                     },
                 },
                 {
@@ -60,6 +62,12 @@ describe('RoleService - Auto Role Assignment', () => {
                     },
                 },
                 {
+                    provide: getModelToken(UserRoleModelType),
+                    useValue: {
+                        findOne: jest.fn(),
+                    },
+                },
+                {
                     provide: MetricsCollector,
                     useValue: {
                         recordRoleAutoAssignment: jest.fn(),
@@ -72,6 +80,7 @@ describe('RoleService - Auto Role Assignment', () => {
         roleRepository = module.get(RoleRepository);
         orderRepository = module.get(OrderRepository);
         userModel = module.get(getModelToken(UserModelType));
+        userRoleModel = module.get(getModelToken(UserRoleModelType));
         metricsCollector = module.get(MetricsCollector);
 
         jest.clearAllMocks();
@@ -423,6 +432,8 @@ describe('RoleService - Auto Role Assignment', () => {
 
             expect(result.vipAssigned).toBe(false);
             expect(result.wholesaleAssigned).toBe(false);
+            expect(result.vipRevoked).toBe(false);
+            expect(result.wholesaleRevoked).toBe(false);
         });
 
         it('должен вернуть true только для VIP, если только VIP порог достигнут', async () => {
@@ -453,6 +464,231 @@ describe('RoleService - Auto Role Assignment', () => {
 
             expect(result.vipAssigned).toBe(true);
             expect(result.wholesaleAssigned).toBe(false);
+        });
+    });
+
+    describe('autoRevokeVipRole', () => {
+        it('должен понизить VIP роль, если сумма покупок ниже порога и роль была автоматически назначена', async () => {
+            const vipThreshold = getVipRoleThreshold();
+            const totalSpent = vipThreshold - 1000;
+
+            (userModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
+            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(mockVipRole);
+            (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([
+                { roleId: 10 } as never,
+            ]);
+            (orderRepository.getUserTotalSpent as jest.Mock).mockResolvedValue(totalSpent);
+            (roleRepository.revokeRoleFromUser as jest.Mock).mockResolvedValue(true);
+
+            (userRoleModel.findOne as jest.Mock).mockResolvedValue({
+                metadata: { auto_assigned: true },
+            });
+
+            const result = await service.autoRevokeVipRole(1, 1);
+
+            expect(result.revoked).toBe(true);
+            expect(result.roleId).toBe(10);
+            expect(roleRepository.revokeRoleFromUser).toHaveBeenCalledWith(1, 10, 1);
+            expect(metricsCollector.recordRoleAutoAssignment).toHaveBeenCalledWith(
+                'VIP_CUSTOMER',
+                'revoked',
+                true,
+            );
+        });
+
+        it('не должен понижать VIP роль, если сумма покупок все еще >= порога', async () => {
+            const vipThreshold = getVipRoleThreshold();
+            const totalSpent = vipThreshold + 1000;
+
+            (userModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
+            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(mockVipRole);
+            (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([
+                { roleId: 10 } as never,
+            ]);
+            (orderRepository.getUserTotalSpent as jest.Mock).mockResolvedValue(totalSpent);
+
+            (userRoleModel.findOne as jest.Mock).mockResolvedValue({
+                metadata: { auto_assigned: true },
+            });
+
+            const result = await service.autoRevokeVipRole(1, 1);
+
+            expect(result.revoked).toBe(false);
+            expect(result.roleId).toBe(10);
+            expect(roleRepository.revokeRoleFromUser).not.toHaveBeenCalled();
+            expect(metricsCollector.recordRoleAutoAssignment).toHaveBeenCalledWith(
+                'VIP_CUSTOMER',
+                'revoke_threshold_still_met',
+                false,
+            );
+        });
+
+        it('не должен понижать VIP роль, если она была назначена вручную администратором', async () => {
+            const vipThreshold = getVipRoleThreshold();
+            const totalSpent = vipThreshold - 1000;
+
+            (userModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
+            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(mockVipRole);
+            (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([
+                { roleId: 10 } as never,
+            ]);
+            (orderRepository.getUserTotalSpent as jest.Mock).mockResolvedValue(totalSpent);
+
+            (userRoleModel.findOne as jest.Mock).mockResolvedValue({
+                metadata: { auto_assigned: false },
+            });
+
+            const result = await service.autoRevokeVipRole(1, 1);
+
+            expect(result.revoked).toBe(false);
+            expect(result.roleId).toBe(10);
+            expect(roleRepository.revokeRoleFromUser).not.toHaveBeenCalled();
+            expect(metricsCollector.recordRoleAutoAssignment).toHaveBeenCalledWith(
+                'VIP_CUSTOMER',
+                'revoke_skipped_manual_assignment',
+                false,
+            );
+        });
+
+        it('не должен понижать VIP роль, если роль не назначена', async () => {
+            (userModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
+            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(mockVipRole);
+            (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([]);
+
+            const result = await service.autoRevokeVipRole(1, 1);
+
+            expect(result.revoked).toBe(false);
+            expect(roleRepository.revokeRoleFromUser).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('autoRevokeWholesaleRole', () => {
+        it('должен понизить WHOLESALE роль, если количество заказов ниже порога и роль была автоматически назначена', async () => {
+            const wholesaleThreshold = getWholesaleRoleThreshold();
+            const orderCount = wholesaleThreshold - 1;
+
+            (userModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
+            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(mockWholesaleRole);
+            (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([
+                { roleId: 11 } as never,
+            ]);
+            (orderRepository.getUserOrderCount as jest.Mock).mockResolvedValue(orderCount);
+            (roleRepository.revokeRoleFromUser as jest.Mock).mockResolvedValue(true);
+
+            (userRoleModel.findOne as jest.Mock).mockResolvedValue({
+                metadata: { auto_assigned: true },
+            });
+
+            const result = await service.autoRevokeWholesaleRole(1, 1);
+
+            expect(result.revoked).toBe(true);
+            expect(result.roleId).toBe(11);
+            expect(roleRepository.revokeRoleFromUser).toHaveBeenCalledWith(1, 11, 1);
+            expect(metricsCollector.recordRoleAutoAssignment).toHaveBeenCalledWith(
+                'WHOLESALE',
+                'revoked',
+                true,
+            );
+        });
+
+        it('не должен понижать WHOLESALE роль, если количество заказов все еще >= порога', async () => {
+            const wholesaleThreshold = getWholesaleRoleThreshold();
+            const orderCount = wholesaleThreshold + 5;
+
+            (userModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
+            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(mockWholesaleRole);
+            (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([
+                { roleId: 11 } as never,
+            ]);
+            (orderRepository.getUserOrderCount as jest.Mock).mockResolvedValue(orderCount);
+
+            (userRoleModel.findOne as jest.Mock).mockResolvedValue({
+                metadata: { auto_assigned: true },
+            });
+
+            const result = await service.autoRevokeWholesaleRole(1, 1);
+
+            expect(result.revoked).toBe(false);
+            expect(result.roleId).toBe(11);
+            expect(roleRepository.revokeRoleFromUser).not.toHaveBeenCalled();
+            expect(metricsCollector.recordRoleAutoAssignment).toHaveBeenCalledWith(
+                'WHOLESALE',
+                'revoke_threshold_still_met',
+                false,
+            );
+        });
+
+        it('не должен понижать WHOLESALE роль, если она была назначена вручную администратором', async () => {
+            const wholesaleThreshold = getWholesaleRoleThreshold();
+            const orderCount = wholesaleThreshold - 1;
+
+            (userModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
+            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(mockWholesaleRole);
+            (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([
+                { roleId: 11 } as never,
+            ]);
+            (orderRepository.getUserOrderCount as jest.Mock).mockResolvedValue(orderCount);
+
+            (userRoleModel.findOne as jest.Mock).mockResolvedValue({
+                metadata: { auto_assigned: false },
+            });
+
+            const result = await service.autoRevokeWholesaleRole(1, 1);
+
+            expect(result.revoked).toBe(false);
+            expect(result.roleId).toBe(11);
+            expect(roleRepository.revokeRoleFromUser).not.toHaveBeenCalled();
+            expect(metricsCollector.recordRoleAutoAssignment).toHaveBeenCalledWith(
+                'WHOLESALE',
+                'revoke_skipped_manual_assignment',
+                false,
+            );
+        });
+    });
+
+    describe('evaluateAndUpdateCustomerRoles with revocation', () => {
+        it('должен проверить назначение и понижение ролей параллельно', async () => {
+            const vipThreshold = getVipRoleThreshold();
+            const wholesaleThreshold = getWholesaleRoleThreshold();
+
+            (userModel.findByPk as jest.Mock)
+                .mockResolvedValueOnce(mockUser)
+                .mockResolvedValueOnce(mockUser)
+                .mockResolvedValueOnce(mockUser)
+                .mockResolvedValueOnce(mockUser);
+            (orderRepository.getUserTotalSpent as jest.Mock).mockResolvedValue(
+                vipThreshold + 10000,
+            );
+            (orderRepository.getUserOrderCount as jest.Mock).mockResolvedValue(
+                wholesaleThreshold - 1,
+            );
+            (roleRepository.findRoleByName as jest.Mock)
+                .mockResolvedValueOnce(mockVipRole)
+                .mockResolvedValueOnce(mockWholesaleRole)
+                .mockResolvedValueOnce(mockVipRole);
+            (roleRepository.findUserRoles as jest.Mock)
+                .mockResolvedValueOnce([])
+                .mockResolvedValueOnce([])
+                .mockResolvedValueOnce([{ roleId: 10 } as never])
+                .mockResolvedValueOnce([]);
+            (roleRepository.assignRoleToUser as jest.Mock).mockResolvedValue({
+                id: 1,
+                userId: 1,
+                roleId: 10,
+                tenantId: 1,
+            });
+            (roleRepository.revokeRoleFromUser as jest.Mock).mockResolvedValue(false);
+
+            (userRoleModel.findOne as jest.Mock).mockResolvedValue({
+                metadata: { auto_assigned: true },
+            });
+
+            const result = await service.evaluateAndUpdateCustomerRoles(1, 1);
+
+            expect(result.vipAssigned).toBe(true);
+            expect(result.wholesaleAssigned).toBe(false);
+            expect(result.vipRevoked).toBe(false);
+            expect(result.wholesaleRevoked).toBe(false);
         });
     });
 });

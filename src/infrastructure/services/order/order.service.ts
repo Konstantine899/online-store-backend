@@ -97,7 +97,32 @@ export class OrderService implements IOrderService {
         if (!order) {
             this.notFound('Заказ не найден');
         }
+
+        const userId = order.user_id;
+        const tenantId = order.tenant_id;
+
         await this.orderRepository.removeOrder(order.id);
+
+        // Автоматическое пересмотрение ролей после удаления заказа (асинхронно)
+        if (userId && tenantId) {
+            this.roleService
+                .evaluateAndUpdateCustomerRoles(userId, tenantId)
+                .catch((error: unknown) => {
+                    this.logger.warn(
+                        {
+                            userId,
+                            tenantId,
+                            orderId: order.id,
+                            error:
+                                error instanceof Error
+                                    ? error.message
+                                    : 'Unknown error',
+                        },
+                        'Ошибка при автоматическом пересмотре ролей после удаления заказа',
+                    );
+                });
+        }
+
         return {
             status: HttpStatus.OK,
             message: 'success',

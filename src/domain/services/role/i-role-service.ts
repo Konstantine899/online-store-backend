@@ -86,13 +86,42 @@ export interface IRoleService {
 
     /**
      * Оценить и обновить клиентские роли пользователя (VIP и WHOLESALE)
-     * Выполняет проверку порогов и назначение ролей параллельно
+     * Выполняет проверку порогов и назначение/понижение ролей параллельно
      * @param userId - ID пользователя
      * @param tenantId - ID тенанта
-     * @returns Результаты назначения ролей
+     * @returns Результаты назначения и понижения ролей
      */
     evaluateAndUpdateCustomerRoles(
         userId: number,
         tenantId: number,
-    ): Promise<{ vipAssigned: boolean; wholesaleAssigned: boolean }>;
+    ): Promise<{
+        vipAssigned: boolean;
+        wholesaleAssigned: boolean;
+        vipRevoked: boolean;
+        wholesaleRevoked: boolean;
+    }>;
+
+    /**
+     * Автоматически понизить VIP роль пользователю, если сумма покупок ниже порога
+     * Понижает только автоматически назначенные роли (не вручную назначенные администратором)
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Результат понижения роли (revoked: true если роль была отозвана)
+     */
+    autoRevokeVipRole(
+        userId: number,
+        tenantId: number,
+    ): Promise<{ revoked: boolean; roleId?: number }>;
+
+    /**
+     * Автоматически понизить WHOLESALE роль пользователю, если количество заказов ниже порога
+     * Понижает только автоматически назначенные роли (не вручную назначенные администратором)
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Результат понижения роли (revoked: true если роль была отозвана)
+     */
+    autoRevokeWholesaleRole(
+        userId: number,
+        tenantId: number,
+    ): Promise<{ revoked: boolean; roleId?: number }>;
 }

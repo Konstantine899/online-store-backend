@@ -1,4 +1,4 @@
-import { UserModel } from '@app/domain/models';
+import { UserModel, UserRoleModel } from '@app/domain/models';
 import { IRoleService } from '@app/domain/services';
 import { MetricsCollector } from '@app/infrastructure/common/services';
 import {
@@ -57,6 +57,8 @@ export class RoleService implements IRoleService {
         private readonly roleRepository: RoleRepository,
         private readonly orderRepository: OrderRepository,
         @InjectModel(UserModel) private userModel: typeof UserModel,
+        @InjectModel(UserRoleModel)
+        private userRoleModel: typeof UserRoleModel,
         private readonly metricsCollector: MetricsCollector,
     ) {}
 
@@ -712,24 +714,302 @@ export class RoleService implements IRoleService {
 
     /**
      * Оценить и обновить клиентские роли пользователя (VIP и WHOLESALE)
-     * Выполняет проверку порогов и назначение ролей параллельно
+     * Выполняет проверку порогов и назначение/понижение ролей параллельно
      * @param userId - ID пользователя
      * @param tenantId - ID тенанта
-     * @returns Результаты назначения ролей
+     * @returns Результаты назначения и понижения ролей
      */
     public async evaluateAndUpdateCustomerRoles(
         userId: number,
         tenantId: number,
-    ): Promise<{ vipAssigned: boolean; wholesaleAssigned: boolean }> {
-        const [vipResult, wholesaleResult] = await Promise.all([
-            this.autoAssignVipRole(userId, tenantId),
-            this.autoAssignWholesaleRole(userId, tenantId),
-        ]);
+    ): Promise<{
+        vipAssigned: boolean;
+        wholesaleAssigned: boolean;
+        vipRevoked: boolean;
+        wholesaleRevoked: boolean;
+    }> {
+        const [vipAssignResult, wholesaleAssignResult, vipRevokeResult, wholesaleRevokeResult] =
+            await Promise.all([
+                this.autoAssignVipRole(userId, tenantId),
+                this.autoAssignWholesaleRole(userId, tenantId),
+                this.autoRevokeVipRole(userId, tenantId),
+                this.autoRevokeWholesaleRole(userId, tenantId),
+            ]);
 
         return {
-            vipAssigned: vipResult.assigned,
-            wholesaleAssigned: wholesaleResult.assigned,
+            vipAssigned: vipAssignResult.assigned,
+            wholesaleAssigned: wholesaleAssignResult.assigned,
+            vipRevoked: vipRevokeResult.revoked,
+            wholesaleRevoked: wholesaleRevokeResult.revoked,
         };
+    }
+
+    /**
+     * Автоматически понизить VIP роль пользователю, если сумма покупок ниже порога
+     * Понижает только автоматически назначенные роли (не вручную назначенные администратором)
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Результат понижения роли (revoked: true если роль была отозвана)
+     */
+    public async autoRevokeVipRole(
+        userId: number,
+        tenantId: number,
+    ): Promise<{ revoked: boolean; roleId?: number }> {
+        try {
+            // 1. Проверка существования пользователя и принадлежности к тенанту
+            const user = await this.userModel.findByPk(userId);
+            if (!user || user.tenantId !== tenantId) {
+                this.logger.warn(
+                    { userId, tenantId },
+                    'Пользователь не найден или не принадлежит тенанту',
+                );
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'VIP_CUSTOMER',
+                    'revoke_user_not_found_or_wrong_tenant',
+                    false,
+                );
+                return { revoked: false };
+            }
+
+            // 2. Поиск VIP роли
+            const vipRole =
+                await this.roleRepository.findRoleByName('VIP_CUSTOMER');
+            if (!vipRole) {
+                return { revoked: false };
+            }
+
+            // 3. Проверка наличия VIP роли у пользователя
+            const userRoles = await this.roleRepository.findUserRoles(
+                userId,
+                tenantId,
+            );
+            const userVipRole = userRoles.find((ur) => ur.roleId === vipRole.id);
+            if (!userVipRole) {
+                // Роль не назначена, нечего понижать
+                return { revoked: false };
+            }
+
+            // 4. Проверка, что роль была автоматически назначена (не вручную)
+            const userRoleRecord = await this.userRoleModel.findOne({
+                where: {
+                    userId,
+                    roleId: vipRole.id,
+                    tenantId,
+                },
+            });
+
+            if (!userRoleRecord) {
+                return { revoked: false };
+            }
+
+            const metadata = (userRoleRecord.metadata as Record<string, unknown>) ?? {};
+            const isAutoAssigned = metadata.auto_assigned === true;
+
+            if (!isAutoAssigned) {
+                // Роль назначена вручную администратором, не понижаем
+                this.logger.log(
+                    `VIP роль пользователя ${userId} была назначена вручную, пропускаем понижение`,
+                );
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'VIP_CUSTOMER',
+                    'revoke_skipped_manual_assignment',
+                    false,
+                );
+                return { revoked: false, roleId: vipRole.id };
+            }
+
+            // 5. Получение суммы покупок пользователя
+            const totalSpent = await this.orderRepository.getUserTotalSpent(
+                userId,
+                tenantId,
+            );
+            const vipThreshold = getVipRoleThreshold();
+
+            // 6. Проверка порога - понижаем только если сумма < порога
+            if (totalSpent >= vipThreshold) {
+                // Порог все еще достигнут, не понижаем
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'VIP_CUSTOMER',
+                    'revoke_threshold_still_met',
+                    false,
+                );
+                return { revoked: false, roleId: vipRole.id };
+            }
+
+            // 7. Понижение роли
+            const revoked = await this.roleRepository.revokeRoleFromUser(
+                userId,
+                vipRole.id,
+                tenantId,
+            );
+
+            if (revoked) {
+                this.logger.log(
+                    `Автоматически понижена VIP роль пользователю: userId=${userId}, tenantId=${tenantId}, roleId=${vipRole.id}, roleName=VIP_CUSTOMER, totalSpent=${totalSpent}, threshold=${vipThreshold}`,
+                );
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'VIP_CUSTOMER',
+                    'revoked',
+                    true,
+                );
+                return { revoked: true, roleId: vipRole.id };
+            }
+
+            return { revoked: false };
+        } catch (error: unknown) {
+            this.logger.error(
+                {
+                    userId,
+                    tenantId,
+                    error:
+                        error instanceof Error
+                            ? error.message
+                            : 'Unknown error',
+                },
+                'Ошибка при автоматическом понижении VIP роли',
+            );
+            this.metricsCollector.recordRoleAutoAssignment(
+                'VIP_CUSTOMER',
+                'revoke_error',
+                false,
+            );
+            return { revoked: false };
+        }
+    }
+
+    /**
+     * Автоматически понизить WHOLESALE роль пользователю, если количество заказов ниже порога
+     * Понижает только автоматически назначенные роли (не вручную назначенные администратором)
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Результат понижения роли (revoked: true если роль была отозвана)
+     */
+    public async autoRevokeWholesaleRole(
+        userId: number,
+        tenantId: number,
+    ): Promise<{ revoked: boolean; roleId?: number }> {
+        try {
+            // 1. Проверка существования пользователя и принадлежности к тенанту
+            const user = await this.userModel.findByPk(userId);
+            if (!user || user.tenantId !== tenantId) {
+                this.logger.warn(
+                    { userId, tenantId },
+                    'Пользователь не найден или не принадлежит тенанту',
+                );
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'WHOLESALE',
+                    'revoke_user_not_found_or_wrong_tenant',
+                    false,
+                );
+                return { revoked: false };
+            }
+
+            // 2. Поиск WHOLESALE роли
+            const wholesaleRole =
+                await this.roleRepository.findRoleByName('WHOLESALE');
+            if (!wholesaleRole) {
+                return { revoked: false };
+            }
+
+            // 3. Проверка наличия WHOLESALE роли у пользователя
+            const userRoles = await this.roleRepository.findUserRoles(
+                userId,
+                tenantId,
+            );
+            const userWholesaleRole = userRoles.find(
+                (ur) => ur.roleId === wholesaleRole.id,
+            );
+            if (!userWholesaleRole) {
+                // Роль не назначена, нечего понижать
+                return { revoked: false };
+            }
+
+            // 4. Проверка, что роль была автоматически назначена (не вручную)
+            const userRoleRecord = await this.userRoleModel.findOne({
+                where: {
+                    userId,
+                    roleId: wholesaleRole.id,
+                    tenantId,
+                },
+            });
+
+            if (!userRoleRecord) {
+                return { revoked: false };
+            }
+
+            const metadata = (userRoleRecord.metadata as Record<string, unknown>) ?? {};
+            const isAutoAssigned = metadata.auto_assigned === true;
+
+            if (!isAutoAssigned) {
+                // Роль назначена вручную администратором, не понижаем
+                this.logger.log(
+                    `WHOLESALE роль пользователя ${userId} была назначена вручную, пропускаем понижение`,
+                );
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'WHOLESALE',
+                    'revoke_skipped_manual_assignment',
+                    false,
+                );
+                return { revoked: false, roleId: wholesaleRole.id };
+            }
+
+            // 5. Получение количества заказов пользователя
+            const orderCount = await this.orderRepository.getUserOrderCount(
+                userId,
+                tenantId,
+            );
+            const wholesaleThreshold = getWholesaleRoleThreshold();
+
+            // 6. Проверка порога - понижаем только если количество < порога
+            if (orderCount >= wholesaleThreshold) {
+                // Порог все еще достигнут, не понижаем
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'WHOLESALE',
+                    'revoke_threshold_still_met',
+                    false,
+                );
+                return { revoked: false, roleId: wholesaleRole.id };
+            }
+
+            // 7. Понижение роли
+            const revoked = await this.roleRepository.revokeRoleFromUser(
+                userId,
+                wholesaleRole.id,
+                tenantId,
+            );
+
+            if (revoked) {
+                this.logger.log(
+                    `Автоматически понижена WHOLESALE роль пользователю: userId=${userId}, tenantId=${tenantId}, roleId=${wholesaleRole.id}, roleName=WHOLESALE, orderCount=${orderCount}, threshold=${wholesaleThreshold}`,
+                );
+                this.metricsCollector.recordRoleAutoAssignment(
+                    'WHOLESALE',
+                    'revoked',
+                    true,
+                );
+                return { revoked: true, roleId: wholesaleRole.id };
+            }
+
+            return { revoked: false };
+        } catch (error: unknown) {
+            this.logger.error(
+                {
+                    userId,
+                    tenantId,
+                    error:
+                        error instanceof Error
+                            ? error.message
+                            : 'Unknown error',
+                },
+                'Ошибка при автоматическом понижении WHOLESALE роли',
+            );
+            this.metricsCollector.recordRoleAutoAssignment(
+                'WHOLESALE',
+                'revoke_error',
+                false,
+            );
+            return { revoked: false };
+        }
     }
 
     // ============================================================================
