@@ -3,3 +3,11 @@ export { CartValidationExceptionFilter } from './cart-validation.exception.filte
 export { CustomNotFoundExceptionFilter } from './custom-not-found.exception.filter';
 export { SequelizeDatabaseErrorExceptionFilter } from './sequelize-database-error.exception.filter';
 export { SequelizeUniqueConstraintExceptionFilter } from './sequelize-unique-constraint.exception.filter';
+export {
+    InsufficientPermissionsException,
+    RoleAlreadyExistsException,
+    RoleHierarchyViolationException,
+    RoleNotFoundException,
+    TenantIsolationViolationException,
+} from './role';
+export { RoleExceptionFilter } from './role/role.exception.filter';

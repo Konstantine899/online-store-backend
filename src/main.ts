@@ -1,5 +1,6 @@
 import {
     CustomNotFoundExceptionFilter,
+    RoleExceptionFilter,
     SequelizeDatabaseErrorExceptionFilter,
     SequelizeUniqueConstraintExceptionFilter,
 } from '@app/infrastructure/exceptions';
@@ -98,6 +99,7 @@ async function bootstrap(): Promise<void> {
         ...[
             new SequelizeUniqueConstraintExceptionFilter(),
             new SequelizeDatabaseErrorExceptionFilter(),
+            new RoleExceptionFilter(),
             new CustomNotFoundExceptionFilter(),
         ],
     );

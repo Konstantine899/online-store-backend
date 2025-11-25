@@ -6,6 +6,10 @@ import {
     IsOptional,
     IsPositive,
 } from 'class-validator';
+import {
+    IsDateNotPast,
+    IsValidMetadataSize,
+} from '@app/infrastructure/common/validators';
 
 /**
  * DTO для назначения роли пользователю
@@ -58,6 +62,7 @@ export class AssignRoleDto {
     })
     @IsOptional()
     @IsDateString({}, { message: 'expiresAt должен быть датой в ISO формате' })
+    @IsDateNotPast({ message: 'Дата истечения не может быть в прошлом' })
     declare readonly expiresAt?: string;
 
     @ApiProperty({
@@ -68,5 +73,9 @@ export class AssignRoleDto {
     })
     @IsOptional()
     @IsObject({ message: 'metadata должен быть объектом' })
+    @IsValidMetadataSize({
+        message:
+            'metadata не может содержать более 20 ключей, глубина вложенности не более 3 уровней',
+    })
     declare readonly metadata?: Record<string, unknown>;
 }

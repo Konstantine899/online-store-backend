@@ -23,6 +23,11 @@ import {
     RevokeRoleDto,
 } from '@app/infrastructure/dto';
 import {
+    RoleHierarchyViolationException,
+    RoleNotFoundException,
+    TenantIsolationViolationException,
+} from '@app/infrastructure/exceptions';
+import {
     OrderRepository,
     RoleRepository,
 } from '@app/infrastructure/repositories';
@@ -39,14 +44,7 @@ import {
     RevokePermissionResponse,
     RevokeRoleResponse,
 } from '@app/infrastructure/responses';
-import {
-    BadRequestException,
-    ForbiddenException,
-    HttpStatus,
-    Injectable,
-    Logger,
-    NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 
 @Injectable()
@@ -69,7 +67,7 @@ export class RoleService implements IRoleService {
     public async getRole(role: string): Promise<GetRoleResponse> {
         const foundRole = await this.roleRepository.findRole(role);
         if (!foundRole) {
-            this.notFound(`Роль ${role} не найдена`);
+            throw new RoleNotFoundException(role);
         }
         return foundRole;
     }
@@ -173,7 +171,7 @@ export class RoleService implements IRoleService {
         // Проверить существование роли и tenant isolation
         const role = await this.roleRepository.findRoleById(roleId, tenantId);
         if (!role) {
-            this.notFound('Роль не найдена');
+            throw new RoleNotFoundException(roleId);
         }
 
         // Получить разрешения
@@ -222,8 +220,10 @@ export class RoleService implements IRoleService {
 
         // Проверить tenant isolation: пользователь должен быть из того же тенанта
         if (tenantId !== null && user.tenantId !== tenantId) {
-            throw new ForbiddenException(
-                'Нельзя назначать роли пользователям из других тенантов',
+            throw new TenantIsolationViolationException(
+                'назначение роли',
+                user.tenantId ?? undefined,
+                tenantId,
             );
         }
 
@@ -239,8 +239,12 @@ export class RoleService implements IRoleService {
         // Проверить иерархию: может ли текущий пользователь управлять целевой ролью
         const managerRole = userRoles[0]; // Берем первую (высшую) роль
         if (managerRole && !canManageRole(managerRole, targetRole.role)) {
-            throw new ForbiddenException(
-                'Недостаточно прав для назначения этой роли',
+            const userLevel = getRoleLevel(managerRole);
+            const requiredLevel = getRoleLevel(targetRole.role);
+            throw new RoleHierarchyViolationException(
+                'назначение роли',
+                userLevel,
+                requiredLevel,
             );
         }
 
@@ -299,8 +303,10 @@ export class RoleService implements IRoleService {
 
         // Проверить tenant isolation
         if (tenantId !== null && user.tenantId !== tenantId) {
-            throw new ForbiddenException(
-                'Нельзя отзывать роли у пользователей из других тенантов',
+            throw new TenantIsolationViolationException(
+                'отзыв роли',
+                user.tenantId ?? undefined,
+                tenantId,
             );
         }
 
@@ -310,14 +316,18 @@ export class RoleService implements IRoleService {
             tenantId,
         );
         if (!targetRole) {
-            this.notFound('Роль не найдена');
+            throw new RoleNotFoundException(dto.roleId);
         }
 
         // Проверить иерархию
         const managerRole = userRoles[0];
         if (managerRole && !canManageRole(managerRole, targetRole.role)) {
-            throw new ForbiddenException(
-                'Недостаточно прав для отзыва этой роли',
+            const userLevel = getRoleLevel(managerRole);
+            const requiredLevel = getRoleLevel(targetRole.role);
+            throw new RoleHierarchyViolationException(
+                'отзыв роли',
+                userLevel,
+                requiredLevel,
             );
         }
 
@@ -360,8 +370,10 @@ export class RoleService implements IRoleService {
 
         // Проверить tenant isolation
         if (tenantId !== null && user.tenantId !== tenantId) {
-            throw new ForbiddenException(
-                'Нельзя получить роли пользователей из других тенантов',
+            throw new TenantIsolationViolationException(
+                'получение ролей пользователя',
+                user.tenantId ?? undefined,
+                tenantId,
             );
         }
 
@@ -1023,9 +1035,11 @@ export class RoleService implements IRoleService {
     // ============================================================================
 
     private notFound(message: string): never {
-        throw new NotFoundException({
-            status: HttpStatus.NOT_FOUND,
-            message,
-        });
+        // Извлекаем идентификатор из сообщения, если возможно
+        const roleMatch = message.match(/Роль\s+(.+?)\s+не найдена/);
+        if (roleMatch) {
+            throw new RoleNotFoundException(roleMatch[1]);
+        }
+        throw new RoleNotFoundException();
     }
 }
