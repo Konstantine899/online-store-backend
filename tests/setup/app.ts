@@ -36,7 +36,7 @@ function addGracefulShutdown(app: INestApplication): void {
     const sequelize = app.get(Sequelize);
     const originalClose = app.close.bind(app);
 
-    app.close = async () => {
+    app.close = async (): Promise<void> => {
         try {
             // 1. Закрываем все активные соединения
             await sequelize.connectionManager.close();

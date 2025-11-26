@@ -3,6 +3,7 @@ import {
     NotificationTemplateModel,
     UserModel,
     UserNotificationSettingsModel,
+    UserRoleModel,
 } from '@app/domain/models';
 import { NotificationEventHandler } from '@app/infrastructure/common/events/notification.event-handler';
 import { MetricsCollector } from '@app/infrastructure/common/services';
@@ -39,6 +40,7 @@ import { UserService } from './user/user.service';
         forwardRef(() => RepositoriesModule),
         SequelizeModule.forFeature([
             UserModel,
+            UserRoleModel,
             NotificationModel,
             NotificationTemplateModel,
             UserNotificationSettingsModel,
