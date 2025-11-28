@@ -84,8 +84,11 @@ export class RoleController implements IRoleController {
     @Post('/create')
     public async createRole(
         @Body() dto: CreateRoleDto,
+        @Req() request: Request,
     ): Promise<CreateRoleResponse> {
-        return this.roleService.createRole(dto);
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        return this.roleService.createRole(dto, tenantId);
     }
 
     /**
@@ -144,6 +147,53 @@ export class RoleController implements IRoleController {
             (request.user as IDecodedAccessToken)?.tenantId ?? null;
         return this.roleService.updateRole(id, dto, tenantId);
     }
+
+    // ========================================================================
+    // НАЗНАЧЕНИЕ И ОТЗЫВ РОЛЕЙ У ПОЛЬЗОВАТЕЛЕЙ (MANAGER_ROLES)
+    // ========================================================================
+    // ВАЖНО: Эти роуты должны быть ВЫШЕ /:id, чтобы /revoke не матчился как /:id
+
+    /**
+     * Назначить роль пользователю
+     * @access MANAGER_ROLES
+     * @tenant_isolation YES - нельзя назначать роли пользователям из других тенантов
+     */
+    @HttpCode(201)
+    @Roles(...MANAGER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Post('/assign')
+    public async assignRoleToUser(
+        @Body() dto: AssignRoleDto,
+        @Req() request: Request,
+    ): Promise<AssignRoleResponse> {
+        const user = request.user as IDecodedAccessToken;
+        const tenantId = user?.tenantId ?? null;
+        const userRoles = (user?.roles ?? []).map((role) => role.role);
+        return this.roleService.assignRoleToUser(dto, tenantId, userRoles);
+    }
+
+    /**
+     * Отозвать роль у пользователя
+     * @access MANAGER_ROLES
+     * @tenant_isolation YES - нельзя отзывать роли у пользователям из других тенантов
+     */
+    @HttpCode(200)
+    @Roles(...MANAGER_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Delete('/revoke')
+    public async revokeRoleFromUser(
+        @Body() dto: RevokeRoleDto,
+        @Req() request: Request,
+    ): Promise<RevokeRoleResponse> {
+        const user = request.user as IDecodedAccessToken;
+        const tenantId = user?.tenantId ?? null;
+        const userRoles = (user?.roles ?? []).map((role) => role.role);
+        return this.roleService.revokeRoleFromUser(dto, tenantId, userRoles);
+    }
+
+    // ========================================================================
+    // УДАЛЕНИЕ РОЛИ ПО ID (ADMIN_ROLES)
+    // ========================================================================
 
     /**
      * Удалить роль
@@ -218,48 +268,6 @@ export class RoleController implements IRoleController {
         const tenantId =
             (request.user as IDecodedAccessToken)?.tenantId ?? null;
         return this.roleService.getRolePermissions(roleId, tenantId);
-    }
-
-    // ========================================================================
-    // НАЗНАЧЕНИЕ РОЛЕЙ ПОЛЬЗОВАТЕЛЯМ (MANAGER_ROLES)
-    // ========================================================================
-
-    /**
-     * Назначить роль пользователю
-     * @access MANAGER_ROLES
-     * @tenant_isolation YES - нельзя назначать роли пользователям из других тенантов
-     */
-    @HttpCode(201)
-    @Roles(...MANAGER_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
-    @Post('/assign')
-    public async assignRoleToUser(
-        @Body() dto: AssignRoleDto,
-        @Req() request: Request,
-    ): Promise<AssignRoleResponse> {
-        const user = request.user as IDecodedAccessToken;
-        const tenantId = user?.tenantId ?? null;
-        const userRoles = (user?.roles ?? []).map((role) => role.role);
-        return this.roleService.assignRoleToUser(dto, tenantId, userRoles);
-    }
-
-    /**
-     * Отозвать роль у пользователя
-     * @access MANAGER_ROLES
-     * @tenant_isolation YES - нельзя отзывать роли у пользователей из других тенантов
-     */
-    @HttpCode(200)
-    @Roles(...MANAGER_ROLES)
-    @UseGuards(AuthGuard, RoleGuard)
-    @Delete('/revoke')
-    public async revokeRoleFromUser(
-        @Body() dto: RevokeRoleDto,
-        @Req() request: Request,
-    ): Promise<RevokeRoleResponse> {
-        const user = request.user as IDecodedAccessToken;
-        const tenantId = user?.tenantId ?? null;
-        const userRoles = (user?.roles ?? []).map((role) => role.role);
-        return this.roleService.revokeRoleFromUser(dto, tenantId, userRoles);
     }
 
     /**

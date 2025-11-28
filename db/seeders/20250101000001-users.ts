@@ -10,7 +10,7 @@ interface Seeder {
 const seeder: Seeder = {
     async up(queryInterface: QueryInterface): Promise<void> {
         // Идемпотентность: очищаем таблицы перед вставкой (безопасно для тестовых окружений)
-        await queryInterface.bulkDelete('user_role', {}, {});
+        await queryInterface.bulkDelete('user_roles', {}, {});
         await queryInterface.bulkDelete('user', {}, {});
 
         const passwordHash = await bcrypt.hash('Password123!', 10);
@@ -227,7 +227,7 @@ const seeder: Seeder = {
             role: string;
         }
         const roles = await queryInterface.sequelize.query<RoleRow>(
-            "SELECT id, role FROM role WHERE role IN ('SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE', 'VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST', 'USER', 'ADMIN');",
+            "SELECT id, role FROM roles WHERE role IN ('SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE', 'VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST', 'USER', 'ADMIN');",
             { type: QueryTypes.SELECT },
         );
 
@@ -259,11 +259,14 @@ const seeder: Seeder = {
             'admin@example.com': 'ADMIN',
         };
 
-        // Присваиваем роли через user_role
+        // Присваиваем роли через user_roles
         const now = new Date();
         const rowsToInsert: Array<{
             role_id: number;
             user_id: number;
+            tenant_id: number;
+            granted_at: Date;
+            is_active: boolean;
             created_at: Date;
             updated_at: Date;
         }> = [];
@@ -273,9 +276,23 @@ const seeder: Seeder = {
             if (roleName) {
                 const role = roles.find((r: RoleRow) => r.role === roleName);
                 if (role) {
+                    // ВАЖНО: tenant_id в user_roles всегда должен быть tenant_id пользователя
+                    // Даже для системных ролей (SUPER_ADMIN, PLATFORM_ADMIN)
+                    // Системность роли определяется по is_system_role в таблице roles,
+                    // а не по tenant_id в user_roles
+                    // Получаем tenant_id пользователя (по умолчанию 1 для тестов)
+                    const userTenantId = await queryInterface.sequelize.query<{ tenant_id: number }>(
+                        `SELECT tenant_id FROM user WHERE id = ${user.id}`,
+                        { type: QueryTypes.SELECT },
+                    );
+                    const tenantId = userTenantId[0]?.tenant_id ?? 1;
+
                     rowsToInsert.push({
                         role_id: role.id,
                         user_id: user.id,
+                        tenant_id: tenantId, // Всегда tenant_id пользователя (не NULL!)
+                        granted_at: now,
+                        is_active: true,
                         created_at: now,
                         updated_at: now,
                     });
@@ -284,7 +301,7 @@ const seeder: Seeder = {
         }
 
         if (rowsToInsert.length > 0) {
-            await queryInterface.bulkInsert('user_role', rowsToInsert);
+            await queryInterface.bulkInsert('user_roles', rowsToInsert);
         }
     },
 
@@ -302,7 +319,7 @@ const seeder: Seeder = {
         // Чистим связи и пользователей
         if (userIds.length > 0) {
             await queryInterface.bulkDelete(
-                'user_role',
+                'user_roles',
                 { user_id: userIds },
                 {},
             );

@@ -48,7 +48,7 @@ export class TestCleanup {
             // Cleanup конкретных пользователей
             const idsString = userIds.join(',');
             await sequelize.query(
-                `DELETE FROM user_role WHERE user_id IN (${idsString})`,
+                `DELETE FROM user_roles WHERE user_id IN (${idsString})`,
             );
             await sequelize.query(
                 `DELETE FROM refresh_token WHERE user_id IN (${idsString})`,
@@ -64,7 +64,7 @@ export class TestCleanup {
             );
         } else {
             // Cleanup всех временных пользователей (id > 14)
-            await sequelize.query(`DELETE FROM user_role WHERE user_id > 14`);
+            await sequelize.query(`DELETE FROM user_roles WHERE user_id > 14`);
             await sequelize.query(
                 `DELETE FROM refresh_token WHERE user_id > 14`,
             );
@@ -107,14 +107,14 @@ export class TestCleanup {
 
         // Очищаем добавленные роли (оставляем только CUSTOMER с role_id = 10)
         await sequelize.query(`
-            DELETE FROM user_role
+            DELETE FROM user_roles
             WHERE user_id = 13 AND role_id != 10
         `);
 
         // Убеждаемся что роль CUSTOMER существует
         await sequelize.query(`
-            INSERT IGNORE INTO user_role (user_id, role_id, created_at, updated_at)
-            VALUES (13, 10, NOW(), NOW())
+            INSERT IGNORE INTO user_roles (user_id, role_id, tenant_id, granted_at, is_active, created_at, updated_at)
+            VALUES (13, 10, 1, NOW(), 1, NOW(), NOW())
         `);
     }
 

@@ -186,6 +186,9 @@ export class TestDataFactory {
         if (!role.id) {
             throw new Error(`Role ID is missing for role: ${roleName}`);
         }
+        if (!user.tenantId) {
+            throw new Error('User tenantId is missing after creation');
+        }
 
         // Присваиваем роль через прямую вставку (избегаем проблем с $add)
         // Используем явную дату вместо NOW() для совместимости с параметризованными запросами
@@ -194,9 +197,17 @@ export class TestDataFactory {
         try {
             const now = new Date();
             await sequelize.query(
-                `INSERT INTO \`user_role\` (\`user_id\`, \`role_id\`, \`created_at\`, \`updated_at\`) VALUES (?, ?, ?, ?)`,
+                `INSERT INTO \`user_roles\` (\`user_id\`, \`role_id\`, \`tenant_id\`, \`granted_at\`, \`is_active\`, \`created_at\`, \`updated_at\`) VALUES (?, ?, ?, ?, ?, ?, ?)`,
                 {
-                    replacements: [user.id, role.id, now, now],
+                    replacements: [
+                        user.id,
+                        role.id,
+                        user.tenantId, // Используем tenantId из созданного пользователя
+                        now, // granted_at
+                        true, // is_active
+                        now, // created_at
+                        now, // updated_at
+                    ],
                     transaction,
                 },
             );

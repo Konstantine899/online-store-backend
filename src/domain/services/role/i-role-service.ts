@@ -23,7 +23,10 @@ import type {
 } from '@app/infrastructure/responses';
 
 export interface IRoleService {
-    createRole(dto: CreateRoleDto): Promise<CreateRoleResponse>;
+    createRole(
+        dto: CreateRoleDto,
+        tenantId?: number | null,
+    ): Promise<CreateRoleResponse>;
 
     getRole(role: string, tenantId?: number | null): Promise<GetRoleResponse>;
 

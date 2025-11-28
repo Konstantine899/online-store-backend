@@ -7,6 +7,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+        "clean:dist": "node scripts/delete-dist.js",
+        "clean:cache": "node scripts/clear-jest-cache.js",
     "start": "cross-env NODE_ENV=production nest start",
     "start:dev": "cross-env NODE_ENV=development nest start --watch",
     "lint:ts": "eslint \"{src,config,db}/**/*.ts\"",

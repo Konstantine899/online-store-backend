@@ -134,7 +134,7 @@ export class UserRoleModel
         allowNull: false,
         field: 'user_id',
     })
-    userId!: number;
+    declare userId: number;
 
     @ApiProperty({
         example: 1,
@@ -146,7 +146,7 @@ export class UserRoleModel
         allowNull: false,
         field: 'role_id',
     })
-    roleId!: number;
+    declare roleId: number;
 
     @ApiProperty({
         example: 1,
@@ -158,7 +158,7 @@ export class UserRoleModel
         allowNull: false,
         field: 'tenant_id',
     })
-    tenantId!: number;
+    declare tenantId: number;
 
     @ApiProperty({
         example: 2,
@@ -171,7 +171,7 @@ export class UserRoleModel
         allowNull: true,
         field: 'granted_by',
     })
-    grantedBy!: number | null;
+    declare grantedBy: number | null;
 
     @ApiProperty({
         example: '2024-11-21T14:00:00Z',
@@ -183,7 +183,7 @@ export class UserRoleModel
         defaultValue: DataType.NOW,
         field: 'granted_at',
     })
-    grantedAt!: Date;
+    declare grantedAt: Date;
 
     @ApiProperty({
         example: null,
@@ -194,7 +194,7 @@ export class UserRoleModel
         allowNull: true,
         field: 'expires_at',
     })
-    expiresAt!: Date | null;
+    declare expiresAt: Date | null;
 
     @ApiProperty({
         example: true,
@@ -206,7 +206,7 @@ export class UserRoleModel
         defaultValue: true,
         field: 'is_active',
     })
-    isActive!: boolean;
+    declare isActive: boolean;
 
     @ApiProperty({
         example: {},
@@ -217,7 +217,7 @@ export class UserRoleModel
         allowNull: true,
         defaultValue: null,
     })
-    metadata!: Record<string, unknown>;
+    declare metadata: Record<string, unknown>;
 
     // Связи
     @BelongsTo(() => UserModel, 'user_id')

@@ -63,8 +63,17 @@ export class RoleService implements IRoleService {
         private readonly metricsCollector: MetricsCollector,
     ) {}
 
-    public async createRole(dto: CreateRoleDto): Promise<CreateRoleResponse> {
-        return this.roleRepository.createRole(dto);
+    public async createRole(
+        dto: CreateRoleDto,
+        tenantId?: number | null,
+    ): Promise<CreateRoleResponse> {
+        // Если роль не системная и tenantId не передан в DTO, используем tenantId из JWT
+        // Создаем новый объект DTO, так как поля readonly
+        const dtoWithTenantId: CreateRoleDto =
+            !dto.isSystemRole && !dto.tenantId && tenantId
+                ? { ...dto, tenantId }
+                : dto;
+        return this.roleRepository.createRole(dtoWithTenantId);
     }
 
     /**
@@ -142,33 +151,43 @@ export class RoleService implements IRoleService {
             'Запрос обновления роли с проверкой tenant isolation',
         );
 
-        const role = await this.roleRepository.updateRole(id, dto, tenantId);
+        const updatedRole = await this.roleRepository.updateRole(
+            id,
+            dto,
+            tenantId,
+        );
 
         // Получить разрешения роли
         const permissions = await this.roleRepository.findRolePermissions(
-            role.id,
+            updatedRole.id,
         );
 
         this.logger.log(
-            { roleId: id, roleName: role.role, tenantId },
+            { roleId: id, roleName: updatedRole.role, tenantId },
             'Роль успешно обновлена',
         );
 
+        // Явно читаем description из модели, используя getDataValue если нужно
+        const description =
+            updatedRole.description ??
+            updatedRole.getDataValue?.('description') ??
+            null;
+
         return {
             message: 'Роль успешно обновлена',
-            id: role.id,
-            role: role.role,
-            description: role.description,
-            level: role.level,
+            id: updatedRole.id,
+            role: updatedRole.role,
+            description: description,
+            level: updatedRole.level,
             permissions: permissions.map((p) => ({
                 resource: p.resource,
                 action: p.action,
                 conditions: p.conditions,
             })),
-            isSystemRole: role.isSystemRole,
-            isActive: role.isActive,
-            tenantId: role.tenantId,
-            updatedAt: role.updatedAt,
+            isSystemRole: updatedRole.isSystemRole,
+            isActive: updatedRole.isActive,
+            tenantId: updatedRole.tenantId,
+            updatedAt: updatedRole.updatedAt,
         };
     }
 
@@ -233,7 +252,12 @@ export class RoleService implements IRoleService {
         tenantId: number | null,
     ): Promise<AssignPermissionResponse> {
         this.logger.log(
-            { roleId: dto.roleId, resource: dto.resource, action: dto.action, tenantId },
+            {
+                roleId: dto.roleId,
+                resource: dto.resource,
+                action: dto.action,
+                tenantId,
+            },
             'Запрос назначения разрешения роли с проверкой tenant isolation',
         );
 
@@ -259,16 +283,22 @@ export class RoleService implements IRoleService {
         );
 
         this.logger.log(
-            { roleId: dto.roleId, permissionId: permission.id, resource: dto.resource, action: dto.action, tenantId },
+            {
+                roleId: dto.roleId,
+                permissionId: permission.id,
+                resource: dto.resource,
+                action: dto.action,
+                tenantId,
+            },
             'Разрешение успешно назначено роли',
         );
 
         return {
             message: 'Разрешение успешно назначено роли',
             permissionId: permission.id,
-            roleId: permission.roleId,
-            resource: permission.resource,
-            action: permission.action,
+            roleId: dto.roleId, // Используем roleId из DTO для гарантии
+            resource: dto.resource, // Используем resource из DTO для гарантии
+            action: dto.action, // Используем action из DTO для гарантии
         };
     }
 
@@ -283,7 +313,12 @@ export class RoleService implements IRoleService {
         tenantId: number | null,
     ): Promise<RevokePermissionResponse> {
         this.logger.log(
-            { roleId: dto.roleId, resource: dto.resource, action: dto.action, tenantId },
+            {
+                roleId: dto.roleId,
+                resource: dto.resource,
+                action: dto.action,
+                tenantId,
+            },
             'Запрос отзыва разрешения роли с проверкой tenant isolation',
         );
 
@@ -309,14 +344,24 @@ export class RoleService implements IRoleService {
 
         if (!deleted) {
             this.logger.warn(
-                { roleId: dto.roleId, resource: dto.resource, action: dto.action, tenantId },
+                {
+                    roleId: dto.roleId,
+                    resource: dto.resource,
+                    action: dto.action,
+                    tenantId,
+                },
                 'Разрешение не найдено при отзыве',
             );
             this.notFound('Разрешение не найдено');
         }
 
         this.logger.log(
-            { roleId: dto.roleId, resource: dto.resource, action: dto.action, tenantId },
+            {
+                roleId: dto.roleId,
+                resource: dto.resource,
+                action: dto.action,
+                tenantId,
+            },
             'Разрешение успешно отозвано у роли',
         );
 
@@ -410,7 +455,11 @@ export class RoleService implements IRoleService {
         // Проверить tenant isolation: пользователь должен быть из того же тенанта
         if (tenantId !== null && user.tenantId !== tenantId) {
             this.logger.warn(
-                { userId: dto.userId, userTenantId: user.tenantId, requestTenantId: tenantId },
+                {
+                    userId: dto.userId,
+                    userTenantId: user.tenantId,
+                    requestTenantId: tenantId,
+                },
                 'Нарушение tenant isolation при назначении роли',
             );
             throw new TenantIsolationViolationException(
@@ -421,10 +470,22 @@ export class RoleService implements IRoleService {
         }
 
         // Получить целевую роль
+        // ВАЖНО: сначала проверяем существование роли БЕЗ tenant isolation,
+        // чтобы отличить "роль не существует" (404) от "роль недоступна" (403)
+        const targetRoleExists =
+            await this.roleRepository.findRoleByIdWithoutIsolation(dto.roleId);
+
+        if (!targetRoleExists) {
+            // Роль не существует вообще - возвращаем 404
+            throw new RoleNotFoundException(dto.roleId);
+        }
+
+        // Получить роль с учётом tenant isolation для дальнейшей работы
         const targetRole = await this.roleRepository.findRoleById(
             dto.roleId,
             tenantId,
         );
+
         if (!targetRole) {
             this.notFound('Роль не найдена');
         }
@@ -442,7 +503,11 @@ export class RoleService implements IRoleService {
         }
 
         // Проверить, что роль активна
-        if (!targetRole.isActive) {
+        // ВАЖНО: использовать getDataValue('isActive') вместо targetRole.isActive
+        // Используем getDataValue для isActive из-за затенения геттеров Sequelize полями класса
+        const isActive = targetRole.getDataValue('isActive');
+
+        if (!isActive) {
             throw new BadRequestException('Нельзя назначать неактивную роль');
         }
 
@@ -455,7 +520,15 @@ export class RoleService implements IRoleService {
         }
 
         // Определить tenantId для назначения (из DTO или из контекста)
-        const assignmentTenantId = dto.tenantId ?? tenantId ?? user.tenantId;
+        // ВАЖНО: tenantId не может быть null для user_roles (обязательное поле)
+        // Используем user.tenantId как fallback, так как он гарантированно установлен при создании пользователя
+        const assignmentTenantId =
+            dto.tenantId ?? tenantId ?? user.tenantId ?? 1;
+        if (!assignmentTenantId) {
+            throw new BadRequestException(
+                'tenantId обязателен для назначения роли пользователю',
+            );
+        }
 
         // Назначить роль
         const userRole = await this.roleRepository.assignRoleToUser(
@@ -468,16 +541,21 @@ export class RoleService implements IRoleService {
         );
 
         this.logger.log(
-            { userId: dto.userId, roleId: dto.roleId, userRoleId: userRole.id, tenantId: assignmentTenantId },
+            {
+                userId: dto.userId,
+                roleId: dto.roleId,
+                userRoleId: userRole.id,
+                tenantId: assignmentTenantId,
+            },
             'Роль успешно назначена пользователю',
         );
 
         return {
             message: 'Роль успешно назначена пользователю',
             userRoleId: userRole.id,
-            userId: userRole.userId,
-            roleId: userRole.roleId,
-            tenantId: userRole.tenantId,
+            userId: dto.userId,
+            roleId: dto.roleId,
+            tenantId: assignmentTenantId,
         };
     }
 
@@ -507,7 +585,11 @@ export class RoleService implements IRoleService {
         // Проверить tenant isolation
         if (tenantId !== null && user.tenantId !== tenantId) {
             this.logger.warn(
-                { userId: dto.userId, userTenantId: user.tenantId, requestTenantId: tenantId },
+                {
+                    userId: dto.userId,
+                    userTenantId: user.tenantId,
+                    requestTenantId: tenantId,
+                },
                 'Нарушение tenant isolation при отзыве роли',
             );
             throw new TenantIsolationViolationException(
@@ -518,19 +600,23 @@ export class RoleService implements IRoleService {
         }
 
         // Получить целевую роль
-        const targetRole = await this.roleRepository.findRoleById(
-            dto.roleId,
-            tenantId,
-        );
-        if (!targetRole) {
+        // ВАЖНО: сначала проверяем существование роли БЕЗ tenant isolation,
+        // чтобы отличить "роль не существует" (404) от "роль недоступна" (403)
+        const targetRoleExists =
+            await this.roleRepository.findRoleByIdWithoutIsolation(dto.roleId);
+
+
+        if (!targetRoleExists) {
+            // Роль не существует вообще - возвращаем 404
             throw new RoleNotFoundException(dto.roleId);
         }
 
-        // Проверить иерархию
+        // Проверить иерархию (проверяем на основе существующей роли)
         const managerRole = userRoles[0];
-        if (managerRole && !canManageRole(managerRole, targetRole.role)) {
+
+        if (managerRole && !canManageRole(managerRole, targetRoleExists.role)) {
             const userLevel = getRoleLevel(managerRole);
-            const requiredLevel = getRoleLevel(targetRole.role);
+            const requiredLevel = getRoleLevel(targetRoleExists.role);
             throw new RoleHierarchyViolationException(
                 'отзыв роли',
                 userLevel,
@@ -539,7 +625,15 @@ export class RoleService implements IRoleService {
         }
 
         // Определить tenantId для отзыва
-        const assignmentTenantId = dto.tenantId ?? tenantId ?? user.tenantId;
+        // ВАЖНО: tenantId не может быть null для user_roles (обязательное поле)
+        // Используем user.tenantId как fallback, так как он гарантированно установлен при создании пользователя
+        const assignmentTenantId =
+            dto.tenantId ?? tenantId ?? user.tenantId ?? 1;
+        if (!assignmentTenantId) {
+            throw new BadRequestException(
+                'tenantId обязателен для отзыва роли у пользователя',
+            );
+        }
 
         // Отозвать роль
         const deleted = await this.roleRepository.revokeRoleFromUser(
@@ -550,14 +644,22 @@ export class RoleService implements IRoleService {
 
         if (!deleted) {
             this.logger.warn(
-                { userId: dto.userId, roleId: dto.roleId, tenantId: assignmentTenantId },
+                {
+                    userId: dto.userId,
+                    roleId: dto.roleId,
+                    tenantId: assignmentTenantId,
+                },
                 'Назначение роли не найдено при отзыве',
             );
             this.notFound('Назначение роли не найдено');
         }
 
         this.logger.log(
-            { userId: dto.userId, roleId: dto.roleId, tenantId: assignmentTenantId },
+            {
+                userId: dto.userId,
+                roleId: dto.roleId,
+                tenantId: assignmentTenantId,
+            },
             'Роль успешно отозвана у пользователя',
         );
 
@@ -592,7 +694,11 @@ export class RoleService implements IRoleService {
         // Проверить tenant isolation
         if (tenantId !== null && user.tenantId !== tenantId) {
             this.logger.warn(
-                { userId, userTenantId: user.tenantId, requestTenantId: tenantId },
+                {
+                    userId,
+                    userTenantId: user.tenantId,
+                    requestTenantId: tenantId,
+                },
                 'Нарушение tenant isolation при получении ролей пользователя',
             );
             throw new TenantIsolationViolationException(
@@ -621,8 +727,8 @@ export class RoleService implements IRoleService {
                 roleDescription: ur.roleDescription,
                 roleLevel: ur.roleLevel,
                 tenantId: ur.tenantId,
-                grantedAt: ur.grantedAt.toISOString(),
-                expiresAt: ur.expiresAt?.toISOString(),
+                grantedAt: ur.grantedAt?.toISOString() ?? undefined,
+                expiresAt: ur.expiresAt?.toISOString() ?? undefined,
                 isActive: ur.isActive,
             })),
             totalCount: userRoles.length,

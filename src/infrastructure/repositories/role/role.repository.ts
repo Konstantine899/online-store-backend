@@ -11,7 +11,11 @@ import {
     GetListRoleResponse,
     GetRoleResponse,
 } from '@app/infrastructure/responses';
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+    ConflictException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, WhereOptions } from 'sequelize';
 
@@ -27,19 +31,21 @@ export class RoleRepository implements IRoleRepository {
         @InjectModel(UserModel) private userModel: typeof UserModel,
     ) {}
 
-    private pickAllowedFields(dto: CreateRoleDto): {
-        role: string;
-        description: string;
-    } {
-        const { role, description } = dto;
-        return { role, description };
-    }
-
     public async createRole(dto: CreateRoleDto): Promise<CreateRoleResponse> {
         try {
-            const allowedFields = this.pickAllowedFields(dto);
-            const role = await this.roleModel.create(allowedFields);
-            return this.findRole(role.role);
+            const role = await this.roleModel.create({
+                role: dto.role,
+                description: dto.description,
+                level: dto.level ?? 0,
+                permissions: dto.permissions ?? [],
+                isSystemRole: dto.isSystemRole ?? false,
+                isActive: dto.isActive ?? true,
+                tenantId: dto.isSystemRole ? null : (dto.tenantId ?? null),
+            });
+            // Перезагружаем роль из БД, чтобы получить все поля, включая isActive
+            await role.reload();
+            // Используем role напрямую, так как он уже содержит все поля после создания и reload
+            return role as GetRoleResponse;
         } catch (error: unknown) {
             if (
                 error instanceof Error &&
@@ -61,14 +67,22 @@ export class RoleRepository implements IRoleRepository {
         role: string,
         tenantId?: number | null,
     ): Promise<GetRoleResponse> {
-        const where: WhereOptions = { role };
+        if (!role) {
+            throw new Error('Role parameter is required');
+        }
+
+        let where: WhereOptions;
 
         // Tenant isolation: системные роли доступны всем, тенантские - только своему тенанту
         if (tenantId !== undefined && tenantId !== null) {
-            where[Op.or as keyof WhereOptions] = [
-                { role, tenantId, isSystemRole: false }, // Роли тенанта
-                { role, isSystemRole: true, tenantId: null }, // Системные роли
-            ];
+            where = {
+                [Op.or]: [
+                    { role, tenantId, isSystemRole: false }, // Роли тенанта
+                    { role, isSystemRole: true, tenantId: null }, // Системные роли
+                ],
+            };
+        } else {
+            where = { role };
         }
 
         return this.roleModel.findOne({ where }) as Promise<GetRoleResponse>;
@@ -132,6 +146,18 @@ export class RoleRepository implements IRoleRepository {
     }
 
     /**
+     * Найти роль по ID без проверки tenant isolation
+     * Используется для проверки существования роли перед проверкой tenant isolation
+     * @param id - ID роли
+     * @returns RoleModel или null
+     */
+    public async findRoleByIdWithoutIsolation(
+        id: number,
+    ): Promise<RoleModel | null> {
+        return this.roleModel.findOne({ where: { id } });
+    }
+
+    /**
      * Получить все роли, сгруппированные для иерархии
      * @returns Массив всех ролей, отсортированных по level
      */
@@ -161,7 +187,9 @@ export class RoleRepository implements IRoleRepository {
     ): Promise<RoleModel> {
         const role = await this.findRoleById(id, tenantId);
         if (!role) {
-            throw new ConflictException('Роль не найдена');
+            throw new NotFoundException(
+                'Роль не найдена или недоступна для тенанта',
+            );
         }
 
         // Проверка: нельзя обновлять системные роли, если это не системный пользователь
@@ -171,8 +199,47 @@ export class RoleRepository implements IRoleRepository {
             );
         }
 
-        await role.update(dto);
-        return role;
+        // Обновляем роль с явным указанием полей для обновления
+        const updateData: Record<string, unknown> = {};
+        if (dto.role !== undefined) updateData.role = dto.role;
+        if (dto.description !== undefined)
+            updateData.description = dto.description;
+        if (dto.level !== undefined) updateData.level = dto.level;
+        if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
+        if (dto.tenantId !== undefined) updateData.tenantId = dto.tenantId;
+
+        await role.update(updateData);
+        // Перезагружаем роль из БД без scope, чтобы получить все поля включая description
+        // Используем unscoped() чтобы обойти defaultScope и получить все поля
+        // Важно: используем findByPk с unscoped() и явно указываем все атрибуты
+        // Используем get({ plain: true }) чтобы получить plain object со всеми полями
+        const updatedRole = await this.roleModel.unscoped().findByPk(role.id, {
+            attributes: [
+                'id',
+                'role',
+                'description',
+                'level',
+                'permissions',
+                'isSystemRole',
+                'isActive',
+                'tenantId',
+                'createdAt',
+                'updatedAt',
+            ],
+            raw: false, // Получаем экземпляр модели, а не plain object
+        });
+        if (!updatedRole) {
+            throw new NotFoundException('Роль не найдена после обновления');
+        }
+        // Явно проверяем, что description доступен
+        // Если description undefined, используем getDataValue для явного чтения
+        if (updatedRole.description === undefined) {
+            const descriptionValue = updatedRole.getDataValue('description');
+            if (descriptionValue !== undefined) {
+                updatedRole.setDataValue('description', descriptionValue);
+            }
+        }
+        return updatedRole;
     }
 
     /**
@@ -392,10 +459,16 @@ export class RoleRepository implements IRoleRepository {
             isActive: boolean;
         }>
     > {
+        // ВАЖНО: Для tenant isolation нужно учитывать не только tenant_id в user_roles,
+        // но и is_system_role в roles. Системные роли доступны всем тенантам.
         const where: WhereOptions = { userId };
 
         if (tenantId !== undefined && tenantId !== null) {
-            where.tenantId = tenantId;
+            // Фильтруем: либо tenant_id совпадает, либо роль системная
+            where[Op.or as keyof WhereOptions] = [
+                { tenantId }, // Тенантские роли
+                // Системные роли будут отфильтрованы через include
+            ];
         }
 
         const userRoles = await this.userRoleModel.findAll({
@@ -403,22 +476,52 @@ export class RoleRepository implements IRoleRepository {
             include: [
                 {
                     model: RoleModel,
-                    attributes: ['id', 'role', 'description', 'level'],
+                    attributes: [
+                        'id',
+                        'role',
+                        'description',
+                        'level',
+                        'isSystemRole',
+                    ],
+                    // Для системных ролей не фильтруем по tenant_id
+                    ...(tenantId !== undefined && tenantId !== null
+                        ? {
+                              where: {
+                                  [Op.or]: [
+                                      { isSystemRole: true }, // Системные роли доступны всем
+                                      { isSystemRole: false, tenantId }, // Тенантские роли только для своего тенанта
+                                  ],
+                              },
+                          }
+                        : {}),
                 },
             ],
             order: [['grantedAt', 'DESC']],
         });
 
-        return userRoles.map((ur) => ({
-            id: ur.id,
-            roleId: ur.roleId,
-            roleName: ur.role?.role ?? '',
-            roleDescription: ur.role?.description ?? '',
-            roleLevel: ur.role?.level ?? 0,
-            tenantId: ur.tenantId,
-            grantedAt: ur.grantedAt,
-            expiresAt: ur.expiresAt,
-            isActive: ur.isActive,
-        }));
+        // Дополнительная фильтрация на уровне приложения для безопасности
+        return userRoles
+            .filter((ur) => {
+                // Если роль системная - доступна всем
+                if (ur.role?.isSystemRole) {
+                    return true;
+                }
+                // Если роль тенантская - только для своего тенанта
+                if (tenantId !== undefined && tenantId !== null) {
+                    return ur.tenantId === tenantId;
+                }
+                return true;
+            })
+            .map((ur) => ({
+                id: ur.id,
+                roleId: ur.roleId,
+                roleName: ur.role?.role ?? '',
+                roleDescription: ur.role?.description ?? '',
+                roleLevel: ur.role?.level ?? 0,
+                tenantId: ur.tenantId,
+                grantedAt: ur.grantedAt,
+                expiresAt: ur.expiresAt,
+                isActive: ur.isActive,
+            }));
     }
 }

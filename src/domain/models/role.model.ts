@@ -123,7 +123,7 @@ export class RoleModel
         unique: true,
         allowNull: false,
     })
-    role!: string;
+    declare role: string;
 
     @ApiProperty({
         example: 'Пользователь',
@@ -133,7 +133,7 @@ export class RoleModel
         type: DataType.STRING,
         allowNull: false,
     })
-    description!: string;
+    declare description: string;
 
     @ApiProperty({
         example: 50,
@@ -144,7 +144,7 @@ export class RoleModel
         allowNull: false,
         defaultValue: 0,
     })
-    level!: number;
+    declare level: number;
 
     @ApiProperty({
         example: [],
@@ -155,7 +155,7 @@ export class RoleModel
         allowNull: true,
         defaultValue: null,
     })
-    permissions!: unknown[];
+    declare permissions: unknown[];
 
     @ApiProperty({
         example: false,
@@ -167,7 +167,7 @@ export class RoleModel
         defaultValue: false,
         field: 'is_system_role',
     })
-    isSystemRole!: boolean;
+    declare isSystemRole: boolean;
 
     @ApiProperty({
         example: true,
@@ -179,7 +179,7 @@ export class RoleModel
         defaultValue: true,
         field: 'is_active',
     })
-    isActive!: boolean;
+    declare isActive: boolean;
 
     @ApiProperty({
         example: 1,
@@ -192,7 +192,7 @@ export class RoleModel
         allowNull: true,
         field: 'tenant_id',
     })
-    tenantId!: number | null;
+    declare tenantId: number | null;
 
     // Связь с тенантом (для tenant-specific ролей)
     @BelongsTo(() => TenantModel)
