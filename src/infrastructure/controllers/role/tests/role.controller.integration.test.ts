@@ -186,6 +186,36 @@ describe('RoleController (integration)', () => {
                 })
                 .expect(401);
         });
+
+        it('409: роль с таким названием уже существует', async () => {
+            if (!isAppInitialized || !app) {
+                throw new Error('App is not initialized');
+            }
+
+            const dto = {
+                role: 'DUPLICATE_ROLE',
+                description: 'Роль для теста дублирования',
+                level: 30,
+                isSystemRole: false,
+            };
+
+            // Создаём роль первый раз
+            await request(app.getHttpServer())
+                .post('/online-store/role/create')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send(dto)
+                .expect(201);
+
+            // Пытаемся создать роль с тем же названием
+            const response = await request(app.getHttpServer())
+                .post('/online-store/role/create')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send(dto)
+                .expect(409);
+
+            expect(response.body).toHaveProperty('message');
+            expect(response.body.message).toContain('уже существует');
+        });
     });
 
     describe('GET /role/one/:role', () => {
@@ -439,6 +469,51 @@ describe('RoleController (integration)', () => {
                 })
                 .expect(403);
         });
+
+        it('409: разрешение уже назначено этой роли', async () => {
+            if (!isAppInitialized || !app) {
+                throw new Error('App is not initialized');
+            }
+
+            // Создаём роль для теста
+            const createRoleResponse = await request(app.getHttpServer())
+                .post('/online-store/role/create')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    role: 'PERMISSION_DUPLICATE_ROLE',
+                    description: 'Роль для теста дублирования разрешений',
+                    level: 40,
+                    isSystemRole: false,
+                })
+                .expect(201);
+
+            const roleId = createRoleResponse.body.id;
+
+            // Назначаем разрешение первый раз
+            await request(app.getHttpServer())
+                .post('/online-store/role/permissions/assign')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    roleId,
+                    resource: 'orders',
+                    action: 'create',
+                })
+                .expect(201);
+
+            // Пытаемся назначить то же разрешение повторно
+            const response = await request(app.getHttpServer())
+                .post('/online-store/role/permissions/assign')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    roleId,
+                    resource: 'orders',
+                    action: 'create',
+                })
+                .expect(409);
+
+            expect(response.body).toHaveProperty('message');
+            expect(response.body.message).toContain('уже назначено');
+        });
     });
 
     describe('DELETE /role/permissions/revoke', () => {
@@ -644,6 +719,58 @@ describe('RoleController (integration)', () => {
                     roleId: 1,
                 })
                 .expect(403);
+        });
+
+        it('409: роль уже назначена пользователю', async () => {
+            if (!isAppInitialized || !app) {
+                throw new Error('App is not initialized');
+            }
+
+            // Создаём роль
+            const createRoleResponse = await request(app.getHttpServer())
+                .post('/online-store/role/create')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    role: 'DUPLICATE_ASSIGN_ROLE',
+                    description: 'Роль для теста дублирования назначения',
+                    level: 35,
+                    isSystemRole: false,
+                    isActive: true,
+                })
+                .expect(201);
+
+            const roleId = createRoleResponse.body.id;
+
+            // Создаём пользователя
+            const user = await TestDataFactory.createUserWithRole(
+                app,
+                'CUSTOMER',
+            );
+
+            // Назначаем роль первый раз
+            await request(app.getHttpServer())
+                .post('/online-store/role/assign')
+                .set('Authorization', `Bearer ${managerToken}`)
+                .send({
+                    userId: user.userId,
+                    roleId,
+                })
+                .expect(201);
+
+            // Пытаемся назначить ту же роль повторно
+            const response = await request(app.getHttpServer())
+                .post('/online-store/role/assign')
+                .set('Authorization', `Bearer ${managerToken}`)
+                .send({
+                    userId: user.userId,
+                    roleId,
+                })
+                .expect(409);
+
+            expect(response.body).toHaveProperty(
+                'message',
+                'Роль уже назначена этому пользователю',
+            );
         });
     });
 

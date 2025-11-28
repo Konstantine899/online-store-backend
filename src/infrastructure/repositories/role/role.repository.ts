@@ -411,7 +411,7 @@ export class RoleRepository implements IRoleRepository {
                 error.name === 'SequelizeUniqueConstraintError'
             ) {
                 throw new ConflictException(
-                    'Пользователь уже имеет эту роль в этом тенанте',
+                    'Роль уже назначена этому пользователю',
                 );
             }
             throw error;
