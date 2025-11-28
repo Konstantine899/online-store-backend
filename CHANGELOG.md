@@ -11,6 +11,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### SAAS-017-13: Complete Unit Tests for RoleRepository (2025-11-28)
+
+**Test Coverage Enhancement:**
+- Added 14 new unit tests for RoleRepository (27 → 41 tests)
+- Achieved 100% method coverage (15/15 methods)
+- All 41 tests passing with 100% success rate
+- Execution time: ~0.2 seconds for RoleRepository
+
+**New Test Coverage:**
+- `findRoleByName` - 2 tests (search by role name)
+- `findAllRolesGrouped` - 2 tests (sorted role list)
+- `updateRole` - 3 tests (role updates, tenant isolation)
+- `createRolePermission` - 3 tests (permission creation, conflicts)
+- `deleteRolePermission` - 2 tests (permission deletion)
+- `findRolePermissions` - 2 tests (permission queries)
+
+**Quality Improvements:**
+- Fixed mock implementations for `update()` and `unscoped()`
+- Improved type safety with `as unknown as Model` casting
+- Added proper imports using `import type` for type-only imports
+- Added missing `isSystemRole` field in test DTOs
+
 #### SAAS-017-12: Comprehensive Tests for Role API (2025-11-28)
 
 **Test Coverage:**
