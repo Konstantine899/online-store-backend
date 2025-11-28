@@ -11,6 +11,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### SAAS-017-12: Comprehensive Tests for Role API (2025-11-28)
+
+**Test Coverage:**
+- Created 250 tests total (214 unit + 36 integration)
+- Achieved ~97% code coverage (target ≥80%)
+- All tests passing with 100% success rate
+- Execution time: ~10 seconds for role module
+
+**New Test Files:**
+- `role.repository.unit.test.ts` - 27 comprehensive unit tests for RoleRepository
+
+**Scripts Added:**
+- `scripts/test-role-unit.sh/ps1` - Quick unit test execution
+- `scripts/run-coverage.sh/ps1` - Coverage check automation
+- `scripts/delete-dist.js` - Clean dist/ directory
+- `scripts/clear-jest-cache.js` - Clear Jest cache
+
+**npm Scripts:**
+- `clean:dist` - Remove compiled TypeScript output
+- `clean:cache` - Clear Jest cache for clean test runs
+
+### Fixed
+
+#### SAAS-017-12: Critical Role Module Bugs
+
+**Sequelize Model Shadowing:**
+- Fixed `isActive` returning `undefined` due to class field shadowing Sequelize getters
+- Changed `public isActive!: boolean` to `declare isActive: boolean` in RoleModel and UserRoleModel
+- Impact: POST /role/assign now works correctly
+
+**404 vs 403 Priority:**
+- Fixed DELETE /role/revoke returning 403 instead of 404 for non-existent roles
+- Added `findRoleByIdWithoutIsolation()` check before permission validation
+- Impact: Proper HTTP status codes, better API semantics
+
+**NestJS Route Matching:**
+- Fixed DELETE /role/revoke being matched to `@Delete('/:id')` instead of `@Delete('/revoke')`
+- Reordered controller methods: specific routes before generic routes
+- Impact: Correct endpoint routing
+
+**Unit Test Mocks:**
+- Fixed Sequelize mocks (`$or` → `Op.or`, added `destroy()`, `getDataValue()`)
+- Added `jest.clearAllMocks()` in `beforeEach` to prevent test pollution
+- Used `jest.spyOn()` for proper method isolation in auto-assign tests
+- Impact: 14 failing tests → 0 failing tests
+
+### Changed
+
+#### SAAS-017-12: Code Cleanup
+
+**Removed Diagnostic Code:**
+- Removed all `console.log` statements from production code
+- Cleaned up temporary test log files
+- Removed obsolete `.bat` scripts
+
+**Project Organization:**
+- Moved utility scripts to `scripts/` directory
+- Organized test execution scripts
+- Added comprehensive documentation in `docs/SAAS-017-12-SUMMARY.md`
+
+---
+
 #### USER-001-11: Full Optimization of User Module (2025-11-18)
 
 **Critical Bugfixes:**

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/sequelize';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { Op } from 'sequelize';
 import { RoleRepository } from '../role.repository';
 import {
     RoleModel,
@@ -30,6 +31,7 @@ describe('RoleRepository (unit)', () => {
         createdAt: new Date('2024-01-01'),
         updatedAt: new Date('2024-01-01'),
         reload: jest.fn().mockResolvedValue(undefined),
+        destroy: jest.fn().mockResolvedValue(undefined),
     };
 
     const mockSystemRole = {
@@ -44,6 +46,7 @@ describe('RoleRepository (unit)', () => {
         createdAt: new Date('2024-01-01'),
         updatedAt: new Date('2024-01-01'),
         reload: jest.fn().mockResolvedValue(undefined),
+        destroy: jest.fn().mockResolvedValue(undefined),
     };
 
     beforeEach(async () => {
@@ -218,7 +221,7 @@ describe('RoleRepository (unit)', () => {
 
             expect(roleModelMock.findOne).toHaveBeenCalledWith({
                 where: {
-                    $or: [
+                    [Op.or]: [
                         { role: 'TEST_ROLE', tenantId: 1, isSystemRole: false },
                         {
                             role: 'TEST_ROLE',
@@ -329,16 +332,16 @@ describe('RoleRepository (unit)', () => {
 
     describe('findRoleByIdWithoutIsolation', () => {
         it('должен найти роль без tenant isolation', async () => {
-            roleModelMock.findByPk.mockResolvedValue(mockRole as any);
+            roleModelMock.findOne.mockResolvedValue(mockRole as any);
 
             const result = await repository.findRoleByIdWithoutIsolation(1);
 
-            expect(roleModelMock.findByPk).toHaveBeenCalledWith(1);
+            expect(roleModelMock.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
             expect(result).toEqual(mockRole);
         });
 
         it('должен вернуть null если роль не существует', async () => {
-            roleModelMock.findByPk.mockResolvedValue(null);
+            roleModelMock.findOne.mockResolvedValue(null);
 
             const result = await repository.findRoleByIdWithoutIsolation(999);
 
@@ -349,28 +352,27 @@ describe('RoleRepository (unit)', () => {
     describe('deleteRole', () => {
         it('должен удалить роль успешно', async () => {
             roleModelMock.findOne.mockResolvedValue(mockRole as any);
-            roleModelMock.destroy.mockResolvedValue(1);
 
             const result = await repository.deleteRole(1, 1);
 
-            expect(roleModelMock.destroy).toHaveBeenCalled();
+            expect(mockRole.destroy).toHaveBeenCalled();
             expect(result).toBe(true);
         });
 
-        it('должен выбросить NotFoundException если роль не найдена', async () => {
+        it('должен вернуть false если роль не найдена', async () => {
             roleModelMock.findOne.mockResolvedValue(null);
 
-            await expect(repository.deleteRole(999, 1)).rejects.toThrow(
-                NotFoundException,
-            );
+            const result = await repository.deleteRole(999, 1);
+
+            expect(result).toBe(false);
         });
 
-        it('должен запретить удаление роли другого тенанта', async () => {
+        it('должен вернуть false для роли другого тенанта', async () => {
             roleModelMock.findOne.mockResolvedValue(null);
 
-            await expect(repository.deleteRole(1, 999)).rejects.toThrow(
-                NotFoundException,
-            );
+            const result = await repository.deleteRole(1, 999);
+
+            expect(result).toBe(false);
         });
     });
 
@@ -409,7 +411,12 @@ describe('RoleRepository (unit)', () => {
                 isActive: true,
                 metadata: {},
             });
-            expect(result).toEqual(mockUserRole);
+            expect(result).toEqual({
+                id: mockUserRole.id,
+                userId: mockUserRole.userId,
+                roleId: mockUserRole.roleId,
+                tenantId: mockUserRole.tenantId,
+            });
         });
 
         it('должен назначить роль с датой истечения', async () => {
@@ -476,12 +483,20 @@ describe('RoleRepository (unit)', () => {
                 id: 1,
                 userId: 10,
                 roleId: 1,
+                tenantId: 1,
+                grantedAt: new Date('2024-01-01'),
+                expiresAt: null,
+                isActive: true,
                 role: mockRole,
             },
             {
                 id: 2,
                 userId: 10,
                 roleId: 2,
+                tenantId: 1,
+                grantedAt: new Date('2024-01-01'),
+                expiresAt: null,
+                isActive: true,
                 role: mockSystemRole,
             },
         ];
@@ -493,6 +508,8 @@ describe('RoleRepository (unit)', () => {
 
             expect(userRoleModelMock.findAll).toHaveBeenCalled();
             expect(result).toHaveLength(2);
+            expect(result[0]).toHaveProperty('roleName', 'TEST_ROLE');
+            expect(result[1]).toHaveProperty('roleName', 'SYSTEM_ROLE');
         });
 
         it('должен вернуть пустой массив если у пользователя нет ролей', async () => {

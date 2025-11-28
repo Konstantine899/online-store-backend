@@ -471,24 +471,6 @@ describe('RoleGuard (unit)', () => {
     // TEST-020-6: Дополнительные Edge Cases & Security Tests
     // ============================================================
     describe('Дополнительные Edge Cases (TEST-020)', () => {
-        it('должен логировать информацию о публичных endpoints', async () => {
-            // Mock console.log для проверки логирования
-            const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-            mockReflector.getAllAndOverride.mockReturnValue(null);
-            mockRequest.method = 'POST';
-            mockRequest.url = '/api/public/endpoint';
-
-            await guard.canActivate(mockContext);
-
-            expect(consoleSpy).toHaveBeenCalledWith(
-                expect.stringContaining(
-                    'RoleGuard: No roles required for POST /api/public/endpoint',
-                ),
-            );
-
-            consoleSpy.mockRestore();
-        });
-
         it('должен корректно обрабатывать пустой массив требуемых ролей', async () => {
             mockReflector.getAllAndOverride.mockReturnValue([]);
             mockRequest.headers = { authorization: 'Bearer token' };

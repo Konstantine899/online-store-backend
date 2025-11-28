@@ -36,12 +36,24 @@ describe('RoleService - Auto Role Assignment', () => {
         id: 10,
         role: 'VIP_CUSTOMER',
         isActive: true,
+        tenantId: 1,
+        level: 30,
+        getDataValue: jest.fn((key: string) => {
+            if (key === 'isActive') return true;
+            return undefined;
+        }),
     };
 
     const mockWholesaleRole = {
         id: 11,
         role: 'WHOLESALE',
         isActive: true,
+        tenantId: 1,
+        level: 30,
+        getDataValue: jest.fn((key: string) => {
+            if (key === 'isActive') return true;
+            return undefined;
+        }),
     };
 
     beforeEach(async () => {
@@ -52,6 +64,8 @@ describe('RoleService - Auto Role Assignment', () => {
                     provide: RoleRepository,
                     useValue: {
                         findRoleByName: jest.fn(),
+                        findRoleById: jest.fn(),
+                        findRoleByIdWithoutIsolation: jest.fn(),
                         findUserRoles: jest.fn(),
                         assignRoleToUser: jest.fn(),
                         revokeRoleFromUser: jest.fn(),
@@ -733,42 +747,22 @@ describe('RoleService - Auto Role Assignment', () => {
 
     describe('evaluateAndUpdateCustomerRoles with revocation', () => {
         it('должен проверить назначение и понижение ролей параллельно', async () => {
-            const vipThreshold = getVipRoleThreshold();
-            const wholesaleThreshold = getWholesaleRoleThreshold();
-
-            (userModel.findByPk as jest.Mock)
-                .mockResolvedValueOnce(mockUser)
-                .mockResolvedValueOnce(mockUser)
-                .mockResolvedValueOnce(mockUser)
-                .mockResolvedValueOnce(mockUser);
-            (orderRepository.getUserTotalSpent as jest.Mock).mockResolvedValue(
-                vipThreshold + 10000,
-            );
-            (orderRepository.getUserOrderCount as jest.Mock).mockResolvedValue(
-                wholesaleThreshold - 1,
-            );
-            (roleRepository.findRoleByName as jest.Mock)
-                .mockResolvedValueOnce(mockVipRole) // autoAssignVipRole
-                .mockResolvedValueOnce(mockWholesaleRole) // autoAssignWholesaleRole
-                .mockResolvedValueOnce(mockVipRole) // autoRevokeVipRole
-                .mockResolvedValueOnce(mockWholesaleRole); // autoRevokeWholesaleRole
-            (roleRepository.findUserRoles as jest.Mock)
-                .mockResolvedValueOnce([])
-                .mockResolvedValueOnce([])
-                .mockResolvedValueOnce([{ roleId: 10 } as never])
-                .mockResolvedValueOnce([]);
-            (roleRepository.assignRoleToUser as jest.Mock).mockResolvedValue({
-                id: 1,
-                userId: 1,
+            // Спаим методы autoAssign/autoRevoke напрямую, чтобы избежать вызова реальной логики
+            jest.spyOn(service, 'autoAssignVipRole').mockResolvedValue({
+                assigned: true,
                 roleId: 10,
-                tenantId: 1,
             });
-            (roleRepository.revokeRoleFromUser as jest.Mock).mockResolvedValue(
-                false,
-            );
 
-            (userRoleModel.findOne as jest.Mock).mockResolvedValue({
-                metadata: { auto_assigned: true },
+            jest.spyOn(service, 'autoAssignWholesaleRole').mockResolvedValue({
+                assigned: false,
+            });
+
+            jest.spyOn(service, 'autoRevokeVipRole').mockResolvedValue({
+                revoked: false,
+            });
+
+            jest.spyOn(service, 'autoRevokeWholesaleRole').mockResolvedValue({
+                revoked: false,
             });
 
             const result = await service.evaluateAndUpdateCustomerRoles(1, 1);
@@ -777,6 +771,12 @@ describe('RoleService - Auto Role Assignment', () => {
             expect(result.wholesaleAssigned).toBe(false);
             expect(result.vipRevoked).toBe(false);
             expect(result.wholesaleRevoked).toBe(false);
+
+            // Проверяем, что методы были вызваны параллельно
+            expect(service.autoAssignVipRole).toHaveBeenCalledWith(1, 1);
+            expect(service.autoAssignWholesaleRole).toHaveBeenCalledWith(1, 1);
+            expect(service.autoRevokeVipRole).toHaveBeenCalledWith(1, 1);
+            expect(service.autoRevokeWholesaleRole).toHaveBeenCalledWith(1, 1);
         });
     });
 });

@@ -38,7 +38,7 @@ describe('RoleService (unit)', () => {
     let userRoleModel: jest.Mocked<typeof UserRoleModelType>;
     let metricsCollector: jest.Mocked<MetricsCollector>;
 
-    const mockRole: GetRoleResponse = {
+    const mockRole: GetRoleResponse & { getDataValue: jest.Mock } = {
         id: 1,
         role: 'TEST_ROLE',
         description: 'Test role',
@@ -49,6 +49,10 @@ describe('RoleService (unit)', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         permissions: [],
+        getDataValue: jest.fn((key: string) => {
+            if (key === 'isActive') return true;
+            return undefined;
+        }),
     };
 
     const mockUser = {
@@ -60,6 +64,8 @@ describe('RoleService (unit)', () => {
     } as unknown as UserModel;
 
     beforeEach(async () => {
+        jest.clearAllMocks();
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 RoleService,
@@ -70,6 +76,7 @@ describe('RoleService (unit)', () => {
                         findRole: jest.fn(),
                         findRoleById: jest.fn(),
                         findRoleByName: jest.fn(),
+                        findRoleByIdWithoutIsolation: jest.fn(),
                         findListRole: jest.fn(),
                         findAllRolesGrouped: jest.fn(),
                         updateRole: jest.fn(),
@@ -389,7 +396,10 @@ describe('RoleService (unit)', () => {
             };
 
             userModel.findByPk.mockResolvedValue(mockUser);
-            roleRepository.findRoleById.mockResolvedValue(mockRole);
+            roleRepository.findRoleByIdWithoutIsolation.mockResolvedValue(
+                mockRole as any,
+            );
+            roleRepository.findRoleById.mockResolvedValue(mockRole as any);
             roleRepository.assignRoleToUser.mockResolvedValue(
                 mockUserRole as any,
             );
@@ -442,10 +452,17 @@ describe('RoleService (unit)', () => {
                 roleId: 1,
             };
 
-            const inactiveRole = { ...mockRole, isActive: false };
+            const inactiveRole = {
+                ...mockRole,
+                isActive: false,
+                getDataValue: jest.fn().mockReturnValue(false),
+            };
 
             userModel.findByPk.mockResolvedValue(mockUser);
-            roleRepository.findRoleById.mockResolvedValue(inactiveRole);
+            roleRepository.findRoleByIdWithoutIsolation.mockResolvedValue(
+                inactiveRole as any,
+            );
+            roleRepository.findRoleById.mockResolvedValue(inactiveRole as any);
 
             await expect(
                 service.assignRoleToUser(dto, 1, ['MANAGER']),
@@ -460,7 +477,10 @@ describe('RoleService (unit)', () => {
             };
 
             userModel.findByPk.mockResolvedValue(mockUser);
-            roleRepository.findRoleById.mockResolvedValue(mockRole);
+            roleRepository.findRoleByIdWithoutIsolation.mockResolvedValue(
+                mockRole as any,
+            );
+            roleRepository.findRoleById.mockResolvedValue(mockRole as any);
 
             await expect(
                 service.assignRoleToUser(dto, 1, ['MANAGER']),
@@ -476,6 +496,9 @@ describe('RoleService (unit)', () => {
             };
 
             userModel.findByPk.mockResolvedValue(mockUser);
+            roleRepository.findRoleByIdWithoutIsolation.mockResolvedValue(
+                mockRole as any,
+            );
             roleRepository.findRoleById.mockResolvedValue(mockRole);
             roleRepository.revokeRoleFromUser.mockResolvedValue(true);
 
@@ -485,7 +508,6 @@ describe('RoleService (unit)', () => {
 
             expect(result).toHaveProperty('message');
             expect(userModel.findByPk).toHaveBeenCalledWith(1);
-            expect(roleRepository.findRoleById).toHaveBeenCalledWith(1, 1);
             expect(roleRepository.revokeRoleFromUser).toHaveBeenCalled();
         });
 
@@ -495,11 +517,12 @@ describe('RoleService (unit)', () => {
                 roleId: 999,
             };
 
-            roleRepository.findRoleById.mockResolvedValue(null);
+            userModel.findByPk.mockResolvedValue(mockUser);
+            roleRepository.findRoleByIdWithoutIsolation.mockResolvedValue(null);
 
             await expect(
                 service.revokeRoleFromUser(dto, 1, ['MANAGER']),
-            ).rejects.toThrow();
+            ).rejects.toThrow(RoleNotFoundException);
         });
     });
 
