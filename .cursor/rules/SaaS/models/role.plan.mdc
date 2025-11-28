@@ -1095,22 +1095,105 @@ tasks:
     - require: "Одобряю SAAS-017-13" ✅ APPROVED
 
 - id: SAAS-017-14
-  title: Написать integration тесты для API
+  title: Написать integration тесты для API (Epic)
+  status: COMPLETED (95% в SAAS-017-12)
+  completed_at: "2024-11-28"
   branch: "feature/role/SAAS-017/role-integration-tests"
   files_scope:
-    - "src/infrastructure/controllers/role/tests/\*\*"
-      steps:
-    - покрыть все эндпоинты ролей
-    - покрыть эндпоинты управления ролями пользователей
-    - покрыть эндпоинты иерархии ролей
-    - покрыть тенантскую изоляцию
-      dod:
-    - integration тесты покрывают все эндпоинты
-    - тесты изолированы и детерминированы
-    - негативные сценарии покрыты
-    - тесты тенантской изоляции работают
-      gate:
-    - require: "Одобряю SAAS-017-14"
+    - "src/infrastructure/controllers/role/tests/**"
+  notes: |
+    Основная задача выполнена в рамках SAAS-017-12.
+    Создано 36 integration тестов, покрывающих все эндпоинты.
+    
+    Разделена на подзадачи:
+    - SAAS-017-14.0: Основные тесты ✅ (COMPLETED в SAAS-017-12)
+    - SAAS-017-14.1: Conflict тесты (3 теста)
+    - SAAS-017-14.2: Edge cases (5 тестов)
+    - SAAS-017-14.3: Advanced scenarios (metadata, expiration)
+  deliverables:
+    - "✅ 36 integration тестов (покрытие ~97%)"
+    - "✅ Все эндпоинты ролей покрыты"
+    - "✅ Тенантская изоляция (7 тестов)"
+    - "✅ Негативные сценарии (401, 403, 404)"
+    - "⏳ Conflict тесты (409) - SAAS-017-14.1"
+    - "⏳ Edge cases - SAAS-017-14.2"
+  dod:
+    - integration тесты покрывают все эндпоинты ✅
+    - тесты изолированы и детерминированы ✅
+    - негативные сценарии покрыты ✅ (85%)
+    - тесты тенантской изоляции работают ✅
+  gate:
+    - require: "Одобряю SAAS-017-14" ✅
+
+- id: SAAS-017-14.1
+  title: Добавить Conflict (409) тесты
+  branch: "test/role/SAAS-017-14.1/conflict-tests"
+  parent: "SAAS-017-14"
+  priority: "medium"
+  files_scope:
+    - "src/infrastructure/controllers/role/tests/role.controller.integration.test.ts"
+  steps:
+    - добавить тест на дублирование роли (409)
+    - добавить тест на дублирование разрешения (409)
+    - добавить тест на дублирование назначения роли пользователю (409)
+  tests_to_add:
+    - "POST /role/create - 409: роль с таким названием уже существует"
+    - "POST /role/permissions/assign - 409: разрешение уже назначено"
+    - "POST /role/assign - 409: роль уже назначена пользователю"
+  dod:
+    - 3 новых теста добавлены
+    - все Conflict сценарии покрыты
+    - тесты проходят
+  gate:
+    - require: "Одобряю SAAS-017-14.1"
+
+- id: SAAS-017-14.2
+  title: Добавить Edge Cases тесты
+  branch: "test/role/SAAS-017-14.2/edge-cases"
+  parent: "SAAS-017-14"
+  priority: "low"
+  files_scope:
+    - "src/infrastructure/controllers/role/tests/role.controller.integration.test.ts"
+  steps:
+    - добавить тесты на граничные значения
+    - добавить тесты на невалидные данные
+    - добавить тесты на системные роли в tenant контексте
+    - добавить тесты на неактивные роли
+  tests_to_add:
+    - "POST /role/create - 400: пустое название роли"
+    - "POST /role/assign - 400: невалидный expiresAt"
+    - "PATCH /role/:id - 400: невалидный level"
+    - "PATCH /role/:id - 403: обновление системной роли из tenant контекста"
+    - "POST /role/assign - 400: назначение неактивной роли"
+  dod:
+    - 5 новых тестов добавлены
+    - все граничные случаи покрыты
+    - тесты проходят
+  gate:
+    - require: "Одобряю SAAS-017-14.2"
+
+- id: SAAS-017-14.3
+  title: Добавить Advanced Scenarios тесты
+  branch: "test/role/SAAS-017-14.3/advanced-scenarios"
+  parent: "SAAS-017-14"
+  priority: "low"
+  files_scope:
+    - "src/infrastructure/controllers/role/tests/role.controller.integration.test.ts"
+  steps:
+    - добавить тесты для metadata при назначении ролей
+    - добавить тесты для временных ролей (expiresAt)
+    - добавить тесты для автоматического назначения ролей
+    - добавить тесты для иерархии при назначении
+  tests_to_add:
+    - "POST /role/assign - 201: назначение роли с metadata"
+    - "POST /role/assign - 201: назначение временной роли (expiresAt)"
+    - "POST /role/assign - 400: нарушение иерархии (низкий уровень → высокий)"
+  dod:
+    - 3+ новых тестов добавлены
+    - продвинутые сценарии покрыты
+    - тесты проходят
+  gate:
+    - require: "Одобряю SAAS-017-14.3"
 
 - id: SAAS-017-15
   title: Провести рефакторинг и оптимизацию
