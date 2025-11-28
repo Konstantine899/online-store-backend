@@ -13,6 +13,7 @@ process.env.JWT_REFRESH_EXPIRES = '1h';
 import type { INestApplication } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
+import { randomUUID } from 'crypto';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { TestDataFactory } from '../../../../../tests/utils';
 
@@ -959,6 +960,356 @@ describe('RoleController (integration)', () => {
                 .get('/online-store/role/level/ADMIN')
                 .set('Authorization', `Bearer ${customerToken}`)
                 .expect(403);
+        });
+    });
+
+    // ========================================================================
+    // EDGE CASES ТЕСТЫ
+    // ========================================================================
+
+    describe('⚠️ Edge Cases', () => {
+        describe('POST /role/create - Валидация', () => {
+            it('400: пустое название роли', async () => {
+                if (!isAppInitialized || !app) {
+                    throw new Error('App is not initialized');
+                }
+
+                const response = await request(app.getHttpServer())
+                    .post('/online-store/role/create')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({
+                        role: '', // Пустая строка
+                        description: 'Роль с пустым названием',
+                        level: 30,
+                        isSystemRole: false,
+                    });
+
+                expect(response.status).toBe(400);
+                expect(Array.isArray(response.body)).toBe(true);
+                expect(response.body[0]).toHaveProperty('messages');
+                const messages = response.body[0].messages.join(' ');
+                expect(messages).toContain('название');
+            });
+
+            it('400: название роли только из пробелов', async () => {
+                if (!isAppInitialized || !app) {
+                    throw new Error('App is not initialized');
+                }
+
+                const response = await request(app.getHttpServer())
+                    .post('/online-store/role/create')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({
+                        role: '    ', // Только пробелы
+                        description: 'Роль с пробелами',
+                        level: 30,
+                        isSystemRole: false,
+                    });
+
+                expect(response.status).toBe(400);
+                expect(Array.isArray(response.body)).toBe(true);
+                expect(response.body[0]).toHaveProperty('messages');
+                const messages = response.body[0].messages.join(' ');
+                expect(messages).toContain('символы');
+            });
+
+            it('400: слишком длинное название роли (>100 символов)', async () => {
+                if (!isAppInitialized || !app) {
+                    throw new Error('App is not initialized');
+                }
+
+                const longRoleName = 'A'.repeat(101); // 101 символ
+
+                const response = await request(app.getHttpServer())
+                    .post('/online-store/role/create')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({
+                        role: longRoleName,
+                        description: 'Роль с длинным названием',
+                        level: 30,
+                        isSystemRole: false,
+                    })
+                    .expect(400);
+
+                expect(Array.isArray(response.body)).toBe(true);
+                expect(response.body[0]).toHaveProperty('messages');
+                const messages = response.body[0].messages.join(' ');
+                expect(messages).toContain('100');
+            });
+
+            it('400: слишком длинное описание роли (>200 символов)', async () => {
+                if (!isAppInitialized || !app) {
+                    throw new Error('App is not initialized');
+                }
+
+                const longDescription = 'Описание '.repeat(25); // >200 символов
+
+                const response = await request(app.getHttpServer())
+                    .post('/online-store/role/create')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({
+                        role: 'LONG_DESCRIPTION_ROLE',
+                        description: longDescription,
+                        level: 30,
+                        isSystemRole: false,
+                    })
+                    .expect(400);
+
+                expect(Array.isArray(response.body)).toBe(true);
+                expect(response.body[0]).toHaveProperty('messages');
+                const messages = response.body[0].messages.join(' ');
+                expect(messages).toContain('200');
+            });
+        });
+
+        describe('PATCH /role/:id - Валидация и системные роли', () => {
+            it('400: невалидный level (отрицательное значение)', async () => {
+                if (!isAppInitialized || !app) {
+                    throw new Error('App is not initialized');
+                }
+
+                // Создаём роль
+                const createResponse = await request(app.getHttpServer())
+                    .post('/online-store/role/create')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({
+                        role: 'NEGATIVE_LEVEL_ROLE',
+                        description: 'Роль для теста отрицательного уровня',
+                        level: 30,
+                        isSystemRole: false,
+                    })
+                    .expect(201);
+
+                const roleId = createResponse.body.id;
+
+                // Пытаемся обновить с отрицательным level
+                const response = await request(app.getHttpServer())
+                    .patch(`/online-store/role/${roleId}`)
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({
+                        level: -1, // Отрицательный уровень
+                    })
+                    .expect(400);
+
+                expect(Array.isArray(response.body)).toBe(true);
+                expect(response.body[0]).toHaveProperty('messages');
+                const messages = response.body[0].messages.join(' ');
+                expect(messages).toContain('0');
+            });
+
+            it('400: невалидный level (превышение максимума)', async () => {
+                if (!isAppInitialized || !app) {
+                    throw new Error('App is not initialized');
+                }
+
+                // Создаём роль
+                const createResponse = await request(app.getHttpServer())
+                    .post('/online-store/role/create')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({
+                        role: 'EXCEEDS_MAX_LEVEL_ROLE',
+                        description: 'Роль для теста превышения уровня',
+                        level: 30,
+                        isSystemRole: false,
+                    })
+                    .expect(201);
+
+                const roleId = createResponse.body.id;
+
+                // Пытаемся обновить с level > 100
+                const response = await request(app.getHttpServer())
+                    .patch(`/online-store/role/${roleId}`)
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({
+                        level: 101, // Превышение максимума
+                    })
+                    .expect(400);
+
+                expect(Array.isArray(response.body)).toBe(true);
+                expect(response.body[0]).toHaveProperty('messages');
+                const messages = response.body[0].messages.join(' ');
+                expect(messages).toContain('100');
+            });
+
+            it('403/409: обновление системной роли из tenant контекста запрещено', async () => {
+                if (!isAppInitialized || !app) {
+                    throw new Error('App is not initialized');
+                }
+
+                // Создаём системную роль (SUPER_ADMIN может создавать системные роли)
+                // Получаем SUPER_ADMIN токен
+                const superAdminUser = await TestDataFactory.createUserWithRole(
+                    app,
+                    'SUPER_ADMIN',
+                );
+
+                // Уникальное имя роли с UUID
+                const uniqueRoleName = `SYS_TEST_${randomUUID().substring(0, 8)}`;
+
+                const createSystemRoleResponse = await request(
+                    app.getHttpServer(),
+                )
+                    .post('/online-store/role/create')
+                    .set('Authorization', `Bearer ${superAdminUser.token}`)
+                    .send({
+                        role: uniqueRoleName,
+                        description: 'Системная роль для теста',
+                        level: 90,
+                        isSystemRole: true, // Системная роль
+                        tenantId: null,
+                    });
+
+                // Debug: проверяем что роль создалась
+                if (createSystemRoleResponse.status !== 201) {
+                    console.log('Failed to create system role:', {
+                        status: createSystemRoleResponse.status,
+                        body: createSystemRoleResponse.body,
+                    });
+                }
+
+                expect(createSystemRoleResponse.status).toBe(201);
+                const systemRoleId = createSystemRoleResponse.body.id;
+
+                // Пытаемся обновить системную роль от имени tenant admin
+                const patchResponse = await request(app.getHttpServer())
+                    .patch(`/online-store/role/${systemRoleId}`)
+                    .set('Authorization', `Bearer ${adminToken}`) // Tenant admin
+                    .send({
+                        description: 'Попытка изменить системную роль',
+                    });
+
+                // Проверяем что обновление запрещено (403 или 409)
+                // 403 - если guard блокирует доступ
+                // 409 - если service проверяет системную роль и возвращает конфликт
+                expect([403, 409]).toContain(patchResponse.status);
+            });
+        });
+
+        describe('POST /role/assign - Валидация и неактивные роли', () => {
+            it('400: невалидный expiresAt (прошедшая дата)', async () => {
+                if (!isAppInitialized || !app) {
+                    throw new Error('App is not initialized');
+                }
+
+                // Создаём роль
+                const createRoleResponse = await request(app.getHttpServer())
+                    .post('/online-store/role/create')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({
+                        role: 'PAST_EXPIRY_ROLE',
+                        description: 'Роль для теста прошедшей даты',
+                        level: 30,
+                        isSystemRole: false,
+                        isActive: true,
+                    })
+                    .expect(201);
+
+                const roleId = createRoleResponse.body.id;
+
+                // Создаём пользователя
+                const user = await TestDataFactory.createUserWithRole(
+                    app,
+                    'CUSTOMER',
+                );
+
+                // Пытаемся назначить роль с прошедшей датой
+                const response = await request(app.getHttpServer())
+                    .post('/online-store/role/assign')
+                    .set('Authorization', `Bearer ${managerToken}`)
+                    .send({
+                        userId: user.userId,
+                        roleId,
+                        expiresAt: '2020-01-01T00:00:00Z', // Прошлое
+                    })
+                    .expect(400);
+
+                expect(Array.isArray(response.body)).toBe(true);
+                expect(response.body[0]).toHaveProperty('messages');
+                const messages = response.body[0].messages.join(' ');
+                expect(messages).toContain('прошлом');
+            });
+
+            it('400: невалидный формат expiresAt', async () => {
+                if (!isAppInitialized || !app) {
+                    throw new Error('App is not initialized');
+                }
+
+                // Создаём роль
+                const createRoleResponse = await request(app.getHttpServer())
+                    .post('/online-store/role/create')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({
+                        role: 'INVALID_DATE_FORMAT_ROLE',
+                        description: 'Роль для теста неправильного формата даты',
+                        level: 30,
+                        isSystemRole: false,
+                        isActive: true,
+                    })
+                    .expect(201);
+
+                const roleId = createRoleResponse.body.id;
+
+                // Создаём пользователя
+                const user = await TestDataFactory.createUserWithRole(
+                    app,
+                    'CUSTOMER',
+                );
+
+                // Пытаемся назначить роль с неправильным форматом даты
+                const response = await request(app.getHttpServer())
+                    .post('/online-store/role/assign')
+                    .set('Authorization', `Bearer ${managerToken}`)
+                    .send({
+                        userId: user.userId,
+                        roleId,
+                        expiresAt: '31-12-2025', // Неправильный формат
+                    })
+                    .expect(400);
+
+                expect(Array.isArray(response.body)).toBe(true);
+                expect(response.body[0]).toHaveProperty('messages');
+                const messages = response.body[0].messages.join(' ');
+                expect(messages).toContain('ISO');
+            });
+
+            it('400: назначение неактивной роли', async () => {
+                if (!isAppInitialized || !app) {
+                    throw new Error('App is not initialized');
+                }
+
+                // Создаём неактивную роль
+                const createRoleResponse = await request(app.getHttpServer())
+                    .post('/online-store/role/create')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .send({
+                        role: 'INACTIVE_ASSIGN_ROLE',
+                        description: 'Неактивная роль для теста назначения',
+                        level: 30,
+                        isSystemRole: false,
+                        isActive: false, // Неактивная
+                    })
+                    .expect(201);
+
+                const roleId = createRoleResponse.body.id;
+
+                // Создаём пользователя
+                const user = await TestDataFactory.createUserWithRole(
+                    app,
+                    'CUSTOMER',
+                );
+
+                // Пытаемся назначить неактивную роль
+                const response = await request(app.getHttpServer())
+                    .post('/online-store/role/assign')
+                    .set('Authorization', `Bearer ${managerToken}`)
+                    .send({
+                        userId: user.userId,
+                        roleId,
+                    })
+                    .expect(400);
+
+                expect(response.body.message).toContain('неактивн');
+            });
         });
     });
 
