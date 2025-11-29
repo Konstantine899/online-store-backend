@@ -11,6 +11,12 @@ export class UserRoleInfo {
     declare readonly id: number;
 
     @ApiProperty({
+        description: 'ID роли',
+        example: 5,
+    })
+    declare readonly roleId: number;
+
+    @ApiProperty({
         description: 'Название роли',
         example: 'MANAGER',
     })
@@ -53,6 +59,13 @@ export class UserRoleInfo {
         example: true,
     })
     declare readonly isActive: boolean;
+
+    @ApiProperty({
+        description: 'Дополнительные метаданные назначения роли',
+        example: { reason: 'Promotion', department: 'Sales' },
+        required: false,
+    })
+    declare readonly metadata?: Record<string, unknown>;
 }
 
 /**

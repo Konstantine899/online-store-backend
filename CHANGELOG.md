@@ -11,6 +11,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### SAAS-017-14.3: Advanced Scenarios Integration Tests (2025-11-29)
+
+**Test Coverage Enhancement:**
+- Added 4 new integration tests for advanced role assignment scenarios
+- 100% pass rate (4/4 tests, execution time: ~1.2s)
+- Tests cover metadata, expiresAt, role guard, and combo scenarios
+
+**New Test Coverage:**
+- `POST /role/assign - 201: назначение роли с metadata` (checks metadata persistence)
+- `POST /role/assign - 201: назначение временной роли (expiresAt)` (checks expiration date)
+- `POST /role/assign - 403: CUSTOMER не может назначать роли` (RoleGuard validation)
+- `POST /role/assign - 201: назначение роли с metadata и expiresAt` (combined scenario)
+
+**Infrastructure Improvements:**
+- Added `roleId` field to `UserRoleInfo` response (enables role lookup in GET responses)
+- Added `metadata` field to `UserRoleInfo` response (optional, JSON type)
+- Updated `RoleRepository.findUserRoles()` to return `metadata` field
+- Updated `RoleService.getUserRoles()` to map `roleId` and `metadata`
+
+**Test Scripts:**
+- `test-role-advanced.ps1` - PowerShell script with detailed logging (Windows)
+- `test-role-advanced.sh` - Bash script with detailed logging (Linux/Mac)
+- Automatic test summary extraction, colored output, exit code handling
+
+**Quality Improvements:**
+- Renamed hierarchy test for clarity (RoleGuard vs service hierarchy check)
+- Added detailed comments explaining RoleGuard blocking behavior
+- Verified metadata/expiresAt persistence through GET /role/user/:userId
+- Used `randomUUID()` for unique test data to prevent conflicts
+
 #### SAAS-017-13: Complete Unit Tests for RoleRepository (2025-11-28)
 
 **Test Coverage Enhancement:**

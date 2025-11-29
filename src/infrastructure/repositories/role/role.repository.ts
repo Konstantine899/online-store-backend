@@ -457,6 +457,7 @@ export class RoleRepository implements IRoleRepository {
             grantedAt: Date;
             expiresAt: Date | null;
             isActive: boolean;
+            metadata?: Record<string, unknown>;
         }>
     > {
         // ВАЖНО: Для tenant isolation нужно учитывать не только tenant_id в user_roles,
@@ -522,6 +523,7 @@ export class RoleRepository implements IRoleRepository {
                 grantedAt: ur.grantedAt,
                 expiresAt: ur.expiresAt,
                 isActive: ur.isActive,
+                metadata: ur.metadata ?? undefined,
             }));
     }
 }

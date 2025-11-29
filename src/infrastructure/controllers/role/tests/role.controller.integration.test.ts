@@ -672,14 +672,6 @@ describe('RoleController (integration)', () => {
                     roleId,
                 });
 
-            // Временный вывод для диагностики
-            if (response.status !== 201) {
-                console.log('❌ POST /role/assign failed:', {
-                    status: response.status,
-                    body: response.body,
-                });
-            }
-
             expect(response.status).toBe(201);
 
             expect(response.body).toHaveProperty('message');
@@ -773,6 +765,263 @@ describe('RoleController (integration)', () => {
                 'Роль уже назначена этому пользователю',
             );
         });
+
+        // ========================================
+        // 🔬 SAAS-017-14.3: Advanced Scenarios
+        // ========================================
+
+        it('201: назначение роли с metadata', async () => {
+            if (!isAppInitialized || !app) {
+                throw new Error('App is not initialized');
+            }
+
+            // Создаём роль
+            const createRoleResponse = await request(app.getHttpServer())
+                .post('/online-store/role/create')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    role: `METADATA_ROLE_${randomUUID().substring(0, 8)}`,
+                    description: 'Роль для теста metadata',
+                    level: 25,
+                    isSystemRole: false,
+                    isActive: true,
+                })
+                .expect(201);
+
+            const roleId = createRoleResponse.body.id;
+
+            // Создаём пользователя
+            const user = await TestDataFactory.createUserWithRole(
+                app,
+                'CUSTOMER',
+            );
+
+            // Назначаем роль с metadata
+            const metadata = {
+                reason: 'Повышение до старшего сотрудника',
+                department: 'Отдел продаж',
+                approvedBy: 'Иван Иванов',
+                requestId: 'REQ-12345',
+            };
+
+            const response = await request(app.getHttpServer())
+                .post('/online-store/role/assign')
+                .set('Authorization', `Bearer ${managerToken}`)
+                .send({
+                    userId: user.userId,
+                    roleId,
+                    metadata,
+                });
+
+            // Проверка результата
+            expect(response.status).toBe(201);
+            expect(response.body).toHaveProperty('message');
+            expect(response.body).toHaveProperty('userId', user.userId);
+            expect(response.body).toHaveProperty('roleId', roleId);
+
+            // Проверяем что metadata сохранилась через GET /role/user/:userId
+            const getUserRolesResponse = await request(app.getHttpServer())
+                .get(`/online-store/role/user/${user.userId}`)
+                .set('Authorization', `Bearer ${managerToken}`)
+                .expect(200);
+
+            // Находим назначенную роль
+            const assignedRole = getUserRolesResponse.body.roles.find(
+                (r: any) => r.roleId === roleId,
+            );
+            expect(assignedRole).toBeDefined();
+            expect(assignedRole.metadata).toEqual(metadata);
+        });
+
+        it('201: назначение временной роли (expiresAt)', async () => {
+            if (!isAppInitialized || !app) {
+                throw new Error('App is not initialized');
+            }
+
+            // Создаём роль
+            const createRoleResponse = await request(app.getHttpServer())
+                .post('/online-store/role/create')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    role: `TEMP_ROLE_${randomUUID().substring(0, 8)}`,
+                    description: 'Роль для теста expiresAt',
+                    level: 28,
+                    isSystemRole: false,
+                    isActive: true,
+                })
+                .expect(201);
+
+            const roleId = createRoleResponse.body.id;
+
+            // Создаём пользователя
+            const user = await TestDataFactory.createUserWithRole(
+                app,
+                'CUSTOMER',
+            );
+
+            // Дата истечения: через 1 год
+            const expiresAt = new Date();
+            expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+            const expiresAtISO = expiresAt.toISOString();
+
+            // Назначаем временную роль
+            const response = await request(app.getHttpServer())
+                .post('/online-store/role/assign')
+                .set('Authorization', `Bearer ${managerToken}`)
+                .send({
+                    userId: user.userId,
+                    roleId,
+                    expiresAt: expiresAtISO,
+                });
+
+            // Проверка результата
+            expect(response.status).toBe(201);
+            expect(response.body).toHaveProperty('message');
+            expect(response.body).toHaveProperty('userId', user.userId);
+            expect(response.body).toHaveProperty('roleId', roleId);
+
+            // Проверяем что expiresAt сохранилась через GET /role/user/:userId
+            const getUserRolesResponse = await request(app.getHttpServer())
+                .get(`/online-store/role/user/${user.userId}`)
+                .set('Authorization', `Bearer ${managerToken}`)
+                .expect(200);
+
+            // Находим назначенную роль
+            const assignedRole = getUserRolesResponse.body.roles.find(
+                (r: any) => r.roleId === roleId,
+            );
+            expect(assignedRole).toBeDefined();
+            expect(assignedRole.expiresAt).toBeDefined();
+            // Проверяем что дата близка к ожидаемой (разница < 5 секунд)
+            const expiresAtDate = new Date(assignedRole.expiresAt);
+            const diff = Math.abs(
+                expiresAtDate.getTime() - expiresAt.getTime(),
+            );
+            expect(diff).toBeLessThan(5000); // 5 секунд
+        });
+
+        it('403: CUSTOMER не может назначать роли (проверка RoleGuard)', async () => {
+            if (!isAppInitialized || !app) {
+                throw new Error('App is not initialized');
+            }
+
+            // ВАЖНО: Этот тест проверяет блокировку RoleGuard, а не логику иерархии в сервисе.
+            // CUSTOMER не имеет роли MANAGER_ROLES, поэтому RoleGuard блокирует запрос
+            // ДО того, как проверка иерархии в RoleService будет выполнена.
+            // Для проверки логики иерархии нужен токен с MANAGER_ROLES, но низким level.
+
+            // Создаём роль с высоким уровнем (выше чем у CUSTOMER)
+            const createRoleResponse = await request(app.getHttpServer())
+                .post('/online-store/role/create')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    role: `HIGH_LEVEL_ROLE_${randomUUID().substring(0, 8)}`,
+                    description: 'Роль с высоким уровнем для теста guard',
+                    level: 40,
+                    isSystemRole: false,
+                    isActive: true,
+                })
+                .expect(201);
+
+            const roleId = createRoleResponse.body.id;
+
+            // Создаём пользователя
+            const user = await TestDataFactory.createUserWithRole(
+                app,
+                'CUSTOMER',
+            );
+
+            // CUSTOMER пытается назначить роль → RoleGuard блокирует (403: Forbidden resource)
+            const response = await request(app.getHttpServer())
+                .post('/online-store/role/assign')
+                .set('Authorization', `Bearer ${customerToken}`)
+                .send({
+                    userId: user.userId,
+                    roleId,
+                });
+
+            // RoleGuard блокирует доступ до проверки иерархии в сервисе
+            expect(response.status).toBe(403);
+            expect(response.body).toHaveProperty('message');
+            expect(response.body).toHaveProperty('statusCode', 403);
+        });
+
+        it('201: назначение роли с metadata и expiresAt', async () => {
+            if (!isAppInitialized || !app) {
+                throw new Error('App is not initialized');
+            }
+
+            // Создаём роль
+            const createRoleResponse = await request(app.getHttpServer())
+                .post('/online-store/role/create')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    role: `COMBO_ROLE_${randomUUID().substring(0, 8)}`,
+                    description: 'Роль для теста metadata + expiresAt',
+                    level: 32,
+                    isSystemRole: false,
+                    isActive: true,
+                })
+                .expect(201);
+
+            const roleId = createRoleResponse.body.id;
+
+            // Создаём пользователя
+            const user = await TestDataFactory.createUserWithRole(
+                app,
+                'CUSTOMER',
+            );
+
+            // Дата истечения: через 6 месяцев
+            const expiresAt = new Date();
+            expiresAt.setMonth(expiresAt.getMonth() + 6);
+            const expiresAtISO = expiresAt.toISOString();
+
+            // Metadata
+            const metadata = {
+                reason: 'Временное повышение на период проекта',
+                project: 'Проект Альфа',
+                supervisor: 'Петр Петров',
+            };
+
+            // Назначаем роль с metadata и expiresAt
+            const response = await request(app.getHttpServer())
+                .post('/online-store/role/assign')
+                .set('Authorization', `Bearer ${managerToken}`)
+                .send({
+                    userId: user.userId,
+                    roleId,
+                    metadata,
+                    expiresAt: expiresAtISO,
+                });
+
+            // Проверка результата
+            expect(response.status).toBe(201);
+            expect(response.body).toHaveProperty('message');
+            expect(response.body).toHaveProperty('userId', user.userId);
+            expect(response.body).toHaveProperty('roleId', roleId);
+
+            // Проверяем что metadata и expiresAt сохранились через GET
+            const getUserRolesResponse = await request(app.getHttpServer())
+                .get(`/online-store/role/user/${user.userId}`)
+                .set('Authorization', `Bearer ${managerToken}`)
+                .expect(200);
+
+            // Находим назначенную роль
+            const assignedRole = getUserRolesResponse.body.roles.find(
+                (r: any) => r.roleId === roleId,
+            );
+            expect(assignedRole).toBeDefined();
+            expect(assignedRole.metadata).toEqual(metadata);
+            expect(assignedRole.expiresAt).toBeDefined();
+
+            // Проверяем дату
+            const expiresAtDate = new Date(assignedRole.expiresAt);
+            const diff = Math.abs(
+                expiresAtDate.getTime() - expiresAt.getTime(),
+            );
+            expect(diff).toBeLessThan(5000);
+        });
     });
 
     describe('DELETE /role/revoke', () => {
@@ -809,14 +1058,6 @@ describe('RoleController (integration)', () => {
                     roleId,
                 });
 
-            // Временный вывод для диагностики
-            if (assignResponse.status !== 201) {
-                console.log('❌ POST /role/assign failed in revoke test:', {
-                    status: assignResponse.status,
-                    body: assignResponse.body,
-                });
-            }
-
             expect(assignResponse.status).toBe(201);
 
             // Отзываем роль
@@ -827,14 +1068,6 @@ describe('RoleController (integration)', () => {
                     userId: user.userId,
                     roleId,
                 });
-
-            // Временный вывод для диагностики
-            if (response.status !== 200) {
-                console.log('❌ DELETE /role/revoke failed:', {
-                    status: response.status,
-                    body: response.body,
-                });
-            }
 
             expect(response.status).toBe(200);
 
@@ -858,14 +1091,6 @@ describe('RoleController (integration)', () => {
                     userId: user.userId,
                     roleId: 99999,
                 });
-
-            // Временный вывод для диагностики
-            if (response.status !== 404) {
-                console.log('❌ DELETE /role/revoke 404 test failed:', {
-                    status: response.status,
-                    body: response.body,
-                });
-            }
 
             expect(response.status).toBe(404);
         });
@@ -1158,14 +1383,6 @@ describe('RoleController (integration)', () => {
                         isSystemRole: true, // Системная роль
                         tenantId: null,
                     });
-
-                // Debug: проверяем что роль создалась
-                if (createSystemRoleResponse.status !== 201) {
-                    console.log('Failed to create system role:', {
-                        status: createSystemRoleResponse.status,
-                        body: createSystemRoleResponse.body,
-                    });
-                }
 
                 expect(createSystemRoleResponse.status).toBe(201);
                 const systemRoleId = createSystemRoleResponse.body.id;

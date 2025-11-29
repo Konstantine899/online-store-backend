@@ -723,6 +723,7 @@ export class RoleService implements IRoleService {
             userId,
             roles: userRoles.map((ur) => ({
                 id: ur.id,
+                roleId: ur.roleId,
                 roleName: ur.roleName,
                 roleDescription: ur.roleDescription,
                 roleLevel: ur.roleLevel,
@@ -730,6 +731,7 @@ export class RoleService implements IRoleService {
                 grantedAt: ur.grantedAt?.toISOString() ?? undefined,
                 expiresAt: ur.expiresAt?.toISOString() ?? undefined,
                 isActive: ur.isActive,
+                metadata: ur.metadata ?? undefined,
             })),
             totalCount: userRoles.length,
         };
