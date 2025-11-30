@@ -17,6 +17,8 @@
     "test": "cross-env NODE_ENV=test jest",
     "test:watch": "jest --watch",
     "test:unit": "jest --selectProjects unit",
+    "test:unit:audit": "jest --selectProjects unit audit",
+    "test:unit:audit:log": "node scripts/run-audit-tests-with-log.js",
     "test:integration": "jest --selectProjects integration --runInBand",
     "test:integration:ci": "cross-env CI=true jest --selectProjects integration --maxWorkers=4",
     "test:unit:watch": "jest --selectProjects unit --watch",
