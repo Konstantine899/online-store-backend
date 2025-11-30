@@ -1,4 +1,5 @@
 import {
+    AuditLogModel,
     NotificationModel,
     NotificationTemplateModel,
     UserModel,
@@ -12,6 +13,7 @@ import { Module, OnModuleInit, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { RepositoriesModule } from '../repositories/repositories.module';
+import { AuditService } from './audit/audit.service';
 import { AuthService } from './auth/auth.service';
 import { BrandService } from './brand/brand.service';
 import { CartService } from './cart/cart.service';
@@ -41,6 +43,7 @@ import { UserService } from './user/user.service';
         JwtModule.registerAsync(jwtConfig()),
         forwardRef(() => RepositoriesModule),
         SequelizeModule.forFeature([
+            AuditLogModel,
             UserModel,
             UserRoleModel,
             NotificationModel,
@@ -51,6 +54,7 @@ import { UserService } from './user/user.service';
     ],
     providers: [
         MetricsCollector,
+        AuditService,
         AuthService,
         BrandService,
         CartService,
@@ -87,6 +91,7 @@ import { UserService } from './user/user.service';
     ],
     exports: [
         MetricsCollector,
+        AuditService,
         AuthService,
         BrandService,
         CartService,

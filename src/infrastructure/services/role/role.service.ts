@@ -1,6 +1,7 @@
-import { UserModel, UserRoleModel } from '@app/domain/models';
+import { AuditAction, UserModel, UserRoleModel } from '@app/domain/models';
 import { IRoleService } from '@app/domain/services';
 import { MetricsCollector } from '@app/infrastructure/common/services';
+import { AuditService } from '@app/infrastructure/services/audit/audit.service';
 import {
     canManageRole,
     CUSTOMER_ROLES,
@@ -61,6 +62,7 @@ export class RoleService implements IRoleService {
         private readonly orderRepository: OrderRepository,
         private readonly roleCacheService: RoleCacheService,
         private readonly userRolesCacheService: UserRolesCacheService,
+        private readonly auditService: AuditService,
         @InjectModel(UserModel) private userModel: typeof UserModel,
         @InjectModel(UserRoleModel)
         private userRoleModel: typeof UserRoleModel,
@@ -70,6 +72,12 @@ export class RoleService implements IRoleService {
     public async createRole(
         dto: CreateRoleDto,
         tenantId?: number | null,
+        auditContext?: {
+            userId?: number;
+            ipAddress?: string;
+            userAgent?: string;
+            requestId?: string;
+        },
     ): Promise<CreateRoleResponse> {
         // Если роль не системная и tenantId не передан в DTO, используем tenantId из JWT
         // Создаем новый объект DTO, так как поля readonly
@@ -77,7 +85,32 @@ export class RoleService implements IRoleService {
             !dto.isSystemRole && !dto.tenantId && tenantId
                 ? { ...dto, tenantId }
                 : dto;
-        return this.roleRepository.createRole(dtoWithTenantId);
+        const newRole = await this.roleRepository.createRole(dtoWithTenantId);
+
+        // Создать запись в audit логе
+        if (auditContext) {
+            await this.auditService.createLog({
+                entityType: 'role',
+                entityId: newRole.id,
+                action: AuditAction.CREATE,
+                userId: auditContext.userId ?? null,
+                oldValues: null,
+                newValues: {
+                    role: newRole.role,
+                    description: newRole.description,
+                    level: newRole.level,
+                    isSystemRole: newRole.isSystemRole,
+                    isActive: newRole.isActive,
+                    tenantId: newRole.tenantId,
+                },
+                ipAddress: auditContext.ipAddress ?? null,
+                userAgent: auditContext.userAgent ?? null,
+                requestId: auditContext.requestId ?? null,
+                tenantId: newRole.tenantId,
+            });
+        }
+
+        return newRole;
     }
 
     /**
@@ -149,11 +182,32 @@ export class RoleService implements IRoleService {
         id: number,
         dto: UpdateRoleDto,
         tenantId: number | null,
+        auditContext?: {
+            userId?: number;
+            ipAddress?: string;
+            userAgent?: string;
+            requestId?: string;
+        },
     ): Promise<UpdateRoleResponse> {
         this.logger.log(
             { roleId: id, tenantId, updatedFields: Object.keys(dto) },
             'Запрос обновления роли с проверкой tenant isolation',
         );
+
+        // Получить старые значения для audit лога
+        const oldRole = await this.roleRepository.findRoleById(id, tenantId);
+        if (!oldRole) {
+            throw new RoleNotFoundException(id);
+        }
+
+        const oldValues = {
+            role: oldRole.role,
+            description: oldRole.description,
+            level: oldRole.level,
+            isSystemRole: oldRole.isSystemRole,
+            isActive: oldRole.isActive,
+            tenantId: oldRole.tenantId,
+        };
 
         const updatedRole = await this.roleRepository.updateRole(
             id,
@@ -175,6 +229,29 @@ export class RoleService implements IRoleService {
         this.logger.debug(
             `Инвалидирован кэш для ${invalidatedCount} пользователей с ролью ${updatedRole.role}`,
         );
+
+        // Создать запись в audit логе
+        if (auditContext) {
+            await this.auditService.createLog({
+                entityType: 'role',
+                entityId: updatedRole.id,
+                action: AuditAction.UPDATE,
+                userId: auditContext.userId ?? null,
+                oldValues,
+                newValues: {
+                    role: updatedRole.role,
+                    description: updatedRole.description,
+                    level: updatedRole.level,
+                    isSystemRole: updatedRole.isSystemRole,
+                    isActive: updatedRole.isActive,
+                    tenantId: updatedRole.tenantId,
+                },
+                ipAddress: auditContext.ipAddress ?? null,
+                userAgent: auditContext.userAgent ?? null,
+                requestId: auditContext.requestId ?? null,
+                tenantId: updatedRole.tenantId,
+            });
+        }
 
         // Получить разрешения роли
         const permissions = await this.roleRepository.findRolePermissions(
@@ -219,6 +296,12 @@ export class RoleService implements IRoleService {
     public async deleteRole(
         id: number,
         tenantId: number | null,
+        auditContext?: {
+            userId?: number;
+            ipAddress?: string;
+            userAgent?: string;
+            requestId?: string;
+        },
     ): Promise<DeleteRoleResponse> {
         this.logger.log(
             { roleId: id, tenantId },
@@ -234,6 +317,16 @@ export class RoleService implements IRoleService {
             );
             throw new RoleNotFoundException(id);
         }
+
+        // Сохранить старые значения для audit лога
+        const oldValues = {
+            role: role.role,
+            description: role.description,
+            level: role.level,
+            isSystemRole: role.isSystemRole,
+            isActive: role.isActive,
+            tenantId: role.tenantId,
+        };
 
         const deleted = await this.roleRepository.deleteRole(id, tenantId);
         if (!deleted) {
@@ -258,6 +351,22 @@ export class RoleService implements IRoleService {
         this.logger.debug(
             `Инвалидирован кэш для ${invalidatedCount} пользователей с удаляемой ролью ${role.role}`,
         );
+
+        // Создать запись в audit логе
+        if (auditContext) {
+            await this.auditService.createLog({
+                entityType: 'role',
+                entityId: id,
+                action: AuditAction.DELETE,
+                userId: auditContext.userId ?? null,
+                oldValues,
+                newValues: null,
+                ipAddress: auditContext.ipAddress ?? null,
+                userAgent: auditContext.userAgent ?? null,
+                requestId: auditContext.requestId ?? null,
+                tenantId: role.tenantId,
+            });
+        }
 
         this.logger.log(
             { roleId: id, roleName: role.role, tenantId },
@@ -284,6 +393,12 @@ export class RoleService implements IRoleService {
     public async assignPermission(
         dto: AssignPermissionDto,
         tenantId: number | null,
+        auditContext?: {
+            userId?: number;
+            ipAddress?: string;
+            userAgent?: string;
+            requestId?: string;
+        },
     ): Promise<AssignPermissionResponse> {
         this.logger.log(
             {
@@ -327,6 +442,28 @@ export class RoleService implements IRoleService {
             'Разрешение успешно назначено роли',
         );
 
+        // Создать запись в audit логе
+        if (auditContext) {
+            await this.auditService.createLog({
+                entityType: 'role_permission',
+                entityId: permission.id,
+                action: AuditAction.GRANT_PERMISSION,
+                userId: auditContext.userId ?? null,
+                oldValues: null,
+                newValues: {
+                    roleId: dto.roleId,
+                    roleName: role.role,
+                    resource: dto.resource,
+                    action: dto.action,
+                    conditions: dto.conditions ?? null,
+                },
+                ipAddress: auditContext.ipAddress ?? null,
+                userAgent: auditContext.userAgent ?? null,
+                requestId: auditContext.requestId ?? null,
+                tenantId: role.tenantId,
+            });
+        }
+
         return {
             message: 'Разрешение успешно назначено роли',
             permissionId: permission.id,
@@ -345,6 +482,12 @@ export class RoleService implements IRoleService {
     public async revokePermission(
         dto: RevokePermissionDto,
         tenantId: number | null,
+        auditContext?: {
+            userId?: number;
+            ipAddress?: string;
+            userAgent?: string;
+            requestId?: string;
+        },
     ): Promise<RevokePermissionResponse> {
         this.logger.log(
             {
@@ -368,6 +511,13 @@ export class RoleService implements IRoleService {
             );
             this.notFound('Роль не найдена');
         }
+
+        // Получить информацию о разрешении перед удалением для audit лога
+        const existingPermissions =
+            await this.roleRepository.findRolePermissions(dto.roleId);
+        const permissionToDelete = existingPermissions.find(
+            (p) => p.resource === dto.resource && p.action === dto.action,
+        );
 
         // Удалить разрешение
         const deleted = await this.roleRepository.deleteRolePermission(
@@ -398,6 +548,28 @@ export class RoleService implements IRoleService {
             },
             'Разрешение успешно отозвано у роли',
         );
+
+        // Создать запись в audit логе
+        if (auditContext && permissionToDelete) {
+            await this.auditService.createLog({
+                entityType: 'role_permission',
+                entityId: permissionToDelete.id,
+                action: AuditAction.REVOKE_PERMISSION,
+                userId: auditContext.userId ?? null,
+                oldValues: {
+                    roleId: dto.roleId,
+                    roleName: role.role,
+                    resource: dto.resource,
+                    action: dto.action,
+                    conditions: permissionToDelete.conditions ?? null,
+                },
+                newValues: null,
+                ipAddress: auditContext.ipAddress ?? null,
+                userAgent: auditContext.userAgent ?? null,
+                requestId: auditContext.requestId ?? null,
+                tenantId: role.tenantId,
+            });
+        }
 
         return {
             message: 'Разрешение успешно отозвано у роли',
@@ -474,6 +646,12 @@ export class RoleService implements IRoleService {
         dto: AssignRoleDto,
         tenantId: number | null,
         userRoles: string[],
+        auditContext?: {
+            userId?: number;
+            ipAddress?: string;
+            userAgent?: string;
+            requestId?: string;
+        },
     ): Promise<AssignRoleResponse> {
         this.logger.log(
             { userId: dto.userId, roleId: dto.roleId, tenantId },
@@ -580,6 +758,29 @@ export class RoleService implements IRoleService {
             'Роль успешно назначена пользователю',
         );
 
+        // Создать запись в audit логе
+        if (auditContext) {
+            await this.auditService.createLog({
+                entityType: 'user_role',
+                entityId: userRole.id,
+                action: AuditAction.ASSIGN,
+                userId: auditContext.userId ?? null,
+                oldValues: null,
+                newValues: {
+                    userId: dto.userId,
+                    roleId: dto.roleId,
+                    roleName: targetRole.role,
+                    expiresAt: expiresAt ? expiresAt.toISOString() : null,
+                    metadata: dto.metadata ?? null,
+                    tenantId: assignmentTenantId,
+                },
+                ipAddress: auditContext.ipAddress ?? null,
+                userAgent: auditContext.userAgent ?? null,
+                requestId: auditContext.requestId ?? null,
+                tenantId: assignmentTenantId,
+            });
+        }
+
         // Инвалидировать кэш ролей пользователя
         await this.userRolesCacheService.invalidateUserRoles(
             dto.userId,
@@ -606,6 +807,12 @@ export class RoleService implements IRoleService {
         dto: RevokeRoleDto,
         tenantId: number | null,
         userRoles: string[],
+        auditContext?: {
+            userId?: number;
+            ipAddress?: string;
+            userAgent?: string;
+            requestId?: string;
+        },
     ): Promise<RevokeRoleResponse> {
         this.logger.log(
             { userId: dto.userId, roleId: dto.roleId, tenantId },
@@ -670,6 +877,15 @@ export class RoleService implements IRoleService {
             );
         }
 
+        // Получить существующее назначение роли для audit лога
+        const existingUserRole = await this.userRoleModel.findOne({
+            where: {
+                userId: dto.userId,
+                roleId: dto.roleId,
+                tenantId: assignmentTenantId,
+            },
+        });
+
         // Отозвать роль
         const deleted = await this.roleRepository.revokeRoleFromUser(
             dto.userId,
@@ -697,6 +913,27 @@ export class RoleService implements IRoleService {
             },
             'Роль успешно отозвана у пользователя',
         );
+
+        // Создать запись в audit логе
+        if (auditContext && existingUserRole) {
+            await this.auditService.createLog({
+                entityType: 'user_role',
+                entityId: existingUserRole.id,
+                action: AuditAction.REVOKE,
+                userId: auditContext.userId ?? null,
+                oldValues: {
+                    userId: dto.userId,
+                    roleId: dto.roleId,
+                    roleName: targetRoleExists.role,
+                    tenantId: assignmentTenantId,
+                },
+                newValues: null,
+                ipAddress: auditContext.ipAddress ?? null,
+                userAgent: auditContext.userAgent ?? null,
+                requestId: auditContext.requestId ?? null,
+                tenantId: assignmentTenantId,
+            });
+        }
 
         // Инвалидировать кэш ролей пользователя
         await this.userRolesCacheService.invalidateUserRoles(

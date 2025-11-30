@@ -1,3 +1,9 @@
+export {
+    AuditLogModel,
+    AuditAction,
+    IAuditLogModel,
+    IAuditLogCreationAttributes,
+} from './audit-log.model';
 export { BrandModel } from './brand.model';
 export { CartProductModel } from './cart-product.model';
 export { CartModel } from './cart.model';

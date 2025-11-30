@@ -1,3 +1,4 @@
+export { AuditService } from './audit/audit.service';
 export { AuthService } from './auth/auth.service';
 export { BrandService } from './brand/brand.service';
 export { CartService } from './cart/cart.service';

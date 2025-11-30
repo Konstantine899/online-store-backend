@@ -103,7 +103,17 @@ export class RoleController implements IRoleController {
     ): Promise<CreateRoleResponse> {
         const tenantId =
             (request.user as IDecodedAccessToken)?.tenantId ?? null;
-        return this.roleService.createRole(dto, tenantId);
+        const userId = (request.user as IDecodedAccessToken)?.id;
+        const ipAddress = request.ip;
+        const userAgent = request.headers['user-agent'];
+        const requestId = request.headers['x-request-id'] as string;
+
+        return this.roleService.createRole(dto, tenantId, {
+            userId,
+            ipAddress,
+            userAgent,
+            requestId,
+        });
     }
 
     /**
@@ -160,7 +170,17 @@ export class RoleController implements IRoleController {
     ): Promise<UpdateRoleResponse> {
         const tenantId =
             (request.user as IDecodedAccessToken)?.tenantId ?? null;
-        return this.roleService.updateRole(id, dto, tenantId);
+        const userId = (request.user as IDecodedAccessToken)?.id;
+        const ipAddress = request.ip;
+        const userAgent = request.headers['user-agent'];
+        const requestId = request.headers['x-request-id'] as string;
+
+        return this.roleService.updateRole(id, dto, tenantId, {
+            userId,
+            ipAddress,
+            userAgent,
+            requestId,
+        });
     }
 
     // ========================================================================
@@ -184,7 +204,17 @@ export class RoleController implements IRoleController {
         const user = request.user as IDecodedAccessToken;
         const tenantId = user?.tenantId ?? null;
         const userRoles = (user?.roles ?? []).map((role) => role.role);
-        return this.roleService.assignRoleToUser(dto, tenantId, userRoles);
+        const userId = user?.id;
+        const ipAddress = request.ip;
+        const userAgent = request.headers['user-agent'];
+        const requestId = request.headers['x-request-id'] as string;
+
+        return this.roleService.assignRoleToUser(dto, tenantId, userRoles, {
+            userId,
+            ipAddress,
+            userAgent,
+            requestId,
+        });
     }
 
     /**
@@ -203,7 +233,17 @@ export class RoleController implements IRoleController {
         const user = request.user as IDecodedAccessToken;
         const tenantId = user?.tenantId ?? null;
         const userRoles = (user?.roles ?? []).map((role) => role.role);
-        return this.roleService.revokeRoleFromUser(dto, tenantId, userRoles);
+        const userId = user?.id;
+        const ipAddress = request.ip;
+        const userAgent = request.headers['user-agent'];
+        const requestId = request.headers['x-request-id'] as string;
+
+        return this.roleService.revokeRoleFromUser(dto, tenantId, userRoles, {
+            userId,
+            ipAddress,
+            userAgent,
+            requestId,
+        });
     }
 
     // ========================================================================
@@ -227,7 +267,17 @@ export class RoleController implements IRoleController {
     ): Promise<DeleteRoleResponse> {
         const tenantId =
             (request.user as IDecodedAccessToken)?.tenantId ?? null;
-        return this.roleService.deleteRole(id, tenantId);
+        const userId = (request.user as IDecodedAccessToken)?.id;
+        const ipAddress = request.ip;
+        const userAgent = request.headers['user-agent'];
+        const requestId = request.headers['x-request-id'] as string;
+
+        return this.roleService.deleteRole(id, tenantId, {
+            userId,
+            ipAddress,
+            userAgent,
+            requestId,
+        });
     }
 
     // ========================================================================
@@ -248,7 +298,17 @@ export class RoleController implements IRoleController {
     ): Promise<AssignPermissionResponse> {
         const tenantId =
             (request.user as IDecodedAccessToken)?.tenantId ?? null;
-        return this.roleService.assignPermission(dto, tenantId);
+        const userId = (request.user as IDecodedAccessToken)?.id;
+        const ipAddress = request.ip;
+        const userAgent = request.headers['user-agent'];
+        const requestId = request.headers['x-request-id'] as string;
+
+        return this.roleService.assignPermission(dto, tenantId, {
+            userId,
+            ipAddress,
+            userAgent,
+            requestId,
+        });
     }
 
     /**
@@ -265,7 +325,17 @@ export class RoleController implements IRoleController {
     ): Promise<RevokePermissionResponse> {
         const tenantId =
             (request.user as IDecodedAccessToken)?.tenantId ?? null;
-        return this.roleService.revokePermission(dto, tenantId);
+        const userId = (request.user as IDecodedAccessToken)?.id;
+        const ipAddress = request.ip;
+        const userAgent = request.headers['user-agent'];
+        const requestId = request.headers['x-request-id'] as string;
+
+        return this.roleService.revokePermission(dto, tenantId, {
+            userId,
+            ipAddress,
+            userAgent,
+            requestId,
+        });
     }
 
     /**
