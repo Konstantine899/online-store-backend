@@ -1,5 +1,5 @@
-import { AuditAction, AuditLogModel } from '@app/domain/models';
-import { IAuditLogDiff } from '@app/infrastructure/services/audit/role-audit.service';
+import type { AuditAction } from '@app/domain/models';
+import type { IAuditLogDiff } from '@app/infrastructure/services/audit/role-audit.service';
 
 /**
  * Response для сводного отчёта по audit логам
@@ -61,4 +61,3 @@ export class UserActivityReportResponse {
         end: string;
     };
 }
-

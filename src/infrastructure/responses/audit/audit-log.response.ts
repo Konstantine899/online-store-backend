@@ -1,5 +1,5 @@
-import { AuditAction, AuditLogModel } from '@app/domain/models';
-import { IAuditLogDiff } from '@app/infrastructure/services/audit/role-audit.service';
+import type { AuditAction, AuditLogModel } from '@app/domain/models';
+import type { IAuditLogDiff } from '@app/infrastructure/services/audit/role-audit.service';
 
 /**
  * Response для одного audit лога
@@ -54,7 +54,7 @@ export function mapAuditLogToResponse(
         userName:
             auditLog.user?.firstName && auditLog.user?.lastName
                 ? `${auditLog.user.firstName} ${auditLog.user.lastName}`
-                : auditLog.user?.email ?? null,
+                : (auditLog.user?.email ?? null),
         userEmail: auditLog.user?.email ?? null,
         oldValues: auditLog.oldValues,
         newValues: auditLog.newValues,
@@ -66,4 +66,3 @@ export function mapAuditLogToResponse(
         ...(includeDiff && diff ? { diff } : {}),
     };
 }
-

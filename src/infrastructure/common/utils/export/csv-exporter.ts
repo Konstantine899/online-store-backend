@@ -15,10 +15,12 @@ export class CSVExporter {
 
         // Определить заголовки
         const csvHeaders =
-            headers || Object.keys(data[0]).filter((key) => key !== 'diff');
+            headers ?? Object.keys(data[0]).filter((key) => key !== 'diff');
 
         // Создать CSV строку с заголовками
-        const csvRows: string[] = [csvHeaders.map((h) => this.escapeCsvValue(h)).join(',')];
+        const csvRows: string[] = [
+            csvHeaders.map((h) => this.escapeCsvValue(h)).join(','),
+        ];
 
         // Добавить строки данных
         data.forEach((row) => {
@@ -118,4 +120,3 @@ export class CSVExporter {
         return this.export(csvData);
     }
 }
-

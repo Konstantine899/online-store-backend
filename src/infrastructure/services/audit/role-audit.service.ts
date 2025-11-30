@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
 import { AuditAction, AuditLogModel } from '@app/domain/models';
+import { Injectable, Logger } from '@nestjs/common';
 import {
     AuditService,
     IAuditFilters,
@@ -112,14 +112,13 @@ export class RoleAuditService {
         });
 
         // Объединяем результаты и сортируем по дате
-        const allLogs = [
-            ...assignLogs.data,
-            ...revokeLogs.data,
-        ].sort((a, b) => {
-            const dateA = new Date(a.createdAt).getTime();
-            const dateB = new Date(b.createdAt).getTime();
-            return dateB - dateA; // Сортировка по убыванию (новые первыми)
-        });
+        const allLogs = [...assignLogs.data, ...revokeLogs.data].sort(
+            (a, b) => {
+                const dateA = new Date(a.createdAt).getTime();
+                const dateB = new Date(b.createdAt).getTime();
+                return dateB - dateA; // Сортировка по убыванию (новые первыми)
+            },
+        );
 
         const totalCount = assignLogs.totalCount + revokeLogs.totalCount;
         const lastPage = Math.ceil(totalCount / limit);
@@ -175,10 +174,7 @@ export class RoleAuditService {
         endDate: Date,
         page: number = 1,
         limit: number = 20,
-        filters?: Omit<
-            IAuditFilters,
-            'startDate' | 'endDate'
-        >,
+        filters?: Omit<IAuditFilters, 'startDate' | 'endDate'>,
     ): Promise<IPaginatedAuditLogs> {
         this.logger.log({
             startDate: startDate.toISOString(),
@@ -417,7 +413,7 @@ export class RoleAuditService {
                         userName:
                             log.user?.firstName && log.user?.lastName
                                 ? `${log.user.firstName} ${log.user.lastName}`
-                                : log.user?.email ?? null,
+                                : (log.user?.email ?? null),
                         userEmail: log.user?.email ?? null,
                     };
                 }
@@ -502,7 +498,10 @@ export class RoleAuditService {
         let roleName = 'Unknown Role';
         if (allLogs.length > 0) {
             const firstLog = allLogs[0];
-            if (firstLog.newValues && typeof firstLog.newValues.role === 'string') {
+            if (
+                firstLog.newValues &&
+                typeof firstLog.newValues.role === 'string'
+            ) {
                 roleName = firstLog.newValues.role;
             } else if (
                 firstLog.oldValues &&
@@ -521,7 +520,7 @@ export class RoleAuditService {
                 userName:
                     log.user?.firstName && log.user?.lastName
                         ? `${log.user.firstName} ${log.user.lastName}`
-                        : log.user?.email ?? null,
+                        : (log.user?.email ?? null),
                 userEmail: log.user?.email ?? null,
             },
             timestamp: log.createdAt.toISOString(),
@@ -585,7 +584,11 @@ export class RoleAuditService {
         let hasMore = true;
 
         while (hasMore) {
-            const result = await this.auditService.findAll(page, limit, filters);
+            const result = await this.auditService.findAll(
+                page,
+                limit,
+                filters,
+            );
             allLogs = allLogs.concat(result.data);
             hasMore = result.currentPage < result.lastPage;
             page++;
@@ -599,7 +602,7 @@ export class RoleAuditService {
             userName =
                 user.firstName && user.lastName
                     ? `${user.firstName} ${user.lastName}`
-                    : user.email ?? null;
+                    : (user.email ?? null);
             userEmail = user.email ?? null;
         }
 
@@ -625,7 +628,10 @@ export class RoleAuditService {
 
                 if (log.entityType === 'role') {
                     roleId = log.entityId;
-                    if (log.newValues && typeof log.newValues.role === 'string') {
+                    if (
+                        log.newValues &&
+                        typeof log.newValues.role === 'string'
+                    ) {
                         roleName = log.newValues.role;
                     } else if (
                         log.oldValues &&
@@ -634,7 +640,10 @@ export class RoleAuditService {
                         roleName = log.oldValues.role;
                     }
                 } else if (log.entityType === 'user_role') {
-                    if (log.newValues && typeof log.newValues.roleId === 'number') {
+                    if (
+                        log.newValues &&
+                        typeof log.newValues.roleId === 'number'
+                    ) {
                         roleId = log.newValues.roleId;
                     } else if (
                         log.oldValues &&
@@ -642,7 +651,10 @@ export class RoleAuditService {
                     ) {
                         roleId = log.oldValues.roleId;
                     }
-                    if (log.newValues && typeof log.newValues.roleName === 'string') {
+                    if (
+                        log.newValues &&
+                        typeof log.newValues.roleName === 'string'
+                    ) {
                         roleName = log.newValues.roleName;
                     } else if (
                         log.oldValues &&
@@ -671,13 +683,12 @@ export class RoleAuditService {
 
         // Определить диапазон дат
         const actualStartDate =
-            startDate ||
+            startDate ??
             (allLogs.length > 0
                 ? allLogs[allLogs.length - 1].createdAt
                 : new Date());
         const actualEndDate =
-            endDate ||
-            (allLogs.length > 0 ? allLogs[0].createdAt : new Date());
+            endDate ?? (allLogs.length > 0 ? allLogs[0].createdAt : new Date());
 
         return {
             userId,
@@ -693,4 +704,3 @@ export class RoleAuditService {
         };
     }
 }
-

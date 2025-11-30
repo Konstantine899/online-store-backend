@@ -1,12 +1,12 @@
 import { AuditAction } from '@app/domain/models';
 import {
-    IsOptional,
-    IsEnum,
-    IsString,
-    IsInt,
     IsDateString,
-    Min,
+    IsEnum,
+    IsInt,
+    IsOptional,
+    IsString,
     Max,
+    Min,
 } from 'class-validator';
 
 /**
@@ -60,4 +60,3 @@ export class AuditFiltersDto {
     @Max(100)
     limit?: number;
 }
-
