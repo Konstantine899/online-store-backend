@@ -11,7 +11,12 @@ import {
     Req,
     UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import { Request } from 'express';
 
 import { IDecodedAccessToken } from '@app/domain/jwt';
@@ -47,10 +52,7 @@ import {
     RevokeRoleResponse,
     UpdateRoleResponse,
 } from '@app/infrastructure/responses';
-import {
-    RoleCacheService,
-    RoleService,
-} from '@app/infrastructure/services';
+import { RoleCacheService, RoleService } from '@app/infrastructure/services';
 
 import { IRoleController } from '@app/domain/controllers';
 import { ADMIN_ROLES, MANAGER_ROLES } from './role-constants';

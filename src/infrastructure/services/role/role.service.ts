@@ -32,7 +32,6 @@ import {
     OrderRepository,
     RoleRepository,
 } from '@app/infrastructure/repositories';
-import { RoleCacheService } from './role-cache.service';
 import {
     AssignPermissionResponse,
     AssignRoleResponse,
@@ -50,6 +49,7 @@ import {
 } from '@app/infrastructure/responses';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { RoleCacheService } from './role-cache.service';
 
 @Injectable()
 export class RoleService implements IRoleService {
@@ -622,7 +622,6 @@ export class RoleService implements IRoleService {
         // чтобы отличить "роль не существует" (404) от "роль недоступна" (403)
         const targetRoleExists =
             await this.roleRepository.findRoleByIdWithoutIsolation(dto.roleId);
-
 
         if (!targetRoleExists) {
             // Роль не существует вообще - возвращаем 404

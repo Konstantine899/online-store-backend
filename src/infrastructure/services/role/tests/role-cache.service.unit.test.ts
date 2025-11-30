@@ -1,7 +1,7 @@
-import type { TestingModule } from '@nestjs/testing';
-import { Test } from '@nestjs/testing';
 import type { RoleModel } from '@app/domain/models';
 import { RoleRepository } from '@app/infrastructure/repositories';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { RoleCacheService } from '../role-cache.service';
 
 describe('RoleCacheService', () => {
@@ -251,5 +251,3 @@ describe('RoleCacheService', () => {
         });
     });
 });
-
-

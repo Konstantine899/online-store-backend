@@ -145,6 +145,7 @@ describe('TenantRoleGuard (unit)', () => {
                 roles: [
                     {
                         id: 1,
+                        roleId: 1,
                         roleName: 'TENANT_ADMIN',
                         roleDescription: 'Администратор',
                         roleLevel: 60,
@@ -265,6 +266,7 @@ describe('TenantRoleGuard (unit)', () => {
                 roles: [
                     {
                         id: 1,
+                        roleId: 1,
                         roleName: 'TENANT_ADMIN',
                         roleDescription: 'Администратор',
                         roleLevel: 60,
@@ -290,6 +292,7 @@ describe('TenantRoleGuard (unit)', () => {
                 roles: [
                     {
                         id: 1,
+                        roleId: 1,
                         roleName: 'TENANT_ADMIN',
                         roleDescription: 'Администратор',
                         roleLevel: 60,
@@ -300,6 +303,7 @@ describe('TenantRoleGuard (unit)', () => {
                     },
                     {
                         id: 2,
+                        roleId: 2,
                         roleName: 'MANAGER',
                         roleDescription: 'Менеджер',
                         roleLevel: 50,

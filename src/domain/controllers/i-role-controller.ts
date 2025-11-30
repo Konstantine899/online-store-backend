@@ -9,7 +9,10 @@ import type {
 import type { Request } from 'express';
 
 export interface IRoleController {
-    createRole(dto: CreateRoleDto): Promise<CreateRoleResponse>;
+    createRole(
+        dto: CreateRoleDto,
+        request: Request,
+    ): Promise<CreateRoleResponse>;
 
     getRole(role: string, request: Request): Promise<GetRoleResponse>;
 

@@ -116,7 +116,7 @@ export class ServicesModule implements OnModuleInit {
      * Инициализация модуля при старте приложения
      * Прогрев кэша для системных ролей
      */
-    async onModuleInit() {
+    async onModuleInit(): Promise<void> {
         await this.roleCacheService.warmUp([
             'VIP_CUSTOMER',
             'WHOLESALE_CUSTOMER',
