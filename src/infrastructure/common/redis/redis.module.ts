@@ -1,4 +1,4 @@
-import { Module, Global, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Global, Module, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from './redis.constants';
@@ -14,7 +14,7 @@ import { RedisService } from './redis.service';
     providers: [
         {
             provide: REDIS_CLIENT,
-            useFactory: (configService: ConfigService) => {
+            useFactory: (configService: ConfigService): Redis => {
                 const redisConfig = configService.get('redis');
 
                 const client = new Redis({
@@ -26,8 +26,7 @@ import { RedisService } from './redis.service';
                     retryStrategy: redisConfig.retryStrategy,
                     maxRetriesPerRequest: redisConfig.maxRetriesPerRequest,
                     enableReadyCheck: redisConfig.enableReadyCheck,
-                    showFriendlyErrorStack:
-                        redisConfig.showFriendlyErrorStack,
+                    showFriendlyErrorStack: redisConfig.showFriendlyErrorStack,
                     lazyConnect: false,
                 });
 
@@ -65,4 +64,3 @@ export class RedisModule implements OnModuleInit, OnModuleDestroy {
         await this.redisService.disconnect();
     }
 }
-
