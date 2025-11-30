@@ -42,9 +42,7 @@ export class RoleRepository implements IRoleRepository {
                 isActive: dto.isActive ?? true,
                 tenantId: dto.isSystemRole ? null : (dto.tenantId ?? null),
             });
-            // Перезагружаем роль из БД, чтобы получить все поля, включая isActive
-            await role.reload();
-            // Используем role напрямую, так как он уже содержит все поля после создания и reload
+            // После create() Sequelize возвращает полный объект со всеми полями
             return role as GetRoleResponse;
         } catch (error: unknown) {
             if (

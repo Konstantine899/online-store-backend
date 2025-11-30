@@ -8,7 +8,7 @@ import {
 import { NotificationEventHandler } from '@app/infrastructure/common/events/notification.event-handler';
 import { MetricsCollector } from '@app/infrastructure/common/services';
 import { jwtConfig } from '@app/infrastructure/config/jwt';
-import { Module, forwardRef } from '@nestjs/common';
+import { Module, OnModuleInit, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { RepositoriesModule } from '../repositories/repositories.module';
@@ -28,6 +28,7 @@ import { ProductPropertyService } from './product-property/product-property.serv
 import { ProductService } from './product/product.service';
 import { PromoCodeService } from './promo-code/promo-code.service';
 import { RatingService } from './rating/rating.service';
+import { RoleCacheService } from './role/role-cache.service';
 import { RoleService } from './role/role.service';
 import { TokenService } from './token/token.service';
 import { UserAddressService } from './user-address/user-address.service';
@@ -60,6 +61,7 @@ import { UserService } from './user/user.service';
         PaymentService,
         PromoCodeService,
         RatingService,
+        RoleCacheService,
         RoleService,
         TokenService,
         UserService,
@@ -94,6 +96,7 @@ import { UserService } from './user/user.service';
         PaymentService,
         PromoCodeService,
         RatingService,
+        RoleCacheService,
         RoleService,
         TokenService,
         UserService,
@@ -106,4 +109,23 @@ import { UserService } from './user/user.service';
         'ITemplateRenderer',
     ],
 })
-export class ServicesModule {}
+export class ServicesModule implements OnModuleInit {
+    constructor(private readonly roleCacheService: RoleCacheService) {}
+
+    /**
+     * Инициализация модуля при старте приложения
+     * Прогрев кэша для системных ролей
+     */
+    async onModuleInit() {
+        await this.roleCacheService.warmUp([
+            'VIP_CUSTOMER',
+            'WHOLESALE_CUSTOMER',
+            'ADMIN',
+            'MANAGER',
+            'MODERATOR',
+            'CUSTOMER',
+            'TENANT_ADMIN',
+            'TENANT_OWNER',
+        ]);
+    }
+}

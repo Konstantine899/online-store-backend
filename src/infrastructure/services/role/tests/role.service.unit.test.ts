@@ -1,4 +1,4 @@
-import type { UserModel } from '@app/domain/models';
+import type { RoleModel, UserModel } from '@app/domain/models';
 import {
     UserModel as UserModelType,
     UserRoleModel as UserRoleModelType,
@@ -28,15 +28,14 @@ import type {
 import { BadRequestException } from '@nestjs/common';
 import { getModelToken } from '@nestjs/sequelize';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { RoleCacheService } from '../role-cache.service';
 import { RoleService } from '../role.service';
 
 describe('RoleService (unit)', () => {
     let service: RoleService;
     let roleRepository: jest.Mocked<RoleRepository>;
-    let orderRepository: jest.Mocked<OrderRepository>;
+    let roleCacheService: jest.Mocked<RoleCacheService>;
     let userModel: jest.Mocked<typeof UserModelType>;
-    let userRoleModel: jest.Mocked<typeof UserRoleModelType>;
-    let metricsCollector: jest.Mocked<MetricsCollector>;
 
     const mockRole: GetRoleResponse & { getDataValue: jest.Mock } = {
         id: 1,
@@ -90,6 +89,15 @@ describe('RoleService (unit)', () => {
                     },
                 },
                 {
+                    provide: RoleCacheService,
+                    useValue: {
+                        getCachedRole: jest.fn(),
+                        invalidate: jest.fn(),
+                        invalidateAll: jest.fn(),
+                        getStats: jest.fn(),
+                    },
+                },
+                {
                     provide: OrderRepository,
                     useValue: {
                         getUserTotalSpent: jest.fn(),
@@ -119,10 +127,8 @@ describe('RoleService (unit)', () => {
 
         service = module.get<RoleService>(RoleService);
         roleRepository = module.get(RoleRepository);
-        orderRepository = module.get(OrderRepository);
+        roleCacheService = module.get(RoleCacheService);
         userModel = module.get(getModelToken(UserModelType));
-        userRoleModel = module.get(getModelToken(UserRoleModelType));
-        metricsCollector = module.get(MetricsCollector);
 
         jest.clearAllMocks();
     });
@@ -169,7 +175,9 @@ describe('RoleService (unit)', () => {
         });
 
         it('должен выбросить RoleNotFoundException, если роль не найдена', async () => {
-            roleRepository.findRole.mockResolvedValue(null);
+            roleRepository.findRole.mockResolvedValue(
+                null as unknown as GetRoleResponse,
+            );
 
             await expect(service.getRole('NONEXISTENT', 1)).rejects.toThrow(
                 RoleNotFoundException,
@@ -189,7 +197,9 @@ describe('RoleService (unit)', () => {
         });
 
         it('должен выбросить ошибку, если роли не найдены', async () => {
-            roleRepository.findListRole.mockResolvedValue(null);
+            roleRepository.findListRole.mockResolvedValue(
+                null as unknown as GetListRoleResponse[],
+            );
 
             await expect(service.getListRole(1)).rejects.toThrow();
         });
@@ -205,9 +215,16 @@ describe('RoleService (unit)', () => {
                 ...mockRole,
                 description: 'Updated description',
             };
-            const mockPermissions = [];
+            const mockPermissions: Array<{
+                id: number;
+                resource: string;
+                action: string;
+                conditions: Record<string, unknown> | null;
+            }> = [];
 
-            roleRepository.updateRole.mockResolvedValue(updatedRole);
+            roleRepository.updateRole.mockResolvedValue(
+                updatedRole as unknown as RoleModel,
+            );
             roleRepository.findRolePermissions.mockResolvedValue(
                 mockPermissions,
             );
@@ -223,7 +240,9 @@ describe('RoleService (unit)', () => {
 
     describe('deleteRole', () => {
         it('должен удалить роль', async () => {
-            roleRepository.findRoleById.mockResolvedValue(mockRole);
+            roleRepository.findRoleById.mockResolvedValue(
+                mockRole as unknown as RoleModel,
+            );
             roleRepository.deleteRole.mockResolvedValue(true);
 
             const result = await service.deleteRole(1, 1);
@@ -244,7 +263,9 @@ describe('RoleService (unit)', () => {
         });
 
         it('должен выбросить RoleNotFoundException, если удаление не удалось', async () => {
-            roleRepository.findRoleById.mockResolvedValue(mockRole);
+            roleRepository.findRoleById.mockResolvedValue(
+                mockRole as unknown as RoleModel,
+            );
             roleRepository.deleteRole.mockResolvedValue(false);
 
             await expect(service.deleteRole(1, 1)).rejects.toThrow(
@@ -273,7 +294,9 @@ describe('RoleService (unit)', () => {
                 conditions: null,
             };
 
-            roleRepository.findRoleById.mockResolvedValue(mockRole);
+            roleRepository.findRoleById.mockResolvedValue(
+                mockRole as unknown as RoleModel,
+            );
             roleRepository.createRolePermission.mockResolvedValue(
                 mockPermission,
             );
@@ -314,7 +337,9 @@ describe('RoleService (unit)', () => {
                 action: 'read',
             };
 
-            roleRepository.findRoleById.mockResolvedValue(mockRole);
+            roleRepository.findRoleById.mockResolvedValue(
+                mockRole as unknown as RoleModel,
+            );
             roleRepository.deleteRolePermission.mockResolvedValue(true);
 
             const result = await service.revokePermission(dto, 1);
@@ -353,7 +378,9 @@ describe('RoleService (unit)', () => {
                 },
             ];
 
-            roleRepository.findRoleById.mockResolvedValue(mockRole);
+            roleRepository.findRoleById.mockResolvedValue(
+                mockRole as unknown as RoleModel,
+            );
             roleRepository.findRolePermissions.mockResolvedValue(
                 mockPermissions,
             );
@@ -397,11 +424,13 @@ describe('RoleService (unit)', () => {
 
             userModel.findByPk.mockResolvedValue(mockUser);
             roleRepository.findRoleByIdWithoutIsolation.mockResolvedValue(
-                mockRole as any,
+                mockRole as unknown as RoleModel,
             );
-            roleRepository.findRoleById.mockResolvedValue(mockRole as any);
+            roleRepository.findRoleById.mockResolvedValue(
+                mockRole as unknown as RoleModel,
+            );
             roleRepository.assignRoleToUser.mockResolvedValue(
-                mockUserRole as any,
+                mockUserRole as unknown as UserRoleModelType,
             );
 
             const result = await service.assignRoleToUser(dto, 1, ['MANAGER']);
@@ -438,7 +467,7 @@ describe('RoleService (unit)', () => {
             };
 
             userModel.findByPk.mockResolvedValue(
-                userFromDifferentTenant as any,
+                userFromDifferentTenant as unknown as UserModel,
             );
 
             await expect(
@@ -460,9 +489,11 @@ describe('RoleService (unit)', () => {
 
             userModel.findByPk.mockResolvedValue(mockUser);
             roleRepository.findRoleByIdWithoutIsolation.mockResolvedValue(
-                inactiveRole as any,
+                inactiveRole as unknown as RoleModel,
             );
-            roleRepository.findRoleById.mockResolvedValue(inactiveRole as any);
+            roleRepository.findRoleById.mockResolvedValue(
+                inactiveRole as unknown as RoleModel,
+            );
 
             await expect(
                 service.assignRoleToUser(dto, 1, ['MANAGER']),
@@ -478,9 +509,11 @@ describe('RoleService (unit)', () => {
 
             userModel.findByPk.mockResolvedValue(mockUser);
             roleRepository.findRoleByIdWithoutIsolation.mockResolvedValue(
-                mockRole as any,
+                mockRole as unknown as RoleModel,
             );
-            roleRepository.findRoleById.mockResolvedValue(mockRole as any);
+            roleRepository.findRoleById.mockResolvedValue(
+                mockRole as unknown as RoleModel,
+            );
 
             await expect(
                 service.assignRoleToUser(dto, 1, ['MANAGER']),
@@ -497,9 +530,11 @@ describe('RoleService (unit)', () => {
 
             userModel.findByPk.mockResolvedValue(mockUser);
             roleRepository.findRoleByIdWithoutIsolation.mockResolvedValue(
-                mockRole as any,
+                mockRole as unknown as RoleModel,
             );
-            roleRepository.findRoleById.mockResolvedValue(mockRole);
+            roleRepository.findRoleById.mockResolvedValue(
+                mockRole as unknown as RoleModel,
+            );
             roleRepository.revokeRoleFromUser.mockResolvedValue(true);
 
             const result = await service.revokeRoleFromUser(dto, 1, [
@@ -539,7 +574,18 @@ describe('RoleService (unit)', () => {
 
             userModel.findByPk.mockResolvedValue(mockUser);
             roleRepository.findUserRoles.mockResolvedValue(
-                mockUserRoles as any,
+                mockUserRoles as unknown as Array<{
+                    id: number;
+                    roleId: number;
+                    roleName: string;
+                    roleDescription: string;
+                    roleLevel: number;
+                    tenantId: number;
+                    grantedAt: Date;
+                    expiresAt: Date | null;
+                    isActive: boolean;
+                    metadata?: Record<string, unknown>;
+                }>,
             );
 
             const result = await service.getUserRoles(1, 1);
@@ -564,7 +610,7 @@ describe('RoleService (unit)', () => {
             ];
 
             roleRepository.findAllRolesGrouped.mockResolvedValue(
-                mockAllRoles as any,
+                mockAllRoles as unknown as RoleModel[],
             );
 
             const result = await service.getRoleHierarchy();
@@ -583,7 +629,9 @@ describe('RoleService (unit)', () => {
             const roleName = 'TENANT_ADMIN';
             const roleWithRealName = { ...mockRole, role: roleName };
 
-            roleRepository.findRoleByName.mockResolvedValue(roleWithRealName);
+            roleCacheService.getCachedRole.mockResolvedValue(
+                roleWithRealName as unknown as RoleModel,
+            );
 
             const result = await service.getRoleLevel(roleName);
 
@@ -592,13 +640,13 @@ describe('RoleService (unit)', () => {
             expect(result.level).toBeGreaterThan(0); // Уровень должен быть > 0 для реальной роли
             expect(result).toHaveProperty('category');
             expect(result).toHaveProperty('manageableRoles');
-            expect(roleRepository.findRoleByName).toHaveBeenCalledWith(
+            expect(roleCacheService.getCachedRole).toHaveBeenCalledWith(
                 roleName,
             );
         });
 
         it('должен выбросить ошибку, если роль не найдена', async () => {
-            roleRepository.findRoleByName.mockResolvedValue(null);
+            roleCacheService.getCachedRole.mockResolvedValue(null);
 
             await expect(service.getRoleLevel('NONEXISTENT')).rejects.toThrow();
         });

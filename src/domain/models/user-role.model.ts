@@ -44,6 +44,29 @@ interface IUserRoleCreationAttributes {
     tableName: 'user_roles',
     underscored: true,
     timestamps: true,
+    indexes: [
+        // Составной индекс для findUserRoles(userId, tenantId)
+        {
+            name: 'idx_user_roles_user_id_tenant_id',
+            fields: ['user_id', 'tenant_id'],
+        },
+        // Индекс для поиска по role_id
+        {
+            name: 'idx_user_roles_role_id',
+            fields: ['role_id'],
+        },
+        // Составной индекс для tenant_id + is_active (для tenant statistics)
+        {
+            name: 'idx_user_roles_tenant_id_is_active',
+            fields: ['tenant_id', 'is_active'],
+        },
+        // Уникальное ограничение: один пользователь не может иметь одну роль дважды в одном tenant
+        {
+            name: 'idx_user_roles_unique_user_role_tenant',
+            fields: ['user_id', 'role_id', 'tenant_id'],
+            unique: true,
+        },
+    ],
     defaultScope: {
         attributes: { exclude: ['createdAt', 'updatedAt'] },
     },

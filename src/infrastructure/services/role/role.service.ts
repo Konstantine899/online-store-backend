@@ -32,6 +32,7 @@ import {
     OrderRepository,
     RoleRepository,
 } from '@app/infrastructure/repositories';
+import { RoleCacheService } from './role-cache.service';
 import {
     AssignPermissionResponse,
     AssignRoleResponse,
@@ -57,6 +58,7 @@ export class RoleService implements IRoleService {
     constructor(
         private readonly roleRepository: RoleRepository,
         private readonly orderRepository: OrderRepository,
+        private readonly roleCacheService: RoleCacheService,
         @InjectModel(UserModel) private userModel: typeof UserModel,
         @InjectModel(UserRoleModel)
         private userRoleModel: typeof UserRoleModel,
@@ -157,6 +159,14 @@ export class RoleService implements IRoleService {
             tenantId,
         );
 
+        // Инвалидировать кэш для обновленной роли
+        if (updatedRole.isSystemRole) {
+            this.roleCacheService.invalidate(updatedRole.role);
+            this.logger.debug(
+                `Кэш для роли ${updatedRole.role} инвалидирован после обновления`,
+            );
+        }
+
         // Получить разрешения роли
         const permissions = await this.roleRepository.findRolePermissions(
             updatedRole.id,
@@ -223,6 +233,14 @@ export class RoleService implements IRoleService {
                 'Не удалось удалить роль',
             );
             throw new RoleNotFoundException(id);
+        }
+
+        // Инвалидировать кэш для удаленной роли
+        if (role.isSystemRole) {
+            this.roleCacheService.invalidate(role.role);
+            this.logger.debug(
+                `Кэш для роли ${role.role} инвалидирован после удаления`,
+            );
         }
 
         this.logger.log(
@@ -790,7 +808,7 @@ export class RoleService implements IRoleService {
      * @returns GetRoleLevelResponse
      */
     public async getRoleLevel(role: string): Promise<GetRoleLevelResponse> {
-        const roleModel = await this.roleRepository.findRoleByName(role);
+        const roleModel = await this.roleCacheService.getCachedRole(role);
         if (!roleModel) {
             this.notFound(`Роль ${role} не найдена`);
         }
@@ -823,25 +841,30 @@ export class RoleService implements IRoleService {
     // ============================================================================
 
     /**
-     * Автоматически назначить VIP роль пользователю, если сумма покупок превышает порог
+     * Базовая функция для автоматического назначения роли по порогу суммы покупок
+     * Используется для VIP и WHOLESALE ролей
      * @param userId - ID пользователя
      * @param tenantId - ID тенанта
+     * @param roleName - Имя роли для назначения
+     * @param threshold - Порог суммы покупок
      * @returns Результат назначения роли
      */
-    public async autoAssignVipRole(
+    private async autoAssignRoleByThreshold(
         userId: number,
         tenantId: number,
+        roleName: string,
+        threshold: number,
     ): Promise<{ assigned: boolean; roleId?: number }> {
         try {
             // 1. Проверка существования пользователя и принадлежности к тенанту
             const user = await this.userModel.findByPk(userId);
             if (!user || user.tenantId !== tenantId) {
                 this.logger.warn(
-                    { userId, tenantId },
+                    { userId, tenantId, roleName },
                     'Пользователь не найден или не принадлежит тенанту',
                 );
                 this.metricsCollector.recordRoleAutoAssignment(
-                    'VIP_CUSTOMER',
+                    roleName,
                     'user_not_found_or_wrong_tenant',
                     false,
                 );
@@ -853,28 +876,26 @@ export class RoleService implements IRoleService {
                 userId,
                 tenantId,
             );
-            const vipThreshold = getVipRoleThreshold();
 
             // 3. Проверка порога
-            if (totalSpent < vipThreshold) {
+            if (totalSpent < threshold) {
                 this.metricsCollector.recordRoleAutoAssignment(
-                    'VIP_CUSTOMER',
+                    roleName,
                     'threshold_not_met',
                     false,
                 );
                 return { assigned: false };
             }
 
-            // 4. Поиск VIP роли
-            const vipRole =
-                await this.roleRepository.findRoleByName('VIP_CUSTOMER');
-            if (!vipRole?.isActive) {
+            // 4. Поиск роли (с кэшированием)
+            const role = await this.roleCacheService.getCachedRole(roleName);
+            if (!role?.isActive) {
                 this.logger.warn(
-                    { userId, tenantId },
-                    'Роль VIP_CUSTOMER не найдена или неактивна',
+                    { userId, tenantId, roleName },
+                    `Роль ${roleName} не найдена или неактивна`,
                 );
                 this.metricsCollector.recordRoleAutoAssignment(
-                    'VIP_CUSTOMER',
+                    roleName,
                     'role_not_found_or_inactive',
                     false,
                 );
@@ -886,59 +907,71 @@ export class RoleService implements IRoleService {
                 userId,
                 tenantId,
             );
-            const hasVipRole = userRoles.some((ur) => ur.roleId === vipRole.id);
-            if (hasVipRole) {
+            const hasRole = userRoles.some((ur) => ur.roleId === role.id);
+            if (hasRole) {
                 this.metricsCollector.recordRoleAutoAssignment(
-                    'VIP_CUSTOMER',
+                    roleName,
                     'already_assigned',
                     false,
                 );
-                return { assigned: false, roleId: vipRole.id };
+                return { assigned: false, roleId: role.id };
             }
 
             // 6. Назначение роли
             await this.roleRepository.assignRoleToUser(
                 userId,
-                vipRole.id,
+                role.id,
                 tenantId,
                 null,
                 null,
                 {
                     auto_assigned: true,
                     total_spent: totalSpent,
-                    threshold: vipThreshold,
+                    threshold,
                     assigned_at: new Date().toISOString(),
                 },
             );
 
             this.logger.log(
-                `Автоматически назначена VIP роль пользователю: userId=${userId}, tenantId=${tenantId}, roleId=${vipRole.id}, roleName=VIP_CUSTOMER, totalSpent=${totalSpent}, threshold=${vipThreshold}`,
+                `Автоматически назначена роль ${roleName} пользователю: userId=${userId}, tenantId=${tenantId}, roleId=${role.id}, roleName=${roleName}, totalSpent=${totalSpent}, threshold=${threshold}`,
             );
             this.metricsCollector.recordRoleAutoAssignment(
-                'VIP_CUSTOMER',
+                roleName,
                 'assigned',
                 true,
             );
-            return { assigned: true, roleId: vipRole.id };
+
+            return { assigned: true, roleId: role.id };
         } catch (error: unknown) {
             this.logger.error(
-                {
-                    userId,
-                    tenantId,
-                    error:
-                        error instanceof Error
-                            ? error.message
-                            : 'Unknown error',
-                },
-                'Ошибка при автоматическом назначении VIP роли',
+                { error, userId, tenantId, roleName },
+                `Ошибка автоматического назначения роли ${roleName}`,
             );
             this.metricsCollector.recordRoleAutoAssignment(
-                'VIP_CUSTOMER',
+                roleName,
                 'error',
                 false,
             );
             return { assigned: false };
         }
+    }
+
+    /**
+     * Автоматически назначить VIP роль пользователю, если сумма покупок превышает порог
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Результат назначения роли
+     */
+    public async autoAssignVipRole(
+        userId: number,
+        tenantId: number,
+    ): Promise<{ assigned: boolean; roleId?: number }> {
+        return this.autoAssignRoleByThreshold(
+            userId,
+            tenantId,
+            'VIP_CUSTOMER',
+            getVipRoleThreshold(),
+        );
     }
 
     /**
@@ -984,9 +1017,9 @@ export class RoleService implements IRoleService {
                 return { assigned: false };
             }
 
-            // 4. Поиск WHOLESALE роли
+            // 4. Поиск WHOLESALE роли (с кэшированием)
             const wholesaleRole =
-                await this.roleRepository.findRoleByName('WHOLESALE');
+                await this.roleCacheService.getCachedRole('WHOLESALE');
             if (!wholesaleRole?.isActive) {
                 this.logger.warn(
                     { userId, tenantId },
@@ -1125,9 +1158,9 @@ export class RoleService implements IRoleService {
                 return { revoked: false };
             }
 
-            // 2. Поиск VIP роли
+            // 2. Поиск VIP роли (с кэшированием)
             const vipRole =
-                await this.roleRepository.findRoleByName('VIP_CUSTOMER');
+                await this.roleCacheService.getCachedRole('VIP_CUSTOMER');
             if (!vipRole) {
                 return { revoked: false };
             }
@@ -1260,9 +1293,9 @@ export class RoleService implements IRoleService {
                 return { revoked: false };
             }
 
-            // 2. Поиск WHOLESALE роли
+            // 2. Поиск WHOLESALE роли (с кэшированием)
             const wholesaleRole =
-                await this.roleRepository.findRoleByName('WHOLESALE');
+                await this.roleCacheService.getCachedRole('WHOLESALE');
             if (!wholesaleRole) {
                 return { revoked: false };
             }

@@ -47,7 +47,10 @@ import {
     RevokeRoleResponse,
     UpdateRoleResponse,
 } from '@app/infrastructure/responses';
-import { RoleService } from '@app/infrastructure/services';
+import {
+    RoleCacheService,
+    RoleService,
+} from '@app/infrastructure/services';
 
 import { IRoleController } from '@app/domain/controllers';
 import { ADMIN_ROLES, MANAGER_ROLES } from './role-constants';
@@ -67,7 +70,10 @@ import { ADMIN_ROLES, MANAGER_ROLES } from './role-constants';
 @ApiBearerAuth('JWT-auth')
 @Controller('role')
 export class RoleController implements IRoleController {
-    constructor(private readonly roleService: RoleService) {}
+    constructor(
+        private readonly roleService: RoleService,
+        private readonly roleCacheService: RoleCacheService,
+    ) {}
 
     // ========================================================================
     // CRUD ОПЕРАЦИИ С РОЛЯМИ (ADMIN_ROLES)
@@ -318,5 +324,115 @@ export class RoleController implements IRoleController {
         @Param('role') role: string,
     ): Promise<GetRoleLevelResponse> {
         return this.roleService.getRoleLevel(role);
+    }
+
+    // ========================================================================
+    // МОНИТОРИНГ И УПРАВЛЕНИЕ КЭШЕМ (SUPER_ADMIN, PLATFORM_ADMIN)
+    // ========================================================================
+
+    /**
+     * Получить статистику кэша ролей
+     * @access SUPER_ADMIN, PLATFORM_ADMIN
+     */
+    @ApiOperation({ summary: 'Получить статистику кэша системных ролей' })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика кэша',
+        schema: {
+            type: 'object',
+            properties: {
+                hits: { type: 'number', example: 150 },
+                misses: { type: 'number', example: 10 },
+                invalidations: { type: 'number', example: 5 },
+                evictions: { type: 'number', example: 0 },
+                size: { type: 'number', example: 8 },
+                hitRate: { type: 'number', example: 93.75 },
+                ttlMs: { type: 'number', example: 3600000 },
+                maxSize: { type: 'number', example: 50 },
+            },
+        },
+    })
+    @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN', 'PLATFORM_ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/cache/stats')
+    public getCacheStats(): {
+        hits: number;
+        misses: number;
+        invalidations: number;
+        evictions: number;
+        size: number;
+        hitRate: number;
+        ttlMs: number;
+        maxSize: number;
+    } {
+        return this.roleCacheService.getStats();
+    }
+
+    /**
+     * Очистить кэш ролей
+     * @access SUPER_ADMIN
+     */
+    @ApiOperation({ summary: 'Очистить весь кэш системных ролей' })
+    @ApiResponse({
+        status: 200,
+        description: 'Кэш очищен',
+        schema: {
+            type: 'object',
+            properties: {
+                message: { type: 'string', example: 'Кэш очищен успешно' },
+                clearedCount: { type: 'number', example: 8 },
+            },
+        },
+    })
+    @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Delete('/cache')
+    public clearCache(): { message: string; clearedCount: number } {
+        const statsBefore = this.roleCacheService.getStats();
+        const clearedCount = statsBefore.size;
+
+        this.roleCacheService.invalidateAll();
+
+        return {
+            message: 'Кэш очищен успешно',
+            clearedCount,
+        };
+    }
+
+    /**
+     * Сбросить статистику кэша (только счетчики)
+     * @access SUPER_ADMIN
+     */
+    @ApiOperation({
+        summary: 'Сбросить статистику кэша (hits/misses/evictions)',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика сброшена',
+        schema: {
+            type: 'object',
+            properties: {
+                message: {
+                    type: 'string',
+                    example: 'Статистика кэша сброшена',
+                },
+            },
+        },
+    })
+    @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Post('/cache/reset-stats')
+    public resetCacheStats(): { message: string } {
+        this.roleCacheService.resetStats();
+        return { message: 'Статистика кэша сброшена' };
     }
 }

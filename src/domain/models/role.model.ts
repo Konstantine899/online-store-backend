@@ -45,6 +45,19 @@ interface IRoleCreationAttributes {
     tableName: 'roles',
     underscored: true,
     timestamps: true,
+    indexes: [
+        // Уникальный индекс для role уже создается автоматически через unique: true
+        // Индекс для быстрого поиска системных ролей
+        {
+            name: 'idx_roles_is_system_role',
+            fields: ['is_system_role'],
+        },
+        // Составной индекс для поиска системных/tenant ролей
+        {
+            name: 'idx_roles_tenant_id_is_system_role',
+            fields: ['tenant_id', 'is_system_role'],
+        },
+    ],
     defaultScope: {
         attributes: { exclude: ['updatedAt', 'createdAt'] },
     },
