@@ -1,0 +1,696 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { AuditAction, AuditLogModel } from '@app/domain/models';
+import {
+    AuditService,
+    IAuditFilters,
+    IPaginatedAuditLogs,
+} from './audit.service';
+
+/**
+ * Интерфейс для diff между old и new values
+ */
+export interface IAuditDiff {
+    field: string;
+    oldValue: unknown;
+    newValue: unknown;
+    changed: boolean;
+}
+
+/**
+ * Интерфейс для детального diff audit лога
+ */
+export interface IAuditLogDiff {
+    auditLogId: number;
+    action: AuditAction;
+    hasChanges: boolean;
+    diffs: IAuditDiff[];
+}
+
+/**
+ * Специализированный сервис для работы с audit логами ролей
+ * Предоставляет методы для получения истории изменений ролей, пользователей и разрешений
+ */
+@Injectable()
+export class RoleAuditService {
+    private readonly logger = new Logger(RoleAuditService.name);
+
+    constructor(private readonly auditService: AuditService) {}
+
+    /**
+     * Получить историю изменений конкретной роли
+     * @param roleId - ID роли
+     * @param page - номер страницы (начиная с 1)
+     * @param limit - количество записей на странице
+     * @param tenantId - ID тенанта для tenant isolation
+     * @returns Promise<IPaginatedAuditLogs>
+     */
+    async getRoleAuditHistory(
+        roleId: number,
+        page: number = 1,
+        limit: number = 20,
+        tenantId?: number | null,
+    ): Promise<IPaginatedAuditLogs> {
+        this.logger.log({
+            roleId,
+            page,
+            limit,
+            tenantId,
+            message: 'Getting role audit history',
+        });
+
+        const filters: IAuditFilters = {
+            entityType: 'role',
+            entityId: roleId,
+            tenantId: tenantId ?? undefined,
+        };
+
+        return this.auditService.findAll(page, limit, filters);
+    }
+
+    /**
+     * Получить историю назначений и отзывов ролей для конкретного пользователя
+     * @param userId - ID пользователя
+     * @param page - номер страницы
+     * @param limit - количество записей на странице
+     * @param tenantId - ID тенанта для tenant isolation
+     * @returns Promise<IPaginatedAuditLogs>
+     */
+    async getUserRoleAuditHistory(
+        userId: number,
+        page: number = 1,
+        limit: number = 20,
+        tenantId?: number | null,
+    ): Promise<IPaginatedAuditLogs> {
+        this.logger.log({
+            userId,
+            page,
+            limit,
+            tenantId,
+            message: 'Getting user role audit history',
+        });
+
+        const filters: IAuditFilters = {
+            entityType: 'user_role',
+            userId,
+            tenantId: tenantId ?? undefined,
+            action: AuditAction.ASSIGN,
+        };
+
+        // Получаем ASSIGN и REVOKE операции
+        const assignLogs = await this.auditService.findAll(page, limit, {
+            ...filters,
+            action: AuditAction.ASSIGN,
+        });
+
+        const revokeFilters: IAuditFilters = {
+            ...filters,
+            action: AuditAction.REVOKE,
+        };
+
+        const revokeLogs = await this.auditService.findAll(page, limit, {
+            ...revokeFilters,
+        });
+
+        // Объединяем результаты и сортируем по дате
+        const allLogs = [
+            ...assignLogs.data,
+            ...revokeLogs.data,
+        ].sort((a, b) => {
+            const dateA = new Date(a.createdAt).getTime();
+            const dateB = new Date(b.createdAt).getTime();
+            return dateB - dateA; // Сортировка по убыванию (новые первыми)
+        });
+
+        const totalCount = assignLogs.totalCount + revokeLogs.totalCount;
+        const lastPage = Math.ceil(totalCount / limit);
+
+        return {
+            data: allLogs.slice((page - 1) * limit, page * limit),
+            totalCount,
+            currentPage: page,
+            lastPage,
+            limit,
+        };
+    }
+
+    /**
+     * Получить audit логи по типу действия
+     * @param action - тип действия (CREATE, UPDATE, DELETE, ASSIGN, REVOKE и т.д.)
+     * @param page - номер страницы
+     * @param limit - количество записей на странице
+     * @param filters - дополнительные фильтры
+     * @returns Promise<IPaginatedAuditLogs>
+     */
+    async getAuditByAction(
+        action: AuditAction,
+        page: number = 1,
+        limit: number = 20,
+        filters?: Omit<IAuditFilters, 'action'>,
+    ): Promise<IPaginatedAuditLogs> {
+        this.logger.log({
+            action,
+            page,
+            limit,
+            filters,
+            message: 'Getting audit logs by action',
+        });
+
+        return this.auditService.findAll(page, limit, {
+            ...filters,
+            action,
+        });
+    }
+
+    /**
+     * Получить audit логи за указанный период с фильтрацией
+     * @param startDate - начальная дата
+     * @param endDate - конечная дата
+     * @param page - номер страницы
+     * @param limit - количество записей на странице
+     * @param filters - дополнительные фильтры (entityType, entityId, userId, tenantId)
+     * @returns Promise<IPaginatedAuditLogs>
+     */
+    async getAuditByDateRange(
+        startDate: Date,
+        endDate: Date,
+        page: number = 1,
+        limit: number = 20,
+        filters?: Omit<
+            IAuditFilters,
+            'startDate' | 'endDate'
+        >,
+    ): Promise<IPaginatedAuditLogs> {
+        this.logger.log({
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            page,
+            limit,
+            filters,
+            message: 'Getting audit logs by date range',
+        });
+
+        return this.auditService.findByDateRange(
+            startDate,
+            endDate,
+            page,
+            limit,
+            filters,
+        );
+    }
+
+    /**
+     * Вычислить diff между old и new values в audit логе
+     * @param auditLog - audit лог для анализа
+     * @returns IAuditLogDiff
+     */
+    getDiff(auditLog: AuditLogModel): IAuditLogDiff {
+        const diffs: IAuditDiff[] = [];
+
+        // Для CREATE - только newValues
+        if (auditLog.isCreateAction && auditLog.newValues) {
+            Object.keys(auditLog.newValues).forEach((field) => {
+                diffs.push({
+                    field,
+                    oldValue: null,
+                    newValue: auditLog.newValues?.[field] ?? null,
+                    changed: true,
+                });
+            });
+        }
+        // Для DELETE - только oldValues
+        else if (auditLog.isDeleteAction && auditLog.oldValues) {
+            Object.keys(auditLog.oldValues).forEach((field) => {
+                diffs.push({
+                    field,
+                    oldValue: auditLog.oldValues?.[field] ?? null,
+                    newValue: null,
+                    changed: true,
+                });
+            });
+        }
+        // Для UPDATE, ASSIGN, REVOKE - сравнение old и new
+        else if (auditLog.hasChanges) {
+            const oldVals = auditLog.oldValues ?? {};
+            const newVals = auditLog.newValues ?? {};
+
+            // Получить все уникальные ключи из old и new
+            const allKeys = new Set([
+                ...Object.keys(oldVals),
+                ...Object.keys(newVals),
+            ]);
+
+            allKeys.forEach((field) => {
+                const oldVal = oldVals[field];
+                const newVal = newVals[field];
+
+                // Сравнить значения (deep comparison для объектов/массивов)
+                const changed = !this.valuesEqual(oldVal, newVal);
+
+                diffs.push({
+                    field,
+                    oldValue: oldVal ?? null,
+                    newValue: newVal ?? null,
+                    changed,
+                });
+            });
+        }
+
+        return {
+            auditLogId: auditLog.id,
+            action: auditLog.action,
+            hasChanges: diffs.some((diff) => diff.changed),
+            diffs: diffs.filter((diff) => diff.changed), // Возвращаем только изменённые поля
+        };
+    }
+
+    /**
+     * Вычислить diff для массива audit логов
+     * @param auditLogs - массив audit логов
+     * @returns IAuditLogDiff[]
+     */
+    getDiffForMultiple(auditLogs: AuditLogModel[]): IAuditLogDiff[] {
+        return auditLogs.map((log) => this.getDiff(log));
+    }
+
+    /**
+     * Сравнить два значения (deep comparison)
+     * @param a - первое значение
+     * @param b - второе значение
+     * @returns boolean
+     */
+    private valuesEqual(a: unknown, b: unknown): boolean {
+        // Оба null или undefined
+        if (a === null && b === null) {
+            return true;
+        }
+        if (a === undefined && b === undefined) {
+            return true;
+        }
+
+        // Один из них null/undefined
+        if (a === null || a === undefined || b === null || b === undefined) {
+            return false;
+        }
+
+        // Примитивные типы
+        if (typeof a !== 'object' || typeof b !== 'object') {
+            return a === b;
+        }
+
+        // Массивы
+        if (Array.isArray(a) && Array.isArray(b)) {
+            if (a.length !== b.length) {
+                return false;
+            }
+            return a.every((val, idx) => this.valuesEqual(val, b[idx]));
+        }
+
+        // Объекты
+        if (
+            !Array.isArray(a) &&
+            !Array.isArray(b) &&
+            typeof a === 'object' &&
+            typeof b === 'object'
+        ) {
+            const keysA = Object.keys(a);
+            const keysB = Object.keys(b);
+
+            if (keysA.length !== keysB.length) {
+                return false;
+            }
+
+            return keysA.every(
+                (key) =>
+                    keysB.includes(key) &&
+                    this.valuesEqual(
+                        (a as Record<string, unknown>)[key],
+                        (b as Record<string, unknown>)[key],
+                    ),
+            );
+        }
+
+        return false;
+    }
+
+    /**
+     * Сгенерировать сводный отчёт по audit логам
+     * @param startDate - начальная дата
+     * @param endDate - конечная дата
+     * @param tenantId - ID тенанта для фильтрации
+     * @returns Promise с данными сводного отчёта
+     */
+    async generateSummaryReport(
+        startDate: Date,
+        endDate: Date,
+        tenantId?: number | null,
+    ): Promise<{
+        totalOperations: number;
+        operationsByAction: Record<string, number>;
+        operationsByEntityType: Record<string, number>;
+        topUsers: Array<{
+            userId: number;
+            userName: string | null;
+            userEmail: string | null;
+            operationsCount: number;
+        }>;
+        dateRange: { start: string; end: string };
+        tenantId?: number | null;
+    }> {
+        this.logger.log({
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            tenantId,
+            message: 'Generating summary report',
+        });
+
+        // Получить все логи за период (без пагинации, так как нужна полная статистика)
+        const filters: IAuditFilters = {
+            startDate,
+            endDate,
+            tenantId: tenantId ?? undefined,
+        };
+
+        // Получаем все логи большими батчами
+        let allLogs: AuditLogModel[] = [];
+        let page = 1;
+        const limit = 100;
+        let hasMore = true;
+
+        while (hasMore) {
+            const result = await this.auditService.findAll(
+                page,
+                limit,
+                filters,
+            );
+            allLogs = allLogs.concat(result.data);
+            hasMore = result.currentPage < result.lastPage;
+            page++;
+        }
+
+        // Подсчёт операций по типам действий
+        const operationsByAction: Record<string, number> = {};
+        Object.values(AuditAction).forEach((action) => {
+            operationsByAction[action] = 0;
+        });
+        allLogs.forEach((log) => {
+            operationsByAction[log.action] =
+                (operationsByAction[log.action] || 0) + 1;
+        });
+
+        // Подсчёт операций по типам сущностей
+        const operationsByEntityType: Record<string, number> = {};
+        allLogs.forEach((log) => {
+            operationsByEntityType[log.entityType] =
+                (operationsByEntityType[log.entityType] || 0) + 1;
+        });
+
+        // Топ пользователей по количеству операций
+        const userOperationsCount: Record<
+            number,
+            { count: number; userName: string | null; userEmail: string | null }
+        > = {};
+        allLogs.forEach((log) => {
+            if (log.userId) {
+                if (!userOperationsCount[log.userId]) {
+                    userOperationsCount[log.userId] = {
+                        count: 0,
+                        userName:
+                            log.user?.firstName && log.user?.lastName
+                                ? `${log.user.firstName} ${log.user.lastName}`
+                                : log.user?.email ?? null,
+                        userEmail: log.user?.email ?? null,
+                    };
+                }
+                userOperationsCount[log.userId].count++;
+            }
+        });
+
+        const topUsers = Object.entries(userOperationsCount)
+            .map(([userId, data]) => ({
+                userId: Number.parseInt(userId, 10),
+                userName: data.userName,
+                userEmail: data.userEmail,
+                operationsCount: data.count,
+            }))
+            .sort((a, b) => b.operationsCount - a.operationsCount)
+            .slice(0, 10); // Топ 10 пользователей
+
+        return {
+            totalOperations: allLogs.length,
+            operationsByAction,
+            operationsByEntityType,
+            topUsers,
+            dateRange: {
+                start: startDate.toISOString(),
+                end: endDate.toISOString(),
+            },
+            tenantId,
+        };
+    }
+
+    /**
+     * Сгенерировать timeline для конкретной роли
+     * @param roleId - ID роли
+     * @param tenantId - ID тенанта для фильтрации
+     * @returns Promise с timeline данными
+     */
+    async generateTimelineReport(
+        roleId: number,
+        tenantId?: number | null,
+    ): Promise<{
+        roleId: number;
+        roleName: string;
+        events: Array<{
+            id: number;
+            action: AuditAction;
+            performedBy: {
+                userId: number | null;
+                userName: string | null;
+                userEmail: string | null;
+            };
+            timestamp: string;
+            changes: IAuditLogDiff;
+            ipAddress: string | null;
+            requestId: string | null;
+        }>;
+    }> {
+        this.logger.log({
+            roleId,
+            tenantId,
+            message: 'Generating timeline report',
+        });
+
+        // Получить все логи для роли
+        let allLogs: AuditLogModel[] = [];
+        let page = 1;
+        const limit = 100;
+        let hasMore = true;
+
+        while (hasMore) {
+            const result = await this.getRoleAuditHistory(
+                roleId,
+                page,
+                limit,
+                tenantId,
+            );
+            allLogs = allLogs.concat(result.data);
+            hasMore = result.currentPage < result.lastPage;
+            page++;
+        }
+
+        // Получить название роли из первого лога или из самого последнего
+        let roleName = 'Unknown Role';
+        if (allLogs.length > 0) {
+            const firstLog = allLogs[0];
+            if (firstLog.newValues && typeof firstLog.newValues.role === 'string') {
+                roleName = firstLog.newValues.role;
+            } else if (
+                firstLog.oldValues &&
+                typeof firstLog.oldValues.role === 'string'
+            ) {
+                roleName = firstLog.oldValues.role;
+            }
+        }
+
+        // Преобразовать логи в события с diff
+        const events = allLogs.map((log) => ({
+            id: log.id,
+            action: log.action,
+            performedBy: {
+                userId: log.userId,
+                userName:
+                    log.user?.firstName && log.user?.lastName
+                        ? `${log.user.firstName} ${log.user.lastName}`
+                        : log.user?.email ?? null,
+                userEmail: log.user?.email ?? null,
+            },
+            timestamp: log.createdAt.toISOString(),
+            changes: this.getDiff(log),
+            ipAddress: log.ipAddress,
+            requestId: log.requestId,
+        }));
+
+        return {
+            roleId,
+            roleName,
+            events,
+        };
+    }
+
+    /**
+     * Сгенерировать отчёт об активности пользователя
+     * @param userId - ID пользователя
+     * @param startDate - начальная дата (опционально)
+     * @param endDate - конечная дата (опционально)
+     * @param tenantId - ID тенанта для фильтрации
+     * @returns Promise с данными об активности пользователя
+     */
+    async generateUserActivityReport(
+        userId: number,
+        startDate?: Date,
+        endDate?: Date,
+        tenantId?: number | null,
+    ): Promise<{
+        userId: number;
+        userName: string | null;
+        userEmail: string | null;
+        totalOperations: number;
+        operationsByAction: Record<string, number>;
+        rolesModified: Array<{
+            roleId: number;
+            roleName: string;
+            operationsCount: number;
+        }>;
+        dateRange: { start: string; end: string };
+    }> {
+        this.logger.log({
+            userId,
+            startDate: startDate?.toISOString(),
+            endDate: endDate?.toISOString(),
+            tenantId,
+            message: 'Generating user activity report',
+        });
+
+        const filters: IAuditFilters = {
+            userId,
+            tenantId: tenantId ?? undefined,
+            startDate,
+            endDate,
+        };
+
+        // Получить все логи пользователя
+        let allLogs: AuditLogModel[] = [];
+        let page = 1;
+        const limit = 100;
+        let hasMore = true;
+
+        while (hasMore) {
+            const result = await this.auditService.findAll(page, limit, filters);
+            allLogs = allLogs.concat(result.data);
+            hasMore = result.currentPage < result.lastPage;
+            page++;
+        }
+
+        // Получить информацию о пользователе из первого лога
+        let userName: string | null = null;
+        let userEmail: string | null = null;
+        if (allLogs.length > 0 && allLogs[0].user) {
+            const user = allLogs[0].user;
+            userName =
+                user.firstName && user.lastName
+                    ? `${user.firstName} ${user.lastName}`
+                    : user.email ?? null;
+            userEmail = user.email ?? null;
+        }
+
+        // Подсчёт операций по типам действий
+        const operationsByAction: Record<string, number> = {};
+        Object.values(AuditAction).forEach((action) => {
+            operationsByAction[action] = 0;
+        });
+        allLogs.forEach((log) => {
+            operationsByAction[log.action] =
+                (operationsByAction[log.action] || 0) + 1;
+        });
+
+        // Подсчёт изменённых ролей
+        const rolesModifiedCount: Record<
+            number,
+            { roleName: string; count: number }
+        > = {};
+        allLogs.forEach((log) => {
+            if (log.entityType === 'role' || log.entityType === 'user_role') {
+                let roleId: number | null = null;
+                let roleName = 'Unknown';
+
+                if (log.entityType === 'role') {
+                    roleId = log.entityId;
+                    if (log.newValues && typeof log.newValues.role === 'string') {
+                        roleName = log.newValues.role;
+                    } else if (
+                        log.oldValues &&
+                        typeof log.oldValues.role === 'string'
+                    ) {
+                        roleName = log.oldValues.role;
+                    }
+                } else if (log.entityType === 'user_role') {
+                    if (log.newValues && typeof log.newValues.roleId === 'number') {
+                        roleId = log.newValues.roleId;
+                    } else if (
+                        log.oldValues &&
+                        typeof log.oldValues.roleId === 'number'
+                    ) {
+                        roleId = log.oldValues.roleId;
+                    }
+                    if (log.newValues && typeof log.newValues.roleName === 'string') {
+                        roleName = log.newValues.roleName;
+                    } else if (
+                        log.oldValues &&
+                        typeof log.oldValues.roleName === 'string'
+                    ) {
+                        roleName = log.oldValues.roleName;
+                    }
+                }
+
+                if (roleId !== null) {
+                    if (!rolesModifiedCount[roleId]) {
+                        rolesModifiedCount[roleId] = { roleName, count: 0 };
+                    }
+                    rolesModifiedCount[roleId].count++;
+                }
+            }
+        });
+
+        const rolesModified = Object.entries(rolesModifiedCount).map(
+            ([roleId, data]) => ({
+                roleId: Number.parseInt(roleId, 10),
+                roleName: data.roleName,
+                operationsCount: data.count,
+            }),
+        );
+
+        // Определить диапазон дат
+        const actualStartDate =
+            startDate ||
+            (allLogs.length > 0
+                ? allLogs[allLogs.length - 1].createdAt
+                : new Date());
+        const actualEndDate =
+            endDate ||
+            (allLogs.length > 0 ? allLogs[0].createdAt : new Date());
+
+        return {
+            userId,
+            userName,
+            userEmail,
+            totalOperations: allLogs.length,
+            operationsByAction,
+            rolesModified,
+            dateRange: {
+                start: actualStartDate.toISOString(),
+                end: actualEndDate.toISOString(),
+            },
+        };
+    }
+}
+

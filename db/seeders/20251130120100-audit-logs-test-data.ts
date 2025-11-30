@@ -1,10 +1,16 @@
-import { QueryInterface } from 'sequelize';
+import type { QueryInterface } from 'sequelize';
 
 /**
  * Сиды для тестовых данных audit_logs
  * Создаёт примеры различных типов аудит-логов для разработки и тестирования
  */
-export async function up(queryInterface: QueryInterface): Promise<void> {
+interface Seeder {
+    up(queryInterface: QueryInterface): Promise<void>;
+    down(queryInterface: QueryInterface): Promise<void>;
+}
+
+const seeder: Seeder = {
+    async up(queryInterface: QueryInterface): Promise<void> {
     const now = new Date();
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -214,9 +220,12 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
             created_at: yesterday,
         },
     ]);
-}
+},
 
-export async function down(queryInterface: QueryInterface): Promise<void> {
-    await queryInterface.bulkDelete('audit_logs', {});
-}
+    async down(queryInterface: QueryInterface): Promise<void> {
+        await queryInterface.bulkDelete('audit_logs', {});
+    },
+};
+
+export default seeder;
 

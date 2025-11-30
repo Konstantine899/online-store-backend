@@ -1,3 +1,4 @@
+export { AuditFiltersDto } from '@app/domain/dto/audit/audit-filters.dto';
 export { LoginDto } from './auth/login.dto';
 export { RefreshDto } from './auth/refresh.dto';
 export { RegistrationDto } from './auth/registration.dto';

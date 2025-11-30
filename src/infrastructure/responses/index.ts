@@ -1,3 +1,13 @@
+export {
+    AuditLogResponse,
+    PaginatedAuditLogsResponse,
+    mapAuditLogToResponse,
+} from './audit/audit-log.response';
+export {
+    AuditSummaryResponse,
+    AuditTimelineResponse,
+    UserActivityReportResponse,
+} from './audit/audit-report.response';
 export { CheckResponse } from './auth/check-response';
 export { LoginResponse } from './auth/login.response';
 export { LogoutResponse } from './auth/logout.response';

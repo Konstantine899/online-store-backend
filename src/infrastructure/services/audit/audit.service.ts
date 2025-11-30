@@ -302,15 +302,10 @@ export class AuditService {
         }
 
         if (filters.startDate || filters.endDate) {
-            where.createdAt = {};
-
-            if (filters.startDate) {
-                where.createdAt[Op.gte] = filters.startDate;
-            }
-
-            if (filters.endDate) {
-                where.createdAt[Op.lte] = filters.endDate;
-            }
+            where.createdAt = {
+                ...(filters.startDate && { [Op.gte]: filters.startDate }),
+                ...(filters.endDate && { [Op.lte]: filters.endDate }),
+            } as any;
         }
 
         return where;

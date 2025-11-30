@@ -14,6 +14,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { RepositoriesModule } from '../repositories/repositories.module';
 import { AuditService } from './audit/audit.service';
+import { RoleAuditService } from './audit/role-audit.service';
 import { AuthService } from './auth/auth.service';
 import { BrandService } from './brand/brand.service';
 import { CartService } from './cart/cart.service';
@@ -55,6 +56,7 @@ import { UserService } from './user/user.service';
     providers: [
         MetricsCollector,
         AuditService,
+        RoleAuditService,
         AuthService,
         BrandService,
         CartService,
@@ -92,6 +94,7 @@ import { UserService } from './user/user.service';
     exports: [
         MetricsCollector,
         AuditService,
+        RoleAuditService,
         AuthService,
         BrandService,
         CartService,

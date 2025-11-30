@@ -145,7 +145,7 @@ export class AuditLogModel
     declare userId: number | null;
 
     @Column({
-        type: DataType.JSONB,
+        type: DataType.JSON,
         allowNull: true,
         field: 'old_values',
         comment: 'Старые значения (для UPDATE, DELETE)',
@@ -153,7 +153,7 @@ export class AuditLogModel
     declare oldValues: Record<string, unknown> | null;
 
     @Column({
-        type: DataType.JSONB,
+        type: DataType.JSON,
         allowNull: true,
         field: 'new_values',
         comment: 'Новые значения (для CREATE, UPDATE)',
@@ -161,7 +161,7 @@ export class AuditLogModel
     declare newValues: Record<string, unknown> | null;
 
     @Column({
-        type: DataType.INET,
+        type: DataType.STRING(45), // IPv6 max length
         allowNull: true,
         field: 'ip_address',
         comment: 'IP адрес пользователя',
