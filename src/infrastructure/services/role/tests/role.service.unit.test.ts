@@ -30,11 +30,13 @@ import { getModelToken } from '@nestjs/sequelize';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { RoleCacheService } from '../role-cache.service';
 import { RoleService } from '../role.service';
+import { UserRolesCacheService } from '../user-roles-cache.service';
 
 describe('RoleService (unit)', () => {
     let service: RoleService;
     let roleRepository: jest.Mocked<RoleRepository>;
     let roleCacheService: jest.Mocked<RoleCacheService>;
+    let userRolesCacheService: jest.Mocked<UserRolesCacheService>;
     let userModel: jest.Mocked<typeof UserModelType>;
 
     const mockRole: GetRoleResponse & { getDataValue: jest.Mock } = {
@@ -95,6 +97,19 @@ describe('RoleService (unit)', () => {
                         invalidate: jest.fn(),
                         invalidateAll: jest.fn(),
                         getStats: jest.fn(),
+                        resetStats: jest.fn(),
+                        warmUp: jest.fn(),
+                    },
+                },
+                {
+                    provide: UserRolesCacheService,
+                    useValue: {
+                        getUserRoles: jest.fn(),
+                        setUserRoles: jest.fn(),
+                        invalidateUserRoles: jest.fn(),
+                        invalidateAllUserRoles: jest.fn(),
+                        invalidateByRoleId: jest.fn(),
+                        getStats: jest.fn(),
                     },
                 },
                 {
@@ -128,6 +143,7 @@ describe('RoleService (unit)', () => {
         service = module.get<RoleService>(RoleService);
         roleRepository = module.get(RoleRepository);
         roleCacheService = module.get(RoleCacheService);
+        userRolesCacheService = module.get(UserRolesCacheService);
         userModel = module.get(getModelToken(UserModelType));
 
         jest.clearAllMocks();
@@ -573,6 +589,7 @@ describe('RoleService (unit)', () => {
             ];
 
             userModel.findByPk.mockResolvedValue(mockUser);
+            userRolesCacheService.getUserRoles.mockResolvedValue(null);
             roleRepository.findUserRoles.mockResolvedValue(
                 mockUserRoles as unknown as Array<{
                     id: number;

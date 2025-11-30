@@ -1,10 +1,7 @@
-import type { DataTypes, QueryInterface } from 'sequelize';
+import type { QueryInterface } from 'sequelize';
 
 interface Migration {
-    up(
-        queryInterface: QueryInterface,
-        Sequelize: typeof DataTypes,
-    ): Promise<void>;
+    up(queryInterface: QueryInterface): Promise<void>;
 
     down(queryInterface: QueryInterface): Promise<void>;
 }
@@ -22,10 +19,7 @@ interface Migration {
  * - Защита от N+1 и полных сканов таблицы
  */
 const migration: Migration = {
-    async up(
-        queryInterface: QueryInterface,
-        Sequelize: typeof DataTypes,
-    ): Promise<void> {
+    async up(queryInterface: QueryInterface): Promise<void> {
         const indexes = [
             // 1. Индекс для фильтрации активных пользователей по tenant
             {
@@ -53,12 +47,7 @@ const migration: Migration = {
 
             // 4. Составной индекс для оптимизации комбинированных фильтров (удалённые/активные/заблокированные)
             {
-                columns: [
-                    'tenant_id',
-                    'is_deleted',
-                    'is_active',
-                    'is_blocked',
-                ],
+                columns: ['tenant_id', 'is_deleted', 'is_active', 'is_blocked'],
                 name: 'idx_user_tenant_id_is_deleted_is_active',
                 comment:
                     'Оптимизация запросов с множественными статусами (tenant-scoped)',
@@ -68,32 +57,28 @@ const migration: Migration = {
             {
                 columns: ['tenant_id', 'first_name'],
                 name: 'idx_user_tenant_id_first_name',
-                comment:
-                    'Оптимизация поиска по имени (tenant-scoped)',
+                comment: 'Оптимизация поиска по имени (tenant-scoped)',
             },
 
             // 6. Индекс для поиска по фамилии по tenant
             {
                 columns: ['tenant_id', 'last_name'],
                 name: 'idx_user_tenant_id_last_name',
-                comment:
-                    'Оптимизация поиска по фамилии (tenant-scoped)',
+                comment: 'Оптимизация поиска по фамилии (tenant-scoped)',
             },
 
             // 7. Индекс для поиска по телефону по tenant
             {
                 columns: ['tenant_id', 'phone'],
                 name: 'idx_user_tenant_id_phone',
-                comment:
-                    'Оптимизация поиска по телефону (tenant-scoped)',
+                comment: 'Оптимизация поиска по телефону (tenant-scoped)',
             },
 
             // 8. Составной индекс для поиска по полному имени (first_name + last_name) по tenant
             {
                 columns: ['tenant_id', 'first_name', 'last_name'],
                 name: 'idx_user_tenant_id_full_name',
-                comment:
-                    'Оптимизация поиска по полному имени (tenant-scoped)',
+                comment: 'Оптимизация поиска по полному имени (tenant-scoped)',
             },
         ];
 
@@ -160,11 +145,8 @@ const migration: Migration = {
             }
         }
 
-        console.log(
-            '✅ Успешно удалены составные индексы для user таблицы',
-        );
+        console.log('✅ Успешно удалены составные индексы для user таблицы');
     },
 };
 
 export default migration;
-

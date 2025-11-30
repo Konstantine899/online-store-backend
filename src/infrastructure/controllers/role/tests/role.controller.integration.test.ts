@@ -10,10 +10,11 @@ process.env.JWT_REFRESH_SECRET = 'test_refresh_secret';
 process.env.JWT_ACCESS_EXPIRES = '5m';
 process.env.JWT_REFRESH_EXPIRES = '1h';
 
+import type { UserRoleInfo } from '@app/infrastructure/responses/role/user-roles.response';
 import type { INestApplication } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { Sequelize } from 'sequelize-typescript';
 import request from 'supertest';
-import { randomUUID } from 'crypto';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { TestDataFactory } from '../../../../../tests/utils';
 
@@ -827,7 +828,7 @@ describe('RoleController (integration)', () => {
 
             // Находим назначенную роль
             const assignedRole = getUserRolesResponse.body.roles.find(
-                (r: any) => r.roleId === roleId,
+                (r: UserRoleInfo) => r.roleId === roleId,
             );
             expect(assignedRole).toBeDefined();
             expect(assignedRole.metadata).toEqual(metadata);
@@ -888,7 +889,7 @@ describe('RoleController (integration)', () => {
 
             // Находим назначенную роль
             const assignedRole = getUserRolesResponse.body.roles.find(
-                (r: any) => r.roleId === roleId,
+                (r: UserRoleInfo) => r.roleId === roleId,
             );
             expect(assignedRole).toBeDefined();
             expect(assignedRole.expiresAt).toBeDefined();
@@ -1009,7 +1010,7 @@ describe('RoleController (integration)', () => {
 
             // Находим назначенную роль
             const assignedRole = getUserRolesResponse.body.roles.find(
-                (r: any) => r.roleId === roleId,
+                (r: UserRoleInfo) => r.roleId === roleId,
             );
             expect(assignedRole).toBeDefined();
             expect(assignedRole.metadata).toEqual(metadata);
@@ -1457,7 +1458,8 @@ describe('RoleController (integration)', () => {
                     .set('Authorization', `Bearer ${adminToken}`)
                     .send({
                         role: 'INVALID_DATE_FORMAT_ROLE',
-                        description: 'Роль для теста неправильного формата даты',
+                        description:
+                            'Роль для теста неправильного формата даты',
                         level: 30,
                         isSystemRole: false,
                         isActive: true,

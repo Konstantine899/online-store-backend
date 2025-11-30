@@ -14,12 +14,15 @@ import {
 } from '@app/infrastructure/repositories';
 import { getModelToken } from '@nestjs/sequelize';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { RoleCacheService } from '../role-cache.service';
 import { RoleService } from '../role.service';
+import { UserRolesCacheService } from '../user-roles-cache.service';
 
 describe('RoleService - Auto Role Assignment', () => {
     let service: RoleService;
     let roleRepository: jest.Mocked<RoleRepository>;
     let orderRepository: jest.Mocked<OrderRepository>;
+    let roleCacheService: jest.Mocked<RoleCacheService>;
     let userModel: jest.Mocked<typeof UserModelType>;
     let userRoleModel: jest.Mocked<typeof UserRoleModelType>;
     let metricsCollector: jest.Mocked<MetricsCollector>;
@@ -79,6 +82,28 @@ describe('RoleService - Auto Role Assignment', () => {
                     },
                 },
                 {
+                    provide: RoleCacheService,
+                    useValue: {
+                        getCachedRole: jest.fn(),
+                        invalidate: jest.fn(),
+                        invalidateAll: jest.fn(),
+                        getStats: jest.fn(),
+                        resetStats: jest.fn(),
+                        warmUp: jest.fn(),
+                    },
+                },
+                {
+                    provide: UserRolesCacheService,
+                    useValue: {
+                        getUserRoles: jest.fn(),
+                        setUserRoles: jest.fn(),
+                        invalidateUserRoles: jest.fn(),
+                        invalidateAllUserRoles: jest.fn(),
+                        invalidateByRoleId: jest.fn(),
+                        getStats: jest.fn(),
+                    },
+                },
+                {
                     provide: getModelToken(UserModelType),
                     useValue: {
                         findByPk: jest.fn(),
@@ -102,6 +127,7 @@ describe('RoleService - Auto Role Assignment', () => {
         service = module.get<RoleService>(RoleService);
         roleRepository = module.get(RoleRepository);
         orderRepository = module.get(OrderRepository);
+        roleCacheService = module.get(RoleCacheService);
         userModel = module.get(getModelToken(UserModelType));
         userRoleModel = module.get(getModelToken(UserRoleModelType));
         metricsCollector = module.get(MetricsCollector);
@@ -118,7 +144,7 @@ describe('RoleService - Auto Role Assignment', () => {
             (orderRepository.getUserTotalSpent as jest.Mock).mockResolvedValue(
                 totalSpent,
             );
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 mockVipRole,
             );
             (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([]);
@@ -176,7 +202,7 @@ describe('RoleService - Auto Role Assignment', () => {
             (orderRepository.getUserTotalSpent as jest.Mock).mockResolvedValue(
                 totalSpent,
             );
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 mockVipRole,
             );
             (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([
@@ -237,7 +263,7 @@ describe('RoleService - Auto Role Assignment', () => {
             (orderRepository.getUserTotalSpent as jest.Mock).mockResolvedValue(
                 totalSpent,
             );
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 null,
             );
 
@@ -262,7 +288,7 @@ describe('RoleService - Auto Role Assignment', () => {
             (orderRepository.getUserTotalSpent as jest.Mock).mockResolvedValue(
                 totalSpent,
             );
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 mockVipRole,
             );
             (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([]);
@@ -288,7 +314,7 @@ describe('RoleService - Auto Role Assignment', () => {
             (orderRepository.getUserOrderCount as jest.Mock).mockResolvedValue(
                 orderCount,
             );
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 mockWholesaleRole,
             );
             (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([]);
@@ -346,7 +372,7 @@ describe('RoleService - Auto Role Assignment', () => {
             (orderRepository.getUserOrderCount as jest.Mock).mockResolvedValue(
                 orderCount,
             );
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 mockWholesaleRole,
             );
             (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([
@@ -387,7 +413,7 @@ describe('RoleService - Auto Role Assignment', () => {
             (orderRepository.getUserOrderCount as jest.Mock).mockResolvedValue(
                 orderCount,
             );
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 null,
             );
 
@@ -412,7 +438,7 @@ describe('RoleService - Auto Role Assignment', () => {
             (orderRepository.getUserOrderCount as jest.Mock).mockResolvedValue(
                 orderCount,
             );
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 mockWholesaleRole,
             );
             (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([]);
@@ -443,7 +469,7 @@ describe('RoleService - Auto Role Assignment', () => {
             (orderRepository.getUserOrderCount as jest.Mock).mockResolvedValue(
                 wholesaleThreshold + 5,
             );
-            (roleRepository.findRoleByName as jest.Mock)
+            (roleCacheService.getCachedRole as jest.Mock)
                 .mockResolvedValueOnce(mockVipRole)
                 .mockResolvedValueOnce(mockWholesaleRole);
             (roleRepository.findUserRoles as jest.Mock)
@@ -504,7 +530,7 @@ describe('RoleService - Auto Role Assignment', () => {
             (orderRepository.getUserOrderCount as jest.Mock).mockResolvedValue(
                 wholesaleThreshold - 1,
             );
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 mockVipRole,
             );
             (roleRepository.findUserRoles as jest.Mock)
@@ -530,7 +556,7 @@ describe('RoleService - Auto Role Assignment', () => {
             const totalSpent = vipThreshold - 1000;
 
             (userModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 mockVipRole,
             );
             (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([
@@ -566,7 +592,7 @@ describe('RoleService - Auto Role Assignment', () => {
             const totalSpent = vipThreshold + 1000;
 
             (userModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 mockVipRole,
             );
             (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([
@@ -599,7 +625,7 @@ describe('RoleService - Auto Role Assignment', () => {
             const totalSpent = vipThreshold - 1000;
 
             (userModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 mockVipRole,
             );
             (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([
@@ -629,7 +655,7 @@ describe('RoleService - Auto Role Assignment', () => {
 
         it('не должен понижать VIP роль, если роль не назначена', async () => {
             (userModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 mockVipRole,
             );
             (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([]);
@@ -647,7 +673,7 @@ describe('RoleService - Auto Role Assignment', () => {
             const orderCount = wholesaleThreshold - 1;
 
             (userModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 mockWholesaleRole,
             );
             (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([
@@ -683,7 +709,7 @@ describe('RoleService - Auto Role Assignment', () => {
             const orderCount = wholesaleThreshold + 5;
 
             (userModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 mockWholesaleRole,
             );
             (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([
@@ -716,7 +742,7 @@ describe('RoleService - Auto Role Assignment', () => {
             const orderCount = wholesaleThreshold - 1;
 
             (userModel.findByPk as jest.Mock).mockResolvedValue(mockUser);
-            (roleRepository.findRoleByName as jest.Mock).mockResolvedValue(
+            (roleCacheService.getCachedRole as jest.Mock).mockResolvedValue(
                 mockWholesaleRole,
             );
             (roleRepository.findUserRoles as jest.Mock).mockResolvedValue([

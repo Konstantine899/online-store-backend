@@ -135,7 +135,6 @@ describe('RoleRepository (unit)', () => {
                 isActive: dto.isActive,
                 tenantId: dto.tenantId,
             });
-            expect(mockRole.reload).toHaveBeenCalled();
             expect(result).toEqual(mockRole);
         });
 

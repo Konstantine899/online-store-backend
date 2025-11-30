@@ -169,6 +169,13 @@ export class RoleService implements IRoleService {
             );
         }
 
+        // Инвалидировать кэш всех пользователей с этой ролью
+        const invalidatedCount =
+            await this.userRolesCacheService.invalidateByRoleId(updatedRole.id);
+        this.logger.debug(
+            `Инвалидирован кэш для ${invalidatedCount} пользователей с ролью ${updatedRole.role}`,
+        );
+
         // Получить разрешения роли
         const permissions = await this.roleRepository.findRolePermissions(
             updatedRole.id,
@@ -244,6 +251,13 @@ export class RoleService implements IRoleService {
                 `Кэш для роли ${role.role} инвалидирован после удаления`,
             );
         }
+
+        // Инвалидировать кэш всех пользователей с этой ролью
+        const invalidatedCount =
+            await this.userRolesCacheService.invalidateByRoleId(role.id);
+        this.logger.debug(
+            `Инвалидирован кэш для ${invalidatedCount} пользователей с удаляемой ролью ${role.role}`,
+        );
 
         this.logger.log(
             { roleId: id, roleName: role.role, tenantId },
@@ -466,8 +480,14 @@ export class RoleService implements IRoleService {
             'Запрос назначения роли пользователю с проверкой tenant isolation',
         );
 
+        // Параллельная проверка пользователя и роли
+        const [user, targetRoleExists, targetRole] = await Promise.all([
+            this.userModel.findByPk(dto.userId),
+            this.roleRepository.findRoleByIdWithoutIsolation(dto.roleId),
+            this.roleRepository.findRoleById(dto.roleId, tenantId),
+        ]);
+
         // Проверить существование пользователя
-        const user = await this.userModel.findByPk(dto.userId);
         if (!user) {
             this.notFound('Пользователь не найден');
         }
@@ -489,23 +509,13 @@ export class RoleService implements IRoleService {
             );
         }
 
-        // Получить целевую роль
-        // ВАЖНО: сначала проверяем существование роли БЕЗ tenant isolation,
-        // чтобы отличить "роль не существует" (404) от "роль недоступна" (403)
-        const targetRoleExists =
-            await this.roleRepository.findRoleByIdWithoutIsolation(dto.roleId);
-
+        // Проверить существование роли
         if (!targetRoleExists) {
             // Роль не существует вообще - возвращаем 404
             throw new RoleNotFoundException(dto.roleId);
         }
 
-        // Получить роль с учётом tenant isolation для дальнейшей работы
-        const targetRole = await this.roleRepository.findRoleById(
-            dto.roleId,
-            tenantId,
-        );
-
+        // Проверить доступность роли с учётом tenant isolation
         if (!targetRole) {
             this.notFound('Роль не найдена');
         }
@@ -570,6 +580,12 @@ export class RoleService implements IRoleService {
             'Роль успешно назначена пользователю',
         );
 
+        // Инвалидировать кэш ролей пользователя
+        await this.userRolesCacheService.invalidateUserRoles(
+            dto.userId,
+            assignmentTenantId,
+        );
+
         return {
             message: 'Роль успешно назначена пользователю',
             userRoleId: userRole.id,
@@ -596,8 +612,13 @@ export class RoleService implements IRoleService {
             'Запрос отзыва роли у пользователя с проверкой tenant isolation',
         );
 
+        // Параллельная проверка пользователя и роли
+        const [user, targetRoleExists] = await Promise.all([
+            this.userModel.findByPk(dto.userId),
+            this.roleRepository.findRoleByIdWithoutIsolation(dto.roleId),
+        ]);
+
         // Проверить существование пользователя
-        const user = await this.userModel.findByPk(dto.userId);
         if (!user) {
             this.notFound('Пользователь не найден');
         }
@@ -619,12 +640,7 @@ export class RoleService implements IRoleService {
             );
         }
 
-        // Получить целевую роль
-        // ВАЖНО: сначала проверяем существование роли БЕЗ tenant isolation,
-        // чтобы отличить "роль не существует" (404) от "роль недоступна" (403)
-        const targetRoleExists =
-            await this.roleRepository.findRoleByIdWithoutIsolation(dto.roleId);
-
+        // Проверить существование роли
         if (!targetRoleExists) {
             // Роль не существует вообще - возвращаем 404
             throw new RoleNotFoundException(dto.roleId);
@@ -682,6 +698,12 @@ export class RoleService implements IRoleService {
             'Роль успешно отозвана у пользователя',
         );
 
+        // Инвалидировать кэш ролей пользователя
+        await this.userRolesCacheService.invalidateUserRoles(
+            dto.userId,
+            assignmentTenantId,
+        );
+
         return {
             message: 'Роль успешно отозвана у пользователя',
             userId: dto.userId,
@@ -727,7 +749,26 @@ export class RoleService implements IRoleService {
             );
         }
 
-        // Получить роли
+        // Проверить кэш Redis (только для конкретного tenantId)
+        if (tenantId !== null) {
+            const cachedRoles = await this.userRolesCacheService.getUserRoles(
+                userId,
+                tenantId,
+            );
+            if (cachedRoles) {
+                this.logger.debug(
+                    { userId, tenantId },
+                    'Роли пользователя получены из Redis кэша',
+                );
+                return {
+                    userId,
+                    roles: cachedRoles,
+                    totalCount: cachedRoles.length,
+                };
+            }
+        }
+
+        // Получить роли из БД
         const userRoles = await this.roleRepository.findUserRoles(
             userId,
             tenantId,
@@ -735,24 +776,36 @@ export class RoleService implements IRoleService {
 
         this.logger.log(
             { userId, tenantId, rolesCount: userRoles.length },
-            'Роли пользователя успешно получены',
+            'Роли пользователя успешно получены из БД',
         );
+
+        // Преобразовать в DTO
+        const rolesDto = userRoles.map((ur) => ({
+            id: ur.id,
+            roleId: ur.roleId,
+            roleName: ur.roleName,
+            roleDescription: ur.roleDescription,
+            roleLevel: ur.roleLevel,
+            tenantId: ur.tenantId,
+            grantedAt: ur.grantedAt?.toISOString() ?? undefined,
+            expiresAt: ur.expiresAt?.toISOString() ?? undefined,
+            isActive: ur.isActive,
+            metadata: ur.metadata ?? undefined,
+        }));
+
+        // Сохранить в кэш Redis (только для конкретного tenantId)
+        if (tenantId !== null) {
+            await this.userRolesCacheService.setUserRoles(
+                userId,
+                tenantId,
+                rolesDto,
+            );
+        }
 
         return {
             userId,
-            roles: userRoles.map((ur) => ({
-                id: ur.id,
-                roleId: ur.roleId,
-                roleName: ur.roleName,
-                roleDescription: ur.roleDescription,
-                roleLevel: ur.roleLevel,
-                tenantId: ur.tenantId,
-                grantedAt: ur.grantedAt?.toISOString() ?? undefined,
-                expiresAt: ur.expiresAt?.toISOString() ?? undefined,
-                isActive: ur.isActive,
-                metadata: ur.metadata ?? undefined,
-            })),
-            totalCount: userRoles.length,
+            roles: rolesDto,
+            totalCount: rolesDto.length,
         };
     }
 
@@ -857,8 +910,14 @@ export class RoleService implements IRoleService {
         threshold: number,
     ): Promise<{ assigned: boolean; roleId?: number }> {
         try {
-            // 1. Проверка существования пользователя и принадлежности к тенанту
-            const user = await this.userModel.findByPk(userId);
+            // 1-4. Параллельные независимые проверки
+            const [user, totalSpent, role] = await Promise.all([
+                this.userModel.findByPk(userId),
+                this.orderRepository.getUserTotalSpent(userId, tenantId),
+                this.roleCacheService.getCachedRole(roleName),
+            ]);
+
+            // Проверка пользователя
             if (!user || user.tenantId !== tenantId) {
                 this.logger.warn(
                     { userId, tenantId, roleName },
@@ -872,13 +931,7 @@ export class RoleService implements IRoleService {
                 return { assigned: false };
             }
 
-            // 2. Получение суммы покупок пользователя
-            const totalSpent = await this.orderRepository.getUserTotalSpent(
-                userId,
-                tenantId,
-            );
-
-            // 3. Проверка порога
+            // Проверка порога
             if (totalSpent < threshold) {
                 this.metricsCollector.recordRoleAutoAssignment(
                     roleName,
@@ -888,8 +941,7 @@ export class RoleService implements IRoleService {
                 return { assigned: false };
             }
 
-            // 4. Поиск роли (с кэшированием)
-            const role = await this.roleCacheService.getCachedRole(roleName);
+            // Проверка роли
             if (!role?.isActive) {
                 this.logger.warn(
                     { userId, tenantId, roleName },

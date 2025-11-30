@@ -15,9 +15,11 @@ import { UserController } from './user/user.controller';
 import { UserAddressController } from './user-address/user-address.controller';
 import { LoginHistoryController } from './login-history/login-history.controller';
 import { NotificationController } from './notification/notification.controller';
+import { PerformanceMonitoringInterceptor } from '../common/interceptors/performance-monitoring.interceptor';
 
 @Module({
     imports: [ServicesModule, JwtModule],
+    providers: [PerformanceMonitoringInterceptor],
     controllers: [
         AuthController,
         BrandController,

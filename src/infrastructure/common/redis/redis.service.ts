@@ -1,6 +1,6 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type Redis from 'ioredis';
-import { REDIS_CLIENT, DEFAULT_CACHE_TTL } from './redis.constants';
+import { DEFAULT_CACHE_TTL, REDIS_CLIENT } from './redis.constants';
 
 /**
  * Redis сервис
@@ -81,6 +81,7 @@ export class RedisService {
     /**
      * Удалить несколько ключей по паттерну
      * ВНИМАНИЕ: используйте осторожно, может быть медленным
+     * @deprecated Используйте scanKeys() для production
      */
     async delPattern(pattern: string): Promise<number> {
         try {
@@ -95,11 +96,55 @@ export class RedisService {
             );
             return result;
         } catch (error) {
+            this.logger.error(`Redis DEL pattern error for: ${pattern}`, error);
+            return 0;
+        }
+    }
+
+    /**
+     * Сканировать ключи по паттерну (неблокирующая операция)
+     * Использует SCAN вместо KEYS для production-безопасности
+     *
+     * @param pattern - паттерн для поиска (например, "user:roles:*")
+     * @param count - количество ключей за итерацию (default: 100)
+     * @yields Массивы ключей по батчам
+     *
+     * @example
+     * for await (const batch of redisService.scanKeys('user:roles:*', 100)) {
+     *     // Обработать batch ключей
+     * }
+     */
+    async *scanKeys(
+        pattern: string,
+        count: number = 100,
+    ): AsyncGenerator<string[]> {
+        try {
+            let cursor = '0';
+
+            do {
+                const [newCursor, keys] = await this.redisClient.scan(
+                    cursor,
+                    'MATCH',
+                    pattern,
+                    'COUNT',
+                    count,
+                );
+
+                cursor = newCursor;
+
+                if (keys.length > 0) {
+                    this.logger.debug(
+                        `Redis SCAN: found ${keys.length} keys for pattern ${pattern}`,
+                    );
+                    yield keys;
+                }
+            } while (cursor !== '0');
+        } catch (error) {
             this.logger.error(
-                `Redis DEL pattern error for: ${pattern}`,
+                `Redis SCAN error for pattern: ${pattern}`,
                 error,
             );
-            return 0;
+            return;
         }
     }
 
@@ -111,10 +156,7 @@ export class RedisService {
             const result = await this.redisClient.exists(key);
             return result === 1;
         } catch (error) {
-            this.logger.error(
-                `Redis EXISTS error for key: ${key}`,
-                error,
-            );
+            this.logger.error(`Redis EXISTS error for key: ${key}`, error);
             return false;
         }
     }
@@ -162,4 +204,3 @@ export class RedisService {
         return this.redisClient;
     }
 }
-

@@ -472,6 +472,16 @@ export class RoleRepository implements IRoleRepository {
 
         const userRoles = await this.userRoleModel.findAll({
             where,
+            attributes: [
+                'id',
+                'userId',
+                'roleId',
+                'tenantId',
+                'grantedAt',
+                'expiresAt',
+                'isActive',
+                'metadata',
+            ],
             include: [
                 {
                     model: RoleModel,

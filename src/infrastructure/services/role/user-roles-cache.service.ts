@@ -1,6 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { RedisService, REDIS_KEY_PREFIXES } from '@app/infrastructure/common/redis';
+import {
+    REDIS_KEY_PREFIXES,
+    RedisService,
+} from '@app/infrastructure/common/redis';
 import type { UserRoleInfo } from '@app/infrastructure/responses/role/user-roles.response';
+import { Injectable, Logger } from '@nestjs/common';
 
 /**
  * Сервис кэширования пользовательских ролей в Redis
@@ -30,9 +33,9 @@ export class UserRolesCacheService {
     }
 
     /**
-     * Получить ключ паттерн для всех пользователей с определённой ролью
+     * Получить ключ паттерн для всех пользовательских ролей
      */
-    private getRoleUsersPattern(roleId: number): string {
+    private getRoleUsersPattern(): string {
         return `${REDIS_KEY_PREFIXES.USER_ROLES}*`;
     }
 
@@ -49,8 +52,7 @@ export class UserRolesCacheService {
     ): Promise<UserRoleInfo[] | null> {
         try {
             const key = this.getUserRolesKey(userId, tenantId);
-            const cached =
-                await this.redisService.get<UserRoleInfo[]>(key);
+            const cached = await this.redisService.get<UserRoleInfo[]>(key);
 
             if (cached) {
                 this.logger.debug(
@@ -141,10 +143,7 @@ export class UserRolesCacheService {
 
             return deleted;
         } catch (error) {
-            this.logger.error(
-                'Error invalidating all user roles cache',
-                error,
-            );
+            this.logger.error('Error invalidating all user roles cache', error);
             return 0;
         }
     }
@@ -157,23 +156,31 @@ export class UserRolesCacheService {
      */
     async invalidateByRoleId(roleId: number): Promise<number> {
         try {
-            // Получить все ключи пользовательских ролей
-            const pattern = this.getRoleUsersPattern(roleId);
-            const keys = await this.redisService
-                .getClient()
-                .keys(`${REDIS_KEY_PREFIXES.USER_ROLES}*`);
-
-            // Фильтровать ключи, которые содержат эту роль
-            // Это требует чтения всех ключей, что может быть медленно
-            // TODO: рассмотреть использование Redis Sets для отслеживания user-role связей
+            const pattern = this.getRoleUsersPattern();
             let deleted = 0;
-            for (const key of keys) {
-                const roles =
-                    await this.redisService.get<UserRoleInfo[]>(key);
-                if (roles && roles.some((r) => r.roleId === roleId)) {
-                    await this.redisService.del(key);
-                    deleted++;
-                }
+
+            // Использовать SCAN вместо keys() для неблокирующей операции
+            for await (const batch of this.redisService.scanKeys(
+                pattern,
+                100,
+            )) {
+                // Параллельная обработка батча для оптимизации
+                const deletions = await Promise.all(
+                    batch.map(async (key) => {
+                        const roles =
+                            await this.redisService.get<UserRoleInfo[]>(key);
+                        if (roles?.some((r) => r.roleId === roleId)) {
+                            await this.redisService.del(key);
+                            return 1;
+                        }
+                        return 0;
+                    }),
+                );
+
+                deleted += deletions.reduce(
+                    (sum: number, d: number) => sum + d,
+                    0,
+                );
             }
 
             this.logger.debug(
@@ -182,10 +189,7 @@ export class UserRolesCacheService {
 
             return deleted;
         } catch (error) {
-            this.logger.error(
-                'Error invalidating cache by role ID',
-                error,
-            );
+            this.logger.error('Error invalidating cache by role ID', error);
             return 0;
         }
     }
@@ -198,16 +202,22 @@ export class UserRolesCacheService {
         memoryUsage: string;
     }> {
         try {
-            const keys = await this.redisService
-                .getClient()
-                .keys(`${REDIS_KEY_PREFIXES.USER_ROLES}*`);
+            let totalKeys = 0;
+
+            // Использовать SCAN вместо keys() для неблокирующей операции
+            for await (const batch of this.redisService.scanKeys(
+                `${REDIS_KEY_PREFIXES.USER_ROLES}*`,
+                100,
+            )) {
+                totalKeys += batch.length;
+            }
 
             const info = await this.redisService.info();
             const memoryMatch = info.match(/used_memory_human:(.+)/);
             const memoryUsage = memoryMatch ? memoryMatch[1].trim() : 'N/A';
 
             return {
-                totalKeys: keys.length,
+                totalKeys,
                 memoryUsage,
             };
         } catch (error) {
@@ -219,4 +229,3 @@ export class UserRolesCacheService {
         }
     }
 }
-

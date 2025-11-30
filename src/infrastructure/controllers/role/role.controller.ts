@@ -1,15 +1,19 @@
 import {
     Body,
     Controller,
+    DefaultValuePipe,
     Delete,
+    ForbiddenException,
     Get,
     HttpCode,
     Param,
     ParseIntPipe,
     Patch,
     Post,
+    Query,
     Req,
     UseGuards,
+    UseInterceptors,
 } from '@nestjs/common';
 import {
     ApiBearerAuth,
@@ -29,6 +33,7 @@ import {
     UpdateRoleSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
 import { AuthGuard, RoleGuard } from '@app/infrastructure/common/guards';
+import { PerformanceMonitoringInterceptor } from '@app/infrastructure/common/interceptors/performance-monitoring.interceptor';
 import {
     AssignPermissionDto,
     AssignRoleDto,
@@ -71,10 +76,12 @@ import { ADMIN_ROLES, MANAGER_ROLES } from './role-constants';
 @ApiTags('Роль')
 @ApiBearerAuth('JWT-auth')
 @Controller('role')
+@UseInterceptors(PerformanceMonitoringInterceptor)
 export class RoleController implements IRoleController {
     constructor(
         private readonly roleService: RoleService,
         private readonly roleCacheService: RoleCacheService,
+        private readonly performanceInterceptor: PerformanceMonitoringInterceptor,
     ) {}
 
     // ========================================================================
@@ -436,5 +443,185 @@ export class RoleController implements IRoleController {
     public resetCacheStats(): { message: string } {
         this.roleCacheService.resetStats();
         return { message: 'Статистика кэша сброшена' };
+    }
+
+    // ============================================================================
+    // МОНИТОРИНГ ПРОИЗВОДИТЕЛЬНОСТИ
+    // ============================================================================
+
+    @ApiOperation({
+        summary: 'Получить статистику медленных запросов',
+        description:
+            'Возвращает список медленных запросов (>500ms). SUPER_ADMIN видит все запросы, PLATFORM_ADMIN - только своего тенанта.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика медленных запросов',
+    })
+    @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN', 'PLATFORM_ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/performance/slow-queries')
+    public getSlowQueries(
+        @Req() req: Request & { user?: IDecodedAccessToken },
+    ): Array<{
+        method: string;
+        route: string;
+        duration: number;
+        timestamp: string;
+    }> {
+        const user = req.user;
+        const userRoles = user?.roles ?? [];
+        const tenantId = user?.tenantId ?? null;
+
+        // SUPER_ADMIN видит все запросы (null)
+        // PLATFORM_ADMIN видит только свой тенант
+        const isSuperAdmin = userRoles.some((r) => r.role === 'SUPER_ADMIN');
+        const requestorTenantId = isSuperAdmin ? null : tenantId;
+
+        return this.performanceInterceptor.getSlowQueries(requestorTenantId);
+    }
+
+    @ApiOperation({
+        summary: 'Получить сводную статистику производительности',
+        description: 'Возвращает агрегированную статистику медленных запросов',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Сводная статистика',
+    })
+    @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN', 'PLATFORM_ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/performance/stats')
+    public getPerformanceStats(): {
+        totalSlowQueries: number;
+        averageDuration: number;
+        maxDuration: number;
+        slowestRoute: string;
+    } {
+        return this.performanceInterceptor.getStats();
+    }
+
+    @ApiOperation({
+        summary: 'Очистить статистику медленных запросов',
+        description: 'Удаляет все записи о медленных запросах',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика очищена',
+    })
+    @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Post('/performance/clear')
+    public clearPerformanceStats(): { message: string } {
+        this.performanceInterceptor.clearSlowQueries();
+        this.performanceInterceptor.clearTenantStats();
+        return { message: 'Статистика медленных запросов очищена' };
+    }
+
+    // ============================================================================
+    // TENANT-AWARE МОНИТОРИНГ
+    // ============================================================================
+
+    @ApiOperation({
+        summary: 'Получить статистику производительности тенанта',
+        description:
+            'Возвращает статистику медленных запросов для конкретного тенанта',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика тенанта',
+        schema: {
+            type: 'object',
+            properties: {
+                tenantId: { type: 'number' },
+                slowQueryCount: { type: 'number' },
+                avgDuration: { type: 'number' },
+                maxDuration: { type: 'number' },
+                totalDuration: { type: 'number' },
+            },
+        },
+    })
+    @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN', 'PLATFORM_ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/performance/tenant/:tenantId/stats')
+    public getTenantStats(
+        @Param('tenantId', ParseIntPipe) tenantId: number,
+        @Req() req: Request & { user?: IDecodedAccessToken },
+    ): {
+        tenantId: number;
+        slowQueryCount: number;
+        avgDuration: number;
+        maxDuration: number;
+        totalDuration: number;
+    } {
+        const user = req.user;
+        const userRoles = user?.roles ?? [];
+        const userTenantId = user?.tenantId ?? null;
+
+        const isSuperAdmin = userRoles.some((r) => r.role === 'SUPER_ADMIN');
+
+        // PLATFORM_ADMIN может видеть только свой тенант
+        if (!isSuperAdmin && userTenantId !== tenantId) {
+            throw new ForbiddenException(
+                'Недостаточно прав для просмотра статистики другого тенанта',
+            );
+        }
+
+        const stats = this.performanceInterceptor.getTenantStats(tenantId);
+
+        return {
+            tenantId,
+            ...stats,
+        };
+    }
+
+    @ApiOperation({
+        summary: 'Получить топ проблемных тенантов',
+        description:
+            'Возвращает список тенантов с наибольшим количеством медленных запросов (только для SUPER_ADMIN)',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Топ проблемных тенантов',
+        schema: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    tenantId: { type: 'number' },
+                    slowQueryCount: { type: 'number' },
+                    avgDuration: { type: 'number' },
+                    maxDuration: { type: 'number' },
+                },
+            },
+        },
+    })
+    @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/performance/tenants/top-noisy')
+    public getTopNoisyTenants(
+        @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    ): Array<{
+        tenantId: number;
+        slowQueryCount: number;
+        avgDuration: number;
+        maxDuration: number;
+    }> {
+        return this.performanceInterceptor.getTopNoisyTenants(limit);
     }
 }
