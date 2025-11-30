@@ -50,6 +50,7 @@ import {
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { RoleCacheService } from './role-cache.service';
+import { UserRolesCacheService } from './user-roles-cache.service';
 
 @Injectable()
 export class RoleService implements IRoleService {
@@ -59,6 +60,7 @@ export class RoleService implements IRoleService {
         private readonly roleRepository: RoleRepository,
         private readonly orderRepository: OrderRepository,
         private readonly roleCacheService: RoleCacheService,
+        private readonly userRolesCacheService: UserRolesCacheService,
         @InjectModel(UserModel) private userModel: typeof UserModel,
         @InjectModel(UserRoleModel)
         private userRoleModel: typeof UserRoleModel,

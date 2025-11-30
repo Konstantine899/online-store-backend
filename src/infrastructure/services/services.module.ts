@@ -30,6 +30,7 @@ import { PromoCodeService } from './promo-code/promo-code.service';
 import { RatingService } from './rating/rating.service';
 import { RoleCacheService } from './role/role-cache.service';
 import { RoleService } from './role/role.service';
+import { UserRolesCacheService } from './role/user-roles-cache.service';
 import { TokenService } from './token/token.service';
 import { UserAddressService } from './user-address/user-address.service';
 import { UserCleanupService } from './user/user-cleanup.service';
@@ -63,6 +64,7 @@ import { UserService } from './user/user.service';
         RatingService,
         RoleCacheService,
         RoleService,
+        UserRolesCacheService,
         TokenService,
         UserService,
         UserAddressService,
@@ -98,6 +100,7 @@ import { UserService } from './user/user.service';
         RatingService,
         RoleCacheService,
         RoleService,
+        UserRolesCacheService,
         TokenService,
         UserService,
         UserAddressService,

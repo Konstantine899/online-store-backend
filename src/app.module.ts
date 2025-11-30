@@ -14,6 +14,8 @@ import {
     SequelizeConfigService,
     databaseConfig,
 } from '@app/infrastructure/config/sequelize';
+import { redisConfig } from '@app/infrastructure/config/redis.config';
+import { RedisModule } from '@app/infrastructure/common/redis';
 import * as Joi from 'joi';
 import * as process from 'process';
 import { ControllersModule } from './infrastructure/controllers/controllers.module';
@@ -30,7 +32,7 @@ import { ServicesModule } from './infrastructure/services/services.module';
         SequelizeModule.forFeature([TenantModel]),
         ConfigModule.forRoot({
             envFilePath: `.${process.env.NODE_ENV}.env`,
-            load: [databaseConfig],
+            load: [databaseConfig, redisConfig],
             isGlobal: true,
             validationSchema: Joi.object({
                 NODE_ENV: Joi.string()
@@ -78,6 +80,13 @@ import { ServicesModule } from './infrastructure/services/services.module';
                 JWT_REFRESH_EXPIRES: Joi.string()
                     .regex(/^\d+(ms|s|m|h|d)$/)
                     .required(),
+
+                // Redis (опционально, по умолчанию localhost)
+                REDIS_HOST: Joi.string().default('localhost'),
+                REDIS_PORT: Joi.number().integer().min(1).max(65535).default(6379),
+                REDIS_PASSWORD: Joi.string().optional().allow(''),
+                REDIS_DB: Joi.number().integer().min(0).max(15).default(0),
+                REDIS_KEY_PREFIX: Joi.string().default('online-store:'),
             }),
             validationOptions: {
                 abortEarly: false, // показать все ошибки разом
@@ -141,6 +150,7 @@ import { ServicesModule } from './infrastructure/services/services.module';
 
         ScheduleModule.forRoot(),
 
+        RedisModule,
         ControllersModule,
         ServicesModule,
         RepositoriesModule,
