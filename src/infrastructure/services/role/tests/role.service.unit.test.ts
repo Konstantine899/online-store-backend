@@ -4,6 +4,7 @@ import {
     UserRoleModel as UserRoleModelType,
 } from '@app/domain/models';
 import { MetricsCollector } from '@app/infrastructure/common/services';
+import { AuditService } from '@app/infrastructure/services/audit/audit.service';
 import type {
     AssignPermissionDto,
     AssignRoleDto,
@@ -137,6 +138,12 @@ describe('RoleService (unit)', () => {
                         recordRoleAutoAssignment: jest.fn(),
                     },
                 },
+                {
+                    provide: AuditService,
+                    useValue: {
+                        createLog: jest.fn().mockResolvedValue(undefined),
+                    },
+                },
             ],
         }).compile();
 
@@ -238,6 +245,10 @@ describe('RoleService (unit)', () => {
                 conditions: Record<string, unknown> | null;
             }> = [];
 
+            // Мок для получения старой роли (нужно для audit лога)
+            roleRepository.findRoleById.mockResolvedValue(
+                mockRole as unknown as RoleModel,
+            );
             roleRepository.updateRole.mockResolvedValue(
                 updatedRole as unknown as RoleModel,
             );
@@ -356,6 +367,14 @@ describe('RoleService (unit)', () => {
             roleRepository.findRoleById.mockResolvedValue(
                 mockRole as unknown as RoleModel,
             );
+            // Мок для получения существующих разрешений (нужно для audit лога)
+            roleRepository.findRolePermissions.mockResolvedValue([
+                {
+                    resource: 'products',
+                    action: 'read',
+                    conditions: null,
+                },
+            ]);
             roleRepository.deleteRolePermission.mockResolvedValue(true);
 
             const result = await service.revokePermission(dto, 1);

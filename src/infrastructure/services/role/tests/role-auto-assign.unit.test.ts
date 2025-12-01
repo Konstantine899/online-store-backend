@@ -8,6 +8,7 @@ import {
     getVipRoleThreshold,
     getWholesaleRoleThreshold,
 } from '@app/infrastructure/controllers/role/role-constants';
+import { AuditService } from '@app/infrastructure/services/audit/audit.service';
 import {
     OrderRepository,
     RoleRepository,
@@ -119,6 +120,12 @@ describe('RoleService - Auto Role Assignment', () => {
                     provide: MetricsCollector,
                     useValue: {
                         recordRoleAutoAssignment: jest.fn(),
+                    },
+                },
+                {
+                    provide: AuditService,
+                    useValue: {
+                        createLog: jest.fn().mockResolvedValue(undefined),
                     },
                 },
             ],
