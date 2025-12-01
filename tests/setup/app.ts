@@ -1,5 +1,8 @@
 import { UserModel } from '@app/domain/models';
 import { BruteforceGuard } from '@app/infrastructure/common/guards';
+import { RedisService } from '@app/infrastructure/common/redis/redis.service';
+import { REDIS_CLIENT } from '@app/infrastructure/common/redis/redis.constants';
+import { UserRolesCacheService } from '@app/infrastructure/services/role/user-roles-cache.service';
 import { getConfig } from '@app/infrastructure/config';
 import { CustomValidationPipe } from '@app/infrastructure/pipes/custom-validation-pipe';
 import type { INestApplication } from '@nestjs/common';
@@ -70,6 +73,50 @@ export async function setupTestApp(): Promise<INestApplication> {
     builder
         .overrideProvider(BruteforceGuard)
         .useValue({ canActivate: () => true });
+
+    // Мок RedisService для тестов (Redis не требуется в integration тестах)
+    const mockRedisClient = {
+        ping: async () => Promise.resolve('PONG'),
+        get: async () => Promise.resolve(null),
+        setex: async () => Promise.resolve('OK'),
+        del: async () => Promise.resolve(1),
+        keys: async () => Promise.resolve([]),
+        scan: async () => Promise.resolve(['0', []]),
+        exists: async () => Promise.resolve(0),
+        ttl: async () => Promise.resolve(-1),
+        info: async () => Promise.resolve('used_memory_human:0B'),
+        quit: async () => Promise.resolve('OK'),
+    };
+
+    async function* mockScanKeys(): AsyncGenerator<string[]> {
+        yield [];
+    }
+
+    builder.overrideProvider(REDIS_CLIENT).useValue(mockRedisClient);
+    builder.overrideProvider(RedisService).useValue({
+        ping: async () => Promise.resolve(true),
+        get: async () => Promise.resolve(null),
+        set: async () => Promise.resolve(true),
+        del: async () => Promise.resolve(true),
+        delPattern: async () => Promise.resolve(0),
+        scanKeys: mockScanKeys,
+        exists: async () => Promise.resolve(false),
+        ttl: async () => Promise.resolve(-1),
+        info: async () => Promise.resolve('used_memory_human:0B'),
+        disconnect: async () => Promise.resolve(undefined),
+        getClient: () => mockRedisClient,
+    });
+
+    // Мок UserRolesCacheService для тестов (избегаем проблем с зависимостями Redis)
+    builder.overrideProvider(UserRolesCacheService).useValue({
+        getUserRoles: async () => Promise.resolve(null),
+        setUserRoles: async () => Promise.resolve(true),
+        invalidateUserRoles: async () => Promise.resolve(true),
+        invalidateAllUserRoles: async () => Promise.resolve(0),
+        invalidateByRoleId: async () => Promise.resolve(0),
+        getStats: async () =>
+            Promise.resolve({ totalKeys: 0, memoryUsage: '0B' }),
+    });
 
     const moduleRef = await builder.compile();
     const app = moduleRef.createNestApplication();

@@ -743,6 +743,8 @@ export class RoleController implements IRoleController {
     @Get('/audit')
     public async getAuditLogs(
         @Query() filters: AuditFiltersDto,
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
         @Req() request: Request,
     ): Promise<PaginatedAuditLogsResponse> {
         const user = request.user as IDecodedAccessToken;
@@ -752,9 +754,6 @@ export class RoleController implements IRoleController {
         const isTenantAdmin =
             user?.roles?.some((r) => r.role === 'TENANT_ADMIN') ?? false;
         const effectiveTenantId = isTenantAdmin ? tenantId : filters.tenantId;
-
-        const page = filters.page ?? 1;
-        const limit = filters.limit ?? 20;
 
         // Преобразовать строки дат в Date объекты
         const startDate = filters.startDate
@@ -772,6 +771,99 @@ export class RoleController implements IRoleController {
             endDate,
             requestId: filters.requestId,
         });
+
+        return {
+            data: auditLogs.data.map((log) =>
+                mapAuditLogToResponse(log, false),
+            ),
+            meta: {
+                totalCount: auditLogs.totalCount,
+                currentPage: auditLogs.currentPage,
+                lastPage: auditLogs.lastPage,
+                limit: auditLogs.limit,
+                hasNextPage: auditLogs.currentPage < auditLogs.lastPage,
+                hasPreviousPage: auditLogs.currentPage > 1,
+            },
+        };
+    }
+
+    /**
+     * Получить audit логи с фильтрацией
+     * @access ADMIN_ROLES, SUPER_ADMIN
+     * @tenant_isolation YES - TENANT_ADMIN видит только логи своего тенанта
+     */
+    @ApiOperation({
+        summary: 'Получить audit логи с фильтрацией',
+        description:
+            'Возвращает audit логи с применением множественных фильтров',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Отфильтрованные audit логи',
+        type: PaginatedAuditLogsResponse,
+    })
+    @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiBearerAuth('JWT-auth')
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES, 'SUPER_ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/audit/filter')
+    public async getFilteredAudit(
+        @Query() filters: AuditFiltersDto,
+        @Req() request: Request,
+    ): Promise<PaginatedAuditLogsResponse> {
+        const user = request.user as IDecodedAccessToken;
+        const tenantId = user?.tenantId ?? null;
+
+        // Получаем page и limit напрямую из query параметров, минуя ParseIntPipe
+        // чтобы избежать конфликта с валидацией DTO
+        const page = request.query.page
+            ? parseInt(String(request.query.page), 10)
+            : 1;
+        const limit = request.query.limit
+            ? parseInt(String(request.query.limit), 10)
+            : 20;
+
+        // Для TENANT_ADMIN применяем tenant isolation
+        const isTenantAdmin =
+            user?.roles?.some((r) => r.role === 'TENANT_ADMIN') ?? false;
+        const effectiveTenantId = isTenantAdmin ? tenantId : filters.tenantId;
+
+        // Преобразовать строки дат в Date объекты
+        const startDate = filters.startDate
+            ? new Date(filters.startDate)
+            : undefined;
+        const endDate = filters.endDate ? new Date(filters.endDate) : undefined;
+
+        // Используем getAuditByDateRange если указаны даты, иначе findAll
+        let auditLogs;
+        if (startDate && endDate) {
+            auditLogs = await this.roleAuditService.getAuditByDateRange(
+                startDate,
+                endDate,
+                page,
+                limit,
+                {
+                    action: filters.action,
+                    entityType: filters.entityType,
+                    entityId: filters.entityId,
+                    userId: filters.userId,
+                    tenantId: effectiveTenantId ?? undefined,
+                    requestId: filters.requestId,
+                },
+            );
+        } else {
+            auditLogs = await this.auditService.findAll(page, limit, {
+                action: filters.action,
+                entityType: filters.entityType,
+                entityId: filters.entityId,
+                userId: filters.userId,
+                tenantId: effectiveTenantId ?? undefined,
+                startDate,
+                endDate,
+                requestId: filters.requestId,
+            });
+        }
 
         return {
             data: auditLogs.data.map((log) =>
@@ -942,93 +1034,6 @@ export class RoleController implements IRoleController {
         };
     }
 
-    /**
-     * Получить audit логи с фильтрацией
-     * @access ADMIN_ROLES, SUPER_ADMIN
-     * @tenant_isolation YES - TENANT_ADMIN видит только логи своего тенанта
-     */
-    @ApiOperation({
-        summary: 'Получить audit логи с фильтрацией',
-        description:
-            'Возвращает audit логи с применением множественных фильтров',
-    })
-    @ApiResponse({
-        status: 200,
-        description: 'Отфильтрованные audit логи',
-        type: PaginatedAuditLogsResponse,
-    })
-    @ApiResponse({ status: 403, description: 'Недостаточно прав' })
-    @ApiBearerAuth('JWT-auth')
-    @HttpCode(200)
-    @Roles(...ADMIN_ROLES, 'SUPER_ADMIN')
-    @UseGuards(AuthGuard, RoleGuard)
-    @Get('/audit/filter')
-    public async getFilteredAudit(
-        @Query() filters: AuditFiltersDto,
-        @Req() request: Request,
-    ): Promise<PaginatedAuditLogsResponse> {
-        const user = request.user as IDecodedAccessToken;
-        const tenantId = user?.tenantId ?? null;
-
-        // Для TENANT_ADMIN применяем tenant isolation
-        const isTenantAdmin =
-            user?.roles?.some((r) => r.role === 'TENANT_ADMIN') ?? false;
-        const effectiveTenantId = isTenantAdmin ? tenantId : filters.tenantId;
-
-        const page = filters.page ?? 1;
-        const limit = filters.limit ?? 20;
-
-        // Преобразовать строки дат в Date объекты
-        const startDate = filters.startDate
-            ? new Date(filters.startDate)
-            : undefined;
-        const endDate = filters.endDate ? new Date(filters.endDate) : undefined;
-
-        // Используем getAuditByDateRange если указаны даты, иначе findAll
-        let auditLogs;
-        if (startDate && endDate) {
-            auditLogs = await this.roleAuditService.getAuditByDateRange(
-                startDate,
-                endDate,
-                page,
-                limit,
-                {
-                    action: filters.action,
-                    entityType: filters.entityType,
-                    entityId: filters.entityId,
-                    userId: filters.userId,
-                    tenantId: effectiveTenantId ?? undefined,
-                    requestId: filters.requestId,
-                },
-            );
-        } else {
-            auditLogs = await this.auditService.findAll(page, limit, {
-                action: filters.action,
-                entityType: filters.entityType,
-                entityId: filters.entityId,
-                userId: filters.userId,
-                tenantId: effectiveTenantId ?? undefined,
-                startDate,
-                endDate,
-                requestId: filters.requestId,
-            });
-        }
-
-        return {
-            data: auditLogs.data.map((log) =>
-                mapAuditLogToResponse(log, false),
-            ),
-            meta: {
-                totalCount: auditLogs.totalCount,
-                currentPage: auditLogs.currentPage,
-                lastPage: auditLogs.lastPage,
-                limit: auditLogs.limit,
-                hasNextPage: auditLogs.currentPage < auditLogs.lastPage,
-                hasPreviousPage: auditLogs.currentPage > 1,
-            },
-        };
-    }
-
     // ========================================================================
     // ОТЧЁТЫ ПО АУДИТУ (ADMIN_ROLES, SUPER_ADMIN)
     // ========================================================================
@@ -1057,8 +1062,7 @@ export class RoleController implements IRoleController {
     public async getAuditSummary(
         @Query('startDate') startDateStr: string,
         @Query('endDate') endDateStr: string,
-        @Query('tenantId', new DefaultValuePipe(null), ParseIntPipe)
-        tenantIdParam: number | null,
+        @Query('tenantId') tenantIdParam?: string,
         @Req() request: Request,
     ): Promise<AuditSummaryResponse> {
         const user = request.user as IDecodedAccessToken;
@@ -1067,9 +1071,12 @@ export class RoleController implements IRoleController {
         // Для TENANT_ADMIN применяем tenant isolation
         const isTenantAdmin =
             user?.roles?.some((r) => r.role === 'TENANT_ADMIN') ?? false;
-        const effectiveTenantId = isTenantAdmin
-            ? tenantId
-            : tenantIdParam ?? null;
+        let parsedTenantId: number | null = null;
+        if (tenantIdParam) {
+            const parsed = Number.parseInt(tenantIdParam, 10);
+            parsedTenantId = Number.isNaN(parsed) ? null : parsed;
+        }
+        const effectiveTenantId = isTenantAdmin ? tenantId : parsedTenantId;
 
         if (!startDateStr || !endDateStr) {
             throw new BadRequestException(
@@ -1208,6 +1215,8 @@ export class RoleController implements IRoleController {
     public async exportAudit(
         @Query() filters: AuditFiltersDto,
         @Query('format') format: 'csv' | 'json',
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('limit', new DefaultValuePipe(1000), ParseIntPipe) limit: number,
         @Req() request: Request,
         @Res() res: Response,
     ): Promise<void> {
@@ -1224,9 +1233,6 @@ export class RoleController implements IRoleController {
         const isTenantAdmin =
             user?.roles?.some((r) => r.role === 'TENANT_ADMIN') ?? false;
         const effectiveTenantId = isTenantAdmin ? tenantId : filters.tenantId;
-
-        const page = filters.page ?? 1;
-        const limit = filters.limit ?? 1000; // Для экспорта берём больший лимит
 
         // Преобразовать строки дат в Date объекты
         const startDate = filters.startDate

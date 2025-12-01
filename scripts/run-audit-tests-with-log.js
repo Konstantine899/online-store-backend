@@ -10,7 +10,10 @@ const fs = require('fs');
 const path = require('path');
 
 const logDir = path.join(process.cwd(), 'test-logs');
-const logFile = path.join(logDir, `audit-unit-tests-${new Date().toISOString().replace(/[:.]/g, '-')}.log`);
+const logFile = path.join(
+    logDir,
+    `audit-unit-tests-${new Date().toISOString().replace(/[:.]/g, '-')}.log`,
+);
 
 // Создать директорию для логов, если её нет
 if (!fs.existsSync(logDir)) {
@@ -27,11 +30,15 @@ writeStream.write(`Command: jest --selectProjects unit audit --verbose\n`);
 writeStream.write(`${'='.repeat(50)}\n\n`);
 
 // Запустить jest
-const jest = spawn('npx', ['jest', '--selectProjects', 'unit', 'audit', '--verbose'], {
-    stdio: ['inherit', 'pipe', 'pipe'],
-    shell: true,
-    env: { ...process.env, NODE_ENV: 'test' },
-});
+const jest = spawn(
+    'npx',
+    ['jest', '--selectProjects', 'unit', 'audit', '--verbose'],
+    {
+        stdio: ['inherit', 'pipe', 'pipe'],
+        shell: true,
+        env: { ...process.env, NODE_ENV: 'test' },
+    },
+);
 
 let stdout = '';
 let stderr = '';
@@ -72,4 +79,3 @@ jest.on('error', (error) => {
     console.error('Ошибка запуска jest:', error);
     process.exit(1);
 });
-

@@ -8,13 +8,16 @@ import {
     Max,
     Min,
 } from 'class-validator';
+import { Exclude, Type } from 'class-transformer';
 
 /**
  * DTO для фильтрации audit логов
  */
 export class AuditFiltersDto {
     @IsOptional()
-    @IsEnum(AuditAction)
+    @IsEnum(AuditAction, {
+        message: 'Некорректное действие для audit лога',
+    })
     action?: AuditAction;
 
     @IsOptional()
@@ -22,11 +25,13 @@ export class AuditFiltersDto {
     entityType?: string;
 
     @IsOptional()
+    @Type(() => Number)
     @IsInt()
     @Min(1)
     entityId?: number;
 
     @IsOptional()
+    @Type(() => Number)
     @IsInt()
     @Min(1)
     userId?: number;
@@ -40,6 +45,7 @@ export class AuditFiltersDto {
     endDate?: string;
 
     @IsOptional()
+    @Type(() => Number)
     @IsInt()
     @Min(1)
     tenantId?: number;
@@ -48,15 +54,18 @@ export class AuditFiltersDto {
     @IsString()
     requestId?: string;
 
+    // Эти поля обрабатываются отдельно в контроллере напрямую из request.query
+    // Валидируем их как опциональные строки, чтобы они прошли валидацию и не блокировались
     @IsOptional()
-    @IsInt()
-    @Min(1)
-    @Max(100)
-    page?: number;
+    @IsString()
+    page?: string;
 
     @IsOptional()
-    @IsInt()
-    @Min(1)
-    @Max(100)
-    limit?: number;
+    @IsString()
+    limit?: string;
+
+    // Для export endpoint
+    @IsOptional()
+    @IsString()
+    format?: string;
 }
