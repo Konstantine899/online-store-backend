@@ -13,6 +13,7 @@ import { Module, OnModuleInit, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { RepositoriesModule } from '../repositories/repositories.module';
+import { AuditCleanupService } from './audit/audit-cleanup.service';
 import { AuditService } from './audit/audit.service';
 import { RoleAuditService } from './audit/role-audit.service';
 import { AuthService } from './auth/auth.service';
@@ -57,6 +58,7 @@ import { UserService } from './user/user.service';
         MetricsCollector,
         AuditService,
         RoleAuditService,
+        AuditCleanupService,
         AuthService,
         BrandService,
         CartService,

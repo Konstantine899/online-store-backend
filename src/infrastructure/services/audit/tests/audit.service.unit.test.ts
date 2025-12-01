@@ -478,4 +478,120 @@ describe('AuditService (unit)', () => {
             expect(result).toBe(0);
         });
     });
+
+    describe('deleteOldLogsBatch', () => {
+        beforeEach(() => {
+            // Мокируем sequelize instance и query метод
+            const mockSequelize = {
+                query: jest.fn(),
+            };
+            (auditLogModel as any).sequelize = mockSequelize;
+        });
+
+        it('should delete logs in batches', async () => {
+            const beforeDate = new Date('2023-01-01');
+            const mockSequelize = (auditLogModel as any).sequelize;
+
+            // Первый батч удаляет 1000 записей (полный батч)
+            // Второй батч удаляет 500 записей (меньше батча - конец)
+            (mockSequelize.query as jest.Mock)
+                .mockResolvedValueOnce({ affectedRows: 1000 })
+                .mockResolvedValueOnce({ affectedRows: 500 });
+
+            // Мокируем setTimeout для паузы между батчами
+            jest.useFakeTimers();
+
+            const resultPromise = service.deleteOldLogsBatch(beforeDate, 1000);
+
+            // Продвигаем таймер для обработки паузы между батчами
+            await jest.advanceTimersByTimeAsync(100);
+
+            const result = await resultPromise;
+
+            expect(mockSequelize.query).toHaveBeenCalledTimes(2);
+            expect(mockSequelize.query).toHaveBeenCalledWith(
+                expect.stringContaining('DELETE FROM audit_logs'),
+                expect.objectContaining({
+                    replacements: {
+                        beforeDate,
+                        batchSize: 1000,
+                    },
+                    type: 'DELETE', // QueryTypes.DELETE возвращает строку
+                }),
+            );
+
+            expect(result).toBe(1500); // 1000 + 500
+
+            jest.useRealTimers();
+        });
+
+        it('should handle single batch deletion', async () => {
+            const beforeDate = new Date('2023-01-01');
+            const mockSequelize = (auditLogModel as any).sequelize;
+
+            // Один батч удаляет 100 записей (меньше батча - конец)
+            (mockSequelize.query as jest.Mock).mockResolvedValueOnce({
+                affectedRows: 100,
+            });
+
+            jest.useFakeTimers();
+
+            const resultPromise = service.deleteOldLogsBatch(beforeDate, 1000);
+
+            await jest.advanceTimersByTimeAsync(100);
+
+            const result = await resultPromise;
+
+            expect(mockSequelize.query).toHaveBeenCalledTimes(1);
+            expect(result).toBe(100);
+
+            jest.useRealTimers();
+        });
+
+        it('should return 0 when no logs to delete', async () => {
+            const beforeDate = new Date('2023-01-01');
+            const mockSequelize = (auditLogModel as any).sequelize;
+
+            // Батч возвращает 0 удалённых записей
+            (mockSequelize.query as jest.Mock).mockResolvedValueOnce({
+                affectedRows: 0,
+            });
+
+            const result = await service.deleteOldLogsBatch(beforeDate, 1000);
+
+            expect(mockSequelize.query).toHaveBeenCalledTimes(1);
+            expect(result).toBe(0);
+        });
+
+        it('should handle number result type (MySQL)', async () => {
+            const beforeDate = new Date('2023-01-01');
+            const mockSequelize = (auditLogModel as any).sequelize;
+
+            // Некоторые БД возвращают число напрямую
+            (mockSequelize.query as jest.Mock)
+                .mockResolvedValueOnce(1000)
+                .mockResolvedValueOnce(500);
+
+            jest.useFakeTimers();
+
+            const resultPromise = service.deleteOldLogsBatch(beforeDate, 1000);
+
+            await jest.advanceTimersByTimeAsync(100);
+
+            const result = await resultPromise;
+
+            expect(result).toBe(1500);
+
+            jest.useRealTimers();
+        });
+
+        it('should throw error when sequelize instance not available', async () => {
+            const beforeDate = new Date('2023-01-01');
+            (auditLogModel as any).sequelize = null;
+
+            await expect(
+                service.deleteOldLogsBatch(beforeDate, 1000),
+            ).rejects.toThrow('Sequelize instance not available');
+        });
+    });
 });

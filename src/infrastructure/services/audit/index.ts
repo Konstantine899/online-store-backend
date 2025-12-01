@@ -8,4 +8,5 @@ export {
     IAuditDiff,
     IAuditLogDiff,
 } from './role-audit.service';
+export { AuditCleanupService } from './audit-cleanup.service';
 

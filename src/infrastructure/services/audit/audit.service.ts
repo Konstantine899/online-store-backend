@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, WhereOptions, fn, col, literal } from 'sequelize';
+import { Op, WhereOptions, fn, col, literal, QueryTypes } from 'sequelize';
 import {
     AuditLogModel,
     AuditAction,
@@ -261,6 +261,82 @@ export class AuditService {
         });
 
         return deletedCount;
+    }
+
+    /**
+     * Удалить старые audit логи порциями (batch удаление)
+     * Используется для больших объёмов данных, чтобы не блокировать БД
+     * @param beforeDate - удалить логи старше этой даты
+     * @param batchSize - размер батча (по умолчанию 1000 записей)
+     * @returns Promise<number> - общее количество удаленных записей
+     */
+    async deleteOldLogsBatch(
+        beforeDate: Date,
+        batchSize: number = 1000,
+    ): Promise<number> {
+        const sequelize = this.auditLogModel.sequelize;
+        if (!sequelize) {
+            throw new Error('Sequelize instance not available');
+        }
+
+        let totalDeleted = 0;
+        let batchNumber = 0;
+        let hasMore = true;
+
+        this.logger.log({
+            beforeDate: beforeDate.toISOString(),
+            batchSize,
+            message: 'Starting batch deletion of old audit logs',
+        });
+
+        while (hasMore) {
+            batchNumber++;
+
+            // Используем прямой SQL запрос для batch удаления
+            // LIMIT гарантирует, что удалим только batchSize записей за раз
+            const result = await sequelize.query(
+                `DELETE FROM audit_logs WHERE created_at < :beforeDate LIMIT :batchSize`,
+                {
+                    replacements: {
+                        beforeDate,
+                        batchSize,
+                    },
+                    type: QueryTypes.DELETE,
+                },
+            );
+
+            // MySQL возвращает affectedRows в результате
+            const deletedInBatch =
+                typeof result === 'number'
+                    ? result
+                    : (result as unknown as { affectedRows?: number })
+                            ?.affectedRows ?? 0;
+
+            totalDeleted += deletedInBatch;
+            hasMore = deletedInBatch === batchSize; // Если удалили меньше, значит больше нет
+
+            this.logger.debug({
+                batchNumber,
+                deletedInBatch,
+                totalDeleted,
+                hasMore,
+                message: `Batch ${batchNumber}: deleted ${deletedInBatch} records`,
+            });
+
+            // Небольшая пауза между батчами, чтобы дать БД передохнуть
+            if (hasMore) {
+                await new Promise((resolve) => setTimeout(resolve, 100));
+            }
+        }
+
+        this.logger.log({
+            totalDeleted,
+            batchNumber,
+            beforeDate: beforeDate.toISOString(),
+            message: `Batch deletion completed: ${totalDeleted} audit logs deleted in ${batchNumber} batches`,
+        });
+
+        return totalDeleted;
     }
 
     /**

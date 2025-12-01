@@ -87,6 +87,12 @@ import { ServicesModule } from './infrastructure/services/services.module';
                 REDIS_PASSWORD: Joi.string().optional().allow(''),
                 REDIS_DB: Joi.number().integer().min(0).max(15).default(0),
                 REDIS_KEY_PREFIX: Joi.string().default('online-store:'),
+                // Audit logs retention policy
+                AUDIT_LOG_RETENTION_DAYS: Joi.number()
+                    .integer()
+                    .min(30)
+                    .max(1095)
+                    .default(365),
             }),
             validationOptions: {
                 abortEarly: false, // показать все ошибки разом
