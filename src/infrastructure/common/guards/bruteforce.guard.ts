@@ -138,6 +138,16 @@ export class BruteforceGuard extends ThrottlerGuard {
             );
         }
 
+        // Rate limiting для audit endpoints (30 запросов в минуту)
+        if (request.url.includes('/role/audit')) {
+            return this.checkAndIncrement(
+                'audit',
+                60 * 1000, // 1 минута
+                30, // 30 запросов в минуту
+                requestProps,
+            );
+        }
+
         // Для всех остальных роутов разрешаем проход без ограничений
         return true;
     }
@@ -181,7 +191,7 @@ export class BruteforceGuard extends ThrottlerGuard {
     }
 
     private checkAndIncrement(
-        profile: 'login' | 'refresh' | 'registration',
+        profile: 'login' | 'refresh' | 'registration' | 'audit',
         windowMs: number,
         limit: number,
         requestProps: ThrottlerRequest,

@@ -736,6 +736,10 @@ export class RoleController implements IRoleController {
     })
     @ApiResponse({ status: 401, description: 'Не авторизован' })
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiResponse({
+        status: 429,
+        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+    })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
     @Roles(...ADMIN_ROLES, 'SUPER_ADMIN')
@@ -803,6 +807,10 @@ export class RoleController implements IRoleController {
         type: PaginatedAuditLogsResponse,
     })
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiResponse({
+        status: 429,
+        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+    })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
     @Roles(...ADMIN_ROLES, 'SUPER_ADMIN')
@@ -896,6 +904,10 @@ export class RoleController implements IRoleController {
     })
     @ApiResponse({ status: 404, description: 'Audit лог не найден' })
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiResponse({
+        status: 429,
+        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+    })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
     @Roles(...ADMIN_ROLES, 'SUPER_ADMIN')
@@ -946,6 +958,10 @@ export class RoleController implements IRoleController {
         type: PaginatedAuditLogsResponse,
     })
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiResponse({
+        status: 429,
+        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+    })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
     @Roles(...ADMIN_ROLES, 'SUPER_ADMIN')
@@ -998,6 +1014,10 @@ export class RoleController implements IRoleController {
         type: PaginatedAuditLogsResponse,
     })
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiResponse({
+        status: 429,
+        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+    })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
     @Roles(...ADMIN_ROLES, 'SUPER_ADMIN')
@@ -1054,6 +1074,10 @@ export class RoleController implements IRoleController {
         type: AuditSummaryResponse,
     })
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiResponse({
+        status: 429,
+        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+    })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
     @Roles(...ADMIN_ROLES, 'SUPER_ADMIN')
@@ -1120,6 +1144,10 @@ export class RoleController implements IRoleController {
         type: AuditTimelineResponse,
     })
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiResponse({
+        status: 429,
+        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+    })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
     @Roles(...ADMIN_ROLES, 'SUPER_ADMIN')
@@ -1151,6 +1179,10 @@ export class RoleController implements IRoleController {
         type: UserActivityReportResponse,
     })
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiResponse({
+        status: 429,
+        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+    })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
     @Roles(...ADMIN_ROLES, 'SUPER_ADMIN')
@@ -1207,6 +1239,10 @@ export class RoleController implements IRoleController {
     })
     @ApiResponse({ status: 400, description: 'Неверный формат' })
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+    @ApiResponse({
+        status: 429,
+        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+    })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
     @Roles(...ADMIN_ROLES, 'SUPER_ADMIN')

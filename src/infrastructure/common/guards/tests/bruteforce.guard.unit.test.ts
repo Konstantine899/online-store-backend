@@ -207,6 +207,85 @@ describe('BruteforceGuard (unit)', () => {
                 ).resolves.toBe(true);
             }
         });
+
+        it('должен применить лимит audit после 30 попыток', async () => {
+            mockRequest.url = '/online-store/role/audit';
+
+            const requestProps = { context: mockContext };
+
+            // Первые 30 попыток должны пройти
+            for (let i = 0; i < 30; i++) {
+                delete mockRequest.__bruteforceProcessed;
+                await expect(
+                    asPrivate(guard).handleRequest(requestProps),
+                ).resolves.toBe(true);
+            }
+
+            // 31-я попытка должна быть заблокирована
+            delete mockRequest.__bruteforceProcessed;
+            await expect(
+                asPrivate(guard).handleRequest(requestProps),
+            ).rejects.toThrow(ThrottlerException);
+        });
+
+        it('должен применять rate limiting ко всем audit endpoints', async () => {
+            const auditEndpoints = [
+                '/online-store/role/audit',
+                '/online-store/role/audit/filter',
+                '/online-store/role/audit/123',
+                '/online-store/role/audit/role/456',
+                '/online-store/role/audit/user/789',
+                '/online-store/role/audit/reports/summary',
+                '/online-store/role/audit/reports/timeline/123',
+                '/online-store/role/audit/reports/user-activity/456',
+                '/online-store/role/audit/reports/export',
+            ];
+
+            for (const endpoint of auditEndpoints) {
+                BruteforceGuard.resetCounters();
+                mockRequest.url = endpoint;
+                const requestProps = { context: mockContext };
+
+                // Первые 30 попыток должны пройти
+                for (let i = 0; i < 30; i++) {
+                    delete mockRequest.__bruteforceProcessed;
+                    await expect(
+                        asPrivate(guard).handleRequest(requestProps),
+                    ).resolves.toBe(true);
+                }
+
+                // 31-я попытка должна быть заблокирована
+                delete mockRequest.__bruteforceProcessed;
+                await expect(
+                    asPrivate(guard).handleRequest(requestProps),
+                ).rejects.toThrow(ThrottlerException);
+            }
+        });
+
+        it('должен устанавливать Retry-After header для audit endpoints', async () => {
+            mockRequest.url = '/online-store/role/audit';
+            const requestProps = { context: mockContext };
+
+            // Исчерпываем лимит
+            for (let i = 0; i < 30; i++) {
+                delete mockRequest.__bruteforceProcessed;
+                await asPrivate(guard).handleRequest(requestProps);
+            }
+
+            // Следующий запрос должен установить Retry-After header
+            delete mockRequest.__bruteforceProcessed;
+            try {
+                await asPrivate(guard).handleRequest(requestProps);
+            } catch {
+                // Ожидаем исключение
+            }
+
+            // Проверяем, что Retry-After header был установлен
+            expect(mockResponse.setHeader).toHaveBeenCalledWith(
+                'Retry-After',
+                expect.any(String),
+            );
+        });
     });
 
     describe('Изоляция между профилями', () => {
@@ -231,6 +310,32 @@ describe('BruteforceGuard (unit)', () => {
             // refresh должен всё ещё работать
             await expect(
                 asPrivate(guard).handleRequest({ context: refreshContext }),
+            ).resolves.toBe(true);
+        });
+
+        it('счётчики audit и login должны быть независимыми', async () => {
+            const loginRequest = {
+                ...mockRequest,
+                url: '/online-store/auth/login',
+            };
+            const auditRequest = {
+                ...mockRequest,
+                url: '/online-store/role/audit',
+            };
+
+            const loginContext = createMockContextForRequest(loginRequest);
+            const auditContext = createMockContextForRequest(auditRequest);
+
+            // Исчерпываем лимит login
+            for (let i = 0; i < 3; i++) {
+                delete (loginRequest as TestRequest).__bruteforceProcessed;
+                await asPrivate(guard).handleRequest({ context: loginContext });
+            }
+
+            // audit должен всё ещё работать (независимые счётчики)
+            delete (auditRequest as TestRequest).__bruteforceProcessed;
+            await expect(
+                asPrivate(guard).handleRequest({ context: auditContext }),
             ).resolves.toBe(true);
         });
 
@@ -494,6 +599,37 @@ describe('BruteforceGuard (unit)', () => {
                 'login rate limit exceeded',
                 expect.objectContaining({
                     route: '/online-store/auth/login',
+                    method: 'POST',
+                    correlationId: 'test-correlation-id',
+                    ip: '192.168.1.xxx', // Маскированный IP
+                }),
+            );
+        });
+
+        it('должен логировать блокировку audit endpoints с замаскированным IP', async () => {
+            mockRequest.url = '/online-store/role/audit';
+            mockRequest.socket = { remoteAddress: '192.168.1.200' };
+            const requestProps = { context: mockContext };
+            const loggerSpy = jest.spyOn(asPrivate(guard).logger, 'warn');
+
+            // Исчерпываем лимит (30 запросов)
+            for (let i = 0; i < 30; i++) {
+                delete mockRequest.__bruteforceProcessed;
+                await asPrivate(guard).handleRequest(requestProps);
+            }
+
+            // Следующий запрос должен залогировать блокировку
+            delete mockRequest.__bruteforceProcessed;
+            try {
+                await asPrivate(guard).handleRequest(requestProps);
+            } catch {
+                // Ожидаем исключение
+            }
+
+            expect(loggerSpy).toHaveBeenCalledWith(
+                'audit rate limit exceeded',
+                expect.objectContaining({
+                    route: '/online-store/role/audit',
                     method: 'POST',
                     correlationId: 'test-correlation-id',
                     ip: '192.168.1.xxx', // Маскированный IP
