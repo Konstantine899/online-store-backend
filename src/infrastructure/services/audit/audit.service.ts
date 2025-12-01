@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, WhereOptions } from 'sequelize';
+import { Op, WhereOptions, fn, col, literal } from 'sequelize';
 import {
     AuditLogModel,
     AuditAction,
@@ -261,6 +261,112 @@ export class AuditService {
         });
 
         return deletedCount;
+    }
+
+    /**
+     * Получить агрегированную статистику по действиям (без загрузки всех логов в память)
+     * @param filters - фильтры для поиска
+     * @returns Promise с агрегированными данными
+     */
+    async getAggregatedByAction(
+        filters?: IAuditFilters,
+    ): Promise<Record<string, number>> {
+        const where = this.buildWhereClause(filters);
+
+        const results = await this.auditLogModel.findAll({
+            where,
+            attributes: [
+                'action',
+                [fn('COUNT', col('id')), 'count'],
+            ],
+            group: ['action'],
+            raw: true,
+        });
+
+        const operationsByAction: Record<string, number> = {};
+        Object.values(AuditAction).forEach((action) => {
+            operationsByAction[action] = 0;
+        });
+
+        results.forEach((row: any) => {
+            operationsByAction[row.action] = Number.parseInt(row.count, 10) || 0;
+        });
+
+        return operationsByAction;
+    }
+
+    /**
+     * Получить агрегированную статистику по типам сущностей (без загрузки всех логов в память)
+     * @param filters - фильтры для поиска
+     * @returns Promise с агрегированными данными
+     */
+    async getAggregatedByEntityType(
+        filters?: IAuditFilters,
+    ): Promise<Record<string, number>> {
+        const where = this.buildWhereClause(filters);
+
+        const results = await this.auditLogModel.findAll({
+            where,
+            attributes: [
+                'entityType',
+                [fn('COUNT', col('id')), 'count'],
+            ],
+            group: ['entityType'],
+            raw: true,
+        });
+
+        const operationsByEntityType: Record<string, number> = {};
+
+        results.forEach((row: any) => {
+            operationsByEntityType[row.entityType] =
+                Number.parseInt(row.count, 10) || 0;
+        });
+
+        return operationsByEntityType;
+    }
+
+    /**
+     * Получить топ пользователей по количеству операций (с лимитом)
+     * @param filters - фильтры для поиска
+     * @param limit - максимальное количество пользователей (по умолчанию 10)
+     * @returns Promise с данными топ пользователей
+     */
+    async getTopUsersByOperations(
+        filters?: IAuditFilters,
+        limit: number = 10,
+    ): Promise<
+        Array<{
+            userId: number;
+            operationsCount: number;
+        }>
+    > {
+        const where = this.buildWhereClause({
+            ...filters,
+            userId: undefined, // Исключаем фильтр userId для агрегации
+        });
+
+        // Фильтруем только логи с userId
+        const userWhere = {
+            ...where,
+            userId: { [Op.ne]: null },
+        };
+
+        const results = await this.auditLogModel.findAll({
+            where: userWhere,
+            attributes: [
+                'userId',
+                [fn('COUNT', col('id')), 'count'],
+            ],
+            group: ['userId'],
+            order: [[literal('count'), 'DESC']],
+            limit,
+            raw: true,
+        });
+
+        return results.map((row: any) => ({
+            userId: row.userId,
+            operationsCount: Number.parseInt(row.count, 10) || 0,
+        }));
     }
 
     /**

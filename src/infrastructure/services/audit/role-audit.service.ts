@@ -1,10 +1,17 @@
 import { AuditAction, AuditLogModel } from '@app/domain/models';
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { UserModel } from '@app/domain/models';
+import { maskPII } from '@app/infrastructure/common/utils/logging';
 import {
     AuditService,
     IAuditFilters,
     IPaginatedAuditLogs,
 } from './audit.service';
+
+// Константы для лимитов
+const MAX_TIMELINE_RECORDS = 1000; // Максимум записей для timeline
+const MAX_USER_ACTIVITY_RECORDS = 1000; // Максимум записей для user activity
 
 /**
  * Интерфейс для diff между old и new values
@@ -34,7 +41,11 @@ export interface IAuditLogDiff {
 export class RoleAuditService {
     private readonly logger = new Logger(RoleAuditService.name);
 
-    constructor(private readonly auditService: AuditService) {}
+    constructor(
+        private readonly auditService: AuditService,
+        @InjectModel(UserModel)
+        private readonly userModel: typeof UserModel,
+    ) {}
 
     /**
      * Получить историю изменений конкретной роли
@@ -330,6 +341,7 @@ export class RoleAuditService {
 
     /**
      * Сгенерировать сводный отчёт по audit логам
+     * Использует агрегацию на уровне БД для избежания memory leak
      * @param startDate - начальная дата
      * @param endDate - конечная дата
      * @param tenantId - ID тенанта для фильтрации
@@ -359,80 +371,66 @@ export class RoleAuditService {
             message: 'Generating summary report',
         });
 
-        // Получить все логи за период (без пагинации, так как нужна полная статистика)
         const filters: IAuditFilters = {
             startDate,
             endDate,
             tenantId: tenantId ?? undefined,
         };
 
-        // Получаем все логи большими батчами
-        let allLogs: AuditLogModel[] = [];
-        let page = 1;
-        const limit = 100;
-        let hasMore = true;
+        // Используем агрегацию на уровне БД вместо загрузки всех логов
+        const [
+            totalOperations,
+            operationsByAction,
+            operationsByEntityType,
+            topUsersData,
+        ] = await Promise.all([
+            this.auditService.count(filters),
+            this.auditService.getAggregatedByAction(filters),
+            this.auditService.getAggregatedByEntityType(filters),
+            this.auditService.getTopUsersByOperations(filters, 10),
+        ]);
 
-        while (hasMore) {
-            const result = await this.auditService.findAll(
-                page,
-                limit,
-                filters,
-            );
-            allLogs = allLogs.concat(result.data);
-            hasMore = result.currentPage < result.lastPage;
-            page++;
-        }
-
-        // Подсчёт операций по типам действий
-        const operationsByAction: Record<string, number> = {};
-        Object.values(AuditAction).forEach((action) => {
-            operationsByAction[action] = 0;
-        });
-        allLogs.forEach((log) => {
-            operationsByAction[log.action] =
-                (operationsByAction[log.action] || 0) + 1;
+        // Получить информацию о пользователях для топ-10
+        const userIds = topUsersData.map((u) => u.userId);
+        const users = await this.userModel.findAll({
+            where: { id: userIds },
+            attributes: ['id', 'firstName', 'lastName', 'email'],
         });
 
-        // Подсчёт операций по типам сущностей
-        const operationsByEntityType: Record<string, number> = {};
-        allLogs.forEach((log) => {
-            operationsByEntityType[log.entityType] =
-                (operationsByEntityType[log.entityType] || 0) + 1;
-        });
+        const userMap = new Map(
+            users.map((u) => [
+                u.id,
+                {
+                    userName:
+                        u.firstName && u.lastName
+                            ? `${u.firstName} ${u.lastName}`
+                            : null,
+                    userEmail: u.email ?? null,
+                },
+            ]),
+        );
 
-        // Топ пользователей по количеству операций
-        const userOperationsCount: Record<
-            number,
-            { count: number; userName: string | null; userEmail: string | null }
-        > = {};
-        allLogs.forEach((log) => {
-            if (log.userId) {
-                if (!userOperationsCount[log.userId]) {
-                    userOperationsCount[log.userId] = {
-                        count: 0,
-                        userName:
-                            log.user?.firstName && log.user?.lastName
-                                ? `${log.user.firstName} ${log.user.lastName}`
-                                : (log.user?.email ?? null),
-                        userEmail: log.user?.email ?? null,
-                    };
-                }
-                userOperationsCount[log.userId].count++;
-            }
-        });
+        // Формируем топ пользователей с маскированием PII
+        const topUsers = topUsersData.map((userData) => {
+            const userInfo = userMap.get(userData.userId) ?? {
+                userName: null,
+                userEmail: null,
+            };
 
-        const topUsers = Object.entries(userOperationsCount)
-            .map(([userId, data]) => ({
-                userId: Number.parseInt(userId, 10),
-                userName: data.userName,
-                userEmail: data.userEmail,
-                operationsCount: data.count,
-            }))
-            .sort((a, b) => b.operationsCount - a.operationsCount)
-            .slice(0, 10); // Топ 10 пользователей
+            return {
+                userId: userData.userId,
+                userName: userInfo.userName
+                    ? maskPII(userInfo.userName)
+                    : null,
+                userEmail: userInfo.userEmail
+                    ? maskPII(userInfo.userEmail)
+                    : null,
+                operationsCount: userData.operationsCount,
+            };
+        });
 
         return {
-            totalOperations: allLogs.length,
+            totalOperations,
             operationsByAction,
             operationsByEntityType,
             topUsers,
@@ -476,22 +474,41 @@ export class RoleAuditService {
             message: 'Generating timeline report',
         });
 
-        // Получить все логи для роли
-        let allLogs: AuditLogModel[] = [];
+        // Получить логи для роли с лимитом (избегаем memory leak)
+        const allLogs: AuditLogModel[] = [];
         let page = 1;
         const limit = 100;
         let hasMore = true;
+        let totalFetched = 0;
 
-        while (hasMore) {
+        while (hasMore && totalFetched < MAX_TIMELINE_RECORDS) {
             const result = await this.getRoleAuditHistory(
                 roleId,
                 page,
                 limit,
                 tenantId,
             );
-            allLogs = allLogs.concat(result.data);
-            hasMore = result.currentPage < result.lastPage;
+
+            const remaining = MAX_TIMELINE_RECORDS - totalFetched;
+            const toAdd = result.data.slice(0, remaining);
+            allLogs.push(...toAdd);
+
+            totalFetched += toAdd.length;
+            hasMore =
+                result.currentPage < result.lastPage &&
+                totalFetched < MAX_TIMELINE_RECORDS;
             page++;
+
+            // Если достигли лимита, прерываем
+            if (totalFetched >= MAX_TIMELINE_RECORDS) {
+                this.logger.warn({
+                    roleId,
+                    limit: MAX_TIMELINE_RECORDS,
+                    message:
+                        'Timeline report limited to maximum records count',
+                });
+                break;
+            }
         }
 
         // Получить название роли из первого лога или из самого последнего
@@ -511,23 +528,29 @@ export class RoleAuditService {
             }
         }
 
-        // Преобразовать логи в события с diff
-        const events = allLogs.map((log) => ({
-            id: log.id,
-            action: log.action,
-            performedBy: {
-                userId: log.userId,
-                userName:
-                    log.user?.firstName && log.user?.lastName
-                        ? `${log.user.firstName} ${log.user.lastName}`
-                        : (log.user?.email ?? null),
-                userEmail: log.user?.email ?? null,
-            },
-            timestamp: log.createdAt.toISOString(),
-            changes: this.getDiff(log),
-            ipAddress: log.ipAddress,
-            requestId: log.requestId,
-        }));
+        // Преобразовать логи в события с diff и маскированием PII
+        const events = allLogs.map((log) => {
+            const userName =
+                log.user?.firstName && log.user?.lastName
+                    ? `${log.user.firstName} ${log.user.lastName}`
+                    : log.user?.email ?? null;
+
+            return {
+                id: log.id,
+                action: log.action,
+                performedBy: {
+                    userId: log.userId,
+                    userName: userName ? maskPII(userName) : null,
+                    userEmail: log.user?.email
+                        ? maskPII(log.user.email)
+                        : null,
+                },
+                timestamp: log.createdAt.toISOString(),
+                changes: this.getDiff(log),
+                ipAddress: log.ipAddress,
+                requestId: log.requestId,
+            };
+        });
 
         return {
             roleId,
@@ -577,46 +600,68 @@ export class RoleAuditService {
             endDate,
         };
 
-        // Получить все логи пользователя
-        let allLogs: AuditLogModel[] = [];
+        // Получить общее количество операций (без загрузки всех логов)
+        const totalOperations = await this.auditService.count(filters);
+
+        // Получить агрегированную статистику по действиям
+        const operationsByAction =
+            await this.auditService.getAggregatedByAction(filters);
+
+        // Получить логи пользователя с лимитом для подсчёта изменённых ролей
+        const allLogs: AuditLogModel[] = [];
         let page = 1;
         const limit = 100;
         let hasMore = true;
+        let totalFetched = 0;
 
-        while (hasMore) {
-            const result = await this.auditService.findAll(
-                page,
-                limit,
-                filters,
-            );
-            allLogs = allLogs.concat(result.data);
-            hasMore = result.currentPage < result.lastPage;
+        while (hasMore && totalFetched < MAX_USER_ACTIVITY_RECORDS) {
+            const result = await this.auditService.findAll(page, limit, filters);
+
+            const remaining = MAX_USER_ACTIVITY_RECORDS - totalFetched;
+            const toAdd = result.data.slice(0, remaining);
+            allLogs.push(...toAdd);
+
+            totalFetched += toAdd.length;
+            hasMore =
+                result.currentPage < result.lastPage &&
+                totalFetched < MAX_USER_ACTIVITY_RECORDS;
             page++;
+
+            if (totalFetched >= MAX_USER_ACTIVITY_RECORDS) {
+                this.logger.warn({
+                    userId,
+                    limit: MAX_USER_ACTIVITY_RECORDS,
+                    message:
+                        'User activity report limited to maximum records count',
+                });
+                break;
+            }
         }
 
-        // Получить информацию о пользователе из первого лога
+        // Получить информацию о пользователе
+        const user = await this.userModel.findByPk(userId, {
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+        });
+
         let userName: string | null = null;
         let userEmail: string | null = null;
-        if (allLogs.length > 0 && allLogs[0].user) {
-            const user = allLogs[0].user;
+        if (user) {
             userName =
                 user.firstName && user.lastName
                     ? `${user.firstName} ${user.lastName}`
-                    : (user.email ?? null);
+                    : null;
             userEmail = user.email ?? null;
+        } else if (allLogs.length > 0 && allLogs[0].user) {
+            // Fallback к данным из логов
+            const logUser = allLogs[0].user;
+            userName =
+                logUser.firstName && logUser.lastName
+                    ? `${logUser.firstName} ${logUser.lastName}`
+                    : null;
+            userEmail = logUser.email ?? null;
         }
 
-        // Подсчёт операций по типам действий
-        const operationsByAction: Record<string, number> = {};
-        Object.values(AuditAction).forEach((action) => {
-            operationsByAction[action] = 0;
-        });
-        allLogs.forEach((log) => {
-            operationsByAction[log.action] =
-                (operationsByAction[log.action] || 0) + 1;
-        });
-
-        // Подсчёт изменённых ролей
+        // Подсчёт изменённых ролей (только для загруженных логов)
         const rolesModifiedCount: Record<
             number,
             { roleName: string; count: number }
@@ -692,9 +737,9 @@ export class RoleAuditService {
 
         return {
             userId,
-            userName,
-            userEmail,
-            totalOperations: allLogs.length,
+            userName: userName ? maskPII(userName) : null,
+            userEmail: userEmail ? maskPII(userEmail) : null,
+            totalOperations,
             operationsByAction,
             rolesModified,
             dateRange: {
