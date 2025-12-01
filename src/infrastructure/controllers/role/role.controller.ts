@@ -1245,8 +1245,9 @@ export class RoleController implements IRoleController {
         let currentPage = page;
         let hasMore = true;
 
-        while (hasMore && allAuditLogs.length < 10000) {
-            // Лимит на экспорт - максимум 10000 записей
+        // Лимит на экспорт - максимум 10000 записей (защита от memory leak)
+        const MAX_EXPORT_RECORDS = 10000;
+        while (hasMore && allAuditLogs.length < MAX_EXPORT_RECORDS) {
             const result = await this.auditService.findAll(
                 currentPage,
                 limit,
