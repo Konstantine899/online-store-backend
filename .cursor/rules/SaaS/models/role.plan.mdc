@@ -1374,6 +1374,136 @@ tasks:
       gate:
     - require: "Одобряю SAAS-017-16"
 
+# Улучшения для Audit Logging (SAAS-017-16 Follow-up)
+
+- id: SAAS-017-16-01
+  title: Rate Limiting для Audit Endpoints
+  branch: "feature/role/SAAS-017-16-01/audit-rate-limiting"
+  priority: HIGH
+  estimated_time: 2 часа
+  files_scope:
+    - "src/infrastructure/common/guards/bruteforce.guard.ts"
+    - "src/infrastructure/controllers/role/role.controller.ts"
+      description: |
+      Audit endpoints могут быть ресурсоёмкими (генерация отчётов, экспорт).
+      Нужен специфичный профиль rate limiting для защиты от злоупотреблений.
+      steps:
+    - добавить профиль 'audit' в BruteforceGuard (30 req/min)
+    - применить профиль ко всем audit endpoints в RoleController
+    - протестировать rate limiting на всех audit endpoints
+    - обновить документацию API (Swagger) с указанием лимитов
+      dod:
+    - профиль 'audit' добавлен в BruteforceGuard
+    - все audit endpoints защищены rate limiting (30 req/min)
+    - тесты проверяют блокировку при превышении лимита
+    - документация обновлена
+      gate:
+    - require: "Одобряю SAAS-017-16-01"
+      pre_commit_workflow: "СТАНДАРТНЫЙ"
+      pre_commit_steps:
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: unit тесты BruteforceGuard с новым профилем"
+    - "«Коммит» → feat(role): SAAS-017-16-01 audit rate limiting"
+
+- id: SAAS-017-16-02
+  title: Retention Policy для Audit Logs
+  branch: "feature/role/SAAS-017-16-02/audit-retention-policy"
+  priority: HIGH
+  estimated_time: 4 часа
+  files_scope:
+    - "src/infrastructure/services/audit/audit.service.ts"
+    - "src/infrastructure/config/\*.ts"
+    - "src/infrastructure/common/jobs/\*.ts"
+      description: |
+      Audit логи накапливаются и могут занимать много места в БД.
+      Нужна автоматическая очистка старых логов через cron job.
+      steps:
+    - добавить env переменную AUDIT_LOG_RETENTION_DAYS (default: 365)
+    - создать cron job для удаления старых логов (ежедневно в 2:00)
+    - добавить валидацию retention days (min: 30, max: 1095)
+    - реализовать batch удаление (по частям, чтобы не блокировать БД)
+    - добавить логирование процесса очистки
+    - добавить метрики (количество удалённых логов)
+      dod:
+    - env переменная AUDIT_LOG_RETENTION_DAYS настроена
+    - cron job удаляет логи старше N дней ежедневно
+    - batch удаление работает корректно (не блокирует БД)
+    - логирование и метрики работают
+    - unit тесты для retention logic
+      gate:
+    - require: "Одобряю SAAS-017-16-02"
+      pre_commit_workflow: "СТАНДАРТНЫЙ"
+      pre_commit_steps:
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: unit тесты для retention job + integration тесты для batch удаления"
+    - "«Коммит» → feat(role): SAAS-017-16-02 audit retention policy"
+
+- id: SAAS-017-16-03
+  title: Кэширование отчётов
+  branch: "feature/role/SAAS-017-16-03/audit-reports-caching"
+  priority: MEDIUM
+  estimated_time: 3 часа
+  files_scope:
+    - "src/infrastructure/services/audit/role-audit.service.ts"
+    - "src/infrastructure/services/role/role-cache.service.ts"
+      description: |
+      Отчёты по audit логам генерируются каждый раз заново.
+      Для часто запрашиваемых отчётов (за сегодня/неделю) нужен кэш.
+      steps:
+    - определить стратегию кэширования (Redis или in-memory)
+    - реализовать кэш для generateSummaryReport (TTL: 5-15 минут)
+    - реализовать кэш для generateTimelineReport (TTL: 10 минут)
+    - добавить инвалидацию кэша при создании новых audit логов
+    - добавить метрики (hit/miss rate)
+      dod:
+    - кэширование работает для summary и timeline отчётов
+    - TTL настраивается через env (AUDIT_CACHE_TTL_SECONDS)
+    - кэш инвалидируется при новых audit логах
+    - метрики hit/miss rate работают
+    - unit тесты для cache logic
+      gate:
+    - require: "Одобряю SAAS-017-16-03"
+      pre_commit_workflow: "СТАНДАРТНЫЙ"
+      pre_commit_steps:
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: unit тесты для cache service + integration тесты кэширования"
+    - "«Коммит» → feat(role): SAAS-017-16-03 audit reports caching"
+
+- id: SAAS-017-16-04
+  title: Метрики и мониторинг для Audit
+  branch: "feature/role/SAAS-017-16-04/audit-metrics"
+  priority: MEDIUM
+  estimated_time: 3 часа
+  files_scope:
+    - "src/infrastructure/services/audit/audit.service.ts"
+    - "src/infrastructure/services/audit/role-audit.service.ts"
+    - "src/infrastructure/common/services/metrics-collector.ts"
+      description: |
+      Нужны метрики для мониторинга работы audit системы:
+    - количество логов в день (per tenant)
+    - размер таблицы audit_logs
+    - время генерации отчётов
+    - количество ошибок при создании логов
+      steps:
+    - добавить метрику audit_logs_count_per_day (per tenant)
+    - добавить метрику audit_logs_table_size (байты)
+    - добавить метрику audit_report_generation_time (мс)
+    - добавить метрику audit_log_creation_errors (count)
+    - добавить endpoint /metrics/audit для просмотра метрик
+    - обновить документацию
+      dod:
+    - все метрики собираются и доступны
+    - endpoint /metrics/audit возвращает актуальные метрики
+    - метрики логируются в структурированном формате
+    - документация обновлена
+      gate:
+    - require: "Одобряю SAAS-017-16-04"
+      pre_commit_workflow: "СТАНДАРТНЫЙ"
+      pre_commit_steps:
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: unit тесты для metrics collector + integration тесты endpoint"
+    - "«Коммит» → feat(role): SAAS-017-16-04 audit metrics and monitoring"
+
 - id: SAAS-017-17
   title: Временные роли и истечение
   branch: "feature/role/SAAS-017/role-expiration"
