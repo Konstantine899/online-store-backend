@@ -3,6 +3,7 @@ import {
     AuditLogModel,
     IAuditLogCreationAttributes,
 } from '@app/domain/models';
+import { MetricsCollector } from '@app/infrastructure/common/services';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { col, fn, literal, Op, QueryTypes, WhereOptions } from 'sequelize';
@@ -45,6 +46,7 @@ export class AuditService {
         @InjectModel(AuditLogModel)
         private readonly auditLogModel: typeof AuditLogModel,
         private readonly auditCacheService: RoleAuditCacheService,
+        private readonly metricsCollector: MetricsCollector,
     ) {}
 
     /**
@@ -68,13 +70,25 @@ export class AuditService {
                 message: 'Audit log created successfully',
             });
 
+            // Записываем метрику создания audit лога
+            this.metricsCollector.recordAuditLogCreation(data.tenantId);
+
             // Инвалидируем кэш отчётов для этого тенанта через RoleAuditCacheService
             await this.auditCacheService.invalidateByTenant(data.tenantId);
 
             return auditLog;
         } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : String(error);
+
+            // Записываем метрику ошибки создания audit лога
+            this.metricsCollector.recordAuditLogCreationError(
+                data.tenantId ?? null,
+                errorMessage,
+            );
+
             this.logger.error({
-                error: error instanceof Error ? error.message : String(error),
+                error: errorMessage,
                 data,
                 message: 'Failed to create audit log',
             });
@@ -487,5 +501,65 @@ export class AuditService {
         }
 
         return where;
+    }
+
+    /**
+     * Получить размер таблицы audit_logs в байтах
+     * @returns Promise с размером таблицы (dataLength, indexLength, totalLength)
+     */
+    async getTableSize(): Promise<{
+        dataLength: number;
+        indexLength: number;
+        totalLength: number;
+    }> {
+        const sequelize = this.auditLogModel.sequelize;
+        if (!sequelize) {
+            throw new Error('Sequelize instance not available');
+        }
+
+        const results = (await sequelize.query(
+            `SELECT
+                ROUND(SUM(data_length)) AS data_length,
+                ROUND(SUM(index_length)) AS index_length,
+                ROUND(SUM(data_length + index_length)) AS total_length
+            FROM information_schema.TABLES
+            WHERE table_schema = DATABASE()
+            AND table_name = 'audit_logs'`,
+            {
+                type: QueryTypes.SELECT,
+            },
+        )) as unknown as Array<{
+            data_length: number | string | null;
+            index_length: number | string | null;
+            total_length: number | string | null;
+        }>;
+
+        const result = results[0];
+        if (!result) {
+            // Таблица не найдена или пустая
+            return {
+                dataLength: 0,
+                indexLength: 0,
+                totalLength: 0,
+            };
+        }
+
+        // MySQL может возвращать числа как строки из information_schema, преобразуем явно
+        const parseSize = (value: number | string | null): number => {
+            if (value === null || value === undefined) {
+                return 0;
+            }
+            if (typeof value === 'string') {
+                const parsed = Number.parseFloat(value);
+                return Number.isNaN(parsed) ? 0 : parsed;
+            }
+            return value;
+        };
+
+        return {
+            dataLength: parseSize(result.data_length),
+            indexLength: parseSize(result.index_length),
+            totalLength: parseSize(result.total_length),
+        };
     }
 }

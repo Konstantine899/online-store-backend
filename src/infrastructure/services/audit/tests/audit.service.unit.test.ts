@@ -5,6 +5,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { Op } from 'sequelize';
 import { AuditService, type IAuditFilters } from '../audit.service';
 import { RoleAuditCacheService } from '../role-audit-cache.service';
+import { MetricsCollector } from '@app/infrastructure/common/services';
 
 interface MockSequelizeInstance {
     query: jest.Mock;
@@ -14,6 +15,7 @@ describe('AuditService (unit)', () => {
     let service: AuditService;
     let auditLogModel: jest.Mocked<typeof AuditLogModel>;
     let auditCacheService: jest.Mocked<RoleAuditCacheService>;
+    let metricsCollector: jest.Mocked<MetricsCollector>;
     let module: TestingModule;
 
     const mockAuditLog = {
@@ -62,6 +64,13 @@ describe('AuditService (unit)', () => {
             resetStats: jest.fn(),
         };
 
+        const mockMetricsCollector = {
+            recordAuditLogCreation: jest.fn(),
+            recordAuditLogCreationError: jest.fn(),
+            recordAuditReportGeneration: jest.fn(),
+            getAuditMetrics: jest.fn(),
+        };
+
         module = await Test.createTestingModule({
             providers: [
                 AuditService,
@@ -74,11 +83,18 @@ describe('AuditService (unit)', () => {
                         findByPk: jest.fn(),
                         count: jest.fn(),
                         destroy: jest.fn(),
+                        sequelize: {
+                            query: jest.fn(),
+                        },
                     },
                 },
                 {
                     provide: RoleAuditCacheService,
                     useValue: mockAuditCacheService,
+                },
+                {
+                    provide: MetricsCollector,
+                    useValue: mockMetricsCollector,
                 },
             ],
         }).compile();
@@ -86,6 +102,7 @@ describe('AuditService (unit)', () => {
         service = module.get<AuditService>(AuditService);
         auditLogModel = module.get(getModelToken(AuditLogModel));
         auditCacheService = module.get(RoleAuditCacheService);
+        metricsCollector = module.get(MetricsCollector);
     });
 
     afterEach(() => {
@@ -117,6 +134,9 @@ describe('AuditService (unit)', () => {
 
             expect(auditLogModel.create).toHaveBeenCalledWith(data);
             expect(result).toEqual(expect.objectContaining(data));
+            expect(metricsCollector.recordAuditLogCreation).toHaveBeenCalledWith(
+                1,
+            );
         });
 
         it('should throw error when creation fails', async () => {
@@ -125,6 +145,7 @@ describe('AuditService (unit)', () => {
                 entityId: 1,
                 action: AuditAction.CREATE,
                 userId: 1,
+                tenantId: 1,
             };
 
             const error = new Error('Database error');
@@ -134,6 +155,10 @@ describe('AuditService (unit)', () => {
             expect(auditLogModel.create).toHaveBeenCalledWith(data);
             // Инвалидация кэша не должна вызываться при ошибке
             expect(auditCacheService.invalidateByTenant).not.toHaveBeenCalled();
+            // Должна быть записана метрика ошибки
+            expect(
+                metricsCollector.recordAuditLogCreationError,
+            ).toHaveBeenCalledWith(data.tenantId ?? null, 'Database error');
         });
 
         it('should invalidate cache after creating log with tenantId', async () => {
@@ -176,6 +201,9 @@ describe('AuditService (unit)', () => {
             await service.createLog(data);
 
             expect(auditCacheService.invalidateByTenant).toHaveBeenCalledWith(
+                null,
+            );
+            expect(metricsCollector.recordAuditLogCreation).toHaveBeenCalledWith(
                 null,
             );
         });
@@ -979,7 +1007,87 @@ describe('AuditService (unit)', () => {
 
             await expect(
                 service.deleteOldLogsBatch(beforeDate, 1000),
-            ).rejects.toThrow('Sequelize instance not available');
+            ).rejects.toThrow(                'Sequelize instance not available');
+        });
+    });
+
+    describe('getTableSize', () => {
+        it('should return table size in bytes', async () => {
+            const mockResults = [
+                {
+                    data_length: 52428800,
+                    index_length: 10485760,
+                    total_length: 62914560,
+                },
+            ];
+
+            (
+                auditLogModel as unknown as { sequelize: MockSequelizeInstance }
+            ).sequelize.query = jest.fn().mockResolvedValue(mockResults);
+
+            const result = await service.getTableSize();
+
+            expect(result).toEqual({
+                dataLength: 52428800,
+                indexLength: 10485760,
+                totalLength: 62914560,
+            });
+
+            expect(
+                (auditLogModel as unknown as { sequelize: MockSequelizeInstance })
+                    .sequelize.query,
+            ).toHaveBeenCalledWith(
+                expect.stringContaining('SELECT'),
+                expect.objectContaining({ type: expect.any(String) }),
+            );
+        });
+
+        it('should return zeros when table not found', async () => {
+            (
+                auditLogModel as unknown as { sequelize: MockSequelizeInstance }
+            ).sequelize.query = jest.fn().mockResolvedValue([]);
+
+            const result = await service.getTableSize();
+
+            expect(result).toEqual({
+                dataLength: 0,
+                indexLength: 0,
+                totalLength: 0,
+            });
+        });
+
+        it('should handle null values from database', async () => {
+            const mockResults = [
+                {
+                    data_length: null,
+                    index_length: null,
+                    total_length: null,
+                },
+            ];
+
+            (
+                auditLogModel as unknown as { sequelize: MockSequelizeInstance }
+            ).sequelize.query = jest.fn().mockResolvedValue(mockResults);
+
+            const result = await service.getTableSize();
+
+            expect(result).toEqual({
+                dataLength: 0,
+                indexLength: 0,
+                totalLength: 0,
+            });
+        });
+
+        it('should throw error when sequelize instance not available', async () => {
+            (
+                auditLogModel as unknown as {
+                    sequelize: MockSequelizeInstance | null;
+                }
+            ).sequelize = null;
+
+            await expect(service.getTableSize()).rejects.toThrow(
+                'Sequelize instance not available',
+            );
         });
     });
 });

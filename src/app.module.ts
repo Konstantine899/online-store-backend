@@ -83,7 +83,11 @@ import { ServicesModule } from './infrastructure/services/services.module';
 
                 // Redis (опционально, по умолчанию localhost)
                 REDIS_HOST: Joi.string().default('localhost'),
-                REDIS_PORT: Joi.number().integer().min(1).max(65535).default(6379),
+                REDIS_PORT: Joi.number()
+                    .integer()
+                    .min(1)
+                    .max(65535)
+                    .default(6379),
                 REDIS_PASSWORD: Joi.string().optional().allow(''),
                 REDIS_DB: Joi.number().integer().min(0).max(15).default(0),
                 REDIS_KEY_PREFIX: Joi.string().default('online-store:'),

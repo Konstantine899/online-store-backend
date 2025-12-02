@@ -11,6 +11,7 @@ import {
     RoleAuditCacheService,
     type IAuditCacheStats,
 } from './role-audit-cache.service';
+import { MetricsCollector } from '@app/infrastructure/common/services';
 
 // Константы для лимитов
 const MAX_TIMELINE_RECORDS = 1000; // Максимум записей для timeline
@@ -49,6 +50,7 @@ export class RoleAuditService {
         @InjectModel(UserModel)
         private readonly userModel: typeof UserModel,
         private readonly auditCacheService: RoleAuditCacheService,
+        private readonly metricsCollector: MetricsCollector,
     ) {}
 
     /**
@@ -403,6 +405,7 @@ export class RoleAuditService {
             message: 'Cache MISS: generating summary report',
         });
 
+        const startTime = Date.now();
         const filters: IAuditFilters = {
             startDate,
             endDate,
@@ -479,6 +482,14 @@ export class RoleAuditService {
             tenantId,
         );
 
+        // Записываем метрику времени генерации отчёта
+        const duration = Date.now() - startTime;
+        this.metricsCollector.recordAuditReportGeneration(
+            'summary',
+            duration,
+            tenantId,
+        );
+
         return report;
     }
 
@@ -538,6 +549,7 @@ export class RoleAuditService {
             message: 'Cache MISS: generating timeline report',
         });
 
+        const startTime = Date.now();
         // Получить логи для роли с лимитом (избегаем memory leak)
         const allLogs: AuditLogModel[] = [];
         let page = 1;
@@ -623,6 +635,14 @@ export class RoleAuditService {
         await this.auditCacheService.setTimelineReport(
             roleId,
             report,
+            tenantId,
+        );
+
+        // Записываем метрику времени генерации отчёта
+        const duration = Date.now() - startTime;
+        this.metricsCollector.recordAuditReportGeneration(
+            'timeline',
+            duration,
             tenantId,
         );
 

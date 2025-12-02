@@ -61,6 +61,7 @@ export { AssignPermissionSwaggerDecorator } from './swagger/role/assign-permissi
 export { AssignRoleSwaggerDecorator } from './swagger/role/assign-role-swagger-decorator';
 export { CreateRoleSwaggerDecorator } from './swagger/role/create-role-swagger-decorator';
 export { DeleteRoleSwaggerDecorator } from './swagger/role/delete-role-swagger-decorator';
+export { GetAuditMetricsSwaggerDecorator } from './swagger/role/audit-metrics.swagger';
 export { GetListRoleSwaggerDecorator } from './swagger/role/get-list-role-swagger-decorator';
 export { GetRoleHierarchySwaggerDecorator } from './swagger/role/get-role-hierarchy-swagger-decorator';
 export { GetRolePermissionsSwaggerDecorator } from './swagger/role/get-role-permissions-swagger-decorator';

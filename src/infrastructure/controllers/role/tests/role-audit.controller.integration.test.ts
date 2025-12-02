@@ -12,6 +12,7 @@ process.env.JWT_REFRESH_EXPIRES = '1h';
 
 import type {
     AuditLogResponse,
+    AuditMetricsResponse,
     AuditTimelineResponse,
 } from '@app/infrastructure/responses';
 import type { INestApplication } from '@nestjs/common';
@@ -951,6 +952,93 @@ describe('RoleController Audit (integration)', () => {
                 );
                 expect(allFromTenant1).toBe(true);
             }
+        });
+    });
+
+    // GET /role/metrics/audit - Метрики audit системы
+    describe('GET /role/metrics/audit', () => {
+        it('200: ADMIN может получить метрики audit системы', async () => {
+            if (!isAppInitialized || !app) {
+                throw new Error('App is not initialized');
+            }
+
+            const response = await request(app.getHttpServer())
+                .get('/online-store/role/metrics/audit')
+                .set('Authorization', `Bearer ${superAdminToken}`)
+                .expect(200);
+
+            const metrics = response.body as AuditMetricsResponse;
+
+            expect(metrics).toBeDefined();
+            expect(metrics).toHaveProperty('logsPerDay');
+            expect(metrics).toHaveProperty('tableSize');
+            expect(metrics).toHaveProperty('avgReportGenerationTime');
+            expect(metrics).toHaveProperty('logCreationErrorsCount');
+            expect(metrics).toHaveProperty('totalLogsLast24h');
+            expect(metrics).toHaveProperty('timestamp');
+
+            expect(Array.isArray(metrics.logsPerDay)).toBe(true);
+            expect(Array.isArray(metrics.totalLogsLast24h)).toBe(true);
+
+            expect(metrics.tableSize).toHaveProperty('dataLength');
+            expect(metrics.tableSize).toHaveProperty('indexLength');
+            expect(metrics.tableSize).toHaveProperty('totalLength');
+
+            expect(typeof metrics.tableSize.dataLength).toBe('number');
+            expect(typeof metrics.tableSize.indexLength).toBe('number');
+            expect(typeof metrics.tableSize.totalLength).toBe('number');
+
+            expect(metrics.avgReportGenerationTime).toHaveProperty('summary');
+            expect(metrics.avgReportGenerationTime).toHaveProperty('timeline');
+            expect(typeof metrics.avgReportGenerationTime.summary).toBe(
+                'number',
+            );
+            expect(typeof metrics.avgReportGenerationTime.timeline).toBe(
+                'number',
+            );
+
+            expect(typeof metrics.logCreationErrorsCount).toBe('number');
+            expect(metrics.logCreationErrorsCount).toBeGreaterThanOrEqual(0);
+
+            expect(typeof metrics.timestamp).toBe('string');
+        });
+
+        it('401: Неавторизованный запрос возвращает 401', async () => {
+            if (!isAppInitialized || !app) {
+                throw new Error('App is not initialized');
+            }
+
+            await request(app.getHttpServer())
+                .get('/online-store/role/metrics/audit')
+                .expect(401);
+        });
+
+        it('403: MANAGER не может получить метрики audit системы', async () => {
+            if (!isAppInitialized || !app) {
+                throw new Error('App is not initialized');
+            }
+
+            await request(app.getHttpServer())
+                .get('/online-store/role/metrics/audit')
+                .set('Authorization', `Bearer ${managerToken}`)
+                .expect(403);
+        });
+
+        it('200: TENANT_ADMIN может получить метрики audit системы', async () => {
+            if (!isAppInitialized || !app) {
+                throw new Error('App is not initialized');
+            }
+
+            const response = await request(app.getHttpServer())
+                .get('/online-store/role/metrics/audit')
+                .set('Authorization', `Bearer ${tenantAdminToken}`)
+                .expect(200);
+
+            const metrics = response.body as AuditMetricsResponse;
+
+            expect(metrics).toBeDefined();
+            expect(metrics.tableSize).toBeDefined();
+            expect(metrics.tableSize.dataLength).toBeGreaterThanOrEqual(0);
         });
     });
 });

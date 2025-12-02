@@ -66,6 +66,7 @@ export { GetRatingResponse } from './rating/get-rating.response';
 export { RatingResponse } from './rating/rating.response';
 export { AssignPermissionResponse } from './role/assign-permission.response';
 export { AssignRoleResponse } from './role/assign-role.response';
+export { AuditMetricsResponse } from './role/audit-metrics.response';
 export { CreateRoleResponse } from './role/create-role.response';
 export { GetListRoleResponse } from './role/get-list-role.response';
 export { GetPaginatedRolesResponse } from './role/get-paginated-roles.response';

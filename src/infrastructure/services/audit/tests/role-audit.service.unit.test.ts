@@ -1,11 +1,12 @@
 import type { AuditLogModel } from '@app/domain/models';
 import { AuditAction, UserModel } from '@app/domain/models';
+import { MetricsCollector } from '@app/infrastructure/common/services';
 import { getConfig } from '@app/infrastructure/config';
 import { getModelToken } from '@nestjs/sequelize';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { AuditService, type IPaginatedAuditLogs } from '../audit.service';
-import { RoleAuditService } from '../role-audit.service';
 import { RoleAuditCacheService } from '../role-audit-cache.service';
+import { RoleAuditService } from '../role-audit.service';
 
 // Мокируем getConfig
 jest.mock('@app/infrastructure/config', () => ({
@@ -16,6 +17,7 @@ describe('RoleAuditService (unit)', () => {
     let service: RoleAuditService;
     let auditService: jest.Mocked<AuditService>;
     let auditCacheService: jest.Mocked<RoleAuditCacheService>;
+    let metricsCollector: jest.Mocked<MetricsCollector>;
     let module: TestingModule;
 
     const mockUser = {
@@ -101,6 +103,13 @@ describe('RoleAuditService (unit)', () => {
             resetStats: jest.fn(),
         };
 
+        const mockMetricsCollector = {
+            recordAuditLogCreation: jest.fn(),
+            recordAuditLogCreationError: jest.fn(),
+            recordAuditReportGeneration: jest.fn(),
+            getAuditMetrics: jest.fn(),
+        };
+
         module = await Test.createTestingModule({
             providers: [
                 RoleAuditService,
@@ -120,6 +129,10 @@ describe('RoleAuditService (unit)', () => {
                     useValue: mockAuditCacheService,
                 },
                 {
+                    provide: MetricsCollector,
+                    useValue: mockMetricsCollector,
+                },
+                {
                     provide: getModelToken(UserModel),
                     useValue: {
                         findAll: jest.fn(),
@@ -132,6 +145,7 @@ describe('RoleAuditService (unit)', () => {
         service = module.get<RoleAuditService>(RoleAuditService);
         auditService = module.get(AuditService);
         auditCacheService = module.get(RoleAuditCacheService);
+        metricsCollector = module.get(MetricsCollector);
     });
 
     afterEach(() => {
@@ -546,6 +560,10 @@ describe('RoleAuditService (unit)', () => {
             expect(report.dateRange.start).toBe(startDate.toISOString());
             expect(report.dateRange.end).toBe(endDate.toISOString());
             expect(report.tenantId).toBe(1);
+            // Проверяем, что записана метрика времени генерации отчёта
+            expect(
+                metricsCollector.recordAuditReportGeneration,
+            ).toHaveBeenCalledWith('summary', expect.any(Number), 1);
         });
 
         it('should handle multiple pages in report generation', async () => {
@@ -574,6 +592,10 @@ describe('RoleAuditService (unit)', () => {
             expect(auditService.getAggregatedByAction).toHaveBeenCalled();
             expect(auditService.getAggregatedByEntityType).toHaveBeenCalled();
             expect(auditService.getTopUsersByOperations).toHaveBeenCalled();
+            // Проверяем, что записана метрика времени генерации отчёта
+            expect(
+                metricsCollector.recordAuditReportGeneration,
+            ).toHaveBeenCalledWith('summary', expect.any(Number), undefined);
         });
     });
 
@@ -616,6 +638,10 @@ describe('RoleAuditService (unit)', () => {
                 },
             });
             expect(timeline.events[0].changes).toBeDefined();
+            // Проверяем, что записана метрика времени генерации отчёта
+            expect(
+                metricsCollector.recordAuditReportGeneration,
+            ).toHaveBeenCalledWith('timeline', expect.any(Number), 1);
         });
 
         it('should use oldValues.role if newValues.role is not available', async () => {
@@ -808,6 +834,10 @@ describe('RoleAuditService (unit)', () => {
                 tenantId,
             );
             expect(result.totalOperations).toBe(100);
+            // Проверяем, что записана метрика времени генерации отчёта
+            expect(
+                metricsCollector.recordAuditReportGeneration,
+            ).toHaveBeenCalledWith('summary', expect.any(Number), tenantId);
 
             auditCacheService.getCacheStats.mockReturnValue({
                 summary: { hits: 0, misses: 1, hitRate: 0 },
@@ -894,6 +924,10 @@ describe('RoleAuditService (unit)', () => {
             );
             expect(result.roleId).toBe(roleId);
             expect(result.roleName).toBe('TEST_ROLE');
+            // Проверяем, что записана метрика времени генерации отчёта
+            expect(
+                metricsCollector.recordAuditReportGeneration,
+            ).toHaveBeenCalledWith('timeline', expect.any(Number), tenantId);
 
             auditCacheService.getCacheStats.mockReturnValue({
                 summary: { hits: 0, misses: 0, hitRate: 0 },

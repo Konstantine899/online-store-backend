@@ -50,6 +50,29 @@ export class MetricsCollector implements OnModuleDestroy {
         timestamp: number;
     }> = [];
 
+    // Хранилище метрик создания audit логов (per tenant, per day)
+    private auditLogsPerDay: Array<{
+        tenantId: number | null;
+        date: string; // YYYY-MM-DD
+        count: number;
+        timestamp: number;
+    }> = [];
+
+    // Хранилище времени генерации audit отчётов
+    private auditReportGenerationTimes: Array<{
+        reportType: 'summary' | 'timeline';
+        duration: number; // в миллисекундах
+        tenantId: number | null;
+        timestamp: number;
+    }> = [];
+
+    // Хранилище ошибок создания audit логов
+    private auditLogCreationErrors: Array<{
+        tenantId: number | null;
+        error: string;
+        timestamp: number;
+    }> = [];
+
     constructor() {
         // Автоматическая очистка старых метрик каждый час (только в production)
         if (process.env.NODE_ENV !== 'test') {
@@ -257,6 +280,9 @@ export class MetricsCollector implements OnModuleDestroy {
             slowQueries: this.slowQueries.length,
             errors: this.errors.length,
             roleAutoAssignments: this.roleAutoAssignments.length,
+            auditLogsPerDay: this.auditLogsPerDay.length,
+            auditReportGenerationTimes: this.auditReportGenerationTimes.length,
+            auditLogCreationErrors: this.auditLogCreationErrors.length,
         };
 
         this.bulkOperations = this.bulkOperations.filter(
@@ -266,6 +292,16 @@ export class MetricsCollector implements OnModuleDestroy {
         this.errors = this.errors.filter((e) => e.timestamp > cutoff);
         this.roleAutoAssignments = this.roleAutoAssignments.filter(
             (item) => item.timestamp > cutoff,
+        );
+        this.auditLogsPerDay = this.auditLogsPerDay.filter(
+            (entry) => entry.timestamp > cutoff,
+        );
+        this.auditReportGenerationTimes =
+            this.auditReportGenerationTimes.filter(
+                (entry) => entry.timestamp > cutoff,
+            );
+        this.auditLogCreationErrors = this.auditLogCreationErrors.filter(
+            (entry) => entry.timestamp > cutoff,
         );
 
         const afterCleanup = {
@@ -298,11 +334,200 @@ export class MetricsCollector implements OnModuleDestroy {
     }
 
     /**
+     * Записать метрику создания audit лога
+     * FIFO: При достижении лимита удаляются самые старые записи
+     * @param tenantId - ID тенанта (null для системных операций)
+     */
+    public recordAuditLogCreation(tenantId?: number | null): void {
+        // Проверяем размер перед добавлением (FIFO)
+        if (this.auditLogsPerDay.length >= this.MAX_METRICS_SIZE) {
+            this.auditLogsPerDay.shift();
+        }
+
+        const now = Date.now();
+        const date = new Date(now).toISOString().split('T')[0]; // YYYY-MM-DD
+
+        // Проверяем, есть ли уже запись за сегодня для этого тенанта
+        const existingIndex = this.auditLogsPerDay.findIndex(
+            (entry) =>
+                entry.tenantId === (tenantId ?? null) && entry.date === date,
+        );
+
+        if (existingIndex >= 0) {
+            // Увеличиваем счётчик для существующей записи
+            this.auditLogsPerDay[existingIndex].count++;
+            this.auditLogsPerDay[existingIndex].timestamp = now; // Обновляем timestamp
+        } else {
+            // Создаём новую запись
+            this.auditLogsPerDay.push({
+                tenantId: tenantId ?? null,
+                date,
+                count: 1,
+                timestamp: now,
+            });
+        }
+    }
+
+    /**
+     * Записать ошибку создания audit лога
+     * FIFO: При достижении лимита удаляются самые старые записи
+     * @param tenantId - ID тенанта (null для системных операций)
+     * @param error - Сообщение об ошибке
+     */
+    public recordAuditLogCreationError(
+        tenantId: number | null,
+        error: string,
+    ): void {
+        // Проверяем размер перед добавлением (FIFO)
+        if (this.auditLogCreationErrors.length >= this.MAX_METRICS_SIZE) {
+            this.auditLogCreationErrors.shift();
+        }
+
+        this.auditLogCreationErrors.push({
+            tenantId,
+            error: error.substring(0, 500), // Truncate для экономии памяти
+            timestamp: Date.now(),
+        });
+    }
+
+    /**
+     * Записать метрику генерации audit отчёта
+     * FIFO: При достижении лимита удаляются самые старые записи
+     * @param reportType - Тип отчёта ('summary' | 'timeline')
+     * @param duration - Время генерации в миллисекундах
+     * @param tenantId - ID тенанта (опционально)
+     */
+    public recordAuditReportGeneration(
+        reportType: 'summary' | 'timeline',
+        duration: number,
+        tenantId?: number | null,
+    ): void {
+        // Проверяем размер перед добавлением (FIFO)
+        if (
+            this.auditReportGenerationTimes.length >= this.MAX_METRICS_SIZE
+        ) {
+            this.auditReportGenerationTimes.shift();
+        }
+
+        this.auditReportGenerationTimes.push({
+            reportType,
+            duration,
+            tenantId: tenantId ?? null,
+            timestamp: Date.now(),
+        });
+    }
+
+    /**
+     * Получить метрики audit системы за последние 24 часа
+     */
+    public getAuditMetrics(): {
+        logsPerDay: Array<{
+            tenantId: number | null;
+            date: string;
+            count: number;
+        }>;
+        avgReportGenerationTime: {
+            summary: number;
+            timeline: number;
+        };
+        logCreationErrorsCount: number;
+        totalLogsLast24h: Array<{
+            tenantId: number | null;
+            count: number;
+        }>;
+    } {
+        const now = Date.now();
+        const cutoff = now - this.METRICS_TTL_MS;
+
+        // Фильтруем метрики за последние 24 часа
+        const recentLogsPerDay = this.auditLogsPerDay.filter(
+            (entry) => entry.timestamp > cutoff,
+        );
+        const recentReportTimes = this.auditReportGenerationTimes.filter(
+            (entry) => entry.timestamp > cutoff,
+        );
+        const recentErrors = this.auditLogCreationErrors.filter(
+            (entry) => entry.timestamp > cutoff,
+        );
+
+        // Группируем логи по дням (без дубликатов дат для одного тенанта)
+        const logsPerDayMap = new Map<
+            string,
+            { tenantId: number | null; date: string; count: number }
+        >();
+        recentLogsPerDay.forEach((entry) => {
+            const key = `${entry.tenantId ?? 'null'}-${entry.date}`;
+            const existing = logsPerDayMap.get(key);
+            if (existing) {
+                existing.count += entry.count;
+            } else {
+                logsPerDayMap.set(key, {
+                    tenantId: entry.tenantId,
+                    date: entry.date,
+                    count: entry.count,
+                });
+            }
+        });
+
+        // Вычисляем среднее время генерации отчётов по типам
+        const summaryTimes = recentReportTimes.filter(
+            (entry) => entry.reportType === 'summary',
+        );
+        const timelineTimes = recentReportTimes.filter(
+            (entry) => entry.reportType === 'timeline',
+        );
+
+        const avgSummaryTime =
+            summaryTimes.length > 0
+                ? summaryTimes.reduce((sum, entry) => sum + entry.duration, 0) /
+                  summaryTimes.length
+                : 0;
+        const avgTimelineTime =
+            timelineTimes.length > 0
+                ? timelineTimes.reduce(
+                      (sum, entry) => sum + entry.duration,
+                      0,
+                  ) / timelineTimes.length
+                : 0;
+
+        // Агрегируем общее количество логов за последние 24 часа по тенантам
+        const totalLogsLast24hMap = new Map<
+            number | null,
+            { tenantId: number | null; count: number }
+        >();
+        recentLogsPerDay.forEach((entry) => {
+            const existing = totalLogsLast24hMap.get(entry.tenantId);
+            if (existing) {
+                existing.count += entry.count;
+            } else {
+                totalLogsLast24hMap.set(entry.tenantId, {
+                    tenantId: entry.tenantId,
+                    count: entry.count,
+                });
+            }
+        });
+
+        return {
+            logsPerDay: Array.from(logsPerDayMap.values()),
+            avgReportGenerationTime: {
+                summary: Math.round(avgSummaryTime * 100) / 100, // 2 знака после запятой
+                timeline: Math.round(avgTimelineTime * 100) / 100,
+            },
+            logCreationErrorsCount: recentErrors.length,
+            totalLogsLast24h: Array.from(totalLogsLast24hMap.values()),
+        };
+    }
+
+    /**
      * Сброс всех метрик (для тестов)
      */
     public reset(): void {
         this.bulkOperations = [];
         this.slowQueries = [];
         this.errors = [];
+        this.roleAutoAssignments = [];
+        this.auditLogsPerDay = [];
+        this.auditReportGenerationTimes = [];
+        this.auditLogCreationErrors = [];
     }
 }

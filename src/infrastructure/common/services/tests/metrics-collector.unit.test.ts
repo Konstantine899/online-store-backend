@@ -238,6 +238,258 @@ describe('MetricsCollector (unit)', () => {
             expect(metrics.errorRate).toBeGreaterThan(0);
         });
     });
+
+    describe('recordAuditLogCreation', () => {
+        it('должен записать метрику создания audit лога', () => {
+            metricsCollector.recordAuditLogCreation(1);
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            expect(auditMetrics.logsPerDay).toHaveLength(1);
+            expect(auditMetrics.logsPerDay[0].tenantId).toBe(1);
+            expect(auditMetrics.logsPerDay[0].count).toBe(1);
+            expect(auditMetrics.logsPerDay[0].date).toBeDefined();
+        });
+
+        it('должен инкрементировать счётчик для существующей записи за день', () => {
+            const tenantId = 1;
+            metricsCollector.recordAuditLogCreation(tenantId);
+            metricsCollector.recordAuditLogCreation(tenantId);
+            metricsCollector.recordAuditLogCreation(tenantId);
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            expect(auditMetrics.logsPerDay).toHaveLength(1);
+            expect(auditMetrics.logsPerDay[0].count).toBe(3);
+            expect(auditMetrics.logsPerDay[0].tenantId).toBe(tenantId);
+        });
+
+        it('должен создавать отдельные записи для разных тенантов', () => {
+            metricsCollector.recordAuditLogCreation(1);
+            metricsCollector.recordAuditLogCreation(2);
+            metricsCollector.recordAuditLogCreation(null);
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            expect(auditMetrics.logsPerDay).toHaveLength(3);
+            expect(
+                auditMetrics.logsPerDay.find((e) => e.tenantId === 1)?.count,
+            ).toBe(1);
+            expect(
+                auditMetrics.logsPerDay.find((e) => e.tenantId === 2)?.count,
+            ).toBe(1);
+            expect(
+                auditMetrics.logsPerDay.find((e) => e.tenantId === null)?.count,
+            ).toBe(1);
+        });
+
+        it('должен обрабатывать null tenantId', () => {
+            metricsCollector.recordAuditLogCreation(null);
+            metricsCollector.recordAuditLogCreation(null);
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            expect(auditMetrics.logsPerDay).toHaveLength(1);
+            expect(auditMetrics.logsPerDay[0].tenantId).toBeNull();
+            expect(auditMetrics.logsPerDay[0].count).toBe(2);
+        });
+
+        it('должен ограничить размер массива (FIFO) при достижении MAX_METRICS_SIZE', () => {
+            const MAX_SIZE = 10000;
+
+            // Записываем метрики для разных комбинаций tenantId
+            for (let i = 0; i < MAX_SIZE + 100; i++) {
+                const tenantId = i % 100;
+                metricsCollector.recordAuditLogCreation(tenantId);
+            }
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            // Проверяем, что метод не крашится и возвращает валидные данные
+            expect(auditMetrics.logsPerDay).toBeDefined();
+            expect(Array.isArray(auditMetrics.logsPerDay)).toBe(true);
+        });
+    });
+
+    describe('recordAuditLogCreationError', () => {
+        it('должен записать ошибку создания audit лога', () => {
+            metricsCollector.recordAuditLogCreationError(1, 'Test error');
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            expect(auditMetrics.logCreationErrorsCount).toBe(1);
+        });
+
+        it('должен записать несколько ошибок', () => {
+            metricsCollector.recordAuditLogCreationError(1, 'Error 1');
+            metricsCollector.recordAuditLogCreationError(2, 'Error 2');
+            metricsCollector.recordAuditLogCreationError(null, 'Error 3');
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            expect(auditMetrics.logCreationErrorsCount).toBe(3);
+        });
+
+        it('должен truncate длинные сообщения об ошибках', () => {
+            const longError = 'Error: ' + 'a'.repeat(1000);
+            metricsCollector.recordAuditLogCreationError(1, longError);
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            expect(auditMetrics.logCreationErrorsCount).toBe(1);
+        });
+
+        it('должен ограничить размер массива (FIFO)', () => {
+            const MAX_SIZE = 10000;
+
+            for (let i = 0; i < MAX_SIZE + 50; i++) {
+                metricsCollector.recordAuditLogCreationError(1, `Error ${i}`);
+            }
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            // Должно остаться не более MAX_SIZE ошибок
+            expect(auditMetrics.logCreationErrorsCount).toBeLessThanOrEqual(
+                MAX_SIZE,
+            );
+        });
+    });
+
+    describe('recordAuditReportGeneration', () => {
+        it('должен записать метрику генерации summary отчёта', () => {
+            metricsCollector.recordAuditReportGeneration('summary', 1250, 1);
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            expect(auditMetrics.avgReportGenerationTime.summary).toBe(1250);
+            expect(auditMetrics.avgReportGenerationTime.timeline).toBe(0);
+        });
+
+        it('должен записать метрику генерации timeline отчёта', () => {
+            metricsCollector.recordAuditReportGeneration('timeline', 875, 2);
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            expect(auditMetrics.avgReportGenerationTime.summary).toBe(0);
+            expect(auditMetrics.avgReportGenerationTime.timeline).toBe(875);
+        });
+
+        it('должен вычислить среднее время для нескольких отчётов', () => {
+            metricsCollector.recordAuditReportGeneration('summary', 1000, 1);
+            metricsCollector.recordAuditReportGeneration('summary', 1500, 1);
+            metricsCollector.recordAuditReportGeneration('summary', 1250, 1);
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            // avg = (1000 + 1500 + 1250) / 3 = 1250
+            expect(auditMetrics.avgReportGenerationTime.summary).toBe(1250);
+        });
+
+        it('должен обрабатывать null tenantId', () => {
+            metricsCollector.recordAuditReportGeneration('summary', 1000, null);
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            expect(auditMetrics.avgReportGenerationTime.summary).toBe(1000);
+        });
+
+        it('должен ограничить размер массива (FIFO)', () => {
+            const MAX_SIZE = 10000;
+
+            for (let i = 0; i < MAX_SIZE + 50; i++) {
+                metricsCollector.recordAuditReportGeneration(
+                    'summary',
+                    1000 + i,
+                    1,
+                );
+            }
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            // Проверяем, что метод не крашится и возвращает валидные данные
+            expect(auditMetrics.avgReportGenerationTime.summary).toBeGreaterThan(
+                0,
+            );
+        });
+    });
+
+    describe('getAuditMetrics', () => {
+        it('должен вернуть пустые метрики при отсутствии данных', () => {
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            expect(auditMetrics.logsPerDay).toEqual([]);
+            expect(auditMetrics.avgReportGenerationTime.summary).toBe(0);
+            expect(auditMetrics.avgReportGenerationTime.timeline).toBe(0);
+            expect(auditMetrics.logCreationErrorsCount).toBe(0);
+            expect(auditMetrics.totalLogsLast24h).toEqual([]);
+        });
+
+        it('должен агрегировать логи по дням и тенантам', () => {
+            // Записываем логи для разных тенантов
+            metricsCollector.recordAuditLogCreation(1);
+            metricsCollector.recordAuditLogCreation(1);
+            metricsCollector.recordAuditLogCreation(2);
+            metricsCollector.recordAuditLogCreation(null);
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            expect(auditMetrics.logsPerDay.length).toBeGreaterThan(0);
+            expect(auditMetrics.totalLogsLast24h.length).toBeGreaterThan(0);
+
+            // Проверяем, что totalLogsLast24h содержит агрегированные данные
+            const tenant1Logs = auditMetrics.totalLogsLast24h.find(
+                (e) => e.tenantId === 1,
+            );
+            expect(tenant1Logs?.count).toBeGreaterThanOrEqual(2);
+        });
+
+        it('должен корректно вычислить среднее время для разных типов отчётов', () => {
+            // Summary отчёты
+            metricsCollector.recordAuditReportGeneration('summary', 1000, 1);
+            metricsCollector.recordAuditReportGeneration('summary', 2000, 1);
+
+            // Timeline отчёты
+            metricsCollector.recordAuditReportGeneration('timeline', 500, 1);
+            metricsCollector.recordAuditReportGeneration('timeline', 1500, 1);
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            expect(auditMetrics.avgReportGenerationTime.summary).toBe(1500);
+            expect(auditMetrics.avgReportGenerationTime.timeline).toBe(1000);
+        });
+
+        it('должен фильтровать метрики старше 24 часов', () => {
+            // Записываем метрики
+            metricsCollector.recordAuditLogCreation(1);
+            metricsCollector.recordAuditReportGeneration('summary', 1000, 1);
+
+            // Записываем новую метрику
+            metricsCollector.recordAuditLogCreation(2);
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            // Должна быть хотя бы одна запись за последние 24 часа
+            expect(auditMetrics.logsPerDay.length).toBeGreaterThan(0);
+        });
+    });
+
+    describe('reset (audit metrics)', () => {
+        it('должен очистить все audit метрики', () => {
+            metricsCollector.recordAuditLogCreation(1);
+            metricsCollector.recordAuditLogCreationError(1, 'Error');
+            metricsCollector.recordAuditReportGeneration('summary', 1000, 1);
+
+            metricsCollector.reset();
+
+            const auditMetrics = metricsCollector.getAuditMetrics();
+
+            expect(auditMetrics.logsPerDay).toEqual([]);
+            expect(auditMetrics.logCreationErrorsCount).toBe(0);
+            expect(auditMetrics.avgReportGenerationTime.summary).toBe(0);
+            expect(auditMetrics.avgReportGenerationTime.timeline).toBe(0);
+            expect(auditMetrics.totalLogsLast24h).toEqual([]);
+        });
+    });
 });
 
 

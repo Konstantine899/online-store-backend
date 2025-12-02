@@ -32,6 +32,7 @@ import { IDecodedAccessToken } from '@app/domain/jwt';
 import {
     CreateRoleSwaggerDecorator,
     DeleteRoleSwaggerDecorator,
+    GetAuditMetricsSwaggerDecorator,
     GetListRoleSwaggerDecorator,
     GetRoleSwaggerDecorator,
     Roles,
@@ -50,6 +51,7 @@ import {
 } from '@app/infrastructure/dto';
 import {
     AuditLogResponse,
+    AuditMetricsResponse,
     AuditSummaryResponse,
     AuditTimelineResponse,
     PaginatedAuditLogsResponse,
@@ -76,6 +78,7 @@ import {
     RoleCacheService,
     RoleService,
 } from '@app/infrastructure/services';
+import { MetricsCollector } from '@app/infrastructure/common/services';
 
 import { IRoleController } from '@app/domain/controllers';
 import { ADMIN_ROLES, MANAGER_ROLES } from './role-constants';
@@ -102,6 +105,7 @@ export class RoleController implements IRoleController {
         private readonly auditService: AuditService,
         private readonly roleAuditService: RoleAuditService,
         private readonly performanceInterceptor: PerformanceMonitoringInterceptor,
+        private readonly metricsCollector: MetricsCollector,
     ) {}
 
     // ========================================================================
@@ -1084,10 +1088,10 @@ export class RoleController implements IRoleController {
     @UseGuards(AuthGuard, RoleGuard)
     @Get('/audit/reports/summary')
     public async getAuditSummary(
+        @Req() request: Request,
         @Query('startDate') startDateStr: string,
         @Query('endDate') endDateStr: string,
         @Query('tenantId') tenantIdParam?: string,
-        @Req() request: Request,
     ): Promise<AuditSummaryResponse> {
         const user = request.user as IDecodedAccessToken;
         const tenantId = user?.tenantId ?? null;
@@ -1325,5 +1329,32 @@ export class RoleController implements IRoleController {
             );
             res.json(exportData);
         }
+    }
+
+    /**
+     * Получить метрики audit системы
+     * @access ADMIN_ROLES, SUPER_ADMIN
+     * @tenant_isolation NO - возвращает метрики всех тенантов (только для SUPER_ADMIN)
+     */
+    @GetAuditMetricsSwaggerDecorator()
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES, 'SUPER_ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/metrics/audit')
+    public async getAuditMetrics(): Promise<AuditMetricsResponse> {
+        // Получаем метрики из MetricsCollector
+        const auditMetrics = this.metricsCollector.getAuditMetrics();
+
+        // Получаем размер таблицы audit_logs
+        const tableSize = await this.auditService.getTableSize();
+
+        return {
+            logsPerDay: auditMetrics.logsPerDay,
+            tableSize,
+            avgReportGenerationTime: auditMetrics.avgReportGenerationTime,
+            logCreationErrorsCount: auditMetrics.logCreationErrorsCount,
+            totalLogsLast24h: auditMetrics.totalLogsLast24h,
+            timestamp: new Date().toISOString(),
+        };
     }
 }
