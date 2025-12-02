@@ -1,13 +1,16 @@
-import { AuditAction, AuditLogModel } from '@app/domain/models';
+import { AuditAction, AuditLogModel, UserModel } from '@app/domain/models';
+import { maskPII } from '@app/infrastructure/common/utils/logging';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { UserModel } from '@app/domain/models';
-import { maskPII } from '@app/infrastructure/common/utils/logging';
 import {
     AuditService,
     IAuditFilters,
     IPaginatedAuditLogs,
 } from './audit.service';
+import {
+    RoleAuditCacheService,
+    type IAuditCacheStats,
+} from './role-audit-cache.service';
 
 // Константы для лимитов
 const MAX_TIMELINE_RECORDS = 1000; // Максимум записей для timeline
@@ -45,6 +48,7 @@ export class RoleAuditService {
         private readonly auditService: AuditService,
         @InjectModel(UserModel)
         private readonly userModel: typeof UserModel,
+        private readonly auditCacheService: RoleAuditCacheService,
     ) {}
 
     /**
@@ -340,8 +344,17 @@ export class RoleAuditService {
     }
 
     /**
+     * Получить статистику кэша для мониторинга
+     * Делегирует запрос в RoleAuditCacheService
+     */
+    getCacheStats(): IAuditCacheStats {
+        return this.auditCacheService.getCacheStats();
+    }
+
+    /**
      * Сгенерировать сводный отчёт по audit логам
      * Использует агрегацию на уровне БД для избежания memory leak
+     * Кэширование: результаты кэшируются для часто запрашиваемых периодов
      * @param startDate - начальная дата
      * @param endDate - конечная дата
      * @param tenantId - ID тенанта для фильтрации
@@ -364,11 +377,30 @@ export class RoleAuditService {
         dateRange: { start: string; end: string };
         tenantId?: number | null;
     }> {
+        // Проверяем кэш через RoleAuditCacheService
+        const cached = await this.auditCacheService.getSummaryReport<{
+            totalOperations: number;
+            operationsByAction: Record<string, number>;
+            operationsByEntityType: Record<string, number>;
+            topUsers: Array<{
+                userId: number;
+                userName: string | null;
+                userEmail: string | null;
+                operationsCount: number;
+            }>;
+            dateRange: { start: string; end: string };
+            tenantId?: number | null;
+        }>(startDate, endDate, tenantId);
+
+        if (cached) {
+            return cached;
+        }
+
         this.logger.log({
             startDate: startDate.toISOString(),
             endDate: endDate.toISOString(),
             tenantId,
-            message: 'Generating summary report',
+            message: 'Cache MISS: generating summary report',
         });
 
         const filters: IAuditFilters = {
@@ -419,9 +451,7 @@ export class RoleAuditService {
 
             return {
                 userId: userData.userId,
-                userName: userInfo.userName
-                    ? maskPII(userInfo.userName)
-                    : null,
+                userName: userInfo.userName ? maskPII(userInfo.userName) : null,
                 userEmail: userInfo.userEmail
                     ? maskPII(userInfo.userEmail)
                     : null,
@@ -429,7 +459,7 @@ export class RoleAuditService {
             };
         });
 
-        return {
+        const report = {
             totalOperations,
             operationsByAction,
             operationsByEntityType,
@@ -440,10 +470,21 @@ export class RoleAuditService {
             },
             tenantId,
         };
+
+        // Кэшируем результат через RoleAuditCacheService
+        await this.auditCacheService.setSummaryReport(
+            startDate,
+            endDate,
+            report,
+            tenantId,
+        );
+
+        return report;
     }
 
     /**
      * Сгенерировать timeline для конкретной роли
+     * Кэширование: результаты кэшируются для часто запрашиваемых ролей
      * @param roleId - ID роли
      * @param tenantId - ID тенанта для фильтрации
      * @returns Promise с timeline данными
@@ -468,10 +509,33 @@ export class RoleAuditService {
             requestId: string | null;
         }>;
     }> {
+        // Проверяем кэш через RoleAuditCacheService
+        const cached = await this.auditCacheService.getTimelineReport<{
+            roleId: number;
+            roleName: string;
+            events: Array<{
+                id: number;
+                action: AuditAction;
+                performedBy: {
+                    userId: number | null;
+                    userName: string | null;
+                    userEmail: string | null;
+                };
+                timestamp: string;
+                changes: IAuditLogDiff;
+                ipAddress: string | null;
+                requestId: string | null;
+            }>;
+        }>(roleId, tenantId);
+
+        if (cached) {
+            return cached;
+        }
+
         this.logger.log({
             roleId,
             tenantId,
-            message: 'Generating timeline report',
+            message: 'Cache MISS: generating timeline report',
         });
 
         // Получить логи для роли с лимитом (избегаем memory leak)
@@ -504,8 +568,7 @@ export class RoleAuditService {
                 this.logger.warn({
                     roleId,
                     limit: MAX_TIMELINE_RECORDS,
-                    message:
-                        'Timeline report limited to maximum records count',
+                    message: 'Timeline report limited to maximum records count',
                 });
                 break;
             }
@@ -533,7 +596,7 @@ export class RoleAuditService {
             const userName =
                 log.user?.firstName && log.user?.lastName
                     ? `${log.user.firstName} ${log.user.lastName}`
-                    : log.user?.email ?? null;
+                    : (log.user?.email ?? null);
 
             return {
                 id: log.id,
@@ -541,9 +604,7 @@ export class RoleAuditService {
                 performedBy: {
                     userId: log.userId,
                     userName: userName ? maskPII(userName) : null,
-                    userEmail: log.user?.email
-                        ? maskPII(log.user.email)
-                        : null,
+                    userEmail: log.user?.email ? maskPII(log.user.email) : null,
                 },
                 timestamp: log.createdAt.toISOString(),
                 changes: this.getDiff(log),
@@ -552,11 +613,20 @@ export class RoleAuditService {
             };
         });
 
-        return {
+        const report = {
             roleId,
             roleName,
             events,
         };
+
+        // Кэшируем результат через RoleAuditCacheService
+        await this.auditCacheService.setTimelineReport(
+            roleId,
+            report,
+            tenantId,
+        );
+
+        return report;
     }
 
     /**
@@ -615,7 +685,11 @@ export class RoleAuditService {
         let totalFetched = 0;
 
         while (hasMore && totalFetched < MAX_USER_ACTIVITY_RECORDS) {
-            const result = await this.auditService.findAll(page, limit, filters);
+            const result = await this.auditService.findAll(
+                page,
+                limit,
+                filters,
+            );
 
             const remaining = MAX_USER_ACTIVITY_RECORDS - totalFetched;
             const toAdd = result.data.slice(0, remaining);

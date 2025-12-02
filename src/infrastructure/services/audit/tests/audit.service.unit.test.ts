@@ -4,10 +4,16 @@ import { getModelToken } from '@nestjs/sequelize';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { Op } from 'sequelize';
 import { AuditService, type IAuditFilters } from '../audit.service';
+import { RoleAuditCacheService } from '../role-audit-cache.service';
+
+interface MockSequelizeInstance {
+    query: jest.Mock;
+}
 
 describe('AuditService (unit)', () => {
     let service: AuditService;
     let auditLogModel: jest.Mocked<typeof AuditLogModel>;
+    let auditCacheService: jest.Mocked<RoleAuditCacheService>;
     let module: TestingModule;
 
     const mockAuditLog = {
@@ -45,6 +51,17 @@ describe('AuditService (unit)', () => {
     beforeEach(async () => {
         jest.clearAllMocks();
 
+        const mockAuditCacheService = {
+            getSummaryReport: jest.fn(),
+            setSummaryReport: jest.fn(),
+            getTimelineReport: jest.fn(),
+            setTimelineReport: jest.fn(),
+            invalidateByTenant: jest.fn(),
+            invalidateTimelineReport: jest.fn(),
+            getCacheStats: jest.fn(),
+            resetStats: jest.fn(),
+        };
+
         module = await Test.createTestingModule({
             providers: [
                 AuditService,
@@ -52,17 +69,23 @@ describe('AuditService (unit)', () => {
                     provide: getModelToken(AuditLogModel),
                     useValue: {
                         create: jest.fn(),
+                        findAll: jest.fn(),
                         findAndCountAll: jest.fn(),
                         findByPk: jest.fn(),
                         count: jest.fn(),
                         destroy: jest.fn(),
                     },
                 },
+                {
+                    provide: RoleAuditCacheService,
+                    useValue: mockAuditCacheService,
+                },
             ],
         }).compile();
 
         service = module.get<AuditService>(AuditService);
         auditLogModel = module.get(getModelToken(AuditLogModel));
+        auditCacheService = module.get(RoleAuditCacheService);
     });
 
     afterEach(() => {
@@ -109,6 +132,99 @@ describe('AuditService (unit)', () => {
 
             await expect(service.createLog(data)).rejects.toThrow(error);
             expect(auditLogModel.create).toHaveBeenCalledWith(data);
+            // Инвалидация кэша не должна вызываться при ошибке
+            expect(auditCacheService.invalidateByTenant).not.toHaveBeenCalled();
+        });
+
+        it('should invalidate cache after creating log with tenantId', async () => {
+            const data = {
+                entityType: 'role',
+                entityId: 1,
+                action: AuditAction.CREATE,
+                userId: 1,
+                tenantId: 1,
+            };
+
+            auditCacheService.invalidateByTenant.mockResolvedValue(2);
+
+            (auditLogModel.create as jest.Mock).mockResolvedValue(
+                createMockAuditLog(data),
+            );
+
+            await service.createLog(data);
+
+            expect(auditCacheService.invalidateByTenant).toHaveBeenCalledWith(
+                1,
+            );
+        });
+
+        it('should invalidate all audit cache when tenantId is null', async () => {
+            const data = {
+                entityType: 'role',
+                entityId: 1,
+                action: AuditAction.CREATE,
+                userId: 1,
+                tenantId: null,
+            };
+
+            auditCacheService.invalidateByTenant.mockResolvedValue(5);
+
+            (auditLogModel.create as jest.Mock).mockResolvedValue(
+                createMockAuditLog(data),
+            );
+
+            await service.createLog(data);
+
+            expect(auditCacheService.invalidateByTenant).toHaveBeenCalledWith(
+                null,
+            );
+        });
+
+        it('should invalidate all audit cache when tenantId is undefined', async () => {
+            const data = {
+                entityType: 'role',
+                entityId: 1,
+                action: AuditAction.CREATE,
+                userId: 1,
+            };
+
+            auditCacheService.invalidateByTenant.mockResolvedValue(3);
+
+            (auditLogModel.create as jest.Mock).mockResolvedValue(
+                createMockAuditLog(data),
+            );
+
+            await service.createLog(data);
+
+            expect(auditCacheService.invalidateByTenant).toHaveBeenCalledWith(
+                undefined,
+            );
+        });
+
+        it('should handle cache invalidation errors gracefully', async () => {
+            const data = {
+                entityType: 'role',
+                entityId: 1,
+                action: AuditAction.CREATE,
+                userId: 1,
+                tenantId: 1,
+            };
+
+            // RoleAuditCacheService.invalidateByTenant обрабатывает ошибки внутри и возвращает 0
+            // Проверяем, что лог создаётся даже если инвалидация возвращает 0 (ошибка обработана)
+            auditCacheService.invalidateByTenant.mockResolvedValue(0);
+
+            (auditLogModel.create as jest.Mock).mockResolvedValue(
+                createMockAuditLog(data),
+            );
+
+            // Лог должен быть создан успешно
+            const result = await service.createLog(data);
+
+            expect(result).toEqual(expect.objectContaining(data));
+            expect(auditCacheService.invalidateByTenant).toHaveBeenCalledWith(
+                1,
+            );
         });
     });
 
@@ -451,6 +567,264 @@ describe('AuditService (unit)', () => {
         });
     });
 
+    describe('getAggregatedByAction', () => {
+        it('should return aggregated operations by action', async () => {
+            const filters: IAuditFilters = {
+                tenantId: 1,
+            };
+
+            const mockResults = [
+                { action: AuditAction.CREATE, count: '10' },
+                { action: AuditAction.UPDATE, count: '5' },
+            ];
+
+            (auditLogModel.findAll as jest.Mock).mockResolvedValue(mockResults);
+
+            const result = await service.getAggregatedByAction(filters);
+
+            expect(auditLogModel.findAll).toHaveBeenCalledWith({
+                where: expect.objectContaining({
+                    tenantId: 1,
+                }),
+                attributes: ['action', expect.any(Array)],
+                group: ['action'],
+                raw: true,
+            });
+
+            expect(result[AuditAction.CREATE]).toBe(10);
+            expect(result[AuditAction.UPDATE]).toBe(5);
+            // Все остальные действия должны быть 0
+            expect(result[AuditAction.DELETE]).toBe(0);
+            expect(result[AuditAction.ASSIGN]).toBe(0);
+            expect(result[AuditAction.REVOKE]).toBe(0);
+        });
+
+        it('should return empty results when no logs found', async () => {
+            (auditLogModel.findAll as jest.Mock).mockResolvedValue([]);
+
+            const result = await service.getAggregatedByAction();
+
+            expect(auditLogModel.findAll).toHaveBeenCalledWith({
+                where: {},
+                attributes: ['action', expect.any(Array)],
+                group: ['action'],
+                raw: true,
+            });
+
+            // Все действия должны быть 0
+            Object.values(AuditAction).forEach((action) => {
+                expect(result[action]).toBe(0);
+            });
+        });
+
+        it('should handle date range filters', async () => {
+            const startDate = new Date('2024-01-01');
+            const endDate = new Date('2024-12-31');
+            const filters: IAuditFilters = {
+                startDate,
+                endDate,
+            };
+
+            (auditLogModel.findAll as jest.Mock).mockResolvedValue([
+                { action: AuditAction.CREATE, count: '3' },
+            ]);
+
+            await service.getAggregatedByAction(filters);
+
+            expect(auditLogModel.findAll).toHaveBeenCalledWith({
+                where: expect.objectContaining({
+                    createdAt: {
+                        [Op.gte]: startDate,
+                        [Op.lte]: endDate,
+                    },
+                }),
+                attributes: ['action', expect.any(Array)],
+                group: ['action'],
+                raw: true,
+            });
+        });
+    });
+
+    describe('getAggregatedByEntityType', () => {
+        it('should return aggregated operations by entity type', async () => {
+            const filters: IAuditFilters = {
+                tenantId: 1,
+            };
+
+            const mockResults = [
+                { entityType: 'role', count: '15' },
+                { entityType: 'user_role', count: '8' },
+            ];
+
+            (auditLogModel.findAll as jest.Mock).mockResolvedValue(mockResults);
+
+            const result = await service.getAggregatedByEntityType(filters);
+
+            expect(auditLogModel.findAll).toHaveBeenCalledWith({
+                where: expect.objectContaining({
+                    tenantId: 1,
+                }),
+                attributes: ['entityType', expect.any(Array)],
+                group: ['entityType'],
+                raw: true,
+            });
+
+            expect(result['role']).toBe(15);
+            expect(result['user_role']).toBe(8);
+        });
+
+        it('should return empty results when no logs found', async () => {
+            (auditLogModel.findAll as jest.Mock).mockResolvedValue([]);
+
+            const result = await service.getAggregatedByEntityType();
+
+            expect(auditLogModel.findAll).toHaveBeenCalledWith({
+                where: {},
+                attributes: ['entityType', expect.any(Array)],
+                group: ['entityType'],
+                raw: true,
+            });
+
+            expect(result).toEqual({});
+        });
+
+        it('should handle date range filters', async () => {
+            const startDate = new Date('2024-01-01');
+            const endDate = new Date('2024-12-31');
+            const filters: IAuditFilters = {
+                startDate,
+                endDate,
+                entityType: 'role',
+            };
+
+            (auditLogModel.findAll as jest.Mock).mockResolvedValue([
+                { entityType: 'role', count: '5' },
+            ]);
+
+            await service.getAggregatedByEntityType(filters);
+
+            expect(auditLogModel.findAll).toHaveBeenCalledWith({
+                where: expect.objectContaining({
+                    entityType: 'role',
+                    createdAt: {
+                        [Op.gte]: startDate,
+                        [Op.lte]: endDate,
+                    },
+                }),
+                attributes: ['entityType', expect.any(Array)],
+                group: ['entityType'],
+                raw: true,
+            });
+        });
+    });
+
+    describe('getTopUsersByOperations', () => {
+        it('should return top users by operations count', async () => {
+            const filters: IAuditFilters = {
+                tenantId: 1,
+            };
+
+            const mockResults = [
+                { userId: 1, count: '25' },
+                { userId: 2, count: '15' },
+                { userId: 3, count: '10' },
+            ];
+
+            (auditLogModel.findAll as jest.Mock).mockResolvedValue(mockResults);
+
+            const result = await service.getTopUsersByOperations(filters, 10);
+
+            expect(auditLogModel.findAll).toHaveBeenCalledWith({
+                where: expect.objectContaining({
+                    tenantId: 1,
+                    userId: { [Op.ne]: null },
+                }),
+                attributes: ['userId', expect.any(Array)],
+                group: ['userId'],
+                order: expect.any(Array),
+                limit: 10,
+                raw: true,
+            });
+
+            expect(result).toHaveLength(3);
+            expect(result[0]).toEqual({ userId: 1, operationsCount: 25 });
+            expect(result[1]).toEqual({ userId: 2, operationsCount: 15 });
+            expect(result[2]).toEqual({ userId: 3, operationsCount: 10 });
+        });
+
+        it('should respect limit parameter', async () => {
+            // Мок должен вернуть только первые 3 элемента (как бы БД вернула)
+            const mockResults = Array.from({ length: 3 }, (_, i) => ({
+                userId: i + 1,
+                count: String(20 - i),
+            }));
+
+            (auditLogModel.findAll as jest.Mock).mockResolvedValue(mockResults);
+
+            const result = await service.getTopUsersByOperations(undefined, 3);
+
+            expect(auditLogModel.findAll).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    limit: 3,
+                }),
+            );
+
+            expect(result).toHaveLength(3);
+            expect(result[0].operationsCount).toBe(20);
+            expect(result[1].operationsCount).toBe(19);
+            expect(result[2].operationsCount).toBe(18);
+        });
+
+        it('should return empty array when no users found', async () => {
+            (auditLogModel.findAll as jest.Mock).mockResolvedValue([]);
+
+            const result = await service.getTopUsersByOperations();
+
+            expect(result).toEqual([]);
+        });
+
+        it('should exclude userId from filters for aggregation', async () => {
+            const filters: IAuditFilters = {
+                userId: 999, // Должен быть исключён из where
+                tenantId: 1,
+            };
+
+            (auditLogModel.findAll as jest.Mock).mockResolvedValue([]);
+
+            await service.getTopUsersByOperations(filters, 10);
+
+            expect(auditLogModel.findAll).toHaveBeenCalledWith({
+                where: expect.objectContaining({
+                    tenantId: 1,
+                    userId: { [Op.ne]: null },
+                    // userId: 999 не должен быть в where
+                }),
+                attributes: ['userId', expect.any(Array)],
+                group: ['userId'],
+                order: expect.any(Array),
+                limit: 10,
+                raw: true,
+            });
+
+            // Проверяем, что userId: 999 не в where
+            const whereCall = (auditLogModel.findAll as jest.Mock).mock
+                .calls[0][0].where;
+            expect(whereCall.userId).not.toBe(999);
+        });
+
+        it('should use default limit of 10 when not specified', async () => {
+            (auditLogModel.findAll as jest.Mock).mockResolvedValue([]);
+
+            await service.getTopUsersByOperations();
+
+            expect(auditLogModel.findAll).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    limit: 10,
+                }),
+            );
+        });
+    });
+
     describe('deleteOldLogs', () => {
         it('should delete logs older than specified date', async () => {
             const beforeDate = new Date('2023-01-01');
@@ -482,19 +856,23 @@ describe('AuditService (unit)', () => {
     describe('deleteOldLogsBatch', () => {
         beforeEach(() => {
             // Мокируем sequelize instance и query метод
-            const mockSequelize = {
+            const mockSequelize: MockSequelizeInstance = {
                 query: jest.fn(),
             };
-            (auditLogModel as any).sequelize = mockSequelize;
+            (
+                auditLogModel as unknown as { sequelize: MockSequelizeInstance }
+            ).sequelize = mockSequelize;
         });
 
         it('should delete logs in batches', async () => {
             const beforeDate = new Date('2023-01-01');
-            const mockSequelize = (auditLogModel as any).sequelize;
+            const mockSequelize = (
+                auditLogModel as unknown as { sequelize: MockSequelizeInstance }
+            ).sequelize;
 
             // Первый батч удаляет 1000 записей (полный батч)
             // Второй батч удаляет 500 записей (меньше батча - конец)
-            (mockSequelize.query as jest.Mock)
+            mockSequelize.query
                 .mockResolvedValueOnce({ affectedRows: 1000 })
                 .mockResolvedValueOnce({ affectedRows: 500 });
 
@@ -527,10 +905,12 @@ describe('AuditService (unit)', () => {
 
         it('should handle single batch deletion', async () => {
             const beforeDate = new Date('2023-01-01');
-            const mockSequelize = (auditLogModel as any).sequelize;
+            const mockSequelize = (
+                auditLogModel as unknown as { sequelize: MockSequelizeInstance }
+            ).sequelize;
 
             // Один батч удаляет 100 записей (меньше батча - конец)
-            (mockSequelize.query as jest.Mock).mockResolvedValueOnce({
+            mockSequelize.query.mockResolvedValueOnce({
                 affectedRows: 100,
             });
 
@@ -550,10 +930,12 @@ describe('AuditService (unit)', () => {
 
         it('should return 0 when no logs to delete', async () => {
             const beforeDate = new Date('2023-01-01');
-            const mockSequelize = (auditLogModel as any).sequelize;
+            const mockSequelize = (
+                auditLogModel as unknown as { sequelize: MockSequelizeInstance }
+            ).sequelize;
 
             // Батч возвращает 0 удалённых записей
-            (mockSequelize.query as jest.Mock).mockResolvedValueOnce({
+            mockSequelize.query.mockResolvedValueOnce({
                 affectedRows: 0,
             });
 
@@ -565,10 +947,12 @@ describe('AuditService (unit)', () => {
 
         it('should handle number result type (MySQL)', async () => {
             const beforeDate = new Date('2023-01-01');
-            const mockSequelize = (auditLogModel as any).sequelize;
+            const mockSequelize = (
+                auditLogModel as unknown as { sequelize: MockSequelizeInstance }
+            ).sequelize;
 
             // Некоторые БД возвращают число напрямую
-            (mockSequelize.query as jest.Mock)
+            mockSequelize.query
                 .mockResolvedValueOnce(1000)
                 .mockResolvedValueOnce(500);
 
@@ -587,7 +971,11 @@ describe('AuditService (unit)', () => {
 
         it('should throw error when sequelize instance not available', async () => {
             const beforeDate = new Date('2023-01-01');
-            (auditLogModel as any).sequelize = null;
+            (
+                auditLogModel as unknown as {
+                    sequelize: MockSequelizeInstance | null;
+                }
+            ).sequelize = null;
 
             await expect(
                 service.deleteOldLogsBatch(beforeDate, 1000),

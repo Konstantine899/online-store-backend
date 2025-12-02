@@ -36,6 +36,7 @@ export interface ValidatedEnv {
     REDIS_TTL: number; // TTL в секундах (например, 900 = 15 минут)
     // Audit logs retention policy
     AUDIT_LOG_RETENTION_DAYS: number; // Количество дней хранения audit логов (30-1095, default: 365)
+    AUDIT_CACHE_TTL_SECONDS: number; // TTL для кэширования audit отчётов в секундах (60-3600, default: 600)
     // Параметры ротации секретов (опционально)
     JWT_SECRET_ROTATION_DATE?: string; // ISO date когда секрет должен быть заменён
     JWT_SECRET_VERSION?: string; // версия секрета для отслеживания
@@ -267,6 +268,13 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         { min: 30, max: 1095 },
     );
 
+    // Audit cache TTL (60-3600 секунд, по умолчанию 600 секунд = 10 минут)
+    const AUDIT_CACHE_TTL_SECONDS = asNumber(
+        raw.AUDIT_CACHE_TTL_SECONDS ?? '600',
+        'AUDIT_CACHE_TTL_SECONDS',
+        { min: 60, max: 3600 },
+    );
+
     // Опциональные параметры ротации секретов
     const JWT_SECRET_ROTATION_DATE = raw.JWT_SECRET_ROTATION_DATE;
     const JWT_SECRET_VERSION = raw.JWT_SECRET_VERSION;
@@ -305,6 +313,7 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         REDIS_KEY_PREFIX,
         REDIS_TTL,
         AUDIT_LOG_RETENTION_DAYS,
+        AUDIT_CACHE_TTL_SECONDS,
         JWT_SECRET_ROTATION_DATE,
         JWT_SECRET_VERSION,
     };

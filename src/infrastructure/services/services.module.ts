@@ -15,6 +15,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { RepositoriesModule } from '../repositories/repositories.module';
 import { AuditCleanupService } from './audit/audit-cleanup.service';
 import { AuditService } from './audit/audit.service';
+import { RoleAuditCacheService } from './audit/role-audit-cache.service';
 import { RoleAuditService } from './audit/role-audit.service';
 import { AuthService } from './auth/auth.service';
 import { BrandService } from './brand/brand.service';
@@ -58,6 +59,7 @@ import { UserService } from './user/user.service';
         MetricsCollector,
         AuditService,
         RoleAuditService,
+        RoleAuditCacheService,
         AuditCleanupService,
         AuthService,
         BrandService,
@@ -97,6 +99,7 @@ import { UserService } from './user/user.service';
         MetricsCollector,
         AuditService,
         RoleAuditService,
+        RoleAuditCacheService,
         AuthService,
         BrandService,
         CartService,

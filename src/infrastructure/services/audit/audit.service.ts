@@ -1,11 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Op, WhereOptions, fn, col, literal, QueryTypes } from 'sequelize';
 import {
-    AuditLogModel,
     AuditAction,
+    AuditLogModel,
     IAuditLogCreationAttributes,
 } from '@app/domain/models';
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { col, fn, literal, Op, QueryTypes, WhereOptions } from 'sequelize';
+import { RoleAuditCacheService } from './role-audit-cache.service';
 
 /**
  * Интерфейс для фильтрации audit логов
@@ -43,16 +44,16 @@ export class AuditService {
     constructor(
         @InjectModel(AuditLogModel)
         private readonly auditLogModel: typeof AuditLogModel,
+        private readonly auditCacheService: RoleAuditCacheService,
     ) {}
 
     /**
      * Создать запись в audit логе
+     * Инвалидирует кэш отчётов после создания лога
      * @param data - данные для создания лога
      * @returns Promise<AuditLogModel>
      */
-    async createLog(
-        data: IAuditLogCreationAttributes,
-    ): Promise<AuditLogModel> {
+    async createLog(data: IAuditLogCreationAttributes): Promise<AuditLogModel> {
         try {
             const auditLog = await this.auditLogModel.create(data);
 
@@ -66,6 +67,9 @@ export class AuditService {
                 requestId: data.requestId,
                 message: 'Audit log created successfully',
             });
+
+            // Инвалидируем кэш отчётов для этого тенанта через RoleAuditCacheService
+            await this.auditCacheService.invalidateByTenant(data.tenantId);
 
             return auditLog;
         } catch (error) {
@@ -309,8 +313,8 @@ export class AuditService {
             const deletedInBatch =
                 typeof result === 'number'
                     ? result
-                    : (result as unknown as { affectedRows?: number })
-                            ?.affectedRows ?? 0;
+                    : ((result as unknown as { affectedRows?: number })
+                          ?.affectedRows ?? 0);
 
             totalDeleted += deletedInBatch;
             hasMore = deletedInBatch === batchSize; // Если удалили меньше, значит больше нет
@@ -349,23 +353,21 @@ export class AuditService {
     ): Promise<Record<string, number>> {
         const where = this.buildWhereClause(filters);
 
-        const results = await this.auditLogModel.findAll({
+        const results = (await this.auditLogModel.findAll({
             where,
-            attributes: [
-                'action',
-                [fn('COUNT', col('id')), 'count'],
-            ],
+            attributes: ['action', [fn('COUNT', col('id')), 'count']],
             group: ['action'],
             raw: true,
-        });
+        })) as unknown as Array<{ action: AuditAction; count: string }>;
 
         const operationsByAction: Record<string, number> = {};
         Object.values(AuditAction).forEach((action) => {
             operationsByAction[action] = 0;
         });
 
-        results.forEach((row: any) => {
-            operationsByAction[row.action] = Number.parseInt(row.count, 10) || 0;
+        results.forEach((row) => {
+            operationsByAction[row.action] =
+                Number.parseInt(row.count, 10) || 0;
         });
 
         return operationsByAction;
@@ -381,19 +383,16 @@ export class AuditService {
     ): Promise<Record<string, number>> {
         const where = this.buildWhereClause(filters);
 
-        const results = await this.auditLogModel.findAll({
+        const results = (await this.auditLogModel.findAll({
             where,
-            attributes: [
-                'entityType',
-                [fn('COUNT', col('id')), 'count'],
-            ],
+            attributes: ['entityType', [fn('COUNT', col('id')), 'count']],
             group: ['entityType'],
             raw: true,
-        });
+        })) as unknown as Array<{ entityType: string; count: string }>;
 
         const operationsByEntityType: Record<string, number> = {};
 
-        results.forEach((row: any) => {
+        results.forEach((row) => {
             operationsByEntityType[row.entityType] =
                 Number.parseInt(row.count, 10) || 0;
         });
@@ -427,19 +426,16 @@ export class AuditService {
             userId: { [Op.ne]: null },
         };
 
-        const results = await this.auditLogModel.findAll({
+        const results = (await this.auditLogModel.findAll({
             where: userWhere,
-            attributes: [
-                'userId',
-                [fn('COUNT', col('id')), 'count'],
-            ],
+            attributes: ['userId', [fn('COUNT', col('id')), 'count']],
             group: ['userId'],
             order: [[literal('count'), 'DESC']],
             limit,
             raw: true,
-        });
+        })) as unknown as Array<{ userId: number; count: string }>;
 
-        return results.map((row: any) => ({
+        return results.map((row) => ({
             userId: row.userId,
             operationsCount: Number.parseInt(row.count, 10) || 0,
         }));
@@ -487,10 +483,9 @@ export class AuditService {
             where.createdAt = {
                 ...(filters.startDate && { [Op.gte]: filters.startDate }),
                 ...(filters.endDate && { [Op.lte]: filters.endDate }),
-            } as any;
+            } as { [Op.gte]?: Date; [Op.lte]?: Date };
         }
 
         return where;
     }
 }
-

@@ -93,6 +93,12 @@ import { ServicesModule } from './infrastructure/services/services.module';
                     .min(30)
                     .max(1095)
                     .default(365),
+                // Audit cache TTL
+                AUDIT_CACHE_TTL_SECONDS: Joi.number()
+                    .integer()
+                    .min(60)
+                    .max(3600)
+                    .default(600),
             }),
             validationOptions: {
                 abortEarly: false, // показать все ошибки разом
