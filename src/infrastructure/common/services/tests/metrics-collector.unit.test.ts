@@ -20,11 +20,7 @@ describe('MetricsCollector (unit)', () => {
 
     describe('recordBulkOperation', () => {
         it('должен записать метрику bulk операции', () => {
-            metricsCollector.recordBulkOperation(
-                'bulkActivateUsers',
-                120,
-                5,
-            );
+            metricsCollector.recordBulkOperation('bulkActivateUsers', 120, 5);
 
             const metrics = metricsCollector.getMetrics();
 
@@ -407,9 +403,9 @@ describe('MetricsCollector (unit)', () => {
             const auditMetrics = metricsCollector.getAuditMetrics();
 
             // Проверяем, что метод не крашится и возвращает валидные данные
-            expect(auditMetrics.avgReportGenerationTime.summary).toBeGreaterThan(
-                0,
-            );
+            expect(
+                auditMetrics.avgReportGenerationTime.summary,
+            ).toBeGreaterThan(0);
         });
     });
 
@@ -491,7 +487,3 @@ describe('MetricsCollector (unit)', () => {
         });
     });
 });
-
-
-
-
