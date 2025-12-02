@@ -185,6 +185,175 @@ chmod +x scripts/cleanup-ports.sh
 }
 ```
 
+## Скрипты логирования тестов
+
+Набор скриптов для запуска тестов с записью результатов в файлы логов для последующего анализа.
+
+### Доступные скрипты
+
+#### 1. Универсальный скрипт логирования
+**Файл:** `scripts/run-tests-with-log.js`
+
+Универсальный скрипт для запуска любых тестов с логированием.
+
+```bash
+# Запустить тесты по паттерну
+node scripts/run-tests-with-log.js "audit.*unit.test"
+
+# Запустить с опциями Jest
+node scripts/run-tests-with-log.js --selectProjects unit audit --verbose
+
+# Запустить с coverage
+node scripts/run-tests-with-log.js "audit.service.unit.test" --coverage
+```
+
+**Параметры:**
+- Первый аргумент без `--` - паттерн для `--testPathPatterns`
+- `--selectProjects <project>` - выбрать проект Jest (unit/integration)
+- `--testPathPatterns <pattern>` - явно указать паттерн
+- `--verbose` - подробный вывод
+- `--coverage` - включить покрытие
+- `--watch` - режим watch
+- `--runInBand` - запускать последовательно
+
+#### 2. Unit тесты audit сервисов
+**Файл:** `scripts/run-audit-unit-tests-with-log.js`
+
+Специализированный скрипт для unit тестов audit сервисов:
+- `audit.service.unit.test.ts`
+- `role-audit.service.unit.test.ts`
+
+```bash
+# Стандартный запуск
+node scripts/run-audit-unit-tests-with-log.js
+
+# С подробным выводом
+node scripts/run-audit-unit-tests-with-log.js --verbose
+
+# С покрытием кода
+node scripts/run-audit-unit-tests-with-log.js --coverage
+
+# В режиме watch
+node scripts/run-audit-unit-tests-with-log.js --watch
+```
+
+#### 3. Integration тесты audit endpoints
+**Файл:** `scripts/run-audit-integration-tests-with-log.js`
+
+Скрипт для integration тестов audit контроллеров.
+
+```bash
+node scripts/run-audit-integration-tests-with-log.js
+```
+
+### NPM скрипты
+
+Для удобства использования добавлены npm скрипты:
+
+```bash
+# Unit тесты audit с логированием
+npm run test:unit:audit:log
+
+# Unit тесты audit с подробным выводом
+npm run test:unit:audit:log:verbose
+
+# Unit тесты audit с покрытием
+npm run test:unit:audit:log:coverage
+
+# Integration тесты audit с логированием
+npm run test:integration:audit:log
+
+# Универсальный скрипт (требует параметры)
+npm run test:log -- "audit.*unit.test"
+```
+
+### Формат логов
+
+Логи сохраняются в директории `test-logs/` с именами:
+- `audit-unit-tests-YYYY-MM-DDTHH-mm-ss-sssZ.log`
+- `audit-integration-tests-YYYY-MM-DDTHH-mm-ss-sssZ.log`
+- `unit-tests-YYYY-MM-DDTHH-mm-ss-sssZ.log` (универсальный)
+
+**Структура лога:**
+```
+=== Test Execution Log ===
+Date: 2024-01-01T12:00:00.000Z
+Command: jest --selectProjects unit --testPathPatterns audit.*unit.test
+Working Directory: /path/to/project
+Node Version: v20.10.0
+============================================================
+
+[вывод тестов]
+
+============================================================
+Exit Code: 0
+Duration: 12.34s
+Finished at: 2024-01-01T12:00:12.340Z
+============================================================
+
+Test Results:
+  Total: 42
+  Passed: 42
+  Failed: 0
+```
+
+### Примеры использования
+
+#### Сценарий 1: Запуск unit тестов audit с логированием
+```bash
+npm run test:unit:audit:log
+```
+
+#### Сценарий 2: Отладка падающих тестов с подробным выводом
+```bash
+npm run test:unit:audit:log:verbose
+```
+
+#### Сценарий 3: Проверка покрытия тестами
+```bash
+npm run test:unit:audit:log:coverage
+```
+
+#### Сценарий 4: Запуск конкретного тестового файла
+```bash
+node scripts/run-tests-with-log.js "audit.service.unit.test" --verbose
+```
+
+### Особенности
+
+1. **Двойной вывод:** Логи выводятся одновременно в консоль и в файл
+2. **Автоматическая статистика:** Подсчёт пройденных/упавших тестов
+3. **Таймстампы:** Каждый лог содержит точное время выполнения
+4. **Детальная информация:** Включает команду, окружение, длительность
+5. **Цветной вывод:** Консоль сохраняет форматирование Jest
+
+### Директория логов
+
+Логи сохраняются в `test-logs/` (уже добавлена в `.gitignore`).
+
+**Рекомендации:**
+- Регулярно очищайте старые логи (старше 30 дней)
+- Используйте логи для анализа падений тестов
+- Сохраняйте логи для CI/CD анализа
+
+### Интеграция с CI/CD
+
+Для CI/CD можно использовать универсальный скрипт:
+
+```yaml
+# GitHub Actions example
+- name: Run tests with logging
+  run: |
+    node scripts/run-tests-with-log.js --selectProjects unit --coverage
+    # Артефакты автоматически сохраняются в test-logs/
+
+- name: Upload test logs
+  uses: actions/upload-artifact@v3
+  with:
+    name: test-logs
+    path: test-logs/
+```
+
 ## Поддержка
 
 При возникновении проблем:
@@ -192,3 +361,4 @@ chmod +x scripts/cleanup-ports.sh
 2. Убедитесь в корректности пути к скриптам
 3. Проверьте версию PowerShell (для Windows)
 4. Убедитесь в наличии bash (для Linux/macOS)
+5. Убедитесь, что директория `test-logs/` существует (создаётся автоматически)
