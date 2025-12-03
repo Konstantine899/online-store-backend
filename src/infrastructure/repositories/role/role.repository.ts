@@ -723,7 +723,6 @@ export class RoleRepository implements IRoleRepository {
             throw new Error('Sequelize instance not available');
         }
 
-
         // Используем позиционные параметры (?) вместо именованных для лучшей совместимости
         // Sequelize автоматически преобразует Date объекты в правильный формат для MySQL
         // Используем DATEDIFF() для сравнения количества дней между датами

@@ -371,7 +371,6 @@ describe('Role Expiration Services (integration)', () => {
             expect(userRoleCheck?.isActive).toBe(true);
             expect(userRoleCheck?.expiresAt).not.toBeNull();
 
-
             // Вызываем метод автоматического продления напрямую
             // Используем daysUntilExpiration=3, чтобы роль попала в выборку (истекает через 2 дня < 3 дней)
             const renewedCount =
