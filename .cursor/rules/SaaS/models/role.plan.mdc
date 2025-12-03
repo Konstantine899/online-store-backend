@@ -1908,22 +1908,93 @@ tasks:
 
 - id: SAAS-017-18
   title: Аналитика ролей и разрешений
-  branch: "feature/role/SAAS-017/role-analytics"
+  branch: "feature/role/SAAS-017-18/role-analytics"
+  priority: MEDIUM
+  estimated_time: 22 часа (3 рабочих дня)
   files_scope:
-    - "src/infrastructure/controllers/role/\*\*"
-    - "src/infrastructure/services/role/\*\*"
+    - "src/infrastructure/repositories/role/role-analytics.repository.ts"
+    - "src/infrastructure/services/role/role-analytics.service.ts"
+    - "src/infrastructure/controllers/role/role.controller.ts"
+    - "src/infrastructure/dto/role/role-analytics-filters.dto.ts"
+    - "src/infrastructure/responses/role/\*.response.ts"
+    - "src/infrastructure/common/decorators/swagger/role/\*.swagger.ts"
+      description: |
+      Реализация комплексной системы аналитики для ролей и разрешений:
+      - Статистика использования ролей (общая, по конкретной роли, по тенантам)
+      - Статистика разрешений (общая, по конкретному разрешению)
+      - Метрики операций назначения/отзыва ролей
+      - Статистика автоматических назначений
+      - Статистика временных ролей и истечения
+      - Статистика иерархии ролей
+      - Агрегированный дашборд с ключевыми метриками
+
+    **Зависимости:**
+    - SAAS-017-16: Audit Logging (для метрик операций)
+    - SAAS-017-17: Временные роли и истечение (для метрик истечения)
+
+    **Архитектура:**
+    - RoleAnalyticsRepository: SQL агрегация данных
+    - RoleAnalyticsService: бизнес-логика аналитики
+    - RoleController: 8 новых endpoints для аналитики
       steps:
-    - создать эндпоинты аналитики ролей
-    - добавить метрики использования ролей
-    - настроить отчеты по разрешениям
-    - создать дашборды для ролей
+    - создать RoleAnalyticsRepository с SQL запросами для агрегации
+    - создать RoleAnalyticsService с методами аналитики
+    - создать DTO для фильтров (RoleAnalyticsFiltersDto)
+    - создать Response типы для всех endpoints
+    - добавить 8 endpoints в RoleController:
+      * GET /role/analytics/stats - общая статистика ролей
+      * GET /role/analytics/stats/:roleId - статистика по конкретной роли
+      * GET /role/analytics/permissions/stats - статистика разрешений
+      * GET /role/analytics/operations/stats - метрики операций назначения/отзыва
+      * GET /role/analytics/auto-assignments/stats - статистика автоматических назначений
+      * GET /role/analytics/expiration/stats - статистика истечения ролей
+      * GET /role/analytics/hierarchy/stats - статистика иерархии ролей
+      * GET /role/analytics/dashboard - агрегированный дашборд
+    - добавить Swagger декораторы для всех endpoints
+    - настроить tenant isolation для всех endpoints
+    - добавить unit тесты для RoleAnalyticsRepository
+    - добавить unit тесты для RoleAnalyticsService
+    - добавить integration тесты для endpoints
+    - оптимизировать SQL запросы (EXPLAIN analysis)
+    - добавить индексы при необходимости
       dod:
-    - аналитика ролей работает
-    - метрики корректны
-    - отчеты генерируются
-    - дашборды функциональны
+    - RoleAnalyticsRepository создан с SQL агрегацией
+    - RoleAnalyticsService реализован со всеми методами
+    - 8 endpoints добавлены в RoleController
+    - Все endpoints имеют Swagger документацию
+    - Tenant isolation работает корректно (TENANT_ADMIN видит только свой тенант)
+    - Все метрики корректны и соответствуют реальным данным БД
+    - Unit тесты для repository и service (>80% покрытия)
+    - Integration тесты для всех endpoints (успех + ошибки 401/403/tenant isolation)
+    - SQL запросы оптимизированы (время выполнения < 1 секунды для большинства случаев)
+    - Линтеры проходят без ошибок
+      architectural_decisions:
+      repository_pattern:
+      decision: "Отдельный RoleAnalyticsRepository для SQL агрегации"
+      rationale: "Разделение ответственности - RoleRepository для CRUD, RoleAnalyticsRepository для аналитики. Прямые SQL запросы для эффективной агрегации больших объемов данных."
+      service_pattern:
+      decision: "RoleAnalyticsService как фасад для всех аналитических методов"
+      rationale: "Централизация бизнес-логики аналитики, упрощение тестирования, возможность переиспользования методов."
+      sql_aggregation:
+      decision: "Использование SQL агрегации вместо загрузки данных в память"
+      rationale: "Производительность - агрегация на уровне БД быстрее и эффективнее для больших объемов данных. Избежание memory leaks."
+      tenant_isolation:
+      decision: "Фильтрация по tenantId на уровне SQL запросов"
+      rationale: "Безопасность и производительность - данные фильтруются на уровне БД, TENANT_ADMIN не может видеть данные других тенантов."
+      caching_strategy:
+      decision: "Опциональное кэширование для тяжелых запросов (future improvement)"
+      rationale: "Для начала - без кэширования, при необходимости добавить через CacheService для запросов, выполняющихся > 1 секунды."
+      data_sources:
+      decision: "Использование данных из таблиц roles, user_roles, role_permissions, audit_logs, role_auto_renewal_config"
+      rationale: "Все необходимые данные уже доступны в существующих таблицах. Audit logs содержат историю операций. role_auto_renewal_config содержит данные об истечении."
       gate:
     - require: "Одобряю SAAS-017-18"
+    - pre_commit_workflow: "СТАНДАРТНЫЙ"
+    - pre_commit_steps:
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: unit тесты для repository + service + integration тесты endpoints"
+    - "Проверка SQL: EXPLAIN analysis для всех запросов"
+    - "«Коммит» → feat(role): SAAS-017-18 role and permissions analytics"
 
 - id: SAAS-017-19
   title: Интеграция с внешними системами
