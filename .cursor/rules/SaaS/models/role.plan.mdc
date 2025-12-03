@@ -1843,22 +1843,22 @@ tasks:
     - "✅ Batch обработка для предотвращения блокировки БД"
     - "✅ Кэш уведомлений для предотвращения дублирования (24 часа)"
       metrics:
-    files_created: 6
-    files_updated: 8
-    lines_added: ~2800
-    lines_removed: ~50
-    migrations_created: 1
-    models_created: 1
-    services_created: 2
-    dto_created: 2
-    repository_methods_added: 8
-    service_methods_added: 4
-    cron_jobs_added: 3
-    unit_tests: 35+
-    integration_tests: 7
-    test_pass_rate: "100% (7/7 integration, 35+ unit)"
-    code_review_score: "9.4/10"
-    linter_errors: 0
+      files_created: 6
+      files_updated: 8
+      lines_added: ~2800
+      lines_removed: ~50
+      migrations_created: 1
+      models_created: 1
+      services_created: 2
+      dto_created: 2
+      repository_methods_added: 8
+      service_methods_added: 4
+      cron_jobs_added: 3
+      unit_tests: 35+
+      integration_tests: 7
+      test_pass_rate: "100% (7/7 integration, 35+ unit)"
+      code_review_score: "9.4/10"
+      linter_errors: 0
       notes: |
       Задача выполнена успешно. Все требования DoD выполнены.
 
