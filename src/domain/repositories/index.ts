@@ -9,5 +9,6 @@ export { IProductRepository } from './product/i-product-repository';
 export { IPromoCodeRepository } from './promo-code/i-promo-code-repository';
 export { IRatingRepository } from './rating/i-rating-repository';
 export { IRefreshTokenRepository } from './refresh-token/i-refresh-token-repository';
+export { IRoleAnalyticsRepository } from './role/i-role-analytics-repository';
 export { IRoleRepository } from './role/i-role-repository';
 export { IUserRepository } from './user/i-user-repository';

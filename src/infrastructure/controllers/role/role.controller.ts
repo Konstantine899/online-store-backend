@@ -18,17 +18,16 @@ import {
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
-import { Response } from 'express';
 import {
     ApiBearerAuth,
     ApiOperation,
     ApiResponse,
     ApiTags,
 } from '@nestjs/swagger';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 
-import { AuditLogModel } from '@app/domain/models';
 import { IDecodedAccessToken } from '@app/domain/jwt';
+import { AuditLogModel } from '@app/domain/models';
 import {
     CreateRoleSwaggerDecorator,
     DeleteRoleSwaggerDecorator,
@@ -40,24 +39,26 @@ import {
 } from '@app/infrastructure/common/decorators';
 import { AuthGuard, RoleGuard } from '@app/infrastructure/common/guards';
 import { PerformanceMonitoringInterceptor } from '@app/infrastructure/common/interceptors/performance-monitoring.interceptor';
+import { MetricsCollector } from '@app/infrastructure/common/services';
+import { CSVExporter } from '@app/infrastructure/common/utils/export/csv-exporter';
 import {
-    AuditFiltersDto,
     AssignPermissionDto,
     AssignRoleDto,
+    AuditFiltersDto,
     CreateRoleDto,
     RevokePermissionDto,
     RevokeRoleDto,
+    RoleAnalyticsFiltersDto,
     UpdateRoleDto,
 } from '@app/infrastructure/dto';
 import {
+    AssignPermissionResponse,
+    AssignRoleResponse,
     AuditLogResponse,
     AuditMetricsResponse,
     AuditSummaryResponse,
     AuditTimelineResponse,
-    PaginatedAuditLogsResponse,
-    UserActivityReportResponse,
-    AssignPermissionResponse,
-    AssignRoleResponse,
+    AutoAssignmentStatsResponse,
     CreateRoleResponse,
     DeleteRoleResponse,
     GetListRoleResponse,
@@ -66,19 +67,29 @@ import {
     GetRolePermissionsResponse,
     GetRoleResponse,
     GetUserRolesResponse,
+    PaginatedAuditLogsResponse,
+    PermissionUsageStatsByResourceAndActionResponse,
+    PermissionUsageStatsResponse,
     RevokePermissionResponse,
     RevokeRoleResponse,
+    RoleAnalyticsDashboardResponse,
+    RoleExpirationStatsResponse,
+    RoleHierarchyStatsResponse,
+    RoleOperationsStatsResponse,
+    RoleUsageStatsByIdResponse,
+    RoleUsageStatsResponse,
+    TenantDistributionInfo,
     UpdateRoleResponse,
+    UserActivityReportResponse,
     mapAuditLogToResponse,
 } from '@app/infrastructure/responses';
-import { CSVExporter } from '@app/infrastructure/common/utils/export/csv-exporter';
 import {
     AuditService,
+    RoleAnalyticsService,
     RoleAuditService,
     RoleCacheService,
     RoleService,
 } from '@app/infrastructure/services';
-import { MetricsCollector } from '@app/infrastructure/common/services';
 
 import { IRoleController } from '@app/domain/controllers';
 import { ADMIN_ROLES, MANAGER_ROLES } from './role-constants';
@@ -104,6 +115,7 @@ export class RoleController implements IRoleController {
         private readonly roleCacheService: RoleCacheService,
         private readonly auditService: AuditService,
         private readonly roleAuditService: RoleAuditService,
+        private readonly roleAnalyticsService: RoleAnalyticsService,
         private readonly performanceInterceptor: PerformanceMonitoringInterceptor,
         private readonly metricsCollector: MetricsCollector,
     ) {}
@@ -742,7 +754,8 @@ export class RoleController implements IRoleController {
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
     @ApiResponse({
         status: 429,
-        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+        description:
+            'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
     })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
@@ -813,7 +826,8 @@ export class RoleController implements IRoleController {
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
     @ApiResponse({
         status: 429,
-        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+        description:
+            'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
     })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
@@ -899,7 +913,8 @@ export class RoleController implements IRoleController {
      */
     @ApiOperation({
         summary: 'Получить детали audit лога',
-        description: 'Возвращает детальную информацию об audit логе, включая diff',
+        description:
+            'Возвращает детальную информацию об audit логе, включая diff',
     })
     @ApiResponse({
         status: 200,
@@ -910,7 +925,8 @@ export class RoleController implements IRoleController {
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
     @ApiResponse({
         status: 429,
-        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+        description:
+            'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
     })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
@@ -964,7 +980,8 @@ export class RoleController implements IRoleController {
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
     @ApiResponse({
         status: 429,
-        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+        description:
+            'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
     })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
@@ -1020,7 +1037,8 @@ export class RoleController implements IRoleController {
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
     @ApiResponse({
         status: 429,
-        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+        description:
+            'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
     })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
@@ -1080,7 +1098,8 @@ export class RoleController implements IRoleController {
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
     @ApiResponse({
         status: 429,
-        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+        description:
+            'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
     })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
@@ -1150,7 +1169,8 @@ export class RoleController implements IRoleController {
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
     @ApiResponse({
         status: 429,
-        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+        description:
+            'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
     })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
@@ -1185,7 +1205,8 @@ export class RoleController implements IRoleController {
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
     @ApiResponse({
         status: 429,
-        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+        description:
+            'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
     })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
@@ -1210,11 +1231,7 @@ export class RoleController implements IRoleController {
         if (endDate && isNaN(endDate.getTime())) {
             throw new BadRequestException('Неверный формат endDate');
         }
-        if (
-            startDate &&
-            endDate &&
-            startDate > endDate
-        ) {
+        if (startDate && endDate && startDate > endDate) {
             throw new BadRequestException(
                 'startDate не может быть больше endDate',
             );
@@ -1245,7 +1262,8 @@ export class RoleController implements IRoleController {
     @ApiResponse({ status: 403, description: 'Недостаточно прав' })
     @ApiResponse({
         status: 429,
-        description: 'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
+        description:
+            'Превышен лимит запросов (30 запросов в минуту). Повторите позже.',
     })
     @ApiBearerAuth('JWT-auth')
     @HttpCode(200)
@@ -1288,20 +1306,16 @@ export class RoleController implements IRoleController {
         // Лимит на экспорт - максимум 10000 записей (защита от memory leak)
         const MAX_EXPORT_RECORDS = 10000;
         while (hasMore && allAuditLogs.length < MAX_EXPORT_RECORDS) {
-            const result = await this.auditService.findAll(
-                currentPage,
-                limit,
-                {
-                    action: filters.action,
-                    entityType: filters.entityType,
-                    entityId: filters.entityId,
-                    userId: filters.userId,
-                    tenantId: effectiveTenantId ?? undefined,
-                    startDate,
-                    endDate,
-                    requestId: filters.requestId,
-                },
-            );
+            const result = await this.auditService.findAll(currentPage, limit, {
+                action: filters.action,
+                entityType: filters.entityType,
+                entityId: filters.entityId,
+                userId: filters.userId,
+                tenantId: effectiveTenantId ?? undefined,
+                startDate,
+                endDate,
+                requestId: filters.requestId,
+            });
 
             allAuditLogs = allAuditLogs.concat(result.data);
             hasMore = result.currentPage < result.lastPage;
@@ -1356,5 +1370,418 @@ export class RoleController implements IRoleController {
             totalLogsLast24h: auditMetrics.totalLogsLast24h,
             timestamp: new Date().toISOString(),
         };
+    }
+
+    // ========================================================================
+    // АНАЛИТИКА РОЛЕЙ И РАЗРЕШЕНИЙ (ADMIN_ROLES)
+    // ========================================================================
+
+    /**
+     * Получить статистику использования ролей
+     * @access ADMIN_ROLES
+     * @tenant_isolation YES - TENANT_ADMIN видит только свой тенант, SUPER_ADMIN видит все
+     */
+    @ApiOperation({
+        summary: 'Статистика использования ролей',
+        description:
+            'Возвращает общую статистику использования ролей: количество активных/неактивных ролей, распределение по уровням, топ используемых ролей',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика успешно получена',
+        type: RoleUsageStatsResponse,
+    })
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/analytics/stats')
+    public async getRoleUsageStats(
+        @Query() filters: RoleAnalyticsFiltersDto,
+        @Req() request: Request,
+    ): Promise<RoleUsageStatsResponse> {
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        const filterTenantId = filters.tenantId ?? null;
+
+        return this.roleAnalyticsService.getRoleUsageStats(
+            filterTenantId ?? tenantId,
+        );
+    }
+
+    /**
+     * Получить статистику использования конкретной роли
+     * @access ADMIN_ROLES
+     * @tenant_isolation YES
+     */
+    @ApiOperation({
+        summary: 'Статистика использования конкретной роли',
+        description:
+            'Возвращает детальную статистику по конкретной роли: количество пользователей, процент, средняя длительность, автоматические назначения',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика роли успешно получена',
+        type: RoleUsageStatsByIdResponse,
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Роль не найдена',
+    })
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/analytics/stats/:roleId')
+    public async getRoleUsageStatsById(
+        @Param('roleId', ParseIntPipe) roleId: number,
+        @Query() filters: RoleAnalyticsFiltersDto,
+        @Req() request: Request,
+    ): Promise<RoleUsageStatsByIdResponse | null> {
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        const filterTenantId = filters.tenantId ?? null;
+
+        const stats = await this.roleAnalyticsService.getRoleUsageStatsById(
+            roleId,
+            filterTenantId ?? tenantId,
+        );
+
+        if (!stats) {
+            throw new NotFoundException('Роль не найдена');
+        }
+
+        return stats;
+    }
+
+    /**
+     * Получить статистику использования разрешений
+     * @access ADMIN_ROLES
+     * @tenant_isolation YES
+     */
+    @ApiOperation({
+        summary: 'Статистика использования разрешений',
+        description:
+            'Возвращает статистику использования разрешений: общее количество, топ используемых, распределение по ресурсам и действиям',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика разрешений успешно получена',
+        type: PermissionUsageStatsResponse,
+    })
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/analytics/permissions/stats')
+    public async getPermissionUsageStats(
+        @Query() filters: RoleAnalyticsFiltersDto,
+        @Req() request: Request,
+    ): Promise<PermissionUsageStatsResponse> {
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        const filterTenantId = filters.tenantId ?? null;
+
+        return this.roleAnalyticsService.getPermissionUsageStats(
+            filterTenantId ?? tenantId,
+        );
+    }
+
+    /**
+     * Получить статистику использования конкретного разрешения
+     * @access ADMIN_ROLES
+     * @tenant_isolation YES
+     */
+    @ApiOperation({
+        summary: 'Статистика использования конкретного разрешения',
+        description:
+            'Возвращает статистику по конкретному разрешению (resource, action): количество ролей, использующих это разрешение, список ролей',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика разрешения успешно получена',
+        type: PermissionUsageStatsByResourceAndActionResponse,
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Разрешение не найдено',
+    })
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/analytics/permissions/stats/:resource/:action')
+    public async getPermissionUsageStatsByResourceAndAction(
+        @Param('resource') resource: string,
+        @Param('action') action: string,
+        @Query() filters: RoleAnalyticsFiltersDto,
+        @Req() request: Request,
+    ): Promise<PermissionUsageStatsByResourceAndActionResponse | null> {
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        const filterTenantId = filters.tenantId ?? null;
+
+        const stats =
+            await this.roleAnalyticsService.getPermissionUsageStatsByResourceAndAction(
+                resource,
+                action,
+                filterTenantId ?? tenantId,
+            );
+
+        if (!stats) {
+            throw new NotFoundException('Разрешение не найдено');
+        }
+
+        return stats;
+    }
+
+    /**
+     * Получить метрики операций назначения/отзыва ролей
+     * @access ADMIN_ROLES
+     * @tenant_isolation YES
+     */
+    @ApiOperation({
+        summary: 'Метрики операций назначения/отзыва ролей',
+        description:
+            'Возвращает метрики операций назначения и отзыва ролей за период: общее количество, соотношение, топ ролей, операции по дням',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Метрики операций успешно получены',
+        type: RoleOperationsStatsResponse,
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Некорректные параметры (даты)',
+    })
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/analytics/operations/stats')
+    public async getRoleOperationsStats(
+        @Query() filters: RoleAnalyticsFiltersDto,
+        @Req() request: Request,
+    ): Promise<RoleOperationsStatsResponse> {
+        if (!filters.startDate || !filters.endDate) {
+            throw new BadRequestException(
+                'Необходимо указать startDate и endDate',
+            );
+        }
+
+        const startDate = new Date(filters.startDate);
+        const endDate = new Date(filters.endDate);
+
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            throw new BadRequestException('Некорректный формат дат');
+        }
+
+        if (startDate > endDate) {
+            throw new BadRequestException(
+                'startDate должна быть раньше endDate',
+            );
+        }
+
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        const filterTenantId = filters.tenantId ?? null;
+
+        return this.roleAnalyticsService.getRoleOperationsStats(
+            startDate,
+            endDate,
+            filterTenantId ?? tenantId,
+        );
+    }
+
+    /**
+     * Получить статистику автоматических назначений
+     * @access ADMIN_ROLES
+     * @tenant_isolation YES
+     */
+    @ApiOperation({
+        summary: 'Статистика автоматических назначений',
+        description:
+            'Возвращает статистику автоматических назначений ролей: общее количество, успешные/неудачные, по типам, причины ошибок',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика автоматических назначений успешно получена',
+        type: AutoAssignmentStatsResponse,
+    })
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/analytics/auto-assignments/stats')
+    public async getAutoAssignmentStats(
+        @Query() filters: RoleAnalyticsFiltersDto,
+        @Req() request: Request,
+    ): Promise<AutoAssignmentStatsResponse> {
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        const filterTenantId = filters.tenantId ?? null;
+
+        return this.roleAnalyticsService.getAutoAssignmentStats(
+            filterTenantId ?? tenantId,
+        );
+    }
+
+    /**
+     * Получить статистику истечения ролей
+     * @access ADMIN_ROLES
+     * @tenant_isolation YES
+     */
+    @ApiOperation({
+        summary: 'Статистика истечения ролей',
+        description:
+            'Возвращает статистику истечения ролей: активные роли с истечением, истекшие роли, средняя длительность, статистика продлений',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика истечения ролей успешно получена',
+        type: RoleExpirationStatsResponse,
+    })
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/analytics/expiration/stats')
+    public async getExpirationStats(
+        @Query() filters: RoleAnalyticsFiltersDto,
+        @Req() request: Request,
+    ): Promise<RoleExpirationStatsResponse> {
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        const filterTenantId = filters.tenantId ?? null;
+
+        return this.roleAnalyticsService.getExpirationStats(
+            filterTenantId ?? tenantId,
+        );
+    }
+
+    /**
+     * Получить статистику иерархии ролей
+     * @access ADMIN_ROLES
+     * @tenant_isolation YES
+     */
+    @ApiOperation({
+        summary: 'Статистика иерархии ролей',
+        description:
+            'Возвращает статистику иерархии ролей: распределение по уровням с средним количеством разрешений, пустые роли, минимальный и максимальный уровень',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика иерархии ролей успешно получена',
+        type: RoleHierarchyStatsResponse,
+    })
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/analytics/hierarchy/stats')
+    public async getHierarchyStats(
+        @Query() filters: RoleAnalyticsFiltersDto,
+        @Req() request: Request,
+    ): Promise<RoleHierarchyStatsResponse> {
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        const filterTenantId = filters.tenantId ?? null;
+
+        return this.roleAnalyticsService.getHierarchyStats(
+            filterTenantId ?? tenantId,
+        );
+    }
+
+    /**
+     * Получить агрегированный дашборд с ключевыми метриками
+     * @access ADMIN_ROLES
+     * @tenant_isolation YES
+     */
+    @ApiOperation({
+        summary: 'Агрегированный дашборд аналитики',
+        description:
+            'Возвращает агрегированный дашборд со всеми ключевыми метриками: статистика ролей, разрешений, операций (при указании периода), истечения, иерархии, топ используемых ролей',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Данные дашборда успешно получены',
+        type: RoleAnalyticsDashboardResponse,
+    })
+    @HttpCode(200)
+    @Roles(...ADMIN_ROLES)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/analytics/dashboard')
+    public async getDashboardData(
+        @Query() filters: RoleAnalyticsFiltersDto,
+        @Req() request: Request,
+    ): Promise<RoleAnalyticsDashboardResponse> {
+        const tenantId =
+            (request.user as IDecodedAccessToken)?.tenantId ?? null;
+        const filterTenantId = filters.tenantId ?? null;
+
+        // Обработка периода для дашборда
+        let period: { startDate: Date; endDate: Date } | undefined;
+
+        if (
+            filters.period === 'custom' &&
+            filters.startDate &&
+            filters.endDate
+        ) {
+            period = {
+                startDate: new Date(filters.startDate),
+                endDate: new Date(filters.endDate),
+            };
+        } else if (filters.period && filters.period !== 'custom') {
+            const now = new Date();
+            const endDate = new Date(now);
+            let startDate: Date;
+
+            switch (filters.period) {
+                case 'last24h':
+                    startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    break;
+                case 'last7d':
+                    startDate = new Date(
+                        now.getTime() - 7 * 24 * 60 * 60 * 1000,
+                    );
+                    break;
+                case 'last30d':
+                    startDate = new Date(
+                        now.getTime() - 30 * 24 * 60 * 60 * 1000,
+                    );
+                    break;
+                default:
+                    startDate = new Date(
+                        now.getTime() - 7 * 24 * 60 * 60 * 1000,
+                    );
+            }
+
+            period = { startDate, endDate };
+        }
+
+        const dashboardData = await this.roleAnalyticsService.getDashboardData(
+            filterTenantId ?? tenantId,
+            period,
+        );
+        return dashboardData as RoleAnalyticsDashboardResponse;
+    }
+
+    /**
+     * Получить распределение ролей по тенантам (только для SUPER_ADMIN)
+     * @access SUPER_ADMIN
+     * @tenant_isolation NO - видит все тенанты
+     */
+    @ApiOperation({
+        summary: 'Распределение ролей по тенантам',
+        description:
+            'Возвращает статистику распределения ролей по всем тенантам. Доступно только для SUPER_ADMIN',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Распределение ролей по тенантам успешно получено',
+        type: [TenantDistributionInfo],
+    })
+    @ApiResponse({
+        status: 403,
+        description: 'Доступ запрещён (только для SUPER_ADMIN)',
+    })
+    @HttpCode(200)
+    @Roles('SUPER_ADMIN')
+    @UseGuards(AuthGuard, RoleGuard)
+    @Get('/analytics/distribution/by-tenant')
+    public async getDistributionByTenant(): Promise<TenantDistributionInfo[]> {
+        return this.roleAnalyticsService.getDistributionByTenant();
     }
 }

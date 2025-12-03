@@ -34,6 +34,7 @@ import { ProductPropertyService } from './product-property/product-property.serv
 import { ProductService } from './product/product.service';
 import { PromoCodeService } from './promo-code/promo-code.service';
 import { RatingService } from './rating/rating.service';
+import { RoleAnalyticsService } from './role/role-analytics.service';
 import { RoleCacheService } from './role/role-cache.service';
 import { RoleExpirationNotificationService } from './role/role-expiration-notification.service';
 import { RoleExpirationService } from './role/role-expiration.service';
@@ -78,6 +79,7 @@ import { UserService } from './user/user.service';
         RatingService,
         RoleCacheService,
         RoleService,
+        RoleAnalyticsService,
         RoleExpirationService,
         RoleExpirationNotificationService,
         UserRolesCacheService,
@@ -119,6 +121,7 @@ import { UserService } from './user/user.service';
         RatingService,
         RoleCacheService,
         RoleService,
+        RoleAnalyticsService,
         RoleExpirationService,
         RoleExpirationNotificationService,
         UserRolesCacheService,

@@ -1,4 +1,5 @@
 import {
+    AuditLogModel,
     BrandModel,
     CartModel,
     CartProductModel,
@@ -38,6 +39,7 @@ import { ProductRepository } from './product/product.repository';
 import { PromoCodeRepository } from './promo-code/promo-code.repository';
 import { RatingRepository } from './rating/rating.repository';
 import { RefreshTokenRepository } from './refresh-token/refresh-token.repository';
+import { RoleAnalyticsRepository } from './role/role-analytics.repository';
 import { RoleRepository } from './role/role.repository';
 import { UserAddressRepository } from './user-address/user-address.repository';
 import { UserBulkRepository } from './user/user-bulk.repository';
@@ -65,6 +67,7 @@ import { UserRepository } from './user/user.repository';
             UserModel,
             UserRoleModel,
             RoleAutoRenewalConfigModel,
+            AuditLogModel,
             RefreshTokenModel,
             UserAddressModel,
             LoginHistoryModel,
@@ -85,6 +88,7 @@ import { UserRepository } from './user/user.repository';
         OrderItemRepository,
         RatingRepository,
         RoleRepository,
+        RoleAnalyticsRepository,
         RefreshTokenRepository,
         UserRepository,
         UserSearchRepository, // Специализированный репозиторий для поиска пользователей
@@ -107,6 +111,7 @@ import { UserRepository } from './user/user.repository';
         OrderItemRepository,
         RatingRepository,
         RoleRepository,
+        RoleAnalyticsRepository,
         RefreshTokenRepository,
         UserRepository,
         UserSearchRepository, // Экспортируем для использования в тестах

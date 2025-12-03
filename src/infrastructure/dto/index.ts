@@ -20,6 +20,7 @@ export { CreateAutoRenewalConfigDto } from './role/create-auto-renewal-config.dt
 export { CreateRoleDto } from './role/create-role.dto';
 export { RevokePermissionDto } from './role/revoke-permission.dto';
 export { RevokeRoleDto } from './role/revoke-role.dto';
+export { RoleAnalyticsFiltersDto } from './role/role-analytics-filters.dto';
 export { UpdateAutoRenewalConfigDto } from './role/update-auto-renewal-config.dto';
 export { UpdateRoleDto } from './role/update-role.dto';
 export { CreateUserAddressDto } from './user-address/create-user-address.dto';

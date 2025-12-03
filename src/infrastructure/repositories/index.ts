@@ -8,6 +8,7 @@ export { ProductRepository } from './product/product.repository';
 export { PromoCodeRepository } from './promo-code/promo-code.repository';
 export { RatingRepository } from './rating/rating.repository';
 export { RefreshTokenRepository } from './refresh-token/refresh-token.repository';
+export { RoleAnalyticsRepository } from './role/role-analytics.repository';
 export { RoleRepository } from './role/role.repository';
 export { UserAddressRepository } from './user-address/user-address.repository';
 export { UserRepository } from './user/user.repository';

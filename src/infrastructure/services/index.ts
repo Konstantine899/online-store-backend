@@ -10,6 +10,7 @@ export { ProductPropertyService } from './product-property/product-property.serv
 export { ProductService } from './product/product.service';
 export { PromoCodeService } from './promo-code/promo-code.service';
 export { RatingService } from './rating/rating.service';
+export { RoleAnalyticsService } from './role/role-analytics.service';
 export { RoleCacheService } from './role/role-cache.service';
 export { RoleService } from './role/role.service';
 export { UserRolesCacheService } from './role/user-roles-cache.service';

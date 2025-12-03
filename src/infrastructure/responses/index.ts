@@ -1,7 +1,7 @@
 export {
     AuditLogResponse,
-    PaginatedAuditLogsResponse,
     mapAuditLogToResponse,
+    PaginatedAuditLogsResponse,
 } from './audit/audit-log.response';
 export {
     AuditSummaryResponse,
@@ -68,8 +68,35 @@ export { AssignPermissionResponse } from './role/assign-permission.response';
 export { AssignRoleResponse } from './role/assign-role.response';
 export { AuditMetricsResponse } from './role/audit-metrics.response';
 export { CreateRoleResponse } from './role/create-role.response';
+export { DeleteRoleResponse } from './role/delete-role.response';
 export { GetListRoleResponse } from './role/get-list-role.response';
 export { GetPaginatedRolesResponse } from './role/get-paginated-roles.response';
+export { GetRoleResponse } from './role/get-role.response';
+export { RevokePermissionResponse } from './role/revoke-permission.response';
+export { RevokeRoleResponse } from './role/revoke-role.response';
+export {
+    AutoAssignmentByTypeInfo,
+    AutoAssignmentStatsResponse,
+    EmptyRoleInfo,
+    FailureReasonInfo,
+    OperationsByDayInfo,
+    PermissionDistributionByActionInfo,
+    PermissionDistributionByResourceInfo,
+    PermissionStatsInfo,
+    PermissionUsageStatsByResourceAndActionResponse,
+    PermissionUsageStatsResponse,
+    RenewalStatsInfo,
+    RoleAnalyticsDashboardResponse,
+    RoleExpirationStatsResponse,
+    RoleHierarchyStatsResponse,
+    RoleOperationInfo,
+    RoleOperationsStatsResponse,
+    RolesByLevelInfo,
+    RoleStatsInfo,
+    RoleUsageStatsByIdResponse,
+    RoleUsageStatsResponse,
+    TenantDistributionInfo,
+} from './role/role-analytics.response';
 export {
     GetRoleHierarchyResponse,
     RoleNode,
@@ -79,15 +106,8 @@ export {
     GetRolePermissionsResponse,
     RolePermissionInfo,
 } from './role/role-permissions.response';
-export { GetRoleResponse } from './role/get-role.response';
-export {
-    GetUserRolesResponse,
-    UserRoleInfo,
-} from './role/user-roles.response';
-export { DeleteRoleResponse } from './role/delete-role.response';
-export { RevokePermissionResponse } from './role/revoke-permission.response';
-export { RevokeRoleResponse } from './role/revoke-role.response';
 export { UpdateRoleResponse } from './role/update-role.response';
+export { GetUserRolesResponse, UserRoleInfo } from './role/user-roles.response';
 export {
     CreateUserAddressResponse,
     GetUserAddressResponse,

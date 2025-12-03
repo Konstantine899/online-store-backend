@@ -1920,13 +1920,13 @@ tasks:
     - "src/infrastructure/common/decorators/swagger/role/\*.swagger.ts"
       description: |
       Реализация комплексной системы аналитики для ролей и разрешений:
-      - Статистика использования ролей (общая, по конкретной роли, по тенантам)
-      - Статистика разрешений (общая, по конкретному разрешению)
-      - Метрики операций назначения/отзыва ролей
-      - Статистика автоматических назначений
-      - Статистика временных ролей и истечения
-      - Статистика иерархии ролей
-      - Агрегированный дашборд с ключевыми метриками
+        - Статистика использования ролей (общая, по конкретной роли, по тенантам)
+        - Статистика разрешений (общая, по конкретному разрешению)
+        - Метрики операций назначения/отзыва ролей
+        - Статистика автоматических назначений
+        - Статистика временных ролей и истечения
+        - Статистика иерархии ролей
+        - Агрегированный дашборд с ключевыми метриками
 
     **Зависимости:**
     - SAAS-017-16: Audit Logging (для метрик операций)
@@ -1942,14 +1942,14 @@ tasks:
     - создать DTO для фильтров (RoleAnalyticsFiltersDto)
     - создать Response типы для всех endpoints
     - добавить 8 endpoints в RoleController:
-      * GET /role/analytics/stats - общая статистика ролей
-      * GET /role/analytics/stats/:roleId - статистика по конкретной роли
-      * GET /role/analytics/permissions/stats - статистика разрешений
-      * GET /role/analytics/operations/stats - метрики операций назначения/отзыва
-      * GET /role/analytics/auto-assignments/stats - статистика автоматических назначений
-      * GET /role/analytics/expiration/stats - статистика истечения ролей
-      * GET /role/analytics/hierarchy/stats - статистика иерархии ролей
-      * GET /role/analytics/dashboard - агрегированный дашборд
+        - GET /role/analytics/stats - общая статистика ролей
+        - GET /role/analytics/stats/:roleId - статистика по конкретной роли
+        - GET /role/analytics/permissions/stats - статистика разрешений
+        - GET /role/analytics/operations/stats - метрики операций назначения/отзыва
+        - GET /role/analytics/auto-assignments/stats - статистика автоматических назначений
+        - GET /role/analytics/expiration/stats - статистика истечения ролей
+        - GET /role/analytics/hierarchy/stats - статистика иерархии ролей
+        - GET /role/analytics/dashboard - агрегированный дашборд
     - добавить Swagger декораторы для всех endpoints
     - настроить tenant isolation для всех endpoints
     - добавить unit тесты для RoleAnalyticsRepository
