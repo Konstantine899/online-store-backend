@@ -103,6 +103,18 @@ import { ServicesModule } from './infrastructure/services/services.module';
                     .min(60)
                     .max(3600)
                     .default(600),
+                // Role expiration configuration
+                ROLE_EXPIRATION_BATCH_SIZE: Joi.number()
+                    .integer()
+                    .min(100)
+                    .max(10000)
+                    .default(1000),
+                ROLE_EXPIRATION_WARNING_DAYS: Joi.string()
+                    .pattern(/^(\d+)(,\d+)*$/)
+                    .default('7,1')
+                    .description(
+                        'Дни до истечения для отправки уведомлений (формат: "7,1" или "7,3,1")',
+                    ),
             }),
             validationOptions: {
                 abortEarly: false, // показать все ошибки разом

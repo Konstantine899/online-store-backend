@@ -141,4 +141,26 @@ export interface IRoleService {
         userId: number,
         tenantId: number,
     ): Promise<{ revoked: boolean; roleId?: number }>;
+
+    // ============================================================================
+    // Методы для работы с истечением и автоматическим продлением ролей
+    // ============================================================================
+
+    /**
+     * Деактивировать истекшие активные роли (batch операция)
+     * @param batchSize - Максимальное количество ролей для обработки за раз
+     * @param beforeDate - Дата до которой искать истекшие роли (опционально)
+     * @returns Количество деактивированных ролей
+     */
+    deactivateExpiredRoles(
+        batchSize?: number,
+        beforeDate?: Date,
+    ): Promise<number>;
+
+    /**
+     * Автоматически продлить роль, если настроено автоматическое продление
+     * @param userRoleId - ID назначения роли
+     * @returns true если роль была продлена, false если продление невозможно
+     */
+    autoRenewRole(userRoleId: number): Promise<boolean>;
 }

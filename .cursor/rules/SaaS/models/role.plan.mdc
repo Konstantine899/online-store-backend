@@ -1743,22 +1743,80 @@ tasks:
 
 - id: SAAS-017-17
   title: Временные роли и истечение
-  branch: "feature/role/SAAS-017/role-expiration"
+  branch: "feature/role/SAAS-017-17/role-expiration"
+  priority: MEDIUM
+  estimated_time: 16 часов (2 рабочих дня)
   files_scope:
-    - "src/infrastructure/services/role/\*\*"
-    - "src/infrastructure/common/jobs/\*\*"
-      steps:
-    - реализовать логику истечения ролей
-    - создать job для очистки истекших ролей
-    - добавить уведомления об истечении ролей
-    - настроить автоматическое продление ролей
+    - "db/migrations/\*create-role-auto-renewal-config.ts"
+    - "src/domain/models/role-auto-renewal-config.model.ts"
+    - "src/infrastructure/repositories/role/role.repository.ts"
+    - "src/infrastructure/services/role/role.service.ts"
+    - "src/infrastructure/services/role/role-expiration.service.ts"
+    - "src/infrastructure/services/role/role-expiration-notification.service.ts"
+    - "src/infrastructure/dto/role/\*.dto.ts"
+    - "src/infrastructure/config/env/validation.ts"
+      description: |
+      Реализация системы управления временными ролями с автоматической деактивацией,
+      уведомлениями об истечении и автоматическим продлением через отдельную таблицу конфигурации.
+
+    **Архитектурное решение: Вариант В (отдельная таблица)**
+    - Таблица `role_auto_renewal_config` для хранения конфигурации продления
+    - Индексы для эффективных запросов по enabled/disabled ролям
+    - Foreign Key с CASCADE для автоматической очистки при удалении user_role
+    - Строгая типизация через отдельную модель Sequelize
+
+    **Компоненты:**
+    1. Миграция БД: создание таблицы `role_auto_renewal_config`
+    2. Модель: `RoleAutoRenewalConfigModel` с валидацией
+    3. Репозиторий: методы для работы с конфигурацией продления
+    4. Сервисы: деактивация, уведомления, автоматическое продление
+    5. Cron jobs: ежедневная деактивация, проверка уведомлений
+       steps:
+    - создать миграцию для таблицы role_auto_renewal_config (FK, индексы, constraints)
+    - создать модель RoleAutoRenewalConfigModel в domain/models
+    - добавить методы в RoleRepository для работы с конфигурацией продления
+    - реализовать логику деактивации истекших ролей в RoleService
+    - создать RoleExpirationService с cron job для деактивации (04:00 ежедневно)
+    - создать RoleExpirationNotificationService с cron job для уведомлений (каждый час)
+    - реализовать автоматическое продление ролей через конфигурацию
+    - добавить env переменные для конфигурации (ROLE*EXPIRATION*\*)
+    - интегрировать метрики в MetricsCollector
+    - добавить DTO для управления конфигурацией продления
       dod:
-    - логика истечения ролей работает
-    - job очистки функционален
-    - уведомления отправляются
-    - автоматическое продление настроено
+    - миграция создана и протестирована (up/down работают)
+    - модель RoleAutoRenewalConfigModel создана с валидацией
+    - истекшие роли автоматически деактивируются через cron job
+    - уведомления отправляются за 7 дней, 1 день и при истечении
+    - автоматическое продление работает через конфигурацию в таблице
+    - метрики собираются (deactivation, renewal, notifications)
+    - unit тесты для всех методов (>80% покрытия)
+    - integration тесты для cron jobs
+    - audit logs создаются при деактивации и продлении
+    - документация обновлена (Swagger, комментарии)
+    - линтеры проходят без ошибок
+      architectural_decisions:
+      storage_strategy:
+      decision: "Отдельная таблица role_auto_renewal_config (Вариант В)"
+      rationale: | - Эффективные SQL запросы с индексами для поиска ролей с продлением - Строгая валидация на уровне БД (FK, UNIQUE, CHECK constraints) - Легко расширять (можно добавить историю продлений, настройки уведомлений) - Типизация через отдельную модель Sequelize - Производительность при массовых запросах
+      table_structure: | - id (PK, AUTO_INCREMENT) - user_role_id (FK → user_roles.id, UNIQUE, CASCADE DELETE) - is_enabled (BOOLEAN, DEFAULT true, INDEX) - renewal_duration_ms (BIGINT, NOT NULL) - длительность продления в миллисекундах - max_renewals (INT, DEFAULT 12) - максимум продлений - current_renewal_count (INT, DEFAULT 0) - текущее количество продлений - last_renewed_at (DATETIME, NULL) - дата последнего продления - notification_enabled (BOOLEAN, DEFAULT true) - включены ли уведомления - created_at, updated_at (TIMESTAMPS)
+      indexes: - PRIMARY KEY (id) - UNIQUE INDEX (user_role_id) - INDEX (is_enabled) - для поиска активных конфигураций - INDEX (user_role_id, is_enabled) - составной для оптимизации запросов
+      cron_schedule:
+      deactivation: "EVERY_DAY_AT_4AM (04:00 по Europe/Moscow)"
+      notifications: "EVERY_HOUR (каждый час для проверки приближающихся истечений)"
+      rationale: "Деактивация раз в день достаточно, уведомления нужны чаще для своевременности"
+      notification_strategy:
+      decision: "Прямой вызов NotificationService (не EventEmitter)"
+      rationale: "Простота реализации, меньше зависимостей, достаточная производительность"
+      warning_days: [7, 1] - уведомления за 7 дней и 1 день до истечения
+      expired_notification: true - уведомление при истечении
       gate:
     - require: "Одобряю SAAS-017-17"
+      pre_commit_workflow: "СТАНДАРТНЫЙ"
+      pre_commit_steps:
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: unit тесты для всех сервисов + integration тесты cron jobs"
+    - "Проверка миграции: npm run db:migrate:undo && npm run db:migrate"
+    - "«Коммит» → feat(role): SAAS-017-17 role expiration with auto-renewal (variant B)"
 
 - id: SAAS-017-18
   title: Аналитика ролей и разрешений

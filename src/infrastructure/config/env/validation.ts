@@ -37,6 +37,9 @@ export interface ValidatedEnv {
     // Audit logs retention policy
     AUDIT_LOG_RETENTION_DAYS: number; // Количество дней хранения audit логов (30-1095, default: 365)
     AUDIT_CACHE_TTL_SECONDS: number; // TTL для кэширования audit отчётов в секундах (60-3600, default: 600)
+    // Role expiration configuration
+    ROLE_EXPIRATION_BATCH_SIZE: number; // Размер batch для обработки истекших ролей (default: 1000)
+    ROLE_EXPIRATION_WARNING_DAYS: number[]; // Дни до истечения для отправки уведомлений (default: [7, 1])
     // Параметры ротации секретов (опционально)
     JWT_SECRET_ROTATION_DATE?: string; // ISO date когда секрет должен быть заменён
     JWT_SECRET_VERSION?: string; // версия секрета для отслеживания
@@ -275,6 +278,29 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         { min: 60, max: 3600 },
     );
 
+    // Role expiration configuration
+    const ROLE_EXPIRATION_BATCH_SIZE = asNumber(
+        raw.ROLE_EXPIRATION_BATCH_SIZE ?? '1000',
+        'ROLE_EXPIRATION_BATCH_SIZE',
+        { min: 100, max: 10000 },
+    );
+
+    // Role expiration warning days (массив чисел, например "7,1" или "7,3,1")
+    const ROLE_EXPIRATION_WARNING_DAYS_RAW =
+        raw.ROLE_EXPIRATION_WARNING_DAYS ?? '7,1';
+    const ROLE_EXPIRATION_WARNING_DAYS = ROLE_EXPIRATION_WARNING_DAYS_RAW.split(',')
+        .map((day) => day.trim())
+        .filter((day) => day.length > 0)
+        .map((day) => {
+            const n = Number(day);
+            if (!Number.isFinite(n) || n < 1 || n > 365) {
+                throw new Error(
+                    `ROLE_EXPIRATION_WARNING_DAYS: каждый день должен быть числом от 1 до 365, получено: ${day}`,
+                );
+            }
+            return n;
+        });
+
     // Опциональные параметры ротации секретов
     const JWT_SECRET_ROTATION_DATE = raw.JWT_SECRET_ROTATION_DATE;
     const JWT_SECRET_VERSION = raw.JWT_SECRET_VERSION;
@@ -314,6 +340,8 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         REDIS_TTL,
         AUDIT_LOG_RETENTION_DAYS,
         AUDIT_CACHE_TTL_SECONDS,
+        ROLE_EXPIRATION_BATCH_SIZE,
+        ROLE_EXPIRATION_WARNING_DAYS,
         JWT_SECRET_ROTATION_DATE,
         JWT_SECRET_VERSION,
     };

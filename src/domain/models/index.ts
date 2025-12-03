@@ -25,6 +25,11 @@ export { RatingModel } from './rating.model';
 export { RefreshTokenModel } from './refresh-token.model';
 export { RolePermissionModel } from './role-permission.model';
 export { RoleModel } from './role.model';
+export {
+    RoleAutoRenewalConfigModel,
+    IRoleAutoRenewalConfigModel,
+    IRoleAutoRenewalConfigCreationAttributes,
+} from './role-auto-renewal-config.model';
 export { TenantModel } from './tenant.model';
 export { UserAddressModel } from './user-address';
 export { UserNotificationSettingsModel } from './user-notification-settings.model';

@@ -73,6 +73,38 @@ export class MetricsCollector implements OnModuleDestroy {
         timestamp: number;
     }> = [];
 
+    // Хранилище метрик деактивации истекших ролей (per tenant, per day)
+    private roleExpirationsPerDay: Array<{
+        tenantId: number | null;
+        date: string; // YYYY-MM-DD
+        count: number;
+        timestamp: number;
+    }> = [];
+
+    // Хранилище метрик автоматического продления ролей (per tenant, per day)
+    private roleRenewalsPerDay: Array<{
+        tenantId: number | null;
+        date: string; // YYYY-MM-DD
+        count: number;
+        timestamp: number;
+    }> = [];
+
+    // Хранилище метрик отправки уведомлений об истечении ролей (per tenant, per day)
+    private roleExpirationNotificationsPerDay: Array<{
+        tenantId: number | null;
+        date: string; // YYYY-MM-DD
+        count: number;
+        timestamp: number;
+    }> = [];
+
+    // Хранилище ошибок деактивации/продления ролей
+    private roleExpirationErrors: Array<{
+        tenantId: number | null;
+        operation: 'deactivation' | 'renewal' | 'notification';
+        error: string;
+        timestamp: number;
+    }> = [];
+
     constructor() {
         // Автоматическая очистка старых метрик каждый час (только в production)
         if (process.env.NODE_ENV !== 'test') {
@@ -283,6 +315,11 @@ export class MetricsCollector implements OnModuleDestroy {
             auditLogsPerDay: this.auditLogsPerDay.length,
             auditReportGenerationTimes: this.auditReportGenerationTimes.length,
             auditLogCreationErrors: this.auditLogCreationErrors.length,
+            roleExpirationsPerDay: this.roleExpirationsPerDay.length,
+            roleRenewalsPerDay: this.roleRenewalsPerDay.length,
+            roleExpirationNotificationsPerDay:
+                this.roleExpirationNotificationsPerDay.length,
+            roleExpirationErrors: this.roleExpirationErrors.length,
         };
 
         this.bulkOperations = this.bulkOperations.filter(
@@ -301,6 +338,19 @@ export class MetricsCollector implements OnModuleDestroy {
                 (entry) => entry.timestamp > cutoff,
             );
         this.auditLogCreationErrors = this.auditLogCreationErrors.filter(
+            (entry) => entry.timestamp > cutoff,
+        );
+        this.roleExpirationsPerDay = this.roleExpirationsPerDay.filter(
+            (entry) => entry.timestamp > cutoff,
+        );
+        this.roleRenewalsPerDay = this.roleRenewalsPerDay.filter(
+            (entry) => entry.timestamp > cutoff,
+        );
+        this.roleExpirationNotificationsPerDay =
+            this.roleExpirationNotificationsPerDay.filter(
+                (entry) => entry.timestamp > cutoff,
+            );
+        this.roleExpirationErrors = this.roleExpirationErrors.filter(
             (entry) => entry.timestamp > cutoff,
         );
 
@@ -403,9 +453,7 @@ export class MetricsCollector implements OnModuleDestroy {
         tenantId?: number | null,
     ): void {
         // Проверяем размер перед добавлением (FIFO)
-        if (
-            this.auditReportGenerationTimes.length >= this.MAX_METRICS_SIZE
-        ) {
+        if (this.auditReportGenerationTimes.length >= this.MAX_METRICS_SIZE) {
             this.auditReportGenerationTimes.shift();
         }
 
@@ -415,6 +463,342 @@ export class MetricsCollector implements OnModuleDestroy {
             tenantId: tenantId ?? null,
             timestamp: Date.now(),
         });
+    }
+
+    /**
+     * Записать метрику деактивации истекших ролей (per tenant, per day)
+     * Агрегирует количество деактиваций по дням для каждого тенанта
+     * @param tenantId - ID тенанта (null для системных операций)
+     * @param count - Количество деактивированных ролей
+     */
+    public recordRoleExpiration(tenantId: number | null, count: number): void {
+        const now = Date.now();
+        const date = new Date(now).toISOString().split('T')[0]; // YYYY-MM-DD
+
+        // Проверяем, есть ли уже запись за сегодня для этого тенанта
+        const existingIndex = this.roleExpirationsPerDay.findIndex(
+            (entry) =>
+                entry.tenantId === tenantId &&
+                entry.date === date &&
+                entry.timestamp > now - 24 * 60 * 60 * 1000, // В пределах последних 24 часов
+        );
+
+        if (existingIndex >= 0) {
+            // Обновляем существующую запись
+            this.roleExpirationsPerDay[existingIndex].count += count;
+            this.roleExpirationsPerDay[existingIndex].timestamp = now;
+        } else {
+            // Создаём новую запись
+            if (this.roleExpirationsPerDay.length >= this.MAX_METRICS_SIZE) {
+                this.roleExpirationsPerDay.shift();
+            }
+
+            this.roleExpirationsPerDay.push({
+                tenantId,
+                date,
+                count,
+                timestamp: now,
+            });
+        }
+    }
+
+    /**
+     * Записать метрику автоматического продления ролей (per tenant, per day)
+     * Агрегирует количество продлений по дням для каждого тенанта
+     * @param tenantId - ID тенанта (null для системных операций)
+     * @param count - Количество продлённых ролей
+     */
+    public recordRoleRenewal(tenantId: number | null, count: number): void {
+        const now = Date.now();
+        const date = new Date(now).toISOString().split('T')[0]; // YYYY-MM-DD
+
+        // Проверяем, есть ли уже запись за сегодня для этого тенанта
+        const existingIndex = this.roleRenewalsPerDay.findIndex(
+            (entry) =>
+                entry.tenantId === tenantId &&
+                entry.date === date &&
+                entry.timestamp > now - 24 * 60 * 60 * 1000, // В пределах последних 24 часов
+        );
+
+        if (existingIndex >= 0) {
+            // Обновляем существующую запись
+            this.roleRenewalsPerDay[existingIndex].count += count;
+            this.roleRenewalsPerDay[existingIndex].timestamp = now;
+        } else {
+            // Создаём новую запись
+            if (this.roleRenewalsPerDay.length >= this.MAX_METRICS_SIZE) {
+                this.roleRenewalsPerDay.shift();
+            }
+
+            this.roleRenewalsPerDay.push({
+                tenantId,
+                date,
+                count,
+                timestamp: now,
+            });
+        }
+    }
+
+    /**
+     * Записать метрику отправки уведомлений об истечении ролей (per tenant, per day)
+     * Агрегирует количество уведомлений по дням для каждого тенанта
+     * @param tenantId - ID тенанта (null для системных операций)
+     * @param count - Количество отправленных уведомлений
+     */
+    public recordRoleExpirationNotification(
+        tenantId: number | null,
+        count: number,
+    ): void {
+        const now = Date.now();
+        const date = new Date(now).toISOString().split('T')[0]; // YYYY-MM-DD
+
+        // Проверяем, есть ли уже запись за сегодня для этого тенанта
+        const existingIndex = this.roleExpirationNotificationsPerDay.findIndex(
+            (entry) =>
+                entry.tenantId === tenantId &&
+                entry.date === date &&
+                entry.timestamp > now - 24 * 60 * 60 * 1000, // В пределах последних 24 часов
+        );
+
+        if (existingIndex >= 0) {
+            // Обновляем существующую запись
+            this.roleExpirationNotificationsPerDay[existingIndex].count +=
+                count;
+            this.roleExpirationNotificationsPerDay[existingIndex].timestamp =
+                now;
+        } else {
+            // Создаём новую запись
+            if (
+                this.roleExpirationNotificationsPerDay.length >=
+                this.MAX_METRICS_SIZE
+            ) {
+                this.roleExpirationNotificationsPerDay.shift();
+            }
+
+            this.roleExpirationNotificationsPerDay.push({
+                tenantId,
+                date,
+                count,
+                timestamp: now,
+            });
+        }
+    }
+
+    /**
+     * Записать ошибку деактивации/продления ролей
+     * FIFO: При достижении лимита удаляются самые старые записи
+     * @param tenantId - ID тенанта (null для системных операций)
+     * @param operation - Тип операции ('deactivation' | 'renewal' | 'notification')
+     * @param error - Сообщение об ошибке
+     */
+    public recordRoleExpirationError(
+        tenantId: number | null,
+        operation: 'deactivation' | 'renewal' | 'notification',
+        error: string,
+    ): void {
+        // Проверяем размер перед добавлением (FIFO)
+        if (this.roleExpirationErrors.length >= this.MAX_METRICS_SIZE) {
+            this.roleExpirationErrors.shift();
+        }
+
+        this.roleExpirationErrors.push({
+            tenantId,
+            operation,
+            error: error.substring(0, 500), // Truncate для экономии памяти
+            timestamp: Date.now(),
+        });
+    }
+
+    /**
+     * Получить метрики expiration/renewal ролей за последние 24 часа
+     */
+    public getRoleExpirationMetrics(): {
+        expirationsPerDay: Array<{
+            tenantId: number | null;
+            date: string;
+            count: number;
+        }>;
+        renewalsPerDay: Array<{
+            tenantId: number | null;
+            date: string;
+            count: number;
+        }>;
+        notificationsPerDay: Array<{
+            tenantId: number | null;
+            date: string;
+            count: number;
+        }>;
+        totalExpirationsLast24h: Array<{
+            tenantId: number | null;
+            count: number;
+        }>;
+        totalRenewalsLast24h: Array<{
+            tenantId: number | null;
+            count: number;
+        }>;
+        totalNotificationsLast24h: Array<{
+            tenantId: number | null;
+            count: number;
+        }>;
+        errorsCount: number;
+        errorsByOperation: {
+            deactivation: number;
+            renewal: number;
+            notification: number;
+        };
+    } {
+        const now = Date.now();
+        const cutoff = now - this.METRICS_TTL_MS;
+
+        // Фильтруем метрики за последние 24 часа
+        const recentExpirations = this.roleExpirationsPerDay.filter(
+            (entry) => entry.timestamp > cutoff,
+        );
+        const recentRenewals = this.roleRenewalsPerDay.filter(
+            (entry) => entry.timestamp > cutoff,
+        );
+        const recentNotifications =
+            this.roleExpirationNotificationsPerDay.filter(
+                (entry) => entry.timestamp > cutoff,
+            );
+        const recentErrors = this.roleExpirationErrors.filter(
+            (entry) => entry.timestamp > cutoff,
+        );
+
+        // Группируем expirations по дням (без дубликатов дат для одного тенанта)
+        const expirationsPerDayMap = new Map<
+            string,
+            { tenantId: number | null; date: string; count: number }
+        >();
+        recentExpirations.forEach((entry) => {
+            const key = `${entry.tenantId ?? 'null'}-${entry.date}`;
+            const existing = expirationsPerDayMap.get(key);
+            if (existing) {
+                existing.count += entry.count;
+            } else {
+                expirationsPerDayMap.set(key, {
+                    tenantId: entry.tenantId,
+                    date: entry.date,
+                    count: entry.count,
+                });
+            }
+        });
+
+        // Группируем renewals по дням
+        const renewalsPerDayMap = new Map<
+            string,
+            { tenantId: number | null; date: string; count: number }
+        >();
+        recentRenewals.forEach((entry) => {
+            const key = `${entry.tenantId ?? 'null'}-${entry.date}`;
+            const existing = renewalsPerDayMap.get(key);
+            if (existing) {
+                existing.count += entry.count;
+            } else {
+                renewalsPerDayMap.set(key, {
+                    tenantId: entry.tenantId,
+                    date: entry.date,
+                    count: entry.count,
+                });
+            }
+        });
+
+        // Группируем notifications по дням
+        const notificationsPerDayMap = new Map<
+            string,
+            { tenantId: number | null; date: string; count: number }
+        >();
+        recentNotifications.forEach((entry) => {
+            const key = `${entry.tenantId ?? 'null'}-${entry.date}`;
+            const existing = notificationsPerDayMap.get(key);
+            if (existing) {
+                existing.count += entry.count;
+            } else {
+                notificationsPerDayMap.set(key, {
+                    tenantId: entry.tenantId,
+                    date: entry.date,
+                    count: entry.count,
+                });
+            }
+        });
+
+        // Агрегируем общее количество expirations за последние 24 часа по тенантам
+        const totalExpirationsLast24hMap = new Map<
+            number | null,
+            { tenantId: number | null; count: number }
+        >();
+        recentExpirations.forEach((entry) => {
+            const existing = totalExpirationsLast24hMap.get(entry.tenantId);
+            if (existing) {
+                existing.count += entry.count;
+            } else {
+                totalExpirationsLast24hMap.set(entry.tenantId, {
+                    tenantId: entry.tenantId,
+                    count: entry.count,
+                });
+            }
+        });
+
+        // Агрегируем общее количество renewals за последние 24 часа по тенантам
+        const totalRenewalsLast24hMap = new Map<
+            number | null,
+            { tenantId: number | null; count: number }
+        >();
+        recentRenewals.forEach((entry) => {
+            const existing = totalRenewalsLast24hMap.get(entry.tenantId);
+            if (existing) {
+                existing.count += entry.count;
+            } else {
+                totalRenewalsLast24hMap.set(entry.tenantId, {
+                    tenantId: entry.tenantId,
+                    count: entry.count,
+                });
+            }
+        });
+
+        // Агрегируем общее количество notifications за последние 24 часа по тенантам
+        const totalNotificationsLast24hMap = new Map<
+            number | null,
+            { tenantId: number | null; count: number }
+        >();
+        recentNotifications.forEach((entry) => {
+            const existing = totalNotificationsLast24hMap.get(entry.tenantId);
+            if (existing) {
+                existing.count += entry.count;
+            } else {
+                totalNotificationsLast24hMap.set(entry.tenantId, {
+                    tenantId: entry.tenantId,
+                    count: entry.count,
+                });
+            }
+        });
+
+        // Группируем ошибки по операциям
+        const errorsByOperation = {
+            deactivation: recentErrors.filter(
+                (e) => e.operation === 'deactivation',
+            ).length,
+            renewal: recentErrors.filter((e) => e.operation === 'renewal')
+                .length,
+            notification: recentErrors.filter(
+                (e) => e.operation === 'notification',
+            ).length,
+        };
+
+        return {
+            expirationsPerDay: Array.from(expirationsPerDayMap.values()),
+            renewalsPerDay: Array.from(renewalsPerDayMap.values()),
+            notificationsPerDay: Array.from(notificationsPerDayMap.values()),
+            totalExpirationsLast24h: Array.from(
+                totalExpirationsLast24hMap.values(),
+            ),
+            totalRenewalsLast24h: Array.from(totalRenewalsLast24hMap.values()),
+            totalNotificationsLast24h: Array.from(
+                totalNotificationsLast24hMap.values(),
+            ),
+            errorsCount: recentErrors.length,
+            errorsByOperation,
+        };
     }
 
     /**
@@ -529,5 +913,9 @@ export class MetricsCollector implements OnModuleDestroy {
         this.auditLogsPerDay = [];
         this.auditReportGenerationTimes = [];
         this.auditLogCreationErrors = [];
+        this.roleExpirationsPerDay = [];
+        this.roleRenewalsPerDay = [];
+        this.roleExpirationNotificationsPerDay = [];
+        this.roleExpirationErrors = [];
     }
 }

@@ -486,4 +486,278 @@ describe('MetricsCollector (unit)', () => {
             expect(auditMetrics.totalLogsLast24h).toEqual([]);
         });
     });
+
+    // ============================================================================
+    // Role Expiration/Renewal Metrics Tests
+    // ============================================================================
+
+    describe('recordRoleExpiration', () => {
+        it('должен записать метрику деактивации истекших ролей', () => {
+            metricsCollector.recordRoleExpiration(1, 5);
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(expirationMetrics.expirationsPerDay).toHaveLength(1);
+            expect(expirationMetrics.expirationsPerDay[0].tenantId).toBe(1);
+            expect(expirationMetrics.expirationsPerDay[0].count).toBe(5);
+            expect(expirationMetrics.expirationsPerDay[0].date).toBeDefined();
+        });
+
+        it('должен инкрементировать счётчик для существующей записи за день', () => {
+            const tenantId = 1;
+            metricsCollector.recordRoleExpiration(tenantId, 3);
+            metricsCollector.recordRoleExpiration(tenantId, 2);
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(expirationMetrics.expirationsPerDay).toHaveLength(1);
+            expect(expirationMetrics.expirationsPerDay[0].count).toBe(5);
+        });
+
+        it('должен создавать отдельные записи для разных тенантов', () => {
+            metricsCollector.recordRoleExpiration(1, 2);
+            metricsCollector.recordRoleExpiration(2, 3);
+            metricsCollector.recordRoleExpiration(null, 1);
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(
+                expirationMetrics.expirationsPerDay.length,
+            ).toBeGreaterThanOrEqual(3);
+        });
+    });
+
+    describe('recordRoleRenewal', () => {
+        it('должен записать метрику автоматического продления ролей', () => {
+            metricsCollector.recordRoleRenewal(1, 3);
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(expirationMetrics.renewalsPerDay).toHaveLength(1);
+            expect(expirationMetrics.renewalsPerDay[0].tenantId).toBe(1);
+            expect(expirationMetrics.renewalsPerDay[0].count).toBe(3);
+        });
+
+        it('должен инкрементировать счётчик для существующей записи за день', () => {
+            const tenantId = 1;
+            metricsCollector.recordRoleRenewal(tenantId, 2);
+            metricsCollector.recordRoleRenewal(tenantId, 1);
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(expirationMetrics.renewalsPerDay).toHaveLength(1);
+            expect(expirationMetrics.renewalsPerDay[0].count).toBe(3);
+        });
+    });
+
+    describe('recordRoleExpirationNotification', () => {
+        it('должен записать метрику отправки уведомлений об истечении ролей', () => {
+            metricsCollector.recordRoleExpirationNotification(1, 4);
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(expirationMetrics.notificationsPerDay).toHaveLength(1);
+            expect(expirationMetrics.notificationsPerDay[0].tenantId).toBe(1);
+            expect(expirationMetrics.notificationsPerDay[0].count).toBe(4);
+        });
+
+        it('должен инкрементировать счётчик для существующей записи за день', () => {
+            const tenantId = 1;
+            metricsCollector.recordRoleExpirationNotification(tenantId, 2);
+            metricsCollector.recordRoleExpirationNotification(tenantId, 3);
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(expirationMetrics.notificationsPerDay).toHaveLength(1);
+            expect(expirationMetrics.notificationsPerDay[0].count).toBe(5);
+        });
+    });
+
+    describe('recordRoleExpirationError', () => {
+        it('должен записать ошибку деактивации ролей', () => {
+            metricsCollector.recordRoleExpirationError(
+                1,
+                'deactivation',
+                'Test error',
+            );
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(expirationMetrics.errorsCount).toBe(1);
+            expect(expirationMetrics.errorsByOperation.deactivation).toBe(1);
+            expect(expirationMetrics.errorsByOperation.renewal).toBe(0);
+            expect(expirationMetrics.errorsByOperation.notification).toBe(0);
+        });
+
+        it('должен записать ошибку продления ролей', () => {
+            metricsCollector.recordRoleExpirationError(
+                1,
+                'renewal',
+                'Renewal error',
+            );
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(expirationMetrics.errorsCount).toBe(1);
+            expect(expirationMetrics.errorsByOperation.renewal).toBe(1);
+        });
+
+        it('должен записать ошибку отправки уведомлений', () => {
+            metricsCollector.recordRoleExpirationError(
+                1,
+                'notification',
+                'Notification error',
+            );
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(expirationMetrics.errorsCount).toBe(1);
+            expect(expirationMetrics.errorsByOperation.notification).toBe(1);
+        });
+
+        it('должен группировать ошибки по типам операций', () => {
+            metricsCollector.recordRoleExpirationError(
+                1,
+                'deactivation',
+                'Error 1',
+            );
+            metricsCollector.recordRoleExpirationError(
+                1,
+                'deactivation',
+                'Error 2',
+            );
+            metricsCollector.recordRoleExpirationError(1, 'renewal', 'Error 3');
+            metricsCollector.recordRoleExpirationError(
+                1,
+                'notification',
+                'Error 4',
+            );
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(expirationMetrics.errorsCount).toBe(4);
+            expect(expirationMetrics.errorsByOperation.deactivation).toBe(2);
+            expect(expirationMetrics.errorsByOperation.renewal).toBe(1);
+            expect(expirationMetrics.errorsByOperation.notification).toBe(1);
+        });
+
+        it('должен truncate длинные сообщения об ошибках', () => {
+            const longError = 'Error: ' + 'a'.repeat(1000);
+            metricsCollector.recordRoleExpirationError(
+                1,
+                'deactivation',
+                longError,
+            );
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(expirationMetrics.errorsCount).toBe(1);
+        });
+    });
+
+    describe('getRoleExpirationMetrics', () => {
+        it('должен вернуть пустые метрики при отсутствии данных', () => {
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(expirationMetrics.expirationsPerDay).toEqual([]);
+            expect(expirationMetrics.renewalsPerDay).toEqual([]);
+            expect(expirationMetrics.notificationsPerDay).toEqual([]);
+            expect(expirationMetrics.totalExpirationsLast24h).toEqual([]);
+            expect(expirationMetrics.totalRenewalsLast24h).toEqual([]);
+            expect(expirationMetrics.totalNotificationsLast24h).toEqual([]);
+            expect(expirationMetrics.errorsCount).toBe(0);
+            expect(expirationMetrics.errorsByOperation.deactivation).toBe(0);
+            expect(expirationMetrics.errorsByOperation.renewal).toBe(0);
+            expect(expirationMetrics.errorsByOperation.notification).toBe(0);
+        });
+
+        it('должен агрегировать метрики по дням и тенантам', () => {
+            metricsCollector.recordRoleExpiration(1, 5);
+            metricsCollector.recordRoleExpiration(1, 3);
+            metricsCollector.recordRoleExpiration(2, 2);
+            metricsCollector.recordRoleRenewal(1, 2);
+            metricsCollector.recordRoleExpirationNotification(1, 4);
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(expirationMetrics.expirationsPerDay.length).toBeGreaterThan(
+                0,
+            );
+            expect(expirationMetrics.renewalsPerDay.length).toBeGreaterThan(0);
+            expect(
+                expirationMetrics.notificationsPerDay.length,
+            ).toBeGreaterThan(0);
+            expect(
+                expirationMetrics.totalExpirationsLast24h.length,
+            ).toBeGreaterThan(0);
+        });
+
+        it('должен корректно агрегировать totalExpirationsLast24h по тенантам', () => {
+            metricsCollector.recordRoleExpiration(1, 3);
+            metricsCollector.recordRoleExpiration(1, 2);
+            metricsCollector.recordRoleExpiration(2, 1);
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            const tenant1Total = expirationMetrics.totalExpirationsLast24h.find(
+                (e) => e.tenantId === 1,
+            );
+            const tenant2Total = expirationMetrics.totalExpirationsLast24h.find(
+                (e) => e.tenantId === 2,
+            );
+
+            expect(tenant1Total?.count).toBeGreaterThanOrEqual(5);
+            expect(tenant2Total?.count).toBeGreaterThanOrEqual(1);
+        });
+
+        it('должен фильтровать метрики старше 24 часов', () => {
+            metricsCollector.recordRoleExpiration(1, 2);
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            // Должна быть хотя бы одна запись за последние 24 часа
+            expect(expirationMetrics.expirationsPerDay.length).toBeGreaterThan(
+                0,
+            );
+        });
+    });
+
+    describe('reset (role expiration metrics)', () => {
+        it('должен очистить все метрики expiration/renewal', () => {
+            metricsCollector.recordRoleExpiration(1, 5);
+            metricsCollector.recordRoleRenewal(1, 3);
+            metricsCollector.recordRoleExpirationNotification(1, 2);
+            metricsCollector.recordRoleExpirationError(
+                1,
+                'deactivation',
+                'Error',
+            );
+
+            metricsCollector.reset();
+
+            const expirationMetrics =
+                metricsCollector.getRoleExpirationMetrics();
+
+            expect(expirationMetrics.expirationsPerDay).toEqual([]);
+            expect(expirationMetrics.renewalsPerDay).toEqual([]);
+            expect(expirationMetrics.notificationsPerDay).toEqual([]);
+            expect(expirationMetrics.errorsCount).toBe(0);
+        });
+    });
 });

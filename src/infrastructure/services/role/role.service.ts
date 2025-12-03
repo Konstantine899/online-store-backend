@@ -1,7 +1,6 @@
 import { AuditAction, UserModel, UserRoleModel } from '@app/domain/models';
 import { IRoleService } from '@app/domain/services';
 import { MetricsCollector } from '@app/infrastructure/common/services';
-import { AuditService } from '@app/infrastructure/services/audit/audit.service';
 import {
     canManageRole,
     CUSTOMER_ROLES,
@@ -48,6 +47,7 @@ import {
     RevokeRoleResponse,
     UpdateRoleResponse,
 } from '@app/infrastructure/responses';
+import { AuditService } from '@app/infrastructure/services/audit/audit.service';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { RoleCacheService } from './role-cache.service';
@@ -1688,6 +1688,476 @@ export class RoleService implements IRoleService {
                 false,
             );
             return { revoked: false };
+        }
+    }
+
+    // ============================================================================
+    // Методы для работы с истечением и автоматическим продлением ролей
+    // ============================================================================
+
+    /**
+     * Деактивировать истекшие активные роли (batch операция)
+     * Находит все активные роли, у которых expiresAt < текущей даты,
+     * и деактивирует их через batch операцию
+     *
+     * @param batchSize - Максимальное количество ролей для обработки за раз (default: 1000)
+     * @param beforeDate - Дата до которой искать истекшие роли (опционально, по умолчанию текущая дата)
+     * @returns Количество деактивированных ролей
+     */
+    public async deactivateExpiredRoles(
+        batchSize: number = 1000,
+        beforeDate?: Date,
+    ): Promise<number> {
+        const startTime = Date.now();
+        if (this.logger) {
+            this.logger.log({
+                batchSize,
+                beforeDate: beforeDate?.toISOString(),
+                message: 'Начинается деактивация истекших ролей',
+            });
+        }
+
+        try {
+            // Найти истекшие активные роли
+            const expiredRoles =
+                await this.roleRepository.findExpiredActiveRoles(
+                    batchSize,
+                    beforeDate,
+                );
+
+            if (expiredRoles.length === 0) {
+                if (this.logger) {
+                    this.logger.debug('Истекшие роли не найдены');
+                }
+                return 0;
+            }
+
+            // Деактивировать найденные роли через batch операцию
+            const userRoleIds = expiredRoles.map((role) => role.id);
+            const deactivatedCount =
+                await this.roleRepository.batchDeactivateExpiredRoles(
+                    userRoleIds,
+                );
+
+            // Создать audit логи для каждой деактивированной роли
+            const auditLogPromises = expiredRoles.map((role) =>
+                this.auditService.createLog({
+                    entityType: 'user_role',
+                    entityId: role.id,
+                    action: AuditAction.UPDATE,
+                    userId: null, // Системное действие
+                    oldValues: {
+                        isActive: true,
+                        expiresAt: role.expiresAt.toISOString(),
+                    },
+                    newValues: {
+                        isActive: false,
+                        expiresAt: role.expiresAt.toISOString(),
+                        reason: 'auto_deactivated_expired',
+                    },
+                    ipAddress: null,
+                    userAgent: null,
+                    requestId: null,
+                    tenantId: role.tenantId,
+                }),
+            );
+
+            await Promise.all(auditLogPromises);
+
+            const duration = Date.now() - startTime;
+            if (this.metricsCollector) {
+                this.metricsCollector.recordBulkOperation(
+                    'deactivateExpiredRoles',
+                    duration,
+                    deactivatedCount,
+                );
+
+                // Записываем метрики по тенантам
+                const tenantCounts = new Map<number | null, number>();
+                expiredRoles.forEach((role) => {
+                    const count = tenantCounts.get(role.tenantId) ?? 0;
+                    tenantCounts.set(role.tenantId, count + 1);
+                });
+
+                tenantCounts.forEach((count, tenantId) => {
+                    this.metricsCollector.recordRoleExpiration(tenantId, count);
+                });
+            }
+
+            if (this.logger) {
+                this.logger.log({
+                    deactivatedCount,
+                    totalFound: expiredRoles.length,
+                    durationMs: duration,
+                    message: `Деактивировано ${deactivatedCount} истекших ролей`,
+                });
+            }
+
+            return deactivatedCount;
+        } catch (error: unknown) {
+            const duration = Date.now() - startTime;
+            if (this.metricsCollector) {
+                this.metricsCollector.recordError(
+                    'RoleService',
+                    error instanceof Error ? error.message : String(error),
+                );
+            }
+            if (this.logger) {
+                this.logger.error(
+                    {
+                        error:
+                            error instanceof Error
+                                ? error.message
+                                : String(error),
+                        durationMs: duration,
+                        message: 'Ошибка при деактивации истекших ролей',
+                    },
+                    error instanceof Error ? error.stack : undefined,
+                );
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Автоматически продлить роль, если настроено автоматическое продление
+     * Проверяет конфигурацию продления, лимиты и выполняет продление с обновлением expiresAt
+     *
+     * @param userRoleId - ID назначения роли
+     * @returns true если роль была продлена, false если продление невозможно
+     */
+    public async autoRenewRole(userRoleId: number): Promise<boolean> {
+        const startTime = Date.now();
+        if (this.logger) {
+            this.logger.debug({
+                userRoleId,
+                message: 'Начинается автоматическое продление роли',
+            });
+        }
+
+        // Временная отладка для диагностики проблемы
+        if (
+            process.env.NODE_ENV === 'test' &&
+            process.env.DEBUG_SQL === 'true'
+        ) {
+            console.log(
+                '[DEBUG] autoRenewRole called with userRoleId:',
+                userRoleId,
+            );
+        }
+
+        try {
+            // Найти конфигурацию автоматического продления
+            const config =
+                await this.roleRepository.findAutoRenewalConfig(userRoleId);
+
+            if (
+                process.env.NODE_ENV === 'test' &&
+                process.env.DEBUG_SQL === 'true'
+            ) {
+                console.log(
+                    '[DEBUG] autoRenewRole config:',
+                    JSON.stringify(config, null, 2),
+                );
+            }
+
+            if (!config?.isEnabled) {
+                if (this.logger) {
+                    this.logger.debug({
+                        userRoleId,
+                        hasConfig: !!config,
+                        isEnabled: config?.isEnabled ?? false,
+                        message:
+                            'Автоматическое продление отключено или не настроено',
+                    });
+                }
+                if (
+                    process.env.NODE_ENV === 'test' &&
+                    process.env.DEBUG_SQL === 'true'
+                ) {
+                    console.log(
+                        '[DEBUG] autoRenewRole returning false: config not enabled',
+                    );
+                }
+                return false;
+            }
+
+            // Проверить лимит продлений
+            if (
+                config.maxRenewals > 0 &&
+                config.currentRenewalCount >= config.maxRenewals
+            ) {
+                if (this.logger) {
+                    this.logger.debug({
+                        userRoleId,
+                        currentRenewalCount: config.currentRenewalCount,
+                        maxRenewals: config.maxRenewals,
+                        message:
+                            'Достигнут лимит автоматических продлений, отключаем продление',
+                    });
+                }
+
+                // Отключаем автоматическое продление
+                await this.roleRepository.updateAutoRenewalConfig(userRoleId, {
+                    isEnabled: false,
+                });
+                return false;
+            }
+
+            // Найти текущую роль для получения текущего expiresAt
+            if (
+                process.env.NODE_ENV === 'test' &&
+                process.env.DEBUG_SQL === 'true'
+            ) {
+                console.log(
+                    '[DEBUG] autoRenewRole: calling userRoleModel.findByPk with userRoleId:',
+                    userRoleId,
+                );
+                console.log(
+                    '[DEBUG] autoRenewRole: userRoleModel exists?',
+                    !!this.userRoleModel,
+                );
+            }
+
+            let userRole;
+            try {
+                userRole = await this.userRoleModel.findByPk(userRoleId);
+            } catch (findError) {
+                if (
+                    process.env.NODE_ENV === 'test' &&
+                    process.env.DEBUG_SQL === 'true'
+                ) {
+                    console.log(
+                        '[DEBUG] autoRenewRole: findByPk ERROR:',
+                        findError instanceof Error
+                            ? findError.message
+                            : String(findError),
+                    );
+                }
+                throw findError;
+            }
+
+            if (
+                process.env.NODE_ENV === 'test' &&
+                process.env.DEBUG_SQL === 'true'
+            ) {
+                console.log(
+                    '[DEBUG] autoRenewRole userRole:',
+                    JSON.stringify(
+                        {
+                            id: userRole?.id,
+                            isActive: userRole?.isActive,
+                            expiresAt: userRole?.expiresAt?.toISOString(),
+                            found: !!userRole,
+                        },
+                        null,
+                        2,
+                    ),
+                );
+            }
+
+            if (!userRole?.isActive) {
+                if (this.logger) {
+                    this.logger.debug({
+                        userRoleId,
+                        found: !!userRole,
+                        isActive: userRole?.isActive ?? false,
+                        message: 'Роль не найдена или уже деактивирована',
+                    });
+                }
+                if (
+                    process.env.NODE_ENV === 'test' &&
+                    process.env.DEBUG_SQL === 'true'
+                ) {
+                    console.log(
+                        '[DEBUG] autoRenewRole returning false: userRole not active',
+                    );
+                }
+                return false;
+            }
+
+            if (userRole.expiresAt === null) {
+                if (this.logger) {
+                    this.logger.debug({
+                        userRoleId,
+                        message: 'Роль бессрочная, продление не требуется',
+                    });
+                }
+                if (
+                    process.env.NODE_ENV === 'test' &&
+                    process.env.DEBUG_SQL === 'true'
+                ) {
+                    console.log(
+                        '[DEBUG] autoRenewRole returning false: expiresAt is null',
+                    );
+                }
+                return false;
+            }
+
+            // Вычислить новую дату истечения
+            const currentExpiresAt = userRole.expiresAt;
+            const newExpiresAt = new Date(
+                currentExpiresAt.getTime() + config.renewalDurationMs,
+            );
+
+            // Обновить счетчик продлений и expiresAt
+            const renewed = await this.roleRepository.incrementRenewalCount(
+                userRoleId,
+                newExpiresAt,
+            );
+
+            if (
+                process.env.NODE_ENV === 'test' &&
+                process.env.DEBUG_SQL === 'true'
+            ) {
+                console.log(
+                    '[DEBUG] autoRenewRole incrementRenewalCount result:',
+                    renewed,
+                );
+            }
+
+            if (!renewed) {
+                if (this.logger) {
+                    this.logger.debug({
+                        userRoleId,
+                        message:
+                            'Не удалось обновить счетчик продлений (возможно, достигнут лимит)',
+                    });
+                }
+                if (
+                    process.env.NODE_ENV === 'test' &&
+                    process.env.DEBUG_SQL === 'true'
+                ) {
+                    console.log(
+                        '[DEBUG] autoRenewRole returning false: incrementRenewalCount failed',
+                    );
+                }
+                return false;
+            }
+
+            // Создать audit log для продления
+            if (
+                process.env.NODE_ENV === 'test' &&
+                process.env.DEBUG_SQL === 'true'
+            ) {
+                console.log(
+                    '[DEBUG] autoRenewRole: before auditService.createLog',
+                );
+            }
+
+            if (this.auditService) {
+                try {
+                    await this.auditService.createLog({
+                        entityType: 'user_role',
+                        entityId: userRoleId,
+                        action: AuditAction.UPDATE,
+                        userId: null, // Системное действие
+                        oldValues: {
+                            expiresAt: currentExpiresAt.toISOString(),
+                            renewalCount: config.currentRenewalCount,
+                        },
+                        newValues: {
+                            expiresAt: newExpiresAt.toISOString(),
+                            renewalCount: config.currentRenewalCount + 1,
+                            reason: 'auto_renewed',
+                            renewalDurationMs: config.renewalDurationMs,
+                        },
+                        ipAddress: null,
+                        userAgent: null,
+                        requestId: null,
+                        tenantId: userRole.tenantId,
+                    });
+                } catch (auditError) {
+                    if (
+                        process.env.NODE_ENV === 'test' &&
+                        process.env.DEBUG_SQL === 'true'
+                    ) {
+                        console.log(
+                            '[DEBUG] autoRenewRole: auditService.createLog ERROR:',
+                            auditError instanceof Error
+                                ? auditError.message
+                                : String(auditError),
+                        );
+                    }
+                    // Не прерываем выполнение из-за ошибки audit логирования
+                }
+            }
+
+            const duration = Date.now() - startTime;
+
+            if (
+                process.env.NODE_ENV === 'test' &&
+                process.env.DEBUG_SQL === 'true'
+            ) {
+                console.log(
+                    '[DEBUG] autoRenewRole: before metricsCollector calls',
+                );
+            }
+
+            if (this.metricsCollector) {
+                this.metricsCollector.recordBulkOperation(
+                    'autoRenewRole',
+                    duration,
+                    1,
+                );
+
+                // Записываем метрику продления
+                this.metricsCollector.recordRoleRenewal(userRole.tenantId, 1);
+            }
+
+            if (this.logger) {
+                this.logger.log({
+                    userRoleId,
+                    userId: userRole.userId,
+                    oldExpiresAt: currentExpiresAt.toISOString(),
+                    newExpiresAt: newExpiresAt.toISOString(),
+                    renewalCount: config.currentRenewalCount + 1,
+                    durationMs: duration,
+                    message: 'Роль успешно продлена автоматически',
+                });
+            }
+
+            if (
+                process.env.NODE_ENV === 'test' &&
+                process.env.DEBUG_SQL === 'true'
+            ) {
+                console.log('[DEBUG] autoRenewRole returning true: success', {
+                    userRoleId,
+                    oldExpiresAt: currentExpiresAt.toISOString(),
+                    newExpiresAt: newExpiresAt.toISOString(),
+                });
+            }
+
+            return true;
+        } catch (error: unknown) {
+            const duration = Date.now() - startTime;
+            if (this.metricsCollector) {
+                this.metricsCollector.recordError(
+                    'RoleService',
+                    error instanceof Error ? error.message : String(error),
+                );
+                // Записываем ошибку продления (tenantId неизвестен в случае ошибки)
+                this.metricsCollector.recordRoleExpirationError(
+                    null,
+                    'renewal',
+                    error instanceof Error ? error.message : String(error),
+                );
+            }
+            if (this.logger) {
+                this.logger.error(
+                    {
+                        userRoleId,
+                        error:
+                            error instanceof Error
+                                ? error.message
+                                : String(error),
+                        durationMs: duration,
+                        message: 'Ошибка при автоматическом продлении роли',
+                    },
+                    error instanceof Error ? error.stack : undefined,
+                );
+            }
+            return false; // Не выбрасываем ошибку, чтобы не прерывать batch обработку
         }
     }
 

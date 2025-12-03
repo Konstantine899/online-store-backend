@@ -1,4 +1,5 @@
 import {
+    RoleAutoRenewalConfigModel,
     RoleModel,
     RolePermissionModel,
     UserModel,
@@ -18,6 +19,9 @@ describe('RoleRepository (unit)', () => {
     let rolePermissionModelMock: jest.Mocked<typeof RolePermissionModel>;
     let userRoleModelMock: jest.Mocked<typeof UserRoleModel>;
     let userModelMock: jest.Mocked<typeof UserModel>;
+    let roleAutoRenewalConfigModelMock: jest.Mocked<
+        typeof RoleAutoRenewalConfigModel
+    >;
 
     // Тестовые данные
     const mockRole = {
@@ -72,12 +76,21 @@ describe('RoleRepository (unit)', () => {
             create: jest.fn(),
             findOne: jest.fn(),
             findAll: jest.fn(),
+            update: jest.fn(),
             destroy: jest.fn(),
         } as unknown as jest.Mocked<typeof UserRoleModel>;
 
         userModelMock = {
             findByPk: jest.fn(),
         } as unknown as jest.Mocked<typeof UserModel>;
+
+        roleAutoRenewalConfigModelMock = {
+            create: jest.fn(),
+            findOne: jest.fn(),
+            findAll: jest.fn(),
+            update: jest.fn(),
+            destroy: jest.fn(),
+        } as unknown as jest.Mocked<typeof RoleAutoRenewalConfigModel>;
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -97,6 +110,10 @@ describe('RoleRepository (unit)', () => {
                 {
                     provide: getModelToken(UserModel),
                     useValue: userModelMock,
+                },
+                {
+                    provide: getModelToken(RoleAutoRenewalConfigModel),
+                    useValue: roleAutoRenewalConfigModelMock,
                 },
             ],
         }).compile();
@@ -793,6 +810,318 @@ describe('RoleRepository (unit)', () => {
             const result = await repository.findRolePermissions(999);
 
             expect(result).toHaveLength(0);
+        });
+    });
+
+    // ============================================================================
+    // Auto Renewal Config Tests
+    // ============================================================================
+
+    describe('createAutoRenewalConfig', () => {
+        it('должен создать конфигурацию автоматического продления', async () => {
+            const mockConfig = {
+                id: 1,
+                userRoleId: 42,
+                isEnabled: true,
+                renewalDurationMs: 2592000000, // 30 дней
+                maxRenewals: 12,
+                currentRenewalCount: 0,
+                notificationEnabled: true,
+                lastRenewedAt: null,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+
+            roleAutoRenewalConfigModelMock.create.mockResolvedValue(
+                mockConfig as unknown as RoleAutoRenewalConfigModel,
+            );
+
+            const result = await repository.createAutoRenewalConfig(
+                42,
+                2592000000,
+                12,
+                true,
+            );
+
+            expect(roleAutoRenewalConfigModelMock.create).toHaveBeenCalledWith({
+                userRoleId: 42,
+                renewalDurationMs: 2592000000,
+                maxRenewals: 12,
+                notificationEnabled: true,
+                isEnabled: true,
+                currentRenewalCount: 0,
+            });
+            expect(result.id).toBe(1);
+            expect(result.userRoleId).toBe(42);
+            expect(result.renewalDurationMs).toBe(2592000000);
+        });
+
+        it('должен использовать значения по умолчанию', async () => {
+            const mockConfig = {
+                id: 1,
+                userRoleId: 42,
+                isEnabled: true,
+                renewalDurationMs: 2592000000,
+                maxRenewals: 12,
+                currentRenewalCount: 0,
+                notificationEnabled: true,
+                lastRenewedAt: null,
+            };
+
+            roleAutoRenewalConfigModelMock.create.mockResolvedValue(
+                mockConfig as unknown as RoleAutoRenewalConfigModel,
+            );
+
+            await repository.createAutoRenewalConfig(42, 2592000000);
+
+            expect(roleAutoRenewalConfigModelMock.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    maxRenewals: 12,
+                    notificationEnabled: true,
+                }),
+            );
+        });
+    });
+
+    describe('findAutoRenewalConfig', () => {
+        it('должен найти конфигурацию по userRoleId', async () => {
+            const mockConfig = {
+                id: 1,
+                userRoleId: 42,
+                isEnabled: true,
+                renewalDurationMs: 2592000000,
+                maxRenewals: 12,
+                currentRenewalCount: 3,
+                lastRenewedAt: new Date('2024-01-15'),
+                notificationEnabled: true,
+            };
+
+            roleAutoRenewalConfigModelMock.findOne.mockResolvedValue(
+                mockConfig as unknown as RoleAutoRenewalConfigModel,
+            );
+
+            const result = await repository.findAutoRenewalConfig(42);
+
+            expect(roleAutoRenewalConfigModelMock.findOne).toHaveBeenCalledWith(
+                {
+                    where: { userRoleId: 42 },
+                },
+            );
+            expect(result).not.toBeNull();
+            expect(result?.userRoleId).toBe(42);
+            expect(result?.currentRenewalCount).toBe(3);
+        });
+
+        it('должен вернуть null если конфигурация не найдена', async () => {
+            roleAutoRenewalConfigModelMock.findOne.mockResolvedValue(null);
+
+            const result = await repository.findAutoRenewalConfig(999);
+
+            expect(result).toBeNull();
+        });
+    });
+
+    describe('updateAutoRenewalConfig', () => {
+        it('должен обновить конфигурацию', async () => {
+            roleAutoRenewalConfigModelMock.update.mockResolvedValue([1]);
+
+            const result = await repository.updateAutoRenewalConfig(42, {
+                isEnabled: false,
+                maxRenewals: 6,
+            });
+
+            expect(roleAutoRenewalConfigModelMock.update).toHaveBeenCalledWith(
+                { isEnabled: false, maxRenewals: 6 },
+                { where: { userRoleId: 42 } },
+            );
+            expect(result).toBe(true);
+        });
+
+        it('должен вернуть false если конфигурация не найдена', async () => {
+            roleAutoRenewalConfigModelMock.update.mockResolvedValue([0]);
+
+            const result = await repository.updateAutoRenewalConfig(999, {
+                isEnabled: false,
+            });
+
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('deleteAutoRenewalConfig', () => {
+        it('должен удалить конфигурацию', async () => {
+            roleAutoRenewalConfigModelMock.destroy.mockResolvedValue(1);
+
+            const result = await repository.deleteAutoRenewalConfig(42);
+
+            expect(roleAutoRenewalConfigModelMock.destroy).toHaveBeenCalledWith(
+                {
+                    where: { userRoleId: 42 },
+                },
+            );
+            expect(result).toBe(true);
+        });
+
+        it('должен вернуть false если конфигурация не найдена', async () => {
+            roleAutoRenewalConfigModelMock.destroy.mockResolvedValue(0);
+
+            const result = await repository.deleteAutoRenewalConfig(999);
+
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('findExpiredActiveRoles', () => {
+        it('должен найти истекшие активные роли', async () => {
+            const mockExpiredRoles = [
+                {
+                    id: 1,
+                    userId: 10,
+                    roleId: 1,
+                    tenantId: 1,
+                    expiresAt: new Date('2024-01-01'),
+                    isActive: true,
+                },
+                {
+                    id: 2,
+                    userId: 11,
+                    roleId: 2,
+                    tenantId: 1,
+                    expiresAt: new Date('2024-01-02'),
+                    isActive: true,
+                },
+            ];
+
+            userRoleModelMock.findAll.mockResolvedValue(
+                mockExpiredRoles as unknown as UserRoleModel[],
+            );
+
+            const result = await repository.findExpiredActiveRoles(100);
+
+            expect(userRoleModelMock.findAll).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({
+                        isActive: true,
+                        expiresAt: expect.any(Object),
+                    }),
+                    limit: 100,
+                }),
+            );
+            expect(result).toHaveLength(2);
+            expect(result[0].id).toBe(1);
+        });
+
+        it('должен вернуть пустой массив если истекших ролей нет', async () => {
+            userRoleModelMock.findAll.mockResolvedValue([]);
+
+            const result = await repository.findExpiredActiveRoles(100);
+
+            expect(result).toHaveLength(0);
+        });
+    });
+
+    describe('batchDeactivateExpiredRoles', () => {
+        it('должен деактивировать истекшие роли batch операцией', async () => {
+            userRoleModelMock.update.mockResolvedValue([3]);
+
+            const result = await repository.batchDeactivateExpiredRoles([
+                1, 2, 3,
+            ]);
+
+            expect(userRoleModelMock.update).toHaveBeenCalledWith(
+                { isActive: false },
+                expect.objectContaining({
+                    where: expect.objectContaining({
+                        id: expect.any(Object),
+                        isActive: true,
+                    }),
+                }),
+            );
+            expect(result).toBe(3);
+        });
+
+        it('должен вернуть 0 если массив пустой', async () => {
+            const result = await repository.batchDeactivateExpiredRoles([]);
+
+            expect(userRoleModelMock.update).not.toHaveBeenCalled();
+            expect(result).toBe(0);
+        });
+    });
+
+    describe('incrementRenewalCount', () => {
+        it('должен увеличить счётчик продлений и обновить expiresAt', async () => {
+            const mockConfig = {
+                id: 1,
+                userRoleId: 42,
+                currentRenewalCount: 2,
+                maxRenewals: 12,
+                update: jest.fn().mockResolvedValue(undefined),
+            };
+
+            roleAutoRenewalConfigModelMock.findOne.mockResolvedValue(
+                mockConfig as unknown as RoleAutoRenewalConfigModel,
+            );
+            userRoleModelMock.update.mockResolvedValue([1]);
+
+            const newExpiresAt = new Date('2024-02-01');
+            const result = await repository.incrementRenewalCount(
+                42,
+                newExpiresAt,
+            );
+
+            expect(roleAutoRenewalConfigModelMock.findOne).toHaveBeenCalledWith(
+                {
+                    where: { userRoleId: 42 },
+                },
+            );
+            expect(mockConfig.update).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    currentRenewalCount: 3,
+                    lastRenewedAt: expect.any(Date),
+                }),
+            );
+            expect(userRoleModelMock.update).toHaveBeenCalledWith(
+                { expiresAt: newExpiresAt },
+                { where: { id: 42 } },
+            );
+            expect(result).toBe(true);
+        });
+
+        it('должен отключить продление при достижении лимита', async () => {
+            const mockConfig = {
+                id: 1,
+                userRoleId: 42,
+                currentRenewalCount: 12,
+                maxRenewals: 12,
+                update: jest.fn().mockResolvedValue(undefined),
+            };
+
+            roleAutoRenewalConfigModelMock.findOne.mockResolvedValue(
+                mockConfig as unknown as RoleAutoRenewalConfigModel,
+            );
+
+            const result = await repository.incrementRenewalCount(
+                42,
+                new Date('2024-02-01'),
+            );
+
+            expect(mockConfig.update).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    isEnabled: false,
+                }),
+            );
+            expect(result).toBe(false);
+        });
+
+        it('должен вернуть false если конфигурация не найдена', async () => {
+            roleAutoRenewalConfigModelMock.findOne.mockResolvedValue(null);
+
+            const result = await repository.incrementRenewalCount(
+                999,
+                new Date('2024-02-01'),
+            );
+
+            expect(result).toBe(false);
         });
     });
 });

@@ -4,7 +4,6 @@ import {
     UserRoleModel as UserRoleModelType,
 } from '@app/domain/models';
 import { MetricsCollector } from '@app/infrastructure/common/services';
-import { AuditService } from '@app/infrastructure/services/audit/audit.service';
 import type {
     AssignPermissionDto,
     AssignRoleDto,
@@ -26,6 +25,7 @@ import type {
     GetListRoleResponse,
     GetRoleResponse,
 } from '@app/infrastructure/responses';
+import { AuditService } from '@app/infrastructure/services/audit/audit.service';
 import { BadRequestException } from '@nestjs/common';
 import { getModelToken } from '@nestjs/sequelize';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -89,6 +89,10 @@ describe('RoleService (unit)', () => {
                         assignRoleToUser: jest.fn(),
                         revokeRoleFromUser: jest.fn(),
                         findUserRoles: jest.fn(),
+                        findExpiredActiveRoles: jest.fn(),
+                        batchDeactivateExpiredRoles: jest.fn(),
+                        findAutoRenewalConfig: jest.fn(),
+                        incrementRenewalCount: jest.fn(),
                     },
                 },
                 {
@@ -130,12 +134,18 @@ describe('RoleService (unit)', () => {
                     provide: getModelToken(UserRoleModelType),
                     useValue: {
                         findOne: jest.fn(),
+                        findByPk: jest.fn(),
                     },
                 },
                 {
                     provide: MetricsCollector,
                     useValue: {
                         recordRoleAutoAssignment: jest.fn(),
+                        recordBulkOperation: jest.fn(),
+                        recordRoleExpiration: jest.fn(),
+                        recordRoleRenewal: jest.fn(),
+                        recordError: jest.fn(),
+                        recordRoleExpirationError: jest.fn(),
                     },
                 },
                 {
@@ -370,6 +380,7 @@ describe('RoleService (unit)', () => {
             // Мок для получения существующих разрешений (нужно для audit лога)
             roleRepository.findRolePermissions.mockResolvedValue([
                 {
+                    id: 1,
                     resource: 'products',
                     action: 'read',
                     conditions: null,
@@ -685,6 +696,251 @@ describe('RoleService (unit)', () => {
             roleCacheService.getCachedRole.mockResolvedValue(null);
 
             await expect(service.getRoleLevel('NONEXISTENT')).rejects.toThrow();
+        });
+    });
+
+    // ============================================================================
+    // Role Expiration/Renewal Tests
+    // ============================================================================
+
+    describe('deactivateExpiredRoles', () => {
+        it('должен деактивировать истекшие роли', async () => {
+            const mockExpiredRoles = [
+                {
+                    id: 1,
+                    userId: 10,
+                    roleId: 1,
+                    tenantId: 1,
+                    expiresAt: new Date('2024-01-01'),
+                    isActive: true,
+                },
+                {
+                    id: 2,
+                    userId: 11,
+                    roleId: 2,
+                    tenantId: 1,
+                    expiresAt: new Date('2024-01-02'),
+                    isActive: true,
+                },
+            ];
+
+            roleRepository.findExpiredActiveRoles.mockResolvedValue(
+                mockExpiredRoles,
+            );
+            roleRepository.batchDeactivateExpiredRoles.mockResolvedValue(2);
+            const auditService = service[
+                'auditService'
+            ] as jest.Mocked<AuditService>;
+            auditService.createLog = jest.fn().mockResolvedValue(undefined);
+            const metricsCollector = service[
+                'metricsCollector'
+            ] as jest.Mocked<MetricsCollector>;
+            metricsCollector.recordBulkOperation = jest.fn();
+            metricsCollector.recordRoleExpiration = jest.fn();
+
+            const result = await service.deactivateExpiredRoles(100);
+
+            expect(roleRepository.findExpiredActiveRoles).toHaveBeenCalledWith(
+                100,
+                undefined,
+            );
+            expect(
+                roleRepository.batchDeactivateExpiredRoles,
+            ).toHaveBeenCalledWith([1, 2]);
+            expect(auditService.createLog).toHaveBeenCalledTimes(2);
+            expect(metricsCollector.recordBulkOperation).toHaveBeenCalled();
+            expect(metricsCollector.recordRoleExpiration).toHaveBeenCalled();
+            expect(result).toBe(2);
+        });
+
+        it('должен вернуть 0 если истекших ролей нет', async () => {
+            roleRepository.findExpiredActiveRoles.mockResolvedValue([]);
+
+            const result = await service.deactivateExpiredRoles(100);
+
+            expect(
+                roleRepository.batchDeactivateExpiredRoles,
+            ).not.toHaveBeenCalled();
+            expect(result).toBe(0);
+        });
+
+        it('должен обработать ошибку и выбросить её', async () => {
+            const error = new Error('Database error');
+            roleRepository.findExpiredActiveRoles.mockRejectedValue(error);
+            const metricsCollector = service[
+                'metricsCollector'
+            ] as jest.Mocked<MetricsCollector>;
+            metricsCollector.recordError = jest.fn();
+
+            await expect(service.deactivateExpiredRoles(100)).rejects.toThrow(
+                'Database error',
+            );
+            expect(metricsCollector.recordError).toHaveBeenCalled();
+        });
+    });
+
+    describe('autoRenewRole', () => {
+        it('должен продлить роль автоматически', async () => {
+            const mockConfig = {
+                id: 1,
+                userRoleId: 42,
+                isEnabled: true,
+                renewalDurationMs: 2592000000, // 30 дней
+                maxRenewals: 12,
+                currentRenewalCount: 2,
+                lastRenewedAt: null,
+                notificationEnabled: true,
+            };
+
+            const mockUserRole = {
+                id: 42,
+                userId: 10,
+                roleId: 1,
+                tenantId: 1,
+                expiresAt: new Date('2024-02-01'),
+                isActive: true,
+            };
+
+            roleRepository.findAutoRenewalConfig.mockResolvedValue(mockConfig);
+            const userRoleModel = service['userRoleModel'] as jest.Mocked<
+                typeof UserRoleModelType
+            >;
+            userRoleModel.findByPk = jest
+                .fn()
+                .mockResolvedValue(
+                    mockUserRole as unknown as UserRoleModelType,
+                );
+            roleRepository.incrementRenewalCount.mockResolvedValue(true);
+            const auditService = service[
+                'auditService'
+            ] as jest.Mocked<AuditService>;
+            auditService.createLog = jest.fn().mockResolvedValue(undefined);
+            const metricsCollector = service[
+                'metricsCollector'
+            ] as jest.Mocked<MetricsCollector>;
+            metricsCollector.recordBulkOperation = jest.fn();
+            metricsCollector.recordRoleRenewal = jest.fn();
+
+            const result = await service.autoRenewRole(42);
+
+            expect(roleRepository.findAutoRenewalConfig).toHaveBeenCalledWith(
+                42,
+            );
+            expect(userRoleModel.findByPk).toHaveBeenCalledWith(42);
+            expect(roleRepository.incrementRenewalCount).toHaveBeenCalledWith(
+                42,
+                expect.any(Date),
+            );
+            expect(auditService.createLog).toHaveBeenCalled();
+            expect(metricsCollector.recordRoleRenewal).toHaveBeenCalledWith(
+                1,
+                1,
+            );
+            expect(result).toBe(true);
+        });
+
+        it('должен вернуть false если конфигурация не найдена', async () => {
+            roleRepository.findAutoRenewalConfig.mockResolvedValue(null);
+
+            const result = await service.autoRenewRole(999);
+
+            expect(result).toBe(false);
+        });
+
+        it('должен вернуть false если продление отключено', async () => {
+            const mockConfig = {
+                id: 1,
+                userRoleId: 42,
+                isEnabled: false,
+                renewalDurationMs: 2592000000,
+                maxRenewals: 12,
+                currentRenewalCount: 0,
+                lastRenewedAt: null,
+                notificationEnabled: true,
+            };
+
+            roleRepository.findAutoRenewalConfig.mockResolvedValue(mockConfig);
+
+            const result = await service.autoRenewRole(42);
+
+            expect(result).toBe(false);
+        });
+
+        it('должен вернуть false если роль не найдена', async () => {
+            const mockConfig = {
+                id: 1,
+                userRoleId: 42,
+                isEnabled: true,
+                renewalDurationMs: 2592000000,
+                maxRenewals: 12,
+                currentRenewalCount: 0,
+                lastRenewedAt: null,
+                notificationEnabled: true,
+            };
+
+            roleRepository.findAutoRenewalConfig.mockResolvedValue(mockConfig);
+            const userRoleModel = service['userRoleModel'] as jest.Mocked<
+                typeof UserRoleModelType
+            >;
+            userRoleModel.findByPk = jest.fn().mockResolvedValue(null);
+
+            const result = await service.autoRenewRole(42);
+
+            expect(result).toBe(false);
+        });
+
+        it('должен вернуть false если роль бессрочная', async () => {
+            const mockConfig = {
+                id: 1,
+                userRoleId: 42,
+                isEnabled: true,
+                renewalDurationMs: 2592000000,
+                maxRenewals: 12,
+                currentRenewalCount: 0,
+                lastRenewedAt: null,
+                notificationEnabled: true,
+            };
+
+            const mockUserRole = {
+                id: 42,
+                userId: 10,
+                roleId: 1,
+                tenantId: 1,
+                expiresAt: null,
+                isActive: true,
+            };
+
+            roleRepository.findAutoRenewalConfig.mockResolvedValue(mockConfig);
+            const userRoleModel = service['userRoleModel'] as jest.Mocked<
+                typeof UserRoleModelType
+            >;
+            userRoleModel.findByPk = jest
+                .fn()
+                .mockResolvedValue(
+                    mockUserRole as unknown as UserRoleModelType,
+                );
+
+            const result = await service.autoRenewRole(42);
+
+            expect(result).toBe(false);
+        });
+
+        it('должен обработать ошибку и вернуть false', async () => {
+            const error = new Error('Database error');
+            roleRepository.findAutoRenewalConfig.mockRejectedValue(error);
+            const metricsCollector = service[
+                'metricsCollector'
+            ] as jest.Mocked<MetricsCollector>;
+            metricsCollector.recordError = jest.fn();
+            metricsCollector.recordRoleExpirationError = jest.fn();
+
+            const result = await service.autoRenewRole(42);
+
+            expect(result).toBe(false);
+            expect(metricsCollector.recordError).toHaveBeenCalled();
+            expect(
+                metricsCollector.recordRoleExpirationError,
+            ).toHaveBeenCalled();
         });
     });
 });

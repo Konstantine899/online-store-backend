@@ -1,4 +1,5 @@
 import {
+    RoleAutoRenewalConfigModel,
     RoleModel,
     RolePermissionModel,
     UserModel,
@@ -17,7 +18,7 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, WhereOptions } from 'sequelize';
+import { Op, QueryTypes, WhereOptions } from 'sequelize';
 
 @Injectable()
 export class RoleRepository implements IRoleRepository {
@@ -29,6 +30,8 @@ export class RoleRepository implements IRoleRepository {
         private rolePermissionModel: typeof RolePermissionModel,
         @InjectModel(UserRoleModel) private userRoleModel: typeof UserRoleModel,
         @InjectModel(UserModel) private userModel: typeof UserModel,
+        @InjectModel(RoleAutoRenewalConfigModel)
+        private roleAutoRenewalConfigModel: typeof RoleAutoRenewalConfigModel,
     ) {}
 
     public async createRole(dto: CreateRoleDto): Promise<CreateRoleResponse> {
@@ -533,5 +536,349 @@ export class RoleRepository implements IRoleRepository {
                 isActive: ur.isActive,
                 metadata: ur.metadata ?? undefined,
             }));
+    }
+
+    // ============================================================================
+    // Методы для работы с автоматическим продлением ролей
+    // ============================================================================
+
+    public async createAutoRenewalConfig(
+        userRoleId: number,
+        renewalDurationMs: number,
+        maxRenewals: number = 12,
+        notificationEnabled: boolean = true,
+    ): Promise<{
+        id: number;
+        userRoleId: number;
+        isEnabled: boolean;
+        renewalDurationMs: number;
+        maxRenewals: number;
+        currentRenewalCount: number;
+    }> {
+        const config = await this.roleAutoRenewalConfigModel.create({
+            userRoleId,
+            renewalDurationMs,
+            maxRenewals,
+            notificationEnabled,
+            isEnabled: true,
+            currentRenewalCount: 0,
+        });
+
+        return {
+            id: config.id,
+            userRoleId: config.userRoleId,
+            isEnabled: config.isEnabled,
+            renewalDurationMs: config.renewalDurationMs,
+            maxRenewals: config.maxRenewals,
+            currentRenewalCount: config.currentRenewalCount,
+        };
+    }
+
+    public async findAutoRenewalConfig(userRoleId: number): Promise<{
+        id: number;
+        userRoleId: number;
+        isEnabled: boolean;
+        renewalDurationMs: number;
+        maxRenewals: number;
+        currentRenewalCount: number;
+        lastRenewedAt: Date | null;
+        notificationEnabled: boolean;
+    } | null> {
+        const config = await this.roleAutoRenewalConfigModel.findOne({
+            where: { userRoleId },
+        });
+
+        if (!config) {
+            return null;
+        }
+
+        return {
+            id: config.id,
+            userRoleId: config.userRoleId,
+            isEnabled: config.isEnabled,
+            renewalDurationMs: config.renewalDurationMs,
+            maxRenewals: config.maxRenewals,
+            currentRenewalCount: config.currentRenewalCount,
+            lastRenewedAt: config.lastRenewedAt,
+            notificationEnabled: config.notificationEnabled,
+        };
+    }
+
+    public async updateAutoRenewalConfig(
+        userRoleId: number,
+        updates: {
+            isEnabled?: boolean;
+            renewalDurationMs?: number;
+            maxRenewals?: number;
+            notificationEnabled?: boolean;
+        },
+    ): Promise<boolean> {
+        const [affectedRows] = await this.roleAutoRenewalConfigModel.update(
+            updates,
+            {
+                where: { userRoleId },
+            },
+        );
+
+        return affectedRows > 0;
+    }
+
+    public async deleteAutoRenewalConfig(userRoleId: number): Promise<boolean> {
+        const deletedCount = await this.roleAutoRenewalConfigModel.destroy({
+            where: { userRoleId },
+        });
+
+        return deletedCount > 0;
+    }
+
+    public async findExpiredActiveRoles(
+        batchSize: number = 1000,
+        beforeDate?: Date,
+    ): Promise<
+        Array<{
+            id: number;
+            userId: number;
+            roleId: number;
+            tenantId: number;
+            expiresAt: Date;
+            isActive: boolean;
+        }>
+    > {
+        const cutoffDate = beforeDate ?? new Date();
+
+        const expiredRoles = await this.userRoleModel.findAll({
+            where: {
+                isActive: true,
+                expiresAt: {
+                    [Op.lt]: cutoffDate,
+                    [Op.ne]: null, // Не NULL (только временные роли)
+                },
+            },
+            attributes: [
+                'id',
+                'userId',
+                'roleId',
+                'tenantId',
+                'expiresAt',
+                'isActive',
+            ],
+            limit: batchSize,
+            order: [['expiresAt', 'ASC']], // Сначала самые старые
+        });
+
+        return expiredRoles
+            .filter((ur) => ur.expiresAt !== null) // Фильтруем только временные роли
+            .map((ur) => ({
+                id: ur.id,
+                userId: ur.userId,
+                roleId: ur.roleId,
+                tenantId: ur.tenantId,
+                expiresAt: ur.expiresAt as Date, // Гарантированно не null после фильтрации
+                isActive: ur.isActive,
+            }));
+    }
+
+    public async batchDeactivateExpiredRoles(
+        userRoleIds: number[],
+    ): Promise<number> {
+        if (userRoleIds.length === 0) {
+            return 0;
+        }
+
+        const [affectedRows] = await this.userRoleModel.update(
+            { isActive: false },
+            {
+                where: {
+                    id: {
+                        [Op.in]: userRoleIds,
+                    },
+                    isActive: true, // Деактивируем только активные
+                },
+            },
+        );
+
+        return affectedRows;
+    }
+
+    public async findRolesWithAutoRenewalExpiringSoon(
+        daysUntilExpiration: number,
+        batchSize: number = 1000,
+    ): Promise<
+        Array<{
+            userRoleId: number;
+            userId: number;
+            roleId: number;
+            tenantId: number;
+            expiresAt: Date;
+            renewalDurationMs: number;
+            maxRenewals: number;
+            currentRenewalCount: number;
+        }>
+    > {
+        const now = new Date();
+        const expirationThreshold = new Date(
+            now.getTime() + daysUntilExpiration * 24 * 60 * 60 * 1000,
+        );
+
+        // Используем прямой SQL запрос для избежания проблем с ассоциациями
+        const sequelize = this.roleAutoRenewalConfigModel.sequelize;
+        if (!sequelize) {
+            throw new Error('Sequelize instance not available');
+        }
+
+        // Временная отладка для диагностики проблемы с датами
+        if (
+            process.env.NODE_ENV === 'test' &&
+            process.env.DEBUG_SQL === 'true'
+        ) {
+            // Проверяем, что есть в БД до запроса
+            const [dbCheck] = await sequelize.query<{
+                user_role_id: number;
+                expires_at: string;
+                is_enabled: number;
+                is_active: number;
+            }>(
+                `
+                SELECT
+                    rac.user_role_id,
+                    ur.expires_at,
+                    rac.is_enabled,
+                    ur.is_active
+                FROM role_auto_renewal_config rac
+                INNER JOIN user_roles ur ON rac.user_role_id = ur.id
+                WHERE rac.is_enabled = 1
+                    AND ur.is_active = 1
+                    AND ur.expires_at IS NOT NULL
+                LIMIT 5
+            `,
+                { type: QueryTypes.SELECT },
+            );
+            console.log(
+                '[DEBUG] DB check before query:',
+                JSON.stringify(dbCheck, null, 2),
+            );
+            console.log('[DEBUG] Query params:', {
+                now: now.toISOString(),
+                nowUTC: now.toISOString(),
+                expirationThreshold: expirationThreshold.toISOString(),
+                expirationThresholdUTC: expirationThreshold.toISOString(),
+                daysUntilExpiration,
+            });
+        }
+
+        // Используем позиционные параметры (?) вместо именованных для лучшей совместимости
+        // Sequelize автоматически преобразует Date объекты в правильный формат для MySQL
+        // Используем DATEDIFF() для сравнения количества дней между датами
+        // Это решает проблемы с часовыми поясами и временем дня
+        // DATEDIFF(date1, date2) возвращает разницу в днях (date1 - date2)
+        // Ищем роли, где разница между expires_at и now >= 0 и <= daysUntilExpiration
+        const results = await sequelize.query<{
+            user_role_id: number;
+            user_id: number;
+            role_id: number;
+            tenant_id: number;
+            expires_at: string;
+            renewal_duration_ms: number;
+            max_renewals: number;
+            current_renewal_count: number;
+        }>(
+            `
+            SELECT
+                rac.user_role_id,
+                ur.user_id,
+                ur.role_id,
+                ur.tenant_id,
+                ur.expires_at,
+                rac.renewal_duration_ms,
+                rac.max_renewals,
+                rac.current_renewal_count
+            FROM role_auto_renewal_config rac
+            INNER JOIN user_roles ur ON rac.user_role_id = ur.id
+            WHERE rac.is_enabled = 1
+                AND ur.is_active = 1
+                AND ur.expires_at IS NOT NULL
+                AND DATEDIFF(ur.expires_at, ?) >= 0
+                AND DATEDIFF(ur.expires_at, ?) <= ?
+            ORDER BY ur.expires_at ASC
+            LIMIT ?
+        `,
+            {
+                replacements: [now, now, daysUntilExpiration, batchSize],
+                type: QueryTypes.SELECT,
+                logging:
+                    process.env.NODE_ENV === 'test' &&
+                    process.env.DEBUG_SQL === 'true'
+                        ? (sql: string): void =>
+                              console.log('[DEBUG] Actual SQL:', sql)
+                        : false,
+            },
+        );
+
+        // Временная отладка для диагностики проблемы
+        if (
+            process.env.NODE_ENV === 'test' &&
+            process.env.DEBUG_SQL === 'true'
+        ) {
+            console.log('[DEBUG] Query results count:', results.length);
+            if (results.length > 0) {
+                console.log(
+                    '[DEBUG] First result:',
+                    JSON.stringify(results[0], null, 2),
+                );
+            }
+        }
+
+        // Преобразуем результаты SQL запроса в формат возвращаемого типа
+        return results.map((row) => ({
+            userRoleId: row.user_role_id,
+            userId: row.user_id,
+            roleId: row.role_id,
+            tenantId: row.tenant_id,
+            expiresAt: new Date(row.expires_at),
+            renewalDurationMs: row.renewal_duration_ms,
+            maxRenewals: row.max_renewals,
+            currentRenewalCount: row.current_renewal_count,
+        }));
+    }
+
+    public async incrementRenewalCount(
+        userRoleId: number,
+        newExpiresAt: Date,
+    ): Promise<boolean> {
+        // Используем Sequelize increment для атомарного увеличения счетчика
+        const config = await this.roleAutoRenewalConfigModel.findOne({
+            where: { userRoleId },
+        });
+
+        if (!config) {
+            return false;
+        }
+
+        // Проверяем лимит продлений
+        if (
+            config.maxRenewals > 0 &&
+            config.currentRenewalCount >= config.maxRenewals
+        ) {
+            // Достигнут лимит, отключаем автоматическое продление
+            await config.update({
+                isEnabled: false,
+                lastRenewedAt: new Date(),
+            });
+            return false;
+        }
+
+        // Обновляем счетчик и дату последнего продления
+        await config.update({
+            currentRenewalCount: config.currentRenewalCount + 1,
+            lastRenewedAt: new Date(),
+        });
+
+        // Обновляем expiresAt в user_roles
+        await this.userRoleModel.update(
+            { expiresAt: newExpiresAt },
+            { where: { id: userRoleId } },
+        );
+
+        return true;
     }
 }

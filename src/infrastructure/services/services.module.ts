@@ -2,6 +2,7 @@ import {
     AuditLogModel,
     NotificationModel,
     NotificationTemplateModel,
+    RoleModel,
     UserModel,
     UserNotificationSettingsModel,
     UserRoleModel,
@@ -34,6 +35,8 @@ import { ProductService } from './product/product.service';
 import { PromoCodeService } from './promo-code/promo-code.service';
 import { RatingService } from './rating/rating.service';
 import { RoleCacheService } from './role/role-cache.service';
+import { RoleExpirationNotificationService } from './role/role-expiration-notification.service';
+import { RoleExpirationService } from './role/role-expiration.service';
 import { RoleService } from './role/role.service';
 import { UserRolesCacheService } from './role/user-roles-cache.service';
 import { TokenService } from './token/token.service';
@@ -49,6 +52,7 @@ import { UserService } from './user/user.service';
             AuditLogModel,
             UserModel,
             UserRoleModel,
+            RoleModel,
             NotificationModel,
             NotificationTemplateModel,
             UserNotificationSettingsModel,
@@ -74,6 +78,8 @@ import { UserService } from './user/user.service';
         RatingService,
         RoleCacheService,
         RoleService,
+        RoleExpirationService,
+        RoleExpirationNotificationService,
         UserRolesCacheService,
         TokenService,
         UserService,
@@ -113,6 +119,8 @@ import { UserService } from './user/user.service';
         RatingService,
         RoleCacheService,
         RoleService,
+        RoleExpirationService,
+        RoleExpirationNotificationService,
         UserRolesCacheService,
         TokenService,
         UserService,
