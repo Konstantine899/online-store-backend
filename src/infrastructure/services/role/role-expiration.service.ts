@@ -327,65 +327,11 @@ export class RoleExpirationService {
                 );
 
                 const results = await Promise.allSettled(renewalPromises);
-
-                // Временная отладка для диагностики проблемы
-                if (
-                    process.env.NODE_ENV === 'test' &&
-                    process.env.DEBUG_SQL === 'true'
-                ) {
-                    console.log(
-                        '[DEBUG] runManualAutoRenewal Promise.allSettled results count:',
-                        results.length,
-                    );
-                    console.log(
-                        '[DEBUG] runManualAutoRenewal results:',
-                        JSON.stringify(
-                            results.map((r) => ({
-                                status: r.status,
-                                value:
-                                    r.status === 'fulfilled'
-                                        ? r.value
-                                        : undefined,
-                                reason:
-                                    r.status === 'rejected'
-                                        ? r.reason instanceof Error
-                                            ? r.reason.message
-                                            : String(r.reason)
-                                        : undefined,
-                            })),
-                            null,
-                            2,
-                        ),
-                    );
-                }
-
                 const renewed = results.filter(
                     (r) => r.status === 'fulfilled' && r.value === true,
                 ).length;
 
-                if (
-                    process.env.NODE_ENV === 'test' &&
-                    process.env.DEBUG_SQL === 'true'
-                ) {
-                    console.log(
-                        '[DEBUG] runManualAutoRenewal filtered renewed count:',
-                        renewed,
-                        'totalRenewed before:',
-                        totalRenewed,
-                    );
-                }
-
                 totalRenewed += renewed;
-
-                if (
-                    process.env.NODE_ENV === 'test' &&
-                    process.env.DEBUG_SQL === 'true'
-                ) {
-                    console.log(
-                        '[DEBUG] runManualAutoRenewal totalRenewed after:',
-                        totalRenewed,
-                    );
-                }
 
                 hasMore = rolesToRenew.length === effectiveBatchSize;
 

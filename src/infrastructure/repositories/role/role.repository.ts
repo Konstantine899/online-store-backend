@@ -716,9 +716,6 @@ export class RoleRepository implements IRoleRepository {
         }>
     > {
         const now = new Date();
-        const expirationThreshold = new Date(
-            now.getTime() + daysUntilExpiration * 24 * 60 * 60 * 1000,
-        );
 
         // Используем прямой SQL запрос для избежания проблем с ассоциациями
         const sequelize = this.roleAutoRenewalConfigModel.sequelize;
@@ -726,45 +723,6 @@ export class RoleRepository implements IRoleRepository {
             throw new Error('Sequelize instance not available');
         }
 
-        // Временная отладка для диагностики проблемы с датами
-        if (
-            process.env.NODE_ENV === 'test' &&
-            process.env.DEBUG_SQL === 'true'
-        ) {
-            // Проверяем, что есть в БД до запроса
-            const [dbCheck] = await sequelize.query<{
-                user_role_id: number;
-                expires_at: string;
-                is_enabled: number;
-                is_active: number;
-            }>(
-                `
-                SELECT
-                    rac.user_role_id,
-                    ur.expires_at,
-                    rac.is_enabled,
-                    ur.is_active
-                FROM role_auto_renewal_config rac
-                INNER JOIN user_roles ur ON rac.user_role_id = ur.id
-                WHERE rac.is_enabled = 1
-                    AND ur.is_active = 1
-                    AND ur.expires_at IS NOT NULL
-                LIMIT 5
-            `,
-                { type: QueryTypes.SELECT },
-            );
-            console.log(
-                '[DEBUG] DB check before query:',
-                JSON.stringify(dbCheck, null, 2),
-            );
-            console.log('[DEBUG] Query params:', {
-                now: now.toISOString(),
-                nowUTC: now.toISOString(),
-                expirationThreshold: expirationThreshold.toISOString(),
-                expirationThresholdUTC: expirationThreshold.toISOString(),
-                daysUntilExpiration,
-            });
-        }
 
         // Используем позиционные параметры (?) вместо именованных для лучшей совместимости
         // Sequelize автоматически преобразует Date объекты в правильный формат для MySQL
@@ -805,28 +763,8 @@ export class RoleRepository implements IRoleRepository {
             {
                 replacements: [now, now, daysUntilExpiration, batchSize],
                 type: QueryTypes.SELECT,
-                logging:
-                    process.env.NODE_ENV === 'test' &&
-                    process.env.DEBUG_SQL === 'true'
-                        ? (sql: string): void =>
-                              console.log('[DEBUG] Actual SQL:', sql)
-                        : false,
             },
         );
-
-        // Временная отладка для диагностики проблемы
-        if (
-            process.env.NODE_ENV === 'test' &&
-            process.env.DEBUG_SQL === 'true'
-        ) {
-            console.log('[DEBUG] Query results count:', results.length);
-            if (results.length > 0) {
-                console.log(
-                    '[DEBUG] First result:',
-                    JSON.stringify(results[0], null, 2),
-                );
-            }
-        }
 
         // Преобразуем результаты SQL запроса в формат возвращаемого типа
         return results.map((row) => ({

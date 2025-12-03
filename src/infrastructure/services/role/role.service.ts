@@ -1835,31 +1835,10 @@ export class RoleService implements IRoleService {
             });
         }
 
-        // Временная отладка для диагностики проблемы
-        if (
-            process.env.NODE_ENV === 'test' &&
-            process.env.DEBUG_SQL === 'true'
-        ) {
-            console.log(
-                '[DEBUG] autoRenewRole called with userRoleId:',
-                userRoleId,
-            );
-        }
-
         try {
             // Найти конфигурацию автоматического продления
             const config =
                 await this.roleRepository.findAutoRenewalConfig(userRoleId);
-
-            if (
-                process.env.NODE_ENV === 'test' &&
-                process.env.DEBUG_SQL === 'true'
-            ) {
-                console.log(
-                    '[DEBUG] autoRenewRole config:',
-                    JSON.stringify(config, null, 2),
-                );
-            }
 
             if (!config?.isEnabled) {
                 if (this.logger) {
@@ -1870,14 +1849,6 @@ export class RoleService implements IRoleService {
                         message:
                             'Автоматическое продление отключено или не настроено',
                     });
-                }
-                if (
-                    process.env.NODE_ENV === 'test' &&
-                    process.env.DEBUG_SQL === 'true'
-                ) {
-                    console.log(
-                        '[DEBUG] autoRenewRole returning false: config not enabled',
-                    );
                 }
                 return false;
             }
@@ -1905,56 +1876,7 @@ export class RoleService implements IRoleService {
             }
 
             // Найти текущую роль для получения текущего expiresAt
-            if (
-                process.env.NODE_ENV === 'test' &&
-                process.env.DEBUG_SQL === 'true'
-            ) {
-                console.log(
-                    '[DEBUG] autoRenewRole: calling userRoleModel.findByPk with userRoleId:',
-                    userRoleId,
-                );
-                console.log(
-                    '[DEBUG] autoRenewRole: userRoleModel exists?',
-                    !!this.userRoleModel,
-                );
-            }
-
-            let userRole;
-            try {
-                userRole = await this.userRoleModel.findByPk(userRoleId);
-            } catch (findError) {
-                if (
-                    process.env.NODE_ENV === 'test' &&
-                    process.env.DEBUG_SQL === 'true'
-                ) {
-                    console.log(
-                        '[DEBUG] autoRenewRole: findByPk ERROR:',
-                        findError instanceof Error
-                            ? findError.message
-                            : String(findError),
-                    );
-                }
-                throw findError;
-            }
-
-            if (
-                process.env.NODE_ENV === 'test' &&
-                process.env.DEBUG_SQL === 'true'
-            ) {
-                console.log(
-                    '[DEBUG] autoRenewRole userRole:',
-                    JSON.stringify(
-                        {
-                            id: userRole?.id,
-                            isActive: userRole?.isActive,
-                            expiresAt: userRole?.expiresAt?.toISOString(),
-                            found: !!userRole,
-                        },
-                        null,
-                        2,
-                    ),
-                );
-            }
+            const userRole = await this.userRoleModel.findByPk(userRoleId);
 
             if (!userRole?.isActive) {
                 if (this.logger) {
@@ -1965,14 +1887,6 @@ export class RoleService implements IRoleService {
                         message: 'Роль не найдена или уже деактивирована',
                     });
                 }
-                if (
-                    process.env.NODE_ENV === 'test' &&
-                    process.env.DEBUG_SQL === 'true'
-                ) {
-                    console.log(
-                        '[DEBUG] autoRenewRole returning false: userRole not active',
-                    );
-                }
                 return false;
             }
 
@@ -1982,14 +1896,6 @@ export class RoleService implements IRoleService {
                         userRoleId,
                         message: 'Роль бессрочная, продление не требуется',
                     });
-                }
-                if (
-                    process.env.NODE_ENV === 'test' &&
-                    process.env.DEBUG_SQL === 'true'
-                ) {
-                    console.log(
-                        '[DEBUG] autoRenewRole returning false: expiresAt is null',
-                    );
                 }
                 return false;
             }
@@ -2006,16 +1912,6 @@ export class RoleService implements IRoleService {
                 newExpiresAt,
             );
 
-            if (
-                process.env.NODE_ENV === 'test' &&
-                process.env.DEBUG_SQL === 'true'
-            ) {
-                console.log(
-                    '[DEBUG] autoRenewRole incrementRenewalCount result:',
-                    renewed,
-                );
-            }
-
             if (!renewed) {
                 if (this.logger) {
                     this.logger.debug({
@@ -2024,27 +1920,10 @@ export class RoleService implements IRoleService {
                             'Не удалось обновить счетчик продлений (возможно, достигнут лимит)',
                     });
                 }
-                if (
-                    process.env.NODE_ENV === 'test' &&
-                    process.env.DEBUG_SQL === 'true'
-                ) {
-                    console.log(
-                        '[DEBUG] autoRenewRole returning false: incrementRenewalCount failed',
-                    );
-                }
                 return false;
             }
 
             // Создать audit log для продления
-            if (
-                process.env.NODE_ENV === 'test' &&
-                process.env.DEBUG_SQL === 'true'
-            ) {
-                console.log(
-                    '[DEBUG] autoRenewRole: before auditService.createLog',
-                );
-            }
-
             if (this.auditService) {
                 try {
                     await this.auditService.createLog({
@@ -2067,32 +1946,13 @@ export class RoleService implements IRoleService {
                         requestId: null,
                         tenantId: userRole.tenantId,
                     });
-                } catch (auditError) {
-                    if (
-                        process.env.NODE_ENV === 'test' &&
-                        process.env.DEBUG_SQL === 'true'
-                    ) {
-                        console.log(
-                            '[DEBUG] autoRenewRole: auditService.createLog ERROR:',
-                            auditError instanceof Error
-                                ? auditError.message
-                                : String(auditError),
-                        );
-                    }
+                } catch {
                     // Не прерываем выполнение из-за ошибки audit логирования
+                    // Ошибка уже будет залогирована в auditService
                 }
             }
 
             const duration = Date.now() - startTime;
-
-            if (
-                process.env.NODE_ENV === 'test' &&
-                process.env.DEBUG_SQL === 'true'
-            ) {
-                console.log(
-                    '[DEBUG] autoRenewRole: before metricsCollector calls',
-                );
-            }
 
             if (this.metricsCollector) {
                 this.metricsCollector.recordBulkOperation(
@@ -2114,17 +1974,6 @@ export class RoleService implements IRoleService {
                     renewalCount: config.currentRenewalCount + 1,
                     durationMs: duration,
                     message: 'Роль успешно продлена автоматически',
-                });
-            }
-
-            if (
-                process.env.NODE_ENV === 'test' &&
-                process.env.DEBUG_SQL === 'true'
-            ) {
-                console.log('[DEBUG] autoRenewRole returning true: success', {
-                    userRoleId,
-                    oldExpiresAt: currentExpiresAt.toISOString(),
-                    newExpiresAt: newExpiresAt.toISOString(),
                 });
             }
 

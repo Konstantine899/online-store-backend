@@ -38,7 +38,18 @@ describe('Role Expiration Services (integration)', () => {
             isAppInitialized = true;
             sequelize = app.get(Sequelize);
 
-            // Получаем зависимости напрямую (workaround для циклических зависимостей)
+            // ========================================================================
+            // DI Workaround для циклических зависимостей в integration тестах
+            // ========================================================================
+            // Проблема: ServicesModule и RepositoriesModule имеют циклическую зависимость
+            // через forwardRef. В тестах это может приводить к тому, что некоторые
+            // зависимости не резолвятся правильно на момент инжекции в конструкторы.
+            //
+            // Решение: Получаем зависимости явно из DI контейнера и инжектируем их
+            // через Object.defineProperty для перезаписи readonly полей классов.
+            // ========================================================================
+
+            // Получаем зависимости из DI контейнера
             const { RoleService } = await import('../role.service');
             const { RoleRepository } = await import(
                 '../../../repositories/role/role.repository'
@@ -47,17 +58,17 @@ describe('Role Expiration Services (integration)', () => {
                 '../../../common/services/metrics-collector.service'
             );
             const { AuditService } = await import('../../audit/audit.service');
+            const { UserRoleModel } = await import('@app/domain/models');
 
             const roleService = app.get(RoleService);
             const roleRepository = app.get(RoleRepository);
             const metricsCollector = app.get(MetricsCollector);
             const auditService = app.get(AuditService);
-
-            // Получаем модели для DI workaround
-            const { UserRoleModel } = await import('@app/domain/models');
             const userRoleModel = app.get(getModelToken(UserRoleModel));
 
-            // Исправляем зависимости в RoleService (workaround для DI проблем в тестах)
+            // Инжектируем зависимости в RoleService
+            // Эти зависимости должны были быть инжектированы через конструктор,
+            // но из-за циклических зависимостей могут быть undefined в тестах
             Object.defineProperty(roleService, 'roleRepository', {
                 value: roleRepository,
                 writable: true,
@@ -74,11 +85,15 @@ describe('Role Expiration Services (integration)', () => {
                 configurable: true,
             });
 
-            // Получаем сервис
+            // Получаем сервисы, которые зависят от RoleService
             roleExpirationService = app.get(RoleExpirationService);
+            roleExpirationNotificationService = app.get(
+                RoleExpirationNotificationService,
+            );
 
-            // Исправляем зависимости вручную (workaround для циклических зависимостей через forwardRef)
-            // Используем Object.defineProperty для перезаписи readonly полей
+            // Инжектируем зависимости в RoleExpirationService
+            // RoleExpirationService зависит от RoleService, который должен быть
+            // правильно инициализирован перед этим
             Object.defineProperty(roleExpirationService, 'roleService', {
                 value: roleService,
                 writable: true,
@@ -95,8 +110,24 @@ describe('Role Expiration Services (integration)', () => {
                 configurable: true,
             });
 
-            roleExpirationNotificationService = app.get(
-                RoleExpirationNotificationService,
+            // Инжектируем зависимости в RoleExpirationNotificationService
+            Object.defineProperty(
+                roleExpirationNotificationService,
+                'roleService',
+                {
+                    value: roleService,
+                    writable: true,
+                    configurable: true,
+                },
+            );
+            Object.defineProperty(
+                roleExpirationNotificationService,
+                'metricsCollector',
+                {
+                    value: metricsCollector,
+                    writable: true,
+                    configurable: true,
+                },
             );
         } catch (error) {
             console.error('❌ [beforeAll] Failed to setup test app:', error);
@@ -340,41 +371,6 @@ describe('Role Expiration Services (integration)', () => {
             expect(userRoleCheck?.isActive).toBe(true);
             expect(userRoleCheck?.expiresAt).not.toBeNull();
 
-            // Временная отладка для диагностики
-            if (process.env.DEBUG_SQL === 'true') {
-                console.log(
-                    '[DEBUG] Test: userRoleCheck.expiresAt:',
-                    userRoleCheck?.expiresAt?.toISOString(),
-                );
-                console.log(
-                    '[DEBUG] Test: originalExpiresAt:',
-                    originalExpiresAt.toISOString(),
-                );
-                const now = new Date();
-                const expirationThreshold = new Date(
-                    now.getTime() + 3 * 24 * 60 * 60 * 1000,
-                );
-                console.log('[DEBUG] Test: now:', now.toISOString());
-                console.log(
-                    '[DEBUG] Test: expirationThreshold (now + 3 days):',
-                    expirationThreshold.toISOString(),
-                );
-                const expiresAtDate = userRoleCheck?.expiresAt;
-                if (expiresAtDate) {
-                    const daysDiff =
-                        (expiresAtDate.getTime() - now.getTime()) /
-                        (1000 * 60 * 60 * 24);
-                    console.log(
-                        '[DEBUG] Test: days until expiration:',
-                        daysDiff,
-                    );
-                    console.log(
-                        '[DEBUG] Test: should be found by query?',
-                        expiresAtDate >= now &&
-                            expiresAtDate <= expirationThreshold,
-                    );
-                }
-            }
 
             // Вызываем метод автоматического продления напрямую
             // Используем daysUntilExpiration=3, чтобы роль попала в выборку (истекает через 2 дня < 3 дней)
