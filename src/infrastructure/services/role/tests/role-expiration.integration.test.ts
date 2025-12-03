@@ -11,17 +11,17 @@ process.env.JWT_REFRESH_EXPIRES = '1h';
 process.env.ROLE_EXPIRATION_BATCH_SIZE = '100';
 process.env.ROLE_EXPIRATION_WARNING_DAYS = '7,1';
 
-import {
-    RoleAutoRenewalConfigModel,
-    RoleModel,
-    UserModel,
-    UserRoleModel,
-} from '@app/domain/models';
 import type { INestApplication } from '@nestjs/common';
 import { getModelToken } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { setupTestApp } from '../../../../../tests/setup/app';
 import { TestDataFactory } from '../../../../../tests/utils';
+import {
+    RoleAutoRenewalConfigModel,
+    RoleModel,
+    UserModel,
+    UserRoleModel,
+} from '../../../../domain/models';
 import { RoleExpirationNotificationService } from '../role-expiration-notification.service';
 import { RoleExpirationService } from '../role-expiration.service';
 
@@ -58,7 +58,7 @@ describe('Role Expiration Services (integration)', () => {
                 '../../../common/services/metrics-collector.service'
             );
             const { AuditService } = await import('../../audit/audit.service');
-            const { UserRoleModel } = await import('@app/domain/models');
+            const { UserRoleModel } = await import('../../../../domain/models');
 
             const roleService = app.get(RoleService);
             const roleRepository = app.get(RoleRepository);

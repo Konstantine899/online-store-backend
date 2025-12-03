@@ -1,14 +1,13 @@
 import { AuditAction } from '@app/domain/models';
+import { Type } from 'class-transformer';
 import {
     IsDateString,
     IsEnum,
     IsInt,
     IsOptional,
     IsString,
-    Max,
     Min,
 } from 'class-validator';
-import { Exclude, Type } from 'class-transformer';
 
 /**
  * DTO для фильтрации audit логов
