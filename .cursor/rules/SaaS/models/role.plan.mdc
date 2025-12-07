@@ -2002,8 +2002,8 @@ tasks:
     - "Тесты: unit тесты для repository + service + integration тесты endpoints"
     - "Проверка SQL: EXPLAIN analysis для всех запросов"
     - "«Коммит» → feat(role): SAAS-017-18 role and permissions analytics"
-  
-  implementation_summary: |
+
+    implementation_summary: |
     **Реализовано:**
     - 8 файлов создано (repository, service, DTO, responses, 3 теста файла)
     - 10 analytics endpoints с полной Swagger документацией
@@ -2011,7 +2011,7 @@ tasks:
     - Tenant isolation на уровне SQL запросов
     - 53 теста (27 unit + 26 integration), все passing
     - Покрытие кода: 85% repository, 80% service
-    
+
     **Статистика:**
     - +2147 строк добавлено, -1553 удалено
     - Все файлы закоммичены в commit f81ff24
