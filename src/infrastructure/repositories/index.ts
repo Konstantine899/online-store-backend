@@ -10,5 +10,7 @@ export { RatingRepository } from './rating/rating.repository';
 export { RefreshTokenRepository } from './refresh-token/refresh-token.repository';
 export { RoleAnalyticsRepository } from './role/role-analytics.repository';
 export { RoleRepository } from './role/role.repository';
+export { ExternalRoleSyncRepository } from './role/external-role-sync.repository';
+export { RoleMappingRepository } from './role/role-mapping.repository';
 export { UserAddressRepository } from './user-address/user-address.repository';
 export { UserRepository } from './user/user.repository';

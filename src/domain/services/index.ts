@@ -35,6 +35,17 @@ export { IPromoCodeService } from './promo-code/i-promo-code-service';
 export { IRatingService } from './rating/i-rating-service';
 export { IRoleService } from './role/i-role-service';
 export {
+    IExternalRoleProvider,
+    IExternalUser,
+    IProviderConnectionResult,
+    ISearchUsersResult,
+} from './role/i-external-role-provider';
+export {
+    IExternalRoleSyncService,
+    ISyncResult,
+    ISyncStatus,
+} from './role/i-external-role-sync.service';
+export {
     IAccessTokenPayload,
     IRefreshTokenPayload,
     ITokenService,

@@ -11,4 +11,13 @@ export { IRatingRepository } from './rating/i-rating-repository';
 export { IRefreshTokenRepository } from './refresh-token/i-refresh-token-repository';
 export { IRoleAnalyticsRepository } from './role/i-role-analytics-repository';
 export { IRoleRepository } from './role/i-role-repository';
+export {
+    IExternalRoleSyncRepository,
+    IFindConfigsOptions,
+    IFindSyncLogsOptions,
+} from './role/i-external-role-sync.repository';
+export {
+    IRoleMappingRepository,
+    IFindMappingsOptions,
+} from './role/i-role-mapping.repository';
 export { IUserRepository } from './user/i-user-repository';

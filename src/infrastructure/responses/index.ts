@@ -106,6 +106,14 @@ export {
     GetRolePermissionsResponse,
     RolePermissionInfo,
 } from './role/role-permissions.response';
+export { ExternalRoleConfigResponse } from './role/external-role-config.response';
+export { RoleMappingResponse } from './role/role-mapping.response';
+export { SyncStatusResponse } from './role/sync-status.response';
+export {
+    SyncResultResponse,
+    SyncStatisticsResponse,
+    SyncErrorDetailResponse,
+} from './role/sync-result.response';
 export { UpdateRoleResponse } from './role/update-role.response';
 export { GetUserRolesResponse, UserRoleInfo } from './role/user-roles.response';
 export {
