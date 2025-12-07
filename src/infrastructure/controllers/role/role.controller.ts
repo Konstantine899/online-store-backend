@@ -1755,7 +1755,7 @@ export class RoleController implements IRoleController {
             filterTenantId ?? tenantId,
             period,
         );
-        return dashboardData as RoleAnalyticsDashboardResponse;
+        return dashboardData;
     }
 
     /**

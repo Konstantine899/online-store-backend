@@ -100,7 +100,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                     SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as inactiveRoles,
                     SUM(CASE WHEN is_system_role = 1 THEN 1 ELSE 0 END) as systemRoles,
                     SUM(CASE WHEN is_system_role = 0 THEN 1 ELSE 0 END) as tenantRoles
-                FROM role
+                FROM roles
                 WHERE (? IS NULL OR tenant_id = ? OR is_system_role = 1)
             `,
                 {
@@ -116,7 +116,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                 `
                 SELECT COUNT(DISTINCT ur.role_id) as rolesWithExpiration
                 FROM user_roles ur
-                INNER JOIN role r ON ur.role_id = r.id
+                INNER JOIN roles r ON ur.role_id = r.id
                 WHERE ur.expires_at IS NOT NULL
                     AND ur.is_active = 1
                     AND (? IS NULL OR r.tenant_id = ? OR r.is_system_role = 1)
@@ -136,7 +136,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                 SELECT
                     level,
                     COUNT(*) as count
-                FROM role
+                FROM roles
                 WHERE (? IS NULL OR tenant_id = ? OR is_system_role = 1)
                 GROUP BY level
                 ORDER BY level ASC
@@ -176,7 +176,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                     r.id as roleId,
                     r.role as roleName,
                     COUNT(DISTINCT ur.user_id) as userCount
-                FROM role r
+                FROM roles r
                 INNER JOIN user_roles ur ON r.id = ur.role_id
                 INNER JOIN user u ON ur.user_id = u.id
                 WHERE ur.is_active = 1
@@ -355,12 +355,12 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                 `
                 SELECT COUNT(*) as autoAssignmentsCount
                 FROM audit_logs al
+                INNER JOIN user_roles ur ON al.entity_id = ur.id
                 WHERE al.entity_type = 'user_role'
                     AND al.action = 'ASSIGN'
-                    AND al.entity_id IN (
-                        SELECT id FROM user_roles WHERE role_id = ? AND is_active = 1
-                    )
-                    AND JSON_EXTRACT(al.metadata, '$.autoAssigned') = true
+                    AND ur.role_id = ?
+                    AND ur.is_active = 1
+                    AND JSON_EXTRACT(al.new_values, '$.auto_assigned') = true
                     AND (? IS NULL OR al.tenant_id = ?)
             `,
                 {
@@ -463,7 +463,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                     COUNT(DISTINCT CONCAT(rp.resource, ':', rp.action)) as totalUniquePermissions,
                     COUNT(DISTINCT rp.role_id) as totalRoles
                 FROM role_permissions rp
-                INNER JOIN role r ON rp.role_id = r.id
+                INNER JOIN roles r ON rp.role_id = r.id
                 WHERE (? IS NULL OR r.tenant_id = ? OR r.is_system_role = 1)
             `,
                 {
@@ -488,7 +488,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                     rp.action,
                     COUNT(DISTINCT rp.role_id) as roleCount
                 FROM role_permissions rp
-                INNER JOIN role r ON rp.role_id = r.id
+                INNER JOIN roles r ON rp.role_id = r.id
                 WHERE (? IS NULL OR r.tenant_id = ? OR r.is_system_role = 1)
                 GROUP BY rp.resource, rp.action
                 ORDER BY roleCount DESC
@@ -510,7 +510,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                     rp.resource,
                     COUNT(DISTINCT CONCAT(rp.resource, ':', rp.action)) as count
                 FROM role_permissions rp
-                INNER JOIN role r ON rp.role_id = r.id
+                INNER JOIN roles r ON rp.role_id = r.id
                 WHERE (? IS NULL OR r.tenant_id = ? OR r.is_system_role = 1)
                 GROUP BY rp.resource
                 ORDER BY count DESC
@@ -531,7 +531,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                     rp.action,
                     COUNT(DISTINCT CONCAT(rp.resource, ':', rp.action)) as count
                 FROM role_permissions rp
-                INNER JOIN role r ON rp.role_id = r.id
+                INNER JOIN roles r ON rp.role_id = r.id
                 WHERE (? IS NULL OR r.tenant_id = ? OR r.is_system_role = 1)
                 GROUP BY rp.action
                 ORDER BY count DESC
@@ -636,12 +636,12 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
 
             // Проверяем, существует ли такое разрешение
             const [permissionExists] = await sequelize.query<{
-                exists: number;
+                exists_count: number;
             }>(
                 `
-                SELECT COUNT(*) as exists
+                SELECT COUNT(*) as exists_count
                 FROM role_permissions rp
-                INNER JOIN role r ON rp.role_id = r.id
+                INNER JOIN roles r ON rp.role_id = r.id
                 WHERE rp.resource = ? AND rp.action = ?
                     AND (? IS NULL OR r.tenant_id = ? OR r.is_system_role = 1)
             `,
@@ -656,7 +656,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                 },
             );
 
-            if (Number(permissionExists?.exists) === 0) {
+            if (Number(permissionExists?.exists_count) === 0) {
                 return null;
             }
 
@@ -666,7 +666,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
             }>(
                 `
                 SELECT COUNT(*) as totalRoles
-                FROM role
+                FROM roles
                 WHERE (? IS NULL OR tenant_id = ? OR is_system_role = 1)
             `,
                 {
@@ -687,7 +687,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                     r.id as roleId,
                     r.role as roleName
                 FROM role_permissions rp
-                INNER JOIN role r ON rp.role_id = r.id
+                INNER JOIN roles r ON rp.role_id = r.id
                 WHERE rp.resource = ? AND rp.action = ?
                     AND (? IS NULL OR r.tenant_id = ? OR r.is_system_role = 1)
             `,
@@ -840,7 +840,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                     COUNT(*) as count
                 FROM audit_logs al
                 INNER JOIN user_roles ur ON al.entity_id = ur.id
-                INNER JOIN role r ON ur.role_id = r.id
+                INNER JOIN roles r ON ur.role_id = r.id
                 WHERE al.entity_type = 'user_role'
                     AND al.action = 'ASSIGN'
                     AND al.created_at >= ?
@@ -874,7 +874,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                     COUNT(*) as count
                 FROM audit_logs al
                 INNER JOIN user_roles ur ON al.entity_id = ur.id
-                INNER JOIN role r ON ur.role_id = r.id
+                INNER JOIN roles r ON ur.role_id = r.id
                 WHERE al.entity_type = 'user_role'
                     AND al.action = 'REVOKE'
                     AND al.created_at >= ?
@@ -1011,7 +1011,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                 FROM audit_logs
                 WHERE entity_type = 'user_role'
                     AND action = 'ASSIGN'
-                    AND JSON_EXTRACT(metadata, '$.autoAssigned') = true
+                    AND JSON_EXTRACT(new_values, '$.auto_assigned') = true
                     AND (? IS NULL OR tenant_id = ?)
             `,
                 {
@@ -1046,12 +1046,12 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
             }>(
                 `
                 SELECT
-                    COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.reason')), 'unknown') as reason,
+                    COALESCE(JSON_UNQUOTE(JSON_EXTRACT(new_values, '$.reason')), 'unknown') as reason,
                     COUNT(*) as count
                 FROM audit_logs
                 WHERE entity_type = 'user_role'
                     AND action = 'ASSIGN'
-                    AND JSON_EXTRACT(metadata, '$.autoAssigned') = true
+                    AND JSON_EXTRACT(new_values, '$.auto_assigned') = true
                     AND (? IS NULL OR tenant_id = ?)
                 GROUP BY reason
             `,
@@ -1087,13 +1087,13 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
             }>(
                 `
                 SELECT
-                    JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.errorReason')) as errorReason,
+                    JSON_UNQUOTE(JSON_EXTRACT(new_values, '$.errorReason')) as errorReason,
                     COUNT(*) as count
                 FROM audit_logs
                 WHERE entity_type = 'user_role'
                     AND action = 'ASSIGN'
-                    AND JSON_EXTRACT(metadata, '$.autoAssigned') = true
-                    AND JSON_EXTRACT(metadata, '$.errorReason') IS NOT NULL
+                    AND JSON_EXTRACT(new_values, '$.auto_assigned') = true
+                    AND JSON_EXTRACT(new_values, '$.errorReason') IS NOT NULL
                     AND (? IS NULL OR tenant_id = ?)
                 GROUP BY errorReason
             `,
@@ -1334,7 +1334,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                     r.level,
                     COUNT(DISTINCT r.id) as count,
                     COALESCE(AVG(permission_count.permission_count), 0) as averagePermissions
-                FROM role r
+                FROM roles r
                 LEFT JOIN (
                     SELECT
                         role_id,
@@ -1363,7 +1363,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                     r.id as roleId,
                     r.role as roleName,
                     r.level
-                FROM role r
+                FROM roles r
                 LEFT JOIN role_permissions rp ON r.id = rp.role_id
                 WHERE rp.role_id IS NULL
                     AND (? IS NULL OR r.tenant_id = ? OR r.is_system_role = 1)
@@ -1385,7 +1385,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                 SELECT
                     MAX(level) as maxLevel,
                     MIN(level) as minLevel
-                FROM role
+                FROM roles
                 WHERE (? IS NULL OR tenant_id = ? OR is_system_role = 1)
             `,
                 {
@@ -1406,7 +1406,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                     level: Number(row.level) || 0,
                     count: Number(row.count) || 0,
                     averagePermissions: Number(
-                        row.averagePermissions.toFixed(2),
+                        (Number(row.averagePermissions) || 0).toFixed(2),
                     ),
                 })),
                 emptyRoles: emptyRoles.map((row) => ({
@@ -1467,7 +1467,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                     COALESCE(tenant_id, 0) as tenantId,
                     COUNT(*) as totalRoles,
                     SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as activeRoles
-                FROM role
+                FROM roles
                 WHERE is_system_role = 0
                 GROUP BY tenant_id
                 ORDER BY tenant_id ASC
@@ -1491,7 +1491,7 @@ export class RoleAnalyticsRepository implements IRoleAnalyticsRepository {
                         SELECT
                             r.role as roleName,
                             COUNT(DISTINCT ur.user_id) as userCount
-                        FROM role r
+                        FROM roles r
                         INNER JOIN user_roles ur ON r.id = ur.role_id
                         INNER JOIN user u ON ur.user_id = u.id
                         WHERE ur.is_active = 1

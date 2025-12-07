@@ -11,7 +11,7 @@ import {
 } from 'sequelize-typescript';
 import { UserRoleModel } from './user-role.model';
 
-interface IRoleAutoRenewalConfigModel {
+export interface IRoleAutoRenewalConfigModel {
     id: number;
     userRoleId: number;
     isEnabled: boolean;
@@ -24,7 +24,7 @@ interface IRoleAutoRenewalConfigModel {
     updatedAt: Date;
 }
 
-interface IRoleAutoRenewalConfigCreationAttributes {
+export interface IRoleAutoRenewalConfigCreationAttributes {
     userRoleId: number;
     isEnabled?: boolean;
     renewalDurationMs: number;

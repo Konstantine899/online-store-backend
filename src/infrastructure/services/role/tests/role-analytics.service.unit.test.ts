@@ -179,6 +179,7 @@ describe('RoleAnalyticsService (unit)', () => {
                     { resource: 'products', count: 15 },
                 ],
                 permissionsByAction: [{ action: 'create', count: 20 }],
+                unusedPermissions: [],
             };
 
             repository.getPermissionUsageMetrics.mockResolvedValue(mockMetrics);
@@ -204,6 +205,8 @@ describe('RoleAnalyticsService (unit)', () => {
                 resource: 'products',
                 action: 'create',
                 roleCount: 10,
+                totalRoles: 25,
+                percentage: 40.0,
                 roles: [
                     {
                         roleId: 1,
@@ -430,6 +433,7 @@ describe('RoleAnalyticsService (unit)', () => {
                 topUsedPermissions: [],
                 permissionsByResource: [],
                 permissionsByAction: [],
+                unusedPermissions: [],
             };
 
             const mockExpirationStats = {

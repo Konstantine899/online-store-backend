@@ -544,15 +544,14 @@ export class RoleAnalyticsService {
                 permissionStats: {
                     totalUniquePermissions:
                         permissionMetrics.totalUniquePermissions,
-                    topUsedPermissions:
-                        permissionMetrics.topUsedPermissions.slice(0, 5).map(
-                            (p) => ({
-                                resource: p.resource,
-                                action: p.action,
-                                roleCount: p.roleCount,
-                                percentage: p.percentage,
-                            }),
-                        ),
+                    topUsedPermissions: permissionMetrics.topUsedPermissions
+                        .slice(0, 5)
+                        .map((p) => ({
+                            resource: p.resource,
+                            action: p.action,
+                            roleCount: p.roleCount,
+                            percentage: p.percentage,
+                        })),
                 },
                 operationsStats: operationsMetrics
                     ? {
