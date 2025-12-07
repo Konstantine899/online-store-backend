@@ -82,11 +82,30 @@
 - **CreateRatingSwaggerDecorator** - создание рейтинга продукта
 - **GetRatingSwaggerDecorator** - получение рейтинга
 
-### Role модуль (3 декоратора)
+### Role модуль (13 декораторов)
 
+**CRUD операции (3):**
 - **CreateRoleSwaggerDecorator** - создание роли пользователя
 - **GetRoleSwaggerDecorator** - получение роли пользователя
 - **GetListRoleSwaggerDecorator** - получение списка ролей пользователя
+
+**Analytics endpoints (10):**
+- **GET /role/analytics/stats** - общая статистика использования ролей
+- **GET /role/analytics/stats/:roleId** - статистика по конкретной роли
+- **GET /role/analytics/permissions/stats** - статистика использования разрешений
+- **GET /role/analytics/permissions/stats/:resource/:action** - статистика конкретного разрешения
+- **GET /role/analytics/operations/stats** - метрики операций назначения/отзыва ролей
+- **GET /role/analytics/auto-assignments/stats** - статистика автоматических назначений ролей
+- **GET /role/analytics/expiration/stats** - статистика истечения временных ролей
+- **GET /role/analytics/hierarchy/stats** - статистика иерархии ролей
+- **GET /role/analytics/dashboard** - агрегированный дашборд с ключевыми метриками
+- **GET /role/analytics/distribution/by-tenant** - распределение ролей по тенантам (только SUPER_ADMIN)
+
+**Особенности Role Analytics:**
+- Tenant isolation: TENANT_ADMIN видит только данные своего тенанта
+- Фильтрация по датам, тенантам, периодам (last7d, last30d, last90d)
+- SQL агрегация для эффективной обработки больших объемов данных
+- Все endpoints требуют авторизации (ADMIN_ROLES)
 
 ### User модуль (15 декораторов)
 
