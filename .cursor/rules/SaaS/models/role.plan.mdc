@@ -2017,23 +2017,246 @@ tasks:
     - Все файлы закоммичены в commit f81ff24
 
 - id: SAAS-017-19
-  title: Интеграция с внешними системами
+  title: Интеграция с внешними системами (Enterprise SaaS)
   branch: "feature/role/SAAS-017/role-external-integration"
+  priority: HIGH
+  estimated_time: 80-100 часов (10-12 рабочих дней)
   files_scope:
     - "src/infrastructure/services/role/\*\*"
     - "src/infrastructure/common/integrations/\*\*"
-      steps:
-    - создать интерфейс для внешних систем управления ролями
-    - реализовать синхронизацию ролей с LDAP/AD
-    - добавить интеграцию с SSO провайдерами
-    - настроить маппинг ролей между системами
-      dod:
-    - интерфейс для внешних систем создан
-    - синхронизация с LDAP/AD работает
-    - интеграция с SSO функциональна
-    - маппинг ролей настроен
-      gate:
+    - "src/infrastructure/repositories/role/external-role-sync.repository.ts"
+    - "src/infrastructure/repositories/role/role-mapping.repository.ts"
+    - "src/infrastructure/controllers/role/external-role-integration.controller.ts"
+    - "src/domain/models/external-role-config.model.ts"
+    - "src/domain/models/role-mapping.model.ts"
+    - "src/domain/models/external-user-sync-log.model.ts"
+    - "db/migrations/\*external-role\*.ts"
+
+    description: |
+    Enterprise-level интеграция с внешними системами управления ролями и SSO провайдерами: - LDAP/Active Directory синхронизация - SSO провайдеры: OAuth 2.0 (Azure AD, Google Workspace), SAML 2.0, OpenID Connect - Гибкий маппинг ролей между системами с поддержкой условий - Автоматическая и ручная синхронизация - Just-in-time provisioning при SSO входе - Шифрование credentials, audit logging, метрики
+
+    **Бизнес-ценность:**
+    - Конкурентное преимущество для enterprise клиентов
+    - Автоматизация onboarding и управления пользователями
+    - Централизованное управление доступом
+    - Соответствие корпоративным требованиям безопасности
+
+    **Архитектура:**
+    - Provider pattern для поддержки множественных провайдеров
+    - Separation of concerns: Client → Provider → Sync Service → Repository
+    - Tenant isolation на всех уровнях
+    - Шифрование sensitive данных (credentials)
+
+    dependencies:
+    - SAAS-017-16: Audit Logging (для логирования синхронизаций)
+    - SAAS-017-17: Временные роли (для синхронизации временных назначений)
+    - SAAS-017-18: Analytics (для метрик синхронизаций)
+
+    steps:
+
+    # Этап 1: Базовая инфраструктура (12-16 часов)
+    - создать Domain модели (ExternalRoleConfig, RoleMapping, ExternalUserSyncLog)
+    - создать миграции БД (3 таблицы с индексами)
+    - создать интерфейсы (IExternalRoleProvider, IExternalRoleSyncService, repositories)
+    - реализовать базовые репозитории (CRUD, tenant isolation)
+    - создать базовые DTO и Response типы
+
+    # Этап 2: LDAP/AD интеграция (16-20 часов)
+    - установить зависимости (ldapjs)
+    - создать LDAPClientService (подключение, поиск, извлечение данных)
+    - создать LDAPProvider (реализация IExternalRoleProvider)
+    - создать LDAPRoleSyncService (синхронизация пользователей и ролей)
+    - реализовать batch обработку для больших объемов
+    - добавить unit и integration тесты
+
+    # Этап 3: SSO интеграция (24-30 часов)
+    - установить зависимости (passport-oauth2, passport-saml, passport-openidconnect)
+    - создать базовый SSO стратегии (Passport)
+    - реализовать OAuth 2.0 провайдеры (Azure AD, Google Workspace, Generic)
+    - реализовать SAML 2.0 провайдер
+    - реализовать OpenID Connect провайдер
+    - создать SSORoleSyncService (just-in-time provisioning)
+    - добавить SSO endpoints в AuthController (GET /auth/sso/:provider, callback)
+    - добавить unit и integration тесты
+
+    # Этап 4: Role Mapping (8-10 часов)
+    - создать RoleMappingService (применение маппингов)
+    - создать MappingRuleEngine (поддержка условий в JSON rules)
+    - реализовать приоритеты маппингов
+    - добавить default роль для несоответствий
+    - добавить валидацию mapping rules
+    - добавить unit тесты
+
+    # Этап 5: Главный сервис синхронизации (10-12 часов)
+    - создать ExternalRoleSyncService (координация всех провайдеров)
+    - реализовать scheduled синхронизацию (cron jobs)
+    - реализовать manual синхронизацию
+    - реализовать on-demand синхронизацию (при SSO входе)
+    - добавить retry логику при ошибках
+    - реализовать audit logging всех операций
+    - добавить метрики синхронизаций
+
+    # Этап 6: API Endpoints (8-10 часов)
+    - создать ExternalRoleIntegrationController
+    - реализовать endpoints для конфигураций (CRUD, test connection)
+    - реализовать endpoints для синхронизаций (start, status, logs, retry)
+    - реализовать endpoints для маппингов (CRUD, test mapping)
+    - добавить Swagger документацию для всех endpoints
+    - настроить tenant isolation и авторизацию
+
+    # Этап 7: Безопасность (8-10 часов)
+    - реализовать шифрование credentials (AES-256-GCM)
+    - добавить валидацию конфигураций провайдеров
+    - настроить rate limiting для SSO и sync endpoints
+    - реализовать audit logging всех операций
+    - добавить проверку SSL/TLS сертификатов
+
+    # Этап 8: Тестирование (16-20 часов)
+    - написать unit тесты для всех сервисов (моки провайдеров)
+    - написать unit тесты для всех репозиториев
+    - создать mock LDAP сервер для integration тестов
+    - создать mock OAuth/SAML/OIDC серверы
+    - написать integration тесты для всех endpoints
+    - написать E2E тесты для полных flow
+
+    # Этап 9: Мониторинг (4-6 часов)
+    - добавить метрики в MetricsCollector (sync stats, SSO stats)
+    - добавить health checks для провайдеров
+    - добавить dashboard endpoints для мониторинга
+
+    # Этап 10: Документация (4-6 часов)
+    - обновить API.md с новыми endpoints
+    - создать руководства (LDAP_SETUP.md, SSO_SETUP.md, ROLE_MAPPING.md)
+    - обновить ARCHITECTURE.md
+
+    dod:
+
+    # Функциональность
+    - ✅ LDAP/AD интеграция работает (создание/обновление пользователей, синхронизация ролей)
+    - ✅ OAuth 2.0 интеграция работает (Azure AD, Google Workspace, Generic)
+    - ✅ SAML 2.0 интеграция работает
+    - ✅ OpenID Connect интеграция работает
+    - ✅ Role mapping работает с поддержкой условий и приоритетов
+    - ✅ Автоматическая синхронизация работает (cron jobs)
+    - ✅ Just-in-time provisioning при SSO входе работает
+    - ✅ Все 15+ endpoints реализованы и протестированы
+    - ✅ Swagger документация полная для всех endpoints
+
+    # Безопасность
+    - ✅ Credentials зашифрованы в БД (AES-256-GCM)
+    - ✅ Валидация всех входных данных (URL, certificates, configs)
+    - ✅ Rate limiting настроен для SSO и sync endpoints
+    - ✅ Audit logging всех операций (конфигурации, синхронизации, SSO входы)
+    - ✅ Tenant isolation работает на всех уровнях
+
+    # Качество
+    - ✅ Unit тесты: >80% покрытия (repository, service, provider)
+    - ✅ Integration тесты: все endpoints покрыты (успех + ошибки + tenant isolation)
+    - ✅ E2E тесты: полные flow синхронизации и SSO
+    - ✅ Все тесты проходят
+    - ✅ Линтеры проходят без ошибок
+
+    # Производительность
+    - ✅ Синхронизация работает для 1000+ пользователей (batch обработка)
+    - ✅ Метрики собираются (время синхронизации, success rate, ошибки)
+    - ✅ Health checks работают (доступность провайдеров)
+
+    # Документация
+    - ✅ API документация обновлена
+    - ✅ Руководства по настройке созданы
+    - ✅ Архитектурная документация обновлена
+
+    architectural_decisions:
+    provider_pattern:
+    decision: "Provider pattern для поддержки множественных провайдеров"
+    rationale: "Легкое добавление новых провайдеров без изменения существующего кода. Каждый провайдер реализует единый интерфейс IExternalRoleProvider."
+
+    encryption_strategy:
+    decision: "Шифрование credentials в БД с использованием AES-256-GCM"
+    rationale: "Безопасное хранение чувствительных данных. Encryption key хранится в env переменных, не в БД. Поддержка ротации ключей."
+
+    sync_strategies:
+    decision: "Три режима синхронизации: FULL, INCREMENTAL, ON_DEMAND"
+    rationale: "FULL для первоначальной синхронизации, INCREMENTAL для регулярных обновлений (производительность), ON_DEMAND для ручного запуска."
+
+    just_in_time_provisioning:
+    decision: "Just-in-time provisioning при SSO входе"
+    rationale: "Создание пользователя автоматически при первом SSO входе. Обновление ролей при каждом входе. Упрощает onboarding."
+
+    role_mapping_rules:
+    decision: "JSON-based rules с поддержкой условий и приоритетов"
+    rationale: "Гибкость настройки маппингов без изменения кода. Условия позволяют сложную логику (department + role). Приоритеты для разрешения конфликтов."
+
+    batch_processing:
+    decision: "Batch обработка для синхронизации больших объемов"
+    rationale: "Производительность при синхронизации тысяч пользователей. Предотвращение блокировки БД и memory leaks."
+
+    audit_logging:
+    decision: "Полное audit logging всех операций интеграции"
+    rationale: "Трассируемость для compliance. Отладка проблем синхронизации. Метрики для мониторинга."
+
+    dependencies_npm:
+    production: - "ldapjs": "^3.0.7" - "passport-oauth2": "^1.9.0" - "passport-saml": "^3.2.4" - "passport-openidconnect": "^0.1.1" - "xml2js": "^0.6.2" - "jsonwebtoken": "^9.0.2"
+    development: - "@types/ldapjs": "^3.0.6" - "@types/passport-oauth2": "^1.4.16" - "@types/passport-saml": "^3.2.3" - "@types/xml2js": "^0.4.14" - "@types/jsonwebtoken": "^9.0.7"
+
+    endpoints_summary: |
+    **Конфигурации (6 endpoints):**
+    - GET /role/external/configs
+    - GET /role/external/configs/:id
+    - POST /role/external/configs
+    - PATCH /role/external/configs/:id
+    - DELETE /role/external/configs/:id
+    - POST /role/external/configs/:id/test
+
+    **Синхронизации (4 endpoints):**
+    - POST /role/external/configs/:id/sync
+    - GET /role/external/configs/:id/sync/status
+    - GET /role/external/configs/:id/sync/logs
+    - POST /role/external/configs/:id/sync/retry
+
+    **Маппинги (6 endpoints):**
+    - GET /role/external/configs/:id/mappings
+    - GET /role/external/configs/:id/mappings/:mappingId
+    - POST /role/external/configs/:id/mappings
+    - PATCH /role/external/configs/:id/mappings/:mappingId
+    - DELETE /role/external/configs/:id/mappings/:mappingId
+    - POST /role/external/configs/:id/mappings/test
+
+    **SSO (3 endpoints):**
+    - GET /auth/sso/:provider
+    - GET /auth/sso/:provider/callback
+    - POST /auth/sso/:provider/logout
+
+    **Всего: 19 endpoints**
+
+    gate:
     - require: "Одобряю SAAS-017-19"
+    - pre_commit_workflow: "СТАНДАРТНЫЙ"
+    - pre_commit_steps:
+    - "«Автофикс» → linter/prettier"
+    - "Тесты: unit тесты для всех сервисов/repositories + integration тесты endpoints"
+    - "Проверка безопасности: credentials шифрование, валидация, rate limiting"
+    - "Проверка миграций: up/down для всех миграций"
+    - "«Коммит» → feat(role): SAAS-017-19 enterprise external systems integration"
+
+    implementation_notes: |
+    **Подробный план:** см. SAAS-017-19-ENTERPRISE-PLAN.md
+
+    **Ключевые особенности enterprise решения:**
+    - Поддержка 5+ типов провайдеров (LDAP, AD, OAuth2, SAML, OIDC)
+    - Гибкий маппинг ролей с условиями и приоритетами
+    - Шифрование credentials
+    - Полный audit logging
+    - Batch обработка для масштабируемости
+    - Just-in-time provisioning
+    - Health checks и мониторинг
+
+    **Ожидаемые результаты:**
+    - 40+ файлов создано
+    - 30+ тестовых файлов
+    - 19 API endpoints
+    - 3 миграции БД
+    - Enterprise-ready решение
 
 # Unit тесты для RoleRepository
 
