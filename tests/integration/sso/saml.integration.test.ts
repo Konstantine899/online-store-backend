@@ -1,6 +1,6 @@
 /**
  * Integration тесты для SAML 2.0 SSO flow
- * 
+ *
  * Тестирует полный flow SSO аутентификации через SAML 2.0:
  * - Инициирование SSO (GET /auth/sso/:providerId)
  * - Callback обработка (POST /auth/sso/saml/callback)

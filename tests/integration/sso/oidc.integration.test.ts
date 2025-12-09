@@ -1,6 +1,6 @@
 /**
  * Integration тесты для OpenID Connect SSO flow
- * 
+ *
  * Тестирует полный flow SSO аутентификации через OIDC:
  * - Инициирование SSO (GET /auth/sso/:providerId)
  * - Callback обработка (GET /auth/sso/oidc/callback)
