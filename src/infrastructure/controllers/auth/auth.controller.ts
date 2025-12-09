@@ -8,7 +8,7 @@ import {
 import { LoginDto, RegistrationDto } from '@app/infrastructure/dto';
 import { ForgotPasswordDto } from '@app/infrastructure/dto/auth/forgot-password.dto';
 import { ResetPasswordDto } from '@app/infrastructure/dto/auth/reset-password.dto';
-import { SSOCallbackDto, SSOLogoutDto } from '@app/infrastructure/dto/sso';
+import { SSOLogoutDto } from '@app/infrastructure/dto/sso';
 import { AuthService, UserService } from '@app/infrastructure/services';
 import { SSOStrategyFactory } from '@app/infrastructure/common/strategies/sso/sso-strategy.factory';
 import { ExternalRoleSyncRepository } from '@app/infrastructure/repositories/role/external-role-sync.repository';
@@ -26,7 +26,6 @@ import {
     Param,
     ParseIntPipe,
     Post,
-    Query,
     Req,
     Res,
     UnauthorizedException,
@@ -35,7 +34,6 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { AuthGuard } from 'passport';
 
 import {
     CheckResponse,
@@ -48,6 +46,11 @@ import {
 import { IDecodedAccessToken } from '@app/domain/jwt';
 import { AuthGuard } from '@app/infrastructure/common/guards';
 import { BruteforceGuard } from '@app/infrastructure/common/guards/bruteforce.guard';
+import {
+    SSOOAuth2Guard,
+    SSOSAMLGuard,
+    SSOOIDCGuard,
+} from '@app/infrastructure/common/guards/sso';
 import {
     buildRefreshCookieOptions,
     getRefreshCookieName,
@@ -429,22 +432,86 @@ export class AuthController {
         description: 'Ошибка аутентификации SSO',
     })
     @HttpCode(200)
-    @Get('/sso/:strategyType/callback')
-    public async handleSSOCallback(
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        @Param('strategyType') _strategyType: 'oauth2' | 'saml' | 'oidc',
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        @Query() _query: SSOCallbackDto,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        @Req() _req: Request,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        @Res({ passthrough: true }) _res: Response,
+    @Get('/sso/oauth2/callback')
+    @UseGuards(SSOOAuth2Guard)
+    public async handleOAuth2Callback(
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
     ): Promise<SSOLoginResponse> {
-        // Для OAuth 2.0 и SAML используем Passport authenticate
-        // Для OIDC нужна специальная обработка через OIDCSSOStrategy
-        throw new BadRequestException(
-            'SSO callback обработка требует интеграции с Passport Guard. Используйте @UseGuards(AuthGuard(strategyType))',
+        return this.handleSSOCallbackSuccess(req, res, 'OAUTH2');
+    }
+
+    @HttpCode(200)
+    @Get('/sso/saml/callback')
+    @UseGuards(SSOSAMLGuard)
+    public async handleSAMLCallback(
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<SSOLoginResponse> {
+        return this.handleSSOCallbackSuccess(req, res, 'SAML');
+    }
+
+    @HttpCode(200)
+    @Get('/sso/oidc/callback')
+    @UseGuards(SSOOIDCGuard)
+    public async handleOIDCCallback(
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<SSOLoginResponse> {
+        return this.handleSSOCallbackSuccess(req, res, 'OIDC');
+    }
+
+    /**
+     * Обработка успешного SSO callback
+     * @private
+     */
+    private async handleSSOCallbackSuccess(
+        req: Request,
+        res: Response,
+        providerType: 'OAUTH2' | 'SAML' | 'OIDC',
+    ): Promise<SSOLoginResponse> {
+        // Получаем результат аутентификации из request (установлен Passport Guard)
+        const ssoResult = req.user as {
+            user: { id: number };
+            ssoProfile: { email: string };
+            providerConfig: { id: number; name: string };
+        } | undefined;
+
+        if (!ssoResult?.user) {
+            throw new UnauthorizedException(
+                'Пользователь не найден после SSO аутентификации',
+            );
+        }
+
+        // Получаем полную модель пользователя
+        const user = await this.userService.findAuthenticatedUser(
+            ssoResult.user.id,
         );
+
+        // Генерируем токены
+        const accessToken = await this.tokenService.generateAccessToken(user);
+        const refreshToken = await this.tokenService.generateRefreshToken(
+            user,
+            60 * 60 * 24 * 30, // 30 дней
+        );
+
+        // Устанавливаем refresh token в cookie
+        const cookieName = getRefreshCookieName();
+        res.cookie(cookieName, refreshToken, buildRefreshCookieOptions());
+
+        // Определяем, был ли пользователь создан (just-in-time provisioning)
+        // Это можно определить по времени создания пользователя
+        const isNewUser =
+            user.createdAt &&
+            Date.now() - new Date(user.createdAt).getTime() < 60000; // Создан менее минуты назад
+
+        return {
+            type: 'Bearer',
+            accessToken,
+            providerType,
+            providerName: ssoResult.providerConfig.name,
+            isNewUser: isNewUser ?? false,
+        };
     }
 
     @ApiOperation({
