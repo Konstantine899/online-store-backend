@@ -416,6 +416,28 @@ npm run test:ldap:log:debug-sql
 
 **Подробная документация:** см. `scripts/LDAP_TESTS_README.md`
 
+## SSO Tests Scripts
+
+См. [SSO_TESTS_README.md](./SSO_TESTS_README.md) для подробной документации по скриптам запуска SSO тестов (Этап 3: SSO Integration).
+
+### Быстрый старт
+
+```bash
+# Запустить все SSO тесты с логами
+npm run test:sso:log
+
+# Только unit тесты
+npm run test:sso:log:unit
+
+# Только integration тесты
+npm run test:sso:log:integration
+
+# С покрытием кода
+npm run test:sso:log:coverage
+```
+
+**Подробная документация:** см. `scripts/SSO_TESTS_README.md`
+
 ## Поддержка
 
 При возникновении проблем:
