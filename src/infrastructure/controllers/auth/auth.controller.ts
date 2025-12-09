@@ -8,7 +8,13 @@ import {
 import { LoginDto, RegistrationDto } from '@app/infrastructure/dto';
 import { ForgotPasswordDto } from '@app/infrastructure/dto/auth/forgot-password.dto';
 import { ResetPasswordDto } from '@app/infrastructure/dto/auth/reset-password.dto';
+import { SSOCallbackDto, SSOLogoutDto } from '@app/infrastructure/dto/sso';
 import { AuthService, UserService } from '@app/infrastructure/services';
+import { SSOStrategyFactory } from '@app/infrastructure/common/strategies/sso/sso-strategy.factory';
+import { ExternalRoleSyncRepository } from '@app/infrastructure/repositories/role/external-role-sync.repository';
+import { TokenService } from '@app/infrastructure/services/token/token.service';
+import { TenantContext } from '@app/infrastructure/common/context';
+import { SSOLoginResponse, SSOLogoutResponse } from '@app/infrastructure/responses/sso';
 import {
     BadRequestException,
     Body,
@@ -17,7 +23,10 @@ import {
     Get,
     HttpCode,
     NotFoundException,
+    Param,
+    ParseIntPipe,
     Post,
+    Query,
     Req,
     Res,
     UnauthorizedException,
@@ -26,6 +35,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
+import { AuthGuard } from 'passport';
 
 import {
     CheckResponse,
@@ -49,6 +59,10 @@ export class AuthController {
     constructor(
         private readonly authService: AuthService,
         private readonly userService: UserService,
+        private readonly ssoStrategyFactory: SSOStrategyFactory,
+        private readonly externalRoleSyncRepository: ExternalRoleSyncRepository,
+        private readonly tokenService: TokenService,
+        private readonly tenantContext: TenantContext,
     ) {}
 
     @RegistrationSwaggerDecorator()
@@ -303,6 +317,185 @@ export class AuthController {
 
         return {
             message: 'Пароль успешно изменён',
+        };
+    }
+
+    // ============================================================
+    // SSO ENDPOINTS
+    // ============================================================
+
+    @ApiOperation({
+        summary: 'Инициация SSO входа',
+        description:
+            'Перенаправляет пользователя на страницу авторизации SSO провайдера (OAuth 2.0, SAML, OIDC)',
+    })
+    @ApiResponse({
+        status: 302,
+        description: 'Редирект на страницу авторизации провайдера',
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Некорректный providerId или конфигурация',
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Провайдер не найден',
+    })
+    @Get('/sso/:providerId')
+    public async initiateSSO(
+        @Param('providerId', ParseIntPipe) providerId: number,
+        @Req() req: Request,
+        @Res() res: Response,
+    ): Promise<void> {
+        const tenantId = this.tenantContext.getTenantIdOrNull();
+        if (!tenantId) {
+            throw new UnauthorizedException('Tenant ID не найден в контексте');
+        }
+
+        // Получаем конфигурацию провайдера
+        const providerConfig =
+            await this.externalRoleSyncRepository.findConfigById(
+                providerId,
+                tenantId,
+            );
+
+        if (!providerConfig) {
+            throw new NotFoundException(
+                `Провайдер SSO с ID ${providerId} не найден`,
+            );
+        }
+
+        if (providerConfig.status !== 'ACTIVE') {
+            throw new BadRequestException(
+                `Провайдер ${providerConfig.name} неактивен (статус: ${providerConfig.status})`,
+            );
+        }
+
+        // Определяем базовый URL приложения
+        const protocol = req.protocol;
+        const host = req.get('host');
+        const baseUrl = `${protocol}://${host}`;
+
+        // Определяем тип стратегии и создаем authorization URL
+        const strategyType = this.ssoStrategyFactory.getStrategyType(
+            providerConfig.providerType,
+        );
+
+        let authURL: string;
+        switch (strategyType) {
+            case 'oauth2':
+                authURL = await this.ssoStrategyFactory.createOAuth2AuthorizationUrl(
+                    providerId,
+                    tenantId,
+                    baseUrl,
+                );
+                break;
+            case 'saml':
+                authURL = await this.ssoStrategyFactory.createSAMLAuthorizationUrl(
+                    providerId,
+                    tenantId,
+                    baseUrl,
+                );
+                break;
+            case 'oidc':
+                authURL = await this.ssoStrategyFactory.createOIDCAuthorizationUrl(
+                    providerId,
+                    tenantId,
+                    baseUrl,
+                );
+                break;
+            default:
+                throw new BadRequestException(
+                    `Неподдерживаемый тип провайдера: ${providerConfig.providerType}`,
+                );
+        }
+
+        // Редиректим на страницу авторизации провайдера
+        res.redirect(authURL);
+    }
+
+    @ApiOperation({
+        summary: 'SSO callback обработка',
+        description:
+            'Обрабатывает callback от SSO провайдера и выполняет аутентификацию пользователя',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Успешная аутентификация через SSO',
+        type: SSOLoginResponse,
+    })
+    @ApiResponse({
+        status: 401,
+        description: 'Ошибка аутентификации SSO',
+    })
+    @HttpCode(200)
+    @Get('/sso/:strategyType/callback')
+    public async handleSSOCallback(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        @Param('strategyType') _strategyType: 'oauth2' | 'saml' | 'oidc',
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        @Query() _query: SSOCallbackDto,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        @Req() _req: Request,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        @Res({ passthrough: true }) _res: Response,
+    ): Promise<SSOLoginResponse> {
+        // Для OAuth 2.0 и SAML используем Passport authenticate
+        // Для OIDC нужна специальная обработка через OIDCSSOStrategy
+        throw new BadRequestException(
+            'SSO callback обработка требует интеграции с Passport Guard. Используйте @UseGuards(AuthGuard(strategyType))',
+        );
+    }
+
+    @ApiOperation({
+        summary: 'SSO logout',
+        description:
+            'Выполняет logout из SSO провайдера (SAML/OIDC) и локальной системы',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Успешный logout',
+        type: SSOLogoutResponse,
+    })
+    @HttpCode(200)
+    @UseGuards(AuthGuard)
+    @Post('/sso/:strategyType/logout')
+    public async handleSSOLogout(
+        @Param('strategyType') strategyType: 'oauth2' | 'saml' | 'oidc',
+        @Body() dto: SSOLogoutDto,
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<SSOLogoutResponse> {
+        // Выполняем локальный logout
+        const cookieName = getRefreshCookieName();
+        const refreshFromCookie: string | undefined =
+            req.signedCookies?.[cookieName] ?? req.cookies?.[cookieName];
+
+        if (refreshFromCookie) {
+            await this.authService.logout(
+                { refreshToken: refreshFromCookie },
+                req,
+            );
+        }
+
+        // Очищаем cookie
+        const opts = buildRefreshCookieOptions();
+        res.clearCookie(cookieName, {
+            ...opts,
+            maxAge: undefined,
+            expires: new Date(0),
+        });
+
+        // Для SAML/OIDC может потребоваться редирект на logout URL провайдера
+        let logoutUrl: string | undefined;
+        if (dto.logoutUrl) {
+            logoutUrl = dto.logoutUrl;
+        }
+
+        return {
+            statusCode: 200,
+            message: 'success',
+            logoutUrl,
         };
     }
 }
