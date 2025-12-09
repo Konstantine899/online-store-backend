@@ -54,6 +54,7 @@ export class ExternalRoleConfigResponse {
         example: { host: 'ldap.company.com', port: 389 },
         description: 'Конфигурация провайдера (без чувствительных данных)',
         type: 'object',
+        additionalProperties: false,
     })
     declare providerConfig: IProviderConfig;
 

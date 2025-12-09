@@ -53,6 +53,7 @@ export class RoleMappingResponse {
         },
         description: 'Правила маппинга',
         type: 'object',
+        additionalProperties: false,
     })
     declare mappingRules: IMappingRules | null;
 

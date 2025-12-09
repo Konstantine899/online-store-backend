@@ -2,6 +2,7 @@ import type { UserModel } from '@app/domain/models';
 import type {
     CreateUserDto,
     UpdateConsentsDto,
+    UpdateUserDto,
     UpdateUserStatusDto,
 } from '@app/infrastructure/dto';
 import type { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
@@ -18,7 +19,7 @@ export interface IUserRepository {
 
     updateUser(
         user: UserModel,
-        dto: CreateUserDto,
+        dto: UpdateUserDto,
     ): Promise<UpdateUserResponse>;
 
     findUser(id: number): Promise<GetUserResponse>;

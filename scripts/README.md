@@ -354,6 +354,36 @@ node scripts/run-tests-with-log.js "audit.service.unit.test" --verbose
     path: test-logs/
 ```
 
+#### 4. LDAP/AD тесты (Этап 2)
+**Файл:** `scripts/run-ldap-tests-with-log.mjs`
+
+Скрипт для запуска тестов LDAP/AD интеграции с логированием:
+- `LDAPClientService` (unit)
+- `LDAPProvider` (unit + integration)
+- `LDAPRoleSyncService` (unit)
+
+```bash
+# Все LDAP тесты с логированием
+npm run test:ldap:log
+
+# Только unit тесты
+npm run test:ldap:log:unit
+
+# Только integration тесты
+npm run test:ldap:log:integration
+
+# С подробным выводом
+npm run test:ldap:log:verbose
+
+# С покрытием кода
+npm run test:ldap:log:coverage
+
+# С SQL логами (для отладки)
+npm run test:ldap:log:debug-sql
+```
+
+**Подробная документация:** см. `scripts/LDAP_TESTS_README.md`
+
 ## Поддержка
 
 При возникновении проблем:

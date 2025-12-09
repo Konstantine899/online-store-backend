@@ -69,8 +69,8 @@ export interface IProviderConfig {
     entryPoint?: string;
     cert?: string;
     privateKey?: string; // Зашифровано
-    issuer?: string;
-    callbackURL?: string;
+    samlIssuer?: string; // Переименовано для избежания конфликта с OIDC issuer
+    samlCallbackURL?: string; // Переименовано для избежания конфликта с OIDC callbackURL
 
     // Общие
     verifySSL?: boolean;

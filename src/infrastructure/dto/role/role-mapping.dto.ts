@@ -25,6 +25,7 @@ export class MappingRuleConditionDto {
         example: { department: 'IT', external_role: 'admin' },
         description: 'Условие (if)',
         type: 'object',
+        additionalProperties: false,
     })
     @IsNotEmpty({ message: 'Укажите условие' })
     @IsObject({ message: 'Условие должно быть объектом' })

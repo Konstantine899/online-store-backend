@@ -40,6 +40,7 @@ import { RoleExpirationNotificationService } from './role/role-expiration-notifi
 import { RoleExpirationService } from './role/role-expiration.service';
 import { RoleService } from './role/role.service';
 import { UserRolesCacheService } from './role/user-roles-cache.service';
+import { ADProvider, LDAPClientService, LDAPProvider, LDAPRoleSyncService } from './role/ldap';
 import { TokenService } from './token/token.service';
 import { UserAddressService } from './user-address/user-address.service';
 import { UserCleanupService } from './user/user-cleanup.service';
@@ -83,6 +84,10 @@ import { UserService } from './user/user.service';
         RoleExpirationService,
         RoleExpirationNotificationService,
         UserRolesCacheService,
+        LDAPClientService,
+        LDAPProvider,
+        ADProvider,
+        LDAPRoleSyncService,
         TokenService,
         UserService,
         UserAddressService,
@@ -125,6 +130,10 @@ import { UserService } from './user/user.service';
         RoleExpirationService,
         RoleExpirationNotificationService,
         UserRolesCacheService,
+        LDAPClientService,
+        LDAPProvider,
+        ADProvider,
+        LDAPRoleSyncService,
         TokenService,
         UserService,
         UserAddressService,

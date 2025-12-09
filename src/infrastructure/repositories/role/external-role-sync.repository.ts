@@ -257,7 +257,7 @@ export class ExternalRoleSyncRepository
             updateData.lastErrorAt = error ? new Date() : null;
             if (error) {
                 // Инкремент счетчика ошибок
-                await this.externalRoleConfigModel.increment('error_count', {
+                await this.externalRoleConfigModel.increment('errorCount', {
                     where,
                 });
             }
