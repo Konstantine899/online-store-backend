@@ -41,13 +41,25 @@ import { RoleExpirationService } from './role/role-expiration.service';
 import { RoleService } from './role/role.service';
 import { UserRolesCacheService } from './role/user-roles-cache.service';
 import { ADProvider, LDAPClientService, LDAPProvider, LDAPRoleSyncService } from './role/ldap';
+import {
+    SSOStateService,
+    SSOUserProfileMapper,
+    SSORoleSyncService,
+} from './role/sso';
 import { TokenService } from './token/token.service';
+import {
+    OAuth2SSOStrategy,
+    SAMLSSOStrategy,
+    OIDCSSOStrategy,
+    SSOStrategyFactory,
+} from '../common/strategies/sso';
 import { UserAddressService } from './user-address/user-address.service';
 import { UserCleanupService } from './user/user-cleanup.service';
 import { UserService } from './user/user.service';
 
 @Module({
     imports: [
+        PassportModule,
         JwtModule.registerAsync(jwtConfig()),
         forwardRef(() => RepositoriesModule),
         SequelizeModule.forFeature([
