@@ -2070,14 +2070,59 @@ tasks:
     - добавить unit и integration тесты
 
     # Этап 3: SSO интеграция (24-30 часов)
-    - установить зависимости (passport-oauth2, passport-saml, passport-openidconnect)
-    - создать базовый SSO стратегии (Passport)
-    - реализовать OAuth 2.0 провайдеры (Azure AD, Google Workspace, Generic)
-    - реализовать SAML 2.0 провайдер
-    - реализовать OpenID Connect провайдер
-    - создать SSORoleSyncService (just-in-time provisioning)
-    - добавить SSO endpoints в AuthController (GET /auth/sso/:provider, callback)
-    - добавить unit и integration тесты
+
+    **Структура файлов:**
+
+    ```
+    src/infrastructure/common/strategies/sso/
+    ├── oauth2.strategy.ts              # Базовый OAuth 2.0 стратегия
+    ├── oauth2-azure.strategy.ts        # Azure AD провайдер
+    ├── oauth2-google.strategy.ts       # Google Workspace провайдер
+    ├── oauth2-generic.strategy.ts      # Generic OAuth 2.0 провайдер
+    ├── saml.strategy.ts                 # SAML 2.0 стратегия (MultiSamlStrategy)
+    ├── oidc.strategy.ts                 # OpenID Connect стратегия (обертка над openid-client)
+    └── sso-strategy.factory.ts          # Фабрика для динамического создания стратегий
+
+    src/infrastructure/services/role/sso/
+    ├── sso-role-sync.service.ts         # Just-in-time provisioning и синхронизация ролей
+    ├── sso-user-profile.mapper.ts      # Маппинг профилей из SSO в локальные пользователи
+    └── sso-state.service.ts             # Управление state parameter для tenantId
+
+    src/infrastructure/controllers/auth/
+    └── auth.controller.ts              # Добавить SSO endpoints
+
+    src/infrastructure/dto/sso/
+    ├── sso-callback.dto.ts              # DTO для callback обработки
+    └── sso-logout.dto.ts                # DTO для logout
+
+    src/infrastructure/responses/sso/
+    ├── sso-login.response.ts            # Response после успешного SSO входа
+    └── sso-logout.response.ts            # Response после logout
+
+    tests/integration/sso/
+    ├── oauth2.integration.test.ts       # Integration тесты для OAuth 2.0
+    ├── saml.integration.test.ts         # Integration тесты для SAML
+    └── oidc.integration.test.ts         # Integration тесты для OIDC
+
+    tests/unit/sso/
+    ├── sso-role-sync.service.unit.test.ts
+    └── sso-strategy.factory.unit.test.ts
+    ```
+
+    **Шаги реализации:**
+    - установить зависимости (passport-oauth2@^1.9.0, @node-saml/passport-saml@^3.2.4, openid-client@^6.2.0)
+    - создать базовые SSO стратегии (Passport для OAuth2/SAML, openid-client для OIDC)
+    - реализовать OAuth 2.0 провайдеры (Azure AD, Google Workspace, Generic) через passport-oauth2
+    - реализовать SAML 2.0 провайдер через @node-saml/passport-saml (MultiSamlStrategy для динамической конфигурации)
+    - реализовать OpenID Connect провайдер через openid-client (panva/openid-client) с оберткой для NestJS
+    - создать SSORoleSyncService (just-in-time provisioning при SSO входе)
+    - создать SSOUserProfileMapper для маппинга профилей из разных провайдеров
+    - создать SSOStateService для управления state parameter (передача tenantId)
+    - добавить SSO endpoints в AuthController (GET /auth/sso/:provider, GET /auth/sso/:provider/callback, POST /auth/sso/:provider/logout)
+    - реализовать динамическую конфигурацию стратегий из ExternalRoleConfig (tenant-specific)
+    - добавить поддержку state parameter для передачи tenantId в SSO flow
+    - создать mock OAuth/SAML/OIDC серверы для тестирования
+    - добавить unit и integration тесты (с mock серверами)
 
     # Этап 4: Role Mapping (8-10 часов)
     - создать RoleMappingService (применение маппингов)
@@ -2183,6 +2228,11 @@ tasks:
     decision: "Just-in-time provisioning при SSO входе"
     rationale: "Создание пользователя автоматически при первом SSO входе. Обновление ролей при каждом входе. Упрощает onboarding."
 
+    sso_libraries:
+    decision: "Использование @node-saml/passport-saml и openid-client вместо устаревших библиотек"
+    rationale: "@node-saml/passport-saml - активно поддерживаемая библиотека с MultiSamlStrategy для динамической конфигурации. openid-client (panva) - современная библиотека с отличной TypeScript типизацией и поддержкой discovery. passport-oauth2 остается для OAuth 2.0 провайдеров."
+    implementation: | - OAuth 2.0: passport-oauth2 стратегии (Azure AD, Google Workspace, Generic) - SAML 2.0: @node-saml/passport-saml с MultiSamlStrategy для tenant-specific конфигураций - OpenID Connect: openid-client с оберткой для интеграции с NestJS Passport - Динамическая конфигурация через ExternalRoleConfig с шифрованием credentials - State parameter для передачи tenantId в SSO flow
+
     role_mapping_rules:
     decision: "JSON-based rules с поддержкой условий и приоритетов"
     rationale: "Гибкость настройки маппингов без изменения кода. Условия позволяют сложную логику (department + role). Приоритеты для разрешения конфликтов."
@@ -2196,8 +2246,9 @@ tasks:
     rationale: "Трассируемость для compliance. Отладка проблем синхронизации. Метрики для мониторинга."
 
     dependencies_npm:
-    production: - "ldapjs": "^3.0.7" - "passport-oauth2": "^1.9.0" - "passport-saml": "^3.2.4" - "passport-openidconnect": "^0.1.1" - "xml2js": "^0.6.2" - "jsonwebtoken": "^9.0.2"
-    development: - "@types/ldapjs": "^3.0.6" - "@types/passport-oauth2": "^1.4.16" - "@types/passport-saml": "^3.2.3" - "@types/xml2js": "^0.4.14" - "@types/jsonwebtoken": "^9.0.7"
+    production: - "ldapjs": "^3.0.7" - "passport-oauth2": "^1.8.0" - "@node-saml/passport-saml": "^5.1.0" - "openid-client": "^6.8.1" - "xml2js": "^0.6.2" - "jsonwebtoken": "^9.0.2"
+    development: - "@types/ldapjs": "^3.0.6" - "@types/passport-oauth2": "^1.4.16" - "@types/xml2js": "^0.4.14" - "@types/jsonwebtoken": "^9.0.7"
+    note: "openid-client имеет встроенную TypeScript типизацию, @node-saml/passport-saml также имеет типы. Версии обновлены до актуальных."
 
     endpoints_summary: |
     **Конфигурации (6 endpoints):**
