@@ -12,6 +12,7 @@ import { MetricsCollector } from '@app/infrastructure/common/services';
 import { jwtConfig } from '@app/infrastructure/config/jwt';
 import { Module, OnModuleInit, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { RepositoriesModule } from '../repositories/repositories.module';
 import { AuditCleanupService } from './audit/audit-cleanup.service';
