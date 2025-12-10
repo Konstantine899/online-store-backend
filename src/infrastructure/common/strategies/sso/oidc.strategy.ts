@@ -1,6 +1,11 @@
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-custom';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PassportCustomStrategyWrapper } from './passport-custom-wrapper';
+import {
+    HttpException,
+    HttpStatus,
+    Injectable,
+    UnauthorizedException,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { createLogger } from '@app/infrastructure/common/utils/logging';
 import * as oidc from 'openid-client';
@@ -27,7 +32,10 @@ import { IProviderConfig } from '@app/domain/models/external-role-config.model';
  * так как openid-client не является Passport стратегией напрямую.
  */
 @Injectable()
-export class OIDCSSOStrategy extends PassportStrategy(Strategy, 'oidc') {
+export class OIDCSSOStrategy extends PassportStrategy(
+    PassportCustomStrategyWrapper,
+    'oidc',
+) {
     private readonly logger = createLogger('OIDCSSOStrategy');
     private readonly clientCache = new Map<
         number,
@@ -41,6 +49,9 @@ export class OIDCSSOStrategy extends PassportStrategy(Strategy, 'oidc') {
         private readonly ssoUserProfileMapper: SSOUserProfileMapper,
         private readonly ssoRoleSyncService: SSORoleSyncService,
     ) {
+        // PassportStrategy создает callback из validate и передает его в super() как последний аргумент
+        // PassportCustomStrategyWrapper извлекает callback из аргументов и передает его в passport-custom
+        // как первый аргумент, что решает проблему несовместимости
         super();
     }
 
@@ -255,6 +266,55 @@ export class OIDCSSOStrategy extends PassportStrategy(Strategy, 'oidc') {
         );
 
         return client;
+    }
+
+    /**
+     * Преобразует NestJS исключения в стандартные Error для Passport
+     * Сохраняет статус-код в свойстве statusCode для обработки exception filter
+     * @private
+     */
+    private convertToPassportError(error: unknown): Error {
+        if (error instanceof HttpException) {
+            // Создаем стандартный Error с сохранением статус-кода
+            const statusCode = error.getStatus();
+            const response = error.getResponse();
+            let errorMessage: string;
+
+            if (typeof response === 'string') {
+                errorMessage = response;
+            } else if (
+                typeof response === 'object' &&
+                response !== null &&
+                'message' in response
+            ) {
+                const message = (response as { message?: string | string[] })
+                    .message;
+                errorMessage = Array.isArray(message)
+                    ? message.join(', ')
+                    : message ?? error.message;
+            } else {
+                errorMessage = error.message;
+            }
+
+            const passportError = new Error(errorMessage);
+            // Сохраняем статус-код для обработки exception filter
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (passportError as any).statusCode = statusCode;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (passportError as any).response = response;
+
+            return passportError;
+        }
+
+        if (error instanceof Error) {
+            return error;
+        }
+
+        // Для неизвестных ошибок создаем стандартный Error
+        const unknownError = new Error(String(error));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (unknownError as any).statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+        return unknownError;
     }
 }
 

@@ -22,6 +22,7 @@ import {
     Delete,
     Get,
     HttpCode,
+    HttpStatus,
     NotFoundException,
     Param,
     ParseIntPipe,
@@ -369,9 +370,10 @@ export class AuthController {
         }
 
         if (providerConfig.status !== 'ACTIVE') {
-            throw new BadRequestException(
-                `Провайдер ${providerConfig.name} неактивен (статус: ${providerConfig.status})`,
-            );
+            throw new BadRequestException({
+                statusCode: HttpStatus.BAD_REQUEST,
+                message: `Провайдер ${providerConfig.name} неактивен (статус: ${providerConfig.status})`,
+            });
         }
 
         // Определяем базовый URL приложения

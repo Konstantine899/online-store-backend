@@ -1,6 +1,6 @@
 /**
  * Azure AD OAuth 2.0 Strategy
- * 
+ *
  * Специализированная стратегия для Microsoft Azure AD с предустановленными endpoints
  * и специфичной обработкой профилей Azure AD
  *
@@ -18,12 +18,12 @@ import { SSORoleSyncService } from '@app/infrastructure/services/role/sso/sso-ro
 
 /**
  * Azure AD OAuth 2.0 Strategy
- * 
+ *
  * Использует стандартные Azure AD endpoints:
  * - Authorization: https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize
  * - Token: https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token
  * - UserInfo: https://graph.microsoft.com/v1.0/me
- * 
+ *
  * Специфичные поля Azure AD:
  * - upn (User Principal Name) - используется как email
  * - oid (Object ID) - уникальный идентификатор пользователя

@@ -1,21 +1,32 @@
-import { PassportStrategy } from '@nestjs/passport';
-import { Strategy as OAuth2Strategy } from 'passport-oauth2';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { Request } from 'express';
+import { IOAuth2UserProfile } from '@app/domain/types/sso/sso-user-profile.types';
 import { createLogger } from '@app/infrastructure/common/utils/logging';
 import { ExternalRoleSyncRepository } from '@app/infrastructure/repositories/role/external-role-sync.repository';
+import { SSORoleSyncService } from '@app/infrastructure/services/role/sso/sso-role-sync.service';
 import { SSOStateService } from '@app/infrastructure/services/role/sso/sso-state.service';
 import { SSOUserProfileMapper } from '@app/infrastructure/services/role/sso/sso-user-profile.mapper';
-import { SSORoleSyncService } from '@app/infrastructure/services/role/sso/sso-role-sync.service';
+import {
+    HttpException,
+    HttpStatus,
+    Injectable,
+    UnauthorizedException,
+} from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { Request } from 'express';
+import { PassportCustomStrategyWrapper } from './passport-custom-wrapper';
 
 /**
  * Базовая OAuth 2.0 стратегия для SSO
+ *
+ * Использует passport-custom для полного контроля над OAuth 2.0 flow,
+ * так как passport-oauth2 требует валидную конфигурацию при инициализации,
+ * что не подходит для динамической конфигурации из БД.
  *
  * Особенности:
  * - Динамическая конфигурация из ExternalRoleConfig (tenant-specific)
  * - Использование state parameter для передачи providerId и tenantId
  * - Just-in-time provisioning через SSORoleSyncService
  * - Автоматическая синхронизация ролей
+ * - Полный контроль над OAuth 2.0 flow (authorization code exchange, token exchange, userInfo fetch)
  *
  * Использование:
  * - Регистрируется как 'oauth2' стратегия
@@ -23,7 +34,7 @@ import { SSORoleSyncService } from '@app/infrastructure/services/role/sso/sso-ro
  */
 @Injectable()
 export class OAuth2SSOStrategy extends PassportStrategy(
-    OAuth2Strategy,
+    PassportCustomStrategyWrapper,
     'oauth2',
 ) {
     private readonly logger = createLogger('OAuth2SSOStrategy');
@@ -34,40 +45,32 @@ export class OAuth2SSOStrategy extends PassportStrategy(
         private readonly ssoUserProfileMapper: SSOUserProfileMapper,
         private readonly ssoRoleSyncService: SSORoleSyncService,
     ) {
-        // Базовая конфигурация (будет переопределена динамически)
-        super({
-            authorizationURL: '', // Будет установлено динамически
-            tokenURL: '', // Будет установлено динамически
-            clientID: '', // Будет установлено динамически
-            clientSecret: '', // Будет установлено динамически
-            callbackURL: '', // Будет установлено динамически
-            scope: ['openid', 'profile', 'email'],
-            passReqToCallback: true, // Для получения request в validate
-        });
+        // PassportStrategy создает callback из validate и передает его в super() как последний аргумент
+        // PassportCustomStrategyWrapper извлекает callback из аргументов и передает его в passport-custom
+        // как первый аргумент, что решает проблему несовместимости
+        super();
     }
 
     /**
      * Валидация и обработка OAuth 2.0 callback
-     * @param req - Express request (содержит state parameter)
-     * @param accessToken - Access token от провайдера
-     * @param refreshToken - Refresh token (если доступен)
-     * @param profile - Профиль пользователя от провайдера
-     * @param done - Callback для завершения аутентификации
+     * Используется как кастомная стратегия через passport-custom
+     * Реализует полный OAuth 2.0 Authorization Code flow
      */
-    public async validate(
-        req: Request,
-        accessToken: string,
-        refreshToken: string,
-        profile: Record<string, unknown>,
-        done: (error: Error | null, user?: unknown) => void,
-    ): Promise<void> {
+    public async validate(req: Request): Promise<unknown> {
         try {
-            // Извлекаем state из query параметров
+            // Извлекаем state и code из query параметров
             const state = (req.query.state as string) ?? req.body?.state;
+            const code = (req.query.code as string) ?? req.body?.code;
 
             if (!state) {
                 throw new UnauthorizedException(
                     'State parameter отсутствует в callback',
+                );
+            }
+
+            if (!code) {
+                throw new UnauthorizedException(
+                    'Authorization code отсутствует в callback',
                 );
             }
 
@@ -100,6 +103,33 @@ export class OAuth2SSOStrategy extends PassportStrategy(
                 );
             }
 
+            // Валидируем обязательные поля конфигурации
+            if (
+                !providerConfig.providerConfig.tokenURL ||
+                !providerConfig.providerConfig.clientId ||
+                !providerConfig.providerConfig.clientSecret
+            ) {
+                throw new UnauthorizedException(
+                    'OAuth 2.0 конфигурация неполная. Отсутствуют обязательные поля: tokenURL, clientId, clientSecret',
+                );
+            }
+
+            // Обмениваем authorization code на access token
+            const { accessToken, refreshToken } =
+                await this.exchangeCodeForToken(
+                    code,
+                    {
+                        tokenURL: providerConfig.providerConfig.tokenURL,
+                        clientId: providerConfig.providerConfig.clientId,
+                        clientSecret:
+                            providerConfig.providerConfig.clientSecret,
+                        callbackURL:
+                            providerConfig.providerConfig.callbackURL ??
+                            `${req.protocol}://${req.get('host')}${req.path}`,
+                    },
+                    req,
+                );
+
             // Получаем userInfo если доступен (для OAuth 2.0)
             let userInfo: Record<string, unknown> | null = null;
             if (providerConfig.providerConfig.userInfoURL && accessToken) {
@@ -122,10 +152,8 @@ export class OAuth2SSOStrategy extends PassportStrategy(
                 }
             }
 
-            // Объединяем profile и userInfo
-            const fullProfile = userInfo
-                ? { ...profile, ...userInfo }
-                : profile;
+            // Создаем профиль из userInfo или используем пустой объект
+            const fullProfile = userInfo ?? {};
 
             // Добавляем токены в профиль
             fullProfile.accessToken = accessToken;
@@ -137,7 +165,7 @@ export class OAuth2SSOStrategy extends PassportStrategy(
             const ssoProfile = this.ssoUserProfileMapper.mapProfile(
                 fullProfile,
                 providerConfig.providerConfig,
-            );
+            ) as IOAuth2UserProfile;
 
             // Provision пользователя (just-in-time)
             const user = await this.ssoRoleSyncService.provisionUser(
@@ -165,11 +193,11 @@ export class OAuth2SSOStrategy extends PassportStrategy(
             );
 
             // Возвращаем пользователя для Passport
-            done(null, {
+            return {
                 user,
                 ssoProfile,
                 providerConfig,
-            });
+            };
         } catch (error: unknown) {
             const errorMessage =
                 error instanceof Error ? error.message : String(error);
@@ -179,8 +207,108 @@ export class OAuth2SSOStrategy extends PassportStrategy(
                 'SSO authentication failed',
             );
 
-            done(error as Error);
+            // Пробрасываем ошибку дальше - она будет обработана в _verify
+            throw error;
         }
+    }
+
+    /**
+     * Преобразует NestJS исключения в стандартные Error для Passport
+     * Сохраняет статус-код в свойстве statusCode для обработки exception filter
+     * @private
+     */
+    private convertToPassportError(error: unknown): Error {
+        if (error instanceof HttpException) {
+            // Создаем стандартный Error с сохранением статус-кода
+            const statusCode = error.getStatus();
+            const response = error.getResponse();
+            let errorMessage: string;
+
+            if (typeof response === 'string') {
+                errorMessage = response;
+            } else if (
+                typeof response === 'object' &&
+                response !== null &&
+                'message' in response
+            ) {
+                const message = (response as { message?: string | string[] })
+                    .message;
+                errorMessage = Array.isArray(message)
+                    ? message.join(', ')
+                    : (message ?? error.message);
+            } else {
+                errorMessage = error.message;
+            }
+
+            const passportError = new Error(errorMessage);
+            // Сохраняем статус-код для обработки exception filter
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (passportError as any).statusCode = statusCode;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (passportError as any).response = response;
+
+            return passportError;
+        }
+
+        if (error instanceof Error) {
+            return error;
+        }
+
+        // Для неизвестных ошибок создаем стандартный Error
+        const unknownError = new Error(String(error));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (unknownError as any).statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+        return unknownError;
+    }
+
+    /**
+     * Обмен authorization code на access token
+     * @private
+     */
+    private async exchangeCodeForToken(
+        code: string,
+        config: {
+            tokenURL: string;
+            clientId: string;
+            clientSecret: string;
+            callbackURL: string;
+        },
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        _req: Request,
+    ): Promise<{ accessToken: string; refreshToken?: string }> {
+        const axios = (await import('axios')).default;
+
+        const params = new URLSearchParams();
+        params.append('grant_type', 'authorization_code');
+        params.append('code', code);
+        params.append('redirect_uri', config.callbackURL);
+        params.append('client_id', config.clientId);
+        params.append('client_secret', config.clientSecret);
+
+        const response = await axios.post(config.tokenURL, params, {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                Accept: 'application/json',
+            },
+        });
+
+        const tokenData = response.data as {
+            access_token: string;
+            refresh_token?: string;
+            token_type?: string;
+            expires_in?: number;
+        };
+
+        if (!tokenData.access_token) {
+            throw new UnauthorizedException(
+                'Access token не получен от провайдера',
+            );
+        }
+
+        return {
+            accessToken: tokenData.access_token,
+            refreshToken: tokenData.refresh_token,
+        };
     }
 
     /**
@@ -202,4 +330,3 @@ export class OAuth2SSOStrategy extends PassportStrategy(
         return response.data as Record<string, unknown>;
     }
 }
-

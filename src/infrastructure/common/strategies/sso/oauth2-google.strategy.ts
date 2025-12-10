@@ -1,6 +1,6 @@
 /**
  * Google Workspace OAuth 2.0 Strategy
- * 
+ *
  * Специализированная стратегия для Google Workspace с предустановленными endpoints
  * и специфичной обработкой профилей Google
  *
@@ -18,12 +18,12 @@ import { SSORoleSyncService } from '@app/infrastructure/services/role/sso/sso-ro
 
 /**
  * Google Workspace OAuth 2.0 Strategy
- * 
+ *
  * Использует стандартные Google OAuth 2.0 endpoints:
  * - Authorization: https://accounts.google.com/o/oauth2/v2/auth
  * - Token: https://oauth2.googleapis.com/token
  * - UserInfo: https://www.googleapis.com/oauth2/v2/userinfo
- * 
+ *
  * Специфичные поля Google:
  * - sub - уникальный идентификатор пользователя
  * - email - email пользователя

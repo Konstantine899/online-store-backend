@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    BadRequestException,
+    HttpStatus,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { createLogger } from '@app/infrastructure/common/utils/logging';
 import { ExternalRoleSyncRepository } from '@app/infrastructure/repositories/role/external-role-sync.repository';
 import { SSOStateService } from '@app/infrastructure/services/role/sso/sso-state.service';
@@ -34,7 +39,8 @@ export class SSOStrategyFactory {
         tenantId: number,
         baseUrl: string,
     ): Promise<string> {
-        const config = await this.getActiveConfig(providerId, tenantId);
+        // Пропускаем проверку статуса, так как контроллер уже проверил
+        const config = await this.getActiveConfig(providerId, tenantId, true);
 
         // Валидация OAuth 2.0 конфигурации
         this.validateOAuth2Config(config.providerConfig);
@@ -75,7 +81,8 @@ export class SSOStrategyFactory {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         _baseUrl: string,
     ): Promise<string> {
-        const config = await this.getActiveConfig(providerId, tenantId);
+        // Пропускаем проверку статуса, так как контроллер уже проверил
+        const config = await this.getActiveConfig(providerId, tenantId, true);
 
         // Валидация SAML конфигурации
         this.validateSAMLConfig(config.providerConfig);
@@ -112,7 +119,8 @@ export class SSOStrategyFactory {
         tenantId: number,
         baseUrl: string,
     ): Promise<string> {
-        const config = await this.getActiveConfig(providerId, tenantId);
+        // Пропускаем проверку статуса, так как контроллер уже проверил
+        const config = await this.getActiveConfig(providerId, tenantId, true);
 
         // Валидация OIDC конфигурации
         this.validateOIDCConfig(config.providerConfig);
@@ -155,10 +163,12 @@ export class SSOStrategyFactory {
     /**
      * Получить активную конфигурацию провайдера
      * @private
+     * @param skipStatusCheck - Пропустить проверку статуса (если уже проверено в контроллере)
      */
     private async getActiveConfig(
         providerId: number,
         tenantId: number,
+        skipStatusCheck = false,
     ): Promise<ExternalRoleConfigModel> {
         const config =
             await this.externalRoleSyncRepository.findConfigById(
@@ -172,10 +182,13 @@ export class SSOStrategyFactory {
             );
         }
 
-        if (config.status !== 'ACTIVE') {
-            throw new BadRequestException(
-                `Провайдер ${config.name} неактивен (статус: ${config.status})`,
-            );
+        // Проверяем статус только если не пропущена проверка
+        // (контроллер уже проверил статус перед вызовом create*AuthorizationUrl)
+        if (!skipStatusCheck && config.status !== 'ACTIVE') {
+            throw new BadRequestException({
+                statusCode: HttpStatus.BAD_REQUEST,
+                message: `Провайдер ${config.name} неактивен (статус: ${config.status})`,
+            });
         }
 
         return config;

@@ -1,6 +1,6 @@
 /**
  * Generic OAuth 2.0 Strategy
- * 
+ *
  * Универсальная стратегия для любых OAuth 2.0 провайдеров
  * Используется когда провайдер не является Azure AD или Google Workspace
  *
@@ -16,10 +16,10 @@ import { SSORoleSyncService } from '@app/infrastructure/services/role/sso/sso-ro
 
 /**
  * Generic OAuth 2.0 Strategy
- * 
+ *
  * Базовая стратегия для любых OAuth 2.0 провайдеров.
  * Все конфигурации берутся из ExternalRoleConfig.
- * 
+ *
  * Поддерживает:
  * - Любые OAuth 2.0 провайдеры (Okta, Auth0, Keycloak и т.д.)
  * - Кастомные endpoints и scopes
