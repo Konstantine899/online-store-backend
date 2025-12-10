@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PerformanceMonitoringInterceptor } from '../common/interceptors/performance-monitoring.interceptor';
 import { ServicesModule } from '../services/services.module';
+import { RepositoriesModule } from '../repositories/repositories.module';
 import { AuthController } from './auth/auth.controller';
 import { BrandController } from './brand/brand.controller';
 import { CartController } from './cart/cart.controller';
@@ -18,7 +19,7 @@ import { UserAddressController } from './user-address/user-address.controller';
 import { UserController } from './user/user.controller';
 
 @Module({
-    imports: [ServicesModule, JwtModule],
+    imports: [ServicesModule, RepositoriesModule, JwtModule],
     providers: [PerformanceMonitoringInterceptor],
     controllers: [
         AuthController,

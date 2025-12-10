@@ -1,6 +1,6 @@
 /**
  * Integration тесты для обработки ошибок SSO flow
- * 
+ *
  * Тестирует различные сценарии ошибок:
  * - Невалидный state parameter
  * - Истекший state parameter

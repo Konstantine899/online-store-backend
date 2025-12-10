@@ -96,6 +96,7 @@ describe('OAuth 2.0 SSO Flow (integration)', () => {
             tenantId: 1,
             externalRoleName: 'Admin',
             internalRoleId: adminRole.id,
+            mappingRules: null,
             priority: 100,
             isActive: true,
         });

@@ -42,7 +42,7 @@ const commonConfig = {
         '^@tests/(.*)$': '<rootDir>/tests/$1',
     },
     transformIgnorePatterns: [
-        'node_modules/(?!(uuid|openid-client|oauth4webapi|jose|mysql2)/)',
+        'node_modules/(?!(uuid|openid-client|oauth4webapi|jose|mysql2|sequelize)/)',
     ],
     setupFilesAfterEnv: ['<rootDir>/tests/jest-setup.ts'],
     clearMocks: true,

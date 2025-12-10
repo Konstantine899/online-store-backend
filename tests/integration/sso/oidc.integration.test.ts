@@ -92,6 +92,7 @@ describe('OpenID Connect SSO Flow (integration)', () => {
             tenantId: 1,
             externalRoleName: 'Admin',
             internalRoleId: adminRole.id,
+            mappingRules: null,
             priority: 100,
             isActive: true,
         });

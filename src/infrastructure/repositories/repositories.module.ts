@@ -98,9 +98,21 @@ import { UserRepository } from './user/user.repository';
         RoleRepository,
         RoleAnalyticsRepository,
         ExternalRoleSyncRepository,
+        {
+            provide: 'IExternalRoleSyncRepository',
+            useExisting: ExternalRoleSyncRepository,
+        },
         RoleMappingRepository,
+        {
+            provide: 'IRoleMappingRepository',
+            useExisting: RoleMappingRepository,
+        },
         RefreshTokenRepository,
         UserRepository,
+        {
+            provide: 'IUserRepository',
+            useExisting: UserRepository,
+        },
         UserSearchRepository, // Специализированный репозиторий для поиска пользователей
         UserStatsRepository, // Специализированный репозиторий для статистики пользователей
         UserBulkRepository, // Специализированный репозиторий для bulk операций
@@ -123,9 +135,12 @@ import { UserRepository } from './user/user.repository';
         RoleRepository,
         RoleAnalyticsRepository,
         ExternalRoleSyncRepository,
+        'IExternalRoleSyncRepository',
         RoleMappingRepository,
+        'IRoleMappingRepository',
         RefreshTokenRepository,
         UserRepository,
+        'IUserRepository',
         UserSearchRepository, // Экспортируем для использования в тестах
         UserStatsRepository, // Экспортируем для использования в тестах
         UserBulkRepository, // Экспортируем для использования в тестах

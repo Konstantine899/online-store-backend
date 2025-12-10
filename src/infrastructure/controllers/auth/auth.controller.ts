@@ -442,7 +442,7 @@ export class AuthController {
     }
 
     @HttpCode(200)
-    @Get('/sso/saml/callback')
+    @Post('/sso/saml/callback')
     @UseGuards(SSOSAMLGuard)
     public async handleSAMLCallback(
         @Req() req: Request,

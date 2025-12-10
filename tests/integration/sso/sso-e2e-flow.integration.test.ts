@@ -1,6 +1,6 @@
 /**
  * E2E тесты для полного SSO flow
- * 
+ *
  * Тестирует сквозной сценарий SSO аутентификации:
  * - Инициирование SSO → Redirect на провайдера
  * - Авторизация на провайдере → Callback с code
@@ -107,6 +107,7 @@ describe('SSO E2E Flow (integration)', () => {
             tenantId: 1,
             externalRoleName: 'Admin',
             internalRoleId: adminRole.id,
+            mappingRules: null,
             priority: 100,
             isActive: true,
         });
