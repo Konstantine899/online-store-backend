@@ -6,12 +6,14 @@ import {
     HealthIndicatorResult,
 } from '@nestjs/terminus';
 import { SequelizeHealthIndicator } from './sequelize.health';
+import { SSOHealthIndicator } from './sso.health';
 
 @Controller()
 export class HealthController {
     constructor(
         private readonly healthCheck: HealthCheckService,
         private readonly db: SequelizeHealthIndicator,
+        private readonly sso: SSOHealthIndicator,
     ) {}
 
     @Get('health')
@@ -19,6 +21,7 @@ export class HealthController {
     health(): Promise<HealthCheckResult> {
         return this.healthCheck.check([
             (): Promise<HealthIndicatorResult> => this.db.pingCheck(),
+            (): Promise<HealthIndicatorResult> => this.sso.pingCheck(),
         ]);
     }
 
@@ -32,6 +35,7 @@ export class HealthController {
     ready(): Promise<HealthCheckResult> {
         return this.healthCheck.check([
             (): Promise<HealthIndicatorResult> => this.db.pingCheck(),
+            (): Promise<HealthIndicatorResult> => this.sso.pingCheck(),
         ]);
     }
 }

@@ -105,6 +105,25 @@ export class MetricsCollector implements OnModuleDestroy {
         timestamp: number;
     }> = [];
 
+    // Хранилище метрик SSO операций
+    private ssoOperations: Array<{
+        providerType: 'OAUTH2' | 'SAML' | 'OIDC';
+        operation: 'initiate' | 'callback' | 'logout';
+        success: boolean;
+        duration: number;
+        tenantId: number | null;
+        timestamp: number;
+    }> = [];
+
+    // Хранилище ошибок SSO операций
+    private ssoErrors: Array<{
+        providerType: 'OAUTH2' | 'SAML' | 'OIDC';
+        operation: 'initiate' | 'callback' | 'logout';
+        error: string;
+        tenantId: number | null;
+        timestamp: number;
+    }> = [];
+
     constructor() {
         // Автоматическая очистка старых метрик каждый час (только в production)
         if (process.env.NODE_ENV !== 'test') {
@@ -207,6 +226,63 @@ export class MetricsCollector implements OnModuleDestroy {
     }
 
     /**
+     * Записать метрику SSO операции
+     * @param providerType - Тип SSO провайдера (OAUTH2, SAML, OIDC)
+     * @param operation - Тип операции (initiate, callback, logout)
+     * @param success - Успешность операции
+     * @param duration - Длительность операции в миллисекундах
+     * @param tenantId - ID тенанта (опционально)
+     */
+    public recordSSOOperation(
+        providerType: 'OAUTH2' | 'SAML' | 'OIDC',
+        operation: 'initiate' | 'callback' | 'logout',
+        success: boolean,
+        duration: number,
+        tenantId: number | null = null,
+    ): void {
+        // Проверяем размер перед добавлением (FIFO)
+        if (this.ssoOperations.length >= this.MAX_METRICS_SIZE) {
+            this.ssoOperations.shift(); // Удаляем самую старую запись
+        }
+
+        this.ssoOperations.push({
+            providerType,
+            operation,
+            success,
+            duration,
+            tenantId,
+            timestamp: Date.now(),
+        });
+    }
+
+    /**
+     * Записать ошибку SSO операции
+     * @param providerType - Тип SSO провайдера (OAUTH2, SAML, OIDC)
+     * @param operation - Тип операции (initiate, callback, logout)
+     * @param error - Сообщение об ошибке
+     * @param tenantId - ID тенанта (опционально)
+     */
+    public recordSSOError(
+        providerType: 'OAUTH2' | 'SAML' | 'OIDC',
+        operation: 'initiate' | 'callback' | 'logout',
+        error: string,
+        tenantId: number | null = null,
+    ): void {
+        // Проверяем размер перед добавлением (FIFO)
+        if (this.ssoErrors.length >= this.MAX_METRICS_SIZE) {
+            this.ssoErrors.shift(); // Удаляем самую старую запись
+        }
+
+        this.ssoErrors.push({
+            providerType,
+            operation,
+            error: error.substring(0, 500),
+            tenantId,
+            timestamp: Date.now(),
+        });
+    }
+
+    /**
      * Получить метрики за последние 24 часа
      */
     public getMetrics(): {
@@ -220,6 +296,14 @@ export class MetricsCollector implements OnModuleDestroy {
             string,
             { total: number; assigned: number; failed: number }
         >;
+        ssoStats: {
+            totalOperations: number;
+            successRate: number;
+            avgDuration: number;
+            operationsByType: Record<string, number>;
+            operationsByProvider: Record<string, number>;
+            errorCount: number;
+        };
         timestamp: string;
     } {
         const now = Date.now();
@@ -235,6 +319,12 @@ export class MetricsCollector implements OnModuleDestroy {
         const recentErrors = this.errors.filter((e) => e.timestamp > cutoff);
         const recentRoleAutoAssignments = this.roleAutoAssignments.filter(
             (item) => item.timestamp > cutoff,
+        );
+        const recentSSOOperations = this.ssoOperations.filter(
+            (op) => op.timestamp > cutoff,
+        );
+        const recentSSOErrors = this.ssoErrors.filter(
+            (e) => e.timestamp > cutoff,
         );
 
         // Вычисляем среднее время bulk операций
@@ -287,6 +377,48 @@ export class MetricsCollector implements OnModuleDestroy {
             }
         });
 
+        // Вычисляем SSO метрики
+        const totalSSOOperations = recentSSOOperations.length;
+        const successfulSSOOperations = recentSSOOperations.filter(
+            (op) => op.success,
+        ).length;
+        const ssoSuccessRate =
+            totalSSOOperations > 0
+                ? successfulSSOOperations / totalSSOOperations
+                : 0;
+
+        const avgSSODuration =
+            recentSSOOperations.length > 0
+                ? recentSSOOperations.reduce(
+                      (sum, op) => sum + op.duration,
+                      0,
+                  ) / recentSSOOperations.length
+                : 0;
+
+        // Группируем SSO операции по типу (initiate, callback, logout)
+        const ssoOpsByType: Record<string, number> = {
+            initiate: 0,
+            callback: 0,
+            logout: 0,
+        };
+        recentSSOOperations.forEach((op) => {
+            if (ssoOpsByType[op.operation] !== undefined) {
+                ssoOpsByType[op.operation]++;
+            }
+        });
+
+        // Группируем SSO операции по провайдеру
+        const ssoOpsByProvider: Record<string, number> = {
+            OAUTH2: 0,
+            SAML: 0,
+            OIDC: 0,
+        };
+        recentSSOOperations.forEach((op) => {
+            if (ssoOpsByProvider[op.providerType] !== undefined) {
+                ssoOpsByProvider[op.providerType]++;
+            }
+        });
+
         return {
             slowQueriesCount: recentSlowQueries.length,
             avgBulkOperationTime: Math.round(avgBulkTime * 100) / 100, // 2 знака после запятой
@@ -295,6 +427,14 @@ export class MetricsCollector implements OnModuleDestroy {
             errorRate: Math.round(errorRate * 10000) / 10000, // 4 знака после запятой
             totalRoleAutoAssignments: recentRoleAutoAssignments.length,
             roleAutoAssignmentsByType: roleAutoAssignmentsByType,
+            ssoStats: {
+                totalOperations: totalSSOOperations,
+                successRate: Math.round(ssoSuccessRate * 10000) / 10000, // 4 знака после запятой
+                avgDuration: Math.round(avgSSODuration * 100) / 100, // 2 знака после запятой
+                operationsByType: ssoOpsByType,
+                operationsByProvider: ssoOpsByProvider,
+                errorCount: recentSSOErrors.length,
+            },
             timestamp: new Date().toISOString(),
         };
     }
@@ -317,6 +457,8 @@ export class MetricsCollector implements OnModuleDestroy {
             auditLogCreationErrors: this.auditLogCreationErrors.length,
             roleExpirationsPerDay: this.roleExpirationsPerDay.length,
             roleRenewalsPerDay: this.roleRenewalsPerDay.length,
+            ssoOperations: this.ssoOperations.length,
+            ssoErrors: this.ssoErrors.length,
             roleExpirationNotificationsPerDay:
                 this.roleExpirationNotificationsPerDay.length,
             roleExpirationErrors: this.roleExpirationErrors.length,
@@ -353,17 +495,27 @@ export class MetricsCollector implements OnModuleDestroy {
         this.roleExpirationErrors = this.roleExpirationErrors.filter(
             (entry) => entry.timestamp > cutoff,
         );
+        this.ssoOperations = this.ssoOperations.filter(
+            (op) => op.timestamp > cutoff,
+        );
+        this.ssoErrors = this.ssoErrors.filter(
+            (e) => e.timestamp > cutoff,
+        );
 
         const afterCleanup = {
             bulkOps: this.bulkOperations.length,
             slowQueries: this.slowQueries.length,
             errors: this.errors.length,
+            ssoOperations: this.ssoOperations.length,
+            ssoErrors: this.ssoErrors.length,
         };
 
         const removed = {
             bulkOps: beforeCleanup.bulkOps - afterCleanup.bulkOps,
             slowQueries: beforeCleanup.slowQueries - afterCleanup.slowQueries,
             errors: beforeCleanup.errors - afterCleanup.errors,
+            ssoOperations: beforeCleanup.ssoOperations - afterCleanup.ssoOperations,
+            ssoErrors: beforeCleanup.ssoErrors - afterCleanup.ssoErrors,
         };
 
         // Логируем для мониторинга memory usage
@@ -917,5 +1069,7 @@ export class MetricsCollector implements OnModuleDestroy {
         this.roleRenewalsPerDay = [];
         this.roleExpirationNotificationsPerDay = [];
         this.roleExpirationErrors = [];
+        this.ssoOperations = [];
+        this.ssoErrors = [];
     }
 }

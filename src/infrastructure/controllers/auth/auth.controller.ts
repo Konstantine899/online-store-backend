@@ -18,6 +18,7 @@ import {
 } from '@app/infrastructure/responses/sso';
 import { AuthService, UserService } from '@app/infrastructure/services';
 import { TokenService } from '@app/infrastructure/services/token/token.service';
+import { MetricsCollector } from '@app/infrastructure/common/services/metrics-collector.service';
 import {
     BadRequestException,
     Body,
@@ -36,7 +37,13 @@ import {
     UnprocessableEntityException,
     UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+    ApiBearerAuth,
+    ApiOperation,
+    ApiParam,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import { Request, Response } from 'express';
 
 import {
@@ -70,6 +77,7 @@ export class AuthController {
         private readonly externalRoleSyncRepository: ExternalRoleSyncRepository,
         private readonly tokenService: TokenService,
         private readonly tenantContext: TenantContext,
+        private readonly metricsCollector: MetricsCollector,
     ) {}
 
     @RegistrationSwaggerDecorator()
@@ -334,7 +342,14 @@ export class AuthController {
     @ApiOperation({
         summary: 'Инициация SSO входа',
         description:
-            'Перенаправляет пользователя на страницу авторизации SSO провайдера (OAuth 2.0, SAML, OIDC)',
+            'Перенаправляет пользователя на страницу авторизации SSO провайдера (OAuth 2.0, SAML, OIDC). ' +
+            'Поддерживает провайдеры: Azure AD, Google Workspace, Generic OAuth 2.0, SAML 2.0, OpenID Connect.',
+    })
+    @ApiParam({
+        name: 'providerId',
+        description: 'ID конфигурации SSO провайдера',
+        type: Number,
+        example: 1,
     })
     @ApiResponse({
         status: 302,
@@ -342,11 +357,11 @@ export class AuthController {
     })
     @ApiResponse({
         status: 400,
-        description: 'Некорректный providerId или конфигурация',
+        description: 'Некорректный providerId или конфигурация провайдера неактивна',
     })
     @ApiResponse({
-        status: 404,
-        description: 'Провайдер не найден',
+        status: 401,
+        description: 'Провайдер не найден или недоступен, или отсутствует tenant ID',
     })
     @Get('/sso/:providerId')
     public async initiateSSO(
@@ -354,95 +369,138 @@ export class AuthController {
         @Req() req: Request,
         @Res() res: Response,
     ): Promise<void> {
-        // КРИТИЧНО: Используем req.tenantId вместо tenantContext.getTenantIdOrNull()
-        // так как TenantContext имеет scope REQUEST и в тестах может не работать правильно
-        // TenantMiddleware устанавливает req.tenantId напрямую
-        const tenantId = req.tenantId ?? this.tenantContext.getTenantIdOrNull();
-        if (!tenantId) {
-            throw new UnauthorizedException('Tenant ID не найден в контексте');
-        }
+        const startTime = Date.now();
+        let providerType: 'OAUTH2' | 'SAML' | 'OIDC' = 'OAUTH2';
+        let tenantId: number | null = null;
 
-        // Получаем конфигурацию провайдера
-        const providerConfig =
-            await this.externalRoleSyncRepository.findConfigById(
-                providerId,
+        try {
+            // КРИТИЧНО: Используем req.tenantId вместо tenantContext.getTenantIdOrNull()
+            // так как TenantContext имеет scope REQUEST и в тестах может не работать правильно
+            // TenantMiddleware устанавливает req.tenantId напрямую
+            tenantId = req.tenantId ?? this.tenantContext.getTenantIdOrNull();
+            if (!tenantId) {
+                throw new UnauthorizedException('Tenant ID не найден в контексте');
+            }
+
+            // Получаем конфигурацию провайдера
+            const providerConfig =
+                await this.externalRoleSyncRepository.findConfigById(
+                    providerId,
+                    tenantId,
+                );
+
+            if (!providerConfig) {
+                // Для SSO endpoints возвращаем 401 вместо 404 для безопасности
+                // Не раскрываем информацию о существовании провайдеров
+                throw new UnauthorizedException(
+                    `Провайдер SSO с ID ${providerId} не найден или недоступен`,
+                );
+            }
+
+            if (providerConfig.status !== 'ACTIVE') {
+                throw new BadRequestException({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    message: `Провайдер ${providerConfig.name} неактивен (статус: ${providerConfig.status})`,
+                });
+            }
+
+            // Определяем тип провайдера для метрик
+            providerType = providerConfig.providerType as 'OAUTH2' | 'SAML' | 'OIDC';
+
+            // Определяем базовый URL приложения
+            const protocol = req.protocol;
+            const host = req.get('host');
+            const baseUrl = `${protocol}://${host}`;
+
+            // Определяем тип стратегии и создаем authorization URL
+            const strategyType = this.ssoStrategyFactory.getStrategyType(
+                providerConfig.providerType,
+            );
+
+            let authURL: string;
+            switch (strategyType) {
+                case 'oauth2':
+                    authURL =
+                        await this.ssoStrategyFactory.createOAuth2AuthorizationUrl(
+                            providerId,
+                            tenantId,
+                            baseUrl,
+                        );
+                    break;
+                case 'saml':
+                    authURL =
+                        await this.ssoStrategyFactory.createSAMLAuthorizationUrl(
+                            providerId,
+                            tenantId,
+                            baseUrl,
+                        );
+                    break;
+                case 'oidc':
+                    authURL =
+                        await this.ssoStrategyFactory.createOIDCAuthorizationUrl(
+                            providerId,
+                            tenantId,
+                            baseUrl,
+                        );
+                    break;
+                default:
+                    throw new BadRequestException(
+                        `Неподдерживаемый тип провайдера: ${providerConfig.providerType}`,
+                    );
+            }
+
+            // Записываем успешную метрику
+            const duration = Date.now() - startTime;
+            this.metricsCollector.recordSSOOperation(
+                providerType,
+                'initiate',
+                true,
+                duration,
                 tenantId,
             );
 
-        if (!providerConfig) {
-            // Для SSO endpoints возвращаем 401 вместо 404 для безопасности
-            // Не раскрываем информацию о существовании провайдеров
-            throw new UnauthorizedException(
-                `Провайдер SSO с ID ${providerId} не найден или недоступен`,
+            // Редиректим на страницу авторизации провайдера
+            res.redirect(authURL);
+        } catch (error: unknown) {
+            // Записываем ошибку в метрики
+            const duration = Date.now() - startTime;
+            this.metricsCollector.recordSSOOperation(
+                providerType,
+                'initiate',
+                false,
+                duration,
+                tenantId,
             );
+            const errorMessage =
+                error instanceof Error ? error.message : String(error);
+            this.metricsCollector.recordSSOError(
+                providerType,
+                'initiate',
+                errorMessage,
+                tenantId,
+            );
+            throw error;
         }
-
-        if (providerConfig.status !== 'ACTIVE') {
-            throw new BadRequestException({
-                statusCode: HttpStatus.BAD_REQUEST,
-                message: `Провайдер ${providerConfig.name} неактивен (статус: ${providerConfig.status})`,
-            });
-        }
-
-        // Определяем базовый URL приложения
-        const protocol = req.protocol;
-        const host = req.get('host');
-        const baseUrl = `${protocol}://${host}`;
-
-        // Определяем тип стратегии и создаем authorization URL
-        const strategyType = this.ssoStrategyFactory.getStrategyType(
-            providerConfig.providerType,
-        );
-
-        let authURL: string;
-        switch (strategyType) {
-            case 'oauth2':
-                authURL =
-                    await this.ssoStrategyFactory.createOAuth2AuthorizationUrl(
-                        providerId,
-                        tenantId,
-                        baseUrl,
-                    );
-                break;
-            case 'saml':
-                authURL =
-                    await this.ssoStrategyFactory.createSAMLAuthorizationUrl(
-                        providerId,
-                        tenantId,
-                        baseUrl,
-                    );
-                break;
-            case 'oidc':
-                authURL =
-                    await this.ssoStrategyFactory.createOIDCAuthorizationUrl(
-                        providerId,
-                        tenantId,
-                        baseUrl,
-                    );
-                break;
-            default:
-                throw new BadRequestException(
-                    `Неподдерживаемый тип провайдера: ${providerConfig.providerType}`,
-                );
-        }
-
-        // Редиректим на страницу авторизации провайдера
-        res.redirect(authURL);
     }
 
     @ApiOperation({
-        summary: 'SSO callback обработка',
+        summary: 'OAuth 2.0 SSO callback обработка',
         description:
-            'Обрабатывает callback от SSO провайдера и выполняет аутентификацию пользователя',
+            'Обрабатывает callback от OAuth 2.0 провайдера (Azure AD, Google Workspace, Generic OAuth 2.0) ' +
+            'и выполняет аутентификацию пользователя. Выполняет just-in-time provisioning при первом входе.',
     })
     @ApiResponse({
         status: 200,
-        description: 'Успешная аутентификация через SSO',
+        description: 'Успешная аутентификация через OAuth 2.0 SSO',
         type: SSOLoginResponse,
     })
     @ApiResponse({
+        status: 400,
+        description: 'Некорректные параметры callback (отсутствует code, state и т.д.)',
+    })
+    @ApiResponse({
         status: 401,
-        description: 'Ошибка аутентификации SSO',
+        description: 'Ошибка аутентификации SSO (неверный state, ошибка обмена кода на токен и т.д.)',
     })
     @HttpCode(200)
     @Get('/sso/oauth2/callback')
@@ -454,6 +512,25 @@ export class AuthController {
         return this.handleSSOCallbackSuccess(req, res, 'OAUTH2');
     }
 
+    @ApiOperation({
+        summary: 'SAML 2.0 SSO callback обработка',
+        description:
+            'Обрабатывает callback от SAML 2.0 провайдера и выполняет аутентификацию пользователя. ' +
+            'Выполняет just-in-time provisioning при первом входе.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Успешная аутентификация через SAML 2.0 SSO',
+        type: SSOLoginResponse,
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Некорректные параметры callback (отсутствует SAMLResponse, RelayState и т.д.)',
+    })
+    @ApiResponse({
+        status: 401,
+        description: 'Ошибка аутентификации SSO (неверный RelayState, ошибка валидации SAML assertion и т.д.)',
+    })
     @HttpCode(200)
     @Post('/sso/saml/callback')
     @UseGuards(SSOSAMLGuard)
@@ -464,6 +541,25 @@ export class AuthController {
         return this.handleSSOCallbackSuccess(req, res, 'SAML');
     }
 
+    @ApiOperation({
+        summary: 'OpenID Connect SSO callback обработка',
+        description:
+            'Обрабатывает callback от OpenID Connect провайдера и выполняет аутентификацию пользователя. ' +
+            'Выполняет just-in-time provisioning при первом входе.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Успешная аутентификация через OpenID Connect SSO',
+        type: SSOLoginResponse,
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Некорректные параметры callback (отсутствует code, state и т.д.)',
+    })
+    @ApiResponse({
+        status: 401,
+        description: 'Ошибка аутентификации SSO (неверный state, ошибка обмена кода на токен и т.д.)',
+    })
     @HttpCode(200)
     @Get('/sso/oidc/callback')
     @UseGuards(SSOOIDCGuard)
@@ -483,61 +579,107 @@ export class AuthController {
         res: Response,
         providerType: 'OAUTH2' | 'SAML' | 'OIDC',
     ): Promise<SSOLoginResponse> {
-        // Получаем результат аутентификации из request (установлен Passport Guard)
-        const ssoResult = req.user as
-            | {
-                  user: { id: number };
-                  ssoProfile: { email: string };
-                  providerConfig: { id: number; name: string };
-              }
-            | undefined;
+        const startTime = Date.now();
+        const tenantId = req.tenantId ?? this.tenantContext.getTenantIdOrNull();
 
-        if (!ssoResult?.user) {
-            throw new UnauthorizedException(
-                'Пользователь не найден после SSO аутентификации',
+        try {
+            // Получаем результат аутентификации из request (установлен Passport Guard)
+            const ssoResult = req.user as
+                | {
+                      user: { id: number };
+                      ssoProfile: { email: string };
+                      providerConfig: { id: number; name: string };
+                  }
+                | undefined;
+
+            if (!ssoResult?.user) {
+                throw new UnauthorizedException(
+                    'Пользователь не найден после SSO аутентификации',
+                );
+            }
+
+            // Получаем полную модель пользователя
+            const user = await this.userService.findAuthenticatedUser(
+                ssoResult.user.id,
             );
+
+            // Генерируем токены
+            const accessToken = await this.tokenService.generateAccessToken(user);
+            const refreshToken = await this.tokenService.generateRefreshToken(
+                user,
+                60 * 60 * 24 * 30, // 30 дней
+            );
+
+            // Устанавливаем refresh token в cookie
+            const cookieName = getRefreshCookieName();
+            res.cookie(cookieName, refreshToken, buildRefreshCookieOptions());
+
+            // Определяем, был ли пользователь создан (just-in-time provisioning)
+            // Это можно определить по времени создания пользователя
+            const isNewUser =
+                user.createdAt &&
+                Date.now() - new Date(user.createdAt).getTime() < 60000; // Создан менее минуты назад
+
+            // Записываем успешную метрику
+            const duration = Date.now() - startTime;
+            this.metricsCollector.recordSSOOperation(
+                providerType,
+                'callback',
+                true,
+                duration,
+                tenantId,
+            );
+
+            return {
+                type: 'Bearer',
+                accessToken,
+                providerType,
+                providerName: ssoResult.providerConfig.name,
+                isNewUser: isNewUser ?? false,
+            };
+        } catch (error: unknown) {
+            // Записываем ошибку в метрики
+            const duration = Date.now() - startTime;
+            this.metricsCollector.recordSSOOperation(
+                providerType,
+                'callback',
+                false,
+                duration,
+                tenantId,
+            );
+            const errorMessage =
+                error instanceof Error ? error.message : String(error);
+            this.metricsCollector.recordSSOError(
+                providerType,
+                'callback',
+                errorMessage,
+                tenantId,
+            );
+            throw error;
         }
-
-        // Получаем полную модель пользователя
-        const user = await this.userService.findAuthenticatedUser(
-            ssoResult.user.id,
-        );
-
-        // Генерируем токены
-        const accessToken = await this.tokenService.generateAccessToken(user);
-        const refreshToken = await this.tokenService.generateRefreshToken(
-            user,
-            60 * 60 * 24 * 30, // 30 дней
-        );
-
-        // Устанавливаем refresh token в cookie
-        const cookieName = getRefreshCookieName();
-        res.cookie(cookieName, refreshToken, buildRefreshCookieOptions());
-
-        // Определяем, был ли пользователь создан (just-in-time provisioning)
-        // Это можно определить по времени создания пользователя
-        const isNewUser =
-            user.createdAt &&
-            Date.now() - new Date(user.createdAt).getTime() < 60000; // Создан менее минуты назад
-
-        return {
-            type: 'Bearer',
-            accessToken,
-            providerType,
-            providerName: ssoResult.providerConfig.name,
-            isNewUser: isNewUser ?? false,
-        };
     }
 
     @ApiOperation({
         summary: 'SSO logout',
         description:
-            'Выполняет logout из SSO провайдера (SAML/OIDC) и локальной системы',
+            'Выполняет logout из SSO провайдера (OAuth 2.0/SAML/OIDC) и локальной системы. ' +
+            'Очищает refresh token cookie и возвращает logout URL провайдера (если указан) для завершения сессии на стороне провайдера.',
     })
+    @ApiParam({
+        name: 'strategyType',
+        description: 'Тип SSO стратегии',
+        enum: ['oauth2', 'saml', 'oidc'],
+        example: 'saml',
+    })
+    @ApiBearerAuth('JWT-auth')
     @ApiResponse({
         status: 200,
-        description: 'Успешный logout',
+        description: 'Успешный logout из локальной системы',
         type: SSOLogoutResponse,
+    })
+    @ApiResponse({
+        status: 401,
+        description: 'Пользователь не аутентифицирован',
     })
     @HttpCode(200)
     @UseGuards(AuthGuard)
@@ -548,36 +690,72 @@ export class AuthController {
         @Req() req: Request,
         @Res({ passthrough: true }) res: Response,
     ): Promise<SSOLogoutResponse> {
-        // Выполняем локальный logout
-        const cookieName = getRefreshCookieName();
-        const refreshFromCookie: string | undefined =
-            req.signedCookies?.[cookieName] ?? req.cookies?.[cookieName];
+        const startTime = Date.now();
+        const tenantId = req.tenantId ?? this.tenantContext.getTenantIdOrNull();
+        const providerType =
+            strategyType.toUpperCase() as 'OAUTH2' | 'SAML' | 'OIDC';
 
-        if (refreshFromCookie) {
-            await this.authService.logout(
-                { refreshToken: refreshFromCookie },
-                req,
+        try {
+            // Выполняем локальный logout
+            const cookieName = getRefreshCookieName();
+            const refreshFromCookie: string | undefined =
+                req.signedCookies?.[cookieName] ?? req.cookies?.[cookieName];
+
+            if (refreshFromCookie) {
+                await this.authService.logout(
+                    { refreshToken: refreshFromCookie },
+                    req,
+                );
+            }
+
+            // Очищаем cookie
+            const opts = buildRefreshCookieOptions();
+            res.clearCookie(cookieName, {
+                ...opts,
+                maxAge: undefined,
+                expires: new Date(0),
+            });
+
+            // Для SAML/OIDC может потребоваться редирект на logout URL провайдера
+            let logoutUrl: string | undefined;
+            if (dto.logoutUrl) {
+                logoutUrl = dto.logoutUrl;
+            }
+
+            // Записываем успешную метрику
+            const duration = Date.now() - startTime;
+            this.metricsCollector.recordSSOOperation(
+                providerType,
+                'logout',
+                true,
+                duration,
+                tenantId,
             );
+
+            return {
+                statusCode: 200,
+                message: 'success',
+                logoutUrl,
+            };
+        } catch (error: unknown) {
+            // Записываем ошибку в метрики
+            const duration = Date.now() - startTime;
+            this.metricsCollector.recordSSOOperation(
+                providerType,
+                'logout',
+                false,
+                duration,
+                tenantId,
+            );
+            const errorMessage =
+                error instanceof Error ? error.message : String(error);
+            this.metricsCollector.recordSSOError(
+                providerType,
+                'logout',
+                errorMessage,
+                tenantId,
+            );
+            throw error;
         }
-
-        // Очищаем cookie
-        const opts = buildRefreshCookieOptions();
-        res.clearCookie(cookieName, {
-            ...opts,
-            maxAge: undefined,
-            expires: new Date(0),
-        });
-
-        // Для SAML/OIDC может потребоваться редирект на logout URL провайдера
-        let logoutUrl: string | undefined;
-        if (dto.logoutUrl) {
-            logoutUrl = dto.logoutUrl;
-        }
-
-        return {
-            statusCode: 200,
-            message: 'success',
-            logoutUrl,
-        };
     }
 }

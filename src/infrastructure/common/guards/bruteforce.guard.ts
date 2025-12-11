@@ -138,6 +138,37 @@ export class BruteforceGuard extends ThrottlerGuard {
             );
         }
 
+        // Rate limiting для SSO endpoints
+        if (request.url.includes('/auth/sso/') && !request.url.includes('/callback') && !request.url.includes('/logout')) {
+            // Инициация SSO: 10 попыток в 5 минут (либерально, так как это редирект)
+            return this.checkAndIncrement(
+                'sso-initiate',
+                config.refreshWindowMs, // 5 минут
+                10, // 10 попыток
+                requestProps,
+            );
+        }
+
+        if (request.url.includes('/auth/sso/') && request.url.includes('/callback')) {
+            // SSO callback: 20 попыток в 15 минут (callback может быть вызван несколько раз)
+            return this.checkAndIncrement(
+                'sso-callback',
+                config.loginWindowMs, // 15 минут
+                20, // 20 попыток
+                requestProps,
+            );
+        }
+
+        if (request.url.includes('/auth/sso/') && request.url.includes('/logout')) {
+            // SSO logout: 30 попыток в минуту (logout обычно не критичен)
+            return this.checkAndIncrement(
+                'sso-logout',
+                60 * 1000, // 1 минута
+                30, // 30 попыток
+                requestProps,
+            );
+        }
+
         // Rate limiting для audit endpoints (30 запросов в минуту)
         if (request.url.includes('/role/audit')) {
             return this.checkAndIncrement(
