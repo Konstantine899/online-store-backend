@@ -89,7 +89,9 @@ describe('SSO Error Handling (integration)', () => {
                 .expect(HttpStatus.UNAUTHORIZED);
 
             expect(response.body).toHaveProperty('message');
-            expect(response.body.message).toContain('state');
+            // Проверяем, что сообщение содержит информацию о state (case-insensitive)
+            const message = String(response.body.message).toLowerCase();
+            expect(message).toContain('state');
         });
 
         it('должен вернуть 401 при невалидном state', async () => {

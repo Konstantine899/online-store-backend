@@ -66,6 +66,35 @@ export class CustomPassportStrategy extends BaseStrategy {
     }
 
     public error(err: Error): void {
+        // КРИТИЧНО: Проверяем, что this существует и является валидным объектом
+        // Это защита от вызова на undefined/null объекте
+        if (!this || typeof this !== 'object') {
+            console.error(
+                '[CustomPassportStrategy.error] this is undefined or invalid',
+                { err: err?.message },
+            );
+            // Если this невалиден, пробуем обработать через сохраненные req/res
+            try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const self = this as any;
+                const req = self?._req;
+                const res = self?._res;
+                if (req && res && typeof res.status === 'function') {
+                    const errorMessage =
+                        err instanceof Error ? err.message : String(err);
+                    res.status(401).json({
+                        statusCode: 401,
+                        message: errorMessage,
+                        error: 'Unauthorized',
+                    });
+                    return;
+                }
+            } catch {
+                // Игнорируем ошибки
+            }
+            return;
+        }
+
         // Пробуем вызвать через BaseStrategy.prototype
         try {
             // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
@@ -75,7 +104,19 @@ export class CustomPassportStrategy extends BaseStrategy {
                 BaseStrategy?.prototype?.error &&
                 typeof BaseStrategy.prototype.error === 'function'
             ) {
-                return BaseStrategy.prototype.error.call(this, err);
+                try {
+                    return BaseStrategy.prototype.error.call(this, err);
+                } catch (callError) {
+                    // Если вызов error вызывает ошибку (например, undefined внутри),
+                    // обрабатываем через fallback
+                    console.warn(
+                        '[CustomPassportStrategy.error] BaseStrategy.prototype.error.call failed:',
+                        callError instanceof Error
+                            ? callError.message
+                            : String(callError),
+                    );
+                    // Продолжаем к следующему fallback
+                }
             }
         } catch {
             // Игнорируем ошибки require
@@ -85,11 +126,54 @@ export class CustomPassportStrategy extends BaseStrategy {
             BaseStrategyProto?.error &&
             typeof BaseStrategyProto.error === 'function'
         ) {
-            return BaseStrategyProto.error.call(this, err);
+            try {
+                return BaseStrategyProto.error.call(this, err);
+            } catch (callError) {
+                console.warn(
+                    '[CustomPassportStrategy.error] BaseStrategyProto.error.call failed:',
+                    callError instanceof Error
+                        ? callError.message
+                        : String(callError),
+                );
+                // Продолжаем к следующему fallback
+            }
+        }
+        // Если ничего не помогло, пробуем обработать через req/res напрямую
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const self = this as any;
+            const req = self?._req;
+            const res = self?._res;
+            if (req && res && typeof res.status === 'function') {
+                const errorMessage =
+                    err instanceof Error ? err.message : String(err);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const statusCode = (err as any)?.statusCode ?? 401;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const response = (err as any)?.response;
+
+                const errorResponse: Record<string, unknown> = {
+                    statusCode,
+                    message: errorMessage,
+                    error:
+                        statusCode === 401
+                            ? 'Unauthorized'
+                            : 'Internal Server Error',
+                };
+
+                if (response && typeof response === 'object') {
+                    Object.assign(errorResponse, response);
+                }
+
+                res.status(statusCode).json(errorResponse);
+                return;
+            }
+        } catch {
+            // Игнорируем ошибки
         }
         // Если ничего не помогло, логируем ошибку
         console.error(
-            '[CustomPassportStrategy.error] BaseStrategy.prototype.error not available',
+            '[CustomPassportStrategy.error] All error handling methods failed',
             err,
         );
     }
@@ -634,6 +718,39 @@ export class CustomPassportStrategy extends BaseStrategy {
             user: unknown,
             info: unknown,
         ): void {
+            // КРИТИЧНО: Проверяем что self существует и является объектом
+            if (!self || typeof self !== 'object') {
+                console.error(
+                    '[CustomPassportStrategy.verified] self is undefined or not an object',
+                    {
+                        selfType: typeof self,
+                        selfValue: self,
+                        error: err?.message,
+                    },
+                );
+                // Пробрасываем ошибку напрямую через req/res если возможно
+                try {
+                    const req = self?._req;
+                    const res = self?._res;
+                    if (req && res) {
+                        const errorMessage =
+                            err instanceof Error ? err.message : String(err);
+                        res.status(401).json({
+                            statusCode: 401,
+                            message: errorMessage || 'Authentication error',
+                            error: 'Unauthorized',
+                        });
+                        return;
+                    }
+                } catch {
+                    // Если даже это не работает, просто возвращаемся
+                    console.error(
+                        '[CustomPassportStrategy.verified] Cannot handle error, self is invalid',
+                    );
+                    return;
+                }
+            }
+
             if (err) {
                 // КРИТИЧНО: Используем прямой вызов через BaseStrategy.prototype
                 // При Object.create(prototype) методы могут быть недоступны через цепочку прототипов
@@ -644,9 +761,22 @@ export class CustomPassportStrategy extends BaseStrategy {
                     const BaseStrategy = passportStrategyModule?.Strategy;
                     if (
                         BaseStrategy?.prototype?.error &&
-                        typeof BaseStrategy.prototype.error === 'function'
+                        typeof BaseStrategy.prototype.error === 'function' &&
+                        self
                     ) {
-                        return BaseStrategy.prototype.error.call(self, err);
+                        try {
+                            return BaseStrategy.prototype.error.call(self, err);
+                        } catch (callError) {
+                            // Если вызов error сам вызывает ошибку (например, undefined внутри),
+                            // обрабатываем через fallback
+                            console.warn(
+                                '[CustomPassportStrategy.verified] BaseStrategy.prototype.error.call failed:',
+                                callError instanceof Error
+                                    ? callError.message
+                                    : String(callError),
+                            );
+                            // Продолжаем к следующему fallback
+                        }
                     }
                 } catch (requireError) {
                     // Игнорируем ошибки require, но логируем для диагностики
@@ -660,13 +790,34 @@ export class CustomPassportStrategy extends BaseStrategy {
                 // Fallback: пробуем через модульную переменную
                 if (
                     BaseStrategyProto?.error &&
-                    typeof BaseStrategyProto.error === 'function'
+                    typeof BaseStrategyProto.error === 'function' &&
+                    self
                 ) {
-                    return BaseStrategyProto.error.call(self, err);
+                    try {
+                        return BaseStrategyProto.error.call(self, err);
+                    } catch (callError) {
+                        console.warn(
+                            '[CustomPassportStrategy.verified] BaseStrategyProto.error.call failed:',
+                            callError instanceof Error
+                                ? callError.message
+                                : String(callError),
+                        );
+                        // Продолжаем к следующему fallback
+                    }
                 }
                 // Fallback: пробуем через экземпляр
-                if (self.error && typeof self.error === 'function') {
-                    return self.error.call(self, err);
+                if (self?.error && typeof self.error === 'function') {
+                    try {
+                        return self.error.call(self, err);
+                    } catch (callError) {
+                        console.warn(
+                            '[CustomPassportStrategy.verified] self.error.call failed:',
+                            callError instanceof Error
+                                ? callError.message
+                                : String(callError),
+                        );
+                        // Продолжаем к следующему fallback
+                    }
                 }
                 // Если метод error не найден, пробуем вызвать fail с сообщением об ошибке
                 // Это последний fallback для обработки ошибок
@@ -711,16 +862,50 @@ export class CustomPassportStrategy extends BaseStrategy {
                 }
 
                 // Если ничего не помогло, создаем собственную реализацию error метода
-                // Это последний fallback - просто пробрасываем ошибку как есть
-                // Passport Guard должен обработать её
+                // Это последний fallback - обрабатываем ошибку напрямую через req/res
                 const errorMessage =
                     err instanceof Error ? err.message : String(err);
                 console.error(
                     `[CustomPassportStrategy.verified] Error and fail methods not found. Error message: ${errorMessage}`,
                 );
-                // Пробрасываем ошибку через throw, чтобы Guard мог её обработать
-                // Но это может не сработать, так как мы в callback
-                // Поэтому просто возвращаемся - Guard должен обработать отсутствие user
+                // КРИТИЧНО: Пробуем обработать ошибку напрямую через req/res
+                // Это гарантирует, что ошибка будет правильно обработана даже если все методы недоступны
+                try {
+                    const req = self?._req;
+                    const res = self?._res;
+                    if (req && res && typeof res.status === 'function') {
+                        // Извлекаем статус-код из ошибки если есть
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const statusCode = (err as any)?.statusCode ?? 401;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const response = (err as any)?.response;
+
+                        // Формируем правильный ответ
+                        const errorResponse = {
+                            statusCode,
+                            message: errorMessage,
+                            error:
+                                statusCode === 401
+                                    ? 'Unauthorized'
+                                    : 'Internal Server Error',
+                        };
+
+                        // Если есть response объект с дополнительными данными, добавляем их
+                        if (response && typeof response === 'object') {
+                            Object.assign(errorResponse, response);
+                        }
+
+                        res.status(statusCode).json(errorResponse);
+                        return;
+                    }
+                } catch (reqResError) {
+                    console.error(
+                        '[CustomPassportStrategy.verified] Failed to handle error via req/res:',
+                        reqResError,
+                    );
+                }
+                // Если даже req/res недоступны, просто возвращаемся
+                // Guard должен обработать отсутствие user
                 return;
             }
             if (!user) {

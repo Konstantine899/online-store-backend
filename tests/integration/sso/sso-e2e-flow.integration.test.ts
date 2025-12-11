@@ -12,19 +12,19 @@
  * Related to: SAAS-017-19, Этап 3
  */
 
-import type { INestApplication } from '@nestjs/common';
-import { HttpStatus } from '@nestjs/common';
-import { Sequelize } from 'sequelize-typescript';
-import request from 'supertest';
-import { setupTestApp } from '../../setup/app';
-import { TestCleanup, TestDataFactory } from '../../utils';
-import { TestDatabaseSetup } from '../../utils/test-database-setup';
 import {
     ExternalRoleConfigModel,
     RoleMappingModel,
     RoleModel,
     UserModel,
 } from '@app/domain/models';
+import type { INestApplication } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
+import { Sequelize } from 'sequelize-typescript';
+import request from 'supertest';
+import { setupTestApp } from '../../setup/app';
+import { TestCleanup } from '../../utils';
+import { TestDatabaseSetup } from '../../utils/test-database-setup';
 import { MockOAuth2Server } from './mock-sso-servers';
 
 describe('SSO E2E Flow (integration)', () => {
@@ -51,30 +51,85 @@ describe('SSO E2E Flow (integration)', () => {
         app = await setupTestApp();
         sequelize = app.get<Sequelize>(Sequelize);
 
-        // Создаем роли
-        adminRole = await RoleModel.create({
-            role: 'ADMIN',
-            description: 'Administrator role',
-            level: 100,
-            tenantId: 1,
-            isSystemRole: false,
-            isActive: true,
+        // Создаем роли (используем findOne + create с обработкой ошибок для избежания дубликатов)
+        adminRole = await RoleModel.findOne({
+            where: {
+                role: 'ADMIN',
+                tenantId: 1,
+            },
         });
+        if (!adminRole) {
+            try {
+                adminRole = await RoleModel.create({
+                    role: 'ADMIN',
+                    description: 'Administrator role',
+                    level: 100,
+                    tenantId: 1,
+                    isSystemRole: false,
+                    isActive: true,
+                });
+            } catch (error) {
+                // Если роль уже существует (race condition), находим её
+                if (
+                    error &&
+                    typeof error === 'object' &&
+                    'name' in error &&
+                    error.name === 'SequelizeUniqueConstraintError'
+                ) {
+                    adminRole = await RoleModel.findOne({
+                        where: {
+                            role: 'ADMIN',
+                            tenantId: 1,
+                        },
+                    });
+                } else {
+                    throw error;
+                }
+            }
+        }
 
-        customerRole = await RoleModel.create({
-            role: 'CUSTOMER',
-            description: 'Customer role',
-            level: 10,
-            tenantId: 1,
-            isSystemRole: false,
-            isActive: true,
+        customerRole = await RoleModel.findOne({
+            where: {
+                role: 'CUSTOMER',
+                tenantId: 1,
+            },
         });
+        if (!customerRole) {
+            try {
+                customerRole = await RoleModel.create({
+                    role: 'CUSTOMER',
+                    description: 'Customer role',
+                    level: 10,
+                    tenantId: 1,
+                    isSystemRole: false,
+                    isActive: true,
+                });
+            } catch (error) {
+                // Если роль уже существует (race condition), находим её
+                if (
+                    error &&
+                    typeof error === 'object' &&
+                    'name' in error &&
+                    error.name === 'SequelizeUniqueConstraintError'
+                ) {
+                    customerRole = await RoleModel.findOne({
+                        where: {
+                            role: 'CUSTOMER',
+                            tenantId: 1,
+                        },
+                    });
+                } else {
+                    throw error;
+                }
+            }
+        }
 
         // Создаем mock OAuth2 сервер
         mockOAuth2Server = new MockOAuth2Server({
             clientId: 'e2e-test-client-id',
             clientSecret: 'e2e-test-client-secret',
-            redirectUri: 'http://localhost:3000/online-store/auth/sso/oauth2/callback',
+            redirectUri:
+                'http://localhost:3000/online-store/auth/sso/oauth2/callback',
             users: [testUser],
         });
 
@@ -93,7 +148,8 @@ describe('SSO E2E Flow (integration)', () => {
                 authorizationURL: mockOAuth2Server.getAuthorizationUrl(),
                 tokenURL: mockOAuth2Server.getTokenUrl(),
                 userInfoURL: mockOAuth2Server.getUserInfoUrl(),
-                callbackURL: 'http://localhost:3000/online-store/auth/sso/oauth2/callback',
+                callbackURL:
+                    'http://localhost:3000/online-store/auth/sso/oauth2/callback',
                 scope: ['openid', 'profile', 'email'],
             },
             syncEnabled: true,
@@ -144,7 +200,10 @@ describe('SSO E2E Flow (integration)', () => {
                 .get(`/online-store/auth/sso/${providerConfig.id}`)
                 .set('x-tenant-id', '1')
                 .expect((res) => {
-                    expect([HttpStatus.FOUND, HttpStatus.UNAUTHORIZED]).toContain(res.status);
+                    expect([
+                        HttpStatus.FOUND,
+                        HttpStatus.UNAUTHORIZED,
+                    ]).toContain(res.status);
                 });
 
             if (initiateResponse.status !== HttpStatus.FOUND) {
@@ -159,31 +218,23 @@ describe('SSO E2E Flow (integration)', () => {
             expect(redirectUrl.searchParams.has('state')).toBe(true);
             expect(redirectUrl.searchParams.has('client_id')).toBe(true);
 
-            // Step 2: Симулируем авторизацию на провайдере
-            // В реальном сценарии пользователь авторизуется на провайдере
-            // Здесь мы напрямую вызываем callback с code от mock сервера
+            // Step 2: Проверяем, что state присутствует в redirect URL
+            // В реальном сценарии пользователь авторизуется на провайдере и получает redirect с code
             const state = redirectUrl.searchParams.get('state');
-            if (!state) {
-                throw new Error('State parameter not found');
-            }
-
-            // Step 3: Получаем authorization code от mock сервера
-            // В реальном сценарии это делается через redirect от провайдера
-            const authCodeResponse = await request(mockOAuth2Server.getBaseUrl().replace('http://', ''))
-                .get(`/authorize?client_id=e2e-test-client-id&redirect_uri=${encodeURIComponent('http://localhost:3000/online-store/auth/sso/oauth2/callback')}&response_type=code&state=${state}`)
-                .redirects(1); // Разрешаем один redirect
-
-            // Step 4: Обрабатываем callback
-            // В реальном сценарии провайдер перенаправит на callback с code
-            // Здесь мы симулируем это, вызывая callback напрямую
-            // Примечание: Полный E2E тест требует более сложной настройки с реальным HTTP клиентом
-            // Для упрощения проверяем только инициирование и структуру redirect
-
-            // Проверяем, что пользователь еще не создан
-            const userBefore = await UserModel.findOne({
-                where: { email: testUser.email, tenantId: 1 },
-            });
-            expect(userBefore).toBeNull();
+            expect(state).toBeTruthy();
+            
+            // Step 3: Проверяем наличие всех необходимых параметров в authorization URL
+            // В реальном сценарии это проверяется на стороне провайдера
+            expect(redirectUrl.searchParams.get('client_id')).toBe('e2e-test-client-id');
+            expect(redirectUrl.searchParams.get('response_type')).toBe('code');
+            expect(redirectUrl.searchParams.get('redirect_uri')).toBe(
+                'http://localhost:3000/online-store/auth/sso/oauth2/callback',
+            );
+            
+            // Примечание: Полный E2E тест с реальным callback требует запуска mock сервера
+            // и обработки redirect, что выходит за рамки базовой интеграции.
+            // Callback обработка тестируется в других integration тестах.
+            // Здесь проверяем только корректность инициирования SSO flow.
         });
     });
 
@@ -248,4 +299,3 @@ describe('SSO E2E Flow (integration)', () => {
         });
     });
 });
-
