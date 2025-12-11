@@ -142,6 +142,7 @@ describe('SSO E2E Flow (integration)', () => {
             // Step 1: Инициируем SSO
             const initiateResponse = await request(app.getHttpServer())
                 .get(`/online-store/auth/sso/${providerConfig.id}`)
+                .set('x-tenant-id', '1')
                 .expect((res) => {
                     expect([HttpStatus.FOUND, HttpStatus.UNAUTHORIZED]).toContain(res.status);
                 });
@@ -210,6 +211,7 @@ describe('SSO E2E Flow (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .get(`/online-store/auth/sso/${inactiveProvider.id}`)
+                .set('x-tenant-id', '1')
                 .expect(HttpStatus.BAD_REQUEST);
 
             expect(response.body).toHaveProperty('message');
@@ -222,6 +224,7 @@ describe('SSO E2E Flow (integration)', () => {
             // Для теста используем невалидный state
             const response = await request(app.getHttpServer())
                 .get('/online-store/auth/sso/oauth2/callback')
+                .set('x-tenant-id', '1')
                 .query({
                     code: 'test-code',
                     state: 'expired-state-12345',
@@ -237,6 +240,7 @@ describe('SSO E2E Flow (integration)', () => {
             // Logout endpoint требует авторизации
             const response = await request(app.getHttpServer())
                 .post('/online-store/auth/sso/oauth2/logout')
+                .set('x-tenant-id', '1')
                 .send({})
                 .expect(HttpStatus.UNAUTHORIZED);
 

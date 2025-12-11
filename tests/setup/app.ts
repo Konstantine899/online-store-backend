@@ -199,6 +199,58 @@ export async function setupTestApp(): Promise<INestApplication> {
             void samlStrategy;
             void oidcStrategy;
 
+            // КРИТИЧНО: Сохраняем callback на прототипе стратегий для работы с Object.create(prototype)
+            // Это гарантирует, что _verify будет доступен при создании нового экземпляра через passport.authenticate
+            const { CustomPassportStrategy } = await import('@app/infrastructure/common/strategies/sso/custom-passport-strategy');
+            if (oauth2Strategy) {
+                const callback = (oauth2Strategy as any)?._verify;
+                if (callback && typeof callback === 'function') {
+                    const proto = Object.getPrototypeOf(oauth2Strategy);
+                    if (proto) {
+                        Object.defineProperty(proto, '_verify', {
+                            value: callback,
+                            writable: true,
+                            configurable: true,
+                            enumerable: false,
+                        });
+                        CustomPassportStrategy.verifyCallbacksByName.set('oauth2', callback);
+                        console.log('[setupTestApp] Saved callback on prototype for oauth2');
+                    }
+                }
+            }
+            if (samlStrategy) {
+                const callback = (samlStrategy as any)?._verify;
+                if (callback && typeof callback === 'function') {
+                    const proto = Object.getPrototypeOf(samlStrategy);
+                    if (proto) {
+                        Object.defineProperty(proto, '_verify', {
+                            value: callback,
+                            writable: true,
+                            configurable: true,
+                            enumerable: false,
+                        });
+                        CustomPassportStrategy.verifyCallbacksByName.set('saml', callback);
+                        console.log('[setupTestApp] Saved callback on prototype for saml');
+                    }
+                }
+            }
+            if (oidcStrategy) {
+                const callback = (oidcStrategy as any)?._verify;
+                if (callback && typeof callback === 'function') {
+                    const proto = Object.getPrototypeOf(oidcStrategy);
+                    if (proto) {
+                        Object.defineProperty(proto, '_verify', {
+                            value: callback,
+                            writable: true,
+                            configurable: true,
+                            enumerable: false,
+                        });
+                        CustomPassportStrategy.verifyCallbacksByName.set('oidc', callback);
+                        console.log('[setupTestApp] Saved callback on prototype for oidc');
+                    }
+                }
+            }
+
             // Проверяем, что стратегии зарегистрированы в Passport
             const passport = require('passport');
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -216,13 +268,13 @@ export async function setupTestApp(): Promise<INestApplication> {
                 console.warn(
                     `[setupTestApp] Missing Passport strategies after explicit get: ${missingStrategies.join(', ')}. Registered: ${registeredStrategies.join(', ')}`,
                 );
-                
+
                 // КРИТИЧНО: Если стратегии не зарегистрированы, попробуем явно зарегистрировать их
                 // Это может быть необходимо, если PassportStrategy не регистрирует их автоматически
                 console.warn(
                     `[setupTestApp] Attempting to manually register strategies...`,
                 );
-                
+
                 // Попробуем явно зарегистрировать стратегии в Passport
                 try {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -231,7 +283,7 @@ export async function setupTestApp(): Promise<INestApplication> {
                     (passport as any).use('saml', samlStrategy);
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     (passport as any).use('oidc', oidcStrategy);
-                    
+
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const afterManualRegister = Object.keys((passport as any)._strategies ?? {});
                     console.log(

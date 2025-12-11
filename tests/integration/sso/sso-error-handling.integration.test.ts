@@ -12,6 +12,7 @@
  * Related to: SAAS-017-19, Этап 3
  */
 
+import { ExternalRoleConfigModel, RoleModel } from '@app/domain/models';
 import type { INestApplication } from '@nestjs/common';
 import { HttpStatus } from '@nestjs/common';
 import { Sequelize } from 'sequelize-typescript';
@@ -19,10 +20,6 @@ import request from 'supertest';
 import { setupTestApp } from '../../setup/app';
 import { TestCleanup } from '../../utils';
 import { TestDatabaseSetup } from '../../utils/test-database-setup';
-import {
-    ExternalRoleConfigModel,
-    RoleModel,
-} from '@app/domain/models';
 
 describe('SSO Error Handling (integration)', () => {
     let app: INestApplication;
@@ -57,7 +54,8 @@ describe('SSO Error Handling (integration)', () => {
                 clientSecret: 'test-client-secret',
                 authorizationURL: 'https://example.com/auth',
                 tokenURL: 'https://example.com/token',
-                callbackURL: 'http://localhost:3000/online-store/auth/sso/oauth2/callback',
+                callbackURL:
+                    'http://localhost:3000/online-store/auth/sso/oauth2/callback',
             },
             syncEnabled: true,
             status: 'ACTIVE',
@@ -83,6 +81,7 @@ describe('SSO Error Handling (integration)', () => {
         it('должен вернуть 401 при отсутствии state в callback', async () => {
             const response = await request(app.getHttpServer())
                 .get('/online-store/auth/sso/oauth2/callback')
+                .set('x-tenant-id', '1')
                 .query({
                     code: 'test-code',
                     // state отсутствует
@@ -125,7 +124,10 @@ describe('SSO Error Handling (integration)', () => {
             const response = await request(app.getHttpServer())
                 .get('/online-store/auth/sso/99999')
                 .expect((res) => {
-                    expect([HttpStatus.UNAUTHORIZED, HttpStatus.NOT_FOUND]).toContain(res.status);
+                    expect([
+                        HttpStatus.UNAUTHORIZED,
+                        HttpStatus.NOT_FOUND,
+                    ]).toContain(res.status);
                 });
 
             expect(response.body).toHaveProperty('message');
@@ -145,6 +147,7 @@ describe('SSO Error Handling (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .get(`/online-store/auth/sso/${inactiveProvider.id}`)
+                .set('x-tenant-id', '1')
                 .expect(HttpStatus.BAD_REQUEST);
 
             expect(response.body).toHaveProperty('message');
@@ -167,6 +170,7 @@ describe('SSO Error Handling (integration)', () => {
 
             const response = await request(app.getHttpServer())
                 .get(`/online-store/auth/sso/${errorProvider.id}`)
+                .set('x-tenant-id', '1')
                 .expect(HttpStatus.BAD_REQUEST);
 
             expect(response.body).toHaveProperty('message');
@@ -181,7 +185,10 @@ describe('SSO Error Handling (integration)', () => {
             const initiateResponse = await request(app.getHttpServer())
                 .get(`/online-store/auth/sso/${providerConfig.id}`)
                 .expect((res) => {
-                    expect([HttpStatus.FOUND, HttpStatus.UNAUTHORIZED]).toContain(res.status);
+                    expect([
+                        HttpStatus.FOUND,
+                        HttpStatus.UNAUTHORIZED,
+                    ]).toContain(res.status);
                 });
 
             if (initiateResponse.status !== HttpStatus.FOUND) {
@@ -257,4 +264,3 @@ describe('SSO Error Handling (integration)', () => {
         });
     });
 });
-
