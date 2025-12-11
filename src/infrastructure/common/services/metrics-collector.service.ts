@@ -498,9 +498,7 @@ export class MetricsCollector implements OnModuleDestroy {
         this.ssoOperations = this.ssoOperations.filter(
             (op) => op.timestamp > cutoff,
         );
-        this.ssoErrors = this.ssoErrors.filter(
-            (e) => e.timestamp > cutoff,
-        );
+        this.ssoErrors = this.ssoErrors.filter((e) => e.timestamp > cutoff);
 
         const afterCleanup = {
             bulkOps: this.bulkOperations.length,
@@ -514,7 +512,8 @@ export class MetricsCollector implements OnModuleDestroy {
             bulkOps: beforeCleanup.bulkOps - afterCleanup.bulkOps,
             slowQueries: beforeCleanup.slowQueries - afterCleanup.slowQueries,
             errors: beforeCleanup.errors - afterCleanup.errors,
-            ssoOperations: beforeCleanup.ssoOperations - afterCleanup.ssoOperations,
+            ssoOperations:
+                beforeCleanup.ssoOperations - afterCleanup.ssoOperations,
             ssoErrors: beforeCleanup.ssoErrors - afterCleanup.ssoErrors,
         };
 

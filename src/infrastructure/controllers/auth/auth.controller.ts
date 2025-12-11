@@ -6,6 +6,7 @@ import {
     RegistrationSwaggerDecorator,
     UpdateAccessTokenSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
+import { MetricsCollector } from '@app/infrastructure/common/services/metrics-collector.service';
 import { SSOStrategyFactory } from '@app/infrastructure/common/strategies/sso/sso-strategy.factory';
 import { LoginDto, RegistrationDto } from '@app/infrastructure/dto';
 import { ForgotPasswordDto } from '@app/infrastructure/dto/auth/forgot-password.dto';
@@ -18,7 +19,6 @@ import {
 } from '@app/infrastructure/responses/sso';
 import { AuthService, UserService } from '@app/infrastructure/services';
 import { TokenService } from '@app/infrastructure/services/token/token.service';
-import { MetricsCollector } from '@app/infrastructure/common/services/metrics-collector.service';
 import {
     BadRequestException,
     Body,
@@ -357,11 +357,13 @@ export class AuthController {
     })
     @ApiResponse({
         status: 400,
-        description: 'Некорректный providerId или конфигурация провайдера неактивна',
+        description:
+            'Некорректный providerId или конфигурация провайдера неактивна',
     })
     @ApiResponse({
         status: 401,
-        description: 'Провайдер не найден или недоступен, или отсутствует tenant ID',
+        description:
+            'Провайдер не найден или недоступен, или отсутствует tenant ID',
     })
     @Get('/sso/:providerId')
     public async initiateSSO(
@@ -379,7 +381,9 @@ export class AuthController {
             // TenantMiddleware устанавливает req.tenantId напрямую
             tenantId = req.tenantId ?? this.tenantContext.getTenantIdOrNull();
             if (!tenantId) {
-                throw new UnauthorizedException('Tenant ID не найден в контексте');
+                throw new UnauthorizedException(
+                    'Tenant ID не найден в контексте',
+                );
             }
 
             // Получаем конфигурацию провайдера
@@ -405,7 +409,10 @@ export class AuthController {
             }
 
             // Определяем тип провайдера для метрик
-            providerType = providerConfig.providerType as 'OAUTH2' | 'SAML' | 'OIDC';
+            providerType = providerConfig.providerType as
+                | 'OAUTH2'
+                | 'SAML'
+                | 'OIDC';
 
             // Определяем базовый URL приложения
             const protocol = req.protocol;
@@ -496,11 +503,13 @@ export class AuthController {
     })
     @ApiResponse({
         status: 400,
-        description: 'Некорректные параметры callback (отсутствует code, state и т.д.)',
+        description:
+            'Некорректные параметры callback (отсутствует code, state и т.д.)',
     })
     @ApiResponse({
         status: 401,
-        description: 'Ошибка аутентификации SSO (неверный state, ошибка обмена кода на токен и т.д.)',
+        description:
+            'Ошибка аутентификации SSO (неверный state, ошибка обмена кода на токен и т.д.)',
     })
     @HttpCode(200)
     @Get('/sso/oauth2/callback')
@@ -525,11 +534,13 @@ export class AuthController {
     })
     @ApiResponse({
         status: 400,
-        description: 'Некорректные параметры callback (отсутствует SAMLResponse, RelayState и т.д.)',
+        description:
+            'Некорректные параметры callback (отсутствует SAMLResponse, RelayState и т.д.)',
     })
     @ApiResponse({
         status: 401,
-        description: 'Ошибка аутентификации SSO (неверный RelayState, ошибка валидации SAML assertion и т.д.)',
+        description:
+            'Ошибка аутентификации SSO (неверный RelayState, ошибка валидации SAML assertion и т.д.)',
     })
     @HttpCode(200)
     @Post('/sso/saml/callback')
@@ -554,11 +565,13 @@ export class AuthController {
     })
     @ApiResponse({
         status: 400,
-        description: 'Некорректные параметры callback (отсутствует code, state и т.д.)',
+        description:
+            'Некорректные параметры callback (отсутствует code, state и т.д.)',
     })
     @ApiResponse({
         status: 401,
-        description: 'Ошибка аутентификации SSO (неверный state, ошибка обмена кода на токен и т.д.)',
+        description:
+            'Ошибка аутентификации SSO (неверный state, ошибка обмена кода на токен и т.д.)',
     })
     @HttpCode(200)
     @Get('/sso/oidc/callback')
@@ -604,7 +617,8 @@ export class AuthController {
             );
 
             // Генерируем токены
-            const accessToken = await this.tokenService.generateAccessToken(user);
+            const accessToken =
+                await this.tokenService.generateAccessToken(user);
             const refreshToken = await this.tokenService.generateRefreshToken(
                 user,
                 60 * 60 * 24 * 30, // 30 дней
@@ -692,8 +706,10 @@ export class AuthController {
     ): Promise<SSOLogoutResponse> {
         const startTime = Date.now();
         const tenantId = req.tenantId ?? this.tenantContext.getTenantIdOrNull();
-        const providerType =
-            strategyType.toUpperCase() as 'OAUTH2' | 'SAML' | 'OIDC';
+        const providerType = strategyType.toUpperCase() as
+            | 'OAUTH2'
+            | 'SAML'
+            | 'OIDC';
 
         try {
             // Выполняем локальный logout

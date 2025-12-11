@@ -1,6 +1,6 @@
+import { RepositoriesModule } from '@app/infrastructure/repositories/repositories.module';
 import { Module } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
-import { RepositoriesModule } from '@app/infrastructure/repositories/repositories.module';
 import { HealthController } from './health.controller';
 import { SequelizeHealthIndicator } from './sequelize.health';
 import { SSOHealthIndicator } from './sso.health';

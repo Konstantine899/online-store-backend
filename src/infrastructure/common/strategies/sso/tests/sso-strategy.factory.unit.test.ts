@@ -5,16 +5,16 @@
  * Related to: SAAS-017-19, Этап 3
  */
 
-import { Test, type TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { SSOStrategyFactory } from '../sso-strategy.factory';
-import { ExternalRoleSyncRepository } from '@app/infrastructure/repositories/role/external-role-sync.repository';
-import { SSOStateService } from '@app/infrastructure/services/role/sso/sso-state.service';
-import {
+import type {
     ExternalRoleConfigModel,
     ExternalRoleProviderType,
     IProviderConfig,
 } from '@app/domain/models/external-role-config.model';
+import { ExternalRoleSyncRepository } from '@app/infrastructure/repositories/role/external-role-sync.repository';
+import { SSOStateService } from '@app/infrastructure/services/role/sso/sso-state.service';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { SSOStrategyFactory } from '../sso-strategy.factory';
 
 describe('SSOStrategyFactory (unit)', () => {
     let factory: SSOStrategyFactory;
@@ -78,10 +78,8 @@ describe('SSOStrategyFactory (unit)', () => {
         }).compile();
 
         factory = module.get<SSOStrategyFactory>(SSOStrategyFactory);
-        externalRoleSyncRepository = module.get(
-            ExternalRoleSyncRepository,
-        ) as jest.Mocked<ExternalRoleSyncRepository>;
-        ssoStateService = module.get(SSOStateService) as jest.Mocked<SSOStateService>;
+        externalRoleSyncRepository = module.get(ExternalRoleSyncRepository);
+        ssoStateService = module.get(SSOStateService);
     });
 
     afterEach(() => {
@@ -145,10 +143,14 @@ describe('SSOStrategyFactory (unit)', () => {
             expect(url).toContain('https://oauth2.example.com/authorize');
             expect(url).toContain('client_id=test-client-id');
             expect(url).toContain('redirect_uri=');
-            expect(url).toMatch(/redirect_uri=.*(auth\/sso\/oauth2\/callback|auth%2Fsso%2Foauth2%2Fcallback)/);
+            expect(url).toMatch(
+                /redirect_uri=.*(auth\/sso\/oauth2\/callback|auth%2Fsso%2Foauth2%2Fcallback)/,
+            );
             expect(url).toContain('response_type=code');
             expect(url).toContain('scope=');
-            expect(url).toMatch(/scope=(openid%20profile%20email|openid\+profile\+email)/);
+            expect(url).toMatch(
+                /scope=(openid%20profile%20email|openid\+profile\+email)/,
+            );
             expect(url).toContain('state=test-state-12345');
             expect(ssoStateService.generateState).toHaveBeenCalledWith(
                 mockTenantId,
@@ -186,7 +188,9 @@ describe('SSOStrategyFactory (unit)', () => {
             );
 
             expect(url).toContain('scope=');
-            expect(url).toMatch(/scope=(openid%20profile%20email|openid\+profile\+email)/);
+            expect(url).toMatch(
+                /scope=(openid%20profile%20email|openid\+profile\+email)/,
+            );
         });
 
         it('должен выбрасывать NotFoundException если конфигурация не найдена', async () => {
@@ -231,7 +235,9 @@ describe('SSOStrategyFactory (unit)', () => {
         };
 
         beforeEach(() => {
-            ssoStateService.generateState.mockReturnValue('test-relay-state-12345');
+            ssoStateService.generateState.mockReturnValue(
+                'test-relay-state-12345',
+            );
         });
 
         it('должен создавать корректный SAML authorization URL с RelayState', async () => {
@@ -295,7 +301,9 @@ describe('SSOStrategyFactory (unit)', () => {
         };
 
         beforeEach(() => {
-            ssoStateService.generateState.mockReturnValue('test-state-oidc-12345');
+            ssoStateService.generateState.mockReturnValue(
+                'test-state-oidc-12345',
+            );
         });
 
         it('должен создавать корректный OIDC authorization URL используя issuer', async () => {
@@ -311,10 +319,14 @@ describe('SSOStrategyFactory (unit)', () => {
             expect(url).toContain('https://oidc.example.com/authorize');
             expect(url).toContain('client_id=test-client-id');
             expect(url).toContain('redirect_uri=');
-            expect(url).toMatch(/redirect_uri=.*(auth\/sso\/oidc\/callback|auth%2Fsso%2Foidc%2Fcallback)/);
+            expect(url).toMatch(
+                /redirect_uri=.*(auth\/sso\/oidc\/callback|auth%2Fsso%2Foidc%2Fcallback)/,
+            );
             expect(url).toContain('response_type=code');
             expect(url).toContain('scope=');
-            expect(url).toMatch(/scope=(openid%20profile%20email|openid\+profile\+email)/);
+            expect(url).toMatch(
+                /scope=(openid%20profile%20email|openid\+profile\+email)/,
+            );
             expect(url).toContain('state=test-state-oidc-12345');
             expect(ssoStateService.generateState).toHaveBeenCalledWith(
                 mockTenantId,
@@ -369,7 +381,9 @@ describe('SSOStrategyFactory (unit)', () => {
             );
 
             expect(url).toContain('scope=');
-            expect(url).toMatch(/scope=(openid%20profile%20email|openid\+profile\+email)/);
+            expect(url).toMatch(
+                /scope=(openid%20profile%20email|openid\+profile\+email)/,
+            );
         });
 
         it('должен выбрасывать BadRequestException если нет ни authorizationURL ни issuer', async () => {

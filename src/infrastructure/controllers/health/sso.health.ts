@@ -1,6 +1,6 @@
+import { ExternalRoleSyncRepository } from '@app/infrastructure/repositories/role/external-role-sync.repository';
 import { Injectable } from '@nestjs/common';
 import { HealthIndicator, HealthIndicatorResult } from '@nestjs/terminus';
-import { ExternalRoleSyncRepository } from '@app/infrastructure/repositories/role/external-role-sync.repository';
 
 /**
  * SSO Health Indicator
@@ -41,7 +41,8 @@ export class SSOHealthIndicator extends HealthIndicator {
                 // В production просто проверяем, что репозиторий работает
                 // без реальных запросов к БД
                 return this.getStatus(key, true, {
-                    message: 'SSO configurations check skipped (requires tenant context)',
+                    message:
+                        'SSO configurations check skipped (requires tenant context)',
                 });
             }
 
