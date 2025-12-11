@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, ParseIntPipe, Query } from '@nestjs/common';
 import {
     HealthCheck,
     HealthCheckResult,
@@ -22,6 +22,20 @@ export class HealthController {
         return this.healthCheck.check([
             (): Promise<HealthIndicatorResult> => this.db.pingCheck(),
             (): Promise<HealthIndicatorResult> => this.sso.pingCheck(),
+        ]);
+    }
+
+    @Get('health/sso')
+    @HealthCheck()
+    ssoHealth(
+        @Query('tenantId', new ParseIntPipe({ optional: true }))
+        tenantId?: number,
+        @Query('checkExternal') checkExternal?: string,
+    ): Promise<HealthCheckResult> {
+        const checkExternalServers = checkExternal === 'true';
+        return this.healthCheck.check([
+            (): Promise<HealthIndicatorResult> =>
+                this.sso.pingCheck('sso', tenantId, checkExternalServers),
         ]);
     }
 

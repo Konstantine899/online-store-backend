@@ -2069,7 +2069,18 @@ tasks:
     - реализовать batch обработку для больших объемов
     - добавить unit и integration тесты
 
-    # Этап 3: SSO интеграция (24-30 часов)
+    # Этап 3: SSO интеграция (24-30 часов) ✅ COMPLETED
+
+    **Статус:** Выполнено (2025-01-XX)
+    **Реализовано:**
+    - ✅ Все SSO стратегии (OAuth2, SAML, OIDC)
+    - ✅ Just-in-time provisioning
+    - ✅ Динамическая конфигурация из БД
+    - ✅ Все endpoints реализованы
+    - ✅ Полное тестирование (unit + integration)
+    - ✅ Документация SSO_SETUP.md
+    - ✅ Расширенные health checks
+    - ✅ Rate limiting настроен
 
     **Структура файлов:**
 
@@ -2110,19 +2121,19 @@ tasks:
     ```
 
     **Шаги реализации:**
-    - установить зависимости (passport-oauth2@^1.9.0, @node-saml/passport-saml@^3.2.4, openid-client@^6.2.0)
-    - создать базовые SSO стратегии (Passport для OAuth2/SAML, openid-client для OIDC)
-    - реализовать OAuth 2.0 провайдеры (Azure AD, Google Workspace, Generic) через passport-oauth2
-    - реализовать SAML 2.0 провайдер через @node-saml/passport-saml (MultiSamlStrategy для динамической конфигурации)
-    - реализовать OpenID Connect провайдер через openid-client (panva/openid-client) с оберткой для NestJS
-    - создать SSORoleSyncService (just-in-time provisioning при SSO входе)
-    - создать SSOUserProfileMapper для маппинга профилей из разных провайдеров
-    - создать SSOStateService для управления state parameter (передача tenantId)
-    - добавить SSO endpoints в AuthController (GET /auth/sso/:provider, GET /auth/sso/:provider/callback, POST /auth/sso/:provider/logout)
-    - реализовать динамическую конфигурацию стратегий из ExternalRoleConfig (tenant-specific)
-    - добавить поддержку state parameter для передачи tenantId в SSO flow
-    - создать mock OAuth/SAML/OIDC серверы для тестирования
-    - добавить unit и integration тесты (с mock серверами)
+    - ✅ установить зависимости (passport-oauth2@^1.8.0, @node-saml/passport-saml@^5.1.0, openid-client@^6.8.1)
+    - ✅ создать базовые SSO стратегии (Passport для OAuth2/SAML, openid-client для OIDC)
+    - ✅ реализовать OAuth 2.0 провайдеры (Azure AD, Google Workspace, Generic) через passport-oauth2
+    - ✅ реализовать SAML 2.0 провайдер через @node-saml/passport-saml (MultiSamlStrategy для динамической конфигурации)
+    - ✅ реализовать OpenID Connect провайдер через openid-client (panva/openid-client) с оберткой для NestJS
+    - ✅ создать SSORoleSyncService (just-in-time provisioning при SSO входе)
+    - ✅ создать SSOUserProfileMapper для маппинга профилей из разных провайдеров
+    - ✅ создать SSOStateService для управления state parameter (передача tenantId)
+    - ✅ добавить SSO endpoints в AuthController (GET /auth/sso/:provider, GET /auth/sso/:provider/callback, POST /auth/sso/:provider/logout)
+    - ✅ реализовать динамическую конфигурацию стратегий из ExternalRoleConfig (tenant-specific)
+    - ✅ добавить поддержку state parameter для передачи tenantId в SSO flow
+    - ✅ создать mock OAuth/SAML/OIDC серверы для тестирования
+    - ✅ добавить unit и integration тесты (с mock серверами)
 
     # Этап 4: Role Mapping (8-10 часов)
     - создать RoleMappingService (применение маппингов)
@@ -2178,12 +2189,12 @@ tasks:
 
     # Функциональность
     - ✅ LDAP/AD интеграция работает (создание/обновление пользователей, синхронизация ролей)
-    - ✅ OAuth 2.0 интеграция работает (Azure AD, Google Workspace, Generic)
-    - ✅ SAML 2.0 интеграция работает
-    - ✅ OpenID Connect интеграция работает
+    - ✅ OAuth 2.0 интеграция работает (Azure AD, Google Workspace, Generic) [Этап 3: COMPLETED]
+    - ✅ SAML 2.0 интеграция работает [Этап 3: COMPLETED]
+    - ✅ OpenID Connect интеграция работает [Этап 3: COMPLETED]
     - ✅ Role mapping работает с поддержкой условий и приоритетов
     - ✅ Автоматическая синхронизация работает (cron jobs)
-    - ✅ Just-in-time provisioning при SSO входе работает
+    - ✅ Just-in-time provisioning при SSO входе работает [Этап 3: COMPLETED]
     - ✅ Все 15+ endpoints реализованы и протестированы
     - ✅ Swagger документация полная для всех endpoints
 
@@ -2204,11 +2215,11 @@ tasks:
     # Производительность
     - ✅ Синхронизация работает для 1000+ пользователей (batch обработка)
     - ✅ Метрики собираются (время синхронизации, success rate, ошибки)
-    - ✅ Health checks работают (доступность провайдеров)
+    - ✅ Health checks работают (доступность провайдеров) [Этап 3: расширены]
 
     # Документация
     - ✅ API документация обновлена
-    - ✅ Руководства по настройке созданы
+    - ✅ Руководства по настройке созданы [Этап 3: SSO_SETUP.md создан]
     - ✅ Архитектурная документация обновлена
 
     architectural_decisions:
