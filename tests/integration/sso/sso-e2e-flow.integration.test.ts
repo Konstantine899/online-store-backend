@@ -16,7 +16,6 @@ import {
     ExternalRoleConfigModel,
     RoleMappingModel,
     RoleModel,
-    UserModel,
 } from '@app/domain/models';
 import type { INestApplication } from '@nestjs/common';
 import { HttpStatus } from '@nestjs/common';
@@ -222,15 +221,17 @@ describe('SSO E2E Flow (integration)', () => {
             // В реальном сценарии пользователь авторизуется на провайдере и получает redirect с code
             const state = redirectUrl.searchParams.get('state');
             expect(state).toBeTruthy();
-            
+
             // Step 3: Проверяем наличие всех необходимых параметров в authorization URL
             // В реальном сценарии это проверяется на стороне провайдера
-            expect(redirectUrl.searchParams.get('client_id')).toBe('e2e-test-client-id');
+            expect(redirectUrl.searchParams.get('client_id')).toBe(
+                'e2e-test-client-id',
+            );
             expect(redirectUrl.searchParams.get('response_type')).toBe('code');
             expect(redirectUrl.searchParams.get('redirect_uri')).toBe(
                 'http://localhost:3000/online-store/auth/sso/oauth2/callback',
             );
-            
+
             // Примечание: Полный E2E тест с реальным callback требует запуска mock сервера
             // и обработки redirect, что выходит за рамки базовой интеграции.
             // Callback обработка тестируется в других integration тестах.

@@ -89,23 +89,16 @@ export class PassportCustomStrategyWrapper extends CustomStrategy {
         // Используем обычную функцию (не arrow), чтобы сохранить правильный контекст this
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (PassportCustomStrategyWrapper.prototype as any).authenticate =
-            function (req: unknown) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const self = this as any;
-
+            function (req: unknown): void {
                 // КРИТИЧНО: passport-custom вызывает this._verify(req, verified) напрямую
                 // Но при Object.create(prototype) свойства экземпляра не копируются
                 // Поэтому проверяем _verify на экземпляре, затем на прототипе
-                let verifyFn = self._verify;
+                let verifyFn = this._verify;
                 if (!verifyFn || typeof verifyFn !== 'function') {
                     // Проверяем прототип
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const proto = Object.getPrototypeOf(self);
-                    if (
-                        proto &&
-                        proto._verify &&
-                        typeof proto._verify === 'function'
-                    ) {
+
+                    const proto = Object.getPrototypeOf(this);
+                    if (proto?._verify && typeof proto._verify === 'function') {
                         verifyFn = proto._verify;
                     } else {
                         // Если _verify не найден, это критическая ошибка
@@ -116,21 +109,22 @@ export class PassportCustomStrategyWrapper extends CustomStrategy {
                             errorMsg,
                         );
                         // Проверяем, что метод error существует перед вызовом
-                        if (typeof self.error === 'function') {
-                            return self.error(new Error(errorMsg));
+                        if (typeof this.error === 'function') {
+                            return this.error(new Error(errorMsg));
                         }
                         // Fallback: пробуем через BaseStrategy.prototype
                         try {
                             // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+                            const passportStrategyModule = require('passport-strategy');
                             const BaseStrategy =
-                                require('passport-strategy').Strategy;
+                                passportStrategyModule?.Strategy;
                             if (
                                 BaseStrategy?.prototype?.error &&
                                 typeof BaseStrategy.prototype.error ===
                                     'function'
                             ) {
                                 return BaseStrategy.prototype.error.call(
-                                    self,
+                                    this,
                                     new Error(errorMsg),
                                 );
                             }
@@ -142,40 +136,35 @@ export class PassportCustomStrategyWrapper extends CustomStrategy {
                         return;
                     }
                     // Восстанавливаем _verify на экземпляре для будущих вызовов
-                    self._verify = verifyFn;
+                    this._verify = verifyFn;
                 }
 
-                // Создаем функцию verified, как это делает оригинальный passport-custom
-                function verified(
+                // Создаем стрелочную функцию verified, чтобы автоматически захватить this
+                // из внешней функции authenticate
+                const verified = (
                     err: Error | null,
                     user: unknown,
                     info: unknown,
-                ) {
-                    // КРИТИЧНО: Проверяем, что self существует
-                    if (!self) {
-                        console.error(
-                            '[PassportCustomStrategyWrapper.verified] self is undefined',
-                        );
-                        return;
-                    }
-
+                ): void => {
                     if (err) {
                         // Проверяем, что метод error существует перед вызовом
-                        if (self.error && typeof self.error === 'function') {
-                            return self.error(err);
+                        if (this.error && typeof this.error === 'function') {
+                            return this.error(err);
                         }
                         // Fallback через BaseStrategy.prototype
                         try {
-                            // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+                            /* eslint-disable */
+                            const passportStrategyModule = require('passport-strategy');
                             const BaseStrategy =
-                                require('passport-strategy').Strategy;
+                                passportStrategyModule?.Strategy;
+                            /* eslint-enable */
                             if (
                                 BaseStrategy?.prototype?.error &&
                                 typeof BaseStrategy.prototype.error ===
                                     'function'
                             ) {
                                 return BaseStrategy.prototype.error.call(
-                                    self,
+                                    this,
                                     err,
                                 );
                             }
@@ -186,21 +175,23 @@ export class PassportCustomStrategyWrapper extends CustomStrategy {
                     }
                     if (!user) {
                         // Проверяем, что метод fail существует перед вызовом
-                        if (self.fail && typeof self.fail === 'function') {
-                            return self.fail(info);
+                        if (this.fail && typeof this.fail === 'function') {
+                            return this.fail(info);
                         }
                         // Fallback через BaseStrategy.prototype
                         try {
-                            // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+                            /* eslint-disable */
+                            const passportStrategyModule = require('passport-strategy');
                             const BaseStrategy =
-                                require('passport-strategy').Strategy;
+                                passportStrategyModule?.Strategy;
+                            /* eslint-enable */
                             if (
                                 BaseStrategy?.prototype?.fail &&
                                 typeof BaseStrategy.prototype.fail ===
                                     'function'
                             ) {
                                 return BaseStrategy.prototype.fail.call(
-                                    self,
+                                    this,
                                     info,
                                 );
                             }
@@ -210,21 +201,23 @@ export class PassportCustomStrategyWrapper extends CustomStrategy {
                         return;
                     }
                     // Проверяем, что метод success существует перед вызовом
-                    if (self.success && typeof self.success === 'function') {
-                        self.success(user, info);
+                    if (this.success && typeof this.success === 'function') {
+                        this.success(user, info);
                     } else {
                         // Fallback через BaseStrategy.prototype
                         try {
-                            // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+                            /* eslint-disable */
+                            const passportStrategyModule = require('passport-strategy');
                             const BaseStrategy =
-                                require('passport-strategy').Strategy;
+                                passportStrategyModule?.Strategy;
+                            /* eslint-enable */
                             if (
                                 BaseStrategy?.prototype?.success &&
                                 typeof BaseStrategy.prototype.success ===
                                     'function'
                             ) {
                                 BaseStrategy.prototype.success.call(
-                                    self,
+                                    this,
                                     user,
                                     info,
                                 );
@@ -233,25 +226,26 @@ export class PassportCustomStrategyWrapper extends CustomStrategy {
                             // Игнорируем ошибки require
                         }
                     }
-                }
+                };
 
                 // Вызываем verify
                 try {
                     verifyFn(req, verified);
                 } catch (ex) {
-                    if (typeof self.error === 'function') {
-                        return self.error(ex);
+                    if (typeof this.error === 'function') {
+                        return this.error(ex);
                     }
                     // Fallback через BaseStrategy.prototype
                     try {
-                        // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-                        const BaseStrategy =
-                            require('passport-strategy').Strategy;
+                        /* eslint-disable */
+                        const passportStrategyModule = require('passport-strategy');
+                        const BaseStrategy = passportStrategyModule?.Strategy;
+                        /* eslint-enable */
                         if (
                             BaseStrategy?.prototype?.error &&
                             typeof BaseStrategy.prototype.error === 'function'
                         ) {
-                            return BaseStrategy.prototype.error.call(self, ex);
+                            return BaseStrategy.prototype.error.call(this, ex);
                         }
                     } catch {
                         // Игнорируем ошибки require

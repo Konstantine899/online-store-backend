@@ -10,7 +10,6 @@ import type {
     IOAuth2UserProfile,
     IOIDCUserProfile,
     ISAMLUserProfile,
-    ISSOUserProfile,
 } from '@app/domain/types/sso/sso-user-profile.types';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { SSOUserProfileMapper } from '../sso-user-profile.mapper';
@@ -51,6 +50,7 @@ describe('SSOUserProfileMapper (unit)', () => {
                 roles: ['Admin', 'User'],
                 accessToken: 'token-123',
                 refreshToken: 'refresh-123',
+                providerType: 'OAUTH2',
             };
 
             const result = mapper.mapProfile(profile, oauth2Config);
@@ -117,13 +117,16 @@ describe('SSOUserProfileMapper (unit)', () => {
 
         it('должен маппить SAML профиль с nameID', () => {
             const profile: ISAMLUserProfile = {
+                id: 'user-123',
                 nameID: 'user-123',
-                nameIDFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+                nameIDFormat:
+                    'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
                 email: 'user@example.com',
                 firstName: 'John',
                 lastName: 'Doe',
                 roles: ['Admin'],
                 sessionIndex: 'session-123',
+                providerType: 'SAML',
             };
 
             const result = mapper.mapProfile(profile, samlConfig);
@@ -172,15 +175,17 @@ describe('SSOUserProfileMapper (unit)', () => {
 
         it('должен маппить OIDC профиль с sub claim', () => {
             const profile: IOIDCUserProfile = {
+                id: 'user-123',
                 sub: 'user-123',
                 email: 'user@example.com',
-                given_name: 'John',
-                family_name: 'Doe',
-                name: 'John Doe',
+                firstName: 'John',
+                lastName: 'Doe',
+                displayName: 'John Doe',
                 roles: ['Admin'],
                 idToken: 'id-token-123',
                 accessToken: 'access-token-123',
                 refreshToken: 'refresh-token-123',
+                providerType: 'OIDC',
             };
 
             const result = mapper.mapProfile(profile, oidcConfig);
@@ -299,4 +304,3 @@ describe('SSOUserProfileMapper (unit)', () => {
         });
     });
 });
-

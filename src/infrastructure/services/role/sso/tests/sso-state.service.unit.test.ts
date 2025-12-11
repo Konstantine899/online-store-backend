@@ -48,8 +48,10 @@ describe('SSOStateService (unit)', () => {
             const providerId = 100;
 
             const state = service.generateState(tenantId, providerId);
-            const count = service.getActiveStatesCount();
+            expect(state).toBeDefined();
+            expect(state).toMatch(/^[a-f0-9]{64}$/);
 
+            const count = service.getActiveStatesCount();
             expect(count).toBeGreaterThan(0);
         });
 
@@ -157,6 +159,8 @@ describe('SSOStateService (unit)', () => {
             service.validateState(state1);
 
             expect(service.getActiveStatesCount()).toBe(1);
+            // state2 остается активным после удаления state1
+            expect(state2).toBeDefined();
         });
     });
 
@@ -194,4 +198,3 @@ describe('SSOStateService (unit)', () => {
         });
     });
 });
-

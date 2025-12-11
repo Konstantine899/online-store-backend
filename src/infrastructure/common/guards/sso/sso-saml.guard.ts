@@ -21,7 +21,7 @@ export class SSOSAMLGuard extends AuthGuard('saml') {
         err: Error | null,
         user: TUser,
         info: Error | string | undefined,
-        context: ExecutionContext,
+        _context: ExecutionContext, // eslint-disable-line @typescript-eslint/no-unused-vars
     ): TUser {
         // Если есть ошибка, обрабатываем её
         if (err) {

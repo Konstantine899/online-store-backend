@@ -282,23 +282,26 @@ export class LDAPProvider implements IExternalRoleProvider {
             );
 
             if (process.env.NODE_ENV === 'test') {
+                const firstEntry = entries[0] as ldap.SearchEntry & {
+                    objectName?: unknown;
+                };
                 console.log('[LDAPProvider] getUserById search result:', {
                     externalUserId,
                     entriesCount: entries.length,
                     searchBase,
                     searchFilter,
-                    firstEntry: entries[0]
+                    firstEntry: firstEntry
                         ? {
-                              dn: entries[0].dn?.toString(),
-                              objectName: (entries[0] as any).objectName,
-                              hasDn: !!entries[0].dn,
-                              hasObjectName: !!(entries[0] as any).objectName,
-                              attributesCount: entries[0].attributes?.length,
-                              attributesTypes: entries[0].attributes?.map(
+                              dn: firstEntry.dn?.toString(),
+                              objectName: firstEntry.objectName,
+                              hasDn: !!firstEntry.dn,
+                              hasObjectName: !!firstEntry.objectName,
+                              attributesCount: firstEntry.attributes?.length,
+                              attributesTypes: firstEntry.attributes?.map(
                                   (a) => a.type,
                               ),
-                              entryKeys: Object.keys(entries[0]),
-                              entryType: typeof entries[0],
+                              entryKeys: Object.keys(firstEntry),
+                              entryType: typeof firstEntry,
                           }
                         : null,
                 });
