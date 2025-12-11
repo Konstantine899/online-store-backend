@@ -32,12 +32,18 @@ export class PassportCustomStrategyWrapper extends CustomStrategy {
 
         if (!callback || typeof callback !== 'function') {
             const errorMsg = `PassportCustomStrategyWrapper requires a verify callback. Received ${args.length} args: ${args.map((arg) => typeof arg).join(', ')}`;
-            console.error('[PassportCustomStrategyWrapper]', errorMsg, 'args:', args);
+            console.error(
+                '[PassportCustomStrategyWrapper]',
+                errorMsg,
+                'args:',
+                args,
+            );
             throw new TypeError(errorMsg);
         }
 
         // Вызываем родительский конструктор с callback как первым аргументом
         // passport-custom.Strategy требует verify как первый (и единственный) аргумент
+        // Родительский конструктор устанавливает this._verify = verify
         super(callback);
 
         // Убеждаемся, что _verify установлен правильно после вызова super()
@@ -45,7 +51,6 @@ export class PassportCustomStrategyWrapper extends CustomStrategy {
         let verify = (this as any)._verify;
         if (!verify || typeof verify !== 'function') {
             // Если _verify не установлен родительским конструктором, устанавливаем его вручную
-            // Это может произойти в некоторых случаях, когда родительский конструктор не устанавливает _verify правильно
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (this as any)._verify = callback;
             verify = callback;
@@ -54,38 +59,205 @@ export class PassportCustomStrategyWrapper extends CustomStrategy {
             );
         }
 
-        // Дополнительная проверка: убеждаемся, что _verify установлен и является функцией
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const finalVerify = (this as any)._verify;
-        if (!finalVerify || typeof finalVerify !== 'function') {
-            const errorMsg = `Failed to set _verify in PassportCustomStrategyWrapper. _verify type: ${typeof finalVerify}, value: ${finalVerify}`;
-            console.error('[PassportCustomStrategyWrapper]', errorMsg);
-            throw new Error(errorMsg);
-        }
+        // КРИТИЧНО: Защищаем _verify от перезаписи через Object.defineProperty
+        // Это гарантирует, что _verify не будет потерян при регистрации стратегии в Passport
+        // или при других операциях
+        Object.defineProperty(this, '_verify', {
+            value: verify,
+            writable: true, // Разрешаем перезапись для возможного восстановления
+            configurable: true, // Разрешаем конфигурацию
+            enumerable: false, // Скрываем от перечисления
+        });
 
         // Сохраняем ссылку на callback для возможного восстановления _verify
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (this as any)._savedCallback = callback;
 
-        // Переопределяем метод authenticate, чтобы убедиться, что _verify всегда доступен
-        // Сохраняем ссылку на this и callback для использования в замыкании
-        const self = this;
-        const savedCallback = callback;
-        const originalAuthenticate = this.authenticate;
+        // КРИТИЧНО: Проблема в том, что passport.authenticate создает новый экземпляр через Object.create(prototype)
+        // Это означает, что свойства экземпляра (включая _verify) не копируются
+        // Решение: устанавливаем _verify на прототипе, чтобы он был доступен во всех экземплярах
+
+        // Устанавливаем _verify на прототипе, чтобы он был доступен при Object.create
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (this as any).authenticate = function (req: unknown) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            if (!(this as any)._verify || typeof (this as any)._verify !== 'function') {
-                // Если _verify потерян, восстанавливаем его из сохраненного callback
+        (PassportCustomStrategyWrapper.prototype as any)._verify = callback;
+
+        // Также устанавливаем _verify на текущем экземпляре для совместимости
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (this as any)._verify = callback;
+
+        // Переопределяем authenticate на прототипе, чтобы он был доступен во всех экземплярах
+        // Используем обычную функцию (не arrow), чтобы сохранить правильный контекст this
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (PassportCustomStrategyWrapper.prototype as any).authenticate =
+            function (req: unknown) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (this as any)._verify = savedCallback;
-                console.warn(
-                    '[PassportCustomStrategyWrapper] _verify was lost, restored from savedCallback',
-                );
-            }
-            // Вызываем оригинальный метод authenticate с правильным контекстом
-            return originalAuthenticate.call(this, req);
-        };
+                const self = this as any;
+
+                // КРИТИЧНО: passport-custom вызывает this._verify(req, verified) напрямую
+                // Но при Object.create(prototype) свойства экземпляра не копируются
+                // Поэтому проверяем _verify на экземпляре, затем на прототипе
+                let verifyFn = self._verify;
+                if (!verifyFn || typeof verifyFn !== 'function') {
+                    // Проверяем прототип
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const proto = Object.getPrototypeOf(self);
+                    if (
+                        proto &&
+                        proto._verify &&
+                        typeof proto._verify === 'function'
+                    ) {
+                        verifyFn = proto._verify;
+                    } else {
+                        // Если _verify не найден, это критическая ошибка
+                        const errorMsg =
+                            'PassportCustomStrategyWrapper: _verify is not available on instance or prototype';
+                        console.error(
+                            '[PassportCustomStrategyWrapper]',
+                            errorMsg,
+                        );
+                        // Проверяем, что метод error существует перед вызовом
+                        if (typeof self.error === 'function') {
+                            return self.error(new Error(errorMsg));
+                        }
+                        // Fallback: пробуем через BaseStrategy.prototype
+                        try {
+                            // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+                            const BaseStrategy =
+                                require('passport-strategy').Strategy;
+                            if (
+                                BaseStrategy?.prototype?.error &&
+                                typeof BaseStrategy.prototype.error ===
+                                    'function'
+                            ) {
+                                return BaseStrategy.prototype.error.call(
+                                    self,
+                                    new Error(errorMsg),
+                                );
+                            }
+                        } catch {
+                            // Игнорируем ошибки require
+                        }
+                        // Если ничего не помогло, просто возвращаемся
+                        // Passport Guard должен обработать отсутствие user
+                        return;
+                    }
+                    // Восстанавливаем _verify на экземпляре для будущих вызовов
+                    self._verify = verifyFn;
+                }
+
+                // Создаем функцию verified, как это делает оригинальный passport-custom
+                function verified(
+                    err: Error | null,
+                    user: unknown,
+                    info: unknown,
+                ) {
+                    // КРИТИЧНО: Проверяем, что self существует
+                    if (!self) {
+                        console.error(
+                            '[PassportCustomStrategyWrapper.verified] self is undefined',
+                        );
+                        return;
+                    }
+
+                    if (err) {
+                        // Проверяем, что метод error существует перед вызовом
+                        if (self.error && typeof self.error === 'function') {
+                            return self.error(err);
+                        }
+                        // Fallback через BaseStrategy.prototype
+                        try {
+                            // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+                            const BaseStrategy =
+                                require('passport-strategy').Strategy;
+                            if (
+                                BaseStrategy?.prototype?.error &&
+                                typeof BaseStrategy.prototype.error ===
+                                    'function'
+                            ) {
+                                return BaseStrategy.prototype.error.call(
+                                    self,
+                                    err,
+                                );
+                            }
+                        } catch {
+                            // Игнорируем ошибки require
+                        }
+                        return;
+                    }
+                    if (!user) {
+                        // Проверяем, что метод fail существует перед вызовом
+                        if (self.fail && typeof self.fail === 'function') {
+                            return self.fail(info);
+                        }
+                        // Fallback через BaseStrategy.prototype
+                        try {
+                            // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+                            const BaseStrategy =
+                                require('passport-strategy').Strategy;
+                            if (
+                                BaseStrategy?.prototype?.fail &&
+                                typeof BaseStrategy.prototype.fail ===
+                                    'function'
+                            ) {
+                                return BaseStrategy.prototype.fail.call(
+                                    self,
+                                    info,
+                                );
+                            }
+                        } catch {
+                            // Игнорируем ошибки require
+                        }
+                        return;
+                    }
+                    // Проверяем, что метод success существует перед вызовом
+                    if (self.success && typeof self.success === 'function') {
+                        self.success(user, info);
+                    } else {
+                        // Fallback через BaseStrategy.prototype
+                        try {
+                            // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+                            const BaseStrategy =
+                                require('passport-strategy').Strategy;
+                            if (
+                                BaseStrategy?.prototype?.success &&
+                                typeof BaseStrategy.prototype.success ===
+                                    'function'
+                            ) {
+                                BaseStrategy.prototype.success.call(
+                                    self,
+                                    user,
+                                    info,
+                                );
+                            }
+                        } catch {
+                            // Игнорируем ошибки require
+                        }
+                    }
+                }
+
+                // Вызываем verify
+                try {
+                    verifyFn(req, verified);
+                } catch (ex) {
+                    if (typeof self.error === 'function') {
+                        return self.error(ex);
+                    }
+                    // Fallback через BaseStrategy.prototype
+                    try {
+                        // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+                        const BaseStrategy =
+                            require('passport-strategy').Strategy;
+                        if (
+                            BaseStrategy?.prototype?.error &&
+                            typeof BaseStrategy.prototype.error === 'function'
+                        ) {
+                            return BaseStrategy.prototype.error.call(self, ex);
+                        }
+                    } catch {
+                        // Игнорируем ошибки require
+                    }
+                    return;
+                }
+            };
     }
 }
-

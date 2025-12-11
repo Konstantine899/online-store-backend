@@ -15,6 +15,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { SequelizeModule } from '@nestjs/sequelize';
 import passport from 'passport';
+import {
+    OAuth2SSOStrategy,
+    OIDCSSOStrategy,
+    SAMLSSOStrategy,
+    SSOStrategyFactory,
+} from '../common/strategies/sso';
+import { CustomPassportStrategy } from '../common/strategies/sso/custom-passport-strategy';
 import { RepositoriesModule } from '../repositories/repositories.module';
 import { AuditCleanupService } from './audit/audit-cleanup.service';
 import { AuditService } from './audit/audit.service';
@@ -36,25 +43,24 @@ import { ProductPropertyService } from './product-property/product-property.serv
 import { ProductService } from './product/product.service';
 import { PromoCodeService } from './promo-code/promo-code.service';
 import { RatingService } from './rating/rating.service';
+import {
+    ADProvider,
+    LDAPClientService,
+    LDAPProvider,
+    LDAPRoleSyncService,
+} from './role/ldap';
 import { RoleAnalyticsService } from './role/role-analytics.service';
 import { RoleCacheService } from './role/role-cache.service';
 import { RoleExpirationNotificationService } from './role/role-expiration-notification.service';
 import { RoleExpirationService } from './role/role-expiration.service';
 import { RoleService } from './role/role.service';
-import { UserRolesCacheService } from './role/user-roles-cache.service';
-import { ADProvider, LDAPClientService, LDAPProvider, LDAPRoleSyncService } from './role/ldap';
 import {
+    SSORoleSyncService,
     SSOStateService,
     SSOUserProfileMapper,
-    SSORoleSyncService,
 } from './role/sso';
+import { UserRolesCacheService } from './role/user-roles-cache.service';
 import { TokenService } from './token/token.service';
-import {
-    OAuth2SSOStrategy,
-    SAMLSSOStrategy,
-    OIDCSSOStrategy,
-    SSOStrategyFactory,
-} from '../common/strategies/sso';
 import { UserAddressService } from './user-address/user-address.service';
 import { UserCleanupService } from './user/user-cleanup.service';
 import { UserService } from './user/user.service';
@@ -198,12 +204,104 @@ export class ServicesModule implements OnModuleInit {
         void this.samlSSOStrategy;
         void this.oidcSSOStrategy;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const registeredStrategies = Object.keys((passport as any)._strategies ?? {});
+        // Passport хранит стратегии в приватном поле _strategies
+        const passportWithStrategies = passport as typeof passport & {
+            _strategies?: Record<string, unknown>;
+        };
+        const registeredStrategies = Object.keys(
+            passportWithStrategies._strategies ?? {},
+        );
 
         console.log(
             `[ServicesModule constructor] Registered strategies: ${registeredStrategies.join(', ')}`,
         );
+
+        // КРИТИЧНО: Сохраняем callback на прототипе стратегий сразу после их создания
+        // Это гарантирует, что _verify будет доступен при Object.create(prototype)
+        // даже если конструктор не вызывался при создании экземпляра через passport.authenticate
+        this.saveCallbackOnPrototype('oauth2', this.oauth2SSOStrategy);
+        this.saveCallbackOnPrototype('saml', this.samlSSOStrategy);
+        this.saveCallbackOnPrototype('oidc', this.oidcSSOStrategy);
+    }
+
+    /**
+     * Сохраняет callback на прототипе стратегии для работы с Object.create(prototype)
+     * Вызывается после регистрации стратегии в Passport
+     */
+    private saveCallbackOnPrototype(
+        strategyName: string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        strategyInstance: any,
+    ): void {
+        try {
+            console.log(
+                `[ServicesModule.saveCallbackOnPrototype] Processing ${strategyName}`,
+            );
+            console.log(
+                `[ServicesModule.saveCallbackOnPrototype] Instance _verify: ${typeof strategyInstance?._verify}`,
+            );
+
+            // КРИТИЧНО: Получаем callback из экземпляра стратегии (_verify)
+            // PassportStrategy устанавливает _verify в конструкторе через super(...args, callback)
+            let callback = strategyInstance?._verify;
+
+            console.log(
+                `[ServicesModule.saveCallbackOnPrototype] Callback from instance: ${typeof callback}`,
+            );
+
+            if (!callback || typeof callback !== 'function') {
+                // Пробуем получить из статического Map по имени стратегии
+                callback =
+                    CustomPassportStrategy.verifyCallbacksByName?.get(
+                        strategyName,
+                    );
+                console.log(
+                    `[ServicesModule.saveCallbackOnPrototype] Callback from Map by name: ${typeof callback}`,
+                );
+            }
+
+            // Если все еще не найден, пробуем получить из экземпляра через конструктор
+            if (!callback || typeof callback !== 'function') {
+                const Constructor = strategyInstance?.constructor;
+                if (Constructor) {
+                    callback =
+                        CustomPassportStrategy.verifyCallbacks.get(Constructor);
+                    console.log(
+                        `[ServicesModule.saveCallbackOnPrototype] Callback from Map by constructor: ${typeof callback}, Constructor: ${Constructor.name}`,
+                    );
+                }
+            }
+
+            if (callback && typeof callback === 'function') {
+                // Сохраняем callback на прототипе стратегии
+                const proto = Object.getPrototypeOf(strategyInstance);
+                if (proto) {
+                    Object.defineProperty(proto, '_verify', {
+                        value: callback,
+                        writable: true,
+                        configurable: true,
+                        enumerable: false,
+                    });
+                    // Также сохраняем в Map по имени для будущих вызовов
+                    CustomPassportStrategy.verifyCallbacksByName.set(
+                        strategyName,
+                        callback,
+                    );
+                    console.log(
+                        `[ServicesModule] Saved callback on prototype for ${strategyName}`,
+                    );
+                }
+            } else {
+                console.warn(
+                    `[ServicesModule] Callback not found for ${strategyName}. Instance has _verify: ${typeof strategyInstance?._verify}, Constructor: ${strategyInstance?.constructor?.name}`,
+                );
+            }
+        } catch (error) {
+            console.warn(
+                `[ServicesModule] Failed to save callback on prototype for ${strategyName}:`,
+                error,
+            );
+        }
     }
 
     /**
@@ -223,10 +321,25 @@ export class ServicesModule implements OnModuleInit {
         // Однако в тестовом окружении может быть проблема с порядком инициализации,
         // поэтому явно регистрируем стратегии, если они не зарегистрированы
 
+        // КРИТИЧНО: Сохраняем callback на прототипе для всех стратегий
+        // Это гарантирует, что _verify будет доступен при Object.create(prototype)
+        // даже если конструктор не вызывался при создании экземпляра через passport.authenticate
+        this.saveCallbackOnPrototype('oauth2', this.oauth2SSOStrategy);
+        this.saveCallbackOnPrototype('saml', this.samlSSOStrategy);
+        this.saveCallbackOnPrototype('oidc', this.oidcSSOStrategy);
+
+        // КРИТИЧНО: Переопределяем authenticate на прототипе MultiSamlStrategy для SAML стратегии
+        // Это должно происходить после создания экземпляра стратегии
+        this.samlSSOStrategy.ensureAuthenticateOverride();
+
         // КРИТИЧНО: Явно регистрируем стратегии в Passport, если они не зарегистрированы
         // Это критично для тестового окружения, где стратегии могут не регистрироваться автоматически
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const registeredStrategies = Object.keys((passport as any)._strategies ?? {});
+        const passportWithStrategies = passport as typeof passport & {
+            _strategies?: Record<string, unknown>;
+        };
+        const registeredStrategies = Object.keys(
+            passportWithStrategies._strategies ?? {},
+        );
         const requiredStrategies = ['oauth2', 'saml', 'oidc'];
         const missingStrategies = requiredStrategies.filter(
             (name) => !registeredStrategies.includes(name),
@@ -240,25 +353,48 @@ export class ServicesModule implements OnModuleInit {
             );
 
             try {
-                if (missingStrategies.includes('oauth2') && this.oauth2SSOStrategy) {
+                if (
+                    missingStrategies.includes('oauth2') &&
+                    this.oauth2SSOStrategy
+                ) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     (passport as any).use('oauth2', this.oauth2SSOStrategy);
-                    console.log('[ServicesModule] Manually registered oauth2 strategy');
+                    console.log(
+                        '[ServicesModule] Manually registered oauth2 strategy',
+                    );
+                    // КРИТИЧНО: Сохраняем callback на прототипе стратегии для работы с Object.create(prototype)
+                    this.saveCallbackOnPrototype(
+                        'oauth2',
+                        this.oauth2SSOStrategy,
+                    );
                 }
-                if (missingStrategies.includes('saml') && this.samlSSOStrategy) {
+                if (
+                    missingStrategies.includes('saml') &&
+                    this.samlSSOStrategy
+                ) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     (passport as any).use('saml', this.samlSSOStrategy);
-                    console.log('[ServicesModule] Manually registered saml strategy');
+                    console.log(
+                        '[ServicesModule] Manually registered saml strategy',
+                    );
+                    this.saveCallbackOnPrototype('saml', this.samlSSOStrategy);
                 }
-                if (missingStrategies.includes('oidc') && this.oidcSSOStrategy) {
+                if (
+                    missingStrategies.includes('oidc') &&
+                    this.oidcSSOStrategy
+                ) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     (passport as any).use('oidc', this.oidcSSOStrategy);
-                    console.log('[ServicesModule] Manually registered oidc strategy');
+                    console.log(
+                        '[ServicesModule] Manually registered oidc strategy',
+                    );
+                    this.saveCallbackOnPrototype('oidc', this.oidcSSOStrategy);
                 }
 
                 // Проверяем регистрацию после ручной регистрации
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const afterRegistration = Object.keys((passport as any)._strategies ?? {});
+                const afterRegistration = Object.keys(
+                    passportWithStrategies._strategies ?? {},
+                );
                 const stillMissing = requiredStrategies.filter(
                     (name) => !afterRegistration.includes(name),
                 );

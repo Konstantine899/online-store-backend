@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
-import { PassportCustomStrategyWrapper } from './passport-custom-wrapper';
+import { CustomPassportStrategy } from './custom-passport-strategy';
 
 /**
  * Базовая OAuth 2.0 стратегия для SSO
@@ -34,7 +34,7 @@ import { PassportCustomStrategyWrapper } from './passport-custom-wrapper';
  */
 @Injectable()
 export class OAuth2SSOStrategy extends PassportStrategy(
-    PassportCustomStrategyWrapper,
+    CustomPassportStrategy,
     'oauth2',
 ) {
     private readonly logger = createLogger('OAuth2SSOStrategy');
@@ -46,8 +46,8 @@ export class OAuth2SSOStrategy extends PassportStrategy(
         private readonly ssoRoleSyncService: SSORoleSyncService,
     ) {
         // PassportStrategy создает callback из validate и передает его в super() как последний аргумент
-        // PassportCustomStrategyWrapper извлекает callback из аргументов и передает его в passport-custom
-        // как первый аргумент, что решает проблему несовместимости
+        // CustomPassportStrategy извлекает callback из аргументов и устанавливает его как _verify
+        // на прототипе для правильной работы с Object.create(prototype)
         super();
     }
 

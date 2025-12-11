@@ -1,5 +1,5 @@
 import { PassportStrategy } from '@nestjs/passport';
-import { PassportCustomStrategyWrapper } from './passport-custom-wrapper';
+import { CustomPassportStrategy } from './custom-passport-strategy';
 import {
     HttpException,
     HttpStatus,
@@ -33,7 +33,7 @@ import { IProviderConfig } from '@app/domain/models/external-role-config.model';
  */
 @Injectable()
 export class OIDCSSOStrategy extends PassportStrategy(
-    PassportCustomStrategyWrapper,
+    CustomPassportStrategy,
     'oidc',
 ) {
     private readonly logger = createLogger('OIDCSSOStrategy');
@@ -49,9 +49,8 @@ export class OIDCSSOStrategy extends PassportStrategy(
         private readonly ssoUserProfileMapper: SSOUserProfileMapper,
         private readonly ssoRoleSyncService: SSORoleSyncService,
     ) {
-        // PassportStrategy создает callback из validate и передает его в super() как последний аргумент
-        // PassportCustomStrategyWrapper извлекает callback из аргументов и передает его в passport-custom
-        // как первый аргумент, что решает проблему несовместимости
+        // CustomPassportStrategy извлекает callback из аргументов и устанавливает его как _verify
+        // на прототипе для правильной работы с Object.create(prototype)
         super();
     }
 

@@ -1,3 +1,4 @@
+import { TenantContext } from '@app/infrastructure/common/context';
 import {
     CheckUserAuthSwaggerDecorator,
     LoginSwaggerDecorator,
@@ -5,16 +6,18 @@ import {
     RegistrationSwaggerDecorator,
     UpdateAccessTokenSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
+import { SSOStrategyFactory } from '@app/infrastructure/common/strategies/sso/sso-strategy.factory';
 import { LoginDto, RegistrationDto } from '@app/infrastructure/dto';
 import { ForgotPasswordDto } from '@app/infrastructure/dto/auth/forgot-password.dto';
 import { ResetPasswordDto } from '@app/infrastructure/dto/auth/reset-password.dto';
 import { SSOLogoutDto } from '@app/infrastructure/dto/sso';
-import { AuthService, UserService } from '@app/infrastructure/services';
-import { SSOStrategyFactory } from '@app/infrastructure/common/strategies/sso/sso-strategy.factory';
 import { ExternalRoleSyncRepository } from '@app/infrastructure/repositories/role/external-role-sync.repository';
+import {
+    SSOLoginResponse,
+    SSOLogoutResponse,
+} from '@app/infrastructure/responses/sso';
+import { AuthService, UserService } from '@app/infrastructure/services';
 import { TokenService } from '@app/infrastructure/services/token/token.service';
-import { TenantContext } from '@app/infrastructure/common/context';
-import { SSOLoginResponse, SSOLogoutResponse } from '@app/infrastructure/responses/sso';
 import {
     BadRequestException,
     Body,
@@ -49,8 +52,8 @@ import { AuthGuard } from '@app/infrastructure/common/guards';
 import { BruteforceGuard } from '@app/infrastructure/common/guards/bruteforce.guard';
 import {
     SSOOAuth2Guard,
-    SSOSAMLGuard,
     SSOOIDCGuard,
+    SSOSAMLGuard,
 } from '@app/infrastructure/common/guards/sso';
 import {
     buildRefreshCookieOptions,
@@ -351,7 +354,10 @@ export class AuthController {
         @Req() req: Request,
         @Res() res: Response,
     ): Promise<void> {
-        const tenantId = this.tenantContext.getTenantIdOrNull();
+        // КРИТИЧНО: Используем req.tenantId вместо tenantContext.getTenantIdOrNull()
+        // так как TenantContext имеет scope REQUEST и в тестах может не работать правильно
+        // TenantMiddleware устанавливает req.tenantId напрямую
+        const tenantId = req.tenantId ?? this.tenantContext.getTenantIdOrNull();
         if (!tenantId) {
             throw new UnauthorizedException('Tenant ID не найден в контексте');
         }
@@ -364,8 +370,10 @@ export class AuthController {
             );
 
         if (!providerConfig) {
-            throw new NotFoundException(
-                `Провайдер SSO с ID ${providerId} не найден`,
+            // Для SSO endpoints возвращаем 401 вместо 404 для безопасности
+            // Не раскрываем информацию о существовании провайдеров
+            throw new UnauthorizedException(
+                `Провайдер SSO с ID ${providerId} не найден или недоступен`,
             );
         }
 
@@ -389,25 +397,28 @@ export class AuthController {
         let authURL: string;
         switch (strategyType) {
             case 'oauth2':
-                authURL = await this.ssoStrategyFactory.createOAuth2AuthorizationUrl(
-                    providerId,
-                    tenantId,
-                    baseUrl,
-                );
+                authURL =
+                    await this.ssoStrategyFactory.createOAuth2AuthorizationUrl(
+                        providerId,
+                        tenantId,
+                        baseUrl,
+                    );
                 break;
             case 'saml':
-                authURL = await this.ssoStrategyFactory.createSAMLAuthorizationUrl(
-                    providerId,
-                    tenantId,
-                    baseUrl,
-                );
+                authURL =
+                    await this.ssoStrategyFactory.createSAMLAuthorizationUrl(
+                        providerId,
+                        tenantId,
+                        baseUrl,
+                    );
                 break;
             case 'oidc':
-                authURL = await this.ssoStrategyFactory.createOIDCAuthorizationUrl(
-                    providerId,
-                    tenantId,
-                    baseUrl,
-                );
+                authURL =
+                    await this.ssoStrategyFactory.createOIDCAuthorizationUrl(
+                        providerId,
+                        tenantId,
+                        baseUrl,
+                    );
                 break;
             default:
                 throw new BadRequestException(
@@ -473,11 +484,13 @@ export class AuthController {
         providerType: 'OAUTH2' | 'SAML' | 'OIDC',
     ): Promise<SSOLoginResponse> {
         // Получаем результат аутентификации из request (установлен Passport Guard)
-        const ssoResult = req.user as {
-            user: { id: number };
-            ssoProfile: { email: string };
-            providerConfig: { id: number; name: string };
-        } | undefined;
+        const ssoResult = req.user as
+            | {
+                  user: { id: number };
+                  ssoProfile: { email: string };
+                  providerConfig: { id: number; name: string };
+              }
+            | undefined;
 
         if (!ssoResult?.user) {
             throw new UnauthorizedException(

@@ -100,6 +100,15 @@ export class TenantMiddleware implements NestMiddleware {
         // 4. Attach tenant ID to request context
         this.tenantContext.setTenantId(tenantId);
 
+        // Логируем для диагностики в тестах
+        if (process.env.NODE_ENV === 'test') {
+            console.log('[TenantMiddleware] Setting tenantId in context', {
+                tenantId,
+                hasTenantContext: !!this.tenantContext,
+                tenantIdAfterSet: this.tenantContext.getTenantIdOrNull(),
+            });
+        }
+
         // Also attach to request for convenience
         req.tenantId = tenantId;
         req.tenant = tenant;
