@@ -200,6 +200,84 @@ describe('SSOStateService (unit)', () => {
             // Восстанавливаем
             nowSpy.mockRestore();
         });
+
+        it('должен очищать истекшие state при прямом вызове cleanupExpiredStates', () => {
+            const nowSpy = jest.spyOn(Date, 'now');
+            const currentTime = Date.now();
+
+            // Генерируем state1 с текущим временем
+            nowSpy.mockReturnValue(currentTime);
+            const state1 = service.generateState(1, 100);
+
+            // Генерируем state2 позже (через 1 минуту), чтобы он истекал позже
+            const state2Time = currentTime + 1 * 60 * 1000;
+            nowSpy.mockReturnValue(state2Time);
+            const state2 = service.generateState(1, 200);
+
+            expect(service.getActiveStatesCount()).toBe(2);
+
+            // Устанавливаем время так, чтобы state1 истек (6 минут от его создания > 5 минут TTL)
+            // но state2 еще активен (5 минут от его создания < 5 минут TTL)
+            nowSpy.mockReturnValue(currentTime + 6 * 60 * 1000);
+
+            // Вызываем cleanup напрямую через приватный метод (для тестирования)
+            // @ts-expect-error - Доступ к приватному методу для тестирования
+            service.cleanupExpiredStates();
+
+            // state1 должен быть удален, state2 остаться
+            expect(service.getActiveStatesCount()).toBe(1);
+            
+            // Проверяем, что state2 валиден (state1 уже удален cleanup)
+            const state2Data = service.validateState(state2);
+            expect(state2Data).not.toBeNull();
+            expect(state2Data?.tenantId).toBe(1);
+            expect(state2Data?.providerId).toBe(200);
+
+            nowSpy.mockRestore();
+        });
+
+        it('должен корректно обрабатывать cleanup когда нет истекших state', () => {
+            const state1 = service.generateState(1, 100);
+            const state2 = service.generateState(1, 200);
+
+            const countBefore = service.getActiveStatesCount();
+            expect(countBefore).toBe(2);
+
+            // Вызываем cleanup (нет истекших state)
+            // @ts-expect-error - Доступ к приватному методу для тестирования
+            service.cleanupExpiredStates();
+
+            // Количество не должно измениться
+            const countAfter = service.getActiveStatesCount();
+            expect(countAfter).toBe(2);
+            expect(service.validateState(state1)).not.toBeNull();
+            expect(service.validateState(state2)).not.toBeNull();
+        });
+
+        it('должен очищать все истекшие state при cleanup', () => {
+            const nowSpy = jest.spyOn(Date, 'now');
+            const currentTime = Date.now();
+
+            // Генерируем несколько state
+            nowSpy.mockReturnValue(currentTime);
+            const state1 = service.generateState(1, 100);
+            const state2 = service.generateState(1, 200);
+            const state3 = service.generateState(1, 300);
+
+            // Симулируем истечение для всех
+            nowSpy.mockReturnValue(currentTime + 6 * 60 * 1000);
+
+            // @ts-expect-error - Доступ к приватному методу для тестирования
+            service.cleanupExpiredStates();
+
+            // Все state должны быть удалены
+            expect(service.getActiveStatesCount()).toBe(0);
+            expect(service.validateState(state1)).toBeNull();
+            expect(service.validateState(state2)).toBeNull();
+            expect(service.validateState(state3)).toBeNull();
+
+            nowSpy.mockRestore();
+        });
     });
 
     // ============================================================================
@@ -211,6 +289,36 @@ describe('SSOStateService (unit)', () => {
             // В тестовом окружении интервал не создается (NODE_ENV === 'test')
             // Но метод должен работать без ошибок
             expect(() => service.onModuleDestroy()).not.toThrow();
+        });
+
+        it('должен очищать cleanupInterval если он был установлен', () => {
+            // Симулируем наличие cleanupInterval
+            const mockInterval = setInterval(() => {}, 1000);
+            // @ts-expect-error - Доступ к приватному полю для тестирования
+            service.cleanupInterval = mockInterval;
+
+            // Проверяем, что интервал установлен
+            // @ts-expect-error - Доступ к приватному полю для тестирования
+            expect(service.cleanupInterval).toBeDefined();
+
+            // Вызываем onModuleDestroy
+            service.onModuleDestroy();
+
+            // Интервал должен быть очищен
+            // @ts-expect-error - Доступ к приватному полю для тестирования
+            expect(service.cleanupInterval).toBeUndefined();
+
+            // Очищаем мок интервал
+            clearInterval(mockInterval);
+        });
+    });
+
+    describe('constructor', () => {
+        it('не должен создавать интервал в тестовом окружении (NODE_ENV=test)', () => {
+            // В тестовом окружении интервал не создается
+            // Проверяем, что cleanupInterval не установлен для существующего сервиса
+            // @ts-expect-error - Доступ к приватному полю для тестирования
+            expect(service.cleanupInterval).toBeUndefined();
         });
     });
 });
