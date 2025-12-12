@@ -1,10 +1,17 @@
-import { CreateUserDto } from '@app/infrastructure/dto';
-import { UserModel } from '@app/domain/models';
-import {
-    UpdateUserResponse,
-    GetUserResponse,
+import type { UserModel } from '@app/domain/models';
+import type {
+    CreateUserDto,
+    UpdateConsentsDto,
+    UpdateUserDto,
+    UpdateUserStatusDto,
+} from '@app/infrastructure/dto';
+import type { UpdateUserFlagsDto } from '@app/infrastructure/dto/user/update-user-flags.dto';
+import type { UpdateUserPreferencesDto } from '@app/infrastructure/dto/user/update-user-preferences.dto';
+import type {
     CreateUserResponse,
-    GetListUsersResponse,
+    GetPaginatedUsersResponse,
+    GetUserResponse,
+    UpdateUserResponse,
 } from '@app/infrastructure/responses';
 
 export interface IUserRepository {
@@ -12,7 +19,7 @@ export interface IUserRepository {
 
     updateUser(
         user: UserModel,
-        dto: CreateUserDto,
+        dto: UpdateUserDto,
     ): Promise<UpdateUserResponse>;
 
     findUser(id: number): Promise<GetUserResponse>;
@@ -25,7 +32,54 @@ export interface IUserRepository {
 
     findUserByEmail(email: string): Promise<UserModel>;
 
-    findListUsers(): Promise<GetListUsersResponse[]>;
+    findListUsersPaginated(
+        page: number,
+        limit: number,
+    ): Promise<GetPaginatedUsersResponse>;
 
     removeUser(id: number): Promise<number>;
+
+    updatePhone(userId: number, phone: string): Promise<UserModel>;
+
+    updateDateOfBirth(userId: number, dateOfBirth: string): Promise<UserModel>;
+
+    updateConsents(userId: number, dto: UpdateConsentsDto): Promise<UserModel>;
+
+    updateUserStatus(
+        userId: number,
+        dto: UpdateUserStatusDto,
+        tenantId: number,
+    ): Promise<UserModel>;
+
+    updateFlags(
+        userId: number,
+        dto: UpdateUserFlagsDto,
+    ): Promise<UserModel | null>;
+    updatePreferences(
+        userId: number,
+        dto: UpdateUserPreferencesDto,
+    ): Promise<UserModel | null>;
+    verifyEmail(userId: number, tenantId: number): Promise<UserModel | null>;
+    verifyPhone(userId: number, tenantId: number): Promise<UserModel | null>;
+
+    // Verification Code Methods (with tenant isolation)
+    requestVerificationCode(
+        userId: number,
+        channel: 'email' | 'phone',
+        tenantId: number,
+    ): Promise<void>;
+    confirmVerificationCode(
+        userId: number,
+        channel: 'email' | 'phone',
+        code: string,
+        tenantId: number,
+    ): Promise<boolean>;
+
+    // User Statistics Methods
+    getUserStats(): Promise<{
+        totalUsers: number;
+        activeUsers: number;
+        blockedUsers: number;
+        newsletterSubscribers: number;
+    }>;
 }

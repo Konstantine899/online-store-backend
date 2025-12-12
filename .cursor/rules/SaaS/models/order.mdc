@@ -1,0 +1,2319 @@
+# Система заказов (Order System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы заказов для ecommerce приложения с базовыми статусами, простой оплатой и стандартной доставкой, фокусом на быструю разработку и готовность к масштабированию.
+
+## Основные требования
+- **Базовые статусы** - pending, confirmed, shipped, delivered, cancelled
+- **Простая оплата** - pending, paid, failed
+- **Стандартная доставка** - адрес доставки и трек-номер
+- **Отслеживание заказа** - история статусов
+- **Уведомления** - о смене статуса заказа
+- **Возвраты** - простой статус returned
+
+## Структура базы данных
+
+### Таблица `orders` (расширенная)
+```sql
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    order_number VARCHAR(20) NOT NULL UNIQUE,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'returned')),
+    payment_status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'failed')),
+    payment_method VARCHAR(20) CHECK (payment_method IN ('card', 'cash', 'bank_transfer')),
+    total_amount DECIMAL(10,2) NOT NULL,
+    shipping_address JSONB NOT NULL,
+    tracking_number VARCHAR(100),
+    notes TEXT,
+    cancelled_at TIMESTAMP,
+    cancelled_reason TEXT,
+    is_gift_order BOOLEAN DEFAULT false,
+    is_express_delivery BOOLEAN DEFAULT false,
+    requires_shipping BOOLEAN DEFAULT true,
+    is_paid BOOLEAN DEFAULT false,
+    is_recurring BOOLEAN DEFAULT false,
+    is_subscription BOOLEAN DEFAULT false,
+    is_refunded BOOLEAN DEFAULT false,
+    is_cancelled BOOLEAN DEFAULT false,
+    is_disputed BOOLEAN DEFAULT false,
+    is_rush_order BOOLEAN DEFAULT false,
+    is_bulk_order BOOLEAN DEFAULT false,
+    is_wholesale_order BOOLEAN DEFAULT false,
+    is_tax_exempt BOOLEAN DEFAULT false,
+    is_insurance_required BOOLEAN DEFAULT false,
+    is_signature_required BOOLEAN DEFAULT false,
+    is_archived BOOLEAN DEFAULT false,
+    is_test_order BOOLEAN DEFAULT false,
+    is_urgent BOOLEAN DEFAULT false,
+    is_priority BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `order_status_history`
+```sql
+CREATE TABLE order_status_history (
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+    from_status VARCHAR(20),
+    to_status VARCHAR(20) NOT NULL,
+    reason TEXT,
+    changed_by INTEGER REFERENCES users(id),
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Модели Sequelize
+
+### Order Model (расширенная)
+```typescript
+// src/domain/models/order.model.ts
+import { Model, DataType, Column, Table, BelongsTo, HasMany, ForeignKey } from 'sequelize-typescript';
+import { UserModel } from './user.model';
+import { OrderItemModel } from './order-item.model';
+import { OrderStatusHistoryModel } from './order-status-history.model';
+
+export enum OrderStatus {
+    PENDING = 'pending',
+    CONFIRMED = 'confirmed',
+    SHIPPED = 'shipped',
+    DELIVERED = 'delivered',
+    CANCELLED = 'cancelled',
+    RETURNED = 'returned'
+}
+
+export enum PaymentStatus {
+    PENDING = 'pending',
+    PAID = 'paid',
+    FAILED = 'failed'
+}
+
+export enum PaymentMethod {
+    CARD = 'card',
+    CASH = 'cash',
+    BANK_TRANSFER = 'bank_transfer'
+}
+
+interface IOrderModel {
+    id: number;
+    userId: number;
+    orderNumber: string;
+    status: OrderStatus;
+    paymentStatus: PaymentStatus;
+    paymentMethod?: PaymentMethod;
+    totalAmount: number;
+    shippingAddress: any;
+    trackingNumber?: string;
+    notes?: string;
+    cancelledAt?: Date;
+    cancelledReason?: string;
+    isGiftOrder: boolean;
+    isExpressDelivery: boolean;
+    requiresShipping: boolean;
+    isPaid: boolean;
+    isRecurring: boolean;
+    isSubscription: boolean;
+    isRefunded: boolean;
+    isCancelled: boolean;
+    isDisputed: boolean;
+    isRushOrder: boolean;
+    isBulkOrder: boolean;
+    isWholesaleOrder: boolean;
+    isTaxExempt: boolean;
+    isInsuranceRequired: boolean;
+    isSignatureRequired: boolean;
+    isArchived: boolean;
+    isTestOrder: boolean;
+    isUrgent: boolean;
+    isPriority: boolean;
+    user: UserModel;
+    items: OrderItemModel[];
+    statusHistory: OrderStatusHistoryModel[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IOrderCreationAttributes {
+    userId: number;
+    orderNumber: string;
+    status?: OrderStatus;
+    paymentStatus?: PaymentStatus;
+    paymentMethod?: PaymentMethod;
+    totalAmount: number;
+    shippingAddress: any;
+    trackingNumber?: string;
+    notes?: string;
+    isGiftOrder?: boolean;
+    isExpressDelivery?: boolean;
+    requiresShipping?: boolean;
+    isPaid?: boolean;
+    isRecurring?: boolean;
+    isSubscription?: boolean;
+    isRefunded?: boolean;
+    isCancelled?: boolean;
+    isDisputed?: boolean;
+    isRushOrder?: boolean;
+    isBulkOrder?: boolean;
+    isWholesaleOrder?: boolean;
+    isTaxExempt?: boolean;
+    isInsuranceRequired?: boolean;
+    isSignatureRequired?: boolean;
+    isArchived?: boolean;
+    isTestOrder?: boolean;
+    isUrgent?: boolean;
+    isPriority?: boolean;
+}
+
+@Table({
+    tableName: 'orders',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['user_id'], name: 'idx_orders_user_id' },
+        { fields: ['order_number'], name: 'idx_orders_order_number', unique: true },
+        { fields: ['status'], name: 'idx_orders_status' },
+        { fields: ['payment_status'], name: 'idx_orders_payment_status' },
+        { fields: ['tracking_number'], name: 'idx_orders_tracking_number' },
+        { fields: ['is_gift_order'], name: 'idx_orders_is_gift_order' },
+        { fields: ['is_express_delivery'], name: 'idx_orders_is_express_delivery' },
+        { fields: ['requires_shipping'], name: 'idx_orders_requires_shipping' },
+        { fields: ['is_paid'], name: 'idx_orders_is_paid' },
+        { fields: ['is_recurring'], name: 'idx_orders_is_recurring' },
+        { fields: ['is_subscription'], name: 'idx_orders_is_subscription' },
+        { fields: ['is_refunded'], name: 'idx_orders_is_refunded' },
+        { fields: ['is_cancelled'], name: 'idx_orders_is_cancelled' },
+        { fields: ['is_disputed'], name: 'idx_orders_is_disputed' },
+        { fields: ['is_rush_order'], name: 'idx_orders_is_rush_order' },
+        { fields: ['is_bulk_order'], name: 'idx_orders_is_bulk_order' },
+        { fields: ['is_wholesale_order'], name: 'idx_orders_is_wholesale_order' },
+        { fields: ['is_tax_exempt'], name: 'idx_orders_is_tax_exempt' },
+        { fields: ['is_insurance_required'], name: 'idx_orders_is_insurance_required' },
+        { fields: ['is_signature_required'], name: 'idx_orders_is_signature_required' },
+        { fields: ['is_archived'], name: 'idx_orders_is_archived' },
+        { fields: ['is_test_order'], name: 'idx_orders_is_test_order' },
+        { fields: ['is_urgent'], name: 'idx_orders_is_urgent' },
+        { fields: ['is_priority'], name: 'idx_orders_is_priority' },
+        { fields: ['created_at'], name: 'idx_orders_created_at' },
+        { fields: ['user_id', 'status'], name: 'idx_orders_user_status' },
+    ],
+})
+export class OrderModel
+    extends Model<OrderModel, IOrderCreationAttributes>
+    implements IOrderModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.STRING(20),
+        allowNull: false,
+        unique: true,
+        field: 'order_number',
+    })
+    declare orderNumber: string;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(OrderStatus)),
+        allowNull: false,
+        defaultValue: OrderStatus.PENDING,
+    })
+    declare status: OrderStatus;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(PaymentStatus)),
+        allowNull: false,
+        defaultValue: PaymentStatus.PENDING,
+        field: 'payment_status',
+    })
+    declare paymentStatus: PaymentStatus;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(PaymentMethod)),
+        allowNull: true,
+        field: 'payment_method',
+    })
+    declare paymentMethod: PaymentMethod;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        field: 'total_amount',
+    })
+    declare totalAmount: number;
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: false,
+        field: 'shipping_address',
+    })
+    declare shippingAddress: any;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true,
+        field: 'tracking_number',
+    })
+    declare trackingNumber: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare notes: string;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'cancelled_at',
+    })
+    declare cancelledAt: Date;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'cancelled_reason',
+    })
+    declare cancelledReason: string;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_gift_order',
+    })
+    declare isGiftOrder: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_express_delivery',
+    })
+    declare isExpressDelivery: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'requires_shipping',
+    })
+    declare requiresShipping: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_paid',
+    })
+    declare isPaid: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_recurring',
+    })
+    declare isRecurring: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_subscription',
+    })
+    declare isSubscription: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_refunded',
+    })
+    declare isRefunded: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_cancelled',
+    })
+    declare isCancelled: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_disputed',
+    })
+    declare isDisputed: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_rush_order',
+    })
+    declare isRushOrder: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_bulk_order',
+    })
+    declare isBulkOrder: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_wholesale_order',
+    })
+    declare isWholesaleOrder: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_tax_exempt',
+    })
+    declare isTaxExempt: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_insurance_required',
+    })
+    declare isInsuranceRequired: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_signature_required',
+    })
+    declare isSignatureRequired: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_archived',
+    })
+    declare isArchived: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_test_order',
+    })
+    declare isTestOrder: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_urgent',
+    })
+    declare isUrgent: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_priority',
+    })
+    declare isPriority: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'updated_at',
+    })
+    declare updatedAt: Date;
+
+    // Связи
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    @HasMany(() => OrderItemModel)
+    declare items: OrderItemModel[];
+
+    @HasMany(() => OrderStatusHistoryModel)
+    declare statusHistory: OrderStatusHistoryModel[];
+
+    // Методы
+    get isPaid(): boolean {
+        return this.paymentStatus === PaymentStatus.PAID;
+    }
+
+    get isShipped(): boolean {
+        return this.status === OrderStatus.SHIPPED;
+    }
+
+    get isDelivered(): boolean {
+        return this.status === OrderStatus.DELIVERED;
+    }
+
+    get isCancelled(): boolean {
+        return this.status === OrderStatus.CANCELLED;
+    }
+
+    get canBeCancelled(): boolean {
+        return [OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(this.status);
+    }
+
+    get canBeReturned(): boolean {
+        return this.status === OrderStatus.DELIVERED;
+    }
+
+    get hasSpecialFlags(): boolean {
+        return this.isGiftOrder || this.isExpressDelivery;
+    }
+
+    get isRecurringOrder(): boolean {
+        return this.isRecurring;
+    }
+
+    get isSubscriptionOrder(): boolean {
+        return this.isSubscription;
+    }
+
+    get isRefundedOrder(): boolean {
+        return this.isRefunded;
+    }
+
+    get isCancelledOrder(): boolean {
+        return this.isCancelled;
+    }
+
+    get isDisputedOrder(): boolean {
+        return this.isDisputed;
+    }
+
+    get isRushOrderFlag(): boolean {
+        return this.isRushOrder;
+    }
+
+    get isBulkOrderFlag(): boolean {
+        return this.isBulkOrder;
+    }
+
+    get isWholesaleOrderFlag(): boolean {
+        return this.isWholesaleOrder;
+    }
+
+    get isTaxExemptOrder(): boolean {
+        return this.isTaxExempt;
+    }
+
+    get isInsuranceRequiredOrder(): boolean {
+        return this.isInsuranceRequired;
+    }
+
+    get isSignatureRequiredOrder(): boolean {
+        return this.isSignatureRequired;
+    }
+
+    get isArchivedOrder(): boolean {
+        return this.isArchived;
+    }
+
+    get isTestOrderFlag(): boolean {
+        return this.isTestOrder;
+    }
+
+    get isUrgentOrder(): boolean {
+        return this.isUrgent;
+    }
+
+    get isPriorityOrder(): boolean {
+        return this.isPriority;
+    }
+
+    get orderType(): string {
+        if (this.isSubscription) return 'subscription';
+        if (this.isRecurring) return 'recurring';
+        if (this.isGiftOrder) return 'gift';
+        if (this.isBulkOrder) return 'bulk';
+        if (this.isWholesaleOrder) return 'wholesale';
+        if (this.isTestOrder) return 'test';
+        return 'regular';
+    }
+
+    get orderStatus(): string {
+        if (this.isDisputed) return 'disputed';
+        if (this.isRefunded) return 'refunded';
+        if (this.isCancelled) return 'cancelled';
+        if (this.isArchived) return 'archived';
+        return this.status;
+    }
+
+    get isDigitalOrder(): boolean {
+        return !this.requiresShipping;
+    }
+
+    get canProcessPayment(): boolean {
+        return !this.isPaid && this.paymentStatus === PaymentStatus.PENDING;
+    }
+
+    get requiresSpecialHandling(): boolean {
+        return this.isGiftOrder || this.isExpressDelivery || !this.requiresShipping;
+    }
+
+    // Метод для изменения статуса с историей
+    async changeStatus(
+        newStatus: OrderStatus, 
+        reason?: string, 
+        changedBy?: number
+    ): Promise<void> {
+        const oldStatus = this.status;
+        
+        await this.update({ status: newStatus });
+        
+        await OrderStatusHistoryModel.create({
+            orderId: this.id,
+            fromStatus: oldStatus,
+            toStatus: newStatus,
+            reason,
+            changedBy: changedBy || this.userId,
+        });
+    }
+}
+```
+
+### OrderStatusHistory Model
+```typescript
+// src/domain/models/order-status-history.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { OrderModel, OrderStatus } from './order.model';
+import { UserModel } from './user.model';
+
+interface IOrderStatusHistoryModel {
+    id: number;
+    orderId: number;
+    fromStatus?: OrderStatus;
+    toStatus: OrderStatus;
+    reason?: string;
+    changedBy?: number;
+    order: OrderModel;
+    changedByUser?: UserModel;
+    changedAt: Date;
+}
+
+interface IOrderStatusHistoryCreationAttributes {
+    orderId: number;
+    fromStatus?: OrderStatus;
+    toStatus: OrderStatus;
+    reason?: string;
+    changedBy?: number;
+}
+
+@Table({
+    tableName: 'order_status_history',
+    underscored: true,
+    timestamps: false,
+    indexes: [
+        { fields: ['order_id'], name: 'idx_order_status_history_order_id' },
+        { fields: ['to_status'], name: 'idx_order_status_history_to_status' },
+        { fields: ['changed_at'], name: 'idx_order_status_history_changed_at' },
+    ],
+})
+export class OrderStatusHistoryModel
+    extends Model<OrderStatusHistoryModel, IOrderStatusHistoryCreationAttributes>
+    implements IOrderStatusHistoryModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => OrderModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'order_id',
+    })
+    declare orderId: number;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(OrderStatus)),
+        allowNull: true,
+        field: 'from_status',
+    })
+    declare fromStatus: OrderStatus;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(OrderStatus)),
+        allowNull: false,
+        field: 'to_status',
+    })
+    declare toStatus: OrderStatus;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare reason: string;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'changed_by',
+    })
+    declare changedBy: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'changed_at',
+    })
+    declare changedAt: Date;
+
+    // Связи
+    @BelongsTo(() => OrderModel)
+    declare order: OrderModel;
+
+    @BelongsTo(() => UserModel)
+    declare changedByUser: UserModel;
+}
+```
+
+## Сервисы
+
+### Order Service
+```typescript
+// src/infrastructure/services/order.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { OrderModel, OrderStatus, PaymentStatus } from '@app/domain/models/order.model';
+import { OrderStatusHistoryModel } from '@app/domain/models/order-status-history.model';
+import { Op } from 'sequelize';
+
+@Injectable()
+export class OrderService {
+    private readonly logger = new Logger(OrderService.name);
+
+    constructor(
+        @InjectModel(OrderModel)
+        private orderModel: typeof OrderModel,
+        @InjectModel(OrderStatusHistoryModel)
+        private statusHistoryModel: typeof OrderStatusHistoryModel,
+    ) {}
+
+    async createOrder(
+        userId: number,
+        orderData: {
+            totalAmount: number;
+            shippingAddress: any;
+            paymentMethod?: string;
+            notes?: string;
+        },
+    ): Promise<OrderModel> {
+        const orderNumber = await this.generateOrderNumber();
+        
+        const order = await this.orderModel.create({
+            userId,
+            orderNumber,
+            totalAmount: orderData.totalAmount,
+            shippingAddress: orderData.shippingAddress,
+            paymentMethod: orderData.paymentMethod,
+            notes: orderData.notes,
+            status: OrderStatus.PENDING,
+            paymentStatus: PaymentStatus.PENDING,
+        });
+
+        // Записываем в историю
+        await this.statusHistoryModel.create({
+            orderId: order.id,
+            toStatus: OrderStatus.PENDING,
+            reason: 'Заказ создан',
+            changedBy: userId,
+        });
+
+        this.logger.log(`Создан заказ ${order.orderNumber} для пользователя ${userId}`);
+        return order;
+    }
+
+    async getOrderById(orderId: number, userId?: number): Promise<OrderModel> {
+        const whereClause: any = { id: orderId };
+        if (userId) {
+            whereClause.userId = userId;
+        }
+
+        const order = await this.orderModel.findOne({
+            where: whereClause,
+            include: [
+                { association: 'items' },
+                { association: 'statusHistory', order: [['changed_at', 'DESC']] },
+            ],
+        });
+
+        if (!order) {
+            throw new NotFoundException('Заказ не найден');
+        }
+
+        return order;
+    }
+
+    async getUserOrders(
+        userId: number,
+        page: number = 1,
+        limit: number = 10,
+        status?: OrderStatus,
+    ): Promise<{ data: OrderModel[]; total: number }> {
+        const whereClause: any = { userId };
+        if (status) {
+            whereClause.status = status;
+        }
+
+        const { rows: orders, count: total } = await this.orderModel.findAndCountAll({
+            where: whereClause,
+            order: [['created_at', 'DESC']],
+            limit,
+            offset: (page - 1) * limit,
+            include: [{ association: 'items' }],
+        });
+
+        return { data: orders, total };
+    }
+
+    async updateOrderStatus(
+        orderId: number,
+        newStatus: OrderStatus,
+        reason?: string,
+        changedBy?: number,
+    ): Promise<OrderModel> {
+        const order = await this.getOrderById(orderId);
+        
+        if (!this.canChangeStatus(order.status, newStatus)) {
+            throw new BadRequestException(`Невозможно изменить статус с ${order.status} на ${newStatus}`);
+        }
+
+        await order.changeStatus(newStatus, reason, changedBy);
+
+        // Обновляем дополнительные поля при необходимости
+        const updateData: any = {};
+        if (newStatus === OrderStatus.CANCELLED) {
+            updateData.cancelledAt = new Date();
+            updateData.cancelledReason = reason;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+            await order.update(updateData);
+        }
+
+        this.logger.log(`Статус заказа ${order.orderNumber} изменен на ${newStatus}`);
+        return order;
+    }
+
+    async updatePaymentStatus(
+        orderId: number,
+        paymentStatus: PaymentStatus,
+    ): Promise<OrderModel> {
+        const order = await this.getOrderById(orderId);
+        
+        await order.update({ paymentStatus });
+
+        this.logger.log(`Статус оплаты заказа ${order.orderNumber} изменен на ${paymentStatus}`);
+        return order;
+    }
+
+    async addTrackingNumber(
+        orderId: number,
+        trackingNumber: string,
+    ): Promise<OrderModel> {
+        const order = await this.getOrderById(orderId);
+        
+        if (order.status !== OrderStatus.CONFIRMED) {
+            throw new BadRequestException('Можно добавить трек-номер только для подтвержденных заказов');
+        }
+
+        await order.update({ trackingNumber });
+        await this.updateOrderStatus(orderId, OrderStatus.SHIPPED, 'Добавлен трек-номер');
+
+        this.logger.log(`Добавлен трек-номер ${trackingNumber} для заказа ${order.orderNumber}`);
+        return order;
+    }
+
+    async cancelOrder(
+        orderId: number,
+        reason: string,
+        userId?: number,
+    ): Promise<OrderModel> {
+        const order = await this.getOrderById(orderId, userId);
+        
+        if (!order.canBeCancelled) {
+            throw new BadRequestException('Заказ не может быть отменен');
+        }
+
+        await this.updateOrderStatus(orderId, OrderStatus.CANCELLED, reason, userId);
+        return order;
+    }
+
+    async getOrderByTrackingNumber(trackingNumber: string): Promise<OrderModel> {
+        const order = await this.orderModel.findOne({
+            where: { trackingNumber },
+            include: [
+                { association: 'items' },
+                { association: 'statusHistory', order: [['changed_at', 'DESC']] },
+            ],
+        });
+
+        if (!order) {
+            throw new NotFoundException('Заказ с указанным трек-номером не найден');
+        }
+
+        return order;
+    }
+
+    // Методы для работы с флагами заказов
+    async markAsGiftOrder(): Promise<void> {
+        await this.update({ isGiftOrder: true });
+    }
+
+    async unmarkAsGiftOrder(): Promise<void> {
+        await this.update({ isGiftOrder: false });
+    }
+
+    async markAsExpressDelivery(): Promise<void> {
+        await this.update({ isExpressDelivery: true });
+    }
+
+    async unmarkAsExpressDelivery(): Promise<void> {
+        await this.update({ isExpressDelivery: false });
+    }
+
+    async markAsPaid(): Promise<void> {
+        await this.update({ isPaid: true, paymentStatus: PaymentStatus.PAID });
+    }
+
+    async markAsUnpaid(): Promise<void> {
+        await this.update({ isPaid: false, paymentStatus: PaymentStatus.PENDING });
+    }
+
+    async setShippingRequired(requiresShipping: boolean): Promise<void> {
+        await this.update({ requiresShipping });
+    }
+
+    async markAsRecurring(): Promise<void> {
+        await this.update({ isRecurring: true });
+    }
+
+    async unmarkAsRecurring(): Promise<void> {
+        await this.update({ isRecurring: false });
+    }
+
+    async markAsSubscription(): Promise<void> {
+        await this.update({ isSubscription: true });
+    }
+
+    async unmarkAsSubscription(): Promise<void> {
+        await this.update({ isSubscription: false });
+    }
+
+    async markAsRefunded(): Promise<void> {
+        await this.update({ isRefunded: true });
+    }
+
+    async unmarkAsRefunded(): Promise<void> {
+        await this.update({ isRefunded: false });
+    }
+
+    async markAsCancelled(): Promise<void> {
+        await this.update({ isCancelled: true, status: OrderStatus.CANCELLED });
+    }
+
+    async unmarkAsCancelled(): Promise<void> {
+        await this.update({ isCancelled: false });
+    }
+
+    async markAsDisputed(): Promise<void> {
+        await this.update({ isDisputed: true });
+    }
+
+    async unmarkAsDisputed(): Promise<void> {
+        await this.update({ isDisputed: false });
+    }
+
+    async markAsRushOrder(): Promise<void> {
+        await this.update({ isRushOrder: true });
+    }
+
+    async unmarkAsRushOrder(): Promise<void> {
+        await this.update({ isRushOrder: false });
+    }
+
+    async markAsBulkOrder(): Promise<void> {
+        await this.update({ isBulkOrder: true });
+    }
+
+    async unmarkAsBulkOrder(): Promise<void> {
+        await this.update({ isBulkOrder: false });
+    }
+
+    async markAsWholesaleOrder(): Promise<void> {
+        await this.update({ isWholesaleOrder: true });
+    }
+
+    async unmarkAsWholesaleOrder(): Promise<void> {
+        await this.update({ isWholesaleOrder: false });
+    }
+
+    async markAsTaxExempt(): Promise<void> {
+        await this.update({ isTaxExempt: true });
+    }
+
+    async unmarkAsTaxExempt(): Promise<void> {
+        await this.update({ isTaxExempt: false });
+    }
+
+    async markAsInsuranceRequired(): Promise<void> {
+        await this.update({ isInsuranceRequired: true });
+    }
+
+    async unmarkAsInsuranceRequired(): Promise<void> {
+        await this.update({ isInsuranceRequired: false });
+    }
+
+    async markAsSignatureRequired(): Promise<void> {
+        await this.update({ isSignatureRequired: true });
+    }
+
+    async unmarkAsSignatureRequired(): Promise<void> {
+        await this.update({ isSignatureRequired: false });
+    }
+
+    async archiveOrder(): Promise<void> {
+        await this.update({ isArchived: true });
+    }
+
+    async unarchiveOrder(): Promise<void> {
+        await this.update({ isArchived: false });
+    }
+
+    async markAsTestOrder(): Promise<void> {
+        await this.update({ isTestOrder: true });
+    }
+
+    async unmarkAsTestOrder(): Promise<void> {
+        await this.update({ isTestOrder: false });
+    }
+
+    async markAsUrgent(): Promise<void> {
+        await this.update({ isUrgent: true });
+    }
+
+    async unmarkAsUrgent(): Promise<void> {
+        await this.update({ isUrgent: false });
+    }
+
+    async markAsPriority(): Promise<void> {
+        await this.update({ isPriority: true });
+    }
+
+    async unmarkAsPriority(): Promise<void> {
+        await this.update({ isPriority: false });
+    }
+
+    // Статические методы для работы с флагами
+    static async getGiftOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isGiftOrder: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getExpressOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isExpressDelivery: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getPaidOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isPaid: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getUnpaidOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isPaid: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getDigitalOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { requiresShipping: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getRecurringOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isRecurring: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getSubscriptionOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isSubscription: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getRefundedOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isRefunded: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getCancelledOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isCancelled: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getDisputedOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isDisputed: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getRushOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isRushOrder: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getBulkOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isBulkOrder: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getWholesaleOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isWholesaleOrder: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getTaxExemptOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isTaxExempt: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getInsuranceRequiredOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isInsuranceRequired: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getSignatureRequiredOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isSignatureRequired: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getArchivedOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isArchived: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getTestOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isTestOrder: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNonTestOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isTestOrder: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getUrgentOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isUrgent: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNonUrgentOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isUrgent: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getPriorityOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isPriority: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNonPriorityOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isPriority: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNonArchivedOrders(): Promise<OrderModel[]> {
+        return this.findAll({
+            where: { isArchived: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    async getOrderStatistics(): Promise<{
+        totalOrders: number;
+        pendingOrders: number;
+        shippedOrders: number;
+        deliveredOrders: number;
+        cancelledOrders: number;
+        giftOrders: number;
+        expressOrders: number;
+        paidOrders: number;
+        unpaidOrders: number;
+        digitalOrders: number;
+    }> {
+        const [
+            totalOrders,
+            pendingOrders,
+            shippedOrders,
+            deliveredOrders,
+            cancelledOrders,
+            giftOrders,
+            expressOrders,
+            paidOrders,
+            unpaidOrders,
+            digitalOrders,
+        ] = await Promise.all([
+            this.orderModel.count(),
+            this.orderModel.count({ where: { status: OrderStatus.PENDING } }),
+            this.orderModel.count({ where: { status: OrderStatus.SHIPPED } }),
+            this.orderModel.count({ where: { status: OrderStatus.DELIVERED } }),
+            this.orderModel.count({ where: { status: OrderStatus.CANCELLED } }),
+            this.orderModel.count({ where: { isGiftOrder: true } }),
+            this.orderModel.count({ where: { isExpressDelivery: true } }),
+            this.orderModel.count({ where: { isPaid: true } }),
+            this.orderModel.count({ where: { isPaid: false } }),
+            this.orderModel.count({ where: { requiresShipping: false } }),
+        ]);
+
+        return {
+            totalOrders,
+            pendingOrders,
+            shippedOrders,
+            deliveredOrders,
+            cancelledOrders,
+            giftOrders,
+            expressOrders,
+            paidOrders,
+            unpaidOrders,
+            digitalOrders,
+        };
+    }
+
+    private async generateOrderNumber(): Promise<string> {
+        const prefix = 'ORD';
+        const timestamp = Date.now().toString().slice(-8);
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        return `${prefix}${timestamp}${random}`;
+    }
+
+    private canChangeStatus(currentStatus: OrderStatus, newStatus: OrderStatus): boolean {
+        const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
+            [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
+            [OrderStatus.CONFIRMED]: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
+            [OrderStatus.SHIPPED]: [OrderStatus.DELIVERED, OrderStatus.RETURNED],
+            [OrderStatus.DELIVERED]: [OrderStatus.RETURNED],
+            [OrderStatus.CANCELLED]: [],
+            [OrderStatus.RETURNED]: [],
+        };
+
+        return allowedTransitions[currentStatus]?.includes(newStatus) || false;
+    }
+
+    // Методы для работы с флагами заказов
+    async markAsGiftOrder(orderId: number): Promise<OrderModel> {
+        const order = await this.getOrderById(orderId);
+        await order.markAsGiftOrder();
+        return order;
+    }
+
+    async markAsExpressDelivery(orderId: number): Promise<OrderModel> {
+        const order = await this.getOrderById(orderId);
+        await order.markAsExpressDelivery();
+        return order;
+    }
+
+    async markAsPaid(orderId: number): Promise<OrderModel> {
+        const order = await this.getOrderById(orderId);
+        await order.markAsPaid();
+        return order;
+    }
+
+    async markAsRecurring(orderId: number): Promise<OrderModel> {
+        const order = await this.getOrderById(orderId);
+        await order.markAsRecurring();
+        this.logger.log(`Заказ ${order.orderNumber} отмечен как повторяющийся`);
+        return order;
+    }
+
+    async markAsSubscription(orderId: number): Promise<OrderModel> {
+        const order = await this.getOrderById(orderId);
+        await order.markAsSubscription();
+        this.logger.log(`Заказ ${order.orderNumber} отмечен как подписка`);
+        return order;
+    }
+
+    async markAsRefunded(orderId: number): Promise<OrderModel> {
+        const order = await this.getOrderById(orderId);
+        await order.markAsRefunded();
+        this.logger.log(`Заказ ${order.orderNumber} отмечен как возвращенный`);
+        return order;
+    }
+
+    async markAsCancelled(orderId: number): Promise<OrderModel> {
+        const order = await this.getOrderById(orderId);
+        await order.markAsCancelled();
+        this.logger.log(`Заказ ${order.orderNumber} отмечен как отмененный`);
+        return order;
+    }
+
+    async markAsDisputed(orderId: number): Promise<OrderModel> {
+        const order = await this.getOrderById(orderId);
+        await order.markAsDisputed();
+        this.logger.log(`Заказ ${order.orderNumber} отмечен как спорный`);
+        return order;
+    }
+
+    async getGiftOrders(): Promise<OrderModel[]> {
+        return this.orderModel.getGiftOrders();
+    }
+
+    async getExpressOrders(): Promise<OrderModel[]> {
+        return this.orderModel.getExpressOrders();
+    }
+
+    async getPaidOrders(): Promise<OrderModel[]> {
+        return this.orderModel.getPaidOrders();
+    }
+
+    async getDigitalOrders(): Promise<OrderModel[]> {
+        return this.orderModel.getDigitalOrders();
+    }
+
+    async getRecurringOrders(): Promise<OrderModel[]> {
+        return this.orderModel.getRecurringOrders();
+    }
+
+    async getSubscriptionOrders(): Promise<OrderModel[]> {
+        return this.orderModel.getSubscriptionOrders();
+    }
+
+    async getRefundedOrders(): Promise<OrderModel[]> {
+        return this.orderModel.getRefundedOrders();
+    }
+
+    async getCancelledOrders(): Promise<OrderModel[]> {
+        return this.orderModel.getCancelledOrders();
+    }
+
+    async getDisputedOrders(): Promise<OrderModel[]> {
+        return this.orderModel.getDisputedOrders();
+    }
+}
+```
+
+## Контроллеры
+
+### Order Controller
+```typescript
+// src/infrastructure/controllers/order.controller.ts
+import { Controller, Get, Post, Put, Param, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
+import { CurrentUser } from '@app/infrastructure/common/decorators/current-user.decorator';
+import { OrderService } from '@app/infrastructure/services/order.service';
+import { CreateOrderDto } from '@app/infrastructure/dto/order/create-order.dto';
+import { UpdateOrderStatusDto } from '@app/infrastructure/dto/order/update-order-status.dto';
+import { AddTrackingNumberDto } from '@app/infrastructure/dto/order/add-tracking-number.dto';
+import { CancelOrderDto } from '@app/infrastructure/dto/order/cancel-order.dto';
+import { OrderResponse, OrderStatisticsResponse } from '@app/infrastructure/responses/order/order.response';
+
+@ApiTags('Заказы')
+@Controller('orders')
+export class OrderController {
+    // Константы ролей для переиспользования
+    private static readonly ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN'] as const;
+    private static readonly MANAGER_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CUSTOMER_SERVICE'] as const;
+    private static readonly STAFF_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
+    private static readonly CUSTOMER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST'] as const;
+    private static readonly ALL_ROLES = [...OrderController.ADMIN_ROLES, ...OrderController.MANAGER_ROLES, ...OrderController.CUSTOMER_ROLES] as const;
+
+    constructor(private readonly orderService: OrderService) {}
+
+    @Post()
+    @HttpCode(HttpStatus.CREATED)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.CUSTOMER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Создать новый заказ' })
+    @ApiResponse({ status: 201, description: 'Заказ создан', type: OrderResponse })
+    async createOrder(
+        @Body() createOrderDto: CreateOrderDto,
+        @CurrentUser() user: any,
+    ): Promise<OrderResponse> {
+        const order = await this.orderService.createOrder(user.id, createOrderDto);
+        
+        return {
+            id: order.id,
+            userId: order.userId,
+            orderNumber: order.orderNumber,
+            status: order.status,
+            paymentStatus: order.paymentStatus,
+            paymentMethod: order.paymentMethod,
+            totalAmount: order.totalAmount,
+            shippingAddress: order.shippingAddress,
+            trackingNumber: order.trackingNumber,
+            notes: order.notes,
+            cancelledAt: order.cancelledAt,
+            cancelledReason: order.cancelledReason,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+        };
+    }
+
+    @Get()
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить заказы пользователя' })
+    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
+    @ApiQuery({ name: 'status', required: false, description: 'Фильтр по статусу' })
+    @ApiResponse({ status: 200, description: 'Заказы получены', type: [OrderResponse] })
+    async getUserOrders(
+        @CurrentUser() user: any,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+        @Query('status') status?: string,
+    ): Promise<{ data: OrderResponse[]; total: number }> {
+        const result = await this.orderService.getUserOrders(user.id, page, limit, status as any);
+        
+        return {
+            data: result.data.map(order => ({
+                id: order.id,
+                userId: order.userId,
+                orderNumber: order.orderNumber,
+                status: order.status,
+                paymentStatus: order.paymentStatus,
+                paymentMethod: order.paymentMethod,
+                totalAmount: order.totalAmount,
+                shippingAddress: order.shippingAddress,
+                trackingNumber: order.trackingNumber,
+                notes: order.notes,
+                cancelledAt: order.cancelledAt,
+                cancelledReason: order.cancelledReason,
+                createdAt: order.createdAt,
+                updatedAt: order.updatedAt,
+            })),
+            total: result.total,
+        };
+    }
+
+    @Get(':id')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить заказ по ID' })
+    @ApiResponse({ status: 200, description: 'Заказ получен', type: OrderResponse })
+    @ApiResponse({ status: 404, description: 'Заказ не найден' })
+    async getOrderById(
+        @Param('id') orderId: number,
+        @CurrentUser() user: any,
+    ): Promise<OrderResponse> {
+        const order = await this.orderService.getOrderById(orderId, user.id);
+        
+        return {
+            id: order.id,
+            userId: order.userId,
+            orderNumber: order.orderNumber,
+            status: order.status,
+            paymentStatus: order.paymentStatus,
+            paymentMethod: order.paymentMethod,
+            totalAmount: order.totalAmount,
+            shippingAddress: order.shippingAddress,
+            trackingNumber: order.trackingNumber,
+            notes: order.notes,
+            cancelledAt: order.cancelledAt,
+            cancelledReason: order.cancelledReason,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+        };
+    }
+
+    @Put(':id/status')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Обновить статус заказа' })
+    @ApiResponse({ status: 200, description: 'Статус заказа обновлен', type: OrderResponse })
+    @ApiResponse({ status: 400, description: 'Невозможно изменить статус' })
+    @ApiResponse({ status: 404, description: 'Заказ не найден' })
+    async updateOrderStatus(
+        @Param('id') orderId: number,
+        @Body() updateOrderStatusDto: UpdateOrderStatusDto,
+        @CurrentUser() user: any,
+    ): Promise<OrderResponse> {
+        const order = await this.orderService.updateOrderStatus(
+            orderId,
+            updateOrderStatusDto.status,
+            updateOrderStatusDto.reason,
+            user.id,
+        );
+        
+        return {
+            id: order.id,
+            userId: order.userId,
+            orderNumber: order.orderNumber,
+            status: order.status,
+            paymentStatus: order.paymentStatus,
+            paymentMethod: order.paymentMethod,
+            totalAmount: order.totalAmount,
+            shippingAddress: order.shippingAddress,
+            trackingNumber: order.trackingNumber,
+            notes: order.notes,
+            cancelledAt: order.cancelledAt,
+            cancelledReason: order.cancelledReason,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+        };
+    }
+
+    @Put(':id/tracking')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Добавить трек-номер к заказу' })
+    @ApiResponse({ status: 200, description: 'Трек-номер добавлен', type: OrderResponse })
+    @ApiResponse({ status: 400, description: 'Невозможно добавить трек-номер' })
+    @ApiResponse({ status: 404, description: 'Заказ не найден' })
+    async addTrackingNumber(
+        @Param('id') orderId: number,
+        @Body() addTrackingNumberDto: AddTrackingNumberDto,
+    ): Promise<OrderResponse> {
+        const order = await this.orderService.addTrackingNumber(orderId, addTrackingNumberDto.trackingNumber);
+        
+        return {
+            id: order.id,
+            userId: order.userId,
+            orderNumber: order.orderNumber,
+            status: order.status,
+            paymentStatus: order.paymentStatus,
+            paymentMethod: order.paymentMethod,
+            totalAmount: order.totalAmount,
+            shippingAddress: order.shippingAddress,
+            trackingNumber: order.trackingNumber,
+            notes: order.notes,
+            cancelledAt: order.cancelledAt,
+            cancelledReason: order.cancelledReason,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+        };
+    }
+
+    @Put(':id/cancel')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отменить заказ' })
+    @ApiResponse({ status: 200, description: 'Заказ отменен', type: OrderResponse })
+    @ApiResponse({ status: 400, description: 'Заказ не может быть отменен' })
+    @ApiResponse({ status: 404, description: 'Заказ не найден' })
+    async cancelOrder(
+        @Param('id') orderId: number,
+        @Body() cancelOrderDto: CancelOrderDto,
+        @CurrentUser() user: any,
+    ): Promise<OrderResponse> {
+        const order = await this.orderService.cancelOrder(orderId, cancelOrderDto.reason, user.id);
+        
+        return {
+            id: order.id,
+            userId: order.userId,
+            orderNumber: order.orderNumber,
+            status: order.status,
+            paymentStatus: order.paymentStatus,
+            paymentMethod: order.paymentMethod,
+            totalAmount: order.totalAmount,
+            shippingAddress: order.shippingAddress,
+            trackingNumber: order.trackingNumber,
+            notes: order.notes,
+            cancelledAt: order.cancelledAt,
+            cancelledReason: order.cancelledReason,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+        };
+    }
+
+    @Get('tracking/:trackingNumber')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить заказ по трек-номеру' })
+    @ApiResponse({ status: 200, description: 'Заказ найден', type: OrderResponse })
+    @ApiResponse({ status: 404, description: 'Заказ не найден' })
+    async getOrderByTrackingNumber(
+        @Param('trackingNumber') trackingNumber: string,
+    ): Promise<OrderResponse> {
+        const order = await this.orderService.getOrderByTrackingNumber(trackingNumber);
+        
+        return {
+            id: order.id,
+            userId: order.userId,
+            orderNumber: order.orderNumber,
+            status: order.status,
+            paymentStatus: order.paymentStatus,
+            paymentMethod: order.paymentMethod,
+            totalAmount: order.totalAmount,
+            shippingAddress: order.shippingAddress,
+            trackingNumber: order.trackingNumber,
+            notes: order.notes,
+            cancelledAt: order.cancelledAt,
+            cancelledReason: order.cancelledReason,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+        };
+    }
+
+    @Get('admin/statistics')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить статистику заказов (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Статистика получена', type: OrderStatisticsResponse })
+    async getOrderStatistics(): Promise<OrderStatisticsResponse> {
+        const statistics = await this.orderService.getOrderStatistics();
+        
+        return {
+            totalOrders: statistics.totalOrders,
+            pendingOrders: statistics.pendingOrders,
+            shippedOrders: statistics.shippedOrders,
+            deliveredOrders: statistics.deliveredOrders,
+            cancelledOrders: statistics.cancelledOrders,
+            giftOrders: statistics.giftOrders,
+            expressOrders: statistics.expressOrders,
+            paidOrders: statistics.paidOrders,
+            unpaidOrders: statistics.unpaidOrders,
+            digitalOrders: statistics.digitalOrders,
+        };
+    }
+
+    // Методы для работы с флагами заказов
+    @Patch(':id/gift')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить заказ как подарочный' })
+    @ApiResponse({ status: 200, description: 'Заказ отмечен как подарочный' })
+    async markAsGiftOrder(@Param('id', ParseIntPipe) id: number): Promise<OrderModel> {
+        return this.orderService.markAsGiftOrder(id);
+    }
+
+    @Patch(':id/express')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить заказ как экспресс-доставку' })
+    @ApiResponse({ status: 200, description: 'Заказ отмечен как экспресс-доставка' })
+    async markAsExpressDelivery(@Param('id', ParseIntPipe) id: number): Promise<OrderModel> {
+        return this.orderService.markAsExpressDelivery(id);
+    }
+
+    @Patch(':id/paid')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить заказ как оплаченный' })
+    @ApiResponse({ status: 200, description: 'Заказ отмечен как оплаченный' })
+    async markAsPaid(@Param('id', ParseIntPipe) id: number): Promise<OrderModel> {
+        return this.orderService.markAsPaid(id);
+    }
+
+    @Get('gift')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить список подарочных заказов' })
+    @ApiResponse({ status: 200, description: 'Список подарочных заказов' })
+    async getGiftOrders(): Promise<OrderModel[]> {
+        return this.orderService.getGiftOrders();
+    }
+
+    @Get('express')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить список заказов с экспресс-доставкой' })
+    @ApiResponse({ status: 200, description: 'Список заказов с экспресс-доставкой' })
+    async getExpressOrders(): Promise<OrderModel[]> {
+        return this.orderService.getExpressOrders();
+    }
+
+    @Get('paid')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить список оплаченных заказов' })
+    @ApiResponse({ status: 200, description: 'Список оплаченных заказов' })
+    async getPaidOrders(): Promise<OrderModel[]> {
+        return this.orderService.getPaidOrders();
+    }
+
+    @Get('digital')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить список цифровых заказов' })
+    @ApiResponse({ status: 200, description: 'Список цифровых заказов' })
+    async getDigitalOrders(): Promise<OrderModel[]> {
+        return this.orderService.getDigitalOrders();
+    }
+
+    @Get('recurring')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить список повторяющихся заказов' })
+    @ApiResponse({ status: 200, description: 'Список повторяющихся заказов' })
+    async getRecurringOrders(): Promise<OrderModel[]> {
+        return this.orderService.getRecurringOrders();
+    }
+
+    @Get('subscriptions')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить список заказов по подписке' })
+    @ApiResponse({ status: 200, description: 'Список заказов по подписке' })
+    async getSubscriptionOrders(): Promise<OrderModel[]> {
+        return this.orderService.getSubscriptionOrders();
+    }
+
+    @Get('refunded')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить список возвращенных заказов' })
+    @ApiResponse({ status: 200, description: 'Список возвращенных заказов' })
+    async getRefundedOrders(): Promise<OrderModel[]> {
+        return this.orderService.getRefundedOrders();
+    }
+
+    @Get('cancelled')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить список отмененных заказов' })
+    @ApiResponse({ status: 200, description: 'Список отмененных заказов' })
+    async getCancelledOrders(): Promise<OrderModel[]> {
+        return this.orderService.getCancelledOrders();
+    }
+
+    @Get('disputed')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить список спорных заказов' })
+    @ApiResponse({ status: 200, description: 'Список спорных заказов' })
+    async getDisputedOrders(): Promise<OrderModel[]> {
+        return this.orderService.getDisputedOrders();
+    }
+
+    @Patch(':id/recurring')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить заказ как повторяющийся' })
+    @ApiResponse({ status: 200, description: 'Заказ отмечен как повторяющийся' })
+    async markAsRecurring(@Param('id', ParseIntPipe) id: number): Promise<OrderModel> {
+        return this.orderService.markAsRecurring(id);
+    }
+
+    @Patch(':id/subscription')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить заказ как подписку' })
+    @ApiResponse({ status: 200, description: 'Заказ отмечен как подписка' })
+    async markAsSubscription(@Param('id', ParseIntPipe) id: number): Promise<OrderModel> {
+        return this.orderService.markAsSubscription(id);
+    }
+
+    @Patch(':id/refunded')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить заказ как возвращенный' })
+    @ApiResponse({ status: 200, description: 'Заказ отмечен как возвращенный' })
+    async markAsRefunded(@Param('id', ParseIntPipe) id: number): Promise<OrderModel> {
+        return this.orderService.markAsRefunded(id);
+    }
+
+    @Patch(':id/cancelled')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить заказ как отмененный' })
+    @ApiResponse({ status: 200, description: 'Заказ отмечен как отмененный' })
+    async markAsCancelled(@Param('id', ParseIntPipe) id: number): Promise<OrderModel> {
+        return this.orderService.markAsCancelled(id);
+    }
+
+    @Patch(':id/disputed')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...OrderController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить заказ как спорный' })
+    @ApiResponse({ status: 200, description: 'Заказ отмечен как спорный' })
+    async markAsDisputed(@Param('id', ParseIntPipe) id: number): Promise<OrderModel> {
+        return this.orderService.markAsDisputed(id);
+    }
+}
+```
+
+## Миграции
+
+### Расширение таблицы orders
+```typescript
+// db/migrations/YYYYMMDDHHMMSS-extend-orders-table.ts
+import { QueryInterface, DataTypes } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+    // Добавляем новые колонки к существующей таблице orders
+    await Promise.all([
+        queryInterface.addColumn('orders', 'order_number', {
+            type: DataTypes.STRING(20),
+            allowNull: false,
+            unique: true,
+        }),
+        queryInterface.addColumn('orders', 'status', {
+            type: DataTypes.ENUM('pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'returned'),
+            allowNull: false,
+            defaultValue: 'pending',
+        }),
+        queryInterface.addColumn('orders', 'payment_status', {
+            type: DataTypes.ENUM('pending', 'paid', 'failed'),
+            allowNull: false,
+            defaultValue: 'pending',
+        }),
+        queryInterface.addColumn('orders', 'payment_method', {
+            type: DataTypes.ENUM('card', 'cash', 'bank_transfer'),
+            allowNull: true,
+        }),
+        queryInterface.addColumn('orders', 'shipping_address', {
+            type: DataTypes.JSONB,
+            allowNull: false,
+        }),
+        queryInterface.addColumn('orders', 'tracking_number', {
+            type: DataTypes.STRING(100),
+            allowNull: true,
+        }),
+        queryInterface.addColumn('orders', 'notes', {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        }),
+        queryInterface.addColumn('orders', 'cancelled_at', {
+            type: DataTypes.DATE,
+            allowNull: true,
+        }),
+        queryInterface.addColumn('orders', 'cancelled_reason', {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        }),
+    ]);
+
+    // Создаем индексы
+    await Promise.all([
+        queryInterface.addIndex('orders', ['order_number'], { unique: true }),
+        queryInterface.addIndex('orders', ['status']),
+        queryInterface.addIndex('orders', ['payment_status']),
+        queryInterface.addIndex('orders', ['tracking_number']),
+        queryInterface.addIndex('orders', ['user_id', 'status']),
+    ]);
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+    // Удаляем индексы
+    await Promise.all([
+        queryInterface.removeIndex('orders', ['order_number']),
+        queryInterface.removeIndex('orders', ['status']),
+        queryInterface.removeIndex('orders', ['payment_status']),
+        queryInterface.removeIndex('orders', ['tracking_number']),
+        queryInterface.removeIndex('orders', ['user_id', 'status']),
+    ]);
+
+    // Удаляем колонки
+    const columns = [
+        'order_number', 'status', 'payment_status', 'payment_method',
+        'shipping_address', 'tracking_number', 'notes', 'cancelled_at', 'cancelled_reason'
+    ];
+    
+    for (const column of columns) {
+        await queryInterface.removeColumn('orders', column);
+    }
+}
+```
+
+### Создание таблицы истории статусов
+```typescript
+// db/migrations/YYYYMMDDHHMMSS-create-order-status-history.ts
+import { QueryInterface, DataTypes } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+    await queryInterface.createTable('order_status_history', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        order_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'orders', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        from_status: {
+            type: DataTypes.ENUM('pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'returned'),
+            allowNull: true,
+        },
+        to_status: {
+            type: DataTypes.ENUM('pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'returned'),
+            allowNull: false,
+        },
+        reason: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        changed_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: { model: 'users', key: 'id' },
+        },
+        changed_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создаем индексы
+    await Promise.all([
+        queryInterface.addIndex('order_status_history', ['order_id']),
+        queryInterface.addIndex('order_status_history', ['to_status']),
+        queryInterface.addIndex('order_status_history', ['changed_at']),
+    ]);
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+    await queryInterface.dropTable('order_status_history');
+}
+```
+
+## DTO и валидация
+
+### CreateOrderDto
+```typescript
+// src/infrastructure/dto/order/create-order.dto.ts
+import { IsNumber, IsObject, IsOptional, IsString, Min, IsEnum, IsBoolean } from 'class-validator';
+import { PaymentMethod } from '@app/domain/models/order.model';
+
+export class CreateOrderDto {
+    @IsNumber({}, { message: 'Общая сумма должна быть числом' })
+    @Min(0.01, { message: 'Общая сумма должна быть больше 0' })
+    declare readonly totalAmount: number;
+
+    @IsObject({ message: 'Адрес доставки должен быть объектом' })
+    declare readonly shippingAddress: any;
+
+    @IsOptional()
+    @IsEnum(PaymentMethod, { message: 'Неверный метод оплаты' })
+    declare readonly paymentMethod?: PaymentMethod;
+
+    @IsOptional()
+    @IsString({ message: 'Заметки должны быть строкой' })
+    declare readonly notes?: string;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Подарочный заказ должен быть булевым значением' })
+    declare readonly isGiftOrder?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Экспресс-доставка должна быть булевым значением' })
+    declare readonly isExpressDelivery?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Требует доставки должно быть булевым значением' })
+    declare readonly requiresShipping?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Оплачен должен быть булевым значением' })
+    declare readonly isPaid?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Повторяющийся заказ должен быть булевым значением' })
+    declare readonly isRecurring?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Заказ по подписке должен быть булевым значением' })
+    declare readonly isSubscription?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Возвращенный заказ должен быть булевым значением' })
+    declare readonly isRefunded?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Отмененный заказ должен быть булевым значением' })
+    declare readonly isCancelled?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Спорный заказ должен быть булевым значением' })
+    declare readonly isDisputed?: boolean;
+}
+```
+
+### UpdateOrderStatusDto
+```typescript
+// src/infrastructure/dto/order/update-order-status.dto.ts
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { OrderStatus } from '@app/domain/models/order.model';
+
+export class UpdateOrderStatusDto {
+    @IsEnum(OrderStatus, { message: 'Неверный статус заказа' })
+    declare readonly status: OrderStatus;
+
+    @IsOptional()
+    @IsString({ message: 'Причина должна быть строкой' })
+    declare readonly reason?: string;
+}
+```
+
+### AddTrackingNumberDto
+```typescript
+// src/infrastructure/dto/order/add-tracking-number.dto.ts
+import { IsString, IsNotEmpty } from 'class-validator';
+
+export class AddTrackingNumberDto {
+    @IsString({ message: 'Трек-номер должен быть строкой' })
+    @IsNotEmpty({ message: 'Трек-номер не может быть пустым' })
+    declare readonly trackingNumber: string;
+}
+```
+
+### CancelOrderDto
+```typescript
+// src/infrastructure/dto/order/cancel-order.dto.ts
+import { IsString, IsNotEmpty } from 'class-validator';
+
+export class CancelOrderDto {
+    @IsString({ message: 'Причина отмены должна быть строкой' })
+    @IsNotEmpty({ message: 'Причина отмены не может быть пустой' })
+    declare readonly reason: string;
+}
+```
+
+## Response классы
+
+### OrderResponse
+```typescript
+// src/infrastructure/responses/order/order.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class OrderResponse {
+    @ApiProperty({ description: 'ID заказа' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'ID пользователя' })
+    declare readonly userId: number;
+
+    @ApiProperty({ description: 'Номер заказа' })
+    declare readonly orderNumber: string;
+
+    @ApiProperty({ description: 'Статус заказа' })
+    declare readonly status: string;
+
+    @ApiProperty({ description: 'Статус оплаты' })
+    declare readonly paymentStatus: string;
+
+    @ApiProperty({ description: 'Метод оплаты', required: false })
+    declare readonly paymentMethod?: string;
+
+    @ApiProperty({ description: 'Общая сумма' })
+    declare readonly totalAmount: number;
+
+    @ApiProperty({ description: 'Адрес доставки' })
+    declare readonly shippingAddress: any;
+
+    @ApiProperty({ description: 'Трек-номер', required: false })
+    declare readonly trackingNumber?: string;
+
+    @ApiProperty({ description: 'Заметки', required: false })
+    declare readonly notes?: string;
+
+    @ApiProperty({ description: 'Дата отмены', required: false })
+    declare readonly cancelledAt?: Date;
+
+    @ApiProperty({ description: 'Причина отмены', required: false })
+    declare readonly cancelledReason?: string;
+
+    @ApiProperty({ description: 'Подарочный заказ' })
+    declare readonly isGiftOrder: boolean;
+
+    @ApiProperty({ description: 'Экспресс-доставка' })
+    declare readonly isExpressDelivery: boolean;
+
+    @ApiProperty({ description: 'Требует доставки' })
+    declare readonly requiresShipping: boolean;
+
+    @ApiProperty({ description: 'Оплачен' })
+    declare readonly isPaid: boolean;
+
+    @ApiProperty({ description: 'Повторяющийся заказ' })
+    declare readonly isRecurring: boolean;
+
+    @ApiProperty({ description: 'Заказ по подписке' })
+    declare readonly isSubscription: boolean;
+
+    @ApiProperty({ description: 'Возвращенный заказ' })
+    declare readonly isRefunded: boolean;
+
+    @ApiProperty({ description: 'Отмененный заказ' })
+    declare readonly isCancelled: boolean;
+
+    @ApiProperty({ description: 'Спорный заказ' })
+    declare readonly isDisputed: boolean;
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления' })
+    declare readonly updatedAt: Date;
+}
+```
+
+### OrderStatisticsResponse
+```typescript
+// src/infrastructure/responses/order/order.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class OrderStatisticsResponse {
+    @ApiProperty({ description: 'Общее количество заказов' })
+    declare readonly totalOrders: number;
+
+    @ApiProperty({ description: 'Количество ожидающих заказов' })
+    declare readonly pendingOrders: number;
+
+    @ApiProperty({ description: 'Количество отправленных заказов' })
+    declare readonly shippedOrders: number;
+
+    @ApiProperty({ description: 'Количество доставленных заказов' })
+    declare readonly deliveredOrders: number;
+
+    @ApiProperty({ description: 'Количество отмененных заказов' })
+    declare readonly cancelledOrders: number;
+
+    @ApiProperty({ description: 'Количество подарочных заказов' })
+    declare readonly giftOrders: number;
+
+    @ApiProperty({ description: 'Количество заказов с экспресс-доставкой' })
+    declare readonly expressOrders: number;
+
+    @ApiProperty({ description: 'Количество оплаченных заказов' })
+    declare readonly paidOrders: number;
+
+    @ApiProperty({ description: 'Количество неоплаченных заказов' })
+    declare readonly unpaidOrders: number;
+
+    @ApiProperty({ description: 'Количество цифровых заказов' })
+    declare readonly digitalOrders: number;
+
+    @ApiProperty({ description: 'Количество повторяющихся заказов' })
+    declare readonly recurringOrders: number;
+
+    @ApiProperty({ description: 'Количество заказов по подписке' })
+    declare readonly subscriptionOrders: number;
+
+    @ApiProperty({ description: 'Количество возвращенных заказов' })
+    declare readonly refundedOrders: number;
+
+    @ApiProperty({ description: 'Количество отмененных заказов' })
+    declare readonly cancelledOrders: number;
+
+    @ApiProperty({ description: 'Количество спорных заказов' })
+    declare readonly disputedOrders: number;
+}
+```
+
+## Критерии готовности
+
+### ✅ Обязательные требования:
+- [ ] Созданы миграции для расширения таблицы orders и создания order_status_history
+- [ ] Реализованы модели Sequelize (OrderModel, OrderStatusHistoryModel)
+- [ ] Создан OrderService с управлением заказами
+- [ ] Реализован контроллер с API endpoints
+- [ ] Добавлены DTO классы с валидацией
+- [ ] Созданы Response классы с Swagger
+- [ ] Добавлены индексы для производительности
+- [ ] Реализована логика изменения статусов
+- [ ] Добавлены unit тесты для сервисов
+- [ ] Добавлены integration тесты для API
+- [ ] Интеграция с системой уведомлений
+
+### 🎯 Дополнительные возможности:
+- [ ] Частичная оплата заказов
+- [ ] Множественные методы доставки
+- [ ] Система возвратов и обменов
+- [ ] Интеграция с платежными системами
+- [ ] Автоматическое обновление статусов
+
+## Следующие шаги
+
+### Фаза 1: Базовая реализация (1 неделя)
+1. **Создать миграции** для расширения таблиц
+2. **Реализовать модели** Sequelize
+3. **Создать DTO классы** с валидацией
+4. **Создать Response классы** с Swagger
+5. **Реализовать сервис** с основной логикой
+
+### Фаза 2: API и интеграции (3-4 дня)
+6. **Создать контроллер** с API endpoints
+7. **Настроить интеграцию** с системой уведомлений
+8. **Добавить валидацию** статусов и переходов
+9. **Создать тесты** для API
+
+### Фаза 3: Тестирование и качество (2-3 дня)
+10. **Написать unit тесты** для сервисов и флагов
+11. **Написать integration тесты** для API флагов
+12. **Добавить обработку ошибок** и валидацию флагов
+
+## Новые флаги заказов
+
+### Описание флагов:
+- **isGiftOrder** - Подарочный заказ (особая упаковка, сообщение)
+- **isExpressDelivery** - Экспресс-доставка (приоритетная обработка)
+- **requiresShipping** - Требует ли заказ доставки (для цифровых товаров)
+- **isPaid** - Статус оплаты заказа (синхронизация с paymentStatus)
+
+### Преимущества флагов:
+- **Специальная обработка** - подарочные заказы и экспресс-доставка
+- **Логика доставки** - разделение физических и цифровых заказов
+- **Управление оплатой** - быстрая проверка статуса оплаты
+- **Аналитика** - статистика по типам заказов
+- **Быстрая фильтрация** - индексы для производительности
+
+13. **Провести рефакторинг** и оптимизацию
+
+## Риски и альтернативы
+
+### ⚠️ Риски:
+- **Производительность**: большое количество заказов может замедлить систему
+- **Консистентность**: одновременное изменение статусов
+- **Масштабируемость**: нужна очередь для обработки заказов
+
+### 🔄 Альтернативы:
+- **Очередь сообщений**: Redis/RabbitMQ для асинхронной обработки
+- **Внешние сервисы**: интеграция с курьерскими службами
+- **Кэширование**: Redis для хранения статусов заказов
+
+## Интеграция с другими системами
+
+### 🔗 Связанные системы:
+- **OrderItemService** - управление товарами в заказе
+- **UserService** - управление пользователями
+- **NotificationService** - уведомления о статусе заказа
+- **PaymentService** - обработка платежей
+- **InventoryService** - управление складом
+
+### 📊 Аналитика:
+- Статистика заказов по статусам
+- Популярные методы оплаты
+- Средний чек заказа
+
+## TL;DR
+
+Упрощенная система заказов включает:
+- **2 таблицы**: orders (расширенная), order_status_history
+- **2 модели**: OrderModel, OrderStatusHistoryModel
+- **1 сервис**: OrderService
+- **1 контроллер**: OrderController
+- **Функции**: базовые статусы, простая оплата, стандартная доставка
+- **Валидация**: проверка статусов и переходов
+- **Автоматизация**: уведомления о смене статуса
+- **Готовность**: к масштабированию и дополнительным функциям
+```

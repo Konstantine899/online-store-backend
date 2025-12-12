@@ -1,0 +1,1321 @@
+# Система корзины (Cart System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы корзины для ecommerce приложения с фокусом на быструю разработку, простоту поддержки и готовность к масштабированию.
+
+## Основные требования
+- **Гостевые корзины** - сохранение для неавторизованных пользователей
+- **Базовые операции** - добавление, обновление, удаление товаров
+- **Промокоды** - применение скидок
+- **Производительность** - кэширование и оптимизация
+- **Безопасность** - базовая защита от атак
+
+## Структура базы данных
+
+### Таблица `carts`
+```sql
+CREATE TABLE carts (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    session_id VARCHAR(255),
+    status VARCHAR(20) DEFAULT 'active',
+    subtotal DECIMAL(10,2) DEFAULT 0.00,
+    discount_amount DECIMAL(10,2) DEFAULT 0.00,
+    total DECIMAL(10,2) DEFAULT 0.00,
+    ip_address VARCHAR(45),
+    is_abandoned BOOLEAN DEFAULT false,
+    is_guest_cart BOOLEAN DEFAULT false,
+    is_saved BOOLEAN DEFAULT false,
+    is_shared BOOLEAN DEFAULT false,
+    is_wishlist BOOLEAN DEFAULT false,
+    is_template BOOLEAN DEFAULT false,
+    is_public BOOLEAN DEFAULT false,
+    is_locked BOOLEAN DEFAULT false,
+    is_archived BOOLEAN DEFAULT false,
+    is_recovered BOOLEAN DEFAULT false,
+    is_converted BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP
+);
+```
+
+### Таблица `cart_items`
+```sql
+CREATE TABLE cart_items (
+    id SERIAL PRIMARY KEY,
+    cart_id INTEGER REFERENCES carts(id) ON DELETE CASCADE,
+    product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    price DECIMAL(10,2) NOT NULL,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(cart_id, product_id)
+);
+```
+
+## Модели Sequelize
+
+### Cart Model
+```typescript
+// src/domain/models/cart.model.ts
+import { Model, DataType, Column, Table, BelongsTo, HasMany, ForeignKey } from 'sequelize-typescript';
+import { Op } from 'sequelize';
+import { UserModel } from './user.model';
+import { CartItemModel } from './cart-item.model';
+
+@Table({
+    tableName: 'carts',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['user_id'], name: 'idx_carts_user_id' },
+        { fields: ['session_id'], name: 'idx_carts_session_id' },
+        { fields: ['status'], name: 'idx_carts_status' },
+        { fields: ['expires_at'], name: 'idx_carts_expires_at' },
+        { fields: ['is_abandoned'], name: 'idx_carts_is_abandoned' },
+        { fields: ['is_guest_cart'], name: 'idx_carts_is_guest_cart' },
+        { fields: ['is_saved'], name: 'idx_carts_is_saved' },
+        { fields: ['is_shared'], name: 'idx_carts_is_shared' },
+        { fields: ['is_wishlist'], name: 'idx_carts_is_wishlist' },
+        { fields: ['is_template'], name: 'idx_carts_is_template' },
+        { fields: ['is_public'], name: 'idx_carts_is_public' },
+        { fields: ['is_locked'], name: 'idx_carts_is_locked' },
+        { fields: ['is_archived'], name: 'idx_carts_is_archived' },
+        { fields: ['is_recovered'], name: 'idx_carts_is_recovered' },
+        { fields: ['is_converted'], name: 'idx_carts_is_converted' },
+        { fields: ['is_abandoned', 'is_guest_cart'], name: 'idx_carts_abandoned_guest' },
+        { fields: ['user_id', 'is_abandoned'], name: 'idx_carts_user_abandoned' },
+    ],
+})
+export class CartModel extends Model<CartModel, ICartCreationAttributes> {
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+        field: 'session_id',
+    })
+    declare sessionId: string;
+
+    @Column({
+        type: DataType.STRING(20),
+        allowNull: false,
+        defaultValue: 'active',
+    })
+    declare status: string;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00,
+    })
+    declare subtotal: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00,
+        field: 'discount_amount',
+    })
+    declare discountAmount: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00,
+    })
+    declare total: number;
+
+    @Column({
+        type: DataType.STRING(45),
+        allowNull: true,
+        field: 'ip_address',
+    })
+    declare ipAddress: string;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_abandoned',
+    })
+    declare isAbandoned: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_guest_cart',
+    })
+    declare isGuestCart: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_saved',
+    })
+    declare isSaved: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_shared',
+    })
+    declare isShared: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_wishlist',
+    })
+    declare isWishlist: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_template',
+    })
+    declare isTemplate: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_public',
+    })
+    declare isPublic: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_locked',
+    })
+    declare isLocked: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_archived',
+    })
+    declare isArchived: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_recovered',
+    })
+    declare isRecovered: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_converted',
+    })
+    declare isConverted: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'expires_at',
+    })
+    declare expiresAt: Date;
+
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    @HasMany(() => CartItemModel)
+    declare items: CartItemModel[];
+
+    // Getters для флагов
+    get isAbandonedCart(): boolean {
+        return this.isAbandoned;
+    }
+
+    get isGuestCart(): boolean {
+        return this.isGuestCart;
+    }
+
+    get isSavedCart(): boolean {
+        return this.isSaved;
+    }
+
+    get isSharedCart(): boolean {
+        return this.isShared;
+    }
+
+    get isWishlistCart(): boolean {
+        return this.isWishlist;
+    }
+
+    get isTemplateCart(): boolean {
+        return this.isTemplate;
+    }
+
+    get isPublicCart(): boolean {
+        return this.isPublic;
+    }
+
+    get isLockedCart(): boolean {
+        return this.isLocked;
+    }
+
+    get isArchivedCart(): boolean {
+        return this.isArchived;
+    }
+
+    get isRecoveredCart(): boolean {
+        return this.isRecovered;
+    }
+
+    get isConvertedCart(): boolean {
+        return this.isConverted;
+    }
+
+    get cartType(): string {
+        if (this.isWishlist) return 'wishlist';
+        if (this.isTemplate) return 'template';
+        if (this.isPublic) return 'public';
+        if (this.isShared) return 'shared';
+        if (this.isSaved) return 'saved';
+        if (this.isAbandoned) return 'abandoned';
+        if (this.isGuestCart) return 'guest';
+        if (this.isArchived) return 'archived';
+        return 'active';
+    }
+
+    get isRegisteredUserCart(): boolean {
+        return !this.isGuestCart && this.userId !== null;
+    }
+
+    get canBeRecovered(): boolean {
+        return this.isAbandoned && this.items && this.items.length > 0;
+    }
+
+    get needsCleanup(): boolean {
+        return this.isAbandoned && this.expiresAt && new Date() > this.expiresAt;
+    }
+
+    // Методы для работы с флагами
+    async markAsAbandoned(): Promise<void> {
+        await this.update({ isAbandoned: true });
+    }
+
+    async markAsActive(): Promise<void> {
+        await this.update({ isAbandoned: false });
+    }
+
+    async markAsGuestCart(): Promise<void> {
+        await this.update({ isGuestCart: true, userId: null });
+    }
+
+    async markAsUserCart(userId: number): Promise<void> {
+        await this.update({ isGuestCart: false, userId });
+    }
+
+    async markAsSaved(): Promise<void> {
+        await this.update({ isSaved: true });
+    }
+
+    async unmarkAsSaved(): Promise<void> {
+        await this.update({ isSaved: false });
+    }
+
+    async markAsShared(): Promise<void> {
+        await this.update({ isShared: true });
+    }
+
+    async unmarkAsShared(): Promise<void> {
+        await this.update({ isShared: false });
+    }
+
+    async markAsWishlist(): Promise<void> {
+        await this.update({ isWishlist: true });
+    }
+
+    async unmarkAsWishlist(): Promise<void> {
+        await this.update({ isWishlist: false });
+    }
+
+    async markAsTemplate(): Promise<void> {
+        await this.update({ isTemplate: true });
+    }
+
+    async unmarkAsTemplate(): Promise<void> {
+        await this.update({ isTemplate: false });
+    }
+
+    async markAsPublic(): Promise<void> {
+        await this.update({ isPublic: true });
+    }
+
+    async unmarkAsPublic(): Promise<void> {
+        await this.update({ isPublic: false });
+    }
+
+    async lockCart(): Promise<void> {
+        await this.update({ isLocked: true });
+    }
+
+    async unlockCart(): Promise<void> {
+        await this.update({ isLocked: false });
+    }
+
+    async archiveCart(): Promise<void> {
+        await this.update({ isArchived: true });
+    }
+
+    async unarchiveCart(): Promise<void> {
+        await this.update({ isArchived: false });
+    }
+
+    async markAsRecovered(): Promise<void> {
+        await this.update({ isRecovered: true, isAbandoned: false });
+    }
+
+    async unmarkAsRecovered(): Promise<void> {
+        await this.update({ isRecovered: false });
+    }
+
+    async markAsConverted(): Promise<void> {
+        await this.update({ isConverted: true });
+    }
+
+    async unmarkAsConverted(): Promise<void> {
+        await this.update({ isConverted: false });
+    }
+
+    // Статические методы для работы с флагами
+    static async getAbandonedCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isAbandoned: true },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getGuestCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isGuestCart: true },
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getCartsForRecovery(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { 
+                isAbandoned: true,
+                expiresAt: { [Op.gt]: new Date() }
+            },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getSavedCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isSaved: true },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getSharedCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isShared: true },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getWishlistCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isWishlist: true },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getTemplateCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isTemplate: true },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getPublicCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isPublic: true },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getLockedCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isLocked: true },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getUnlockedCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isLocked: false },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getArchivedCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isArchived: true },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getNonArchivedCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isArchived: false },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getRecoveredCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isRecovered: true },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getNonRecoveredCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isRecovered: false },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getConvertedCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isConverted: true },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+
+    static async getNonConvertedCarts(): Promise<CartModel[]> {
+        return this.findAll({
+            where: { isConverted: false },
+            include: [{ association: 'items' }],
+            order: [['updatedAt', 'DESC']],
+        });
+    }
+}
+```
+
+## Сервисы
+
+### Cart Service
+```typescript
+// src/infrastructure/services/cart.service.ts
+import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
+import { CartModel } from '@app/domain/models/cart.model';
+import { CartItemModel } from '@app/domain/models/cart-item.model';
+import { ProductModel } from '@app/domain/models/product.model';
+
+@Injectable()
+export class CartService {
+    private readonly logger = new Logger(CartService.name);
+
+    constructor(
+        @InjectModel(CartModel)
+        private cartModel: typeof CartModel,
+        @InjectModel(CartItemModel)
+        private cartItemModel: typeof CartItemModel,
+        @InjectModel(ProductModel)
+        private productModel: typeof ProductModel,
+    ) {}
+
+    async getOrCreateCart(
+        userId?: number,
+        sessionId?: string,
+        ipAddress?: string,
+    ): Promise<CartModel> {
+        let cart: CartModel;
+
+        if (userId) {
+            cart = await this.cartModel.findOne({
+                where: { userId, status: 'active' },
+                include: ['items'],
+            });
+        } else if (sessionId) {
+            cart = await this.cartModel.findOne({
+                where: { sessionId, status: 'active' },
+                include: ['items'],
+            });
+        }
+
+        if (!cart) {
+            cart = await this.cartModel.create({
+                userId,
+                sessionId,
+                ipAddress,
+                expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 дней
+            });
+        }
+
+        return cart;
+    }
+
+    async addToCart(
+        cartId: number,
+        productId: number,
+        quantity: number = 1,
+    ): Promise<CartItemModel> {
+        const cart = await this.cartModel.findByPk(cartId);
+        if (!cart) {
+            throw new NotFoundException('Корзина не найдена');
+        }
+
+        const product = await this.productModel.findByPk(productId);
+        if (!product || !product.isActive) {
+            throw new NotFoundException('Товар не найден или неактивен');
+        }
+
+        if (product.stock < quantity) {
+            throw new BadRequestException('Недостаточно товара на складе');
+        }
+
+        const existingItem = await this.cartItemModel.findOne({
+            where: { cartId, productId },
+        });
+
+        if (existingItem) {
+            await existingItem.update({
+                quantity: existingItem.quantity + quantity,
+            });
+        } else {
+            await this.cartItemModel.create({
+                cartId,
+                productId,
+                quantity,
+                price: product.price,
+            });
+        }
+
+        await this.recalculateCart(cartId);
+        return existingItem || await this.cartItemModel.findOne({
+            where: { cartId, productId },
+        });
+    }
+
+    async updateCartItem(
+        cartId: number,
+        productId: number,
+        quantity: number,
+    ): Promise<CartItemModel> {
+        const item = await this.cartItemModel.findOne({
+            where: { cartId, productId },
+        });
+
+        if (!item) {
+            throw new NotFoundException('Товар не найден в корзине');
+        }
+
+        if (quantity <= 0) {
+            await this.removeFromCart(cartId, productId);
+            return null;
+        }
+
+        await item.update({ quantity });
+        await this.recalculateCart(cartId);
+        return item;
+    }
+
+    async removeFromCart(cartId: number, productId: number): Promise<void> {
+        const deletedCount = await this.cartItemModel.destroy({
+            where: { cartId, productId },
+        });
+
+        if (deletedCount === 0) {
+            throw new NotFoundException('Товар не найден в корзине');
+        }
+
+        await this.recalculateCart(cartId);
+    }
+
+    async applyCoupon(cartId: number, couponCode: string): Promise<boolean> {
+        const cart = await this.cartModel.findByPk(cartId, {
+            include: ['items'],
+        });
+
+        if (!cart) {
+            throw new NotFoundException('Корзина не найдена');
+        }
+
+        // Простая валидация промокода
+        const coupon = await this.validateCoupon(couponCode, cart.subtotal);
+        if (!coupon) {
+            return false;
+        }
+
+        const discountAmount = this.calculateDiscount(coupon, cart.subtotal);
+        await cart.update({
+            discountAmount: cart.discountAmount + discountAmount,
+        });
+
+        await this.recalculateCart(cartId);
+        return true;
+    }
+
+    private async recalculateCart(cartId: number): Promise<void> {
+        const cart = await this.cartModel.findByPk(cartId, {
+            include: ['items'],
+        });
+
+        if (!cart) return;
+
+        const subtotal = cart.items.reduce((sum, item) => 
+            sum + (item.price * item.quantity), 0
+        );
+
+        const total = subtotal - cart.discountAmount;
+
+        await cart.update({ subtotal, total });
+    }
+
+    private async validateCoupon(code: string, subtotal: number): Promise<any> {
+        // Простая валидация - в реальном проекте через CouponService
+        return { code, discountType: 'percentage', discountValue: 10, minimumAmount: 100 };
+    }
+
+    private calculateDiscount(coupon: any, subtotal: number): number {
+        if (coupon.discountType === 'percentage') {
+            return (subtotal * coupon.discountValue) / 100;
+        }
+        return coupon.discountValue;
+    }
+
+    // Методы для работы с флагами корзин
+    async markCartAsAbandoned(cartId: number): Promise<CartModel> {
+        const cart = await this.getCartById(cartId);
+        await cart.markAsAbandoned();
+        return cart;
+    }
+
+    async markCartAsActive(cartId: number): Promise<CartModel> {
+        const cart = await this.getCartById(cartId);
+        await cart.markAsActive();
+        return cart;
+    }
+
+    async markCartAsGuest(cartId: number): Promise<CartModel> {
+        const cart = await this.getCartById(cartId);
+        await cart.markAsGuestCart();
+        return cart;
+    }
+
+    async markCartAsUser(cartId: number, userId: number): Promise<CartModel> {
+        const cart = await this.getCartById(cartId);
+        await cart.markAsUserCart(userId);
+        return cart;
+    }
+
+    async markCartAsSaved(cartId: number): Promise<CartModel> {
+        const cart = await this.getCartById(cartId);
+        await cart.markAsSaved();
+        this.logger.log(`Корзина ${cartId} сохранена`);
+        return cart;
+    }
+
+    async unmarkCartAsSaved(cartId: number): Promise<CartModel> {
+        const cart = await this.getCartById(cartId);
+        await cart.unmarkAsSaved();
+        this.logger.log(`Корзина ${cartId} больше не сохранена`);
+        return cart;
+    }
+
+    async markCartAsShared(cartId: number): Promise<CartModel> {
+        const cart = await this.getCartById(cartId);
+        await cart.markAsShared();
+        this.logger.log(`Корзина ${cartId} расшарена`);
+        return cart;
+    }
+
+    async unmarkCartAsShared(cartId: number): Promise<CartModel> {
+        const cart = await this.getCartById(cartId);
+        await cart.unmarkAsShared();
+        this.logger.log(`Корзина ${cartId} больше не расшарена`);
+        return cart;
+    }
+
+    async getAbandonedCarts(): Promise<CartModel[]> {
+        return this.cartModel.getAbandonedCarts();
+    }
+
+    async getGuestCarts(): Promise<CartModel[]> {
+        return this.cartModel.getGuestCarts();
+    }
+
+    async getCartsForRecovery(): Promise<CartModel[]> {
+        return this.cartModel.getCartsForRecovery();
+    }
+
+    async getSavedCarts(): Promise<CartModel[]> {
+        return this.cartModel.getSavedCarts();
+    }
+
+    async getSharedCarts(): Promise<CartModel[]> {
+        return this.cartModel.getSharedCarts();
+    }
+
+    async getCartStatistics(): Promise<{
+        totalCarts: number;
+        activeCarts: number;
+        abandonedCarts: number;
+        guestCarts: number;
+        userCarts: number;
+        recoverableCarts: number;
+    }> {
+        const [
+            totalCarts,
+            activeCarts,
+            abandonedCarts,
+            guestCarts,
+            userCarts,
+            recoverableCarts,
+            savedCarts,
+            sharedCarts,
+        ] = await Promise.all([
+            this.cartModel.count(),
+            this.cartModel.count({ where: { status: 'active', isAbandoned: false } }),
+            this.cartModel.count({ where: { isAbandoned: true } }),
+            this.cartModel.count({ where: { isGuestCart: true } }),
+            this.cartModel.count({ where: { isGuestCart: false, userId: { [Op.ne]: null } } }),
+            this.cartModel.count({ 
+                where: { 
+                    isAbandoned: true,
+                    expiresAt: { [Op.gt]: new Date() }
+                }
+            }),
+            this.cartModel.count({ where: { isSaved: true } }),
+            this.cartModel.count({ where: { isShared: true } }),
+        ]);
+
+        return {
+            totalCarts,
+            activeCarts,
+            abandonedCarts,
+            guestCarts,
+            userCarts,
+            recoverableCarts,
+            savedCarts,
+            sharedCarts,
+        };
+    }
+}
+```
+
+## Контроллеры
+
+### Cart Controller
+```typescript
+// src/infrastructure/controllers/cart.controller.ts
+import { Controller, Get, Post, Put, Delete, Patch, Param, Body, Query, HttpCode, HttpStatus, ParseIntPipe, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { CartService } from '@app/infrastructure/services/cart.service';
+import { AddToCartDto } from '@app/infrastructure/dto/cart/add-to-cart.dto';
+import { UpdateCartItemDto } from '@app/infrastructure/dto/cart/update-cart-item.dto';
+
+@ApiTags('Корзина')
+@Controller('cart')
+export class CartController {
+    constructor(private readonly cartService: CartService) {}
+
+    @Get()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить корзину' })
+    async getCart(
+        @Query('userId') userId: number,
+        @Query('sessionId') sessionId: string,
+        @Req() req: any,
+    ) {
+        const cart = await this.cartService.getOrCreateCart(
+            userId,
+            sessionId,
+            req.ip,
+        );
+
+        return {
+            data: cart,
+            meta: {
+                itemCount: cart.items?.length || 0,
+                totalValue: cart.total,
+            },
+        };
+    }
+
+    @Post('items')
+    @HttpCode(HttpStatus.CREATED)
+    @ApiOperation({ summary: 'Добавить товар в корзину' })
+    async addToCart(
+        @Body() addToCartDto: AddToCartDto,
+        @Query('userId') userId: number,
+        @Query('sessionId') sessionId: string,
+        @Req() req: any,
+    ) {
+        const cart = await this.cartService.getOrCreateCart(
+            userId,
+            sessionId,
+            req.ip,
+        );
+
+        return this.cartService.addToCart(
+            cart.id,
+            addToCartDto.productId,
+            addToCartDto.quantity,
+        );
+    }
+
+    @Put('items/:productId')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Обновить количество товара' })
+    async updateCartItem(
+        @Param('productId') productId: number,
+        @Body() updateCartItemDto: UpdateCartItemDto,
+        @Query('userId') userId: number,
+        @Query('sessionId') sessionId: string,
+        @Req() req: any,
+    ) {
+        const cart = await this.cartService.getOrCreateCart(
+            userId,
+            sessionId,
+            req.ip,
+        );
+
+        return this.cartService.updateCartItem(
+            cart.id,
+            productId,
+            updateCartItemDto.quantity,
+        );
+    }
+
+    @Delete('items/:productId')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Удалить товар из корзины' })
+    async removeFromCart(
+        @Param('productId') productId: number,
+        @Query('userId') userId: number,
+        @Query('sessionId') sessionId: string,
+        @Req() req: any,
+    ) {
+        const cart = await this.cartService.getOrCreateCart(
+            userId,
+            sessionId,
+            req.ip,
+        );
+
+        return this.cartService.removeFromCart(cart.id, productId);
+    }
+
+    @Post('coupon')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Применить промокод' })
+    async applyCoupon(
+        @Body() body: { couponCode: string },
+        @Query('userId') userId: number,
+        @Query('sessionId') sessionId: string,
+        @Req() req: any,
+    ) {
+        const cart = await this.cartService.getOrCreateCart(
+            userId,
+            sessionId,
+            req.ip,
+        );
+
+        const success = await this.cartService.applyCoupon(
+            cart.id,
+            body.couponCode,
+        );
+
+        return {
+            success,
+            message: success ? 'Промокод применен' : 'Промокод недействителен',
+        };
+    }
+
+    // API endpoints для работы с флагами корзин
+    @Patch(':id/abandoned')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Отметить корзину как брошенную' })
+    @ApiResponse({ status: 200, description: 'Корзина отмечена как брошенная' })
+    async markAsAbandoned(@Param('id', ParseIntPipe) id: number): Promise<CartModel> {
+        return this.cartService.markCartAsAbandoned(id);
+    }
+
+    @Patch(':id/active')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Отметить корзину как активную' })
+    @ApiResponse({ status: 200, description: 'Корзина отмечена как активная' })
+    async markAsActive(@Param('id', ParseIntPipe) id: number): Promise<CartModel> {
+        return this.cartService.markCartAsActive(id);
+    }
+
+    @Patch(':id/guest')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Отметить корзину как гостевую' })
+    @ApiResponse({ status: 200, description: 'Корзина отмечена как гостевая' })
+    async markAsGuest(@Param('id', ParseIntPipe) id: number): Promise<CartModel> {
+        return this.cartService.markCartAsGuest(id);
+    }
+
+    @Patch(':id/user/:userId')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Привязать корзину к пользователю' })
+    @ApiResponse({ status: 200, description: 'Корзина привязана к пользователю' })
+    async markAsUser(
+        @Param('id', ParseIntPipe) id: number,
+        @Param('userId', ParseIntPipe) userId: number,
+    ): Promise<CartModel> {
+        return this.cartService.markCartAsUser(id, userId);
+    }
+
+    @Get('abandoned')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить список брошенных корзин' })
+    @ApiResponse({ status: 200, description: 'Список брошенных корзин' })
+    async getAbandonedCarts(): Promise<CartModel[]> {
+        return this.cartService.getAbandonedCarts();
+    }
+
+    @Get('guest')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить список гостевых корзин' })
+    @ApiResponse({ status: 200, description: 'Список гостевых корзин' })
+    async getGuestCarts(): Promise<CartModel[]> {
+        return this.cartService.getGuestCarts();
+    }
+
+    @Get('saved')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить список сохраненных корзин' })
+    @ApiResponse({ status: 200, description: 'Список сохраненных корзин' })
+    async getSavedCarts(): Promise<CartModel[]> {
+        return this.cartService.getSavedCarts();
+    }
+
+    @Get('shared')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить список расшаренных корзин' })
+    @ApiResponse({ status: 200, description: 'Список расшаренных корзин' })
+    async getSharedCarts(): Promise<CartModel[]> {
+        return this.cartService.getSharedCarts();
+    }
+
+    @Patch(':id/saved')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Сохранить корзину' })
+    @ApiResponse({ status: 200, description: 'Корзина сохранена' })
+    async markAsSaved(@Param('id', ParseIntPipe) id: number): Promise<CartModel> {
+        return this.cartService.markCartAsSaved(id);
+    }
+
+    @Patch(':id/unsaved')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Убрать корзину из сохраненных' })
+    @ApiResponse({ status: 200, description: 'Корзина убрана из сохраненных' })
+    async unmarkAsSaved(@Param('id', ParseIntPipe) id: number): Promise<CartModel> {
+        return this.cartService.unmarkCartAsSaved(id);
+    }
+
+    @Patch(':id/shared')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Расшарить корзину' })
+    @ApiResponse({ status: 200, description: 'Корзина расшарена' })
+    async markAsShared(@Param('id', ParseIntPipe) id: number): Promise<CartModel> {
+        return this.cartService.markCartAsShared(id);
+    }
+
+    @Patch(':id/unshared')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Убрать корзину из расшаренных' })
+    @ApiResponse({ status: 200, description: 'Корзина убрана из расшаренных' })
+    async unmarkAsShared(@Param('id', ParseIntPipe) id: number): Promise<CartModel> {
+        return this.cartService.unmarkCartAsShared(id);
+    }
+
+    @Get('recovery')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить корзины для восстановления' })
+    @ApiResponse({ status: 200, description: 'Список корзин для восстановления' })
+    async getCartsForRecovery(): Promise<CartModel[]> {
+        return this.cartService.getCartsForRecovery();
+    }
+
+    @Get('statistics')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить статистику корзин' })
+    @ApiResponse({ status: 200, description: 'Статистика корзин' })
+    async getCartStatistics(): Promise<{
+        totalCarts: number;
+        activeCarts: number;
+        abandonedCarts: number;
+        guestCarts: number;
+        userCarts: number;
+        recoverableCarts: number;
+    }> {
+        return this.cartService.getCartStatistics();
+    }
+}
+```
+
+## DTO классы
+
+### AddToCartDto
+```typescript
+// src/infrastructure/dto/cart/add-to-cart.dto.ts
+import { IsInt, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class AddToCartDto {
+    @IsInt({ message: 'ID товара должен быть числом' })
+    @Type(() => Number)
+    declare readonly productId: number;
+
+    @IsInt({ message: 'Количество должно быть числом' })
+    @Min(1, { message: 'Количество должно быть больше 0' })
+    @Max(999, { message: 'Количество не может превышать 999' })
+    @Type(() => Number)
+    declare readonly quantity: number;
+}
+```
+
+### UpdateCartItemDto
+```typescript
+// src/infrastructure/dto/cart/update-cart-item.dto.ts
+import { IsInt, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class UpdateCartItemDto {
+    @IsInt({ message: 'Количество должно быть числом' })
+    @Min(1, { message: 'Количество должно быть больше 0' })
+    @Max(999, { message: 'Количество не может превышать 999' })
+    @Type(() => Number)
+    declare readonly quantity: number;
+}
+```
+
+## Миграции
+
+### Создание таблиц
+```typescript
+// db/migrations/YYYYMMDDHHMMSS-create-cart-system.ts
+import { QueryInterface, DataTypes } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+    // Создание таблицы carts
+    await queryInterface.createTable('carts', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        user_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: { model: 'users', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        session_id: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+        },
+        status: {
+            type: DataTypes.STRING(20),
+            allowNull: false,
+            defaultValue: 'active',
+        },
+        subtotal: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+            defaultValue: 0.00,
+        },
+        discount_amount: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+            defaultValue: 0.00,
+        },
+        total: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+            defaultValue: 0.00,
+        },
+        ip_address: {
+            type: DataTypes.STRING(45),
+            allowNull: true,
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        expires_at: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+    });
+
+    // Создание таблицы cart_items
+    await queryInterface.createTable('cart_items', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        cart_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'carts', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        product_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'products', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        quantity: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 1,
+        },
+        price: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+        },
+        added_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание индексов
+    await queryInterface.addIndex('carts', ['user_id']);
+    await queryInterface.addIndex('carts', ['session_id']);
+    await queryInterface.addIndex('carts', ['status']);
+    await queryInterface.addIndex('carts', ['expires_at']);
+    await queryInterface.addIndex('cart_items', ['cart_id']);
+    await queryInterface.addIndex('cart_items', ['product_id']);
+    await queryInterface.addIndex('cart_items', ['cart_id', 'product_id'], { unique: true });
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+    await queryInterface.dropTable('cart_items');
+    await queryInterface.dropTable('carts');
+}
+```
+
+## Критерии готовности
+
+### ✅ Обязательные требования:
+- [ ] Созданы таблицы carts и cart_items с индексами
+- [ ] Реализованы модели CartModel и CartItemModel
+- [ ] Создан CartService с основными методами
+- [ ] Реализован CartController с API endpoints
+- [ ] Добавлены DTO классы с валидацией
+- [ ] Созданы миграции для БД
+- [ ] Поддержка гостевых сессий
+- [ ] Автоматический пересчет сумм
+- [ ] Базовое применение промокодов
+
+### 🎯 Дополнительные возможности:
+- [ ] Кэширование корзин (Redis)
+- [ ] Rate limiting для API
+- [ ] Аналитика корзины
+- [ ] Уведомления о брошенных корзинах
+- [ ] Интеграция с системой промокодов
+- [ ] Базовые тесты
+
+## Следующие шаги
+
+### Фаза 1: Базовая реализация (1 неделя)
+1. **Создать миграции** для таблиц carts и cart_items
+2. **Реализовать модели** CartModel и CartItemModel
+3. **Создать CartService** с основными методами
+4. **Добавить DTO классы** с валидацией
+
+### Фаза 2: API и интеграции (1 неделя)
+5. **Создать CartController** с API endpoints
+6. **Интегрировать с промокодами** (базовая версия)
+7. **Добавить обработку ошибок** и валидацию
+8. **Написать базовые тесты**
+
+### Фаза 3: Оптимизация (1 неделя)
+9. **Добавить кэширование** корзин
+10. **Реализовать rate limiting**
+11. **Добавить аналитику** корзины
+12. **Оптимизировать производительность**
+
+## Новые флаги корзин
+
+### Описание флагов:
+- **isAbandoned** - Брошенная корзина (пользователь не завершил покупку)
+- **isGuestCart** - Гостевая корзина (неавторизованный пользователь)
+
+### Преимущества флагов:
+- **Восстановление продаж** - автоматическое выявление брошенных корзин
+- **Email-маркетинг** - таргетированные кампании для восстановления
+- **Аналитика поведения** - анализ паттернов покупок гостей vs пользователей
+- **Очистка данных** - автоматическое удаление старых гостевых корзин
+- **Персонализация** - разная логика для гостей и зарегистрированных пользователей
+
+### Новые возможности системы:
+- **API для управления флагами** - PATCH endpoints для админов
+- **Фильтрация корзин** - GET endpoints по типам корзин
+- **Статистика корзин** - детальная аналитика по флагам
+- **Автоматическое восстановление** - выявление корзин для восстановления
+- **Очистка данных** - автоматическое удаление истекших корзин
+
+## TL;DR
+
+Практичная система корзины включает:
+- **2 таблицы**: carts, cart_items
+- **2 модели**: Cart, CartItem с флагами isAbandoned, isGuestCart
+- **1 сервис**: CartService с методами управления флагами
+- **1 контроллер**: API для корзины с endpoints для флагов
+- **Поддержка**: гостевые сессии, промокоды, восстановление брошенных корзин
+- **Время разработки**: 2-3 недели
+- **Готовность**: к быстрому внедрению в продакшен

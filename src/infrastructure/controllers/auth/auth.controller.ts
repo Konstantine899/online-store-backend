@@ -1,69 +1,189 @@
+import { TenantContext } from '@app/infrastructure/common/context';
 import {
+    CheckUserAuthSwaggerDecorator,
+    LoginSwaggerDecorator,
+    LogoutSwaggerDecorator,
+    RegistrationSwaggerDecorator,
+    UpdateAccessTokenSwaggerDecorator,
+} from '@app/infrastructure/common/decorators';
+import { MetricsCollector } from '@app/infrastructure/common/services/metrics-collector.service';
+import { SSOStrategyFactory } from '@app/infrastructure/common/strategies/sso/sso-strategy.factory';
+import { LoginDto, RegistrationDto } from '@app/infrastructure/dto';
+import { ForgotPasswordDto } from '@app/infrastructure/dto/auth/forgot-password.dto';
+import { ResetPasswordDto } from '@app/infrastructure/dto/auth/reset-password.dto';
+import { SSOLogoutDto } from '@app/infrastructure/dto/sso';
+import { ExternalRoleSyncRepository } from '@app/infrastructure/repositories/role/external-role-sync.repository';
+import {
+    SSOLoginResponse,
+    SSOLogoutResponse,
+} from '@app/infrastructure/responses/sso';
+import { AuthService, UserService } from '@app/infrastructure/services';
+import { TokenService } from '@app/infrastructure/services/token/token.service';
+import {
+    BadRequestException,
     Body,
     Controller,
     Delete,
     Get,
     HttpCode,
+    HttpStatus,
+    NotFoundException,
+    Param,
+    ParseIntPipe,
     Post,
+    Query,
     Req,
+    Res,
+    UnauthorizedException,
+    UnprocessableEntityException,
     UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
-import { AuthService, UserService } from '@app/infrastructure/services';
-import { RegistrationDto, LoginDto, RefreshDto } from '@app/infrastructure/dto';
-import { ApiTags } from '@nestjs/swagger';
 import {
-    RegistrationSwaggerDecorator,
-    LogoutSwaggerDecorator,
-    LoginSwaggerDecorator,
-    CheckUserAuthSwaggerDecorator,
-    UpdateAccessTokenSwaggerDecorator,
-} from '@app/infrastructure/common/decorators';
+    ApiBearerAuth,
+    ApiOperation,
+    ApiParam,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
+import { Request, Response } from 'express';
 
 import {
+    CheckResponse,
     LoginResponse,
+    LogoutResponse,
     RegistrationResponse,
     UpdateAccessTokenResponse,
-    CheckResponse,
-    LogoutResponse,
 } from '@app/infrastructure/responses';
 
-import { AuthGuard } from '@app/infrastructure/common/guards';
-import { IAuthController } from '@app/domain/controllers';
 import { IDecodedAccessToken } from '@app/domain/jwt';
+import { AuthGuard } from '@app/infrastructure/common/guards';
+import { BruteforceGuard } from '@app/infrastructure/common/guards/bruteforce.guard';
+import {
+    SSOOAuth2Guard,
+    SSOOIDCGuard,
+    SSOSAMLGuard,
+} from '@app/infrastructure/common/guards/sso';
+import {
+    buildRefreshCookieOptions,
+    getRefreshCookieName,
+} from '@app/infrastructure/common/utils/cookie-options';
 
 @ApiTags('Аутентификация')
 @Controller('auth')
-export class AuthController implements IAuthController {
+export class AuthController {
     constructor(
         private readonly authService: AuthService,
         private readonly userService: UserService,
+        private readonly ssoStrategyFactory: SSOStrategyFactory,
+        private readonly externalRoleSyncRepository: ExternalRoleSyncRepository,
+        private readonly tokenService: TokenService,
+        private readonly tenantContext: TenantContext,
+        private readonly metricsCollector: MetricsCollector,
     ) {}
 
     @RegistrationSwaggerDecorator()
     @HttpCode(201)
+    @UseGuards(BruteforceGuard)
     @Post('/registration')
     public async registration(
         @Body() dto: RegistrationDto,
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
     ): Promise<RegistrationResponse> {
-        return this.authService.registration(dto);
+        const result = await this.authService.registration(dto);
+
+        const cookieName = getRefreshCookieName();
+        res.cookie(
+            cookieName,
+            result.refreshToken,
+            buildRefreshCookieOptions(),
+        );
+
+        return {
+            type: result.type,
+            accessToken: result.accessToken,
+        };
     }
 
     @LoginSwaggerDecorator()
     @HttpCode(200)
+    @UseGuards(BruteforceGuard)
     @Post('/login')
-    public async login(@Body() dto: LoginDto): Promise<LoginResponse> {
-        return this.authService.login(dto);
+    public async login(
+        @Body() dto: LoginDto,
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<LoginResponse> {
+        const result = await this.authService.login(dto, req);
+        // ставим refresh в HttpOnly cookie
+        const cookieName = getRefreshCookieName();
+        res.cookie(
+            cookieName,
+            result.refreshToken,
+            buildRefreshCookieOptions(),
+        );
+
+        // Возвращаем только поля, определённые в LoginResponse, без refreshToken в теле
+        return { type: result.type, accessToken: result.accessToken };
     }
 
     @UpdateAccessTokenSwaggerDecorator()
-    @HttpCode(201)
-    @UseGuards(AuthGuard)
+    @HttpCode(200)
+    @UseGuards(BruteforceGuard)
     @Post('/refresh')
     public async updateAccessToken(
-        @Body() dto: RefreshDto,
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
     ): Promise<UpdateAccessTokenResponse> {
-        return this.authService.updateAccessToken(dto.refreshToken);
+        const cookieName = getRefreshCookieName();
+        const refreshFromCookie: string | undefined =
+            req.signedCookies?.[cookieName] ?? req.cookies?.[cookieName];
+
+        if (!refreshFromCookie) {
+            // cookie ожидается подписанной; отсутствует = невалидна/не отправлена
+            throw new UnauthorizedException(
+                'Отсутствует или некорректная cookie с refresh токеном',
+            );
+        }
+
+        try {
+            // Получаем новый access и новый refresh
+            const result =
+                await this.authService.updateAccessToken(refreshFromCookie);
+            // Если получили новый refresh токен - обновляем cookie
+            if (result.refreshToken) {
+                res.cookie(
+                    cookieName,
+                    result.refreshToken,
+                    buildRefreshCookieOptions(),
+                );
+            }
+            // Возвращаем только access токен в теле ответа
+            return {
+                type: result.type,
+                accessToken: result.accessToken,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                // Reuse detection - очищаем cookie
+                const opts = buildRefreshCookieOptions();
+                res.clearCookie(cookieName, {
+                    ...opts,
+                    maxAge: undefined,
+                    expires: new Date(0),
+                });
+                throw new UnauthorizedException(
+                    'Refresh токен скомпрометирован. Пожалуйста, выполните вход заново.',
+                );
+            }
+
+            if (error instanceof UnprocessableEntityException) {
+                // Неверный формат, истёкший токен, user mismatch
+                throw new UnauthorizedException('Некорректный refresh токен');
+            }
+
+            throw error;
+        }
     }
 
     @CheckUserAuthSwaggerDecorator()
@@ -74,18 +194,628 @@ export class AuthController implements IAuthController {
     ): Promise<CheckResponse> {
         const { id } = request.user as IDecodedAccessToken;
         if (id === undefined) {
-            throw new Error('User ID is required');
+            throw new BadRequestException(
+                'Идентификатор пользователя обязателен',
+            );
         }
         return this.userService.checkUserAuth(id);
     }
 
     @LogoutSwaggerDecorator()
     @UseGuards(AuthGuard)
+    @HttpCode(200)
     @Delete('/logout')
     public async logout(
-        @Req() request: Request,
-        @Body() refresh: RefreshDto,
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
     ): Promise<LogoutResponse> {
-        return this.authService.logout(refresh, request);
+        const cookieName = getRefreshCookieName();
+        const refreshFromCookie: string | undefined =
+            req.signedCookies?.[cookieName] ?? req.cookies?.[cookieName];
+
+        if (!refreshFromCookie) {
+            // cookie ожидается подписанной; отсутствует = невалидна/не отправлена
+            throw new UnauthorizedException(
+                'Отсутствует или некорректная cookie с refresh токеном',
+            );
+        }
+
+        // 1) Отзываю refresh в БД (чтобы он больше нигде не сработал)
+        await this.authService.logout({ refreshToken: refreshFromCookie }, req);
+
+        // 2) Очистить cookie у клиента
+        const opts = buildRefreshCookieOptions();
+        res.clearCookie(cookieName, {
+            ...opts,
+            maxAge: undefined,
+            expires: new Date(0),
+        });
+
+        return { status: 200, message: 'success' } as LogoutResponse;
+    }
+
+    // ============================================================
+    // PASSWORD RESET ENDPOINTS
+    // ============================================================
+
+    @ApiOperation({
+        summary: 'Запрос сброса пароля',
+        description:
+            'Генерирует токен сброса пароля и отправляет ссылку на email (mock для MVP)',
+    })
+    @ApiResponse({
+        status: 200,
+        description:
+            'Инструкции отправлены (всегда возвращается success для security)',
+        schema: {
+            properties: {
+                message: {
+                    type: 'string',
+                    example: 'Инструкции по сбросу пароля отправлены на email',
+                },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Некорректный формат email',
+    })
+    @ApiResponse({
+        status: 429,
+        description: 'Превышен лимит запросов (3 попытки/час)',
+    })
+    @HttpCode(200)
+    @UseGuards(BruteforceGuard)
+    @Post('/forgot-password')
+    async forgotPassword(
+        @Body() dto: ForgotPasswordDto,
+        @Req() req: Request,
+    ): Promise<{ message: string }> {
+        const tenantId = undefined; // TODO: получить из TenantMiddleware когда будет реализовано
+        const ipAddress = req.ip;
+        const userAgent = req.get('User-Agent');
+
+        await this.authService.forgotPassword(
+            dto.email,
+            tenantId,
+            ipAddress,
+            userAgent,
+        );
+
+        // Всегда возвращаем success (security: не раскрываем есть ли email)
+        return {
+            message: 'Инструкции по сбросу пароля отправлены на email',
+        };
+    }
+
+    @ApiOperation({
+        summary: 'Сброс пароля по токену',
+        description:
+            'Сбрасывает пароль пользователя и завершает все активные сессии',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Пароль успешно изменён',
+        schema: {
+            properties: {
+                message: {
+                    type: 'string',
+                    example: 'Пароль успешно изменён',
+                },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Некорректный формат токена или слабый пароль',
+    })
+    @ApiResponse({
+        status: 401,
+        description: 'Токен некорректен, истёк или уже использован',
+    })
+    @ApiResponse({
+        status: 429,
+        description: 'Превышен лимит запросов (5 попыток/час)',
+    })
+    @HttpCode(200)
+    @UseGuards(BruteforceGuard)
+    @Post('/reset-password')
+    async resetPassword(
+        @Body() dto: ResetPasswordDto,
+    ): Promise<{ message: string }> {
+        const tenantId = undefined; // TODO: получить из TenantMiddleware
+
+        await this.authService.resetPassword(
+            dto.token,
+            dto.newPassword,
+            tenantId,
+        );
+
+        return {
+            message: 'Пароль успешно изменён',
+        };
+    }
+
+    // ============================================================
+    // SSO ENDPOINTS
+    // ============================================================
+
+    @ApiOperation({
+        summary: 'Инициация SSO входа',
+        description:
+            'Перенаправляет пользователя на страницу авторизации SSO провайдера (OAuth 2.0, SAML, OIDC). ' +
+            'Поддерживает провайдеры: Azure AD, Google Workspace, Generic OAuth 2.0, SAML 2.0, OpenID Connect.',
+    })
+    @ApiParam({
+        name: 'providerId',
+        description: 'ID конфигурации SSO провайдера',
+        type: Number,
+        example: 1,
+    })
+    @ApiResponse({
+        status: 302,
+        description: 'Редирект на страницу авторизации провайдера',
+    })
+    @ApiResponse({
+        status: 400,
+        description:
+            'Некорректный providerId или конфигурация провайдера неактивна',
+    })
+    @ApiResponse({
+        status: 401,
+        description:
+            'Провайдер не найден или недоступен, или отсутствует tenant ID',
+    })
+    @Get('/sso/:providerId')
+    public async initiateSSO(
+        @Param('providerId', ParseIntPipe) providerId: number,
+        @Req() req: Request,
+        @Res() res: Response,
+    ): Promise<void> {
+        const startTime = Date.now();
+        let providerType: 'OAUTH2' | 'SAML' | 'OIDC' = 'OAUTH2';
+        let tenantId: number | null = null;
+
+        try {
+            // КРИТИЧНО: Используем req.tenantId вместо tenantContext.getTenantIdOrNull()
+            // так как TenantContext имеет scope REQUEST и в тестах может не работать правильно
+            // TenantMiddleware устанавливает req.tenantId напрямую
+            tenantId = req.tenantId ?? this.tenantContext.getTenantIdOrNull();
+            if (!tenantId) {
+                throw new UnauthorizedException(
+                    'Tenant ID не найден в контексте',
+                );
+            }
+
+            // Получаем конфигурацию провайдера
+            const providerConfig =
+                await this.externalRoleSyncRepository.findConfigById(
+                    providerId,
+                    tenantId,
+                );
+
+            if (!providerConfig) {
+                // Для SSO endpoints возвращаем 401 вместо 404 для безопасности
+                // Не раскрываем информацию о существовании провайдеров
+                throw new UnauthorizedException(
+                    `Провайдер SSO с ID ${providerId} не найден или недоступен`,
+                );
+            }
+
+            if (providerConfig.status !== 'ACTIVE') {
+                throw new BadRequestException({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    message: `Провайдер ${providerConfig.name} неактивен (статус: ${providerConfig.status})`,
+                });
+            }
+
+            // Определяем тип провайдера для метрик
+            providerType = providerConfig.providerType as
+                | 'OAUTH2'
+                | 'SAML'
+                | 'OIDC';
+
+            // Определяем базовый URL приложения
+            const protocol = req.protocol;
+            const host = req.get('host');
+            const baseUrl = `${protocol}://${host}`;
+
+            // Определяем тип стратегии и создаем authorization URL
+            const strategyType = this.ssoStrategyFactory.getStrategyType(
+                providerConfig.providerType,
+            );
+
+            let authURL: string;
+            switch (strategyType) {
+                case 'oauth2':
+                    authURL =
+                        await this.ssoStrategyFactory.createOAuth2AuthorizationUrl(
+                            providerId,
+                            tenantId,
+                            baseUrl,
+                        );
+                    break;
+                case 'saml':
+                    authURL =
+                        await this.ssoStrategyFactory.createSAMLAuthorizationUrl(
+                            providerId,
+                            tenantId,
+                            baseUrl,
+                        );
+                    break;
+                case 'oidc':
+                    authURL =
+                        await this.ssoStrategyFactory.createOIDCAuthorizationUrl(
+                            providerId,
+                            tenantId,
+                            baseUrl,
+                        );
+                    break;
+                default:
+                    throw new BadRequestException(
+                        `Неподдерживаемый тип провайдера: ${providerConfig.providerType}`,
+                    );
+            }
+
+            // Записываем успешную метрику
+            const duration = Date.now() - startTime;
+            this.metricsCollector.recordSSOOperation(
+                providerType,
+                'initiate',
+                true,
+                duration,
+                tenantId,
+            );
+
+            // Редиректим на страницу авторизации провайдера
+            res.redirect(authURL);
+        } catch (error: unknown) {
+            // Записываем ошибку в метрики
+            const duration = Date.now() - startTime;
+            this.metricsCollector.recordSSOOperation(
+                providerType,
+                'initiate',
+                false,
+                duration,
+                tenantId,
+            );
+            const errorMessage =
+                error instanceof Error ? error.message : String(error);
+            this.metricsCollector.recordSSOError(
+                providerType,
+                'initiate',
+                errorMessage,
+                tenantId,
+            );
+            throw error;
+        }
+    }
+
+    @ApiOperation({
+        summary: 'OAuth 2.0 SSO callback обработка',
+        description:
+            'Обрабатывает callback от OAuth 2.0 провайдера (Azure AD, Google Workspace, Generic OAuth 2.0) ' +
+            'и выполняет аутентификацию пользователя. Выполняет just-in-time provisioning при первом входе.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Успешная аутентификация через OAuth 2.0 SSO',
+        type: SSOLoginResponse,
+    })
+    @ApiResponse({
+        status: 400,
+        description:
+            'Некорректные параметры callback (отсутствует code, state и т.д.)',
+    })
+    @ApiResponse({
+        status: 401,
+        description:
+            'Ошибка аутентификации SSO (неверный state, ошибка обмена кода на токен и т.д.)',
+    })
+    @HttpCode(200)
+    @Get('/sso/oauth2/callback')
+    @UseGuards(SSOOAuth2Guard)
+    public async handleOAuth2Callback(
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<SSOLoginResponse> {
+        return this.handleSSOCallbackSuccess(req, res, 'OAUTH2');
+    }
+
+    @ApiOperation({
+        summary: 'SAML 2.0 SSO callback обработка',
+        description:
+            'Обрабатывает callback от SAML 2.0 провайдера и выполняет аутентификацию пользователя. ' +
+            'Выполняет just-in-time provisioning при первом входе.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Успешная аутентификация через SAML 2.0 SSO',
+        type: SSOLoginResponse,
+    })
+    @ApiResponse({
+        status: 400,
+        description:
+            'Некорректные параметры callback (отсутствует SAMLResponse, RelayState и т.д.)',
+    })
+    @ApiResponse({
+        status: 401,
+        description:
+            'Ошибка аутентификации SSO (неверный RelayState, ошибка валидации SAML assertion и т.д.)',
+    })
+    @HttpCode(200)
+    @Post('/sso/saml/callback')
+    @UseGuards(SSOSAMLGuard)
+    public async handleSAMLCallback(
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<SSOLoginResponse> {
+        return this.handleSSOCallbackSuccess(req, res, 'SAML');
+    }
+
+    @ApiOperation({
+        summary: 'OpenID Connect SSO callback обработка',
+        description:
+            'Обрабатывает callback от OpenID Connect провайдера и выполняет аутентификацию пользователя. ' +
+            'Выполняет just-in-time provisioning при первом входе.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Успешная аутентификация через OpenID Connect SSO',
+        type: SSOLoginResponse,
+    })
+    @ApiResponse({
+        status: 400,
+        description:
+            'Некорректные параметры callback (отсутствует code, state и т.д.)',
+    })
+    @ApiResponse({
+        status: 401,
+        description:
+            'Ошибка аутентификации SSO (неверный state, ошибка обмена кода на токен и т.д.)',
+    })
+    @HttpCode(200)
+    @Get('/sso/oidc/callback')
+    @UseGuards(SSOOIDCGuard)
+    public async handleOIDCCallback(
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<SSOLoginResponse> {
+        return this.handleSSOCallbackSuccess(req, res, 'OIDC');
+    }
+
+    /**
+     * Обработка успешного SSO callback
+     * @private
+     */
+    private async handleSSOCallbackSuccess(
+        req: Request,
+        res: Response,
+        providerType: 'OAUTH2' | 'SAML' | 'OIDC',
+    ): Promise<SSOLoginResponse> {
+        const startTime = Date.now();
+        const tenantId = req.tenantId ?? this.tenantContext.getTenantIdOrNull();
+
+        try {
+            // Получаем результат аутентификации из request (установлен Passport Guard)
+            const ssoResult = req.user as
+                | {
+                      user: { id: number };
+                      ssoProfile: { email: string };
+                      providerConfig: { id: number; name: string };
+                  }
+                | undefined;
+
+            if (!ssoResult?.user) {
+                throw new UnauthorizedException(
+                    'Пользователь не найден после SSO аутентификации',
+                );
+            }
+
+            // Получаем полную модель пользователя
+            const user = await this.userService.findAuthenticatedUser(
+                ssoResult.user.id,
+            );
+
+            // Генерируем токены
+            const accessToken =
+                await this.tokenService.generateAccessToken(user);
+            const refreshToken = await this.tokenService.generateRefreshToken(
+                user,
+                60 * 60 * 24 * 30, // 30 дней
+            );
+
+            // Устанавливаем refresh token в cookie
+            const cookieName = getRefreshCookieName();
+            res.cookie(cookieName, refreshToken, buildRefreshCookieOptions());
+
+            // Определяем, был ли пользователь создан (just-in-time provisioning)
+            // Это можно определить по времени создания пользователя
+            const isNewUser =
+                user.createdAt &&
+                Date.now() - new Date(user.createdAt).getTime() < 60000; // Создан менее минуты назад
+
+            // Записываем успешную метрику
+            const duration = Date.now() - startTime;
+            this.metricsCollector.recordSSOOperation(
+                providerType,
+                'callback',
+                true,
+                duration,
+                tenantId,
+            );
+
+            return {
+                type: 'Bearer',
+                accessToken,
+                providerType,
+                providerName: ssoResult.providerConfig.name,
+                isNewUser: isNewUser ?? false,
+            };
+        } catch (error: unknown) {
+            // Записываем ошибку в метрики
+            const duration = Date.now() - startTime;
+            this.metricsCollector.recordSSOOperation(
+                providerType,
+                'callback',
+                false,
+                duration,
+                tenantId,
+            );
+            const errorMessage =
+                error instanceof Error ? error.message : String(error);
+            this.metricsCollector.recordSSOError(
+                providerType,
+                'callback',
+                errorMessage,
+                tenantId,
+            );
+            throw error;
+        }
+    }
+
+    @ApiOperation({
+        summary: 'SSO logout',
+        description:
+            'Выполняет logout из SSO провайдера (OAuth 2.0/SAML/OIDC) и локальной системы. ' +
+            'Очищает refresh token cookie и возвращает logout URL провайдера (если указан) для завершения сессии на стороне провайдера.',
+    })
+    @ApiParam({
+        name: 'strategyType',
+        description: 'Тип SSO стратегии',
+        enum: ['oauth2', 'saml', 'oidc'],
+        example: 'saml',
+    })
+    @ApiBearerAuth('JWT-auth')
+    @ApiResponse({
+        status: 200,
+        description: 'Успешный logout из локальной системы',
+        type: SSOLogoutResponse,
+    })
+    @ApiResponse({
+        status: 401,
+        description: 'Пользователь не аутентифицирован',
+    })
+    @HttpCode(200)
+    @UseGuards(AuthGuard)
+    @Post('/sso/:strategyType/logout')
+    public async handleSSOLogout(
+        @Param('strategyType') strategyType: 'oauth2' | 'saml' | 'oidc',
+        @Body() dto: SSOLogoutDto,
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<SSOLogoutResponse> {
+        const startTime = Date.now();
+        const tenantId = req.tenantId ?? this.tenantContext.getTenantIdOrNull();
+        const providerType = strategyType.toUpperCase() as
+            | 'OAUTH2'
+            | 'SAML'
+            | 'OIDC';
+
+        try {
+            // Выполняем локальный logout
+            const cookieName = getRefreshCookieName();
+            const refreshFromCookie: string | undefined =
+                req.signedCookies?.[cookieName] ?? req.cookies?.[cookieName];
+
+            if (refreshFromCookie) {
+                await this.authService.logout(
+                    { refreshToken: refreshFromCookie },
+                    req,
+                );
+            }
+
+            // Очищаем cookie
+            const opts = buildRefreshCookieOptions();
+            res.clearCookie(cookieName, {
+                ...opts,
+                maxAge: undefined,
+                expires: new Date(0),
+            });
+
+            // Для SAML/OIDC может потребоваться редирект на logout URL провайдера
+            let logoutUrl: string | undefined;
+            if (dto.logoutUrl) {
+                logoutUrl = dto.logoutUrl;
+            }
+
+            // Записываем успешную метрику
+            const duration = Date.now() - startTime;
+            this.metricsCollector.recordSSOOperation(
+                providerType,
+                'logout',
+                true,
+                duration,
+                tenantId,
+            );
+
+            return {
+                statusCode: 200,
+                message: 'success',
+                logoutUrl,
+            };
+        } catch (error: unknown) {
+            // Записываем ошибку в метрики
+            const duration = Date.now() - startTime;
+            this.metricsCollector.recordSSOOperation(
+                providerType,
+                'logout',
+                false,
+                duration,
+                tenantId,
+            );
+            const errorMessage =
+                error instanceof Error ? error.message : String(error);
+            this.metricsCollector.recordSSOError(
+                providerType,
+                'logout',
+                errorMessage,
+                tenantId,
+            );
+            throw error;
+        }
+    }
+
+    /**
+     * Получить статистику SSO операций с алертами
+     * @access ADMIN_ROLES
+     */
+    @ApiOperation({
+        summary: 'Получить статистику SSO операций',
+        description:
+            'Возвращает детальную статистику SSO операций за указанный период с алертами',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика SSO операций',
+        schema: {
+            type: 'object',
+            properties: {
+                totalOperations: { type: 'number' },
+                successfulOperations: { type: 'number' },
+                failedOperations: { type: 'number' },
+                successRate: { type: 'number' },
+                avgDuration: { type: 'number' },
+                minDuration: { type: 'number' },
+                maxDuration: { type: 'number' },
+                operationsByType: { type: 'object' },
+                operationsByProvider: { type: 'object' },
+                errorRate: { type: 'number' },
+                recentErrors: { type: 'array' },
+                alerts: { type: 'array' },
+                timestamp: { type: 'string' },
+            },
+        },
+    })
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @Get('/sso/stats')
+    @HttpCode(HttpStatus.OK)
+    public async getSSOStats(
+        @Query('periodHours', new ParseIntPipe({ optional: true }))
+        periodHours?: number,
+    ): Promise<ReturnType<typeof this.metricsCollector.getSSOStats>> {
+        const period = periodHours && periodHours > 0 ? periodHours : 24;
+        return this.metricsCollector.getSSOStats(period);
     }
 }

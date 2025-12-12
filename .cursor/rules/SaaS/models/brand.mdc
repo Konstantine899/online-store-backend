@@ -1,0 +1,979 @@
+# Система брендов (Brand System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы брендов для ecommerce приложения с фокусом на быструю разработку, простоту поддержки и готовность к масштабированию.
+
+## Основные требования
+- **Базовая информация** - название, slug, описание
+- **Медиа контент** - логотип и изображения
+- **SEO оптимизация** - базовые мета-поля
+- **Управление** - статус активности, сортировка
+- **Связи** - с товарами и категориями
+
+## Структура базы данных
+
+### Таблица `brands`
+```sql
+CREATE TABLE brands (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
+    logo VARCHAR(500),
+    banner_image VARCHAR(500),
+    meta_title VARCHAR(255),
+    meta_description TEXT,
+    website VARCHAR(500),
+    country VARCHAR(100),
+    is_active BOOLEAN DEFAULT true,
+    sort_order INTEGER DEFAULT 0,
+    product_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Модели Sequelize
+
+### Brand Model
+```typescript
+// src/domain/models/brand.model.ts
+import { Model, DataType, Column, Table, HasMany } from 'sequelize-typescript';
+import { ProductModel } from './product.model';
+
+interface IBrandModel {
+    id: number;
+    name: string;
+    slug: string;
+    description?: string;
+    logo?: string;
+    bannerImage?: string;
+    metaTitle?: string;
+    metaDescription?: string;
+    website?: string;
+    country?: string;
+    isActive: boolean;
+    sortOrder: number;
+    productCount: number;
+    products: ProductModel[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IBrandCreationAttributes {
+    name: string;
+    slug: string;
+    description?: string;
+    logo?: string;
+    bannerImage?: string;
+    metaTitle?: string;
+    metaDescription?: string;
+    website?: string;
+    country?: string;
+    isActive?: boolean;
+    sortOrder?: number;
+}
+
+@Table({
+    tableName: 'brands',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['slug'], name: 'idx_brands_slug', unique: true },
+        { fields: ['is_active'], name: 'idx_brands_is_active' },
+        { fields: ['sort_order'], name: 'idx_brands_sort_order' },
+        { fields: ['product_count'], name: 'idx_brands_product_count' },
+    ],
+})
+export class BrandModel
+    extends Model<BrandModel, IBrandCreationAttributes>
+    implements IBrandModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+    })
+    declare name: string;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+        unique: true,
+    })
+    declare slug: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare description: string;
+
+    @Column({
+        type: DataType.STRING(500),
+        allowNull: true,
+    })
+    declare logo: string;
+
+    @Column({
+        type: DataType.STRING(500),
+        allowNull: true,
+        field: 'banner_image',
+    })
+    declare bannerImage: string;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+        field: 'meta_title',
+    })
+    declare metaTitle: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'meta_description',
+    })
+    declare metaDescription: string;
+
+    @Column({
+        type: DataType.STRING(500),
+        allowNull: true,
+    })
+    declare website: string;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true,
+    })
+    declare country: string;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'sort_order',
+    })
+    declare sortOrder: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'product_count',
+    })
+    declare productCount: number;
+
+    @HasMany(() => ProductModel)
+    declare products: ProductModel[];
+}
+```
+
+## Сервисы
+
+### Brand Service
+```typescript
+// src/infrastructure/services/brand.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { BrandModel } from '@app/domain/models/brand.model';
+import { ProductModel } from '@app/domain/models/product.model';
+import { Op } from 'sequelize';
+
+@Injectable()
+export class BrandService {
+    private readonly logger = new Logger(BrandService.name);
+
+    constructor(
+        @InjectModel(BrandModel)
+        private brandModel: typeof BrandModel,
+        @InjectModel(ProductModel)
+        private productModel: typeof ProductModel,
+    ) {}
+
+    async findAll(
+        page: number = 1,
+        limit: number = 10,
+        search?: string,
+        isActive?: boolean,
+    ): Promise<{ data: BrandModel[]; total: number }> {
+        const where: any = {};
+
+        if (search) {
+            where[Op.or] = [
+                { name: { [Op.iLike]: `%${search}%` } },
+                { description: { [Op.iLike]: `%${search}%` } },
+            ];
+        }
+
+        if (isActive !== undefined) {
+            where.isActive = isActive;
+        }
+
+        const { rows: brands, count: total } = await this.brandModel.findAndCountAll({
+            where,
+            order: [['sort_order', 'ASC'], ['name', 'ASC']],
+            limit,
+            offset: (page - 1) * limit,
+        });
+
+        return { data: brands, total };
+    }
+
+    async findById(id: number): Promise<BrandModel> {
+        const brand = await this.brandModel.findByPk(id);
+
+        if (!brand) {
+            throw new NotFoundException('Бренд не найден');
+        }
+
+        return brand;
+    }
+
+    async findBySlug(slug: string): Promise<BrandModel> {
+        const brand = await this.brandModel.findOne({
+            where: { slug, isActive: true },
+        });
+
+        if (!brand) {
+            throw new NotFoundException('Бренд не найден');
+        }
+
+        return brand;
+    }
+
+    async create(brandData: Partial<BrandModel>): Promise<BrandModel> {
+        // Проверяем уникальность slug
+        const existingBrand = await this.brandModel.findOne({
+            where: { slug: brandData.slug },
+        });
+
+        if (existingBrand) {
+            throw new BadRequestException('Бренд с таким slug уже существует');
+        }
+
+        const brand = await this.brandModel.create(brandData);
+        this.logger.log(`Brand created: ${brand.name} (${brand.slug})`);
+        return brand;
+    }
+
+    async update(id: number, brandData: Partial<BrandModel>): Promise<BrandModel> {
+        const brand = await this.findById(id);
+
+        // Проверяем уникальность slug при обновлении
+        if (brandData.slug && brandData.slug !== brand.slug) {
+            const existingBrand = await this.brandModel.findOne({
+                where: { slug: brandData.slug },
+            });
+
+            if (existingBrand) {
+                throw new BadRequestException('Бренд с таким slug уже существует');
+            }
+        }
+
+        await brand.update(brandData);
+        this.logger.log(`Brand updated: ${brand.name} (${brand.slug})`);
+        return brand;
+    }
+
+    async delete(id: number): Promise<void> {
+        const brand = await this.findById(id);
+
+        // Проверяем, есть ли товары у бренда
+        const productCount = await this.productModel.count({
+            where: { brandId: id },
+        });
+
+        if (productCount > 0) {
+            throw new BadRequestException('Нельзя удалить бренд, у которого есть товары');
+        }
+
+        await brand.destroy();
+        this.logger.log(`Brand deleted: ${brand.name} (${brand.slug})`);
+    }
+
+    async updateProductCount(brandId: number): Promise<void> {
+        const productCount = await this.productModel.count({
+            where: { brandId, isActive: true },
+        });
+
+        await this.brandModel.update(
+            { productCount },
+            { where: { id: brandId } }
+        );
+    }
+
+    async getPopularBrands(limit: number = 10): Promise<BrandModel[]> {
+        return this.brandModel.findAll({
+            where: { isActive: true },
+            order: [['product_count', 'DESC'], ['name', 'ASC']],
+            limit,
+            attributes: ['id', 'name', 'slug', 'logo', 'product_count'],
+        });
+    }
+
+    async searchBrands(query: string, limit: number = 10): Promise<BrandModel[]> {
+        return this.brandModel.findAll({
+            where: {
+                isActive: true,
+                [Op.or]: [
+                    { name: { [Op.iLike]: `%${query}%` } },
+                    { description: { [Op.iLike]: `%${query}%` } },
+                ],
+            },
+            order: [['name', 'ASC']],
+            limit,
+            attributes: ['id', 'name', 'slug', 'logo', 'description'],
+        });
+    }
+}
+```
+
+## Контроллеры
+
+### Brand Controller
+```typescript
+// src/infrastructure/controllers/brand.controller.ts
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { BrandService } from '@app/infrastructure/services/brand.service';
+import { CreateBrandDto } from '@app/infrastructure/dto/brand/create-brand.dto';
+import { UpdateBrandDto } from '@app/infrastructure/dto/brand/update-brand.dto';
+import { BrandResponse, BrandListResponse } from '@app/infrastructure/responses/brand/brand.response';
+
+@ApiTags('Бренды')
+@Controller('brands')
+export class BrandController {
+    constructor(private readonly brandService: BrandService) {}
+
+    @Get()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить список брендов' })
+    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
+    @ApiQuery({ name: 'search', required: false, description: 'Поиск по названию' })
+    @ApiQuery({ name: 'isActive', required: false, description: 'Фильтр по активности' })
+    @ApiResponse({ status: 200, description: 'Список брендов получен', type: BrandListResponse })
+    async getBrands(
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+        @Query('search') search?: string,
+        @Query('isActive') isActive?: boolean,
+    ): Promise<BrandListResponse> {
+        const result = await this.brandService.findAll(page, limit, search, isActive);
+        
+        return {
+            data: result.data.map(brand => ({
+                id: brand.id,
+                name: brand.name,
+                slug: brand.slug,
+                description: brand.description,
+                logo: brand.logo,
+                bannerImage: brand.bannerImage,
+                website: brand.website,
+                country: brand.country,
+                productCount: brand.productCount,
+                createdAt: brand.createdAt,
+                updatedAt: brand.updatedAt,
+            })),
+            meta: {
+                totalCount: result.total,
+                currentPage: page,
+                limit,
+                lastPage: Math.ceil(result.total / limit),
+                nextPage: page < Math.ceil(result.total / limit) ? page + 1 : null,
+                previousPage: page > 1 ? page - 1 : null,
+            },
+        };
+    }
+
+    @Get('popular')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить популярные бренды' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество брендов' })
+    @ApiResponse({ status: 200, description: 'Популярные бренды получены', type: [BrandResponse] })
+    async getPopularBrands(
+        @Query('limit') limit: number = 10,
+    ): Promise<BrandResponse[]> {
+        const brands = await this.brandService.getPopularBrands(limit);
+        
+        return brands.map(brand => ({
+            id: brand.id,
+            name: brand.name,
+            slug: brand.slug,
+            logo: brand.logo,
+            productCount: brand.productCount,
+        }));
+    }
+
+    @Get('search')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Поиск брендов' })
+    @ApiQuery({ name: 'q', required: true, description: 'Поисковый запрос' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество результатов' })
+    @ApiResponse({ status: 200, description: 'Результаты поиска получены', type: [BrandResponse] })
+    async searchBrands(
+        @Query('q') query: string,
+        @Query('limit') limit: number = 10,
+    ): Promise<BrandResponse[]> {
+        const brands = await this.brandService.searchBrands(query, limit);
+        
+        return brands.map(brand => ({
+            id: brand.id,
+            name: brand.name,
+            slug: brand.slug,
+            description: brand.description,
+            logo: brand.logo,
+        }));
+    }
+
+    @Get(':id')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить бренд по ID' })
+    @ApiResponse({ status: 200, description: 'Бренд получен', type: BrandResponse })
+    @ApiResponse({ status: 404, description: 'Бренд не найден' })
+    async getBrandById(@Param('id') id: number): Promise<BrandResponse> {
+        const brand = await this.brandService.findById(id);
+        
+        return {
+            id: brand.id,
+            name: brand.name,
+            slug: brand.slug,
+            description: brand.description,
+            logo: brand.logo,
+            bannerImage: brand.bannerImage,
+            metaTitle: brand.metaTitle,
+            metaDescription: brand.metaDescription,
+            website: brand.website,
+            country: brand.country,
+            productCount: brand.productCount,
+            createdAt: brand.createdAt,
+            updatedAt: brand.updatedAt,
+        };
+    }
+
+    @Get('slug/:slug')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить бренд по slug' })
+    @ApiResponse({ status: 200, description: 'Бренд получен', type: BrandResponse })
+    @ApiResponse({ status: 404, description: 'Бренд не найден' })
+    async getBrandBySlug(@Param('slug') slug: string): Promise<BrandResponse> {
+        const brand = await this.brandService.findBySlug(slug);
+        
+        return {
+            id: brand.id,
+            name: brand.name,
+            slug: brand.slug,
+            description: brand.description,
+            logo: brand.logo,
+            bannerImage: brand.bannerImage,
+            metaTitle: brand.metaTitle,
+            metaDescription: brand.metaDescription,
+            website: brand.website,
+            country: brand.country,
+            productCount: brand.productCount,
+            createdAt: brand.createdAt,
+            updatedAt: brand.updatedAt,
+        };
+    }
+
+    @Post()
+    @HttpCode(HttpStatus.CREATED)
+    @ApiOperation({ summary: 'Создать новый бренд' })
+    @ApiResponse({ status: 201, description: 'Бренд создан', type: BrandResponse })
+    @ApiResponse({ status: 400, description: 'Ошибка валидации' })
+    async createBrand(@Body() createBrandDto: CreateBrandDto): Promise<BrandResponse> {
+        const brand = await this.brandService.create(createBrandDto);
+        
+        return {
+            id: brand.id,
+            name: brand.name,
+            slug: brand.slug,
+            description: brand.description,
+            logo: brand.logo,
+            bannerImage: brand.bannerImage,
+            metaTitle: brand.metaTitle,
+            metaDescription: brand.metaDescription,
+            website: brand.website,
+            country: brand.country,
+            productCount: brand.productCount,
+            createdAt: brand.createdAt,
+            updatedAt: brand.updatedAt,
+        };
+    }
+
+    @Put(':id')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Обновить бренд' })
+    @ApiResponse({ status: 200, description: 'Бренд обновлен', type: BrandResponse })
+    @ApiResponse({ status: 404, description: 'Бренд не найден' })
+    @ApiResponse({ status: 400, description: 'Ошибка валидации' })
+    async updateBrand(
+        @Param('id') id: number,
+        @Body() updateBrandDto: UpdateBrandDto,
+    ): Promise<BrandResponse> {
+        const brand = await this.brandService.update(id, updateBrandDto);
+        
+        return {
+            id: brand.id,
+            name: brand.name,
+            slug: brand.slug,
+            description: brand.description,
+            logo: brand.logo,
+            bannerImage: brand.bannerImage,
+            metaTitle: brand.metaTitle,
+            metaDescription: brand.metaDescription,
+            website: brand.website,
+            country: brand.country,
+            productCount: brand.productCount,
+            createdAt: brand.createdAt,
+            updatedAt: brand.updatedAt,
+        };
+    }
+
+    @Delete(':id')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Удалить бренд' })
+    @ApiResponse({ status: 204, description: 'Бренд удален' })
+    @ApiResponse({ status: 404, description: 'Бренд не найден' })
+    @ApiResponse({ status: 400, description: 'Нельзя удалить бренд с товарами' })
+    async deleteBrand(@Param('id') id: number): Promise<void> {
+        return this.brandService.delete(id);
+    }
+}
+```
+
+## Миграции
+
+### Обновление таблицы brands
+```typescript
+// db/migrations/YYYYMMDDHHMMSS-update-brands-table.ts
+import { QueryInterface, DataTypes } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+    // Добавляем новые колонки
+    await queryInterface.addColumn('brands', 'description', {
+        type: DataTypes.TEXT,
+        allowNull: true,
+    });
+
+    await queryInterface.addColumn('brands', 'logo', {
+        type: DataTypes.STRING(500),
+        allowNull: true,
+    });
+
+    await queryInterface.addColumn('brands', 'banner_image', {
+        type: DataTypes.STRING(500),
+        allowNull: true,
+    });
+
+    await queryInterface.addColumn('brands', 'meta_title', {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+    });
+
+    await queryInterface.addColumn('brands', 'meta_description', {
+        type: DataTypes.TEXT,
+        allowNull: true,
+    });
+
+    await queryInterface.addColumn('brands', 'website', {
+        type: DataTypes.STRING(500),
+        allowNull: true,
+    });
+
+    await queryInterface.addColumn('brands', 'country', {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+    });
+
+    await queryInterface.addColumn('brands', 'is_active', {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+    });
+
+    await queryInterface.addColumn('brands', 'sort_order', {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+    });
+
+    await queryInterface.addColumn('brands', 'product_count', {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+    });
+
+    // Создаем индексы
+    await queryInterface.addIndex('brands', ['slug'], { unique: true });
+    await queryInterface.addIndex('brands', ['is_active']);
+    await queryInterface.addIndex('brands', ['sort_order']);
+    await queryInterface.addIndex('brands', ['product_count']);
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+    // Удаляем индексы
+    await queryInterface.removeIndex('brands', ['product_count']);
+    await queryInterface.removeIndex('brands', ['sort_order']);
+    await queryInterface.removeIndex('brands', ['is_active']);
+    await queryInterface.removeIndex('brands', ['slug']);
+
+    // Удаляем колонки
+    await queryInterface.removeColumn('brands', 'product_count');
+    await queryInterface.removeColumn('brands', 'sort_order');
+    await queryInterface.removeColumn('brands', 'is_active');
+    await queryInterface.removeColumn('brands', 'country');
+    await queryInterface.removeColumn('brands', 'website');
+    await queryInterface.removeColumn('brands', 'meta_description');
+    await queryInterface.removeColumn('brands', 'meta_title');
+    await queryInterface.removeColumn('brands', 'banner_image');
+    await queryInterface.removeColumn('brands', 'logo');
+    await queryInterface.removeColumn('brands', 'description');
+}
+```
+
+## DTO и валидация
+
+### CreateBrandDto
+```typescript
+// src/infrastructure/dto/brand/create-brand.dto.ts
+import { IsString, IsOptional, IsBoolean, IsInt, IsUrl, Length, Min } from 'class-validator';
+
+export class CreateBrandDto {
+    @IsString({ message: 'Название бренда должно быть строкой' })
+    @Length(1, 255, { message: 'Название бренда должно быть от 1 до 255 символов' })
+    declare readonly name: string;
+
+    @IsString({ message: 'Slug должен быть строкой' })
+    @Length(1, 255, { message: 'Slug должен быть от 1 до 255 символов' })
+    declare readonly slug: string;
+
+    @IsOptional()
+    @IsString({ message: 'Описание должно быть строкой' })
+    declare readonly description?: string;
+
+    @IsOptional()
+    @IsUrl({}, { message: 'Логотип должен быть валидным URL' })
+    declare readonly logo?: string;
+
+    @IsOptional()
+    @IsUrl({}, { message: 'Баннер должен быть валидным URL' })
+    declare readonly bannerImage?: string;
+
+    @IsOptional()
+    @IsString({ message: 'SEO заголовок должен быть строкой' })
+    @Length(1, 255, { message: 'SEO заголовок должен быть от 1 до 255 символов' })
+    declare readonly metaTitle?: string;
+
+    @IsOptional()
+    @IsString({ message: 'SEO описание должно быть строкой' })
+    declare readonly metaDescription?: string;
+
+    @IsOptional()
+    @IsUrl({}, { message: 'Веб-сайт должен быть валидным URL' })
+    declare readonly website?: string;
+
+    @IsOptional()
+    @IsString({ message: 'Страна должна быть строкой' })
+    @Length(1, 100, { message: 'Страна должна быть от 1 до 100 символов' })
+    declare readonly country?: string;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Статус активности должен быть булевым значением' })
+    declare readonly isActive?: boolean;
+
+    @IsOptional()
+    @IsInt({ message: 'Порядок сортировки должен быть числом' })
+    @Min(0, { message: 'Порядок сортировки не может быть отрицательным' })
+    declare readonly sortOrder?: number;
+}
+```
+
+### UpdateBrandDto
+```typescript
+// src/infrastructure/dto/brand/update-brand.dto.ts
+import { PartialType } from '@nestjs/swagger';
+import { CreateBrandDto } from './create-brand.dto';
+
+export class UpdateBrandDto extends PartialType(CreateBrandDto) {}
+```
+
+## Response классы
+
+### BrandResponse
+```typescript
+// src/infrastructure/responses/brand/brand.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class BrandResponse {
+    @ApiProperty({ description: 'ID бренда' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'Название бренда' })
+    declare readonly name: string;
+
+    @ApiProperty({ description: 'Slug бренда' })
+    declare readonly slug: string;
+
+    @ApiProperty({ description: 'Описание бренда', required: false })
+    declare readonly description?: string;
+
+    @ApiProperty({ description: 'Логотип бренда', required: false })
+    declare readonly logo?: string;
+
+    @ApiProperty({ description: 'Баннер бренда', required: false })
+    declare readonly bannerImage?: string;
+
+    @ApiProperty({ description: 'SEO заголовок', required: false })
+    declare readonly metaTitle?: string;
+
+    @ApiProperty({ description: 'SEO описание', required: false })
+    declare readonly metaDescription?: string;
+
+    @ApiProperty({ description: 'Веб-сайт бренда', required: false })
+    declare readonly website?: string;
+
+    @ApiProperty({ description: 'Страна происхождения', required: false })
+    declare readonly country?: string;
+
+    @ApiProperty({ description: 'Количество товаров' })
+    declare readonly productCount: number;
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления' })
+    declare readonly updatedAt: Date;
+}
+
+export class BrandListResponse {
+    @ApiProperty({ description: 'Список брендов', type: [BrandResponse] })
+    declare readonly data: BrandResponse[];
+
+    @ApiProperty({ description: 'Метаданные пагинации' })
+    declare readonly meta: {
+        totalCount: number;
+        currentPage: number;
+        limit: number;
+        lastPage: number;
+        nextPage: number | null;
+        previousPage: number | null;
+    };
+}
+```
+
+## Тесты
+
+### Unit тесты для BrandService
+```typescript
+// tests/unit/services/brand.service.unit.test.ts
+import { Test, TestingModule } from '@nestjs/testing';
+import { getModelToken } from '@nestjs/sequelize';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { BrandService } from '@app/infrastructure/services/brand.service';
+import { BrandModel } from '@app/domain/models/brand.model';
+import { ProductModel } from '@app/domain/models/product.model';
+
+describe('BrandService', () => {
+    let service: BrandService;
+    let brandModel: typeof BrandModel;
+    let productModel: typeof ProductModel;
+
+    const mockBrand = {
+        id: 1,
+        name: 'Test Brand',
+        slug: 'test-brand',
+        description: 'Test description',
+        logo: 'https://example.com/logo.png',
+        isActive: true,
+        productCount: 5,
+        update: jest.fn(),
+        destroy: jest.fn(),
+    };
+
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [
+                BrandService,
+                {
+                    provide: getModelToken(BrandModel),
+                    useValue: {
+                        findByPk: jest.fn(),
+                        findOne: jest.fn(),
+                        findAll: jest.fn(),
+                        findAndCountAll: jest.fn(),
+                        create: jest.fn(),
+                        update: jest.fn(),
+                        count: jest.fn(),
+                    },
+                },
+                {
+                    provide: getModelToken(ProductModel),
+                    useValue: {
+                        count: jest.fn(),
+                    },
+                },
+            ],
+        }).compile();
+
+        service = module.get<BrandService>(BrandService);
+        brandModel = module.get<typeof BrandModel>(getModelToken(BrandModel));
+        productModel = module.get<typeof ProductModel>(getModelToken(ProductModel));
+    });
+
+    it('should be defined', () => {
+        expect(service).toBeDefined();
+    });
+
+    describe('findById', () => {
+        it('должен вернуть бренд по ID', async () => {
+            jest.spyOn(brandModel, 'findByPk').mockResolvedValue(mockBrand as any);
+            const result = await service.findById(1);
+            expect(result).toEqual(mockBrand);
+        });
+
+        it('должен выбросить ошибку если бренд не найден', async () => {
+            jest.spyOn(brandModel, 'findByPk').mockResolvedValue(null);
+            await expect(service.findById(1)).rejects.toThrow(NotFoundException);
+        });
+    });
+
+    describe('create', () => {
+        it('должен создать новый бренд', async () => {
+            jest.spyOn(brandModel, 'findOne').mockResolvedValue(null);
+            jest.spyOn(brandModel, 'create').mockResolvedValue(mockBrand as any);
+
+            const result = await service.create({
+                name: 'Test Brand',
+                slug: 'test-brand',
+            });
+
+            expect(result).toEqual(mockBrand);
+            expect(brandModel.create).toHaveBeenCalledWith({
+                name: 'Test Brand',
+                slug: 'test-brand',
+            });
+        });
+
+        it('должен выбросить ошибку если slug уже существует', async () => {
+            jest.spyOn(brandModel, 'findOne').mockResolvedValue(mockBrand as any);
+            await expect(service.create({
+                name: 'Test Brand',
+                slug: 'test-brand',
+            })).rejects.toThrow(BadRequestException);
+        });
+    });
+
+    describe('delete', () => {
+        it('должен удалить бренд без товаров', async () => {
+            jest.spyOn(brandModel, 'findByPk').mockResolvedValue(mockBrand as any);
+            jest.spyOn(productModel, 'count').mockResolvedValue(0);
+            jest.spyOn(mockBrand, 'destroy').mockResolvedValue(undefined);
+
+            await service.delete(1);
+            expect(mockBrand.destroy).toHaveBeenCalled();
+        });
+
+        it('должен выбросить ошибку если у бренда есть товары', async () => {
+            jest.spyOn(brandModel, 'findByPk').mockResolvedValue(mockBrand as any);
+            jest.spyOn(productModel, 'count').mockResolvedValue(5);
+
+            await expect(service.delete(1)).rejects.toThrow(BadRequestException);
+        });
+    });
+});
+```
+
+## Критерии готовности
+
+### ✅ Обязательные требования:
+- [ ] Создана миграция для обновления таблицы brands
+- [ ] Обновлена модель BrandModel с новыми полями
+- [ ] Реализован BrandService с основной функциональностью
+- [ ] Создан BrandController с API endpoints
+- [ ] Добавлены DTO классы с валидацией (CreateBrandDto, UpdateBrandDto)
+- [ ] Созданы Response классы с Swagger (BrandResponse, BrandListResponse)
+- [ ] Добавлены индексы для производительности
+- [ ] Реализован поиск и фильтрация брендов
+- [ ] Добавлены unit тесты для BrandService
+- [ ] Добавлены integration тесты для API
+- [ ] Обновлена связь с ProductModel
+
+### 🎯 Дополнительные возможности:
+- [ ] Кэширование популярных брендов
+- [ ] Автоматическое обновление product_count
+- [ ] SEO оптимизация для страниц брендов
+- [ ] Интеграция с системой изображений
+- [ ] Экспорт/импорт брендов
+
+## Следующие шаги
+
+### Фаза 1: Базовая реализация (1 неделя)
+1. **Создать миграцию** для обновления таблицы brands
+2. **Обновить модель** BrandModel с новыми полями
+3. **Создать DTO классы** с валидацией входных данных
+4. **Создать Response классы** с Swagger документацией
+5. **Реализовать BrandService** с основной бизнес-логикой
+
+### Фаза 2: API и интеграции (3-4 дня)
+6. **Создать BrandController** с API endpoints
+7. **Добавить поиск и фильтрацию** брендов
+8. **Реализовать пагинацию** для списка брендов
+9. **Добавить связь с товарами** (product_count)
+
+### Фаза 3: Тестирование и качество (2-3 дня)
+10. **Написать unit тесты** для BrandService
+11. **Написать integration тесты** для API
+12. **Добавить обработку ошибок** и валидацию
+13. **Провести рефакторинг** и оптимизацию
+
+## Риски и альтернативы
+
+### ⚠️ Риски:
+- **Производительность**: при большом количестве брендов может потребоваться кэширование
+- **SEO**: базовые мета-поля могут быть недостаточными для сложной SEO стратегии
+- **Изображения**: хранение URL вместо файлов может быть неудобным
+
+### 🔄 Альтернативы:
+- **Кэширование**: Redis для популярных брендов и поиска
+- **Изображения**: интеграция с CDN или файловым хранилищем
+- **SEO**: более продвинутые мета-поля при необходимости
+
+## Интеграция с другими системами
+
+### 🔗 Связанные системы:
+- **ProductService** - связь с товарами
+- **CategoryService** - связь с категориями
+- **ImageService** - управление изображениями брендов
+- **SearchService** - поиск по брендам
+
+### 📊 Аналитика:
+- Популярные бренды
+- Статистика по странам
+- Конверсия по брендам
+
+## TL;DR
+
+Упрощенная система брендов включает:
+- **1 таблица**: brands (обновленная)
+- **1 модель**: BrandModel с расширенными полями
+- **1 сервис**: BrandService с CRUD операциями
+- **1 контроллер**: API для брендов
+- **Функции**: поиск, фильтрация, пагинация, SEO поля
+- **Связи**: с товарами (product_count)
+- **Готовность**: к масштабированию и дополнительным функциям

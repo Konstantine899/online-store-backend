@@ -1,0 +1,1144 @@
+# Система категорий (Category System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы категорий для ecommerce приложения с простой иерархической структурой, фокусом на быструю разработку и готовность к масштабированию.
+
+## Основные требования
+- **Иерархическая структура** - родительские и дочерние категории
+- **Базовая информация** - название, slug, описание
+- **Медиа контент** - изображение категории
+- **SEO оптимизация** - базовые мета-поля
+- **Управление** - статус активности, сортировка
+- **Связи** - с товарами и брендами
+
+## Структура базы данных
+
+### Таблица `categories`
+```sql
+CREATE TABLE categories (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
+    image VARCHAR(500),
+    parent_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+    meta_title VARCHAR(255),
+    meta_description TEXT,
+    is_active BOOLEAN DEFAULT true,
+    sort_order INTEGER DEFAULT 0,
+    product_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Модели Sequelize
+
+### Category Model
+```typescript
+// src/domain/models/category.model.ts
+import { Model, DataType, Column, Table, BelongsTo, HasMany, ForeignKey } from 'sequelize-typescript';
+import { ProductModel } from './product.model';
+
+interface ICategoryModel {
+    id: number;
+    name: string;
+    slug: string;
+    description?: string;
+    image?: string;
+    parentId?: number;
+    parent?: CategoryModel;
+    children: CategoryModel[];
+    metaTitle?: string;
+    metaDescription?: string;
+    isActive: boolean;
+    sortOrder: number;
+    productCount: number;
+    products: ProductModel[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface ICategoryCreationAttributes {
+    name: string;
+    slug: string;
+    description?: string;
+    image?: string;
+    parentId?: number;
+    metaTitle?: string;
+    metaDescription?: string;
+    isActive?: boolean;
+    sortOrder?: number;
+}
+
+@Table({
+    tableName: 'categories',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['slug'], name: 'idx_categories_slug', unique: true },
+        { fields: ['parent_id'], name: 'idx_categories_parent_id' },
+        { fields: ['is_active'], name: 'idx_categories_is_active' },
+        { fields: ['sort_order'], name: 'idx_categories_sort_order' },
+        { fields: ['product_count'], name: 'idx_categories_product_count' },
+    ],
+})
+export class CategoryModel
+    extends Model<CategoryModel, ICategoryCreationAttributes>
+    implements ICategoryModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+    })
+    declare name: string;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+        unique: true,
+    })
+    declare slug: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare description: string;
+
+    @Column({
+        type: DataType.STRING(500),
+        allowNull: true,
+    })
+    declare image: string;
+
+    @ForeignKey(() => CategoryModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'parent_id',
+    })
+    declare parentId: number;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+        field: 'meta_title',
+    })
+    declare metaTitle: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'meta_description',
+    })
+    declare metaDescription: string;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'sort_order',
+    })
+    declare sortOrder: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'product_count',
+    })
+    declare productCount: number;
+
+    @BelongsTo(() => CategoryModel, 'parentId')
+    declare parent: CategoryModel;
+
+    @HasMany(() => CategoryModel, 'parentId')
+    declare children: CategoryModel[];
+
+    @HasMany(() => ProductModel)
+    declare products: ProductModel[];
+}
+```
+
+## Сервисы
+
+### Category Service
+```typescript
+// src/infrastructure/services/category.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { CategoryModel } from '@app/domain/models/category.model';
+import { ProductModel } from '@app/domain/models/product.model';
+import { Op } from 'sequelize';
+
+@Injectable()
+export class CategoryService {
+    private readonly logger = new Logger(CategoryService.name);
+
+    constructor(
+        @InjectModel(CategoryModel)
+        private categoryModel: typeof CategoryModel,
+        @InjectModel(ProductModel)
+        private productModel: typeof ProductModel,
+    ) {}
+
+    async findAll(
+        page: number = 1,
+        limit: number = 10,
+        search?: string,
+        isActive?: boolean,
+        parentId?: number,
+    ): Promise<{ data: CategoryModel[]; total: number }> {
+        const where: any = {};
+
+        if (search) {
+            where[Op.or] = [
+                { name: { [Op.iLike]: `%${search}%` } },
+                { description: { [Op.iLike]: `%${search}%` } },
+            ];
+        }
+
+        if (isActive !== undefined) {
+            where.isActive = isActive;
+        }
+
+        if (parentId !== undefined) {
+            where.parentId = parentId;
+        }
+
+        const { rows: categories, count: total } = await this.categoryModel.findAndCountAll({
+            where,
+            order: [['sort_order', 'ASC'], ['name', 'ASC']],
+            limit,
+            offset: (page - 1) * limit,
+            include: [
+                {
+                    model: CategoryModel,
+                    as: 'parent',
+                    attributes: ['id', 'name', 'slug'],
+                },
+                {
+                    model: CategoryModel,
+                    as: 'children',
+                    attributes: ['id', 'name', 'slug', 'product_count'],
+                    where: { isActive: true },
+                    required: false,
+                },
+            ],
+        });
+
+        return { data: categories, total };
+    }
+
+    async findById(id: number): Promise<CategoryModel> {
+        const category = await this.categoryModel.findByPk(id, {
+            include: [
+                {
+                    model: CategoryModel,
+                    as: 'parent',
+                    attributes: ['id', 'name', 'slug'],
+                },
+                {
+                    model: CategoryModel,
+                    as: 'children',
+                    attributes: ['id', 'name', 'slug', 'product_count'],
+                    where: { isActive: true },
+                    required: false,
+                },
+            ],
+        });
+
+        if (!category) {
+            throw new NotFoundException('Категория не найдена');
+        }
+
+        return category;
+    }
+
+    async findBySlug(slug: string): Promise<CategoryModel> {
+        const category = await this.categoryModel.findOne({
+            where: { slug, isActive: true },
+            include: [
+                {
+                    model: CategoryModel,
+                    as: 'parent',
+                    attributes: ['id', 'name', 'slug'],
+                },
+                {
+                    model: CategoryModel,
+                    as: 'children',
+                    attributes: ['id', 'name', 'slug', 'product_count'],
+                    where: { isActive: true },
+                    required: false,
+                },
+            ],
+        });
+
+        if (!category) {
+            throw new NotFoundException('Категория не найдена');
+        }
+
+        return category;
+    }
+
+    async create(categoryData: Partial<CategoryModel>): Promise<CategoryModel> {
+        // Проверяем уникальность slug
+        const existingCategory = await this.categoryModel.findOne({
+            where: { slug: categoryData.slug },
+        });
+
+        if (existingCategory) {
+            throw new BadRequestException('Категория с таким slug уже существует');
+        }
+
+        // Проверяем родительскую категорию
+        if (categoryData.parentId) {
+            const parentCategory = await this.categoryModel.findByPk(categoryData.parentId);
+            if (!parentCategory) {
+                throw new BadRequestException('Родительская категория не найдена');
+            }
+        }
+
+        const category = await this.categoryModel.create(categoryData);
+        this.logger.log(`Category created: ${category.name} (${category.slug})`);
+        return category;
+    }
+
+    async update(id: number, categoryData: Partial<CategoryModel>): Promise<CategoryModel> {
+        const category = await this.findById(id);
+
+        // Проверяем уникальность slug при обновлении
+        if (categoryData.slug && categoryData.slug !== category.slug) {
+            const existingCategory = await this.categoryModel.findOne({
+                where: { slug: categoryData.slug },
+            });
+
+            if (existingCategory) {
+                throw new BadRequestException('Категория с таким slug уже существует');
+            }
+        }
+
+        // Проверяем родительскую категорию
+        if (categoryData.parentId) {
+            if (categoryData.parentId === id) {
+                throw new BadRequestException('Категория не может быть родителем самой себе');
+            }
+
+            const parentCategory = await this.categoryModel.findByPk(categoryData.parentId);
+            if (!parentCategory) {
+                throw new BadRequestException('Родительская категория не найдена');
+            }
+        }
+
+        await category.update(categoryData);
+        this.logger.log(`Category updated: ${category.name} (${category.slug})`);
+        return category;
+    }
+
+    async delete(id: number): Promise<void> {
+        const category = await this.findById(id);
+
+        // Проверяем, есть ли товары в категории
+        const productCount = await this.productModel.count({
+            where: { categoryId: id },
+        });
+
+        if (productCount > 0) {
+            throw new BadRequestException('Нельзя удалить категорию, в которой есть товары');
+        }
+
+        // Проверяем, есть ли дочерние категории
+        const childrenCount = await this.categoryModel.count({
+            where: { parentId: id },
+        });
+
+        if (childrenCount > 0) {
+            throw new BadRequestException('Нельзя удалить категорию, у которой есть дочерние категории');
+        }
+
+        await category.destroy();
+        this.logger.log(`Category deleted: ${category.name} (${category.slug})`);
+    }
+
+    async getTree(): Promise<CategoryModel[]> {
+        return this.categoryModel.findAll({
+            where: { isActive: true },
+            order: [['sort_order', 'ASC'], ['name', 'ASC']],
+            include: [
+                {
+                    model: CategoryModel,
+                    as: 'children',
+                    where: { isActive: true },
+                    required: false,
+                    include: [
+                        {
+                            model: CategoryModel,
+                            as: 'children',
+                            where: { isActive: true },
+                            required: false,
+                        },
+                    ],
+                },
+            ],
+        });
+    }
+
+    async getRootCategories(): Promise<CategoryModel[]> {
+        return this.categoryModel.findAll({
+            where: { 
+                parentId: null,
+                isActive: true 
+            },
+            order: [['sort_order', 'ASC'], ['name', 'ASC']],
+            include: [
+                {
+                    model: CategoryModel,
+                    as: 'children',
+                    where: { isActive: true },
+                    required: false,
+                },
+            ],
+        });
+    }
+
+    async getChildren(parentId: number): Promise<CategoryModel[]> {
+        return this.categoryModel.findAll({
+            where: { 
+                parentId,
+                isActive: true 
+            },
+            order: [['sort_order', 'ASC'], ['name', 'ASC']],
+            include: [
+                {
+                    model: CategoryModel,
+                    as: 'children',
+                    where: { isActive: true },
+                    required: false,
+                },
+            ],
+        });
+    }
+
+    async updateProductCount(categoryId: number): Promise<void> {
+        const productCount = await this.productModel.count({
+            where: { categoryId, isActive: true },
+        });
+
+        await this.categoryModel.update(
+            { productCount },
+            { where: { id: categoryId } }
+        );
+    }
+
+    async searchCategories(query: string, limit: number = 10): Promise<CategoryModel[]> {
+        return this.categoryModel.findAll({
+            where: {
+                isActive: true,
+                [Op.or]: [
+                    { name: { [Op.iLike]: `%${query}%` } },
+                    { description: { [Op.iLike]: `%${query}%` } },
+                ],
+            },
+            order: [['name', 'ASC']],
+            limit,
+            attributes: ['id', 'name', 'slug', 'description', 'image'],
+        });
+    }
+}
+```
+
+## Контроллеры
+
+### Category Controller
+```typescript
+// src/infrastructure/controllers/category.controller.ts
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { CategoryService } from '@app/infrastructure/services/category.service';
+import { CreateCategoryDto } from '@app/infrastructure/dto/category/create-category.dto';
+import { UpdateCategoryDto } from '@app/infrastructure/dto/category/update-category.dto';
+import { CategoryResponse, CategoryListResponse } from '@app/infrastructure/responses/category/category.response';
+
+@ApiTags('Категории')
+@Controller('categories')
+export class CategoryController {
+    constructor(private readonly categoryService: CategoryService) {}
+
+    @Get()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить список категорий' })
+    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
+    @ApiQuery({ name: 'search', required: false, description: 'Поиск по названию' })
+    @ApiQuery({ name: 'isActive', required: false, description: 'Фильтр по активности' })
+    @ApiQuery({ name: 'parentId', required: false, description: 'Фильтр по родительской категории' })
+    @ApiResponse({ status: 200, description: 'Список категорий получен', type: CategoryListResponse })
+    async getCategories(
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+        @Query('search') search?: string,
+        @Query('isActive') isActive?: boolean,
+        @Query('parentId') parentId?: number,
+    ): Promise<CategoryListResponse> {
+        const result = await this.categoryService.findAll(page, limit, search, isActive, parentId);
+        
+        return {
+            data: result.data.map(category => ({
+                id: category.id,
+                name: category.name,
+                slug: category.slug,
+                description: category.description,
+                image: category.image,
+                parentId: category.parentId,
+                parent: category.parent,
+                children: category.children,
+                metaTitle: category.metaTitle,
+                metaDescription: category.metaDescription,
+                productCount: category.productCount,
+                createdAt: category.createdAt,
+                updatedAt: category.updatedAt,
+            })),
+            meta: {
+                totalCount: result.total,
+                currentPage: page,
+                limit,
+                lastPage: Math.ceil(result.total / limit),
+                nextPage: page < Math.ceil(result.total / limit) ? page + 1 : null,
+                previousPage: page > 1 ? page - 1 : null,
+            },
+        };
+    }
+
+    @Get('tree')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить дерево категорий' })
+    @ApiResponse({ status: 200, description: 'Дерево категорий получено', type: [CategoryResponse] })
+    async getCategoryTree(): Promise<CategoryResponse[]> {
+        const categories = await this.categoryService.getTree();
+        
+        return categories.map(category => ({
+            id: category.id,
+            name: category.name,
+            slug: category.slug,
+            description: category.description,
+            image: category.image,
+            parentId: category.parentId,
+            children: category.children,
+            productCount: category.productCount,
+        }));
+    }
+
+    @Get('root')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить корневые категории' })
+    @ApiResponse({ status: 200, description: 'Корневые категории получены', type: [CategoryResponse] })
+    async getRootCategories(): Promise<CategoryResponse[]> {
+        const categories = await this.categoryService.getRootCategories();
+        
+        return categories.map(category => ({
+            id: category.id,
+            name: category.name,
+            slug: category.slug,
+            description: category.description,
+            image: category.image,
+            children: category.children,
+            productCount: category.productCount,
+        }));
+    }
+
+    @Get(':id/children')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить дочерние категории' })
+    @ApiResponse({ status: 200, description: 'Дочерние категории получены', type: [CategoryResponse] })
+    async getChildren(@Param('id') id: number): Promise<CategoryResponse[]> {
+        const categories = await this.categoryService.getChildren(id);
+        
+        return categories.map(category => ({
+            id: category.id,
+            name: category.name,
+            slug: category.slug,
+            description: category.description,
+            image: category.image,
+            children: category.children,
+            productCount: category.productCount,
+        }));
+    }
+
+    @Get('search')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Поиск категорий' })
+    @ApiQuery({ name: 'q', required: true, description: 'Поисковый запрос' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество результатов' })
+    @ApiResponse({ status: 200, description: 'Результаты поиска получены', type: [CategoryResponse] })
+    async searchCategories(
+        @Query('q') query: string,
+        @Query('limit') limit: number = 10,
+    ): Promise<CategoryResponse[]> {
+        const categories = await this.categoryService.searchCategories(query, limit);
+        
+        return categories.map(category => ({
+            id: category.id,
+            name: category.name,
+            slug: category.slug,
+            description: category.description,
+            image: category.image,
+        }));
+    }
+
+    @Get(':id')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить категорию по ID' })
+    @ApiResponse({ status: 200, description: 'Категория получена', type: CategoryResponse })
+    @ApiResponse({ status: 404, description: 'Категория не найдена' })
+    async getCategoryById(@Param('id') id: number): Promise<CategoryResponse> {
+        const category = await this.categoryService.findById(id);
+        
+        return {
+            id: category.id,
+            name: category.name,
+            slug: category.slug,
+            description: category.description,
+            image: category.image,
+            parentId: category.parentId,
+            parent: category.parent,
+            children: category.children,
+            metaTitle: category.metaTitle,
+            metaDescription: category.metaDescription,
+            productCount: category.productCount,
+            createdAt: category.createdAt,
+            updatedAt: category.updatedAt,
+        };
+    }
+
+    @Get('slug/:slug')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить категорию по slug' })
+    @ApiResponse({ status: 200, description: 'Категория получена', type: CategoryResponse })
+    @ApiResponse({ status: 404, description: 'Категория не найдена' })
+    async getCategoryBySlug(@Param('slug') slug: string): Promise<CategoryResponse> {
+        const category = await this.categoryService.findBySlug(slug);
+        
+        return {
+            id: category.id,
+            name: category.name,
+            slug: category.slug,
+            description: category.description,
+            image: category.image,
+            parentId: category.parentId,
+            parent: category.parent,
+            children: category.children,
+            metaTitle: category.metaTitle,
+            metaDescription: category.metaDescription,
+            productCount: category.productCount,
+            createdAt: category.createdAt,
+            updatedAt: category.updatedAt,
+        };
+    }
+
+    @Post()
+    @HttpCode(HttpStatus.CREATED)
+    @ApiOperation({ summary: 'Создать новую категорию' })
+    @ApiResponse({ status: 201, description: 'Категория создана', type: CategoryResponse })
+    @ApiResponse({ status: 400, description: 'Ошибка валидации' })
+    async createCategory(@Body() createCategoryDto: CreateCategoryDto): Promise<CategoryResponse> {
+        const category = await this.categoryService.create(createCategoryDto);
+        
+        return {
+            id: category.id,
+            name: category.name,
+            slug: category.slug,
+            description: category.description,
+            image: category.image,
+            parentId: category.parentId,
+            metaTitle: category.metaTitle,
+            metaDescription: category.metaDescription,
+            productCount: category.productCount,
+            createdAt: category.createdAt,
+            updatedAt: category.updatedAt,
+        };
+    }
+
+    @Put(':id')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Обновить категорию' })
+    @ApiResponse({ status: 200, description: 'Категория обновлена', type: CategoryResponse })
+    @ApiResponse({ status: 404, description: 'Категория не найдена' })
+    @ApiResponse({ status: 400, description: 'Ошибка валидации' })
+    async updateCategory(
+        @Param('id') id: number,
+        @Body() updateCategoryDto: UpdateCategoryDto,
+    ): Promise<CategoryResponse> {
+        const category = await this.categoryService.update(id, updateCategoryDto);
+        
+        return {
+            id: category.id,
+            name: category.name,
+            slug: category.slug,
+            description: category.description,
+            image: category.image,
+            parentId: category.parentId,
+            metaTitle: category.metaTitle,
+            metaDescription: category.metaDescription,
+            productCount: category.productCount,
+            createdAt: category.createdAt,
+            updatedAt: category.updatedAt,
+        };
+    }
+
+    @Delete(':id')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Удалить категорию' })
+    @ApiResponse({ status: 204, description: 'Категория удалена' })
+    @ApiResponse({ status: 404, description: 'Категория не найдена' })
+    @ApiResponse({ status: 400, description: 'Нельзя удалить категорию с товарами или дочерними категориями' })
+    async deleteCategory(@Param('id') id: number): Promise<void> {
+        return this.categoryService.delete(id);
+    }
+}
+```
+
+## Миграции
+
+### Обновление таблицы categories
+```typescript
+// db/migrations/YYYYMMDDHHMMSS-update-categories-table.ts
+import { QueryInterface, DataTypes } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+    // Добавляем новые колонки
+    await queryInterface.addColumn('categories', 'description', {
+        type: DataTypes.TEXT,
+        allowNull: true,
+    });
+
+    await queryInterface.addColumn('categories', 'image', {
+        type: DataTypes.STRING(500),
+        allowNull: true,
+    });
+
+    await queryInterface.addColumn('categories', 'parent_id', {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: { model: 'categories', key: 'id' },
+        onDelete: 'SET NULL',
+    });
+
+    await queryInterface.addColumn('categories', 'meta_title', {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+    });
+
+    await queryInterface.addColumn('categories', 'meta_description', {
+        type: DataTypes.TEXT,
+        allowNull: true,
+    });
+
+    await queryInterface.addColumn('categories', 'is_active', {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+    });
+
+    await queryInterface.addColumn('categories', 'sort_order', {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+    });
+
+    await queryInterface.addColumn('categories', 'product_count', {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+    });
+
+    // Создаем индексы
+    await queryInterface.addIndex('categories', ['slug'], { unique: true });
+    await queryInterface.addIndex('categories', ['parent_id']);
+    await queryInterface.addIndex('categories', ['is_active']);
+    await queryInterface.addIndex('categories', ['sort_order']);
+    await queryInterface.addIndex('categories', ['product_count']);
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+    // Удаляем индексы
+    await queryInterface.removeIndex('categories', ['product_count']);
+    await queryInterface.removeIndex('categories', ['sort_order']);
+    await queryInterface.removeIndex('categories', ['is_active']);
+    await queryInterface.removeIndex('categories', ['parent_id']);
+    await queryInterface.removeIndex('categories', ['slug']);
+
+    // Удаляем колонки
+    await queryInterface.removeColumn('categories', 'product_count');
+    await queryInterface.removeColumn('categories', 'sort_order');
+    await queryInterface.removeColumn('categories', 'is_active');
+    await queryInterface.removeColumn('categories', 'meta_description');
+    await queryInterface.removeColumn('categories', 'meta_title');
+    await queryInterface.removeColumn('categories', 'parent_id');
+    await queryInterface.removeColumn('categories', 'image');
+    await queryInterface.removeColumn('categories', 'description');
+}
+```
+
+## DTO и валидация
+
+### CreateCategoryDto
+```typescript
+// src/infrastructure/dto/category/create-category.dto.ts
+import { IsString, IsOptional, IsBoolean, IsInt, IsUrl, Length, Min } from 'class-validator';
+
+export class CreateCategoryDto {
+    @IsString({ message: 'Название категории должно быть строкой' })
+    @Length(1, 255, { message: 'Название категории должно быть от 1 до 255 символов' })
+    declare readonly name: string;
+
+    @IsString({ message: 'Slug должен быть строкой' })
+    @Length(1, 255, { message: 'Slug должен быть от 1 до 255 символов' })
+    declare readonly slug: string;
+
+    @IsOptional()
+    @IsString({ message: 'Описание должно быть строкой' })
+    declare readonly description?: string;
+
+    @IsOptional()
+    @IsUrl({}, { message: 'Изображение должно быть валидным URL' })
+    declare readonly image?: string;
+
+    @IsOptional()
+    @IsInt({ message: 'ID родительской категории должен быть числом' })
+    @Min(1, { message: 'ID родительской категории должен быть больше 0' })
+    declare readonly parentId?: number;
+
+    @IsOptional()
+    @IsString({ message: 'SEO заголовок должен быть строкой' })
+    @Length(1, 255, { message: 'SEO заголовок должен быть от 1 до 255 символов' })
+    declare readonly metaTitle?: string;
+
+    @IsOptional()
+    @IsString({ message: 'SEO описание должно быть строкой' })
+    declare readonly metaDescription?: string;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Статус активности должен быть булевым значением' })
+    declare readonly isActive?: boolean;
+
+    @IsOptional()
+    @IsInt({ message: 'Порядок сортировки должен быть числом' })
+    @Min(0, { message: 'Порядок сортировки не может быть отрицательным' })
+    declare readonly sortOrder?: number;
+}
+```
+
+### UpdateCategoryDto
+```typescript
+// src/infrastructure/dto/category/update-category.dto.ts
+import { PartialType } from '@nestjs/swagger';
+import { CreateCategoryDto } from './create-category.dto';
+
+export class UpdateCategoryDto extends PartialType(CreateCategoryDto) {}
+```
+
+## Response классы
+
+### CategoryResponse
+```typescript
+// src/infrastructure/responses/category/category.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CategoryResponse {
+    @ApiProperty({ description: 'ID категории' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'Название категории' })
+    declare readonly name: string;
+
+    @ApiProperty({ description: 'Slug категории' })
+    declare readonly slug: string;
+
+    @ApiProperty({ description: 'Описание категории', required: false })
+    declare readonly description?: string;
+
+    @ApiProperty({ description: 'Изображение категории', required: false })
+    declare readonly image?: string;
+
+    @ApiProperty({ description: 'ID родительской категории', required: false })
+    declare readonly parentId?: number;
+
+    @ApiProperty({ description: 'Родительская категория', required: false })
+    declare readonly parent?: {
+        id: number;
+        name: string;
+        slug: string;
+    };
+
+    @ApiProperty({ description: 'Дочерние категории', type: [CategoryResponse], required: false })
+    declare readonly children?: CategoryResponse[];
+
+    @ApiProperty({ description: 'SEO заголовок', required: false })
+    declare readonly metaTitle?: string;
+
+    @ApiProperty({ description: 'SEO описание', required: false })
+    declare readonly metaDescription?: string;
+
+    @ApiProperty({ description: 'Количество товаров' })
+    declare readonly productCount: number;
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления' })
+    declare readonly updatedAt: Date;
+}
+
+export class CategoryListResponse {
+    @ApiProperty({ description: 'Список категорий', type: [CategoryResponse] })
+    declare readonly data: CategoryResponse[];
+
+    @ApiProperty({ description: 'Метаданные пагинации' })
+    declare readonly meta: {
+        totalCount: number;
+        currentPage: number;
+        limit: number;
+        lastPage: number;
+        nextPage: number | null;
+        previousPage: number | null;
+    };
+}
+```
+
+## Тесты
+
+### Unit тесты для CategoryService
+```typescript
+// tests/unit/services/category.service.unit.test.ts
+import { Test, TestingModule } from '@nestjs/testing';
+import { getModelToken } from '@nestjs/sequelize';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { CategoryService } from '@app/infrastructure/services/category.service';
+import { CategoryModel } from '@app/domain/models/category.model';
+import { ProductModel } from '@app/domain/models/product.model';
+
+describe('CategoryService', () => {
+    let service: CategoryService;
+    let categoryModel: typeof CategoryModel;
+    let productModel: typeof ProductModel;
+
+    const mockCategory = {
+        id: 1,
+        name: 'Test Category',
+        slug: 'test-category',
+        description: 'Test description',
+        image: 'https://example.com/image.png',
+        parentId: null,
+        isActive: true,
+        productCount: 5,
+        update: jest.fn(),
+        destroy: jest.fn(),
+    };
+
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [
+                CategoryService,
+                {
+                    provide: getModelToken(CategoryModel),
+                    useValue: {
+                        findByPk: jest.fn(),
+                        findOne: jest.fn(),
+                        findAll: jest.fn(),
+                        findAndCountAll: jest.fn(),
+                        create: jest.fn(),
+                        update: jest.fn(),
+                        count: jest.fn(),
+                    },
+                },
+                {
+                    provide: getModelToken(ProductModel),
+                    useValue: {
+                        count: jest.fn(),
+                    },
+                },
+            ],
+        }).compile();
+
+        service = module.get<CategoryService>(CategoryService);
+        categoryModel = module.get<typeof CategoryModel>(getModelToken(CategoryModel));
+        productModel = module.get<typeof ProductModel>(getModelToken(ProductModel));
+    });
+
+    it('should be defined', () => {
+        expect(service).toBeDefined();
+    });
+
+    describe('findById', () => {
+        it('должен вернуть категорию по ID', async () => {
+            jest.spyOn(categoryModel, 'findByPk').mockResolvedValue(mockCategory as any);
+            const result = await service.findById(1);
+            expect(result).toEqual(mockCategory);
+        });
+
+        it('должен выбросить ошибку если категория не найдена', async () => {
+            jest.spyOn(categoryModel, 'findByPk').mockResolvedValue(null);
+            await expect(service.findById(1)).rejects.toThrow(NotFoundException);
+        });
+    });
+
+    describe('create', () => {
+        it('должен создать новую категорию', async () => {
+            jest.spyOn(categoryModel, 'findOne').mockResolvedValue(null);
+            jest.spyOn(categoryModel, 'create').mockResolvedValue(mockCategory as any);
+
+            const result = await service.create({
+                name: 'Test Category',
+                slug: 'test-category',
+            });
+
+            expect(result).toEqual(mockCategory);
+            expect(categoryModel.create).toHaveBeenCalledWith({
+                name: 'Test Category',
+                slug: 'test-category',
+            });
+        });
+
+        it('должен выбросить ошибку если slug уже существует', async () => {
+            jest.spyOn(categoryModel, 'findOne').mockResolvedValue(mockCategory as any);
+            await expect(service.create({
+                name: 'Test Category',
+                slug: 'test-category',
+            })).rejects.toThrow(BadRequestException);
+        });
+
+        it('должен выбросить ошибку если родительская категория не найдена', async () => {
+            jest.spyOn(categoryModel, 'findOne').mockResolvedValue(null);
+            jest.spyOn(categoryModel, 'findByPk').mockResolvedValue(null);
+
+            await expect(service.create({
+                name: 'Test Category',
+                slug: 'test-category',
+                parentId: 999,
+            })).rejects.toThrow(BadRequestException);
+        });
+    });
+
+    describe('delete', () => {
+        it('должен удалить категорию без товаров и дочерних категорий', async () => {
+            jest.spyOn(categoryModel, 'findByPk').mockResolvedValue(mockCategory as any);
+            jest.spyOn(productModel, 'count').mockResolvedValue(0);
+            jest.spyOn(categoryModel, 'count').mockResolvedValue(0);
+            jest.spyOn(mockCategory, 'destroy').mockResolvedValue(undefined);
+
+            await service.delete(1);
+            expect(mockCategory.destroy).toHaveBeenCalled();
+        });
+
+        it('должен выбросить ошибку если в категории есть товары', async () => {
+            jest.spyOn(categoryModel, 'findByPk').mockResolvedValue(mockCategory as any);
+            jest.spyOn(productModel, 'count').mockResolvedValue(5);
+
+            await expect(service.delete(1)).rejects.toThrow(BadRequestException);
+        });
+
+        it('должен выбросить ошибку если у категории есть дочерние категории', async () => {
+            jest.spyOn(categoryModel, 'findByPk').mockResolvedValue(mockCategory as any);
+            jest.spyOn(productModel, 'count').mockResolvedValue(0);
+            jest.spyOn(categoryModel, 'count').mockResolvedValue(3);
+
+            await expect(service.delete(1)).rejects.toThrow(BadRequestException);
+        });
+    });
+});
+```
+
+## Критерии готовности
+
+### ✅ Обязательные требования:
+- [ ] Создана миграция для обновления таблицы categories
+- [ ] Обновлена модель CategoryModel с новыми полями
+- [ ] Реализован CategoryService с основной функциональностью
+- [ ] Создан CategoryController с API endpoints
+- [ ] Добавлены DTO классы с валидацией (CreateCategoryDto, UpdateCategoryDto)
+- [ ] Созданы Response классы с Swagger (CategoryResponse, CategoryListResponse)
+- [ ] Добавлены индексы для производительности
+- [ ] Реализована иерархическая структура (parent_id)
+- [ ] Добавлены unit тесты для CategoryService
+- [ ] Добавлены integration тесты для API
+- [ ] Обновлена связь с ProductModel
+
+### 🎯 Дополнительные возможности:
+- [ ] Кэширование дерева категорий
+- [ ] Автоматическое обновление product_count
+- [ ] SEO оптимизация для страниц категорий
+- [ ] Интеграция с системой изображений
+- [ ] Экспорт/импорт категорий
+
+## Следующие шаги
+
+### Фаза 1: Базовая реализация (1 неделя)
+1. **Создать миграцию** для обновления таблицы categories
+2. **Обновить модель** CategoryModel с новыми полями
+3. **Создать DTO классы** с валидацией входных данных
+4. **Создать Response классы** с Swagger документацией
+5. **Реализовать CategoryService** с основной бизнес-логикой
+
+### Фаза 2: API и интеграции (3-4 дня)
+6. **Создать CategoryController** с API endpoints
+7. **Добавить иерархическую структуру** (parent_id)
+8. **Реализовать дерево категорий** и поиск
+9. **Добавить связь с товарами** (product_count)
+
+### Фаза 3: Тестирование и качество (2-3 дня)
+10. **Написать unit тесты** для CategoryService
+11. **Написать integration тесты** для API
+12. **Добавить обработку ошибок** и валидацию
+13. **Провести рефакторинг** и оптимизацию
+
+## Риски и альтернативы
+
+### ⚠️ Риски:
+- **Производительность**: при глубокой иерархии может потребоваться кэширование
+- **SEO**: базовые мета-поля могут быть недостаточными для сложной SEO стратегии
+- **Изображения**: хранение URL вместо файлов может быть неудобным
+
+### 🔄 Альтернативы:
+- **Кэширование**: Redis для дерева категорий и поиска
+- **Изображения**: интеграция с CDN или файловым хранилищем
+- **SEO**: более продвинутые мета-поля при необходимости
+
+## Интеграция с другими системами
+
+### 🔗 Связанные системы:
+- **ProductService** - связь с товарами
+- **BrandService** - связь с брендами
+- **ImageService** - управление изображениями категорий
+- **SearchService** - поиск по категориям
+
+### 📊 Аналитика:
+- Популярные категории
+- Статистика по уровням иерархии
+- Конверсия по категориям
+
+## TL;DR
+
+Упрощенная система категорий включает:
+- **1 таблица**: categories (обновленная)
+- **1 модель**: CategoryModel с иерархической структурой
+- **1 сервис**: CategoryService с CRUD операциями
+- **1 контроллер**: API для категорий
+- **Функции**: дерево категорий, поиск, фильтрация, SEO поля
+- **Связи**: с товарами (product_count) и родительскими категориями
+- **Готовность**: к масштабированию и дополнительным функциям

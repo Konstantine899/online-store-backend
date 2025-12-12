@@ -1,0 +1,1431 @@
+# Система платежей (Payment System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы платежей для ecommerce приложения с базовыми статусами, простыми методами оплаты и интеграцией с внешними шлюзами, фокусом на быструю разработку и готовность к масштабированию.
+
+## Основные требования
+- **Базовые статусы** - pending, completed, failed, refunded
+- **Простые методы оплаты** - card, cash, bank_transfer
+- **Интеграция с шлюзами** - без сохранения методов платежей
+- **Возвраты** - простой статус refunded
+- **История платежей** - для заказов
+- **Безопасность** - без хранения данных карт
+
+## Структура базы данных
+
+### Таблица `payments`
+```sql
+CREATE TABLE payments (
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+    amount DECIMAL(10,2) NOT NULL,
+    currency VARCHAR(3) NOT NULL DEFAULT 'RUB',
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
+    payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('card', 'cash', 'bank_transfer')),
+    gateway_name VARCHAR(50),
+    gateway_transaction_id VARCHAR(255),
+    gateway_response JSONB,
+    description TEXT,
+    refund_amount DECIMAL(10,2) DEFAULT 0,
+    refund_reason TEXT,
+    is_recurring BOOLEAN DEFAULT false,
+    is_partial BOOLEAN DEFAULT false,
+    is_prepaid BOOLEAN DEFAULT false,
+    is_refundable BOOLEAN DEFAULT true,
+    is_processed BOOLEAN DEFAULT false,
+    is_settled BOOLEAN DEFAULT false,
+    is_archived BOOLEAN DEFAULT false,
+    is_auto_renewal BOOLEAN DEFAULT false,
+    is_installment BOOLEAN DEFAULT false,
+    processed_at TIMESTAMP,
+    failed_at TIMESTAMP,
+    refunded_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Модели Sequelize
+
+### Payment Model
+```typescript
+// src/domain/models/payment.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { OrderModel } from './order.model';
+
+export enum PaymentStatus {
+    PENDING = 'pending',
+    COMPLETED = 'completed',
+    FAILED = 'failed',
+    REFUNDED = 'refunded'
+}
+
+export enum PaymentMethod {
+    CARD = 'card',
+    CASH = 'cash',
+    BANK_TRANSFER = 'bank_transfer'
+}
+
+interface IPaymentModel {
+    id: number;
+    orderId: number;
+    amount: number;
+    currency: string;
+    status: PaymentStatus;
+    paymentMethod: PaymentMethod;
+    gatewayName?: string;
+    gatewayTransactionId?: string;
+    gatewayResponse?: any;
+    description?: string;
+    refundAmount: number;
+    refundReason?: string;
+    processedAt?: Date;
+    failedAt?: Date;
+    refundedAt?: Date;
+    isRecurring: boolean;
+    isPartial: boolean;
+    isPrepaid: boolean;
+    isRefundable: boolean;
+    isProcessed: boolean;
+    isSettled: boolean;
+    isArchived: boolean;
+    isAutoRenewal: boolean;
+    isInstallment: boolean;
+    order: OrderModel;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IPaymentCreationAttributes {
+    orderId: number;
+    amount: number;
+    currency?: string;
+    status?: PaymentStatus;
+    paymentMethod: PaymentMethod;
+    gatewayName?: string;
+    gatewayTransactionId?: string;
+    gatewayResponse?: any;
+    description?: string;
+    isRecurring?: boolean;
+    isPartial?: boolean;
+    isPrepaid?: boolean;
+    isRefundable?: boolean;
+    isProcessed?: boolean;
+    isSettled?: boolean;
+    isArchived?: boolean;
+    isAutoRenewal?: boolean;
+    isInstallment?: boolean;
+}
+
+@Table({
+    tableName: 'payments',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['order_id'], name: 'idx_payments_order_id' },
+        { fields: ['status'], name: 'idx_payments_status' },
+        { fields: ['payment_method'], name: 'idx_payments_payment_method' },
+        { fields: ['gateway_name'], name: 'idx_payments_gateway_name' },
+        { fields: ['gateway_transaction_id'], name: 'idx_payments_gateway_transaction_id' },
+        { fields: ['is_recurring'], name: 'idx_payments_is_recurring' },
+        { fields: ['is_partial'], name: 'idx_payments_is_partial' },
+        { fields: ['is_prepaid'], name: 'idx_payments_is_prepaid' },
+        { fields: ['is_refundable'], name: 'idx_payments_is_refundable' },
+        { fields: ['is_processed'], name: 'idx_payments_is_processed' },
+        { fields: ['is_settled'], name: 'idx_payments_is_settled' },
+        { fields: ['is_archived'], name: 'idx_payments_is_archived' },
+        { fields: ['is_auto_renewal'], name: 'idx_payments_is_auto_renewal' },
+        { fields: ['is_installment'], name: 'idx_payments_is_installment' },
+        { fields: ['created_at'], name: 'idx_payments_created_at' },
+        { fields: ['order_id', 'status'], name: 'idx_payments_order_status' },
+    ],
+})
+export class PaymentModel
+    extends Model<PaymentModel, IPaymentCreationAttributes>
+    implements IPaymentModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => OrderModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'order_id',
+    })
+    declare orderId: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        validate: {
+            min: 0
+        }
+    })
+    declare amount: number;
+
+    @Column({
+        type: DataType.STRING(3),
+        allowNull: false,
+        defaultValue: 'RUB',
+        validate: {
+            isIn: [['RUB', 'USD', 'EUR']]
+        }
+    })
+    declare currency: string;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(PaymentStatus)),
+        allowNull: false,
+        defaultValue: PaymentStatus.PENDING,
+    })
+    declare status: PaymentStatus;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(PaymentMethod)),
+        allowNull: false,
+        field: 'payment_method',
+    })
+    declare paymentMethod: PaymentMethod;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: true,
+        field: 'gateway_name',
+    })
+    declare gatewayName: string;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+        field: 'gateway_transaction_id',
+    })
+    declare gatewayTransactionId: string;
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: true,
+        field: 'gateway_response',
+    })
+    declare gatewayResponse: any;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare description: string;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+        field: 'refund_amount',
+    })
+    declare refundAmount: number;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'refund_reason',
+    })
+    declare refundReason: string;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'processed_at',
+    })
+    declare processedAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'failed_at',
+    })
+    declare failedAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'refunded_at',
+    })
+    declare refundedAt: Date;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_recurring',
+    })
+    declare isRecurring: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_partial',
+    })
+    declare isPartial: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_prepaid',
+    })
+    declare isPrepaid: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_refundable',
+    })
+    declare isRefundable: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_processed',
+    })
+    declare isProcessed: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_settled',
+    })
+    declare isSettled: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_archived',
+    })
+    declare isArchived: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_auto_renewal',
+    })
+    declare isAutoRenewal: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_installment',
+    })
+    declare isInstallment: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'updated_at',
+    })
+    declare updatedAt: Date;
+
+    // Связи
+    @BelongsTo(() => OrderModel)
+    declare order: OrderModel;
+
+    // Методы
+    get isCompleted(): boolean {
+        return this.status === PaymentStatus.COMPLETED;
+    }
+
+    get isFailed(): boolean {
+        return this.status === PaymentStatus.FAILED;
+    }
+
+    get isPending(): boolean {
+        return this.status === PaymentStatus.PENDING;
+    }
+
+    get isRefunded(): boolean {
+        return this.status === PaymentStatus.REFUNDED;
+    }
+
+    get canBeRefunded(): boolean {
+        return this.isCompleted && this.refundAmount < this.amount;
+    }
+
+    get availableRefundAmount(): number {
+        return this.amount - this.refundAmount;
+    }
+
+    get isRecurringPayment(): boolean {
+        return this.isRecurring;
+    }
+
+    get isPartialPayment(): boolean {
+        return this.isPartial;
+    }
+
+    get isPrepaidPayment(): boolean {
+        return this.isPrepaid;
+    }
+
+    get isRefundablePayment(): boolean {
+        return this.isRefundable;
+    }
+
+    get isProcessedPayment(): boolean {
+        return this.isProcessed;
+    }
+
+    get isSettledPayment(): boolean {
+        return this.isSettled;
+    }
+
+    get isArchivedPayment(): boolean {
+        return this.isArchived;
+    }
+
+    get isAutoRenewalPayment(): boolean {
+        return this.isAutoRenewal;
+    }
+
+    get isInstallmentPayment(): boolean {
+        return this.isInstallment;
+    }
+
+    get paymentType(): string {
+        if (this.isRecurring) return 'recurring';
+        if (this.isPartial) return 'partial';
+        if (this.isPrepaid) return 'prepaid';
+        if (this.isInstallment) return 'installment';
+        if (this.isArchived) return 'archived';
+        return 'regular';
+    }
+
+    get paymentStatus(): string {
+        if (this.isSettled) return 'settled';
+        if (this.isProcessed) return 'processed';
+        if (this.isRefunded) return 'refunded';
+        if (this.isFailed) return 'failed';
+        if (this.isCompleted) return 'completed';
+        return 'pending';
+    }
+
+    // Метод для создания возврата
+    async processRefund(amount: number, reason: string): Promise<void> {
+        if (!this.canBeRefunded) {
+            throw new Error('Платеж не может быть возвращен');
+        }
+
+        if (amount > this.availableRefundAmount) {
+            throw new Error('Сумма возврата превышает доступную сумму');
+        }
+
+        const newRefundAmount = this.refundAmount + amount;
+        const isFullyRefunded = newRefundAmount >= this.amount;
+
+        await this.update({
+            refundAmount: newRefundAmount,
+            refundReason: reason,
+            status: isFullyRefunded ? PaymentStatus.REFUNDED : PaymentStatus.COMPLETED,
+            refundedAt: new Date(),
+        });
+    }
+
+    async markAsRecurring(): Promise<void> {
+        await this.update({ isRecurring: true });
+    }
+
+    async unmarkAsRecurring(): Promise<void> {
+        await this.update({ isRecurring: false });
+    }
+
+    async markAsPartial(): Promise<void> {
+        await this.update({ isPartial: true });
+    }
+
+    async unmarkAsPartial(): Promise<void> {
+        await this.update({ isPartial: false });
+    }
+
+    async markAsPrepaid(): Promise<void> {
+        await this.update({ isPrepaid: true });
+    }
+
+    async unmarkAsPrepaid(): Promise<void> {
+        await this.update({ isPrepaid: false });
+    }
+
+    async markAsRefundable(): Promise<void> {
+        await this.update({ isRefundable: true });
+    }
+
+    async unmarkAsRefundable(): Promise<void> {
+        await this.update({ isRefundable: false });
+    }
+
+    async markAsProcessed(): Promise<void> {
+        await this.update({ isProcessed: true, processedAt: new Date() });
+    }
+
+    async unmarkAsProcessed(): Promise<void> {
+        await this.update({ isProcessed: false, processedAt: null });
+    }
+
+    async markAsSettled(): Promise<void> {
+        await this.update({ isSettled: true });
+    }
+
+    async unmarkAsSettled(): Promise<void> {
+        await this.update({ isSettled: false });
+    }
+
+    async archivePayment(): Promise<void> {
+        await this.update({ isArchived: true });
+    }
+
+    async unarchivePayment(): Promise<void> {
+        await this.update({ isArchived: false });
+    }
+
+    async enableAutoRenewal(): Promise<void> {
+        await this.update({ isAutoRenewal: true });
+    }
+
+    async disableAutoRenewal(): Promise<void> {
+        await this.update({ isAutoRenewal: false });
+    }
+
+    async enableInstallment(): Promise<void> {
+        await this.update({ isInstallment: true });
+    }
+
+    async disableInstallment(): Promise<void> {
+        await this.update({ isInstallment: false });
+    }
+
+    // Статические методы для работы с флагами
+    static async getAutoRenewalPayments(): Promise<PaymentModel[]> {
+        return this.findAll({
+            where: { isAutoRenewal: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNonAutoRenewalPayments(): Promise<PaymentModel[]> {
+        return this.findAll({
+            where: { isAutoRenewal: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getInstallmentPayments(): Promise<PaymentModel[]> {
+        return this.findAll({
+            where: { isInstallment: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNonInstallmentPayments(): Promise<PaymentModel[]> {
+        return this.findAll({
+            where: { isInstallment: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getArchivedPayments(): Promise<PaymentModel[]> {
+        return this.findAll({
+            where: { isArchived: true },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
+    static async getNonArchivedPayments(): Promise<PaymentModel[]> {
+        return this.findAll({
+            where: { isArchived: false },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+}
+```
+
+## Сервисы
+
+### Payment Service
+```typescript
+// src/infrastructure/services/payment.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { PaymentModel, PaymentStatus, PaymentMethod } from '@app/domain/models/payment.model';
+import { OrderModel } from '@app/domain/models/order.model';
+
+@Injectable()
+export class PaymentService {
+    private readonly logger = new Logger(PaymentService.name);
+
+    constructor(
+        @InjectModel(PaymentModel)
+        private paymentModel: typeof PaymentModel,
+        @InjectModel(OrderModel)
+        private orderModel: typeof OrderModel,
+    ) {}
+
+    async createPayment(
+        orderId: number,
+        paymentData: {
+            amount: number;
+            currency?: string;
+            paymentMethod: PaymentMethod;
+            description?: string;
+        },
+    ): Promise<PaymentModel> {
+        // Проверяем существование заказа
+        const order = await this.orderModel.findByPk(orderId);
+        if (!order) {
+            throw new NotFoundException('Заказ не найден');
+        }
+
+        // Проверяем, что заказ не оплачен
+        const existingPayment = await this.paymentModel.findOne({
+            where: { 
+                orderId,
+                status: PaymentStatus.COMPLETED,
+            },
+        });
+
+        if (existingPayment) {
+            throw new BadRequestException('Заказ уже оплачен');
+        }
+
+        const payment = await this.paymentModel.create({
+            orderId,
+            amount: paymentData.amount,
+            currency: paymentData.currency || 'RUB',
+            paymentMethod: paymentData.paymentMethod,
+            description: paymentData.description,
+            status: PaymentStatus.PENDING,
+        });
+
+        this.logger.log(`Создан платеж ${payment.id} для заказа ${orderId}`);
+        return payment;
+    }
+
+    async processPayment(
+        paymentId: number,
+        gatewayData: {
+            gatewayName: string;
+            gatewayTransactionId: string;
+            gatewayResponse: any;
+        },
+    ): Promise<PaymentModel> {
+        const payment = await this.getPaymentById(paymentId);
+
+        if (payment.status !== PaymentStatus.PENDING) {
+            throw new BadRequestException('Платеж уже обработан');
+        }
+
+        // Здесь должна быть интеграция с платежным шлюзом
+        // Для примера просто помечаем как завершенный
+        await payment.update({
+            status: PaymentStatus.COMPLETED,
+            gatewayName: gatewayData.gatewayName,
+            gatewayTransactionId: gatewayData.gatewayTransactionId,
+            gatewayResponse: gatewayData.gatewayResponse,
+            processedAt: new Date(),
+        });
+
+        this.logger.log(`Платеж ${paymentId} обработан через ${gatewayData.gatewayName}`);
+        return payment;
+    }
+
+    async failPayment(
+        paymentId: number,
+        reason?: string,
+    ): Promise<PaymentModel> {
+        const payment = await this.getPaymentById(paymentId);
+
+        if (payment.status !== PaymentStatus.PENDING) {
+            throw new BadRequestException('Платеж уже обработан');
+        }
+
+        await payment.update({
+            status: PaymentStatus.FAILED,
+            description: reason,
+            failedAt: new Date(),
+        });
+
+        this.logger.log(`Платеж ${paymentId} завершился с ошибкой: ${reason}`);
+        return payment;
+    }
+
+    async refundPayment(
+        paymentId: number,
+        amount: number,
+        reason: string,
+    ): Promise<PaymentModel> {
+        const payment = await this.getPaymentById(paymentId);
+
+        await payment.processRefund(amount, reason);
+
+        this.logger.log(`Возврат ${amount} руб. для платежа ${paymentId}: ${reason}`);
+        return payment;
+    }
+
+    async getPaymentById(paymentId: number): Promise<PaymentModel> {
+        const payment = await this.paymentModel.findByPk(paymentId, {
+            include: [{ association: 'order' }],
+        });
+
+        if (!payment) {
+            throw new NotFoundException('Платеж не найден');
+        }
+
+        return payment;
+    }
+
+    async getOrderPayments(orderId: number): Promise<PaymentModel[]> {
+        return this.paymentModel.findAll({
+            where: { orderId },
+            order: [['created_at', 'DESC']],
+        });
+    }
+
+    async getPaymentStatistics(): Promise<{
+        totalPayments: number;
+        completedPayments: number;
+        failedPayments: number;
+        refundedPayments: number;
+        totalAmount: number;
+        totalRefunded: number;
+        installmentPayments: number;
+        autoRenewalPayments: number;
+    }> {
+        const [
+            totalPayments,
+            completedPayments,
+            failedPayments,
+            refundedPayments,
+            totalAmountResult,
+            totalRefundedResult,
+            installmentPayments,
+            autoRenewalPayments,
+        ] = await Promise.all([
+            this.paymentModel.count(),
+            this.paymentModel.count({ where: { status: PaymentStatus.COMPLETED } }),
+            this.paymentModel.count({ where: { status: PaymentStatus.FAILED } }),
+            this.paymentModel.count({ where: { status: PaymentStatus.REFUNDED } }),
+            this.paymentModel.sum('amount'),
+            this.paymentModel.sum('refund_amount'),
+            this.paymentModel.count({ where: { isInstallment: true } }),
+            this.paymentModel.count({ where: { isAutoRenewal: true } }),
+        ]);
+
+        return {
+            totalPayments,
+            completedPayments,
+            failedPayments,
+            refundedPayments,
+            totalAmount: totalAmountResult || 0,
+            totalRefunded: totalRefundedResult || 0,
+            installmentPayments,
+            autoRenewalPayments,
+        };
+    }
+
+    async getPaymentsByMethod(paymentMethod: PaymentMethod): Promise<PaymentModel[]> {
+        return this.paymentModel.findAll({
+            where: { paymentMethod },
+            order: [['created_at', 'DESC']],
+            limit: 100,
+        });
+    }
+
+    async getPaymentsByStatus(status: PaymentStatus): Promise<PaymentModel[]> {
+        return this.paymentModel.findAll({
+            where: { status },
+            order: [['created_at', 'DESC']],
+            limit: 100,
+        });
+    }
+
+    async getInstallmentPayments(): Promise<PaymentModel[]> {
+        return this.paymentModel.findAll({
+            where: { isInstallment: true },
+            order: [['created_at', 'DESC']],
+        });
+    }
+
+    async getAutoRenewalPayments(): Promise<PaymentModel[]> {
+        return this.paymentModel.findAll({
+            where: { isAutoRenewal: true },
+            order: [['created_at', 'DESC']],
+        });
+    }
+}
+```
+
+## Контроллеры
+
+### Payment Controller
+```typescript
+// src/infrastructure/controllers/payment.controller.ts
+import { Controller, Get, Post, Put, Param, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
+import { CurrentUser } from '@app/infrastructure/common/decorators/current-user.decorator';
+import { PaymentService } from '@app/infrastructure/services/payment.service';
+import { CreatePaymentDto } from '@app/infrastructure/dto/payment/create-payment.dto';
+import { ProcessPaymentDto } from '@app/infrastructure/dto/payment/process-payment.dto';
+import { RefundPaymentDto } from '@app/infrastructure/dto/payment/refund-payment.dto';
+import { PaymentResponse, PaymentStatisticsResponse } from '@app/infrastructure/responses/payment/payment.response';
+
+@ApiTags('Платежи')
+@Controller('payments')
+export class PaymentController {
+    constructor(private readonly paymentService: PaymentService) {}
+
+    @Post()
+    @HttpCode(HttpStatus.CREATED)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Создать новый платеж' })
+    @ApiResponse({ status: 201, description: 'Платеж создан', type: PaymentResponse })
+    async createPayment(
+        @Body() createPaymentDto: CreatePaymentDto,
+    ): Promise<PaymentResponse> {
+        const payment = await this.paymentService.createPayment(
+            createPaymentDto.orderId,
+            {
+                amount: createPaymentDto.amount,
+                currency: createPaymentDto.currency,
+                paymentMethod: createPaymentDto.paymentMethod,
+                description: createPaymentDto.description,
+            },
+        );
+        
+        return {
+            id: payment.id,
+            orderId: payment.orderId,
+            amount: payment.amount,
+            currency: payment.currency,
+            status: payment.status,
+            paymentMethod: payment.paymentMethod,
+            gatewayName: payment.gatewayName,
+            gatewayTransactionId: payment.gatewayTransactionId,
+            gatewayResponse: payment.gatewayResponse,
+            description: payment.description,
+            refundAmount: payment.refundAmount,
+            refundReason: payment.refundReason,
+            processedAt: payment.processedAt,
+            failedAt: payment.failedAt,
+            refundedAt: payment.refundedAt,
+            createdAt: payment.createdAt,
+            updatedAt: payment.updatedAt,
+        };
+    }
+
+    @Put(':id/process')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Обработать платеж' })
+    @ApiResponse({ status: 200, description: 'Платеж обработан', type: PaymentResponse })
+    @ApiResponse({ status: 400, description: 'Платеж уже обработан' })
+    @ApiResponse({ status: 404, description: 'Платеж не найден' })
+    async processPayment(
+        @Param('id') paymentId: number,
+        @Body() processPaymentDto: ProcessPaymentDto,
+    ): Promise<PaymentResponse> {
+        const payment = await this.paymentService.processPayment(paymentId, {
+            gatewayName: processPaymentDto.gatewayName,
+            gatewayTransactionId: processPaymentDto.gatewayTransactionId,
+            gatewayResponse: processPaymentDto.gatewayResponse,
+        });
+        
+        return {
+            id: payment.id,
+            orderId: payment.orderId,
+            amount: payment.amount,
+            currency: payment.currency,
+            status: payment.status,
+            paymentMethod: payment.paymentMethod,
+            gatewayName: payment.gatewayName,
+            gatewayTransactionId: payment.gatewayTransactionId,
+            gatewayResponse: payment.gatewayResponse,
+            description: payment.description,
+            refundAmount: payment.refundAmount,
+            refundReason: payment.refundReason,
+            processedAt: payment.processedAt,
+            failedAt: payment.failedAt,
+            refundedAt: payment.refundedAt,
+            createdAt: payment.createdAt,
+            updatedAt: payment.updatedAt,
+        };
+    }
+
+    @Put(':id/fail')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Отметить платеж как неудачный' })
+    @ApiResponse({ status: 200, description: 'Платеж отмечен как неудачный', type: PaymentResponse })
+    @ApiResponse({ status: 400, description: 'Платеж уже обработан' })
+    @ApiResponse({ status: 404, description: 'Платеж не найден' })
+    async failPayment(
+        @Param('id') paymentId: number,
+        @Body('reason') reason?: string,
+    ): Promise<PaymentResponse> {
+        const payment = await this.paymentService.failPayment(paymentId, reason);
+        
+        return {
+            id: payment.id,
+            orderId: payment.orderId,
+            amount: payment.amount,
+            currency: payment.currency,
+            status: payment.status,
+            paymentMethod: payment.paymentMethod,
+            gatewayName: payment.gatewayName,
+            gatewayTransactionId: payment.gatewayTransactionId,
+            gatewayResponse: payment.gatewayResponse,
+            description: payment.description,
+            refundAmount: payment.refundAmount,
+            refundReason: payment.refundReason,
+            processedAt: payment.processedAt,
+            failedAt: payment.failedAt,
+            refundedAt: payment.refundedAt,
+            createdAt: payment.createdAt,
+            updatedAt: payment.updatedAt,
+        };
+    }
+
+    @Put(':id/refund')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Возврат платежа' })
+    @ApiResponse({ status: 200, description: 'Возврат обработан', type: PaymentResponse })
+    @ApiResponse({ status: 400, description: 'Невозможно вернуть платеж' })
+    @ApiResponse({ status: 404, description: 'Платеж не найден' })
+    async refundPayment(
+        @Param('id') paymentId: number,
+        @Body() refundPaymentDto: RefundPaymentDto,
+    ): Promise<PaymentResponse> {
+        const payment = await this.paymentService.refundPayment(
+            paymentId,
+            refundPaymentDto.amount,
+            refundPaymentDto.reason,
+        );
+        
+        return {
+            id: payment.id,
+            orderId: payment.orderId,
+            amount: payment.amount,
+            currency: payment.currency,
+            status: payment.status,
+            paymentMethod: payment.paymentMethod,
+            gatewayName: payment.gatewayName,
+            gatewayTransactionId: payment.gatewayTransactionId,
+            gatewayResponse: payment.gatewayResponse,
+            description: payment.description,
+            refundAmount: payment.refundAmount,
+            refundReason: payment.refundReason,
+            processedAt: payment.processedAt,
+            failedAt: payment.failedAt,
+            refundedAt: payment.refundedAt,
+            createdAt: payment.createdAt,
+            updatedAt: payment.updatedAt,
+        };
+    }
+
+    @Get(':id')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить платеж по ID' })
+    @ApiResponse({ status: 200, description: 'Платеж получен', type: PaymentResponse })
+    @ApiResponse({ status: 404, description: 'Платеж не найден' })
+    async getPaymentById(@Param('id') paymentId: number): Promise<PaymentResponse> {
+        const payment = await this.paymentService.getPaymentById(paymentId);
+        
+        return {
+            id: payment.id,
+            orderId: payment.orderId,
+            amount: payment.amount,
+            currency: payment.currency,
+            status: payment.status,
+            paymentMethod: payment.paymentMethod,
+            gatewayName: payment.gatewayName,
+            gatewayTransactionId: payment.gatewayTransactionId,
+            gatewayResponse: payment.gatewayResponse,
+            description: payment.description,
+            refundAmount: payment.refundAmount,
+            refundReason: payment.refundReason,
+            processedAt: payment.processedAt,
+            failedAt: payment.failedAt,
+            refundedAt: payment.refundedAt,
+            createdAt: payment.createdAt,
+            updatedAt: payment.updatedAt,
+        };
+    }
+
+    @Get('order/:orderId')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить платежи заказа' })
+    @ApiResponse({ status: 200, description: 'Платежи получены', type: [PaymentResponse] })
+    async getOrderPayments(@Param('orderId') orderId: number): Promise<PaymentResponse[]> {
+        const payments = await this.paymentService.getOrderPayments(orderId);
+        
+        return payments.map(payment => ({
+            id: payment.id,
+            orderId: payment.orderId,
+            amount: payment.amount,
+            currency: payment.currency,
+            status: payment.status,
+            paymentMethod: payment.paymentMethod,
+            gatewayName: payment.gatewayName,
+            gatewayTransactionId: payment.gatewayTransactionId,
+            gatewayResponse: payment.gatewayResponse,
+            description: payment.description,
+            refundAmount: payment.refundAmount,
+            refundReason: payment.refundReason,
+            processedAt: payment.processedAt,
+            failedAt: payment.failedAt,
+            refundedAt: payment.refundedAt,
+            createdAt: payment.createdAt,
+            updatedAt: payment.updatedAt,
+        }));
+    }
+
+    @Get('admin/statistics')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить статистику платежей (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Статистика получена', type: PaymentStatisticsResponse })
+    async getPaymentStatistics(): Promise<PaymentStatisticsResponse> {
+        const statistics = await this.paymentService.getPaymentStatistics();
+        
+        return {
+            totalPayments: statistics.totalPayments,
+            completedPayments: statistics.completedPayments,
+            failedPayments: statistics.failedPayments,
+            refundedPayments: statistics.refundedPayments,
+            totalAmount: statistics.totalAmount,
+            totalRefunded: statistics.totalRefunded,
+        };
+    }
+
+    @Get('method/:method')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить платежи по методу оплаты' })
+    @ApiResponse({ status: 200, description: 'Платежи получены', type: [PaymentResponse] })
+    async getPaymentsByMethod(
+        @Param('method') method: string,
+    ): Promise<PaymentResponse[]> {
+        const payments = await this.paymentService.getPaymentsByMethod(method as any);
+        
+        return payments.map(payment => ({
+            id: payment.id,
+            orderId: payment.orderId,
+            amount: payment.amount,
+            currency: payment.currency,
+            status: payment.status,
+            paymentMethod: payment.paymentMethod,
+            gatewayName: payment.gatewayName,
+            gatewayTransactionId: payment.gatewayTransactionId,
+            gatewayResponse: payment.gatewayResponse,
+            description: payment.description,
+            refundAmount: payment.refundAmount,
+            refundReason: payment.refundReason,
+            processedAt: payment.processedAt,
+            failedAt: payment.failedAt,
+            refundedAt: payment.refundedAt,
+            createdAt: payment.createdAt,
+            updatedAt: payment.updatedAt,
+        }));
+    }
+}
+```
+
+## Миграции
+
+### Создание таблицы payments
+```typescript
+// db/migrations/YYYYMMDDHHMMSS-create-payments-table.ts
+import { QueryInterface, DataTypes } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+    await queryInterface.createTable('payments', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        order_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'orders', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        amount: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+        },
+        currency: {
+            type: DataTypes.STRING(3),
+            allowNull: false,
+            defaultValue: 'RUB',
+        },
+        status: {
+            type: DataTypes.ENUM('pending', 'completed', 'failed', 'refunded'),
+            allowNull: false,
+            defaultValue: 'pending',
+        },
+        payment_method: {
+            type: DataTypes.ENUM('card', 'cash', 'bank_transfer'),
+            allowNull: false,
+        },
+        gateway_name: {
+            type: DataTypes.STRING(50),
+            allowNull: true,
+        },
+        gateway_transaction_id: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+        },
+        gateway_response: {
+            type: DataTypes.JSONB,
+            allowNull: true,
+        },
+        description: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        refund_amount: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+            defaultValue: 0,
+        },
+        refund_reason: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        processed_at: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        failed_at: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        refunded_at: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создаем индексы
+    await Promise.all([
+        queryInterface.addIndex('payments', ['order_id']),
+        queryInterface.addIndex('payments', ['status']),
+        queryInterface.addIndex('payments', ['payment_method']),
+        queryInterface.addIndex('payments', ['gateway_name']),
+        queryInterface.addIndex('payments', ['gateway_transaction_id']),
+        queryInterface.addIndex('payments', ['created_at']),
+        queryInterface.addIndex('payments', ['order_id', 'status']),
+    ]);
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+    await queryInterface.dropTable('payments');
+}
+```
+
+## DTO и валидация
+
+### CreatePaymentDto
+```typescript
+// src/infrastructure/dto/payment/create-payment.dto.ts
+import { IsNumber, IsOptional, IsString, Min, IsEnum, IsIn } from 'class-validator';
+import { PaymentMethod } from '@app/domain/models/payment.model';
+
+export class CreatePaymentDto {
+    @IsNumber({}, { message: 'ID заказа должен быть числом' })
+    @Min(1, { message: 'ID заказа должен быть больше 0' })
+    declare readonly orderId: number;
+
+    @IsNumber({}, { message: 'Сумма должна быть числом' })
+    @Min(0.01, { message: 'Сумма должна быть больше 0' })
+    declare readonly amount: number;
+
+    @IsOptional()
+    @IsString({ message: 'Валюта должна быть строкой' })
+    @IsIn(['RUB', 'USD', 'EUR'], { message: 'Неподдерживаемая валюта' })
+    declare readonly currency?: string;
+
+    @IsEnum(PaymentMethod, { message: 'Неверный метод оплаты' })
+    declare readonly paymentMethod: PaymentMethod;
+
+    @IsOptional()
+    @IsString({ message: 'Описание должно быть строкой' })
+    declare readonly description?: string;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Флаг рассрочки должен быть булевым' })
+    declare readonly isInstallment?: boolean;
+}
+```
+
+### ProcessPaymentDto
+```typescript
+// src/infrastructure/dto/payment/process-payment.dto.ts
+import { IsString, IsNotEmpty, IsObject, IsOptional } from 'class-validator';
+
+export class ProcessPaymentDto {
+    @IsString({ message: 'Название шлюза должно быть строкой' })
+    @IsNotEmpty({ message: 'Название шлюза не может быть пустым' })
+    declare readonly gatewayName: string;
+
+    @IsString({ message: 'ID транзакции должен быть строкой' })
+    @IsNotEmpty({ message: 'ID транзакции не может быть пустым' })
+    declare readonly gatewayTransactionId: string;
+
+    @IsOptional()
+    @IsObject({ message: 'Ответ шлюза должен быть объектом' })
+    declare readonly gatewayResponse?: any;
+}
+```
+
+### RefundPaymentDto
+```typescript
+// src/infrastructure/dto/payment/refund-payment.dto.ts
+import { IsNumber, IsString, IsNotEmpty, Min } from 'class-validator';
+
+export class RefundPaymentDto {
+    @IsNumber({}, { message: 'Сумма возврата должна быть числом' })
+    @Min(0.01, { message: 'Сумма возврата должна быть больше 0' })
+    declare readonly amount: number;
+
+    @IsString({ message: 'Причина возврата должна быть строкой' })
+    @IsNotEmpty({ message: 'Причина возврата не может быть пустой' })
+    declare readonly reason: string;
+}
+```
+
+## Response классы
+
+### PaymentResponse
+```typescript
+// src/infrastructure/responses/payment/payment.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class PaymentResponse {
+    @ApiProperty({ description: 'ID платежа' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'ID заказа' })
+    declare readonly orderId: number;
+
+    @ApiProperty({ description: 'Сумма платежа' })
+    declare readonly amount: number;
+
+    @ApiProperty({ description: 'Валюта' })
+    declare readonly currency: string;
+
+    @ApiProperty({ description: 'Статус платежа' })
+    declare readonly status: string;
+
+    @ApiProperty({ description: 'Метод оплаты' })
+    declare readonly paymentMethod: string;
+
+    @ApiProperty({ description: 'Название шлюза', required: false })
+    declare readonly gatewayName?: string;
+
+    @ApiProperty({ description: 'ID транзакции в шлюзе', required: false })
+    declare readonly gatewayTransactionId?: string;
+
+    @ApiProperty({ description: 'Ответ от шлюза', required: false })
+    declare readonly gatewayResponse?: any;
+
+    @ApiProperty({ description: 'Описание', required: false })
+    declare readonly description?: string;
+
+    @ApiProperty({ description: 'Сумма возврата' })
+    declare readonly refundAmount: number;
+
+    @ApiProperty({ description: 'Причина возврата', required: false })
+    declare readonly refundReason?: string;
+
+    @ApiProperty({ description: 'Дата обработки', required: false })
+    declare readonly processedAt?: Date;
+
+    @ApiProperty({ description: 'Дата ошибки', required: false })
+    declare readonly failedAt?: Date;
+
+    @ApiProperty({ description: 'Дата возврата', required: false })
+    declare readonly refundedAt?: Date;
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления' })
+    declare readonly updatedAt: Date;
+
+    @ApiProperty({ description: 'Рассрочка платежа' })
+    declare readonly isInstallment: boolean;
+}
+```
+
+### PaymentStatisticsResponse
+```typescript
+// src/infrastructure/responses/payment/payment.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class PaymentStatisticsResponse {
+    @ApiProperty({ description: 'Общее количество платежей' })
+    declare readonly totalPayments: number;
+
+    @ApiProperty({ description: 'Количество завершенных платежей' })
+    declare readonly completedPayments: number;
+
+    @ApiProperty({ description: 'Количество неудачных платежей' })
+    declare readonly failedPayments: number;
+
+    @ApiProperty({ description: 'Количество возвращенных платежей' })
+    declare readonly refundedPayments: number;
+
+    @ApiProperty({ description: 'Общая сумма платежей' })
+    declare readonly totalAmount: number;
+
+    @ApiProperty({ description: 'Общая сумма возвратов' })
+    declare readonly totalRefunded: number;
+
+    @ApiProperty({ description: 'Количество платежей в рассрочку' })
+    declare readonly installmentPayments: number;
+
+    @ApiProperty({ description: 'Количество платежей с автопродлением' })
+    declare readonly autoRenewalPayments: number;
+}
+```
+
+## Критерии готовности
+
+### ✅ Обязательные требования:
+- [ ] Создана миграция для таблицы payments
+- [ ] Реализована модель Sequelize PaymentModel
+- [ ] Создан PaymentService с управлением платежами
+- [ ] Реализован контроллер с API endpoints
+- [ ] Добавлены DTO классы с валидацией
+- [ ] Созданы Response классы с Swagger
+- [ ] Добавлены индексы для производительности
+- [ ] Реализована логика обработки платежей
+- [ ] Добавлены unit тесты для сервисов
+- [ ] Добавлены integration тесты для API
+- [ ] Интеграция с внешними платежными шлюзами
+
+### 🎯 Дополнительные возможности:
+- [ ] Сохранение методов платежей пользователей
+- [ ] Поддержка множественных платежных шлюзов
+- [ ] Частичные возвраты платежей
+- [ ] Автоматическое обновление статусов через webhook
+- [ ] Аналитика платежей по методам
+
+## Следующие шаги
+
+### Фаза 1: Базовая реализация (1 неделя)
+1. **Создать миграцию** для таблицы payments
+2. **Реализовать модель** Sequelize
+3. **Создать DTO классы** с валидацией
+4. **Создать Response классы** с Swagger
+5. **Реализовать сервис** с основной логикой
+
+### Фаза 2: API и интеграции (3-4 дня)
+6. **Создать контроллер** с API endpoints
+7. **Настроить интеграцию** с платежными шлюзами
+8. **Добавить валидацию** платежей и возвратов
+9. **Создать тесты** для API
+
+### Фаза 3: Тестирование и качество (2-3 дня)
+10. **Написать unit тесты** для сервисов
+11. **Написать integration тесты** для API
+12. **Добавить обработку ошибок** и валидацию
+13. **Провести рефакторинг** и оптимизацию
+
+## Риски и альтернативы
+
+### ⚠️ Риски:
+- **Безопасность**: обработка платежных данных
+- **Консистентность**: одновременная обработка платежей
+- **Производительность**: большое количество платежей
+
+### 🔄 Альтернативы:
+- **Внешние сервисы**: Stripe, PayPal для обработки платежей
+- **Очередь сообщений**: Redis/RabbitMQ для асинхронной обработки
+- **Кэширование**: Redis для хранения статусов платежей
+
+## Интеграция с другими системами
+
+### 🔗 Связанные системы:
+- **OrderService** - управление заказами
+- **NotificationService** - уведомления о статусе платежа
+- **UserService** - управление пользователями
+- **ExternalGatewayService** - интеграция с платежными шлюзами
+
+### 📊 Аналитика:
+- Статистика платежей по методам
+- Процент успешных платежей
+- Средняя сумма платежа
+- Статистика рассрочки и автопродления
+
+## TL;DR
+
+Упрощенная система платежей включает:
+- **1 таблица**: payments
+- **1 модель**: PaymentModel
+- **1 сервис**: PaymentService
+- **1 контроллер**: PaymentController
+- **Функции**: базовые статусы, простые методы, возвраты, рассрочка
+- **Валидация**: проверка платежей и возвратов
+- **Автоматизация**: интеграция с внешними шлюзами
+- **Готовность**: к масштабированию и дополнительным функциям
+
+### 🏷️ **Boolean флаги:**
+- **isRecurring** - Регулярные платежи (подписки)
+- **isPartial** - Частичные платежи
+- **isPrepaid** - Предоплаченные платежи
+- **isRefundable** - Возвращаемые платежи
+- **isProcessed** - Обработанные платежи
+- **isSettled** - Завершенные платежи
+- **isArchived** - Архивированные платежи
+- **isAutoRenewal** - Автопродление платежей
+- **isInstallment** - Рассрочка платежа (критично для современных платежных систем)
+```

@@ -1,45 +1,385 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import * as process from 'process';
-import { CustomValidationPipe } from '@app/infrastructure/pipes';
 import {
-    SequelizeUniqueConstraintExceptionFilter,
-    SequelizeDatabaseErrorExceptionFilter,
     CustomNotFoundExceptionFilter,
+    RoleExceptionFilter,
+    SequelizeDatabaseErrorExceptionFilter,
+    SequelizeUniqueConstraintExceptionFilter,
 } from '@app/infrastructure/exceptions';
+import { CustomValidationPipe } from '@app/infrastructure/pipes';
+import { NestFactory } from '@nestjs/core';
+import * as process from 'process';
+import { AppModule } from './app.module';
 
-import * as cookieParser from 'cookie-parser';
+import { CorrelationIdMiddleware } from '@app/infrastructure/common/middleware/correlation-id.middleware';
+import { createLogger } from '@app/infrastructure/common/utils/logging';
+import { getConfig } from '@app/infrastructure/config';
 import { swaggerConfig } from '@app/infrastructure/config/swagger';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import * as cookieParser from 'cookie-parser';
+import { randomUUID } from 'crypto';
+import type { NextFunction, Request, Response } from 'express';
+import helmet from 'helmet';
+import type { IncomingMessage } from 'http';
 import * as path from 'path';
+import pinoHttp from 'pino-http';
+
+type ReqWithCorrelation = IncomingMessage & {
+    correlationId?: string;
+    headers: Record<string, string | string[] | undefined>;
+};
+
+// Глобальные логгеры (создаются один раз для переиспользования)
+const processLogger = createLogger('Bootstrap');
+const rateLimiterLogger = createLogger('RateLimiter');
+
+/**
+ * Обработчик необработанных Promise rejection
+ * Логирует ошибку и корректно завершает приложение
+ */
+process.on('unhandledRejection', (reason: unknown) => {
+    processLogger.error(
+        {
+            reason: reason instanceof Error ? reason.message : String(reason),
+            stack: reason instanceof Error ? reason.stack : undefined,
+        },
+        'Unhandled Promise rejection',
+    );
+
+    // Graceful shutdown после логирования
+    process.exit(1);
+});
+
+/**
+ * Обработчик необработанных исключений
+ * Логирует критичную ошибку и завершает приложение
+ */
+process.on('uncaughtException', (error: Error) => {
+    processLogger.error(
+        {
+            error: error.message,
+            stack: error.stack,
+            name: error.name,
+        },
+        'Unhandled exception',
+    );
+
+    // Критичная ошибка - немедленное завершение
+    process.exit(1);
+});
 
 async function bootstrap(): Promise<void> {
-    const PORT = process.env.PORT || 5000;
+    const cfg = getConfig();
+    const PORT = cfg.PORT || 5000;
+    const logger = createLogger('Application');
+
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
+    // Скрываю технологический заголовок Express
+    app.getHttpAdapter().getInstance().disable('x-powered-by');
+    // Доверять прокси в продакшене (корректные IP и secure cookies)
+    if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
+
     app.setGlobalPrefix('online-store');
+
     app.useStaticAssets(path.join(__dirname, 'static'), {
         prefix: '/online-store/static/',
     });
+
+    // Раздача HTML отчетов тестов только в development/test окружениях
+    if (cfg.NODE_ENV === 'development' || cfg.NODE_ENV === 'test') {
+        // test-reports доступны по /online-store/test-reports/*
+        app.useStaticAssets(path.join(process.cwd(), 'test-reports'), {
+            prefix: '/online-store/test-reports/',
+        });
+        // coverage отчеты доступны по /online-store/coverage/*
+        app.useStaticAssets(path.join(process.cwd(), 'coverage'), {
+            prefix: '/online-store/coverage/',
+        });
+    }
     app.useGlobalPipes(...[new CustomValidationPipe()]);
     app.useGlobalFilters(
         ...[
             new SequelizeUniqueConstraintExceptionFilter(),
             new SequelizeDatabaseErrorExceptionFilter(),
+            new RoleExceptionFilter(),
             new CustomNotFoundExceptionFilter(),
         ],
     );
-    app.enableCors({
-        credentials: true,
-        origin: true,
-        allowedHeaders: ['Content-Type', 'Authorization'], // Настраивает заголовок CORS Access-Control-Allow-Headers.
-        exposedHeaders: ['Content-Range', 'X-Content-Range'], // Настраивает заголовок CORS Access-Control-Expose-Headers
-        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    });
-    app.use(cookieParser(process.env.COOKIE_PARSER_SECRET_KEY));
-    swaggerConfig(app);
+    if (cfg.SECURITY_HELMET_ENABLED) {
+        const cspDirectives = {
+            defaultSrc: ["'self'"],
+            baseUri: ["'self'"],
+            frameAncestors: ["'self'"],
+            imgSrc: ["'self'", 'data:', 'blob:'],
+            objectSrc: ["'none'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            connectSrc: ["'self'", ...cfg.ALLOWED_ORIGINS],
+        } as const;
+
+        app.use(
+            helmet({
+                crossOriginResourcePolicy: { policy: 'cross-origin' },
+                contentSecurityPolicy: cfg.SECURITY_CSP_ENABLED
+                    ? { directives: cspDirectives }
+                    : false,
+            }),
+        );
+    }
+
+    // Глобальный rate limiter (простое in-memory окно 1s и 60s по IP)
+    if (cfg.RATE_LIMIT_ENABLED) {
+        const perIpCounters = new Map<
+            string,
+            { s: number; sTs: number; m: number; mTs: number }
+        >();
+        const SEC = 1000;
+        const MIN = 60 * 1000;
+        const CLEANUP_INTERVAL = 5 * 60 * 1000; // Очистка каждые 5 минут
+        let lastCleanup = Date.now();
+
+        // Пути, исключенные из rate limiting
+        const RATE_LIMIT_EXCLUDED_PATHS = new Set([
+            '/health',
+            '/live',
+            '/ready',
+            '/online-store/health',
+            '/online-store/docs',
+        ]);
+
+        app.use((req: Request, res: Response, next: NextFunction) => {
+            const url = req.url;
+            // Исключаем Swagger docs и health checks из rate limiting
+            if (
+                url &&
+                (RATE_LIMIT_EXCLUDED_PATHS.has(url) ||
+                    url.startsWith('/online-store/docs/') ||
+                    url.startsWith('/online-store/static/'))
+            ) {
+                return next();
+            }
+
+            const ts = Date.now();
+
+            // Периодическая очистка старых записей для предотвращения утечки памяти
+            if (ts - lastCleanup > CLEANUP_INTERVAL) {
+                for (const [ip, ctr] of perIpCounters.entries()) {
+                    if (ts - ctr.mTs > MIN) {
+                        perIpCounters.delete(ip);
+                    }
+                }
+                lastCleanup = ts;
+            }
+
+            const ip =
+                (req.headers['x-forwarded-for'] as string) ??
+                req.socket.remoteAddress ??
+                'unknown';
+            let ctr = perIpCounters.get(ip);
+            if (!ctr) {
+                ctr = { s: 0, sTs: ts, m: 0, mTs: ts };
+                perIpCounters.set(ip, ctr);
+            }
+            if (ts - ctr.sTs >= SEC) {
+                ctr.s = 0;
+                ctr.sTs = ts;
+            }
+            if (ts - ctr.mTs >= MIN) {
+                ctr.m = 0;
+                ctr.mTs = ts;
+            }
+            ctr.s += 1;
+            ctr.m += 1;
+            if (
+                ctr.s > cfg.RATE_LIMIT_GLOBAL_RPS ||
+                ctr.m > cfg.RATE_LIMIT_GLOBAL_RPM
+            ) {
+                // Используем кэшированный logger для оптимизации
+                rateLimiterLogger.warn(
+                    {
+                        ip,
+                        correlationId: (req as ReqWithCorrelation)
+                            .correlationId,
+                    },
+                    'Rate limit exceeded',
+                );
+                res.status(429).json({
+                    statusCode: 429,
+                    url: req.url,
+                    path: req.url,
+                    name: 'TooManyRequests',
+                    message: 'Too many requests. Please try again later',
+                });
+                return;
+            }
+            next();
+        });
+    }
+
+    // Используем Set для O(1) проверки origin и минимизации аллокаций
+    const corsOriginSet = new Set(cfg.ALLOWED_ORIGINS);
+
+    if (cfg.SECURITY_CORS_ENABLED) {
+        app.enableCors({
+            origin: (origin, cb) => {
+                if (!origin || corsOriginSet.has(origin)) {
+                    return cb(null, true);
+                }
+                return cb(new Error('Not allowed by CORS'), false);
+            },
+            credentials: true,
+            allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
+            exposedHeaders: [
+                'Content-Range',
+                'X-Content-Range',
+                'x-request-id',
+            ],
+            methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+        });
+    }
+
+    app.use(cookieParser(cfg.COOKIE_PARSER_SECRET_KEY || 'change-me'));
+
+    const correlation = new CorrelationIdMiddleware();
+    app.use(correlation.use.bind(correlation));
+
+    // Оптимизация: константы для pinoHttp paths (создаются один раз)
+    const PII_REDACT_PATHS = [
+        // Токены и авторизация
+        'req.headers.authorization',
+        'req.headers.cookie',
+        'res.headers["set-cookie"]',
+        'req.body.password',
+        'req.body.token',
+        'req.body.refreshToken',
+        'req.body.accessToken',
+        // PII данные
+        'req.body.email',
+        'req.body.phone',
+        'req.body.firstName',
+        'req.body.lastName',
+        'req.body.name',
+        'req.body.address',
+        // Query параметры с PII
+        'req.query.email',
+        'req.query.phone',
+        // Response body (может содержать PII)
+        'res.body.email',
+        'res.body.phone',
+    ] as const;
+
+    // Оптимизация: Set для быстрой проверки URL (O(1) вместо множественных сравнений)
+    const IGNORED_LOG_PATHS = new Set(['/health', '/live', '/ready']);
+
+    app.use(
+        pinoHttp({
+            genReqId: (req: ReqWithCorrelation) =>
+                req.correlationId ??
+                (req.headers['x-request-id'] as string | undefined) ??
+                randomUUID(),
+            transport:
+                cfg.NODE_ENV === 'development'
+                    ? { target: 'pino-pretty' }
+                    : undefined,
+            // добавляем correlationId в каждую запись лога
+            customProps: (req: ReqWithCorrelation) => ({
+                correlationId: req.correlationId,
+            }),
+            // маскируем токены/куки/PII
+            redact: {
+                paths: PII_REDACT_PATHS as unknown as string[],
+                censor: '[REDACTED]',
+            },
+            // Оптимизация: не логируем успешные health checks (уменьшаем шум)
+            autoLogging: {
+                ignore: (req: ReqWithCorrelation) => {
+                    const url = (req as unknown as { url?: string }).url;
+                    // Проверка через Set (O(1)) + проверка префикса для static
+                    return !!(
+                        (url && IGNORED_LOG_PATHS.has(url)) ??
+                        url?.startsWith('/online-store/static/')
+                    );
+                },
+            },
+        }),
+    );
+
+    // Swagger документация: управляется через SWAGGER_ENABLED (по умолчанию только dev/test)
+    const swaggerPath = '/online-store/docs';
+    if (cfg.SWAGGER_ENABLED) {
+        swaggerConfig(app);
+        logger.info(
+            {
+                port: PORT,
+                swaggerPath,
+            },
+            'Swagger documentation available at /online-store/docs',
+        );
+    } else {
+        logger.info('Swagger documentation disabled (SWAGGER_ENABLED=false)');
+    }
+
+    app.enableShutdownHooks();
+
+    // корректное завершение по сигналам SIGINT/SIGTERM
+    const shutdown = async (signal: string): Promise<void> => {
+        logger.info(
+            { signal },
+            'Received shutdown signal, graceful shutdown...',
+        );
+        try {
+            await app.close();
+            logger.info('Application gracefully shut down');
+            process.exit(0);
+        } catch (e) {
+            logger.error(
+                { error: e instanceof Error ? e.message : String(e) },
+                'Error during application shutdown',
+            );
+            process.exit(1);
+        }
+    };
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+
     await app.listen(PORT, () => {
-        return console.log(`Server started on port = ${PORT}`);
+        const baseUrl = `http://localhost:${PORT}`;
+        const info = {
+            port: PORT,
+            env: cfg.NODE_ENV,
+            apiPrefix: '/online-store',
+            swaggerEnabled: cfg.SWAGGER_ENABLED,
+            ...(cfg.SWAGGER_ENABLED && {
+                swaggerPath: '/online-store/docs',
+                swaggerUrl: `${baseUrl}/online-store/docs`,
+            }),
+            testReports:
+                cfg.NODE_ENV === 'development' || cfg.NODE_ENV === 'test'
+                    ? {
+                          html: {
+                              filePath: 'test-reports/test-report.html',
+                              url: `${baseUrl}/online-store/test-reports/test-report.html`,
+                          },
+                          coverage: {
+                              filePath: 'coverage/index.html',
+                              url: `${baseUrl}/online-store/coverage/index.html`,
+                          },
+                      }
+                    : {
+                          html: { filePath: 'test-reports/test-report.html' },
+                          coverage: { filePath: 'coverage/index.html' },
+                      },
+        };
+
+        logger.info(info, 'Application started successfully');
     });
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+    processLogger.error(
+        {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+        },
+        'Critical error during application startup',
+    );
+    process.exit(1);
+});

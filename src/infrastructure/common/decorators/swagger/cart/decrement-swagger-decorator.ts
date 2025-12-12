@@ -3,54 +3,63 @@ import {
     ApiCookieAuth,
     ApiNotFoundResponse,
     ApiOperation,
-    ApiParam,
+    ApiBody,
     ApiResponse,
+    ApiBadRequestResponse,
 } from '@nestjs/swagger';
 import { DecrementResponse } from '@app/infrastructure/responses';
+import { UpdateCartItemDto } from '@app/infrastructure/dto';
 
 export function DecrementSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Уменьшение количества товара в корзине' }),
         ApiCookieAuth(),
-        ApiParam({
-            name: 'productId',
-            type: String,
-            description: 'Идентификатор продукта',
-            required: true,
-        }),
-        ApiParam({
-            name: 'quantity',
-            type: String,
-            description: 'Количество продуктов',
-            required: true,
+        ApiBody({
+            type: UpdateCartItemDto,
+            description: 'Данные для уменьшения количества товара (amount > 0)',
         }),
         ApiResponse({
-            description: 'decrement quantity',
+            description: 'Количество товара успешно уменьшено',
             status: HttpStatus.OK,
             type: DecrementResponse,
         }),
+        ApiBadRequestResponse({
+            description: 'Ошибка валидации входных данных',
+            schema: {
+                example: {
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    url: '/online-store/cart/items/decrement',
+                    path: '/online-store/cart/items/decrement',
+                    name: 'BadRequestException',
+                    message: [
+                        'Укажите ID товара',
+                        'Укажите изменение количества',
+                    ],
+                },
+            },
+        }),
         ApiNotFoundResponse({
-            description: 'Not found',
+            description: 'Корзина или продукт не найдены',
             schema: {
                 anyOf: [
                     {
                         title: 'Корзина не найдена в БД',
                         example: {
                             statusCode: HttpStatus.NOT_FOUND,
-                            url: '/online-store/cart/product/55/decrement/1',
-                            path: '/online-store/cart/product/55/decrement/1',
+                            url: '/online-store/cart/items/decrement',
+                            path: '/online-store/cart/items/decrement',
                             name: 'NotFoundException',
                             message: 'Корзина с id:26 не найдена в БД',
                         },
                     },
                     {
-                        title: 'Продукт не найден в БД',
+                        title: 'Продукт не найден в корзине',
                         example: {
                             statusCode: HttpStatus.NOT_FOUND,
-                            url: '/online-store/cart/product/56/decrement/1',
-                            path: '/online-store/cart/product/56/decrement/1',
+                            url: '/online-store/cart/items/decrement',
+                            path: '/online-store/cart/items/decrement',
                             name: 'NotFoundException',
-                            message: 'Продукт с id:56 не найден в БД',
+                            message: 'Товар с id:56 не найден в корзине',
                         },
                     },
                 ],

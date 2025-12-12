@@ -13,9 +13,23 @@ export class UpdateUserResponse extends UserModel {
     })
     declare email: string;
 
+    @ApiProperty({
+        example: 'Иван',
+        description: 'Имя пользователя',
+        required: false,
+    })
+    declare firstName?: string;
+
+    @ApiProperty({
+        example: 'Иванов',
+        description: 'Фамилия пользователя',
+        required: false,
+    })
+    declare lastName?: string;
+
     @ApiProperty({ type: () => [RoleModel] })
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => RoleModel)
-   declare roles: RoleModel[];
+    declare roles: RoleModel[];
 }

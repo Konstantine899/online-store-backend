@@ -1,11 +1,11 @@
-import { BrandDto } from '@app/infrastructure/dto';
-import {
+import type { BrandDto } from '@app/infrastructure/dto';
+import type {
     CreateBrandResponse,
     ListAllBrandsResponse,
     BrandResponse,
     UpdateBrandResponse,
 } from '@app/infrastructure/responses';
-import { BrandModel } from '@app/domain/models';
+import type { BrandModel } from '@app/domain/models';
 
 export interface IBrandRepository {
     createBrand(dto: BrandDto): Promise<CreateBrandResponse>;

@@ -1,0 +1,1068 @@
+# Создание системы Analytics для ecommerce
+
+## Обоснование необходимости
+
+### Критичные проблемы без Analytics системы
+- Нет метрик и отчетов по продажам
+- Отсутствует аналитика пользователей
+- Нет отслеживания конверсии
+- Отсутствует аналитика товаров
+- Нет системы дашбордов
+
+## Архитектура системы аналитики
+
+### 1. Основные модели
+
+```typescript
+interface IAnalyticsSystem {
+    // События аналитики
+    events: AnalyticsEvent[];
+    
+    // Метрики
+    metrics: Metric[];
+    
+    // Отчеты
+    reports: Report[];
+    
+    // Дашборды
+    dashboards: Dashboard[];
+    
+    // Сегменты пользователей
+    userSegments: UserSegment[];
+    
+    // Цели конверсии
+    conversionGoals: ConversionGoal[];
+}
+
+interface AnalyticsEvent {
+    id: number;
+    eventType: EventType;    // Тип события
+    eventName: string;       // Название события
+    
+    // Пользователь
+    userId?: number;         // ID пользователя
+    sessionId?: string;      // ID сессии
+    anonymousId?: string;    // Анонимный ID
+    
+    // Контекст события
+    properties: any;         // Свойства события
+    context: EventContext;   // Контекст события
+    
+    // Метаданные
+    timestamp: Date;         // Время события
+    ipAddress?: string;      // IP адрес
+    userAgent?: string;      // User Agent
+    
+    // Временные метки
+    createdAt: Date;        // Время создания записи
+}
+
+enum EventType {
+    PAGE_VIEW = 'page_view',           // Просмотр страницы
+    PRODUCT_VIEW = 'product_view',     // Просмотр товара
+    PRODUCT_CLICK = 'product_click',   // Клик по товару
+    ADD_TO_CART = 'add_to_cart',       // Добавление в корзину
+    REMOVE_FROM_CART = 'remove_from_cart', // Удаление из корзины
+    CART_VIEW = 'cart_view',           // Просмотр корзины
+    CHECKOUT_START = 'checkout_start', // Начало оформления
+    CHECKOUT_STEP = 'checkout_step',   // Шаг оформления
+    ORDER_COMPLETE = 'order_complete', // Завершение заказа
+    SEARCH = 'search',                 // Поиск
+    FILTER = 'filter',                 // Фильтрация
+    SORT = 'sort',                     // Сортировка
+    LOGIN = 'login',                   // Вход
+    LOGOUT = 'logout',                 // Выход
+    REGISTER = 'register',             // Регистрация
+    EMAIL_OPEN = 'email_open',         // Открытие email
+    EMAIL_CLICK = 'email_click',       // Клик в email
+    CUSTOM = 'custom'                  // Пользовательское событие
+}
+
+interface EventContext {
+    page?: {                 // Информация о странице
+        url: string;
+        title: string;
+        referrer?: string;
+    };
+    product?: {              // Информация о товаре
+        id: number;
+        name: string;
+        category: string;
+        price: number;
+    };
+    order?: {                // Информация о заказе
+        id: number;
+        total: number;
+        items: number;
+    };
+    search?: {               // Информация о поиске
+        query: string;
+        results: number;
+    };
+    user?: {                 // Информация о пользователе
+        id: number;
+        email: string;
+        segment: string;
+    };
+}
+
+interface Metric {
+    id: number;
+    name: string;            // Название метрики
+    description?: string;     // Описание метрики
+    
+    // Тип метрики
+    type: MetricType;        // Тип метрики
+    category: MetricCategory; // Категория метрики
+    
+    // Формула расчета
+    formula: string;         // Формула расчета
+    aggregation: AggregationType; // Тип агрегации
+    
+    // Настройки
+    isActive: boolean;       // Активна ли метрика
+    refreshInterval: number;  // Интервал обновления в минутах
+    
+    // Временные метки
+    lastCalculated?: Date;    // Последний расчет
+    createdAt: Date;         // Время создания
+    updatedAt: Date;         // Время обновления
+}
+
+enum MetricType {
+    COUNTER = 'counter',       // Счетчик
+    GAUGE = 'gauge',          // Измеритель
+    HISTOGRAM = 'histogram',  // Гистограмма
+    PERCENTAGE = 'percentage', // Процент
+    RATIO = 'ratio',          // Соотношение
+    RATE = 'rate'             // Скорость
+}
+
+enum MetricCategory {
+    SALES = 'sales',           // Продажи
+    USERS = 'users',           // Пользователи
+    PRODUCTS = 'products',     // Товары
+    TRAFFIC = 'traffic',       // Трафик
+    CONVERSION = 'conversion', // Конверсия
+    REVENUE = 'revenue',       // Доходы
+    PERFORMANCE = 'performance' // Производительность
+}
+
+enum AggregationType {
+    SUM = 'sum',               // Сумма
+    AVG = 'avg',               // Среднее
+    MIN = 'min',               // Минимум
+    MAX = 'max',               // Максимум
+    COUNT = 'count',           // Количество
+    DISTINCT = 'distinct'      // Уникальные значения
+}
+
+interface Report {
+    id: number;
+    name: string;            // Название отчета
+    description?: string;    // Описание отчета
+    
+    // Настройки отчета
+    metrics: number[];       // ID метрик
+    dimensions: string[];    // Измерения
+    filters: ReportFilter[]; // Фильтры
+    
+    // Временной диапазон
+    timeRange: TimeRange;    // Временной диапазон
+    granularity: Granularity; // Гранулярность
+    
+    // Настройки
+    isActive: boolean;       // Активен ли отчет
+    isPublic: boolean;       // Публичный ли отчет
+    schedule?: string;       // Расписание (cron)
+    
+    // Временные метки
+    lastGenerated?: Date;     // Последняя генерация
+    createdAt: Date;         // Время создания
+    updatedAt: Date;         // Время обновления
+}
+
+interface ReportFilter {
+    field: string;           // Поле фильтра
+    operator: FilterOperator; // Оператор
+    value: any;             // Значение
+}
+
+enum FilterOperator {
+    EQUALS = 'equals',         // Равно
+    NOT_EQUALS = 'not_equals', // Не равно
+    GREATER_THAN = 'greater_than', // Больше
+    LESS_THAN = 'less_than',   // Меньше
+    CONTAINS = 'contains',     // Содержит
+    NOT_CONTAINS = 'not_contains', // Не содержит
+    IN = 'in',                 // В списке
+    NOT_IN = 'not_in',         // Не в списке
+    BETWEEN = 'between',       // Между
+    IS_NULL = 'is_null',       // Пусто
+    IS_NOT_NULL = 'is_not_null' // Не пусто
+}
+
+interface TimeRange {
+    start: Date;             // Начало периода
+    end: Date;               // Конец периода
+    timezone: string;         // Часовой пояс
+}
+
+enum Granularity {
+    HOUR = 'hour',            // По часам
+    DAY = 'day',              // По дням
+    WEEK = 'week',            // По неделям
+    MONTH = 'month',          // По месяцам
+    QUARTER = 'quarter',      // По кварталам
+    YEAR = 'year'             // По годам
+}
+
+interface Dashboard {
+    id: number;
+    name: string;            // Название дашборда
+    description?: string;    // Описание дашборда
+    
+    // Виджеты
+    widgets: DashboardWidget[]; // Виджеты дашборда
+    
+    // Настройки
+    isActive: boolean;       // Активен ли дашборд
+    isPublic: boolean;       // Публичный ли дашборд
+    layout: DashboardLayout; // Макет дашборда
+    
+    // Временные метки
+    createdAt: Date;         // Время создания
+    updatedAt: Date;         // Время обновления
+}
+
+interface DashboardWidget {
+    id: number;
+    dashboardId: number;     // ID дашборда
+    reportId: number;        // ID отчета
+    
+    // Позиция и размер
+    position: {              // Позиция виджета
+        x: number;
+        y: number;
+    };
+    size: {                  // Размер виджета
+        width: number;
+        height: number;
+    };
+    
+    // Настройки
+    title: string;           // Заголовок виджета
+    isVisible: boolean;     // Видим ли виджет
+    refreshInterval: number; // Интервал обновления в минутах
+}
+
+interface DashboardLayout {
+    columns: number;         // Количество колонок
+    rows: number;            // Количество строк
+    gap: number;             // Отступ между виджетами
+}
+
+interface UserSegment {
+    id: number;
+    name: string;            // Название сегмента
+    description?: string;    // Описание сегмента
+    
+    // Условия сегмента
+    conditions: SegmentCondition[]; // Условия сегмента
+    
+    // Статистика
+    userCount: number;       // Количество пользователей
+    lastCalculated?: Date;    // Последний расчет
+    
+    // Настройки
+    isActive: boolean;       // Активен ли сегмент
+    
+    // Временные метки
+    createdAt: Date;         // Время создания
+    updatedAt: Date;         // Время обновления
+}
+
+interface SegmentCondition {
+    field: string;           // Поле условия
+    operator: FilterOperator; // Оператор
+    value: any;             // Значение
+    isRequired: boolean;    // Обязательное ли условие
+}
+
+interface ConversionGoal {
+    id: number;
+    name: string;            // Название цели
+    description?: string;    // Описание цели
+    
+    // События цели
+    startEvent: string;      // Начальное событие
+    endEvent: string;        // Конечное событие
+    
+    // Настройки
+    isActive: boolean;       // Активна ли цель
+    targetValue?: number;    // Целевое значение
+    
+    // Статистика
+    conversionRate: number;  // Конверсия
+    lastCalculated?: Date;   // Последний расчет
+    
+    // Временные метки
+    createdAt: Date;         // Время создания
+    updatedAt: Date;         // Время обновления
+}
+```
+
+### 2. Система метрик
+
+```typescript
+interface MetricCalculator {
+    // Рассчитать метрику
+    calculateMetric(metric: Metric, timeRange: TimeRange): Promise<MetricValue>;
+    
+    // Получить значения метрики
+    getMetricValues(metric: Metric, timeRange: TimeRange, granularity: Granularity): Promise<MetricValue[]>;
+    
+    // Обновить метрику
+    updateMetric(metric: Metric): Promise<void>;
+}
+
+interface MetricValue {
+    metricId: number;        // ID метрики
+    value: number;           // Значение метрики
+    timestamp: Date;         // Время значения
+    dimensions?: any;        // Измерения
+    metadata?: any;          // Метаданные
+}
+
+interface MetricAggregator {
+    // Агрегировать события
+    aggregateEvents(events: AnalyticsEvent[], aggregation: AggregationType): Promise<number>;
+    
+    // Агрегировать по времени
+    aggregateByTime(events: AnalyticsEvent[], granularity: Granularity): Promise<TimeSeriesData[]>;
+    
+    // Агрегировать по измерениям
+    aggregateByDimensions(events: AnalyticsEvent[], dimensions: string[]): Promise<DimensionData[]>;
+}
+
+interface TimeSeriesData {
+    timestamp: Date;          // Время
+    value: number;           // Значение
+    metadata?: any;          // Метаданные
+}
+
+interface DimensionData {
+    dimensions: any;          // Измерения
+    value: number;           // Значение
+    count: number;           // Количество
+}
+```
+
+### 3. Система отчетов
+
+```typescript
+interface ReportGenerator {
+    // Сгенерировать отчет
+    generateReport(report: Report): Promise<ReportData>;
+    
+    // Экспортировать отчет
+    exportReport(report: Report, format: ExportFormat): Promise<Buffer>;
+    
+    // Запланировать отчет
+    scheduleReport(report: Report, schedule: string): Promise<void>;
+}
+
+interface ReportData {
+    reportId: number;         // ID отчета
+    data: any;               // Данные отчета
+    metadata: ReportMetadata; // Метаданные отчета
+    generatedAt: Date;       // Время генерации
+}
+
+interface ReportMetadata {
+    totalRows: number;       // Общее количество строк
+    executionTime: number;   // Время выполнения в мс
+    filters: ReportFilter[]; // Примененные фильтры
+    dimensions: string[];     // Использованные измерения
+    metrics: string[];        // Использованные метрики
+}
+
+enum ExportFormat {
+    CSV = 'csv',             // CSV
+    EXCEL = 'excel',         // Excel
+    PDF = 'pdf',             // PDF
+    JSON = 'json'            // JSON
+}
+```
+
+## Миграции для системы аналитики
+
+### 1. Создание таблицы событий аналитики
+
+```typescript
+// Миграция: create-analytics-events
+export default {
+    async up(queryInterface: QueryInterface, Sequelize: typeof DataTypes) {
+        await queryInterface.createTable('analytics_event', {
+            id: {
+                allowNull: false,
+                autoIncrement: true,
+                primaryKey: true,
+                type: Sequelize.INTEGER,
+            },
+            event_type: {
+                type: Sequelize.ENUM('page_view', 'product_view', 'product_click', 'add_to_cart', 'remove_from_cart', 'cart_view', 'checkout_start', 'checkout_step', 'order_complete', 'search', 'filter', 'sort', 'login', 'logout', 'register', 'email_open', 'email_click', 'custom'),
+                allowNull: false,
+            },
+            event_name: {
+                type: Sequelize.STRING(255),
+                allowNull: false,
+            },
+            user_id: {
+                type: Sequelize.INTEGER,
+                allowNull: true,
+                references: {
+                    model: 'user',
+                    key: 'id',
+                },
+                onDelete: 'SET NULL',
+            },
+            session_id: {
+                type: Sequelize.STRING(255),
+                allowNull: true,
+            },
+            anonymous_id: {
+                type: Sequelize.STRING(255),
+                allowNull: true,
+            },
+            properties: {
+                type: Sequelize.JSON,
+                allowNull: true,
+            },
+            context: {
+                type: Sequelize.JSON,
+                allowNull: false,
+            },
+            timestamp: {
+                allowNull: false,
+                type: Sequelize.DATE,
+            },
+            ip_address: {
+                type: Sequelize.STRING(45),
+                allowNull: true,
+            },
+            user_agent: {
+                type: Sequelize.TEXT,
+                allowNull: true,
+            },
+            created_at: {
+                allowNull: false,
+                type: Sequelize.DATE,
+            },
+        });
+
+        // Индексы
+        await Promise.all([
+            queryInterface.addIndex('analytics_event', ['event_type'], {
+                name: 'idx_analytics_event_type',
+            }),
+            queryInterface.addIndex('analytics_event', ['event_name'], {
+                name: 'idx_analytics_event_name',
+            }),
+            queryInterface.addIndex('analytics_event', ['user_id'], {
+                name: 'idx_analytics_event_user_id',
+            }),
+            queryInterface.addIndex('analytics_event', ['session_id'], {
+                name: 'idx_analytics_event_session_id',
+            }),
+            queryInterface.addIndex('analytics_event', ['anonymous_id'], {
+                name: 'idx_analytics_event_anonymous_id',
+            }),
+            queryInterface.addIndex('analytics_event', ['timestamp'], {
+                name: 'idx_analytics_event_timestamp',
+            }),
+            queryInterface.addIndex('analytics_event', ['event_type', 'timestamp'], {
+                name: 'idx_analytics_event_type_timestamp',
+            }),
+        ]);
+    },
+
+    async down(queryInterface: QueryInterface) {
+        await Promise.all([
+            queryInterface.removeIndex('analytics_event', 'idx_analytics_event_type'),
+            queryInterface.removeIndex('analytics_event', 'idx_analytics_event_name'),
+            queryInterface.removeIndex('analytics_event', 'idx_analytics_event_user_id'),
+            queryInterface.removeIndex('analytics_event', 'idx_analytics_event_session_id'),
+            queryInterface.removeIndex('analytics_event', 'idx_analytics_event_anonymous_id'),
+            queryInterface.removeIndex('analytics_event', 'idx_analytics_event_timestamp'),
+            queryInterface.removeIndex('analytics_event', 'idx_analytics_event_type_timestamp'),
+        ]);
+        await queryInterface.dropTable('analytics_event');
+    }
+};
+```
+
+### 2. Создание таблицы метрик
+
+```typescript
+// Миграция: create-metrics
+export default {
+    async up(queryInterface: QueryInterface, Sequelize: typeof DataTypes) {
+        await queryInterface.createTable('metric', {
+            id: {
+                allowNull: false,
+                autoIncrement: true,
+                primaryKey: true,
+                type: Sequelize.INTEGER,
+            },
+            name: {
+                type: Sequelize.STRING(255),
+                allowNull: false,
+            },
+            description: {
+                type: Sequelize.TEXT,
+                allowNull: true,
+            },
+            type: {
+                type: Sequelize.ENUM('counter', 'gauge', 'histogram', 'percentage', 'ratio', 'rate'),
+                allowNull: false,
+            },
+            category: {
+                type: Sequelize.ENUM('sales', 'users', 'products', 'traffic', 'conversion', 'revenue', 'performance'),
+                allowNull: false,
+            },
+            formula: {
+                type: Sequelize.TEXT,
+                allowNull: false,
+            },
+            aggregation: {
+                type: Sequelize.ENUM('sum', 'avg', 'min', 'max', 'count', 'distinct'),
+                allowNull: false,
+            },
+            is_active: {
+                type: Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: true,
+            },
+            refresh_interval: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+                defaultValue: 60,
+            },
+            last_calculated: {
+                type: Sequelize.DATE,
+                allowNull: true,
+            },
+            created_at: {
+                allowNull: false,
+                type: Sequelize.DATE,
+            },
+            updated_at: {
+                allowNull: false,
+                type: Sequelize.DATE,
+            },
+        });
+
+        // Индексы
+        await Promise.all([
+            queryInterface.addIndex('metric', ['type'], {
+                name: 'idx_metric_type',
+            }),
+            queryInterface.addIndex('metric', ['category'], {
+                name: 'idx_metric_category',
+            }),
+            queryInterface.addIndex('metric', ['is_active'], {
+                name: 'idx_metric_is_active',
+            }),
+            queryInterface.addIndex('metric', ['last_calculated'], {
+                name: 'idx_metric_last_calculated',
+            }),
+        ]);
+    },
+
+    async down(queryInterface: QueryInterface) {
+        await Promise.all([
+            queryInterface.removeIndex('metric', 'idx_metric_type'),
+            queryInterface.removeIndex('metric', 'idx_metric_category'),
+            queryInterface.removeIndex('metric', 'idx_metric_is_active'),
+            queryInterface.removeIndex('metric', 'idx_metric_last_calculated'),
+        ]);
+        await queryInterface.dropTable('metric');
+    }
+};
+```
+
+### 3. Создание таблицы отчетов
+
+```typescript
+// Миграция: create-reports
+export default {
+    async up(queryInterface: QueryInterface, Sequelize: typeof DataTypes) {
+        await queryInterface.createTable('report', {
+            id: {
+                allowNull: false,
+                autoIncrement: true,
+                primaryKey: true,
+                type: Sequelize.INTEGER,
+            },
+            name: {
+                type: Sequelize.STRING(255),
+                allowNull: false,
+            },
+            description: {
+                type: Sequelize.TEXT,
+                allowNull: true,
+            },
+            metrics: {
+                type: Sequelize.JSON,
+                allowNull: false,
+                defaultValue: [],
+            },
+            dimensions: {
+                type: Sequelize.JSON,
+                allowNull: false,
+                defaultValue: [],
+            },
+            filters: {
+                type: Sequelize.JSON,
+                allowNull: true,
+                defaultValue: [],
+            },
+            time_range: {
+                type: Sequelize.JSON,
+                allowNull: false,
+            },
+            granularity: {
+                type: Sequelize.ENUM('hour', 'day', 'week', 'month', 'quarter', 'year'),
+                allowNull: false,
+            },
+            is_active: {
+                type: Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: true,
+            },
+            is_public: {
+                type: Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            schedule: {
+                type: Sequelize.STRING(100),
+                allowNull: true,
+            },
+            last_generated: {
+                type: Sequelize.DATE,
+                allowNull: true,
+            },
+            created_at: {
+                allowNull: false,
+                type: Sequelize.DATE,
+            },
+            updated_at: {
+                allowNull: false,
+                type: Sequelize.DATE,
+            },
+        });
+
+        // Индексы
+        await Promise.all([
+            queryInterface.addIndex('report', ['is_active'], {
+                name: 'idx_report_is_active',
+            }),
+            queryInterface.addIndex('report', ['is_public'], {
+                name: 'idx_report_is_public',
+            }),
+            queryInterface.addIndex('report', ['granularity'], {
+                name: 'idx_report_granularity',
+            }),
+            queryInterface.addIndex('report', ['last_generated'], {
+                name: 'idx_report_last_generated',
+            }),
+        ]);
+    },
+
+    async down(queryInterface: QueryInterface) {
+        await Promise.all([
+            queryInterface.removeIndex('report', 'idx_report_is_active'),
+            queryInterface.removeIndex('report', 'idx_report_is_public'),
+            queryInterface.removeIndex('report', 'idx_report_granularity'),
+            queryInterface.removeIndex('report', 'idx_report_last_generated'),
+        ]);
+        await queryInterface.dropTable('report');
+    }
+};
+```
+
+### 4. Создание таблицы дашбордов
+
+```typescript
+// Миграция: create-dashboards
+export default {
+    async up(queryInterface: QueryInterface, Sequelize: typeof DataTypes) {
+        await queryInterface.createTable('dashboard', {
+            id: {
+                allowNull: false,
+                autoIncrement: true,
+                primaryKey: true,
+                type: Sequelize.INTEGER,
+            },
+            name: {
+                type: Sequelize.STRING(255),
+                allowNull: false,
+            },
+            description: {
+                type: Sequelize.TEXT,
+                allowNull: true,
+            },
+            widgets: {
+                type: Sequelize.JSON,
+                allowNull: false,
+                defaultValue: [],
+            },
+            is_active: {
+                type: Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: true,
+            },
+            is_public: {
+                type: Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            layout: {
+                type: Sequelize.JSON,
+                allowNull: false,
+            },
+            created_at: {
+                allowNull: false,
+                type: Sequelize.DATE,
+            },
+            updated_at: {
+                allowNull: false,
+                type: Sequelize.DATE,
+            },
+        });
+
+        // Индексы
+        await Promise.all([
+            queryInterface.addIndex('dashboard', ['is_active'], {
+                name: 'idx_dashboard_is_active',
+            }),
+            queryInterface.addIndex('dashboard', ['is_public'], {
+                name: 'idx_dashboard_is_public',
+            }),
+        ]);
+    },
+
+    async down(queryInterface: QueryInterface) {
+        await Promise.all([
+            queryInterface.removeIndex('dashboard', 'idx_dashboard_is_active'),
+            queryInterface.removeIndex('dashboard', 'idx_dashboard_is_public'),
+        ]);
+        await queryInterface.dropTable('dashboard');
+    }
+};
+```
+
+### 5. Создание таблицы сегментов пользователей
+
+```typescript
+// Миграция: create-user-segments
+export default {
+    async up(queryInterface: QueryInterface, Sequelize: typeof DataTypes) {
+        await queryInterface.createTable('user_segment', {
+            id: {
+                allowNull: false,
+                autoIncrement: true,
+                primaryKey: true,
+                type: Sequelize.INTEGER,
+            },
+            name: {
+                type: Sequelize.STRING(255),
+                allowNull: false,
+            },
+            description: {
+                type: Sequelize.TEXT,
+                allowNull: true,
+            },
+            conditions: {
+                type: Sequelize.JSON,
+                allowNull: false,
+                defaultValue: [],
+            },
+            user_count: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+            },
+            last_calculated: {
+                type: Sequelize.DATE,
+                allowNull: true,
+            },
+            is_active: {
+                type: Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: true,
+            },
+            created_at: {
+                allowNull: false,
+                type: Sequelize.DATE,
+            },
+            updated_at: {
+                allowNull: false,
+                type: Sequelize.DATE,
+            },
+        });
+
+        // Индексы
+        await Promise.all([
+            queryInterface.addIndex('user_segment', ['is_active'], {
+                name: 'idx_user_segment_is_active',
+            }),
+            queryInterface.addIndex('user_segment', ['last_calculated'], {
+                name: 'idx_user_segment_last_calculated',
+            }),
+        ]);
+    },
+
+    async down(queryInterface: QueryInterface) {
+        await Promise.all([
+            queryInterface.removeIndex('user_segment', 'idx_user_segment_is_active'),
+            queryInterface.removeIndex('user_segment', 'idx_user_segment_last_calculated'),
+        ]);
+        await queryInterface.dropTable('user_segment');
+    }
+};
+```
+
+## Модели Sequelize
+
+### 1. Модель AnalyticsEvent
+
+```typescript
+@Table({
+    tableName: 'analytics_event',
+    underscored: true,
+    timestamps: true,
+    defaultScope: {
+        attributes: { exclude: ['updatedAt', 'createdAt'] },
+    },
+    scopes: {
+        byType: (type: EventType) => ({
+            where: { event_type: type },
+        }),
+        byUser: (userId: number) => ({
+            where: { user_id: userId },
+        }),
+        bySession: (sessionId: string) => ({
+            where: { session_id: sessionId },
+        }),
+        recent: (hours: number = 24) => ({
+            where: {
+                timestamp: {
+                    [Op.gte]: new Date(Date.now() - hours * 60 * 60 * 1000),
+                },
+            },
+        }),
+        byTimeRange: (start: Date, end: Date) => ({
+            where: {
+                timestamp: {
+                    [Op.between]: [start, end],
+                },
+            },
+        }),
+    },
+    indexes: [
+        {
+            fields: ['event_type'],
+            name: 'idx_analytics_event_type',
+        },
+        {
+            fields: ['event_name'],
+            name: 'idx_analytics_event_name',
+        },
+        {
+            fields: ['user_id'],
+            name: 'idx_analytics_event_user_id',
+        },
+        {
+            fields: ['session_id'],
+            name: 'idx_analytics_event_session_id',
+        },
+        {
+            fields: ['anonymous_id'],
+            name: 'idx_analytics_event_anonymous_id',
+        },
+        {
+            fields: ['timestamp'],
+            name: 'idx_analytics_event_timestamp',
+        },
+        {
+            fields: ['event_type', 'timestamp'],
+            name: 'idx_analytics_event_type_timestamp',
+        },
+    ],
+})
+export class AnalyticsEventModel extends Model<AnalyticsEventModel, IAnalyticsEventCreationAttributes> implements IAnalyticsEventModel {
+    @Column({
+        type: DataType.INTEGER,
+        unique: true,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.ENUM('page_view', 'product_view', 'product_click', 'add_to_cart', 'remove_from_cart', 'cart_view', 'checkout_start', 'checkout_step', 'order_complete', 'search', 'filter', 'sort', 'login', 'logout', 'register', 'email_open', 'email_click', 'custom'),
+        allowNull: false,
+    })
+    declare eventType: EventType;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+        validate: {
+            notEmpty: true,
+            len: [1, 255]
+        }
+    })
+    declare eventName: string;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        references: {
+            model: 'user',
+            key: 'id',
+        },
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+    })
+    declare sessionId: string;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+    })
+    declare anonymousId: string;
+
+    @Column({
+        type: DataType.JSON,
+        allowNull: true,
+    })
+    declare properties: any;
+
+    @Column({
+        type: DataType.JSON,
+        allowNull: false,
+    })
+    declare context: EventContext;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+    })
+    declare timestamp: Date;
+
+    @Column({
+        type: DataType.STRING(45),
+        allowNull: true,
+    })
+    declare ipAddress: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare userAgent: string;
+
+    // Связи
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    // Методы
+    get isUserEvent(): boolean {
+        return this.userId !== null;
+    }
+
+    get isAnonymousEvent(): boolean {
+        return this.anonymousId !== null;
+    }
+
+    get hasProperties(): boolean {
+        return this.properties !== null && Object.keys(this.properties).length > 0;
+    }
+
+    get hasContext(): boolean {
+        return this.context !== null && Object.keys(this.context).length > 0;
+    }
+
+    // Получить значение свойства
+    getProperty(key: string): any {
+        return this.properties?.[key];
+    }
+
+    // Получить значение контекста
+    getContextValue(key: string): any {
+        return this.context?.[key];
+    }
+
+    // Проверить, является ли событие конверсионным
+    isConversionEvent(): boolean {
+        return [
+            'add_to_cart',
+            'checkout_start',
+            'checkout_step',
+            'order_complete',
+            'register',
+            'login'
+        ].includes(this.eventType);
+    }
+
+    // Проверить, является ли событие просмотром
+    isViewEvent(): boolean {
+        return [
+            'page_view',
+            'product_view',
+            'cart_view'
+        ].includes(this.eventType);
+    }
+
+    // Проверить, является ли событие взаимодействием
+    isInteractionEvent(): boolean {
+        return [
+            'product_click',
+            'add_to_cart',
+            'remove_from_cart',
+            'search',
+            'filter',
+            'sort'
+        ].includes(this.eventType);
+    }
+}
+```
+
+## Критерии готовности
+
+- [ ] Созданы все миграции для системы аналитики
+- [ ] Созданы модели AnalyticsEvent, Metric, Report, Dashboard, UserSegment
+- [ ] Добавлены валидации для всех полей
+- [ ] Созданы индексы для производительности
+- [ ] Добавлены scopes для частых запросов
+- [ ] Реализованы методы для работы с аналитикой
+- [ ] Написаны тесты для новой функциональности
+- [ ] Создана документация API
+- [ ] Проверена безопасность
+- [ ] Настроена интеграция с внешними аналитическими системами
+- [ ] Реализованы дашборды и отчеты
+
+## Следующие шаги
+
+После завершения создания системы Analytics переходим к:
+1. Notification - система уведомлений
+2. Integration - внешние интеграции
+3. Final Testing - финальное тестирование

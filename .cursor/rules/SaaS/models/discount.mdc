@@ -1,0 +1,1397 @@
+# Система скидок (Discount System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы скидок для ecommerce приложения с базовыми типами скидок, фокусом на быструю разработку и готовность к масштабированию.
+
+## Основные требования
+- **Типы скидок** - процентные, фиксированные, бесплатная доставка
+- **Ограничения** - по времени, использованию, минимальной сумме
+- **Валидация** - проверка применимости скидок
+- **История** - отслеживание применения скидок
+- **Управление** - CRUD операции для администраторов
+
+## Структура базы данных
+
+### Таблица `discounts`
+```sql
+CREATE TABLE discounts (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('percentage', 'fixed', 'free_shipping')),
+    value DECIMAL(10,2) NOT NULL,
+    min_order_amount DECIMAL(10,2) DEFAULT 0.00,
+    max_discount DECIMAL(10,2),
+    usage_limit INTEGER,
+    usage_count INTEGER DEFAULT 0,
+    user_limit INTEGER DEFAULT 1,
+    valid_from TIMESTAMP NOT NULL,
+    valid_to TIMESTAMP NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    is_automatic BOOLEAN DEFAULT false,
+    applicable_products INTEGER[],
+    applicable_categories INTEGER[],
+    applicable_brands INTEGER[],
+    priority INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `discount_applications`
+```sql
+CREATE TABLE discount_applications (
+    id SERIAL PRIMARY KEY,
+    discount_id INTEGER REFERENCES discounts(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+    discount_amount DECIMAL(10,2) NOT NULL,
+    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Модели Sequelize
+
+### Discount Model
+```typescript
+// src/domain/models/discount.model.ts
+import { Model, DataType, Column, Table, HasMany } from 'sequelize-typescript';
+import { DiscountApplicationModel } from './discount-application.model';
+
+export enum DiscountType {
+    PERCENTAGE = 'percentage',
+    FIXED = 'fixed',
+    FREE_SHIPPING = 'free_shipping'
+}
+
+interface IDiscountModel {
+    id: number;
+    name: string;
+    description?: string;
+    type: DiscountType;
+    value: number;
+    minOrderAmount: number;
+    maxDiscount?: number;
+    usageLimit?: number;
+    usageCount: number;
+    userLimit: number;
+    validFrom: Date;
+    validTo: Date;
+    isActive: boolean;
+    isAutomatic: boolean;
+    applicableProducts?: number[];
+    applicableCategories?: number[];
+    applicableBrands?: number[];
+    priority: number;
+    applications: DiscountApplicationModel[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IDiscountCreationAttributes {
+    name: string;
+    description?: string;
+    type: DiscountType;
+    value: number;
+    minOrderAmount?: number;
+    maxDiscount?: number;
+    usageLimit?: number;
+    userLimit?: number;
+    validFrom: Date;
+    validTo: Date;
+    isActive?: boolean;
+    isAutomatic?: boolean;
+    applicableProducts?: number[];
+    applicableCategories?: number[];
+    applicableBrands?: number[];
+    priority?: number;
+}
+
+@Table({
+    tableName: 'discounts',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['type'], name: 'idx_discounts_type' },
+        { fields: ['is_active'], name: 'idx_discounts_is_active' },
+        { fields: ['is_automatic'], name: 'idx_discounts_is_automatic' },
+        { fields: ['valid_from', 'valid_to'], name: 'idx_discounts_validity' },
+        { fields: ['priority'], name: 'idx_discounts_priority' },
+    ],
+})
+export class DiscountModel
+    extends Model<DiscountModel, IDiscountCreationAttributes>
+    implements IDiscountModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: false,
+    })
+    declare name: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare description: string;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(DiscountType)),
+        allowNull: false,
+    })
+    declare type: DiscountType;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+    })
+    declare value: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00,
+        field: 'min_order_amount',
+    })
+    declare minOrderAmount: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: true,
+        field: 'max_discount',
+    })
+    declare maxDiscount: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'usage_limit',
+    })
+    declare usageLimit: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'usage_count',
+    })
+    declare usageCount: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+        field: 'user_limit',
+    })
+    declare userLimit: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        field: 'valid_from',
+    })
+    declare validFrom: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        field: 'valid_to',
+    })
+    declare validTo: Date;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_automatic',
+    })
+    declare isAutomatic: boolean;
+
+    @Column({
+        type: DataType.ARRAY(DataType.INTEGER),
+        allowNull: true,
+        field: 'applicable_products',
+    })
+    declare applicableProducts: number[];
+
+    @Column({
+        type: DataType.ARRAY(DataType.INTEGER),
+        allowNull: true,
+        field: 'applicable_categories',
+    })
+    declare applicableCategories: number[];
+
+    @Column({
+        type: DataType.ARRAY(DataType.INTEGER),
+        allowNull: true,
+        field: 'applicable_brands',
+    })
+    declare applicableBrands: number[];
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+    })
+    declare priority: number;
+
+    @HasMany(() => DiscountApplicationModel)
+    declare applications: DiscountApplicationModel[];
+}
+```
+
+### DiscountApplication Model
+```typescript
+// src/domain/models/discount-application.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { DiscountModel } from './discount.model';
+import { UserModel } from './user.model';
+import { OrderModel } from './order.model';
+
+interface IDiscountApplicationModel {
+    id: number;
+    discountId: number;
+    userId: number;
+    orderId: number;
+    discountAmount: number;
+    discount: DiscountModel;
+    user: UserModel;
+    order: OrderModel;
+    appliedAt: Date;
+}
+
+interface IDiscountApplicationCreationAttributes {
+    discountId: number;
+    userId: number;
+    orderId: number;
+    discountAmount: number;
+}
+
+@Table({
+    tableName: 'discount_applications',
+    underscored: true,
+    timestamps: true,
+    createdAt: 'appliedAt',
+    updatedAt: false,
+    indexes: [
+        { fields: ['discount_id'], name: 'idx_discount_applications_discount_id' },
+        { fields: ['user_id'], name: 'idx_discount_applications_user_id' },
+        { fields: ['order_id'], name: 'idx_discount_applications_order_id' },
+        { fields: ['applied_at'], name: 'idx_discount_applications_applied_at' },
+    ],
+})
+export class DiscountApplicationModel
+    extends Model<DiscountApplicationModel, IDiscountApplicationCreationAttributes>
+    implements IDiscountApplicationModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => DiscountModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'discount_id',
+    })
+    declare discountId: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @ForeignKey(() => OrderModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'order_id',
+    })
+    declare orderId: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        field: 'discount_amount',
+    })
+    declare discountAmount: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'applied_at',
+    })
+    declare appliedAt: Date;
+
+    @BelongsTo(() => DiscountModel)
+    declare discount: DiscountModel;
+
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    @BelongsTo(() => OrderModel)
+    declare order: OrderModel;
+}
+```
+
+## Сервисы
+
+### Discount Service
+```typescript
+// src/infrastructure/services/discount.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { DiscountModel, DiscountType } from '@app/domain/models/discount.model';
+import { DiscountApplicationModel } from '@app/domain/models/discount-application.model';
+import { Op } from 'sequelize';
+
+@Injectable()
+export class DiscountService {
+    private readonly logger = new Logger(DiscountService.name);
+
+    constructor(
+        @InjectModel(DiscountModel)
+        private discountModel: typeof DiscountModel,
+        @InjectModel(DiscountApplicationModel)
+        private discountApplicationModel: typeof DiscountApplicationModel,
+    ) {}
+
+    async findAll(
+        page: number = 1,
+        limit: number = 10,
+        search?: string,
+        isActive?: boolean,
+        type?: DiscountType,
+    ): Promise<{ data: DiscountModel[]; total: number }> {
+        const where: any = {};
+
+        if (search) {
+            where[Op.or] = [
+                { name: { [Op.iLike]: `%${search}%` } },
+                { description: { [Op.iLike]: `%${search}%` } },
+            ];
+        }
+
+        if (isActive !== undefined) {
+            where.isActive = isActive;
+        }
+
+        if (type) {
+            where.type = type;
+        }
+
+        const { rows: discounts, count: total } = await this.discountModel.findAndCountAll({
+            where,
+            order: [['priority', 'DESC'], ['created_at', 'DESC']],
+            limit,
+            offset: (page - 1) * limit,
+            include: [
+                {
+                    model: DiscountApplicationModel,
+                    attributes: ['id'],
+                    required: false,
+                },
+            ],
+        });
+
+        return { data: discounts, total };
+    }
+
+    async findById(id: number): Promise<DiscountModel> {
+        const discount = await this.discountModel.findByPk(id, {
+            include: [
+                {
+                    model: DiscountApplicationModel,
+                    include: ['user', 'order'],
+                    required: false,
+                },
+            ],
+        });
+
+        if (!discount) {
+            throw new NotFoundException('Скидка не найдена');
+        }
+
+        return discount;
+    }
+
+    async create(discountData: Partial<DiscountModel>): Promise<DiscountModel> {
+        const discount = await this.discountModel.create(discountData);
+        this.logger.log(`Discount created: ${discount.name} (${discount.type})`);
+        return discount;
+    }
+
+    async update(id: number, discountData: Partial<DiscountModel>): Promise<DiscountModel> {
+        const discount = await this.findById(id);
+        await discount.update(discountData);
+        this.logger.log(`Discount updated: ${discount.name} (${discount.type})`);
+        return discount;
+    }
+
+    async delete(id: number): Promise<void> {
+        const discount = await this.findById(id);
+
+        // Проверяем, есть ли применение скидки
+        const applicationCount = await this.discountApplicationModel.count({
+            where: { discountId: id },
+        });
+
+        if (applicationCount > 0) {
+            throw new BadRequestException('Нельзя удалить скидку, которая уже применялась');
+        }
+
+        await discount.destroy();
+        this.logger.log(`Discount deleted: ${discount.name} (${discount.type})`);
+    }
+
+    async validateDiscount(
+        discountId: number,
+        userId: number,
+        orderAmount: number,
+        productIds?: number[],
+        categoryIds?: number[],
+        brandIds?: number[],
+    ): Promise<{ isValid: boolean; message?: string; discount?: DiscountModel; discountAmount?: number }> {
+        try {
+            const discount = await this.findById(discountId);
+
+            // Проверяем активность
+            if (!discount.isActive) {
+                return { isValid: false, message: 'Скидка неактивна' };
+            }
+
+            // Проверяем срок действия
+            const now = new Date();
+            if (now < discount.validFrom || now > discount.validTo) {
+                return { isValid: false, message: 'Скидка недействительна в данный момент' };
+            }
+
+            // Проверяем минимальную сумму заказа
+            if (orderAmount < discount.minOrderAmount) {
+                return { 
+                    isValid: false, 
+                    message: `Минимальная сумма заказа для применения скидки: ${discount.minOrderAmount} руб.` 
+                };
+            }
+
+            // Проверяем лимит использования
+            if (discount.usageLimit && discount.usageCount >= discount.usageLimit) {
+                return { isValid: false, message: 'Скидка больше не может быть применена' };
+            }
+
+            // Проверяем лимит использования пользователем
+            const userUsageCount = await this.discountApplicationModel.count({
+                where: { discountId: discount.id, userId },
+            });
+
+            if (userUsageCount >= discount.userLimit) {
+                return { isValid: false, message: 'Вы уже использовали эту скидку максимальное количество раз' };
+            }
+
+            // Проверяем применимость к товарам
+            if (discount.applicableProducts && productIds) {
+                const hasApplicableProduct = productIds.some(id => 
+                    discount.applicableProducts.includes(id)
+                );
+                if (!hasApplicableProduct) {
+                    return { isValid: false, message: 'Скидка не применима к выбранным товарам' };
+                }
+            }
+
+            // Проверяем применимость к категориям
+            if (discount.applicableCategories && categoryIds) {
+                const hasApplicableCategory = categoryIds.some(id => 
+                    discount.applicableCategories.includes(id)
+                );
+                if (!hasApplicableCategory) {
+                    return { isValid: false, message: 'Скидка не применима к выбранным категориям' };
+                }
+            }
+
+            // Проверяем применимость к брендам
+            if (discount.applicableBrands && brandIds) {
+                const hasApplicableBrand = brandIds.some(id => 
+                    discount.applicableBrands.includes(id)
+                );
+                if (!hasApplicableBrand) {
+                    return { isValid: false, message: 'Скидка не применима к выбранным брендам' };
+                }
+            }
+
+            // Рассчитываем скидку
+            let discountAmount = 0;
+            switch (discount.type) {
+                case DiscountType.PERCENTAGE:
+                    discountAmount = (orderAmount * discount.value) / 100;
+                    if (discount.maxDiscount && discountAmount > discount.maxDiscount) {
+                        discountAmount = discount.maxDiscount;
+                    }
+                    break;
+                case DiscountType.FIXED:
+                    discountAmount = discount.value;
+                    break;
+                case DiscountType.FREE_SHIPPING:
+                    discountAmount = 0; // Логика бесплатной доставки обрабатывается отдельно
+                    break;
+            }
+
+            return { isValid: true, discount, discountAmount };
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                return { isValid: false, message: 'Скидка не найдена' };
+            }
+            throw error;
+        }
+    }
+
+    async applyDiscount(
+        discountId: number,
+        userId: number,
+        orderId: number,
+        discountAmount: number,
+    ): Promise<DiscountApplicationModel> {
+        const discount = await this.findById(discountId);
+
+        // Проверяем лимит использования
+        if (discount.usageLimit && discount.usageCount >= discount.usageLimit) {
+            throw new BadRequestException('Скидка больше не может быть применена');
+        }
+
+        // Проверяем лимит использования пользователем
+        const userUsageCount = await this.discountApplicationModel.count({
+            where: { discountId, userId },
+        });
+
+        if (userUsageCount >= discount.userLimit) {
+            throw new BadRequestException('Вы уже использовали эту скидку максимальное количество раз');
+        }
+
+        // Создаем запись о применении
+        const application = await this.discountApplicationModel.create({
+            discountId,
+            userId,
+            orderId,
+            discountAmount,
+        });
+
+        // Увеличиваем счетчик использования
+        await discount.update({
+            usageCount: discount.usageCount + 1,
+        });
+
+        this.logger.log(`Discount ${discount.name} applied to order ${orderId}`);
+        return application;
+    }
+
+    async getAutomaticDiscounts(
+        orderAmount: number,
+        productIds?: number[],
+        categoryIds?: number[],
+        brandIds?: number[],
+    ): Promise<DiscountModel[]> {
+        const now = new Date();
+        const discounts = await this.discountModel.findAll({
+            where: {
+                isActive: true,
+                isAutomatic: true,
+                validFrom: { [Op.lte]: now },
+                validTo: { [Op.gte]: now },
+                minOrderAmount: { [Op.lte]: orderAmount },
+            },
+            order: [['priority', 'DESC']],
+        });
+
+        // Фильтруем по применимости
+        return discounts.filter(discount => {
+            // Проверяем применимость к товарам
+            if (discount.applicableProducts && productIds) {
+                const hasApplicableProduct = productIds.some(id => 
+                    discount.applicableProducts.includes(id)
+                );
+                if (!hasApplicableProduct) return false;
+            }
+
+            // Проверяем применимость к категориям
+            if (discount.applicableCategories && categoryIds) {
+                const hasApplicableCategory = categoryIds.some(id => 
+                    discount.applicableCategories.includes(id)
+                );
+                if (!hasApplicableCategory) return false;
+            }
+
+            // Проверяем применимость к брендам
+            if (discount.applicableBrands && brandIds) {
+                const hasApplicableBrand = brandIds.some(id => 
+                    discount.applicableBrands.includes(id)
+                );
+                if (!hasApplicableBrand) return false;
+            }
+
+            return true;
+        });
+    }
+
+    async getDiscountUsage(discountId: number): Promise<DiscountApplicationModel[]> {
+        return this.discountApplicationModel.findAll({
+            where: { discountId },
+            include: ['user', 'order'],
+            order: [['applied_at', 'DESC']],
+        });
+    }
+
+    async getActiveDiscounts(): Promise<DiscountModel[]> {
+        const now = new Date();
+        return this.discountModel.findAll({
+            where: {
+                isActive: true,
+                validFrom: { [Op.lte]: now },
+                validTo: { [Op.gte]: now },
+            },
+            order: [['priority', 'DESC'], ['created_at', 'DESC']],
+        });
+    }
+}
+```
+
+## Контроллеры
+
+### Discount Controller
+```typescript
+// src/infrastructure/controllers/discount.controller.ts
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
+import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
+import { Roles } from '@app/infrastructure/common/decorators/roles.decorator';
+import { CurrentUser } from '@app/infrastructure/common/decorators/current-user.decorator';
+import { DiscountService } from '@app/infrastructure/services/discount.service';
+import { CreateDiscountDto } from '@app/infrastructure/dto/discount/create-discount.dto';
+import { UpdateDiscountDto } from '@app/infrastructure/dto/discount/update-discount.dto';
+import { ValidateDiscountDto } from '@app/infrastructure/dto/discount/validate-discount.dto';
+import { DiscountResponse, DiscountListResponse } from '@app/infrastructure/responses/discount/discount.response';
+
+@ApiTags('Скидки')
+@Controller('discounts')
+export class DiscountController {
+    constructor(private readonly discountService: DiscountService) {}
+
+    @Get()
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить список скидок (только для админов)' })
+    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
+    @ApiQuery({ name: 'search', required: false, description: 'Поиск по названию' })
+    @ApiQuery({ name: 'isActive', required: false, description: 'Фильтр по активности' })
+    @ApiQuery({ name: 'type', required: false, description: 'Фильтр по типу скидки' })
+    @ApiResponse({ status: 200, description: 'Список скидок получен', type: DiscountListResponse })
+    async getDiscounts(
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+        @Query('search') search?: string,
+        @Query('isActive') isActive?: boolean,
+        @Query('type') type?: string,
+    ): Promise<DiscountListResponse> {
+        const result = await this.discountService.findAll(page, limit, search, isActive, type as any);
+        
+        return {
+            data: result.data.map(discount => ({
+                id: discount.id,
+                name: discount.name,
+                description: discount.description,
+                type: discount.type,
+                value: discount.value,
+                minOrderAmount: discount.minOrderAmount,
+                maxDiscount: discount.maxDiscount,
+                usageLimit: discount.usageLimit,
+                usageCount: discount.usageCount,
+                userLimit: discount.userLimit,
+                validFrom: discount.validFrom,
+                validTo: discount.validTo,
+                isActive: discount.isActive,
+                isAutomatic: discount.isAutomatic,
+                applicableProducts: discount.applicableProducts,
+                applicableCategories: discount.applicableCategories,
+                applicableBrands: discount.applicableBrands,
+                priority: discount.priority,
+                createdAt: discount.createdAt,
+                updatedAt: discount.updatedAt,
+            })),
+            meta: {
+                totalCount: result.total,
+                currentPage: page,
+                limit,
+                lastPage: Math.ceil(result.total / limit),
+                nextPage: page < Math.ceil(result.total / limit) ? page + 1 : null,
+                previousPage: page > 1 ? page - 1 : null,
+            },
+        };
+    }
+
+    @Get('active')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить активные скидки' })
+    @ApiResponse({ status: 200, description: 'Активные скидки получены', type: [DiscountResponse] })
+    async getActiveDiscounts(): Promise<DiscountResponse[]> {
+        const discounts = await this.discountService.getActiveDiscounts();
+        
+        return discounts.map(discount => ({
+            id: discount.id,
+            name: discount.name,
+            description: discount.description,
+            type: discount.type,
+            value: discount.value,
+            minOrderAmount: discount.minOrderAmount,
+            maxDiscount: discount.maxDiscount,
+            validFrom: discount.validFrom,
+            validTo: discount.validTo,
+            isAutomatic: discount.isAutomatic,
+            priority: discount.priority,
+        }));
+    }
+
+    @Post('automatic')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить автоматические скидки для заказа' })
+    @ApiResponse({ status: 200, description: 'Автоматические скидки получены', type: [DiscountResponse] })
+    async getAutomaticDiscounts(
+        @Body() validateDiscountDto: ValidateDiscountDto,
+    ): Promise<DiscountResponse[]> {
+        const discounts = await this.discountService.getAutomaticDiscounts(
+            validateDiscountDto.orderAmount,
+            validateDiscountDto.productIds,
+            validateDiscountDto.categoryIds,
+            validateDiscountDto.brandIds,
+        );
+        
+        return discounts.map(discount => ({
+            id: discount.id,
+            name: discount.name,
+            description: discount.description,
+            type: discount.type,
+            value: discount.value,
+            minOrderAmount: discount.minOrderAmount,
+            maxDiscount: discount.maxDiscount,
+            priority: discount.priority,
+        }));
+    }
+
+    @Post('validate')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Валидировать скидку' })
+    @ApiResponse({ status: 200, description: 'Результат валидации скидки' })
+    async validateDiscount(
+        @Body() validateDiscountDto: ValidateDiscountDto,
+        @CurrentUser() user: any,
+    ): Promise<{ isValid: boolean; message?: string; discountAmount?: number }> {
+        const result = await this.discountService.validateDiscount(
+            validateDiscountDto.discountId,
+            user.id,
+            validateDiscountDto.orderAmount,
+            validateDiscountDto.productIds,
+            validateDiscountDto.categoryIds,
+            validateDiscountDto.brandIds,
+        );
+
+        return {
+            isValid: result.isValid,
+            message: result.message,
+            discountAmount: result.discountAmount,
+        };
+    }
+
+    @Get(':id')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить скидку по ID (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Скидка получена', type: DiscountResponse })
+    @ApiResponse({ status: 404, description: 'Скидка не найдена' })
+    async getDiscountById(@Param('id') id: number): Promise<DiscountResponse> {
+        const discount = await this.discountService.findById(id);
+        
+        return {
+            id: discount.id,
+            name: discount.name,
+            description: discount.description,
+            type: discount.type,
+            value: discount.value,
+            minOrderAmount: discount.minOrderAmount,
+            maxDiscount: discount.maxDiscount,
+            usageLimit: discount.usageLimit,
+            usageCount: discount.usageCount,
+            userLimit: discount.userLimit,
+            validFrom: discount.validFrom,
+            validTo: discount.validTo,
+            isActive: discount.isActive,
+            isAutomatic: discount.isAutomatic,
+            applicableProducts: discount.applicableProducts,
+            applicableCategories: discount.applicableCategories,
+            applicableBrands: discount.applicableBrands,
+            priority: discount.priority,
+            createdAt: discount.createdAt,
+            updatedAt: discount.updatedAt,
+        };
+    }
+
+    @Post()
+    @HttpCode(HttpStatus.CREATED)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Создать новую скидку (только для админов)' })
+    @ApiResponse({ status: 201, description: 'Скидка создана', type: DiscountResponse })
+    @ApiResponse({ status: 400, description: 'Ошибка валидации' })
+    async createDiscount(@Body() createDiscountDto: CreateDiscountDto): Promise<DiscountResponse> {
+        const discount = await this.discountService.create(createDiscountDto);
+        
+        return {
+            id: discount.id,
+            name: discount.name,
+            description: discount.description,
+            type: discount.type,
+            value: discount.value,
+            minOrderAmount: discount.minOrderAmount,
+            maxDiscount: discount.maxDiscount,
+            usageLimit: discount.usageLimit,
+            usageCount: discount.usageCount,
+            userLimit: discount.userLimit,
+            validFrom: discount.validFrom,
+            validTo: discount.validTo,
+            isActive: discount.isActive,
+            isAutomatic: discount.isAutomatic,
+            applicableProducts: discount.applicableProducts,
+            applicableCategories: discount.applicableCategories,
+            applicableBrands: discount.applicableBrands,
+            priority: discount.priority,
+            createdAt: discount.createdAt,
+            updatedAt: discount.updatedAt,
+        };
+    }
+
+    @Put(':id')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Обновить скидку (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Скидка обновлена', type: DiscountResponse })
+    @ApiResponse({ status: 404, description: 'Скидка не найдена' })
+    @ApiResponse({ status: 400, description: 'Ошибка валидации' })
+    async updateDiscount(
+        @Param('id') id: number,
+        @Body() updateDiscountDto: UpdateDiscountDto,
+    ): Promise<DiscountResponse> {
+        const discount = await this.discountService.update(id, updateDiscountDto);
+        
+        return {
+            id: discount.id,
+            name: discount.name,
+            description: discount.description,
+            type: discount.type,
+            value: discount.value,
+            minOrderAmount: discount.minOrderAmount,
+            maxDiscount: discount.maxDiscount,
+            usageLimit: discount.usageLimit,
+            usageCount: discount.usageCount,
+            userLimit: discount.userLimit,
+            validFrom: discount.validFrom,
+            validTo: discount.validTo,
+            isActive: discount.isActive,
+            isAutomatic: discount.isAutomatic,
+            applicableProducts: discount.applicableProducts,
+            applicableCategories: discount.applicableCategories,
+            applicableBrands: discount.applicableBrands,
+            priority: discount.priority,
+            createdAt: discount.createdAt,
+            updatedAt: discount.updatedAt,
+        };
+    }
+
+    @Delete(':id')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Удалить скидку (только для админов)' })
+    @ApiResponse({ status: 204, description: 'Скидка удалена' })
+    @ApiResponse({ status: 404, description: 'Скидка не найдена' })
+    @ApiResponse({ status: 400, description: 'Нельзя удалить скидку, которая уже применялась' })
+    async deleteDiscount(@Param('id') id: number): Promise<void> {
+        return this.discountService.delete(id);
+    }
+}
+```
+
+## Миграции
+
+### Создание таблиц скидок
+```typescript
+// db/migrations/YYYYMMDDHHMMSS-create-discount-system.ts
+import { QueryInterface, DataTypes } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+    // Создание таблицы discounts
+    await queryInterface.createTable('discounts', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        name: {
+            type: DataTypes.STRING(100),
+            allowNull: false,
+        },
+        description: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        type: {
+            type: DataTypes.ENUM('percentage', 'fixed', 'free_shipping'),
+            allowNull: false,
+        },
+        value: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+        },
+        min_order_amount: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+            defaultValue: 0.00,
+        },
+        max_discount: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: true,
+        },
+        usage_limit: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        usage_count: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        },
+        user_limit: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 1,
+        },
+        valid_from: {
+            type: DataTypes.DATE,
+            allowNull: false,
+        },
+        valid_to: {
+            type: DataTypes.DATE,
+            allowNull: false,
+        },
+        is_active: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        },
+        is_automatic: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
+        applicable_products: {
+            type: DataTypes.ARRAY(DataTypes.INTEGER),
+            allowNull: true,
+        },
+        applicable_categories: {
+            type: DataTypes.ARRAY(DataTypes.INTEGER),
+            allowNull: true,
+        },
+        applicable_brands: {
+            type: DataTypes.ARRAY(DataTypes.INTEGER),
+            allowNull: true,
+        },
+        priority: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание таблицы discount_applications
+    await queryInterface.createTable('discount_applications', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        discount_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'discounts', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        user_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'users', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        order_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'orders', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        discount_amount: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+        },
+        applied_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание индексов
+    await queryInterface.addIndex('discounts', ['type']);
+    await queryInterface.addIndex('discounts', ['is_active']);
+    await queryInterface.addIndex('discounts', ['is_automatic']);
+    await queryInterface.addIndex('discounts', ['valid_from', 'valid_to']);
+    await queryInterface.addIndex('discounts', ['priority']);
+
+    await queryInterface.addIndex('discount_applications', ['discount_id']);
+    await queryInterface.addIndex('discount_applications', ['user_id']);
+    await queryInterface.addIndex('discount_applications', ['order_id']);
+    await queryInterface.addIndex('discount_applications', ['applied_at']);
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+    await queryInterface.dropTable('discount_applications');
+    await queryInterface.dropTable('discounts');
+}
+```
+
+## DTO и валидация
+
+### CreateDiscountDto
+```typescript
+// src/infrastructure/dto/discount/create-discount.dto.ts
+import { IsString, IsEnum, IsNumber, IsBoolean, IsOptional, IsArray, IsDateString, Length, Min } from 'class-validator';
+import { DiscountType } from '@app/domain/models/discount.model';
+
+export class CreateDiscountDto {
+    @IsString({ message: 'Название скидки должно быть строкой' })
+    @Length(1, 100, { message: 'Название скидки должно быть от 1 до 100 символов' })
+    declare readonly name: string;
+
+    @IsOptional()
+    @IsString({ message: 'Описание должно быть строкой' })
+    declare readonly description?: string;
+
+    @IsEnum(DiscountType, { message: 'Тип скидки должен быть одним из: percentage, fixed, free_shipping' })
+    declare readonly type: DiscountType;
+
+    @IsNumber({}, { message: 'Значение должно быть числом' })
+    @Min(0, { message: 'Значение не может быть отрицательным' })
+    declare readonly value: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Минимальная сумма заказа должна быть числом' })
+    @Min(0, { message: 'Минимальная сумма заказа не может быть отрицательной' })
+    declare readonly minOrderAmount?: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Максимальная скидка должна быть числом' })
+    @Min(0, { message: 'Максимальная скидка не может быть отрицательной' })
+    declare readonly maxDiscount?: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Лимит использования должен быть числом' })
+    @Min(1, { message: 'Лимит использования должен быть больше 0' })
+    declare readonly usageLimit?: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Лимит использования пользователем должен быть числом' })
+    @Min(1, { message: 'Лимит использования пользователем должен быть больше 0' })
+    declare readonly userLimit?: number;
+
+    @IsDateString({}, { message: 'Дата начала действия должна быть валидной датой' })
+    declare readonly validFrom: string;
+
+    @IsDateString({}, { message: 'Дата окончания действия должна быть валидной датой' })
+    declare readonly validTo: string;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Статус активности должен быть булевым значением' })
+    declare readonly isActive?: boolean;
+
+    @IsOptional()
+    @IsBoolean({ message: 'Автоматическое применение должно быть булевым значением' })
+    declare readonly isAutomatic?: boolean;
+
+    @IsOptional()
+    @IsArray({ message: 'Применимые товары должны быть массивом' })
+    @IsNumber({}, { each: true, message: 'ID товара должен быть числом' })
+    declare readonly applicableProducts?: number[];
+
+    @IsOptional()
+    @IsArray({ message: 'Применимые категории должны быть массивом' })
+    @IsNumber({}, { each: true, message: 'ID категории должен быть числом' })
+    declare readonly applicableCategories?: number[];
+
+    @IsOptional()
+    @IsArray({ message: 'Применимые бренды должны быть массивом' })
+    @IsNumber({}, { each: true, message: 'ID бренда должен быть числом' })
+    declare readonly applicableBrands?: number[];
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Приоритет должен быть числом' })
+    declare readonly priority?: number;
+}
+```
+
+### UpdateDiscountDto
+```typescript
+// src/infrastructure/dto/discount/update-discount.dto.ts
+import { PartialType } from '@nestjs/swagger';
+import { CreateDiscountDto } from './create-discount.dto';
+
+export class UpdateDiscountDto extends PartialType(CreateDiscountDto) {}
+```
+
+### ValidateDiscountDto
+```typescript
+// src/infrastructure/dto/discount/validate-discount.dto.ts
+import { IsNumber, IsOptional, IsArray, Min } from 'class-validator';
+
+export class ValidateDiscountDto {
+    @IsOptional()
+    @IsNumber({}, { message: 'ID скидки должен быть числом' })
+    @Min(1, { message: 'ID скидки должен быть больше 0' })
+    declare readonly discountId?: number;
+
+    @IsNumber({}, { message: 'Сумма заказа должна быть числом' })
+    @Min(0, { message: 'Сумма заказа не может быть отрицательной' })
+    declare readonly orderAmount: number;
+
+    @IsOptional()
+    @IsArray({ message: 'ID товаров должны быть массивом' })
+    @IsNumber({}, { each: true, message: 'ID товара должен быть числом' })
+    declare readonly productIds?: number[];
+
+    @IsOptional()
+    @IsArray({ message: 'ID категорий должны быть массивом' })
+    @IsNumber({}, { each: true, message: 'ID категории должен быть числом' })
+    declare readonly categoryIds?: number[];
+
+    @IsOptional()
+    @IsArray({ message: 'ID брендов должны быть массивом' })
+    @IsNumber({}, { each: true, message: 'ID бренда должен быть числом' })
+    declare readonly brandIds?: number[];
+}
+```
+
+## Response классы
+
+### DiscountResponse
+```typescript
+// src/infrastructure/responses/discount/discount.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+import { DiscountType } from '@app/domain/models/discount.model';
+
+export class DiscountResponse {
+    @ApiProperty({ description: 'ID скидки' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'Название скидки' })
+    declare readonly name: string;
+
+    @ApiProperty({ description: 'Описание скидки', required: false })
+    declare readonly description?: string;
+
+    @ApiProperty({ description: 'Тип скидки', enum: DiscountType })
+    declare readonly type: DiscountType;
+
+    @ApiProperty({ description: 'Значение скидки' })
+    declare readonly value: number;
+
+    @ApiProperty({ description: 'Минимальная сумма заказа' })
+    declare readonly minOrderAmount: number;
+
+    @ApiProperty({ description: 'Максимальная скидка', required: false })
+    declare readonly maxDiscount?: number;
+
+    @ApiProperty({ description: 'Лимит использования', required: false })
+    declare readonly usageLimit?: number;
+
+    @ApiProperty({ description: 'Количество использований' })
+    declare readonly usageCount: number;
+
+    @ApiProperty({ description: 'Лимит использования пользователем' })
+    declare readonly userLimit: number;
+
+    @ApiProperty({ description: 'Дата начала действия' })
+    declare readonly validFrom: Date;
+
+    @ApiProperty({ description: 'Дата окончания действия' })
+    declare readonly validTo: Date;
+
+    @ApiProperty({ description: 'Активна ли скидка' })
+    declare readonly isActive: boolean;
+
+    @ApiProperty({ description: 'Автоматическое применение' })
+    declare readonly isAutomatic: boolean;
+
+    @ApiProperty({ description: 'Применимые товары', required: false })
+    declare readonly applicableProducts?: number[];
+
+    @ApiProperty({ description: 'Применимые категории', required: false })
+    declare readonly applicableCategories?: number[];
+
+    @ApiProperty({ description: 'Применимые бренды', required: false })
+    declare readonly applicableBrands?: number[];
+
+    @ApiProperty({ description: 'Приоритет скидки' })
+    declare readonly priority: number;
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления' })
+    declare readonly updatedAt: Date;
+}
+
+export class DiscountListResponse {
+    @ApiProperty({ description: 'Список скидок', type: [DiscountResponse] })
+    declare readonly data: DiscountResponse[];
+
+    @ApiProperty({ description: 'Метаданные пагинации' })
+    declare readonly meta: {
+        totalCount: number;
+        currentPage: number;
+        limit: number;
+        lastPage: number;
+        nextPage: number | null;
+        previousPage: number | null;
+    };
+}
+```
+
+## Критерии готовности
+
+### ✅ Обязательные требования:
+- [ ] Созданы миграции для таблиц discounts и discount_applications
+- [ ] Реализованы модели Sequelize (DiscountModel, DiscountApplicationModel)
+- [ ] Создан DiscountService с валидацией и применением скидок
+- [ ] Реализован DiscountController с API endpoints
+- [ ] Добавлены DTO классы с валидацией
+- [ ] Созданы Response классы с Swagger
+- [ ] Добавлены индексы для производительности
+- [ ] Реализована валидация скидок
+- [ ] Добавлены unit тесты для DiscountService
+- [ ] Добавлены integration тесты для API
+- [ ] Интеграция с системой заказов
+
+### 🎯 Дополнительные возможности:
+- [ ] Кэширование активных скидок
+- [ ] Автоматические скидки
+- [ ] Система приоритетов
+- [ ] Аналитика по эффективности скидок
+- [ ] Интеграция с системой лояльности
+
+## Следующие шаги
+
+### Фаза 1: Базовая реализация (1 неделя)
+1. **Создать миграции** для таблиц discounts и discount_applications
+2. **Реализовать модели** Sequelize
+3. **Создать DTO классы** с валидацией
+4. **Создать Response классы** с Swagger
+5. **Реализовать DiscountService** с основной логикой
+
+### Фаза 2: API и интеграции (3-4 дня)
+6. **Создать DiscountController** с API endpoints
+7. **Добавить валидацию скидок** при оформлении заказов
+8. **Интегрировать с корзиной** для применения скидок
+9. **Реализовать автоматические скидки**
+
+### Фаза 3: Тестирование и качество (2-3 дня)
+10. **Написать unit тесты** для DiscountService
+11. **Написать integration тесты** для API
+12. **Добавить обработку ошибок** и валидацию
+13. **Провести рефакторинг** и оптимизацию
+
+## Риски и альтернативы
+
+### ⚠️ Риски:
+- **Финансовые потери**: неправильный расчет скидок
+- **Мошенничество**: использование скидок не по назначению
+- **Производительность**: сложные запросы для валидации
+
+### 🔄 Альтернативы:
+- **Кэширование**: Redis для быстрой валидации скидок
+- **Внешние сервисы**: интеграция с платформами скидок
+- **Упрощенная система**: только базовые скидки без сложных условий
+
+## Интеграция с другими системами
+
+### 🔗 Связанные системы:
+- **OrderService** - применение скидок к заказам
+- **CartService** - валидация скидок в корзине
+- **UserService** - проверка лимитов использования
+- **ProductService** - проверка применимости к товарам
+- **CategoryService** - проверка применимости к категориям
+- **BrandService** - проверка применимости к брендам
+
+### 📊 Аналитика:
+- Популярные скидки
+- Эффективность скидок
+- Статистика применения
+
+## TL;DR
+
+Упрощенная система скидок включает:
+- **2 таблицы**: discounts, discount_applications
+- **2 модели**: DiscountModel, DiscountApplicationModel
+- **1 сервис**: DiscountService с валидацией и применением
+- **1 контроллер**: API для управления скидками
+- **Функции**: процентные/фиксированные скидки, бесплатная доставка
+- **Валидация**: по времени, лимитам, товарам, категориям, брендам
+- **Автоматические скидки**: с приоритетами и условиями
+- **Готовность**: к масштабированию и дополнительным функциям

@@ -1,0 +1,1520 @@
+# Система отзывов и комментариев (Review/Comment System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы отзывов и комментариев для ecommerce приложения с базовыми функциями оценки, текстовых отзывов, простых комментариев и стандартной модерации, фокусом на быструю разработку и готовность к масштабированию.
+
+## Основные требования
+- **Базовые отзывы** - оценка от 1 до 5 + заголовок + текст + изображения
+- **Простая модерация** - pending, approved, hidden
+- **Базовые комментарии** - простые ответы на отзывы без иерархии
+- **Полезность** - простой счетчик лайков
+- **Верификация** - подтвержденная покупка
+
+## Структура базы данных
+
+### Таблица `reviews` (основная)
+```sql
+CREATE TABLE reviews (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    order_id INTEGER REFERENCES orders(id),
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    title VARCHAR(255),
+    content TEXT,
+    images TEXT[],
+    is_verified BOOLEAN DEFAULT false,
+    helpful_count INTEGER DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'hidden')),
+    moderation_notes TEXT,
+    moderated_by INTEGER REFERENCES users(id),
+    moderated_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(product_id, user_id)
+);
+```
+
+### Таблица `review_comments`
+```sql
+CREATE TABLE review_comments (
+    id SERIAL PRIMARY KEY,
+    review_id INTEGER REFERENCES reviews(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    is_admin BOOLEAN DEFAULT false,
+    status VARCHAR(20) NOT NULL DEFAULT 'approved' CHECK (status IN ('pending', 'approved', 'hidden')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `review_likes`
+```sql
+CREATE TABLE review_likes (
+    id SERIAL PRIMARY KEY,
+    review_id INTEGER REFERENCES reviews(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(review_id, user_id)
+);
+```
+
+## Модели Sequelize
+
+### Review Model
+```typescript
+// src/domain/models/review.model.ts
+import { Model, DataType, Column, Table, BelongsTo, HasMany, ForeignKey } from 'sequelize-typescript';
+import { ProductModel } from './product.model';
+import { UserModel } from './user.model';
+import { OrderModel } from './order.model';
+import { ReviewCommentModel } from './review-comment.model';
+import { ReviewLikeModel } from './review-like.model';
+
+export enum ReviewStatus {
+    PENDING = 'pending',
+    APPROVED = 'approved',
+    HIDDEN = 'hidden'
+}
+
+interface IReviewModel {
+    id: number;
+    productId: number;
+    userId: number;
+    orderId?: number;
+    rating: number;
+    title?: string;
+    content?: string;
+    images: string[];
+    isVerified: boolean;
+    helpfulCount: number;
+    status: ReviewStatus;
+    moderationNotes?: string;
+    moderatedBy?: number;
+    moderatedAt?: Date;
+    product: ProductModel;
+    user: UserModel;
+    order?: OrderModel;
+    moderatedByUser?: UserModel;
+    comments: ReviewCommentModel[];
+    likes: ReviewLikeModel[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IReviewCreationAttributes {
+    productId: number;
+    userId: number;
+    orderId?: number;
+    rating: number;
+    title?: string;
+    content?: string;
+    images?: string[];
+    isVerified?: boolean;
+}
+
+@Table({
+    tableName: 'reviews',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['product_id'], name: 'idx_reviews_product_id' },
+        { fields: ['user_id'], name: 'idx_reviews_user_id' },
+        { fields: ['order_id'], name: 'idx_reviews_order_id' },
+        { fields: ['rating'], name: 'idx_reviews_rating' },
+        { fields: ['status'], name: 'idx_reviews_status' },
+        { fields: ['is_verified'], name: 'idx_reviews_is_verified' },
+        { fields: ['helpful_count'], name: 'idx_reviews_helpful_count' },
+        { fields: ['created_at'], name: 'idx_reviews_created_at' },
+        { fields: ['product_id', 'user_id'], name: 'idx_reviews_product_user_unique', unique: true },
+        { fields: ['product_id', 'status'], name: 'idx_reviews_product_status' },
+    ],
+})
+export class ReviewModel
+    extends Model<ReviewModel, IReviewCreationAttributes>
+    implements IReviewModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => ProductModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'product_id',
+    })
+    declare productId: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @ForeignKey(() => OrderModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'order_id',
+    })
+    declare orderId: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        validate: {
+            min: 1,
+            max: 5
+        }
+    })
+    declare rating: number;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+    })
+    declare title: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare content: string;
+
+    @Column({
+        type: DataType.ARRAY(DataType.TEXT),
+        allowNull: false,
+        defaultValue: [],
+    })
+    declare images: string[];
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_verified',
+    })
+    declare isVerified: boolean;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'helpful_count',
+    })
+    declare helpfulCount: number;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(ReviewStatus)),
+        allowNull: false,
+        defaultValue: ReviewStatus.PENDING,
+    })
+    declare status: ReviewStatus;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'moderation_notes',
+    })
+    declare moderationNotes: string;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'moderated_by',
+    })
+    declare moderatedBy: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'moderated_at',
+    })
+    declare moderatedAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'updated_at',
+    })
+    declare updatedAt: Date;
+
+    // Связи
+    @BelongsTo(() => ProductModel)
+    declare product: ProductModel;
+
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    @BelongsTo(() => OrderModel)
+    declare order: OrderModel;
+
+    @BelongsTo(() => UserModel, 'moderated_by')
+    declare moderatedByUser: UserModel;
+
+    @HasMany(() => ReviewCommentModel)
+    declare comments: ReviewCommentModel[];
+
+    @HasMany(() => ReviewLikeModel)
+    declare likes: ReviewLikeModel[];
+
+    // Методы
+    get isPending(): boolean {
+        return this.status === ReviewStatus.PENDING;
+    }
+
+    get isApproved(): boolean {
+        return this.status === ReviewStatus.APPROVED;
+    }
+
+    get isHidden(): boolean {
+        return this.status === ReviewStatus.HIDDEN;
+    }
+
+    get hasImages(): boolean {
+        return this.images && this.images.length > 0;
+    }
+
+    get hasContent(): boolean {
+        return this.content && this.content.trim().length > 0;
+    }
+
+    get hasTitle(): boolean {
+        return this.title && this.title.trim().length > 0;
+    }
+
+    // Метод для одобрения отзыва
+    async approve(moderatedBy: number, notes?: string): Promise<void> {
+        await this.update({
+            status: ReviewStatus.APPROVED,
+            moderationNotes: notes,
+            moderatedBy,
+            moderatedAt: new Date(),
+        });
+    }
+
+    // Метод для скрытия отзыва
+    async hide(moderatedBy: number, notes?: string): Promise<void> {
+        await this.update({
+            status: ReviewStatus.HIDDEN,
+            moderationNotes: notes,
+            moderatedBy,
+            moderatedAt: new Date(),
+        });
+    }
+
+    // Метод для добавления комментария
+    async addComment(userId: number, content: string, isAdmin: boolean = false): Promise<ReviewCommentModel> {
+        return ReviewCommentModel.create({
+            reviewId: this.id,
+            userId,
+            content,
+            isAdmin,
+        });
+    }
+
+    // Метод для лайка отзыва
+    async like(userId: number): Promise<boolean> {
+        const existingLike = await ReviewLikeModel.findOne({
+            where: { reviewId: this.id, userId },
+        });
+
+        if (existingLike) {
+            return false; // Уже лайкнул
+        }
+
+        await ReviewLikeModel.create({
+            reviewId: this.id,
+            userId,
+        });
+
+        await this.update({
+            helpfulCount: this.helpfulCount + 1,
+        });
+
+        return true;
+    }
+
+    // Метод для удаления лайка
+    async unlike(userId: number): Promise<boolean> {
+        const existingLike = await ReviewLikeModel.findOne({
+            where: { reviewId: this.id, userId },
+        });
+
+        if (!existingLike) {
+            return false; // Не лайкал
+        }
+
+        await existingLike.destroy();
+
+        await this.update({
+            helpfulCount: Math.max(0, this.helpfulCount - 1),
+        });
+
+        return true;
+    }
+}
+```
+
+### Review Comment Model
+```typescript
+// src/domain/models/review-comment.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { ReviewModel } from './review.model';
+import { UserModel } from './user.model';
+
+export enum ReviewCommentStatus {
+    PENDING = 'pending',
+    APPROVED = 'approved',
+    HIDDEN = 'hidden'
+}
+
+interface IReviewCommentModel {
+    id: number;
+    reviewId: number;
+    userId: number;
+    content: string;
+    isAdmin: boolean;
+    status: ReviewCommentStatus;
+    review: ReviewModel;
+    user: UserModel;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IReviewCommentCreationAttributes {
+    reviewId: number;
+    userId: number;
+    content: string;
+    isAdmin?: boolean;
+    status?: ReviewCommentStatus;
+}
+
+@Table({
+    tableName: 'review_comments',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['review_id'], name: 'idx_review_comments_review_id' },
+        { fields: ['user_id'], name: 'idx_review_comments_user_id' },
+        { fields: ['is_admin'], name: 'idx_review_comments_is_admin' },
+        { fields: ['status'], name: 'idx_review_comments_status' },
+        { fields: ['created_at'], name: 'idx_review_comments_created_at' },
+    ],
+})
+export class ReviewCommentModel
+    extends Model<ReviewCommentModel, IReviewCommentCreationAttributes>
+    implements IReviewCommentModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => ReviewModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'review_id',
+    })
+    declare reviewId: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: false,
+    })
+    declare content: string;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_admin',
+    })
+    declare isAdmin: boolean;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(ReviewCommentStatus)),
+        allowNull: false,
+        defaultValue: ReviewCommentStatus.APPROVED,
+    })
+    declare status: ReviewCommentStatus;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'updated_at',
+    })
+    declare updatedAt: Date;
+
+    // Связи
+    @BelongsTo(() => ReviewModel)
+    declare review: ReviewModel;
+
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    // Методы
+    get isPending(): boolean {
+        return this.status === ReviewCommentStatus.PENDING;
+    }
+
+    get isApproved(): boolean {
+        return this.status === ReviewCommentStatus.APPROVED;
+    }
+
+    get isHidden(): boolean {
+        return this.status === ReviewCommentStatus.HIDDEN;
+    }
+}
+```
+
+### Review Like Model
+```typescript
+// src/domain/models/review-like.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { ReviewModel } from './review.model';
+import { UserModel } from './user.model';
+
+interface IReviewLikeModel {
+    id: number;
+    reviewId: number;
+    userId: number;
+    review: ReviewModel;
+    user: UserModel;
+    createdAt: Date;
+}
+
+interface IReviewLikeCreationAttributes {
+    reviewId: number;
+    userId: number;
+}
+
+@Table({
+    tableName: 'review_likes',
+    underscored: true,
+    timestamps: false,
+    indexes: [
+        { fields: ['review_id'], name: 'idx_review_likes_review_id' },
+        { fields: ['user_id'], name: 'idx_review_likes_user_id' },
+        { fields: ['review_id', 'user_id'], name: 'idx_review_likes_review_user_unique', unique: true },
+        { fields: ['created_at'], name: 'idx_review_likes_created_at' },
+    ],
+})
+export class ReviewLikeModel
+    extends Model<ReviewLikeModel, IReviewLikeCreationAttributes>
+    implements IReviewLikeModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => ReviewModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'review_id',
+    })
+    declare reviewId: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    // Связи
+    @BelongsTo(() => ReviewModel)
+    declare review: ReviewModel;
+
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+}
+```
+
+## Сервисы
+
+### Review Service
+```typescript
+// src/infrastructure/services/review.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { ReviewModel, ReviewStatus } from '@app/domain/models/review.model';
+import { ReviewCommentModel } from '@app/domain/models/review-comment.model';
+import { ReviewLikeModel } from '@app/domain/models/review-like.model';
+import { ProductModel } from '@app/domain/models/product.model';
+import { OrderModel } from '@app/domain/models/order.model';
+import { UserModel } from '@app/domain/models/user.model';
+import { Op } from 'sequelize';
+
+@Injectable()
+export class ReviewService {
+    private readonly logger = new Logger(ReviewService.name);
+
+    constructor(
+        @InjectModel(ReviewModel)
+        private reviewModel: typeof ReviewModel,
+        @InjectModel(ReviewCommentModel)
+        private reviewCommentModel: typeof ReviewCommentModel,
+        @InjectModel(ReviewLikeModel)
+        private reviewLikeModel: typeof ReviewLikeModel,
+        @InjectModel(ProductModel)
+        private productModel: typeof ProductModel,
+        @InjectModel(OrderModel)
+        private orderModel: typeof OrderModel,
+        @InjectModel(UserModel)
+        private userModel: typeof UserModel,
+    ) {}
+
+    async createReview(reviewData: {
+        productId: number;
+        userId: number;
+        orderId?: number;
+        rating: number;
+        title?: string;
+        content?: string;
+        images?: string[];
+    }): Promise<ReviewModel> {
+        // Проверяем существование товара
+        const product = await this.productModel.findByPk(reviewData.productId);
+        if (!product) {
+            throw new NotFoundException('Товар не найден');
+        }
+
+        // Проверяем, что пользователь еще не оставлял отзыв на этот товар
+        const existingReview = await this.reviewModel.findOne({
+            where: {
+                productId: reviewData.productId,
+                userId: reviewData.userId,
+            },
+        });
+
+        if (existingReview) {
+            throw new BadRequestException('Вы уже оставили отзыв на этот товар');
+        }
+
+        // Валидируем оценку
+        if (reviewData.rating < 1 || reviewData.rating > 5) {
+            throw new BadRequestException('Оценка должна быть от 1 до 5');
+        }
+
+        // Проверяем верификацию покупки
+        let isVerified = false;
+        if (reviewData.orderId) {
+            const order = await this.orderModel.findOne({
+                where: { id: reviewData.orderId, userId: reviewData.userId },
+                include: [{ association: 'items' }],
+            });
+
+            if (order && order.items.some(item => item.productId === reviewData.productId)) {
+                isVerified = true;
+            }
+        }
+
+        const review = await this.reviewModel.create({
+            ...reviewData,
+            status: ReviewStatus.PENDING,
+            images: reviewData.images || [],
+            isVerified,
+        });
+
+        this.logger.log(`Создан отзыв ${review.id} для товара ${reviewData.productId} пользователем ${reviewData.userId}`);
+        return review;
+    }
+
+    async getReviewById(reviewId: number): Promise<ReviewModel> {
+        const review = await this.reviewModel.findByPk(reviewId, {
+            include: [
+                { association: 'product' },
+                { association: 'user' },
+                { association: 'order' },
+                { association: 'moderatedByUser' },
+                { association: 'comments', include: [{ association: 'user' }] },
+                { association: 'likes' },
+            ],
+        });
+
+        if (!review) {
+            throw new NotFoundException('Отзыв не найден');
+        }
+
+        return review;
+    }
+
+    async getProductReviews(
+        productId: number,
+        filters: {
+            status?: ReviewStatus;
+            rating?: number;
+            hasImages?: boolean;
+            isVerified?: boolean;
+            page?: number;
+            limit?: number;
+            sortBy?: string;
+            sortOrder?: 'ASC' | 'DESC';
+        } = {},
+    ): Promise<{ data: ReviewModel[]; total: number; averageRating: number }> {
+        const {
+            status = ReviewStatus.APPROVED,
+            rating,
+            hasImages,
+            isVerified,
+            page = 1,
+            limit = 10,
+            sortBy = 'created_at',
+            sortOrder = 'DESC',
+        } = filters;
+
+        const whereClause: any = { productId };
+
+        if (status) whereClause.status = status;
+        if (rating) whereClause.rating = rating;
+        if (isVerified !== undefined) whereClause.isVerified = isVerified;
+        if (hasImages) whereClause.images = { [Op.ne]: [] };
+
+        const { rows: reviews, count: total } = await this.reviewModel.findAndCountAll({
+            where: whereClause,
+            include: [
+                { association: 'user' },
+                { association: 'comments', where: { status: 'approved' }, required: false, include: [{ association: 'user' }] },
+            ],
+            order: [[sortBy, sortOrder]],
+            limit,
+            offset: (page - 1) * limit,
+        });
+
+        // Вычисляем среднюю оценку
+        const averageRatingResult = await this.reviewModel.findOne({
+            where: { productId, status: ReviewStatus.APPROVED },
+            attributes: [
+                [this.reviewModel.sequelize.fn('AVG', this.reviewModel.sequelize.col('rating')), 'avg'],
+            ],
+            raw: true,
+        });
+
+        const averageRating = parseFloat(averageRatingResult?.avg || '0');
+
+        return { data: reviews, total, averageRating };
+    }
+
+    async getUserReviews(
+        userId: number,
+        page: number = 1,
+        limit: number = 10,
+    ): Promise<{ data: ReviewModel[]; total: number }> {
+        const { rows: reviews, count: total } = await this.reviewModel.findAndCountAll({
+            where: { userId },
+            include: [
+                { association: 'product' },
+                { association: 'comments', include: [{ association: 'user' }] },
+            ],
+            order: [['created_at', 'DESC']],
+            limit,
+            offset: (page - 1) * limit,
+        });
+
+        return { data: reviews, total };
+    }
+
+    async approveReview(reviewId: number, moderatedBy: number, notes?: string): Promise<ReviewModel> {
+        const review = await this.getReviewById(reviewId);
+
+        if (review.status !== ReviewStatus.PENDING) {
+            throw new BadRequestException('Отзыв уже был обработан');
+        }
+
+        await review.approve(moderatedBy, notes);
+
+        this.logger.log(`Отзыв ${reviewId} одобрен модератором ${moderatedBy}`);
+        return review;
+    }
+
+    async hideReview(reviewId: number, moderatedBy: number, notes?: string): Promise<ReviewModel> {
+        const review = await this.getReviewById(reviewId);
+
+        await review.hide(moderatedBy, notes);
+
+        this.logger.log(`Отзыв ${reviewId} скрыт модератором ${moderatedBy}`);
+        return review;
+    }
+
+    async addCommentToReview(
+        reviewId: number,
+        userId: number,
+        content: string,
+        isAdmin: boolean = false,
+    ): Promise<ReviewCommentModel> {
+        const review = await this.getReviewById(reviewId);
+
+        if (!review.isApproved) {
+            throw new BadRequestException('Нельзя комментировать неодобренные отзывы');
+        }
+
+        const comment = await review.addComment(userId, content, isAdmin);
+
+        this.logger.log(`Добавлен комментарий к отзыву ${reviewId} пользователем ${userId}`);
+        return comment;
+    }
+
+    async likeReview(reviewId: number, userId: number): Promise<boolean> {
+        const review = await this.getReviewById(reviewId);
+
+        if (!review.isApproved) {
+            throw new BadRequestException('Нельзя лайкать неодобренные отзывы');
+        }
+
+        const success = await review.like(userId);
+
+        if (success) {
+            this.logger.log(`Пользователь ${userId} лайкнул отзыв ${reviewId}`);
+        }
+
+        return success;
+    }
+
+    async unlikeReview(reviewId: number, userId: number): Promise<boolean> {
+        const review = await this.getReviewById(reviewId);
+
+        const success = await review.unlike(userId);
+
+        if (success) {
+            this.logger.log(`Пользователь ${userId} убрал лайк с отзыва ${reviewId}`);
+        }
+
+        return success;
+    }
+
+    async getPendingReviews(page: number = 1, limit: number = 20): Promise<{ data: ReviewModel[]; total: number }> {
+        const { rows: reviews, count: total } = await this.reviewModel.findAndCountAll({
+            where: { status: ReviewStatus.PENDING },
+            include: [
+                { association: 'product' },
+                { association: 'user' },
+            ],
+            order: [['created_at', 'ASC']],
+            limit,
+            offset: (page - 1) * limit,
+        });
+
+        return { data: reviews, total };
+    }
+
+    async getReviewStatistics(): Promise<{
+        totalReviews: number;
+        pendingReviews: number;
+        approvedReviews: number;
+        hiddenReviews: number;
+        averageRating: number;
+        reviewsWithImages: number;
+        verifiedReviews: number;
+        reviewsByRating: Record<number, number>;
+    }> {
+        const [
+            totalReviews,
+            pendingReviews,
+            approvedReviews,
+            hiddenReviews,
+            averageRatingResult,
+            reviewsWithImages,
+            verifiedReviews,
+            reviewsByRatingResult,
+        ] = await Promise.all([
+            this.reviewModel.count(),
+            this.reviewModel.count({ where: { status: ReviewStatus.PENDING } }),
+            this.reviewModel.count({ where: { status: ReviewStatus.APPROVED } }),
+            this.reviewModel.count({ where: { status: ReviewStatus.HIDDEN } }),
+            this.reviewModel.findOne({
+                attributes: [
+                    [this.reviewModel.sequelize.fn('AVG', this.reviewModel.sequelize.col('rating')), 'avg'],
+                ],
+                raw: true,
+            }),
+            this.reviewModel.count({
+                where: {
+                    images: { [Op.ne]: [] },
+                    status: ReviewStatus.APPROVED,
+                },
+            }),
+            this.reviewModel.count({
+                where: {
+                    isVerified: true,
+                    status: ReviewStatus.APPROVED,
+                },
+            }),
+            this.reviewModel.findAll({
+                attributes: [
+                    'rating',
+                    [this.reviewModel.sequelize.fn('COUNT', this.reviewModel.sequelize.col('id')), 'count'],
+                ],
+                where: { status: ReviewStatus.APPROVED },
+                group: ['rating'],
+                raw: true,
+            }),
+        ]);
+
+        const reviewsByRating = reviewsByRatingResult.reduce((acc, item) => {
+            acc[item.rating] = parseInt(item.count);
+            return acc;
+        }, {});
+
+        return {
+            totalReviews,
+            pendingReviews,
+            approvedReviews,
+            hiddenReviews,
+            averageRating: parseFloat(averageRatingResult?.avg || '0'),
+            reviewsWithImages,
+            verifiedReviews,
+            reviewsByRating,
+        };
+    }
+
+    async getTopRatedProducts(limit: number = 10): Promise<any[]> {
+        const result = await this.reviewModel.findAll({
+            attributes: [
+                'product_id',
+                [this.reviewModel.sequelize.fn('AVG', this.reviewModel.sequelize.col('rating')), 'averageRating'],
+                [this.reviewModel.sequelize.fn('COUNT', this.reviewModel.sequelize.col('id')), 'reviewCount'],
+            ],
+            where: { status: ReviewStatus.APPROVED },
+            group: ['product_id'],
+            having: this.reviewModel.sequelize.literal('COUNT(*) >= 5'), // Минимум 5 отзывов
+            order: [[this.reviewModel.sequelize.fn('AVG', this.reviewModel.sequelize.col('rating')), 'DESC']],
+            limit,
+            raw: true,
+        });
+
+        return result;
+    }
+
+    async getMostHelpfulReviews(limit: number = 10): Promise<ReviewModel[]> {
+        return this.reviewModel.findAll({
+            where: { status: ReviewStatus.APPROVED },
+            include: [
+                { association: 'product' },
+                { association: 'user' },
+            ],
+            order: [['helpful_count', 'DESC']],
+            limit,
+        });
+    }
+}
+```
+
+## Контроллеры
+
+### Review Controller
+```typescript
+// src/infrastructure/controllers/review.controller.ts
+import { Controller, Get, Post, Put, Param, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
+import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
+import { Roles } from '@app/infrastructure/common/decorators/roles.decorator';
+import { CurrentUser } from '@app/infrastructure/common/decorators/current-user.decorator';
+import { ReviewService } from '@app/infrastructure/services/review.service';
+import { CreateReviewDto } from '@app/infrastructure/dto/review/create-review.dto';
+import { AddCommentDto } from '@app/infrastructure/dto/review/add-comment.dto';
+import { ReviewResponse, ReviewStatisticsResponse } from '@app/infrastructure/responses/review/review.response';
+
+@ApiTags('Отзывы и комментарии')
+@Controller('reviews')
+export class ReviewController {
+    // Ролевые константы (совместимы с многоарендной моделью)
+    private static readonly ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN'] as const;
+    private static readonly MANAGER_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
+    private static readonly STAFF_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
+    private static readonly CUSTOMER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST'] as const;
+    private static readonly ALL_ROLES = [
+        ...ReviewController.ADMIN_ROLES,
+        ...ReviewController.MANAGER_ROLES,
+        ...ReviewController.CUSTOMER_ROLES,
+    ] as const;
+
+    constructor(private readonly reviewService: ReviewService) {}
+
+    @Post()
+    @HttpCode(HttpStatus.CREATED)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReviewController.CUSTOMER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Создать новый отзыв' })
+    @ApiResponse({ status: 201, description: 'Отзыв создан', type: ReviewResponse })
+    async createReview(
+        @Body() createReviewDto: CreateReviewDto,
+        @CurrentUser() user: any,
+    ): Promise<ReviewResponse> {
+        const review = await this.reviewService.createReview({
+            ...createReviewDto,
+            userId: user.id,
+        });
+        
+        return {
+            id: review.id,
+            productId: review.productId,
+            userId: review.userId,
+            orderId: review.orderId,
+            rating: review.rating,
+            title: review.title,
+            content: review.content,
+            images: review.images,
+            isVerified: review.isVerified,
+            helpfulCount: review.helpfulCount,
+            status: review.status,
+            moderationNotes: review.moderationNotes,
+            moderatedBy: review.moderatedBy,
+            moderatedAt: review.moderatedAt,
+            createdAt: review.createdAt,
+            updatedAt: review.updatedAt,
+        };
+    }
+
+    @Get('product/:productId')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReviewController.ALL_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить отзывы товара' })
+    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
+    @ApiQuery({ name: 'rating', required: false, description: 'Фильтр по оценке' })
+    @ApiQuery({ name: 'hasImages', required: false, description: 'Только с изображениями' })
+    @ApiQuery({ name: 'isVerified', required: false, description: 'Только верифицированные' })
+    @ApiQuery({ name: 'sortBy', required: false, description: 'Поле для сортировки' })
+    @ApiQuery({ name: 'sortOrder', required: false, description: 'Порядок сортировки' })
+    @ApiResponse({ status: 200, description: 'Отзывы получены', type: [ReviewResponse] })
+    async getProductReviews(
+        @Param('productId') productId: number,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+        @Query('rating') rating?: number,
+        @Query('hasImages') hasImages?: boolean,
+        @Query('isVerified') isVerified?: boolean,
+        @Query('sortBy') sortBy: string = 'created_at',
+        @Query('sortOrder') sortOrder: 'ASC' | 'DESC' = 'DESC',
+    ): Promise<{ data: ReviewResponse[]; total: number; averageRating: number }> {
+        const result = await this.reviewService.getProductReviews(productId, {
+            rating,
+            hasImages,
+            isVerified,
+            page,
+            limit,
+            sortBy,
+            sortOrder,
+        });
+        
+        return {
+            data: result.data.map(review => ({
+                id: review.id,
+                productId: review.productId,
+                userId: review.userId,
+                orderId: review.orderId,
+                rating: review.rating,
+                title: review.title,
+                content: review.content,
+                images: review.images,
+                isVerified: review.isVerified,
+                helpfulCount: review.helpfulCount,
+                status: review.status,
+                moderationNotes: review.moderationNotes,
+                moderatedBy: review.moderatedBy,
+                moderatedAt: review.moderatedAt,
+                createdAt: review.createdAt,
+                updatedAt: review.updatedAt,
+            })),
+            total: result.total,
+            averageRating: result.averageRating,
+        };
+    }
+
+    @Get(':id')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReviewController.ALL_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить отзыв по ID' })
+    @ApiResponse({ status: 200, description: 'Отзыв получен', type: ReviewResponse })
+    @ApiResponse({ status: 404, description: 'Отзыв не найден' })
+    async getReviewById(@Param('id') reviewId: number): Promise<ReviewResponse> {
+        const review = await this.reviewService.getReviewById(reviewId);
+        
+        return {
+            id: review.id,
+            productId: review.productId,
+            userId: review.userId,
+            orderId: review.orderId,
+            rating: review.rating,
+            title: review.title,
+            content: review.content,
+            images: review.images,
+            isVerified: review.isVerified,
+            helpfulCount: review.helpfulCount,
+            status: review.status,
+            moderationNotes: review.moderationNotes,
+            moderatedBy: review.moderatedBy,
+            moderatedAt: review.moderatedAt,
+            createdAt: review.createdAt,
+            updatedAt: review.updatedAt,
+        };
+    }
+
+    @Put(':id/approve')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReviewController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Одобрить отзыв (только для модераторов)' })
+    @ApiResponse({ status: 200, description: 'Отзыв одобрен', type: ReviewResponse })
+    @ApiResponse({ status: 400, description: 'Отзыв уже обработан' })
+    @ApiResponse({ status: 404, description: 'Отзыв не найден' })
+    async approveReview(
+        @Param('id') reviewId: number,
+        @Body('notes') notes?: string,
+        @CurrentUser() user: any,
+    ): Promise<ReviewResponse> {
+        const review = await this.reviewService.approveReview(reviewId, user.id, notes);
+        
+        return {
+            id: review.id,
+            productId: review.productId,
+            userId: review.userId,
+            orderId: review.orderId,
+            rating: review.rating,
+            title: review.title,
+            content: review.content,
+            images: review.images,
+            isVerified: review.isVerified,
+            helpfulCount: review.helpfulCount,
+            status: review.status,
+            moderationNotes: review.moderationNotes,
+            moderatedBy: review.moderatedBy,
+            moderatedAt: review.moderatedAt,
+            createdAt: review.createdAt,
+            updatedAt: review.updatedAt,
+        };
+    }
+
+    @Put(':id/hide')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReviewController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Скрыть отзыв (только для модераторов)' })
+    @ApiResponse({ status: 200, description: 'Отзыв скрыт', type: ReviewResponse })
+    @ApiResponse({ status: 404, description: 'Отзыв не найден' })
+    async hideReview(
+        @Param('id') reviewId: number,
+        @Body('notes') notes?: string,
+        @CurrentUser() user: any,
+    ): Promise<ReviewResponse> {
+        const review = await this.reviewService.hideReview(reviewId, user.id, notes);
+        
+        return {
+            id: review.id,
+            productId: review.productId,
+            userId: review.userId,
+            orderId: review.orderId,
+            rating: review.rating,
+            title: review.title,
+            content: review.content,
+            images: review.images,
+            isVerified: review.isVerified,
+            helpfulCount: review.helpfulCount,
+            status: review.status,
+            moderationNotes: review.moderationNotes,
+            moderatedBy: review.moderatedBy,
+            moderatedAt: review.moderatedAt,
+            createdAt: review.createdAt,
+            updatedAt: review.updatedAt,
+        };
+    }
+
+    @Post(':id/comments')
+    @HttpCode(HttpStatus.CREATED)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReviewController.CUSTOMER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Добавить комментарий к отзыву' })
+    @ApiResponse({ status: 201, description: 'Комментарий добавлен' })
+    @ApiResponse({ status: 400, description: 'Нельзя комментировать неодобренные отзывы' })
+    @ApiResponse({ status: 404, description: 'Отзыв не найден' })
+    async addComment(
+        @Param('id') reviewId: number,
+        @Body() addCommentDto: AddCommentDto,
+        @CurrentUser() user: any,
+    ): Promise<{ message: string }> {
+        await this.reviewService.addCommentToReview(reviewId, user.id, addCommentDto.content, addCommentDto.isAdmin);
+        return { message: 'Комментарий добавлен' };
+    }
+
+    @Post(':id/like')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReviewController.CUSTOMER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Лайкнуть отзыв' })
+    @ApiResponse({ status: 200, description: 'Отзыв лайкнут' })
+    @ApiResponse({ status: 400, description: 'Нельзя лайкать неодобренные отзывы' })
+    @ApiResponse({ status: 404, description: 'Отзыв не найден' })
+    async likeReview(
+        @Param('id') reviewId: number,
+        @CurrentUser() user: any,
+    ): Promise<{ message: string; success: boolean }> {
+        const success = await this.reviewService.likeReview(reviewId, user.id);
+        return { 
+            message: success ? 'Отзыв лайкнут' : 'Вы уже лайкнули этот отзыв',
+            success 
+        };
+    }
+
+    @Post(':id/unlike')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReviewController.CUSTOMER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Убрать лайк с отзыва' })
+    @ApiResponse({ status: 200, description: 'Лайк убран' })
+    @ApiResponse({ status: 404, description: 'Отзыв не найден' })
+    async unlikeReview(
+        @Param('id') reviewId: number,
+        @CurrentUser() user: any,
+    ): Promise<{ message: string; success: boolean }> {
+        const success = await this.reviewService.unlikeReview(reviewId, user.id);
+        return { 
+            message: success ? 'Лайк убран' : 'Вы не лайкали этот отзыв',
+            success 
+        };
+    }
+
+    @Get('admin/pending')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReviewController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить отзывы на модерации (только для админов)' })
+    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
+    @ApiResponse({ status: 200, description: 'Отзывы на модерации получены', type: [ReviewResponse] })
+    async getPendingReviews(
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 20,
+    ): Promise<{ data: ReviewResponse[]; total: number }> {
+        const result = await this.reviewService.getPendingReviews(page, limit);
+        
+        return {
+            data: result.data.map(review => ({
+                id: review.id,
+                productId: review.productId,
+                userId: review.userId,
+                orderId: review.orderId,
+                rating: review.rating,
+                title: review.title,
+                content: review.content,
+                images: review.images,
+                isVerified: review.isVerified,
+                helpfulCount: review.helpfulCount,
+                status: review.status,
+                moderationNotes: review.moderationNotes,
+                moderatedBy: review.moderatedBy,
+                moderatedAt: review.moderatedAt,
+                createdAt: review.createdAt,
+                updatedAt: review.updatedAt,
+            })),
+            total: result.total,
+        };
+    }
+
+    @Get('admin/statistics')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ReviewController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить статистику отзывов (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Статистика получена', type: ReviewStatisticsResponse })
+    async getReviewStatistics(): Promise<ReviewStatisticsResponse> {
+        const statistics = await this.reviewService.getReviewStatistics();
+        
+        return {
+            totalReviews: statistics.totalReviews,
+            pendingReviews: statistics.pendingReviews,
+            approvedReviews: statistics.approvedReviews,
+            hiddenReviews: statistics.hiddenReviews,
+            averageRating: statistics.averageRating,
+            reviewsWithImages: statistics.reviewsWithImages,
+            verifiedReviews: statistics.verifiedReviews,
+            reviewsByRating: statistics.reviewsByRating,
+        };
+    }
+
+    @Get('top-rated-products')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить топ товаров по рейтингу' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество товаров' })
+    @ApiResponse({ status: 200, description: 'Топ товаров получен' })
+    async getTopRatedProducts(
+        @Query('limit') limit: number = 10,
+    ): Promise<any[]> {
+        return this.reviewService.getTopRatedProducts(limit);
+    }
+
+    @Get('most-helpful')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить самые полезные отзывы' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество отзывов' })
+    @ApiResponse({ status: 200, description: 'Самые полезные отзывы получены', type: [ReviewResponse] })
+    async getMostHelpfulReviews(
+        @Query('limit') limit: number = 10,
+    ): Promise<ReviewResponse[]> {
+        const reviews = await this.reviewService.getMostHelpfulReviews(limit);
+        
+        return reviews.map(review => ({
+            id: review.id,
+            productId: review.productId,
+            userId: review.userId,
+            orderId: review.orderId,
+            rating: review.rating,
+            title: review.title,
+            content: review.content,
+            images: review.images,
+            isVerified: review.isVerified,
+            helpfulCount: review.helpfulCount,
+            status: review.status,
+            moderationNotes: review.moderationNotes,
+            moderatedBy: review.moderatedBy,
+            moderatedAt: review.moderatedAt,
+            createdAt: review.createdAt,
+            updatedAt: review.updatedAt,
+        }));
+    }
+}
+```
+
+## DTO
+
+### Create Review DTO
+```typescript
+// src/infrastructure/dto/review/create-review.dto.ts
+import { IsNumber, IsString, IsArray, IsOptional, Min, Max, Length, IsUrl } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CreateReviewDto {
+    @ApiProperty({ description: 'ID товара', example: 1 })
+    @IsNumber({}, { message: 'ID товара должен быть числом' })
+    @Type(() => Number)
+    productId: number;
+
+    @ApiProperty({ description: 'ID заказа для верификации', example: 1, required: false })
+    @IsOptional()
+    @IsNumber({}, { message: 'ID заказа должен быть числом' })
+    @Type(() => Number)
+    orderId?: number;
+
+    @ApiProperty({ description: 'Оценка от 1 до 5', example: 5, minimum: 1, maximum: 5 })
+    @IsNumber({}, { message: 'Оценка должна быть числом' })
+    @Min(1, { message: 'Оценка не может быть меньше 1' })
+    @Max(5, { message: 'Оценка не может быть больше 5' })
+    @Type(() => Number)
+    rating: number;
+
+    @ApiProperty({ description: 'Заголовок отзыва', example: 'Отличный товар!', required: false })
+    @IsOptional()
+    @IsString({ message: 'Заголовок должен быть строкой' })
+    @Length(1, 255, { message: 'Заголовок должен быть от 1 до 255 символов' })
+    title?: string;
+
+    @ApiProperty({ description: 'Текст отзыва', example: 'Очень доволен покупкой', required: false })
+    @IsOptional()
+    @IsString({ message: 'Текст отзыва должен быть строкой' })
+    @Length(1, 5000, { message: 'Текст отзыва должен быть от 1 до 5000 символов' })
+    content?: string;
+
+    @ApiProperty({ description: 'URL изображений в отзыве', example: ['https://example.com/image1.jpg'], required: false })
+    @IsOptional()
+    @IsArray({ message: 'Изображения должны быть массивом' })
+    @IsUrl({}, { each: true, message: 'Каждое изображение должно быть валидным URL' })
+    images?: string[];
+}
+```
+
+### Add Comment DTO
+```typescript
+// src/infrastructure/dto/review/add-comment.dto.ts
+import { IsString, IsBoolean, IsOptional, Length } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class AddCommentDto {
+    @ApiProperty({ description: 'Текст комментария', example: 'Спасибо за отзыв!' })
+    @IsString({ message: 'Текст комментария должен быть строкой' })
+    @Length(1, 2000, { message: 'Текст комментария должен быть от 1 до 2000 символов' })
+    content: string;
+
+    @ApiProperty({ description: 'Официальный комментарий от админа', example: true, required: false })
+    @IsOptional()
+    @IsBoolean({ message: 'Официальный комментарий должен быть булевым значением' })
+    isAdmin?: boolean;
+}
+```
+
+## Responses
+
+### Review Response
+```typescript
+// src/infrastructure/responses/review/review.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class ReviewResponse {
+    @ApiProperty({ description: 'ID отзыва', example: 1 })
+    id: number;
+
+    @ApiProperty({ description: 'ID товара', example: 1 })
+    productId: number;
+
+    @ApiProperty({ description: 'ID пользователя', example: 1 })
+    userId: number;
+
+    @ApiProperty({ description: 'ID заказа', example: 1, required: false })
+    orderId?: number;
+
+    @ApiProperty({ description: 'Оценка от 1 до 5', example: 5 })
+    rating: number;
+
+    @ApiProperty({ description: 'Заголовок отзыва', example: 'Отличный товар!', required: false })
+    title?: string;
+
+    @ApiProperty({ description: 'Текст отзыва', example: 'Очень доволен покупкой', required: false })
+    content?: string;
+
+    @ApiProperty({ description: 'URL изображений', example: ['https://example.com/image1.jpg'] })
+    images: string[];
+
+    @ApiProperty({ description: 'Подтвержденная покупка', example: true })
+    isVerified: boolean;
+
+    @ApiProperty({ description: 'Количество лайков', example: 15 })
+    helpfulCount: number;
+
+    @ApiProperty({ description: 'Статус отзыва', example: 'approved' })
+    status: string;
+
+    @ApiProperty({ description: 'Заметки модератора', example: 'Одобрено', required: false })
+    moderationNotes?: string;
+
+    @ApiProperty({ description: 'ID модератора', example: 2, required: false })
+    moderatedBy?: number;
+
+    @ApiProperty({ description: 'Дата модерации', example: '2024-01-15T10:30:00Z', required: false })
+    moderatedAt?: Date;
+
+    @ApiProperty({ description: 'Дата создания', example: '2024-01-15T10:00:00Z' })
+    createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления', example: '2024-01-15T10:30:00Z' })
+    updatedAt: Date;
+}
+```
+
+### Review Statistics Response
+```typescript
+// src/infrastructure/responses/review/review-statistics.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class ReviewStatisticsResponse {
+    @ApiProperty({ description: 'Общее количество отзывов', example: 1250 })
+    totalReviews: number;
+
+    @ApiProperty({ description: 'Количество отзывов на модерации', example: 45 })
+    pendingReviews: number;
+
+    @ApiProperty({ description: 'Количество одобренных отзывов', example: 1150 })
+    approvedReviews: number;
+
+    @ApiProperty({ description: 'Количество скрытых отзывов', example: 55 })
+    hiddenReviews: number;
+
+    @ApiProperty({ description: 'Средняя оценка', example: 4.2 })
+    averageRating: number;
+
+    @ApiProperty({ description: 'Количество отзывов с изображениями', example: 320 })
+    reviewsWithImages: number;
+
+    @ApiProperty({ description: 'Количество верифицированных отзывов', example: 890 })
+    verifiedReviews: number;
+
+    @ApiProperty({ description: 'Отзывы по оценкам', example: { 1: 50, 2: 100, 3: 200, 4: 400, 5: 400 } })
+    reviewsByRating: Record<number, number>;
+}
+```
+
+## Критерии готовности
+
+- [ ] Создана миграция для таблицы `reviews`
+- [ ] Создана миграция для таблицы `review_comments`
+- [ ] Создана миграция для таблицы `review_likes`
+- [ ] Созданы модели `ReviewModel`, `ReviewCommentModel`, `ReviewLikeModel`
+- [ ] Добавлены валидации для новых полей
+- [ ] Созданы индексы для производительности
+- [ ] Реализован `ReviewService` с методами для работы с отзывами и комментариями
+- [ ] Создан `ReviewController` с API endpoints
+- [ ] Созданы DTO для валидации входных данных
+- [ ] Созданы Response классы для API ответов
+- [ ] Написаны тесты для новой функциональности
+- [ ] Обновлена документация API
+- [ ] Проверена обратная совместимость
+
+## Следующие шаги
+
+После завершения улучшений Review/Comment переходим к:
+1. Technical Models - аудит, логирование, кэширование
+2. Analytics - метрики и отчеты
+3. Search - полнотекстовый поиск
+```

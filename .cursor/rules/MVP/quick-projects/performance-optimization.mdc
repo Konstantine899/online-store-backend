@@ -1,0 +1,435 @@
+# Performance Optimization: Концепция и подход
+
+## 🎯 Проблема
+
+Текущая производительность:
+
+- ⚠️ N+1 queries на списках (products, orders, cart)
+- ⚠️ Отсутствуют индексы для FK и filters
+- ⚠️ Не все списки пагинированы
+- ⚠️ Выбираются все поля (включая ненужные)
+- ⚠️ Нет лимитов на pagination
+
+**Проблема для Middle:**
+
+- Медленные API = плохая архитектура
+- N+1 = базовая ошибка начинающих
+- Middle должен знать оптимизацию БД
+
+**Цель:** Production-level performance
+
+---
+
+## 🔍 Анализ проблем
+
+### 1. N+1 Queries (классическая проблема ORM)
+
+**Что такое N+1:**
+
+```
+GET /products → 1 query для продуктов
+              → N queries для каждой категории
+              → N queries для каждого бренда
+              → N queries для рейтингов
+
+ИТОГО: 1 + 3N queries вместо 1!
+```
+
+**Пример:**
+
+```sql
+-- N+1 (плохо)
+SELECT * FROM products;          -- 1 query, 100 products
+SELECT * FROM categories WHERE id = 1;  -- query 1
+SELECT * FROM categories WHERE id = 2;  -- query 2
+... -- 100 queries!
+
+-- Optimized (хорошо)
+SELECT p.*, c.name as category_name
+FROM products p
+LEFT JOIN categories c ON p.category_id = c.id;  -- 1 query!
+```
+
+**Где у нас N+1:**
+
+- Products list (category, brand, ratings)
+- Orders list (user, order_items → products)
+- Users admin list (roles, addresses)
+- Cart (cart_products → products)
+
+### 2. Missing Indexes
+
+**Проблема:** Slow queries из-за table scans
+
+**Типы индексов:**
+
+**Single-column indexes:**
+
+- FK columns: `category_id`, `user_id`, `order_id`
+- Filter fields: `status`, `active`, `featured`
+- Sort fields: `price`, `created_at`
+
+**Composite indexes:**
+
+- `(category_id, status)` - фильтр по категории + статус
+- `(user_id, status)` - мои заказы по статусу
+- `(tenant_id, user_id)` - для multi-tenancy (на будущее)
+
+**Unique indexes:**
+
+- `email` (уже есть)
+- `phone` (уже есть)
+
+### 3. Pagination Issues
+
+**Проблема:** Некоторые списки без пагинации
+
+**Риски:**
+
+- Memory overflow (10,000+ products в одном запросе)
+- Slow response time
+- Bad UX
+
+**Решение:**
+
+- Default limit: 5
+- Max limit: 100 (enforce через pipe)
+- Meta с navigation info
+
+### 4. Over-fetching
+
+**Проблема:** Выбираем все колонки
+
+```typescript
+// Плохо
+SELECT * FROM users;
+// → возвращает password, createdAt, updatedAt, etc.
+
+// Хорошо
+SELECT id, email, first_name, last_name FROM users;
+// → только нужные поля
+```
+
+**Sequelize:**
+
+```typescript
+// Плохо
+User.findAll();
+
+// Хорошо
+User.findAll({
+    attributes: {
+        exclude: ['password', 'createdAt', 'updatedAt'],
+    },
+});
+```
+
+---
+
+## 📋 Разбиение на задачи (High-Level)
+
+### Задача 1: PROD-030 - Исправить N+1 Queries
+
+**Проблема:** N+1 queries на всех списках (15+ queries вместо 1)
+
+**Подзадачи:**
+
+1. Audit Products list для N+1
+2. Audit Orders list для N+1
+3. Audit Users admin list для N+1
+4. Audit Cart для N+1
+5. Add attributes filtering across repositories
+
+**Результат:** 1 query на каждый список, 10x faster
+
+**Оценка:** 6-8 часов
+
+---
+
+### Задача 2: PROD-031 - Добавить Database Indexes
+
+**Проблема:** Slow queries из-за table scans, нет индексов
+
+**Подзадачи:**
+
+1. Audit существующих индексов
+2. Создать миграцию для FK indexes
+3. Добавить индексы для filter fields
+4. Добавить composite indexes
+5. Verify с EXPLAIN ANALYZE
+
+**Результат:** Все FK и filters индексированы
+
+**Оценка:** 4-6 часов
+
+---
+
+### Задача 3: PROD-032 - Pagination и Limits
+
+**Проблема:** Не все списки пагинированы, нет max limit
+
+**Подзадачи:**
+
+1. Audit пагинации на всех списках
+2. Добавить пагинацию где отсутствует
+3. Enforce max limit (100)
+4. Verify pagination Meta correctness
+
+**Результат:** Все списки с proper pagination
+
+**Оценка:** 3-4 часа
+
+---
+
+## 🏗️ Архитектура решения
+
+### Database Query Optimization
+
+```
+┌─────────────────────────────────────┐
+│   Controller Layer                  │
+│   - Pagination params (page, limit) │
+│   - Filter params                   │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│   Service Layer                     │
+│   - Build query options             │
+│   - Include related entities        │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│   Repository Layer                  │
+│   - findAll с include               │
+│   - attributes filtering            │
+│   - pagination                      │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│   ORM Layer (Sequelize)             │
+│   - Generate optimized SQL          │
+│   - Use indexes                     │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│   Database (PostgreSQL)             │
+│   - Execute with indexes            │
+│   - Return minimal data             │
+└─────────────────────────────────────┘
+```
+
+---
+
+## 🛠️ Инструменты оптимизации
+
+### 1. Sequelize Include (Eager Loading)
+
+**Синтаксис:**
+
+```typescript
+Product.findAll({
+    include: [
+        {
+            model: Category,
+            attributes: ['id', 'name'], // только нужное
+        },
+        {
+            model: Brand,
+            attributes: ['id', 'name'],
+        },
+        {
+            model: Rating,
+            attributes: ['rating'],
+            separate: false, // в том же query!
+        },
+    ],
+    attributes: {
+        exclude: ['createdAt', 'updatedAt'], // не нужные
+    },
+});
+```
+
+**Результат:** 1 query вместо N+1
+
+### 2. PostgreSQL Indexes
+
+**Создание:**
+
+```typescript
+// Migration
+await queryInterface.addIndex('products', ['category_id'], {
+    name: 'idx_products_category_id',
+});
+
+// Composite
+await queryInterface.addIndex('products', ['category_id', 'status'], {
+    name: 'idx_products_category_status',
+});
+```
+
+**Проверка использования:**
+
+```sql
+EXPLAIN ANALYZE
+SELECT * FROM products WHERE category_id = 1 AND status = 'active';
+```
+
+Ищем `Index Scan` (хорошо) vs `Seq Scan` (плохо)
+
+### 3. Pagination Helper
+
+**MaxLimitPipe:**
+
+```typescript
+@Injectable()
+export class MaxLimitPipe implements PipeTransform {
+    transform(value: number) {
+        return Math.min(value, 100); // max 100
+    }
+}
+```
+
+**Usage:**
+
+```typescript
+@Query('limit', new DefaultValuePipe(5), ParseIntPipe, new MaxLimitPipe())
+limit: number
+```
+
+---
+
+## 📈 Performance Metrics
+
+### Что измеряем:
+
+**Response Time:**
+
+- GET /products: target <100ms
+- GET /orders: target <50ms
+- GET /cart: target <30ms
+
+**Database:**
+
+- Query count per request: target ≤3
+- Query time: target <20ms
+- Index usage: target 100%
+
+**API:**
+
+- Throughput: target 100 rps
+- Pagination: всегда enabled
+- Data transfer: minimal (только нужные поля)
+
+### Измерение до/после:
+
+```bash
+# Before optimization
+GET /products → 15 queries, 500ms
+
+# After optimization
+GET /products → 1 query, 50ms
+
+IMPROVEMENT: 10x faster! 📈
+```
+
+---
+
+## 🎓 Middle vs Junior Performance
+
+### Junior:
+
+- "Работает? Норм."
+- N+1 queries (не замечают)
+- Нет индексов
+- SELECT \* везде
+
+### Middle (твой):
+
+- **Profiling:** знает где bottlenecks
+- **N+1 prevention:** eager loading
+- **Index strategy:** правильные индексы
+- **Query optimization:** только нужные поля
+- **Pagination:** всегда с limits
+- **Metrics:** может показать improvement
+
+**Работодатели ценят это!**
+
+---
+
+## 🛡️ Best Practices
+
+### DO:
+
+- ✅ Use include для relationships
+- ✅ Add indexes для FK и filters
+- ✅ Paginate все списки
+- ✅ Select только нужные attributes
+- ✅ Use EXPLAIN ANALYZE для проверки
+- ✅ Measure before/after
+- ✅ Document optimization decisions
+
+### DON'T:
+
+- ❌ SELECT \* (over-fetching)
+- ❌ N+1 queries (lazy loading everywhere)
+- ❌ Indexes на все подряд (overhead для writes)
+- ❌ Нет pagination (memory issues)
+- ❌ Premature optimization (measure first!)
+
+---
+
+## 📊 Чек-лист оптимизации
+
+### Database:
+
+- [ ] Все FK индексированы
+- [ ] Filter fields индексированы
+- [ ] Composite indexes для hot queries
+- [ ] EXPLAIN ANALYZE подтверждает usage
+- [ ] Миграции для indexes
+
+### Queries:
+
+- [ ] N+1 исправлены везде
+- [ ] Include используется правильно
+- [ ] Attributes filtering применён
+- [ ] Нет SELECT \*
+- [ ] Sequelize generates оптимальный SQL
+
+### API:
+
+- [ ] Все списки пагинированы
+- [ ] Default limit = 5
+- [ ] Max limit = 100
+- [ ] Meta корректный
+- [ ] Response time <100ms для списков
+
+### Verification:
+
+- [ ] Замерены метрики до/после
+- [ ] Improvement задокументирован
+- [ ] Tests подтверждают результаты
+- [ ] No performance regression
+
+---
+
+## 🎯 Результат для Middle портфолио
+
+**Что говоришь на собесах:**
+
+"В процессе разработки обнаружил N+1 queries на списках товаров и заказов.
+
+Провёл оптимизацию:
+
+- Добавил eager loading через Sequelize include
+- Создал индексы для всех FK и частых фильтров
+- Настроил pagination с reasonable limits
+
+Результат: response time улучшился в 10x (с 500ms до 50ms для product lists).
+
+Подтвердил через EXPLAIN ANALYZE что индексы используются.
+Добавил integration тесты для проверки pagination Meta."
+
+**Это демонстрирует Middle thinking!**
+
+**Детальный план:** см. [performance-optimization.plan.mdc](./performance-optimization.plan.mdc)

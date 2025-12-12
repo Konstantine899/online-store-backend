@@ -1,15 +1,11 @@
-import {
-    ConflictException,
-    HttpStatus,
-    Injectable,
-    NotFoundException,
-} from '@nestjs/common';
+import { SortingEnum } from '@app/domain/dto';
+import { IProductService } from '@app/domain/services';
 import {
     CreateProductDto,
     SearchDto,
     SortingDto,
 } from '@app/infrastructure/dto';
-import { FileService } from '../file/file.service';
+import { MetaData, ProductInfo } from '@app/infrastructure/paginate';
 import {
     ProductPropertyRepository,
     ProductRepository,
@@ -17,24 +13,25 @@ import {
 import {
     CreateProductResponse,
     GetProductResponse,
-    GetListProductResponse,
-    GetListProductByBrandIdResponse,
-    GetListProductByCategoryIdResponse,
-    GetAllByBrandIdAndCategoryIdResponse,
-    UpdateProductResponse,
     RemoveProductResponse,
+    UpdateProductResponse,
 } from '@app/infrastructure/responses';
-import { MetaData } from '@app/infrastructure/paginate';
-import { SortingEnum } from '@app/domain/dto';
-import { IProductService } from '@app/domain/services';
-import { RatingService } from '@app/infrastructure/services';
+import { PaginatedResponse } from '@app/infrastructure/responses/paginate/paginated.response';
+import { GetListProductV2Response } from '@app/infrastructure/responses/product/get-list-product-v2.response';
+import {
+    ConflictException,
+    HttpStatus,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
+import { FileService } from '../file/file.service';
 
 @Injectable()
 export class ProductService implements IProductService {
     constructor(
         private readonly productPropertyRepository: ProductPropertyRepository,
         private readonly productRepository: ProductRepository,
-        private readonly ratingService: RatingService,
+        // private readonly ratingService: RatingService,
         private readonly fileService: FileService,
     ) {}
 
@@ -54,39 +51,42 @@ export class ProductService implements IProductService {
         return product;
     }
 
-    public async getListProduct(
+    public async getListProductV2(
         searchQuery: SearchDto,
         sortQuery: SortingDto,
         page: number,
         size: number,
-    ): Promise<GetListProductResponse> {
+    ): Promise<GetListProductV2Response> {
         const { search } = searchQuery;
         const { sort = SortingEnum.DESC } = sortQuery;
         const { limit, offset } = this.getPaginate(page, size);
+
         const products = await this.productRepository.findListProduct(
             search,
             sort,
             limit,
             offset,
         );
+
         const metaData = this.getMetadata(products.count, page, limit);
+
         return {
-            metaData,
-            count: products.count,
-            rows: products.rows,
-        };
+            data: products.rows,
+            meta: metaData,
+        } as GetListProductV2Response;
     }
 
-    public async getListProductByBrandId(
+    public async getListProductByBrandIdV2(
         brandId: number,
         searchQuery: SearchDto,
         sortQuery: SortingDto,
         page: number,
         size: number,
-    ): Promise<GetListProductByBrandIdResponse> {
+    ): Promise<PaginatedResponse<ProductInfo>> {
         const { limit, offset } = this.getPaginate(page, size);
         const { search } = searchQuery;
         const { sort = SortingEnum.DESC } = sortQuery;
+
         const products = await this.productRepository.findListProductByBrandId(
             brandId,
             search,
@@ -94,25 +94,23 @@ export class ProductService implements IProductService {
             limit,
             offset,
         );
+
         const metaData = this.getMetadata(products.count, page, limit);
 
-        return {
-            metaData,
-            count: products.count,
-            rows: products.rows,
-        };
+        return new PaginatedResponse(products.rows, metaData);
     }
 
-    public async getListProductByCategoryId(
+    public async getListProductByCategoryIdV2(
         categoryId: number,
         searchQuery: SearchDto,
         sortQuery: SortingDto,
         page: number,
         size: number,
-    ): Promise<GetListProductByCategoryIdResponse> {
+    ): Promise<PaginatedResponse<ProductInfo>> {
         const { limit, offset } = this.getPaginate(page, size);
         const { search } = searchQuery;
         const { sort = SortingEnum.DESC } = sortQuery;
+
         const products =
             await this.productRepository.findListProductByCategoryId(
                 categoryId,
@@ -124,24 +122,21 @@ export class ProductService implements IProductService {
 
         const metaData = this.getMetadata(products.count, page, limit);
 
-        return {
-            metaData,
-            count: products.count,
-            rows: products.rows,
-        };
+        return new PaginatedResponse(products.rows, metaData);
     }
 
-    public async getAllByBrandIdAndCategoryId(
+    public async getAllByBrandIdAndCategoryIdV2(
         brandId: number,
         categoryId: number,
         searchQuery: SearchDto,
         sortQuery: SortingDto,
         page: number,
         size: number,
-    ): Promise<GetAllByBrandIdAndCategoryIdResponse> {
+    ): Promise<PaginatedResponse<ProductInfo>> {
         const { limit, offset } = this.getPaginate(page, size);
         const { search } = searchQuery;
         const { sort = SortingEnum.DESC } = sortQuery;
+
         const products =
             await this.productRepository.findAllByBrandIdAndCategoryId(
                 brandId,
@@ -151,12 +146,10 @@ export class ProductService implements IProductService {
                 limit,
                 offset,
             );
+
         const metaData = this.getMetadata(products.count, page, limit);
-        return {
-            metaData,
-            count: products.count,
-            rows: products.rows,
-        };
+
+        return new PaginatedResponse(products.rows, metaData);
     }
 
     public async removeProduct(
@@ -170,8 +163,8 @@ export class ProductService implements IProductService {
         const removedFile = await this.fileService.removeFile(
             findProduct.image,
         );
-        const removedRating =
-            await this.ratingService.removeAllRatingsByProductId(productId);
+        // const removedRating =
+        //     await this.ratingService.removeAllRatingsByProductId(productId);
         const removedProductProperties =
             await this.productPropertyRepository.removeProductPropertiesListByProductId(
                 productId,
@@ -186,11 +179,11 @@ export class ProductService implements IProductService {
                     'Произошел конфликт во время удаления характеристик продукта',
                 );
             }
-            if (!removedRating) {
-                this.conflict(
-                    'Произошел конфликт во время удаления рейтинга продукта',
-                );
-            }
+            // if (!removedRating) {
+            //     this.conflict(
+            //         'Произошел конфликт во время удаления рейтинга продукта',
+            //     );
+            // }
         }
         if (!removedProduct) {
             this.conflict('Произошел конфликт во время удаления продукта');
@@ -230,7 +223,9 @@ export class ProductService implements IProductService {
         offset: number;
     } {
         const limit = size;
-        const offset = (page - 1) * limit;
+        // Исправляем page=0 на page=1 для корректного offset
+        const correctedPage = Math.max(1, page);
+        const offset = (correctedPage - 1) * limit;
         return {
             limit,
             offset,

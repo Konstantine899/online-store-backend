@@ -1,0 +1,731 @@
+# Phase 1: Production Ready для Middle позиции (Binding)
+
+binding: true
+module: mvp-production-ready
+epic_ref: MVP-PROD-READY
+version: 1.0
+
+execution_policy:
+must_follow: true
+allow_code_changes_only_after: "Одобряю <TASK_ID>"
+constraints: - работаем с ТЕКУЩИМ проектом (online-store-backend) - каждая задача = один коммит - тесты обязательны - production качество
+
+context:
+goal: Довести текущий проект до production-ready Middle уровня за 1-1.5 месяца
+current_state: 13 моделей, 47% coverage, базовая security, работающий функционал
+target_state: 75%+ coverage, security hardening, production deploy, полная документация
+result: Strong middle-level проект для портфолио
+
+# DEFAULT PRE-COMMIT WORKFLOW для всех MVP production-ready задач
+default_pre_commit_workflow: "СТАНДАРТНЫЙ (mixed: depends on task type)"
+default_pre_commit_steps:
+  - "«Ревью» → check task-specific concerns"
+  - "«Автофикс» → linter/prettier"
+  - "Тесты: relevant tests for the task"
+  - "«Коммит» → feat/fix/docs: <TASK_ID> complete"
+
+---
+
+## 🎯 Общая стратегия
+
+### Текущий проект online-store-backend — это уже Middle level!
+
+**Что есть:**
+
+- ✅ Clean Architecture (Domain/Infrastructure)
+- ✅ 13 моделей данных
+- ✅ NestJS с паттернами (Guards, Pipes, Interceptors)
+- ✅ JWT + RBAC
+- ✅ 47% test coverage
+- ✅ Swagger
+
+**Что нужно:**
+
+- 🔧 Исправить проблемы (тесты, race conditions)
+- 🔧 Security hardening (production-grade)
+- 🔧 Coverage до 75%+
+- 🔧 Performance optimization
+- 🔧 Production deploy
+- 🔧 Профессиональная документация
+
+---
+
+## 📅 Неделя 1-2: Исправление проблем (критично)
+
+### PROD-001: Исправить race conditions в тестах
+
+**Ссылка:** `.cursor/rules/SaaS/testing/testing.coverage.plan.mdc` → TEST-001
+
+**Задача:**
+
+- Исправить user-admin.integration.test.ts (race conditions)
+- Добавить cleanup в afterEach
+- Использовать уникальные email/phone
+- Добавить wait/retry для async операций
+
+**DoD:**
+
+- [ ] Все тесты user-admin проходят (0 failed)
+- [ ] Нет race conditions
+- [ ] Тесты стабильные при любом порядке
+
+**Оценка:** 3-4 часа (2-3 вечера по 2 часа)
+
+**Gate:** require "Одобряю PROD-001"
+
+---
+
+### PROD-002: Исправить 500 errors в user-profile тестах
+
+**Ссылка:** SaaS/testing → TEST-002
+
+**Задача:**
+
+- Исправить ошибки логина в user-profile.integration.test.ts
+- Детальное логирование ошибок в authLoginAs
+- Исправить проблему (вероятно LoginHistoryService)
+
+**DoD:**
+
+- [ ] authLoginAs('user') работает стабильно
+- [ ] Все user-profile тесты зелёные
+
+**Оценка:** 2-3 часа
+
+**Gate:** require "Одобряю PROD-002"
+
+---
+
+### PROD-003: Исправить user-addresses и rbac тесты
+
+**Ссылка:** SaaS/testing → TEST-003, TEST-004
+
+**Задача:**
+
+- Исправить FK constraint errors в address тестах
+- Исправить undefined role в rbac тестах
+- Добавить cleanup для refresh_token
+
+**DoD:**
+
+- [ ] Все address тесты проходят
+- [ ] RBAC тесты стабильны
+- [ ] 0 failed tests в текущем наборе
+
+**Оценка:** 3-4 часа
+
+**Gate:** require "Одобряю PROD-003"
+
+---
+
+### PROD-004: Создать test utilities и отключить SQL логирование
+
+**Ссылка:** SaaS/testing → TEST-005, TEST-006
+
+**Задача:**
+
+- TestDataFactory (uniqueEmail, uniquePhone)
+- TestCleanup (cleanUsers, cleanOrders, cleanAll)
+- Отключить SQL logging в тестах полностью
+
+**DoD:**
+
+- [ ] Test utilities работают
+- [ ] Нет дублирования в тестах
+- [ ] Чистый вывод тестов (без SQL)
+
+**Оценка:** 3-4 часа
+
+**Gate:** require "Одобряю PROD-004"
+
+---
+
+## 📅 Неделя 3-4: Security Hardening (production-grade)
+
+### PROD-010: Валидация конфигурации (Joi) + .env.example
+
+**Ссылка:** SaaS/security → SEC-001
+
+**Задача:**
+
+- Joi-схема для всех env переменных
+- Типизация в process-env.d.ts
+- Полный .env.example с комментариями
+
+**DoD:**
+
+- [ ] Приложение не стартует без валидных env
+- [ ] .env.example актуален
+
+**Оценка:** 3-4 часа
+
+**Gate:** require "Одобряю PROD-010"
+
+---
+
+### PROD-011: HTTP защита (Helmet, CORS, CSP)
+
+**Ссылка:** SaaS/security → SEC-002
+
+**Задача:**
+
+- Helmet с безопасной конфигурацией
+- CORS whitelist из ALLOWED_ORIGINS
+- Базовый CSP
+
+**DoD:**
+
+- [ ] Security headers на всех ответах
+- [ ] CORS только для разрешённых origins
+
+**Оценка:** 2-3 часа
+
+**Gate:** require "Одобряю PROD-011"
+
+---
+
+### PROD-012: Укрепление JWT + cookies + ротация токенов
+
+**Ссылка:** SaaS/security → SEC-003
+
+**Задача:**
+
+- Access token: 15m TTL
+- Refresh token: 30d TTL, HttpOnly cookies
+- Ротация и ревокация refresh токенов
+- Маскирование токенов в логах
+
+**DoD:**
+
+- [ ] Cookies флаги: HttpOnly, Secure, SameSite
+- [ ] E2E тесты login/refresh/logout зелёные
+
+**Оценка:** 4-5 часов
+
+**Gate:** require "Одобряю PROD-012"
+
+---
+
+### PROD-013: Rate limiting и BruteforceGuard
+
+**Ссылка:** SaaS/security → SEC-004
+
+**Задача:**
+
+- Профили rate limiting (login: 5/15min, refresh: 10/5min, registration: 3/1min)
+- Глобальный лимитер (3 rps, 100 rpm)
+- Логирование блокировок (warn, без PII)
+
+**DoD:**
+
+- [ ] Integration тесты rate limiting (429 responses)
+- [ ] Логи без PII
+
+**Оценка:** 4-5 часов
+
+**Gate:** require "Одобряю PROD-013"
+
+---
+
+### PROD-014: Валидация и санитизация входных данных
+
+**Ссылка:** SaaS/security → SEC-005
+
+**Задача:**
+
+- CustomValidationPipe глобально
+- @IsSanitizedString для всех текстовых полей
+- Русские сообщения ошибок
+
+**DoD:**
+
+- [ ] Негативные тесты на XSS проходят
+- [ ] Все DTO валидируются
+
+**Оценка:** 3-4 часа
+
+**Gate:** require "Одобряю PROD-014"
+
+---
+
+### PROD-015: Swagger + секреты + логирование без PII
+
+**Ссылка:** SaaS/security → SEC-006, SEC-007, SEC-008
+
+**Задача:**
+
+- Swagger доступен только в dev/stage
+- Секреты не в репозитории
+- pino/pino-http с маскированием PII
+
+**DoD:**
+
+- [ ] Swagger закрыт в prod
+- [ ] Логи структурированы, без PII
+- [ ] Корреляционные ID в логах
+
+**Оценка:** 4-5 часов
+
+**Gate:** require "Одобряю PROD-015"
+
+---
+
+## 📅 Неделя 5-6: Testing Coverage (до 75%+)
+
+### PROD-020: Comprehensive Authentication Tests
+
+**Ссылка:** SaaS/testing → TEST-010
+
+**Задача:**
+
+- 30 тестов для auth flow
+- Login, register, password reset, refresh, logout
+- Все edge cases
+
+**DoD:**
+
+- [ ] +30 тестов проходят
+- [ ] Auth module coverage ≥ 85%
+
+**Оценка:** 16-20 часов (распределить на неделю)
+
+**Gate:** require "Одобряю PROD-020"
+
+---
+
+### PROD-021: Security Tests (Brute Force + Input Validation)
+
+**Ссылка:** SaaS/testing → TEST-011, TEST-012
+
+**Задача:**
+
+- Тесты rate limiting (429 responses)
+- Тесты XSS/SQL injection prevention
+- Тесты validation pipes
+
+**DoD:**
+
+- [ ] +27 тестов (12 brute force + 15 validation)
+- [ ] Guards coverage ≥ 85%
+
+**Оценка:** 18-22 часа (распределить)
+
+**Gate:** require "Одобряю PROD-021"
+
+---
+
+### PROD-022: RBAC Tests (Role Hierarchy + Permissions)
+
+**Ссылка:** SaaS/testing → TEST-020
+
+**Задача:**
+
+- Тесты role hierarchy
+- Permission matrix для всех endpoints
+- Tenant isolation
+
+**DoD:**
+
+- [ ] +20 тестов проходят
+- [ ] RoleGuard coverage ≥ 85%
+
+**Оценка:** 14-18 часов
+
+**Gate:** require "Одобряю PROD-022"
+
+---
+
+### PROD-023: Coverage Configuration + Thresholds
+
+**Ссылка:** SaaS/testing → TEST-040
+
+**Задача:**
+
+- jest.config.js с per-module thresholds
+- Global: 70% branches/functions, 75% lines/statements
+- Auth/guards/controllers: 85%+
+- CI блокирует merge при падении coverage
+
+**DoD:**
+
+- [ ] Coverage thresholds работают
+- [ ] CI проверяет coverage
+
+**Оценка:** 3-4 часа
+
+**Gate:** require "Одобряю PROD-023"
+
+---
+
+## 📅 Неделя 7: Performance Optimization
+
+### PROD-030: Исправить N+1 queries
+
+**Задача:**
+
+- Audit всех endpoint'ов на N+1
+- Добавить include/associations где нужно
+- Выбирать только нужные attributes
+
+**DoD:**
+
+- [ ] Нет N+1 в списках (products, orders, users)
+- [ ] Запросы оптимизированы
+
+**Оценка:** 6-8 часов
+
+**Gate:** require "Одобряю PROD-030"
+
+---
+
+### PROD-031: Добавить недостающие индексы
+
+**Задача:**
+
+- Индексы для всех FK
+- Индексы для часто фильтруемых полей
+- Индексы для сортировок
+
+**DoD:**
+
+- [ ] Миграция с индексами
+- [ ] Explain analyze показывает улучшение
+
+**Оценка:** 4-6 часов
+
+**Gate:** require "Одобряю PROD-031"
+
+---
+
+### PROD-032: Пагинация и лимиты
+
+**Задача:**
+
+- Проверить пагинацию на всех списках
+- Default limit: 5, max limit: 100
+- Meta с totalCount, currentPage, lastPage
+
+**DoD:**
+
+- [ ] Все списки пагинированы
+- [ ] Meta корректный
+
+**Оценка:** 3-4 часа
+
+**Gate:** require "Одобряю PROD-032"
+
+---
+
+## 📅 Неделя 8: CI/CD + Deploy
+
+### PROD-040: CI/CD Pipeline (GitHub Actions)
+
+**Ссылка:** SaaS/security → SEC-010
+
+**Задача:**
+
+- Lint + tests + build на каждый PR
+- Блокировка merge при ошибках
+- Cache для node_modules
+
+**DoD:**
+
+- [ ] Pipeline стабилен
+- [ ] PR блокируются при падении
+
+**Оценка:** 4-6 часов
+
+**Gate:** require "Одобряю PROD-040"
+
+---
+
+### PROD-041: Production Deploy (Railway/Render)
+
+**Задача:**
+
+- Deploy API на Railway/Render
+- PostgreSQL база на Supabase/Railway
+- Environment variables
+- Health check endpoint
+
+**DoD:**
+
+- [ ] API доступен по https
+- [ ] База работает
+- [ ] Migrations применены
+- [ ] Swagger доступен
+
+**Оценка:** 4-6 часов
+
+**Gate:** require "Одобряю PROD-041"
+
+---
+
+### PROD-042: Docker Production Configuration
+
+**Задача:**
+
+- Multi-stage Docker build
+- Docker Compose для production
+- .dockerignore оптимизирован
+
+**DoD:**
+
+- [ ] Образ оптимизирован (размер)
+- [ ] Compose работает в prod режиме
+
+**Оценка:** 3-4 часа
+
+**Gate:** require "Одобряю PROD-042"
+
+---
+
+## 📅 Неделя 9: Documentation & Polish
+
+### PROD-050: Professional README
+
+**Задача:**
+
+- Описание проекта и архитектуры
+- Diagram архитектуры (Domain/Infrastructure)
+- Installation instructions
+- API documentation link
+- Live demo link
+- Tech stack badges
+- Screenshots/GIF (опционально)
+
+**DoD:**
+
+- [ ] README профессиональный
+- [ ] Diagram архитектуры
+- [ ] Ссылки на demo и docs
+
+**Оценка:** 4-6 часов
+
+**Gate:** require "Одобряю PROD-050"
+
+---
+
+### PROD-051: Architectural Decision Records (ADR)
+
+**Задача:**
+
+- ADR-001: Почему Domain/Infrastructure separation
+- ADR-002: Почему Sequelize (не TypeORM)
+- ADR-003: Почему JWT + refresh tokens
+- ADR-004: Testing strategy (unit vs integration)
+
+**DoD:**
+
+- [ ] 4-5 ADR документированы
+- [ ] Объяснены архитектурные решения
+
+**Оценка:** 4-6 часов
+
+**Gate:** require "Одобряю PROD-051"
+
+---
+
+### PROD-052: Swagger Documentation Complete
+
+**Задача:**
+
+- Все endpoints задокументированы
+- Examples для всех request/response
+- @ApiBearerAuth где нужно
+- Schemas для всех DTO
+
+**DoD:**
+
+- [ ] Swagger 100% полный
+- [ ] Можно тестировать через UI
+
+**Оценка:** 3-4 часа
+
+**Gate:** require "Одобряю PROD-052"
+
+---
+
+### PROD-053: GitHub Profile Optimization
+
+**Задача:**
+
+- Pin online-store-backend
+- Профессиональное bio
+- Contributions активные
+- Topics/tags на репозитории
+
+**DoD:**
+
+- [ ] GitHub профиль впечатляет
+- [ ] Проект на первом месте
+
+**Оценка:** 1-2 часа
+
+**Gate:** require "Одобряю PROD-053"
+
+---
+
+## ✅ Критерии завершения Phase 1
+
+### Production Ready, если:
+
+**Testing:**
+
+- [ ] Все тесты зелёные (0 failed)
+- [ ] Coverage ≥ 75% global
+- [ ] Coverage ≥ 85% auth/guards
+- [ ] Нет race conditions
+- [ ] Нет flaky tests
+
+**Security:**
+
+- [ ] Helmet + CORS + CSP настроены
+- [ ] JWT + cookies + ротация работают
+- [ ] Rate limiting на всех endpoints
+- [ ] Input validation + sanitization
+- [ ] Логи без PII
+
+**Performance:**
+
+- [ ] Нет N+1 queries
+- [ ] Индексы для всех FK
+- [ ] Пагинация на всех списках
+
+**Deploy:**
+
+- [ ] CI/CD pipeline работает
+- [ ] Production deployment live
+- [ ] Health check endpoint
+- [ ] Migrations автоматические
+
+**Documentation:**
+
+- [ ] README профессиональный с архитектурой
+- [ ] ADR документированы
+- [ ] Swagger 100% полный
+- [ ] API examples актуальны
+
+---
+
+## 🎯 Результат Phase 1
+
+### Что получишь:
+
+1. **Production-grade проект**
+    - 75%+ coverage
+    - Security hardened
+    - Performance optimized
+    - Deployed live
+
+2. **Профессиональная документация**
+    - README с архитектурой
+    - ADR с решениями
+    - Swagger полный
+    - Code comments
+
+3. **Middle-level портфолио**
+    - Сложная архитектура
+    - Production опыт
+    - CI/CD pipeline
+    - Live demo
+
+4. **Готовность к собесам**
+    - Можешь объяснить архитектуру
+    - Можешь показать код и решения
+    - Можешь демонстрировать live API
+    - Можешь рассказать про challenges
+
+---
+
+## 📊 Tracking Progress
+
+### Еженедельный чеклист:
+
+**Неделя 1-2 (Fix Issues):**
+
+- [ ] PROD-001: Race conditions исправлены
+- [ ] PROD-002: 500 errors исправлены
+- [ ] PROD-003: Addresses и RBAC работают
+- [ ] PROD-004: Test utilities созданы
+
+**Неделя 3-4 (Security):**
+
+- [ ] PROD-010: Env validation
+- [ ] PROD-011: Helmet + CORS + CSP
+- [ ] PROD-012: JWT укрепление
+- [ ] PROD-013: Rate limiting
+- [ ] PROD-014: Input validation
+- [ ] PROD-015: Swagger + logging
+
+**Неделя 5-6 (Testing):**
+
+- [ ] PROD-020: Auth tests (+30)
+- [ ] PROD-021: Security tests (+27)
+- [ ] PROD-022: RBAC tests (+20)
+- [ ] PROD-023: Coverage thresholds
+
+**Неделя 7 (Performance):**
+
+- [ ] PROD-030: N+1 исправлены
+- [ ] PROD-031: Индексы добавлены
+- [ ] PROD-032: Пагинация проверена
+
+**Неделя 8 (Deploy):**
+
+- [ ] PROD-040: CI/CD pipeline
+- [ ] PROD-041: Production deploy
+- [ ] PROD-042: Docker production
+
+**Неделя 9 (Docs):**
+
+- [ ] PROD-050: Professional README
+- [ ] PROD-051: ADR документированы
+- [ ] PROD-052: Swagger complete
+- [ ] PROD-053: GitHub optimized
+
+---
+
+## 💡 Tips for Middle Level
+
+### Как думать о задачах:
+
+**Junior подход:**
+
+- "Сделать фичу X"
+- Минимальная реализация
+- Без тестов "потом добавлю"
+
+**Middle подход:**
+
+- "Спроектировать решение для X"
+- Подумать об edge cases
+- Тесты сразу
+- Документировать решение (ADR)
+- Performance и security с самого начала
+
+### Демонстрация Middle навыков:
+
+В резюме и на собесах акцентируй:
+
+- **Архитектура:** "Спроектировал Clean Architecture с Domain/Infrastructure"
+- **Качество:** "Покрыл тестами 75%+, включая edge cases"
+- **Security:** "Реализовал JWT + RBAC + rate limiting production-grade"
+- **Performance:** "Оптимизировал N+1 queries, добавил индексы"
+- **Production:** "Задеплоил с CI/CD на Railway"
+
+---
+
+## 🚀 Следующий шаг
+
+**Начинай с PROD-001** (исправление race conditions в тестах)
+
+Это критично, потому что:
+
+- Нестабильные тесты убивают доверие к проекту
+- Middle должен уметь писать детерминированные тесты
+- Это показывает attention to detail
+
+**После PROD-004 переходи к Security hardening!**
+
+**Удачи! Ты делаешь strong Middle проект! 💪🚀**

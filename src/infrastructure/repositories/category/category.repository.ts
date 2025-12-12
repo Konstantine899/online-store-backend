@@ -1,38 +1,106 @@
-import { InjectModel } from '@nestjs/sequelize';
 import { CategoryModel } from '@app/domain/models';
-import { Injectable } from '@nestjs/common';
+import { ICategoryRepository } from '@app/domain/repositories';
+import { TenantContext } from '@app/infrastructure/common/context';
+import { PaginationValidator } from '@app/infrastructure/common/utils/pagination-validator';
 import { CreateCategoryDto } from '@app/infrastructure/dto';
+import { CategoryInfo } from '@app/infrastructure/paginate';
 import {
+    CategoryResponse,
     CreateCategoryResponse,
     ListAllCategoriesResponse,
-    CategoryResponse,
     UpdateCategoryResponse,
 } from '@app/infrastructure/responses';
-import { ICategoryRepository } from '@app/domain/repositories';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { Op, WhereOptions } from 'sequelize';
 
 @Injectable()
 export class CategoryRepository implements ICategoryRepository {
     constructor(
         @InjectModel(CategoryModel)
         private categoryModel: typeof CategoryModel,
+        private readonly tenantContext: TenantContext,
     ) {}
+
+    /**
+     * Локальный маппер ORM-модели в контракт ответа
+     */
+    private mapCategory(model: CategoryModel): CategoryResponse {
+        return {
+            id: model.id,
+            name: model.name,
+            image: model.image ?? '',
+        } as CategoryResponse;
+    }
 
     public async createCategory(
         dto: CreateCategoryDto,
         imageName: string,
     ): Promise<CreateCategoryResponse> {
-        const category = new CategoryModel();
-        category.name = dto.name;
-        category.image = imageName;
-        return category.save();
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
+        const category = await this.categoryModel.create({
+            name: dto.name,
+            image: imageName,
+            tenant_id: tenantId,
+        });
+        return this.mapCategory(category);
     }
 
     public async findListAllCategories(): Promise<ListAllCategoriesResponse[]> {
-        return this.categoryModel.findAll();
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
+        const list = await this.categoryModel.findAll({
+            where: { tenant_id: tenantId },
+        });
+        return list.map((c) => this.mapCategory(c));
+    }
+
+    // SAAS-003: V2 with pagination support
+    public async findListAllCategoriesV2(
+        search: string,
+        sort: string,
+        limit: number,
+        offset: number,
+    ): Promise<{ count: number; rows: CategoryInfo[] }> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
+        const where: WhereOptions<CategoryModel> = { tenant_id: tenantId };
+
+        if (search) {
+            where.name = { [Op.like]: `%${search}%` };
+        }
+
+        // SAAS-003: Validate and sanitize inputs using PaginationValidator (DRY)
+        const validSort = PaginationValidator.validateSort(sort);
+        const safeLimit = PaginationValidator.validateLimit(limit);
+        const safeOffset = PaginationValidator.validateOffset(offset);
+
+        return this.categoryModel.findAndCountAll({
+            where,
+            attributes: [
+                'id',
+                'name',
+                'image',
+                'slug',
+                'description',
+                'isActive',
+                'tenant_id',
+            ],
+            order: [['name', validSort]], // SAAS-003: Sort by name for alphabetical order
+            limit: safeLimit,
+            offset: safeOffset,
+        });
     }
 
     public async findCategory(id: number): Promise<CategoryResponse> {
-        return this.categoryModel.findByPk(id) as Promise<CategoryResponse>;
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
+        const found = await this.categoryModel.findOne({
+            where: {
+                id,
+                tenant_id: tenantId,
+            },
+        });
+        return (found
+            ? this.mapCategory(found)
+            : null) as unknown as CategoryResponse;
     }
 
     public async updateCategory(
@@ -40,14 +108,21 @@ export class CategoryRepository implements ICategoryRepository {
         category: CategoryModel,
         updatedNameImage: string,
     ): Promise<UpdateCategoryResponse> {
-        return category.update({
+        const updated = await category.update({
             ...dto,
             name: dto.name,
             image: updatedNameImage,
         });
+        return this.mapCategory(updated) as UpdateCategoryResponse;
     }
 
     public async removeCategory(id: number): Promise<number> {
-        return this.categoryModel.destroy({ where: { id } });
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
+        return this.categoryModel.destroy({
+            where: {
+                id,
+                tenant_id: tenantId,
+            },
+        });
     }
 }

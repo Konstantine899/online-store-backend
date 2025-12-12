@@ -1,0 +1,817 @@
+# Phase 2: Поиск работы Middle NestJS Developer (Binding)
+
+binding: true
+module: mvp-job-search-middle
+epic_ref: MVP-MIDDLE-SEARCH
+version: 2.0
+
+execution_policy:
+must_follow: true
+focus: Middle резюме → Middle отклики → Middle собеседования → Middle оффер
+
+context:
+goal: Получить оффер Middle NestJS разработчика за 2-3 месяца
+prerequisites: Production-ready проект online-store-backend (Фаза 1 завершена)
+result: Работа Middle Backend Developer
+
+# DEFAULT PRE-COMMIT WORKFLOW для job-search задач
+default_pre_commit_workflow: "МИНИМАЛЬНЫЙ (documentation/content creation)"
+default_pre_commit_steps:
+  - "«Автофикс» → linter/prettier (для markdown)"
+  - "«Коммит» → docs(job-search): <TASK_ID> complete"
+
+---
+
+## 🎯 Общая стратегия
+
+### Реалистичная воронка (статистика для Middle):
+
+- **50-70 откликов** → 10-15 ответов (15-20%, выше чем у Junior!)
+- **10-15 ответов** → 6-8 technical интервью (60%)
+- **6-8 интервью** → 2-3 оффера (30-40%, выше конверсия!)
+
+**Middle отличается:**
+
+- Меньше откликов нужно (strong проект = больше ответов)
+- Выше конверсия на каждом этапе
+- Больше counter-offers и negotiations
+
+### Временные рамки:
+
+- **Недели 1-2:** Подготовка (резюме Middle, System Design, Architecture)
+- **Недели 3-6:** Активные отклики (3-5 вакансий/день, quality > quantity)
+- **Недели 5-10:** Technical интервью и офферы
+
+### Ключевой принцип:
+
+**Поиск работы — это тоже работа**
+
+- Относись серьёзно
+- Будь систематичным
+- Трекай прогресс
+
+---
+
+## 📝 Неделя 1-2: Подготовка
+
+### TASK-001: Резюме на HH.ru
+
+#### Структура резюме:
+
+**Заголовок:**
+
+```
+Middle Backend Developer | NestJS, TypeScript, PostgreSQL
+```
+
+**Обо мне (кратко):**
+
+```
+Middle Backend разработчик, специализирующийся на создании масштабируемых backend систем на NestJS.
+
+Спроектировал и реализовал production-ready ecommerce backend с:
+- Clean Architecture (Domain/Infrastructure separation)
+- 75%+ test coverage с полным набором unit и integration тестов
+- Production-grade security (JWT + RBAC + rate limiting + input sanitization)
+- CI/CD pipeline и deployment на Railway
+
+Опыт проектирования архитектуры, написания тестов, performance оптимизации и production deployment.
+
+Открыт для предложений о работе Middle Backend Developer.
+```
+
+**Ключевые навыки:**
+
+- NestJS, TypeScript
+- Node.js, Express
+- PostgreSQL, Sequelize, TypeORM
+- REST API, Swagger
+- JWT, Authentication
+- Docker, Docker Compose
+- Jest (Unit + Integration testing)
+- Git, GitHub
+
+**Опыт (проекты):**
+
+```
+Проект: Online Store Backend (production-ready SaaS ecommerce platform)
+Период: [месяц-месяц 2025]
+Роль: Backend Architect & Lead Developer
+
+Описание:
+Спроектировал и реализовал полноценную ecommerce backend платформу с чистой архитектурой.
+
+Архитектура:
+- Clean Architecture с разделением Domain и Infrastructure слоёв
+- Repository pattern для data access layer
+- Service layer для бизнес-логики
+- DTO pattern для валидации и type safety
+
+Реализованные модули:
+- User Management (профили, адреса, верификация, история входов)
+- Product Catalog (товары, категории, бренды, рейтинги)
+- Order Management (корзина, заказы, статусы)
+- Authentication & Authorization (JWT + RBAC с multiple roles)
+
+Технические достижения:
+- 75%+ test coverage (85%+ для критичных модулей: auth, guards)
+- 335+ тестов (unit + integration), включая edge cases и race conditions
+- Production-grade security: JWT rotation, HttpOnly cookies, rate limiting, input sanitization
+- Performance optimization: исправлены N+1 queries, добавлены индексы БД
+- CI/CD pipeline с автоматическими тестами и deployment
+- Swagger документация для всего API
+
+Технологии:
+- Backend: NestJS, TypeScript (strict mode), Node.js
+- Database: PostgreSQL, Sequelize ORM, миграции
+- Testing: Jest (unit + integration), 75%+ coverage
+- Security: JWT, bcrypt, Helmet, CORS, Rate Limiting
+- DevOps: Docker, Docker Compose, GitHub Actions, Railway deployment
+- Documentation: Swagger/OpenAPI, ADR (Architectural Decision Records)
+
+Метрики:
+- 13 моделей данных
+- 50+ API endpoints
+- 335+ тестов
+- 75%+ test coverage
+- 100% endpoints документированы
+
+Ссылки:
+- GitHub: https://github.com/[твой-username]/online-store-backend
+- Live API: https://online-store-[твой].railway.app/online-store/docs
+- Architecture Docs: см. README.md и ADR
+
+Демонстрирует:
+- Проектирование сложной архитектуры
+- Production-grade code quality
+- Comprehensive testing strategy
+- Security best practices
+- Performance optimization
+- CI/CD и deployment опыт
+```
+
+**Образование:**
+
+- [Твоё образование]
+
+**Доп. информация:**
+
+- Английский: [уровень]
+- Готовность к командировкам: [да/нет]
+- График работы: Полный день, гибкий график, удалённо
+
+#### Чек-лист резюме для Middle:
+
+- [ ] Заголовок: **Middle Backend Developer**
+- [ ] Обо мне: акцент на архитектуре и production опыте
+- [ ] Ключевые навыки: не просто технологии, а **что умеешь делать**
+- [ ] Проект описан **детально**: архитектура, метрики, достижения
+- [ ] Указаны **цифры**: coverage %, количество тестов, endpoints
+- [ ] Ссылки на GitHub + Live Demo + Documentation
+- [ ] Демонстрирует **Middle навыки**: архитектура, тесты, security, performance
+
+---
+
+### TASK-002: GitHub профиль
+
+#### Настройка профиля:
+
+**Bio:**
+
+```
+Junior Backend Developer | NestJS, TypeScript, PostgreSQL
+Building REST APIs 🚀
+```
+
+**Pinned repositories:**
+
+1. blog-api (самый сильный проект)
+2. todo-api
+3. [shop-api если есть]
+
+**README каждого репозитория должен содержать:**
+
+- Название и краткое описание
+- Скриншот/GIF (опционально)
+- **Стек технологий**
+- **Фичи** (что умеет)
+- **Инструкции запуска** (docker compose up)
+- **Live Demo** ссылка
+- **API Docs** ссылка (Swagger)
+- Примеры запросов
+
+**Чек-лист GitHub:**
+
+- [ ] Bio заполнено
+- [ ] Pinned repositories (лучшие проекты)
+- [ ] README профессиональные
+- [ ] Contributions graph зелёный
+- [ ] Нет test/dummy репозиториев на главной
+
+---
+
+### TASK-003: LinkedIn профиль
+
+#### Оптимизация LinkedIn:
+
+**Headline:**
+
+```
+Junior Backend Developer | NestJS, TypeScript, PostgreSQL
+```
+
+**About:**
+
+```
+Junior Backend разработчик, специализирующийся на создании REST API с использованием NestJS и TypeScript.
+
+🔧 Стек: NestJS, Node.js, TypeScript, PostgreSQL, Docker, Jest
+🚀 Создал несколько проектов, включая Blog API и Todo API
+📚 Постоянно изучаю новые технологии и best practices
+
+Открыт для предложений о работе Junior/Intern Backend Developer.
+```
+
+**Experience:**
+
+- Добавь проекты как "Self-employed" или "Personal Projects"
+- Опиши каждый проект как в резюме
+
+**Skills:**
+
+- Добавь все технологии (NestJS, TypeScript, PostgreSQL и т.д.)
+- Проси endorsements у знакомых
+
+**Чек-лист LinkedIn:**
+
+- [ ] Фото профессиональное
+- [ ] Headline чёткий
+- [ ] About описывает твой стек
+- [ ] Проекты добавлены
+- [ ] Skills заполнены
+
+---
+
+### TASK-004: Подготовка к техническим вопросам
+
+#### JavaScript/TypeScript базовые концепты:
+
+**Обязательно знать:**
+
+- Promises, async/await, callbacks
+- Closures, scope, hoisting
+- this, bind/call/apply
+- ES6+ features (arrow functions, destructuring, spread/rest)
+- TypeScript типы (interfaces, types, generics)
+
+**Ресурсы:**
+
+- [Learn JavaScript](https://javascript.info/)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
+
+#### NestJS Advanced (для Middle):
+
+**Обязательно знать:**
+
+- **Dependency Injection:** как работает под капотом, scopes (Request, Transient, Singleton)
+- **Modules:** Dynamic modules, Global modules, Circular dependencies
+- **Guards:** Custom guards, execution context, reflection
+- **Pipes:** Transform vs Validation, custom pipes, global pipes
+- **Interceptors:** Response transformation, logging, caching
+- **Filters:** Exception hierarchy, custom filters
+- **Custom Decorators:** Metadata, reflection, parameter decorators
+- **Lifecycle hooks:** OnModuleInit, OnApplicationBootstrap и т.д.
+
+**Ресурсы:**
+
+- [NestJS Docs (Advanced)](https://docs.nestjs.com/)
+- [NestJS Under the Hood](https://dev.to/nestjs)
+
+#### SQL:
+
+**Обязательно знать:**
+
+- SELECT, WHERE, JOIN (INNER, LEFT, RIGHT)
+- GROUP BY, HAVING, ORDER BY
+- Indexes (зачем нужны)
+- Transactions (что это)
+
+**Ресурсы:**
+
+- [SQL Tutorial](https://www.sqltutorial.org/)
+- [SQLBolt](https://sqlbolt.com/)
+
+#### Алгоритмы:
+
+**Минимум 20-30 простых задач:**
+
+- Arrays (reverse, find max, two sum)
+- Strings (palindrome, anagram, reverse)
+- Hash Maps (frequency counter, group anagrams)
+
+**Платформы:**
+
+- [LeetCode](https://leetcode.com/) - Easy задачи
+- [CodeWars](https://www.codewars.com/) - 7-8 kyu
+
+**Время на подготовку:**
+
+- 30-60 минут в день
+- 2 недели = 20-30 задач
+
+#### System Design & Architecture (критично для Middle!):
+
+**Обязательно подготовь:**
+
+- **Твой проект:** как спроектировал архитектуру, почему Clean Architecture
+- **Scalability:** как бы масштабировал систему (horizontal scaling)
+- **Database design:** почему такие relationships, indexes, как бы оптимизировал
+- **Caching strategies:** где бы добавил кеш (Redis), cache invalidation
+- **Rate limiting:** как работает, почему такие лимиты
+- **Authentication flow:** JWT vs session, refresh token rotation
+- **Testing strategy:** unit vs integration, почему такой coverage
+- **CI/CD:** как настроен pipeline, что проверяется
+
+**Типовые вопросы:**
+
+- "Как бы спроектировал ecommerce систему с миллионом пользователей?"
+- "Как обрабатывать race conditions в inventory?"
+- "Как бы добавил real-time notifications?"
+- "Как бы мигрировал с monolith на microservices?"
+
+**Ресурсы:**
+
+- [System Design Primer](https://github.com/donnemartin/system-design-primer)
+- [Grokking System Design](https://www.educative.io/courses/grokking-the-system-design-interview)
+
+**Чек-лист подготовки Middle:**
+
+- [ ] Могу объяснить архитектуру своего проекта (15-20 мин)
+- [ ] Прорешал 30+ задач LeetCode (Easy + Medium)
+- [ ] Повторил NestJS advanced концепты
+- [ ] Подготовил 2-3 system design примера
+- [ ] Знаю SQL optimization (indexes, explain analyze)
+- [ ] Могу объяснить каждое архитектурное решение в проекте
+
+---
+
+## 📬 Неделя 3-8: Активные отклики
+
+### TASK-005: Стратегия откликов
+
+#### Где откликаться:
+
+**Основные платформы:**
+
+- **HH.ru** - главная площадка (50% откликов)
+- **LinkedIn** - международные компании (30%)
+- **Habr Career** - IT компании (20%)
+
+#### На какие вакансии откликаться (Middle):
+
+**Основной фокус:**
+
+- Middle NestJS Developer
+- Middle Node.js Developer
+- Middle Backend Developer (Node.js/NestJS)
+- Backend Developer (без уровня, если указан NestJS)
+
+**Можно рассмотреть:**
+
+- Junior+ / Strong Junior (с опытом 1-2 года)
+- Middle- / Junior-Middle (если strong проект)
+- Senior- (если требования совпадают с твоими навыками)
+
+**Избегать:**
+
+- Strict Senior (3-5+ лет, team lead responsibilities)
+- Вакансии с tech lead/architect в описании
+
+**Ключевые слова в вакансиях:**
+
+- NestJS, Node.js, TypeScript
+- REST API, PostgreSQL, MongoDB
+- JWT, authentication
+- Docker (плюс)
+
+#### Количество откликов:
+
+**Цель: 5-10 откликов в день**
+
+- **Будни:** 5 откликов/день
+- **Выходные:** 10 откликов/день
+- **Итого в неделю:** 35-40 откликов
+
+**В месяц:** 140-160 откликов
+**За 2 месяца:** 280-320 откликов
+
+#### Сопроводительное письмо (шаблон):
+
+```
+Добрый день!
+
+Меня заинтересовала вакансия Junior NestJS Developer в вашей компании.
+
+Имею опыт создания REST API на NestJS и TypeScript. Создал несколько проектов:
+- Blog API с аутентификацией, RBAC, CRUD (посты, комментарии, лайки)
+- Todo API с JWT authentication, пагинацией, фильтрацией
+
+Стек: NestJS, TypeScript, PostgreSQL, Docker, Jest.
+Все проекты покрыты тестами (70%+) и задеплоены.
+
+Ссылки на GitHub и live demo есть в резюме.
+
+Готов обсудить детали и ответить на вопросы.
+
+С уважением,
+[Твоё имя]
+```
+
+**Адаптируй под каждую вакансию:**
+
+- Укажи название компании
+- Упомяни технологии из описания вакансии
+- Подчеркни релевантный опыт
+
+**Чек-лист откликов:**
+
+- [ ] Откликаюсь на 5-10 вакансий/день
+- [ ] Сопроводительное письмо персонализировано
+- [ ] Резюме актуально
+- [ ] Трекаю отклики (таблица/Notion)
+
+---
+
+### TASK-006: Трекинг откликов
+
+#### Создай таблицу для отслеживания:
+
+| Дата  | Компания     | Вакансия       | Платформа | Статус           | Комментарий        |
+| ----- | ------------ | -------------- | --------- | ---------------- | ------------------ |
+| 01.10 | ABC Corp     | Junior NestJS  | HH        | Отклик отправлен | -                  |
+| 01.10 | XYZ Ltd      | Backend Junior | LinkedIn  | Ответили         | Тест задание       |
+| 02.10 | Tech Startup | Intern Node.js | Habr      | Отказ            | Недостаточно опыта |
+
+**Статусы:**
+
+- Отклик отправлен
+- Ответили
+- Тестовое задание
+- Интервью назначено
+- Оффер
+- Отказ
+
+**Анализируй:**
+
+- Какие компании отвечают чаще
+- Какие вакансии подходят лучше
+- Где узкие места (тест/интервью)
+
+---
+
+## 🎤 Неделя 6-12: Собеседования
+
+### TASK-007: Подготовка к интервью
+
+#### Типы собеседований:
+
+1. **HR скрининг (15-30 мин):**
+    - Расскажи о себе
+    - Почему Backend? Почему NestJS?
+    - Опыт работы с командой
+    - Ожидания по зарплате
+
+2. **Техническое интервью (45-60 мин):**
+    - Вопросы по JS/TS, NestJS
+    - Вопросы по твоим проектам
+    - Алгоритмическая задача (простая)
+    - SQL запросы
+
+3. **Тестовое задание (1-3 дня):**
+    - Создать простое API
+    - Обычно: CRUD + auth + тесты
+
+4. **Финальное интервью (30-45 мин):**
+    - Встреча с лидом/CTO
+    - Обсуждение условий
+    - Оффер
+
+#### Подготовка к "Расскажи о себе":
+
+**Шаблон (2-3 минуты):**
+
+```
+Меня зовут [Имя], я Junior Backend разработчик.
+
+[Краткий бэкграунд: образование/переход в IT]
+
+В последние [X месяцев] активно изучал backend разработку,
+фокусировался на NestJS и TypeScript.
+
+Создал несколько проектов:
+- Blog API с аутентификацией, ролями, CRUD для постов и комментариев
+- Todo API с JWT, пагинацией, полным покрытием тестами
+
+Во всех проектах использовал:
+- NestJS + TypeScript для backend
+- PostgreSQL для БД
+- Docker для контейнеризации
+- Jest для тестирования
+
+Все проекты задеплоены и доступны на GitHub.
+
+Сейчас ищу позицию Junior Backend Developer,
+где смогу применять свои навыки и развиваться в команде.
+```
+
+**Практикуй:**
+
+- Записывай себя на видео
+- Репетируй вслух
+- Уложись в 2-3 минуты
+
+#### Вопросы по твоим проектам:
+
+**Будь готов ответить:**
+
+- Почему выбрал эту архитектуру?
+- Как реализована аутентификация?
+- Как тестировал API?
+- Какие сложности встретились?
+- Что бы улучшил в проекте?
+
+**Совет:** Освежи память по своему коду перед интервью
+
+#### Типовые технические вопросы:
+
+**NestJS:**
+
+- Что такое Dependency Injection?
+- Чем отличается Controller от Service?
+- Для чего нужны Guards?
+- Как работает JWT authentication?
+
+**TypeScript:**
+
+- Чем interface отличается от type?
+- Что такое generic?
+- Для чего strict mode?
+
+**PostgreSQL:**
+
+- Чем INNER JOIN отличается от LEFT JOIN?
+- Зачем нужны индексы?
+- Что такое транзакция?
+
+**Готовь короткие ответы (1-2 минуты)**
+
+#### Вопросы, которые ты задаёшь:
+
+**Обязательно спроси:**
+
+- Какой стек технологий в проекте?
+- Какова структура команды?
+- Кто будет моим ментором/лидом?
+- Какие задачи буду решать в первые месяцы?
+- Какой процесс онбординга?
+- Есть ли code review?
+
+**Показывает интерес и серьёзность**
+
+---
+
+### TASK-008: Тестовые задания
+
+#### Как подходить к тестовым:
+
+**Обязательно:**
+
+- Прочитай требования **дважды**
+- Уточни непонятное (не стесняйся спрашивать)
+- Следуй инструкциям (если просят REST, не делай GraphQL)
+- Покрой тестами (хотя бы базово)
+- Добавь README с инструкциями
+- Задеплой (если возможно)
+
+**Структура типичного тестового:**
+
+- Создать API для [сущность]
+- CRUD операции
+- Аутентификация (JWT)
+- Валидация
+- Тесты (опционально, но рекомендуется)
+
+**Время:**
+
+- Обычно дают 2-3 дня
+- Трать 4-6 часов (не больше)
+- Если не успеваешь - скажи честно
+
+**Сдача тестового:**
+
+- GitHub репозиторий (публичный)
+- README с инструкциями
+- .env.example
+- Опционально: live demo
+
+**Чек-лист перед сдачей:**
+
+- [ ] Код работает локально
+- [ ] Нет console.log/commented code
+- [ ] README полный
+- [ ] Коммиты осмысленные
+- [ ] Тесты проходят (если есть)
+
+---
+
+## 💰 Неделя 10-12: Офферы и выбор
+
+### TASK-009: Оценка офферов
+
+#### Критерии оценки:
+
+**Обязательно учитывай:**
+
+1. **Зарплата** (но не главное для Junior)
+2. **Команда и ментор** (критично для роста)
+3. **Технологии** (NestJS, современный стек)
+4. **Процессы** (code review, тесты, CI/CD)
+5. **Onboarding** (есть ли обучение)
+
+**Вопросы перед принятием:**
+
+- Кто будет моим ментором?
+- Какой типичный рабочий день?
+- Какие задачи в первый месяц?
+- Как проходит code review?
+- Есть ли образовательный бюджет?
+
+**Не стесняйся спрашивать!**
+
+#### Если несколько офферов:
+
+**Сравни по таблице:**
+
+| Критерий    | Компания A         | Компания B       |
+| ----------- | ------------------ | ---------------- |
+| Зарплата    | 60k                | 70k              |
+| Команда     | 3 backend          | 5 backend        |
+| Ментор      | Есть               | Нет              |
+| Стек        | NestJS, PostgreSQL | Express, MongoDB |
+| Onboarding  | 2 недели           | Нет              |
+| Code review | Да                 | Иногда           |
+
+**Взвешивай:**
+
+- Для Junior ментор и команда > зарплата
+- Современный стек > legacy
+- Процессы (code review) > хаос
+
+#### Переговоры:
+
+**Если хочешь повысить зарплату:**
+
+- "Есть другой оффер на [X+10%], можете ли вы увеличить?"
+- Будь честен и уважителен
+- Готовься к отказу (для Junior редко повышают)
+
+**Если нужно время:**
+
+- "Могу ли я дать ответ через 2-3 дня?"
+- Большинство компаний дают 3-5 дней
+
+---
+
+## ✅ Критерии успеха Фазы 2
+
+### Фаза завершена, если:
+
+- [ ] Получил **минимум 1 оффер**
+- [ ] Оценил условия работы
+- [ ] Принял решение и подписал контракт
+
+### Метрики успеха:
+
+- **100+ откликов** за 2 месяца
+- **5+ интервью** (technical или HR)
+- **2-3 тестовых задания** выполнено
+- **1-2 оффера** получено
+
+---
+
+## 📊 Трекинг прогресса
+
+### Еженедельный чек-лист:
+
+**Неделя 1-2 (Подготовка):**
+
+- [ ] Резюме на HH.ru создано
+- [ ] GitHub профиль оптимизирован
+- [ ] LinkedIn профиль заполнен
+- [ ] Прорешал 10+ алгоритмических задач
+
+**Неделя 3-4 (Старт откликов):**
+
+- [ ] Отправил 40+ откликов
+- [ ] Получил 3-5 ответов
+- [ ] Прошёл 1-2 HR интервью
+
+**Неделя 5-6 (Интенсив):**
+
+- [ ] Отправил ещё 40+ откликов
+- [ ] Прошёл 2-3 технических интервью
+- [ ] Получил тестовое задание
+
+**Неделя 7-8 (Финал):**
+
+- [ ] Выполнил тестовое задание
+- [ ] Прошёл финальное интервью
+- [ ] Получил оффер
+
+---
+
+## 💡 Советы и мотивация
+
+### Что делать при отказах:
+
+**Отказы - это нормально!**
+
+- Junior получают 80-90% отказов
+- Каждый отказ - опыт интервью
+- Анализируй: где споткнулся?
+
+**После отказа:**
+
+- Попроси feedback (многие дадут)
+- Запиши слабые места
+- Подтяни эти темы
+- Продолжай откликаться
+
+### Как не сгореть:
+
+**Балансируй:**
+
+- Не отправляй 50 откликов в день (burnout)
+- 5-10 откликов стабильно > 50 за раз
+- Делай перерывы между интервью
+
+**Отдыхай:**
+
+- Один день в неделю без откликов
+- После неудачного интервью - прогулка
+- Celebrate маленькие победы (ответ, интервью)
+
+### Помни:
+
+- ✅ Один оффер - это всё, что нужно
+- ✅ Junior позиции есть всегда
+- ✅ Твоё портфолио сильное
+- ✅ Процесс займёт время (2-4 месяца)
+- ✅ Каждый интервью - это навык
+
+---
+
+## 🚀 Следующие шаги после устройства
+
+### Первые 3 месяца на работе:
+
+**Фокус на:**
+
+- Изучение кодовой базы
+- Работа с ментором
+- Выполнение простых задач
+- Участие в code review
+- Адаптация в команде
+
+### Через 6-12 месяцев:
+
+**Можешь вернуться к SaaS проекту:**
+
+- Откр��й [SaaS/README.md](../SaaS/README.md)
+- У тебя будет опыт из компании
+- Делай в свободное время (без давления)
+- Применяй знания с работы
+
+---
+
+## 📝 Финал
+
+### Ты готов к Фазе 2, если:
+
+- [x] Завершил Фазу 1 (2-3 проекта готовы)
+- [ ] Создал резюме и профили
+- [ ] Готов откликаться каждый день
+- [ ] Подготовился к техническим вопросам
+
+### Начинай прямо сейчас!
+
+1. Открой HH.ru
+2. Создай резюме по шаблону
+3. Найди 5 вакансий Junior NestJS
+4. Отправь первые отклики
+
+**Каждый большой путь начинается с первого шага.**
+
+**Твой первый шаг - первый отклик.**
+
+**Удачи! Ты справишься! 🚀💪**

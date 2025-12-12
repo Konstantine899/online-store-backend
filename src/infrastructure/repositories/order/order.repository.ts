@@ -1,23 +1,36 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { OrderModel, OrderItemModel } from '@app/domain/models';
+import { OrderItemModel, OrderModel, ProductModel } from '@app/domain/models';
+import { IOrderRepository } from '@app/domain/repositories';
+import { TenantContext } from '@app/infrastructure/common/context';
 import { OrderDto } from '@app/infrastructure/dto';
-import { OrderItemRepository } from '../order-item/order-item-repository';
 import {
-    AdminGetStoreOrderListResponse,
     AdminCreateOrderResponse,
-    AdminGetOrderUserResponse,
     AdminGetOrderListUserResponse,
+    AdminGetOrderUserResponse,
+    AdminGetStoreOrderListResponse,
     UserGetOrderListResponse,
 } from '@app/infrastructure/responses';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { Op, QueryTypes, Transaction } from 'sequelize';
+import { Sequelize } from 'sequelize-typescript';
+import { OrderItemRepository } from '../order-item/order-item-repository';
 
-import { IOrderRepository } from '@app/domain/repositories';
+/**
+ * TEST-032: Extended interface for order items with productId
+ * Needed for inventory checking and stock management
+ */
+interface OrderItemWithProduct extends OrderItemModel {
+    productId: number;
+}
 
 @Injectable()
 export class OrderRepository implements IOrderRepository {
     constructor(
         @InjectModel(OrderModel) private orderModel: typeof OrderModel,
+        @InjectModel(ProductModel) private productModel: typeof ProductModel,
         private readonly orderItemRepository: OrderItemRepository,
+        private readonly sequelize: Sequelize,
+        private readonly tenantContext: TenantContext,
     ) {}
 
     public async adminFindOrderListUser(
@@ -25,10 +38,11 @@ export class OrderRepository implements IOrderRepository {
     ): Promise<
         AdminGetStoreOrderListResponse[] | AdminGetOrderListUserResponse[]
     > {
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         let orders: OrderModel[];
         if (user_id) {
             orders = await this.orderModel.findAll({
-                where: { user_id },
+                where: { user_id, tenant_id: tenantId },
                 include: [
                     {
                         model: OrderItemModel,
@@ -39,6 +53,7 @@ export class OrderRepository implements IOrderRepository {
             });
         } else {
             orders = await this.orderModel.findAll({
+                where: { tenant_id: tenantId },
                 include: [
                     {
                         model: OrderItemModel,
@@ -56,12 +71,14 @@ export class OrderRepository implements IOrderRepository {
         id: number,
         user_id?: number,
     ): Promise<AdminGetOrderUserResponse> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         let order: OrderModel;
         if (user_id) {
-            order = await this.orderModel.findOne({
+            order = (await this.orderModel.findOne({
                 where: {
                     id,
                     user_id,
+                    tenant_id: tenantId,
                 },
                 include: [
                     {
@@ -70,10 +87,11 @@ export class OrderRepository implements IOrderRepository {
                         attributes: ['name', 'price', 'quantity'],
                     },
                 ],
-            }) as AdminGetOrderUserResponse;
+            })) as AdminGetOrderUserResponse;
             return order;
         }
-        order = await this.orderModel.findByPk(id, {
+        order = (await this.orderModel.findOne({
+            where: { id, tenant_id: tenantId },
             include: [
                 {
                     model: OrderItemModel,
@@ -81,15 +99,16 @@ export class OrderRepository implements IOrderRepository {
                     attributes: ['name', 'price', 'quantity'],
                 },
             ],
-        }) as AdminGetOrderUserResponse;
+        })) as AdminGetOrderUserResponse;
         return order;
     }
 
     public async findUserAndHisOrders(
         user_id: number,
     ): Promise<AdminCreateOrderResponse> {
-        return await this.orderModel.findOne({
-            where: { user_id },
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
+        return (await this.orderModel.findOne({
+            where: { user_id, tenant_id: tenantId },
             include: [
                 {
                     model: OrderItemModel,
@@ -97,7 +116,7 @@ export class OrderRepository implements IOrderRepository {
                     attributes: ['name', 'price', 'quantity'],
                 },
             ],
-        })as AdminCreateOrderResponse;
+        })) as AdminCreateOrderResponse;
     }
 
     public async adminCreateOrder(
@@ -111,7 +130,9 @@ export class OrderRepository implements IOrderRepository {
     }
 
     public async findOrder(orderId: number): Promise<OrderModel> {
-        return this.orderModel.findByPk(orderId, {
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
+        return this.orderModel.findOne({
+            where: { id: orderId, tenant_id: tenantId },
             include: [
                 {
                     model: OrderItemModel,
@@ -123,16 +144,18 @@ export class OrderRepository implements IOrderRepository {
     }
 
     public async removeOrder(id: number): Promise<number> {
-        return this.orderModel.destroy({ where: { id } });
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
+        return this.orderModel.destroy({ where: { id, tenant_id: tenantId } });
     }
 
     public async userFindOrderList(
         user_id: number,
     ): Promise<UserGetOrderListResponse[]> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         let orders: OrderModel[];
         if (user_id) {
             orders = await this.orderModel.findAll({
-                where: { user_id },
+                where: { user_id, tenant_id: tenantId },
                 include: [
                     {
                         model: OrderItemModel,
@@ -142,7 +165,9 @@ export class OrderRepository implements IOrderRepository {
                 ],
             });
         } else {
-            orders = await this.orderModel.findAll();
+            orders = await this.orderModel.findAll({
+                where: { tenant_id: tenantId },
+            });
         }
 
         return orders;
@@ -152,10 +177,12 @@ export class OrderRepository implements IOrderRepository {
         order_id: number,
         user_id?: number,
     ): Promise<OrderModel> {
+        const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
         return this.orderModel.findOne({
             where: {
                 user_id,
                 id: order_id,
+                tenant_id: tenantId,
             },
             include: [
                 {
@@ -171,30 +198,152 @@ export class OrderRepository implements IOrderRepository {
         dto: Omit<OrderDto, 'userId'>,
         userId: number,
     ): Promise<OrderModel> {
-        const order: OrderModel = new OrderModel();
-        order.user_id = userId;
-        order.name = dto.name;
-        order.email = dto.email;
-        order.phone = dto.phone;
-        order.address = dto.address;
-        order.comment = dto.comment;
-        order.amount = dto.items.reduce(
-            (sum: number, item: OrderItemModel) => sum + item.price,
-            0,
-        );
-        await order.save();
-        for (const item of dto.items) {
-            await this.orderItemRepository.createItem(order.id, item);
-        }
+        // TEST-032: Inventory checking + transaction + pessimistic locking
+        return this.sequelize.transaction(
+            {
+                isolationLevel: Transaction.ISOLATION_LEVELS.READ_COMMITTED,
+            },
+            async (transaction: Transaction) => {
+                // Cast items to include productId (TEST-032 requirement)
+                const itemsWithProduct =
+                    dto.items as unknown as OrderItemWithProduct[];
 
-        return this.orderModel.findByPk(order.id, {
-            include: [
-                {
-                    model: OrderItemModel,
-                    as: 'items',
-                    attributes: ['name', 'price', 'quantity'],
-                },
-            ],
-        }) as Promise<OrderModel>;
+                // 1. Extract product IDs from order items
+                const productIds = itemsWithProduct.map(
+                    (item) => item.productId,
+                );
+
+                // 2. Lock products FOR UPDATE (pessimistic locking)
+                const products = await this.productModel.findAll({
+                    where: {
+                        id: {
+                            [Op.in]: productIds,
+                        },
+                    },
+                    lock: Transaction.LOCK.UPDATE,
+                    transaction,
+                });
+
+                // 3. Check stock availability for each item
+                for (const item of itemsWithProduct) {
+                    const product = products.find(
+                        (p) => p.id === item.productId,
+                    );
+
+                    if (!product) {
+                        throw new ConflictException(
+                            `Товар с ID ${item.productId} не найден`,
+                        );
+                    }
+
+                    const requestedQuantity = item.quantity || 1;
+
+                    if (product.stock < requestedQuantity) {
+                        throw new ConflictException(
+                            `Недостаточно товара на складе: ${product.name}. ` +
+                                `Доступно: ${product.stock}, запрошено: ${requestedQuantity}`,
+                        );
+                    }
+                }
+
+                // 4. Decrement stock atomically
+                for (const item of itemsWithProduct) {
+                    const requestedQuantity = item.quantity || 1;
+
+                    await this.productModel.decrement('stock', {
+                        by: requestedQuantity,
+                        where: {
+                            id: item.productId,
+                        },
+                        transaction,
+                    });
+                }
+
+                // 5. Create order
+                const order: OrderModel = new OrderModel();
+                order.user_id = userId;
+                order.name = dto.name;
+                order.email = dto.email;
+                order.phone = dto.phone;
+                order.address = dto.address;
+                order.comment = dto.comment;
+                order.amount = dto.items.reduce(
+                    (sum: number, item: OrderItemModel) => sum + item.price,
+                    0,
+                );
+                order.tenant_id = this.tenantContext.getTenantIdOrNull() ?? 1;
+                await order.save({ transaction });
+
+                // 6. Create order items
+                for (const item of dto.items) {
+                    await this.orderItemRepository.createItem(order.id, item);
+                }
+
+                // 7. Return created order with items
+                const tenantId = this.tenantContext.getTenantIdOrNull() ?? 1;
+                return this.orderModel.findOne({
+                    where: { id: order.id, tenant_id: tenantId },
+                    include: [
+                        {
+                            model: OrderItemModel,
+                            as: 'items',
+                            attributes: ['name', 'price', 'quantity'],
+                        },
+                    ],
+                    transaction,
+                }) as Promise<OrderModel>;
+            },
+        );
+    }
+
+    // ============================================================================
+    // МЕТОДЫ ДЛЯ АВТОМАТИЧЕСКОГО НАЗНАЧЕНИЯ РОЛЕЙ
+    // ============================================================================
+
+    /**
+     * Получить общую сумму покупок пользователя
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Сумма всех заказов пользователя в рублях
+     * @performance Использует прямой SQL запрос для оптимизации (индексы: idx_order_user_id, idx_order_tenant_id_user_id)
+     */
+    public async getUserTotalSpent(
+        userId: number,
+        tenantId: number,
+    ): Promise<number> {
+        const result = await this.sequelize.query<{ totalSpent: string }>(
+            `SELECT COALESCE(SUM(amount), 0) as totalSpent
+             FROM \`order\`
+             WHERE user_id = :userId AND tenant_id = :tenantId`,
+            {
+                replacements: { userId, tenantId },
+                type: QueryTypes.SELECT,
+                plain: true,
+            },
+        );
+
+        // Sequelize возвращает DECIMAL как string, преобразуем в number
+        // При plain: true результат - это объект или null, не массив
+        return result?.totalSpent ? Number.parseFloat(result.totalSpent) : 0;
+    }
+
+    /**
+     * Получить количество заказов пользователя
+     * @param userId - ID пользователя
+     * @param tenantId - ID тенанта
+     * @returns Количество заказов пользователя
+     */
+    public async getUserOrderCount(
+        userId: number,
+        tenantId: number,
+    ): Promise<number> {
+        const count = await this.orderModel.count({
+            where: {
+                user_id: userId,
+                tenant_id: tenantId,
+            },
+        });
+
+        return count;
     }
 }

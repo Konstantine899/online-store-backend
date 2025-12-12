@@ -1,19 +1,22 @@
-import {
-    CreateUserDto,
+import type { UserModel } from '@app/domain/models';
+import type {
     AddRoleDto,
+    CreateUserDto,
     RemoveRoleDto,
+    UpdateConsentsDto,
+    UpdateUserDto,
+    UpdateUserStatusDto,
 } from '@app/infrastructure/dto';
-import {
-    CreateUserResponse,
-    GetUserResponse,
-    CheckResponse,
-    GetListUsersResponse,
-    UpdateUserResponse,
-    RemoveUserResponse,
+import type {
     AddRoleResponse,
+    CheckResponse,
+    CreateUserResponse,
+    GetPaginatedUsersResponse,
+    GetUserResponse,
+    RemoveUserResponse,
     RemoveUserRoleResponse,
+    UpdateUserResponse,
 } from '@app/infrastructure/responses';
-import { UserModel } from '@app/domain/models';
 
 export interface IUserService {
     createUser(dto: CreateUserDto): Promise<CreateUserResponse>;
@@ -26,13 +29,49 @@ export interface IUserService {
 
     findUserByEmail(email: string): Promise<UserModel>;
 
-    getListUsers(): Promise<GetListUsersResponse[]>;
+    getListUsers(
+        page?: number,
+        limit?: number,
+    ): Promise<GetPaginatedUsersResponse>;
 
-    updateUser(id: number, dto: CreateUserDto): Promise<UpdateUserResponse>;
+    updateUser(id: number, dto: UpdateUserDto): Promise<UpdateUserResponse>;
 
     removeUser(id: number): Promise<RemoveUserResponse>;
 
     addRole(dto: AddRoleDto): Promise<AddRoleResponse>;
 
     removeUserRole(dto: RemoveRoleDto): Promise<RemoveUserRoleResponse>;
+
+    updatePhone(userId: number, phone: string): Promise<UserModel>;
+
+    updateDateOfBirth(userId: number, dateOfBirth: string): Promise<UserModel>;
+
+    updateConsents(userId: number, dto: UpdateConsentsDto): Promise<UserModel>;
+
+    updateUserStatus(
+        userId: number,
+        dto: UpdateUserStatusDto,
+        tenantId: number,
+    ): Promise<UserModel>;
+
+    // Verification Methods (with tenant isolation)
+    requestVerificationCode(
+        userId: number,
+        channel: 'email' | 'phone',
+        tenantId: number,
+    ): Promise<void>;
+    confirmVerificationCode(
+        userId: number,
+        channel: 'email' | 'phone',
+        code: string,
+        tenantId: number,
+    ): Promise<void>;
+
+    // User Statistics Methods
+    getUserStats(): Promise<{
+        totalUsers: number;
+        activeUsers: number;
+        blockedUsers: number;
+        newsletterSubscribers: number;
+    }>;
 }

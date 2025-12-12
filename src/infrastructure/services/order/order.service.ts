@@ -5,6 +5,7 @@ import {
     OrderRepository,
     UserRepository,
 } from '@app/infrastructure/repositories';
+import { RoleService } from '../role/role.service';
 import { UserService } from '../user/user.service';
 import {
     AdminGetStoreOrderListResponse,
@@ -18,14 +19,21 @@ import {
     GuestCreateOrderResponse,
 } from '@app/infrastructure/responses';
 import { IOrderService } from '@app/domain/services';
+import {
+    createLogger,
+    maskPII,
+} from '@app/infrastructure/common/utils/logging';
 
 @Injectable()
 export class OrderService implements IOrderService {
+    private readonly logger = createLogger('OrderService');
+
     constructor(
         private readonly orderRepository: OrderRepository,
         private readonly cartRepository: CartRepository,
         private readonly userService: UserService,
         private readonly userRepository: UserRepository,
+        private readonly roleService: RoleService,
     ) {}
 
     public async adminGetStoreOrderList(): Promise<
@@ -89,7 +97,32 @@ export class OrderService implements IOrderService {
         if (!order) {
             this.notFound('Заказ не найден');
         }
+
+        const userId = order.user_id;
+        const tenantId = order.tenant_id;
+
         await this.orderRepository.removeOrder(order.id);
+
+        // Автоматическое пересмотрение ролей после удаления заказа (асинхронно)
+        if (userId && tenantId) {
+            this.roleService
+                .evaluateAndUpdateCustomerRoles(userId, tenantId)
+                .catch((error: unknown) => {
+                    this.logger.warn(
+                        {
+                            userId,
+                            tenantId,
+                            orderId: order.id,
+                            error:
+                                error instanceof Error
+                                    ? error.message
+                                    : 'Unknown error',
+                        },
+                        'Ошибка при автоматическом пересмотре ролей после удаления заказа',
+                    );
+                });
+        }
+
         return {
             status: HttpStatus.OK,
             message: 'success',
@@ -145,22 +178,59 @@ export class OrderService implements IOrderService {
         userId: number,
         cartId: number,
     ): Promise<UserCreateOrderResponse> {
-        /*Если есть userId ищем пользователя в БД. Если пользователь не найден выдаст исключение*/
-        if (userId) {
-            await this.userService.getUser(userId);
-        }
-        const cart = await this.cartRepository.findCart(cartId);
+        /*Параллельная проверка пользователя и поиск корзины для оптимизации производительности*/
+        const [, cart] = await Promise.all([
+            userId ? this.userService.getUser(userId) : Promise.resolve(null),
+            this.cartRepository.findCart(cartId),
+        ]);
+
         if (!cart) {
             this.notFound(`Корзины с id:${cartId} не найдена БД`);
         }
         if (cart.products.length === 0) {
             this.notFound('Ваша корзина пуста');
         }
+
         /*Для создания заказа отправляю сформированный в клиентской части объект
          * который содержит в себе данные пользователя, и данные заказа с корзины*/
-        const order = this.orderRepository.createOrder(dto, userId);
-        // после оформления заказа корзину нужно очистить
+        const order = await this.orderRepository.createOrder(dto, userId);
+
+        // Бизнес-логирование: создание заказа (info level)
+        this.logger.info(
+            {
+                orderId: order.id,
+                userId,
+                amount: order.amount,
+                itemsCount: cart.products.length,
+                email: maskPII(dto.email),
+                phone: maskPII(dto.phone),
+            },
+            'Новый заказ создан',
+        );
+
+        // После оформления заказа корзину нужно очистить
         await this.cartRepository.clearCart(cartId);
+
+        // Автоматическое назначение ролей (VIP, WHOLESALE) - асинхронно, не блокируем создание заказа
+        if (userId && order.tenant_id) {
+            this.roleService
+                .evaluateAndUpdateCustomerRoles(userId, order.tenant_id)
+                .catch((error: unknown) => {
+                    this.logger.warn(
+                        {
+                            userId,
+                            tenantId: order.tenant_id,
+                            orderId: order.id,
+                            error:
+                                error instanceof Error
+                                    ? error.message
+                                    : 'Unknown error',
+                        },
+                        'Ошибка при автоматическом назначении ролей после создания заказа',
+                    );
+                });
+        }
+
         return order;
     }
 

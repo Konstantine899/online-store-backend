@@ -1,17 +1,53 @@
-export { BrandDto } from './brand/brand.dto';
-export { CreateUserDto } from './user/create-user.dto';
-export { AddRoleDto } from './user/add-role.dto';
-export { RemoveRoleDto } from './user/remove-role.dto';
-export { CreateRoleDto } from './role/create-role.dto';
-export { RegistrationDto } from './auth/registration.dto';
-export { RefreshDto } from './auth/refresh.dto';
+export { AuditFiltersDto } from '@app/domain/dto/audit/audit-filters.dto';
 export { LoginDto } from './auth/login.dto';
+export { RefreshDto } from './auth/refresh.dto';
+export { RegistrationDto } from './auth/registration.dto';
+export { BrandDto } from './brand/brand.dto';
+export { AddToCartDto, ApplyCouponDto, UpdateCartItemDto } from './cart';
+export { CreateCategoryDto } from './category/create-category.dto';
+export { GetLoginHistoryDto } from './login-history/get-login-history.dto';
 export { OrderDto } from './order/order.dto';
-export { UserOrderDto } from './order/user-order-dto';
 export { SignedCookiesDto } from './order/signed-cookies.dto';
+export { UserOrderDto } from './order/user-order-dto';
+export { MakePaymentDto } from './payment/make.payment.dto';
+export { CreateProductPropertyDto } from './product-property/create-product-property.dto';
 export { CreateProductDto } from './product/create-product.dto';
 export { SearchDto } from './product/search-dto';
 export { SortingDto } from './product/sorting-dto';
-export { CreateCategoryDto } from './category/create-category.dto';
-export { CreateProductPropertyDto } from './product-property/create-product-property.dto';
-export { MakePaymentDto } from './payment/make.payment.dto';
+export { AssignPermissionDto } from './role/assign-permission.dto';
+export { AssignRoleDto } from './role/assign-role.dto';
+export { CreateAutoRenewalConfigDto } from './role/create-auto-renewal-config.dto';
+export { CreateRoleDto } from './role/create-role.dto';
+export {
+    CreateExternalRoleConfigDto,
+    UpdateExternalRoleConfigDto,
+    ProviderConfigDto,
+} from './role/external-role-config.dto';
+export {
+    CreateRoleMappingDto,
+    UpdateRoleMappingDto,
+    MappingRulesDto,
+    MappingRuleConditionDto,
+} from './role/role-mapping.dto';
+export { SyncRequestDto } from './role/sync-request.dto';
+export { RevokePermissionDto } from './role/revoke-permission.dto';
+export { RevokeRoleDto } from './role/revoke-role.dto';
+export { RoleAnalyticsFiltersDto } from './role/role-analytics-filters.dto';
+export { UpdateAutoRenewalConfigDto } from './role/update-auto-renewal-config.dto';
+export { UpdateRoleDto } from './role/update-role.dto';
+export { CreateUserAddressDto } from './user-address/create-user-address.dto';
+export { UpdateUserAddressDto } from './user-address/update-user-address.dto';
+export { AddRoleDto } from './user/add-role.dto';
+export { BulkUsersDto } from './user/bulk-users.dto';
+export { ChangePasswordDto } from './user/change-password.dto';
+export { CreateUserDto } from './user/create-user.dto';
+export { RemoveRoleDto } from './user/remove-role.dto';
+export { TranslationEntryDto } from './user/translation-entry.dto';
+export { UpdateConsentsDto } from './user/update-consents.dto';
+export { UpdateDateOfBirthDto } from './user/update-date-of-birth.dto';
+export { UpdateUserPhoneDto } from './user/update-user-phone.dto';
+export { UpdateUserPreferencesDto } from './user/update-user-preferences.dto';
+export { UpdateUserProfileDto } from './user/update-user-profile.dto';
+export { UpdateUserStatusDto } from './user/update-user-status.dto';
+export { UpdateUserDto } from './user/update-user.dto';
+export { UserFiltersDto, UserFilterType } from './user/user-filters.dto';

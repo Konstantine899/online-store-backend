@@ -1,4 +1,4 @@
-import { OrderItemModel } from '../../models/order-item.model';
+import type { OrderItemModel } from '../../models/order-item.model';
 
 export interface IOrderDto {
     userId?: number;

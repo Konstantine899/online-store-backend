@@ -1,0 +1,1099 @@
+# Store Management System - Ecommerce Edition
+
+## Описание
+Система управления состоянием магазина для ecommerce приложения. Включает флаги для контроля работы магазина, режимов обслуживания и приема заказов.
+
+## SQL Schema
+
+### Таблица `store_settings`
+```sql
+CREATE TABLE store_settings (
+    id SERIAL PRIMARY KEY,
+    store_name VARCHAR(255) NOT NULL DEFAULT 'Online Store',
+    store_description TEXT,
+    store_email VARCHAR(255),
+    store_phone VARCHAR(20),
+    store_address TEXT,
+    timezone VARCHAR(50) DEFAULT 'Europe/Moscow',
+    currency VARCHAR(3) DEFAULT 'RUB',
+    language VARCHAR(10) DEFAULT 'ru',
+    is_open BOOLEAN DEFAULT true,
+    is_maintenance_mode BOOLEAN DEFAULT false,
+    is_accepting_orders BOOLEAN DEFAULT true,
+    is_processing_orders BOOLEAN DEFAULT true,
+    maintenance_message TEXT,
+    holiday_mode BOOLEAN DEFAULT false,
+    holiday_start_date TIMESTAMP,
+    holiday_end_date TIMESTAMP,
+    max_orders_per_day INTEGER DEFAULT 1000,
+    max_orders_per_hour INTEGER DEFAULT 100,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Модели Sequelize
+
+### Store Settings Model
+```typescript
+// src/domain/models/store-settings.model.ts
+import { Model, DataType, Column, Table } from 'sequelize-typescript';
+
+export enum StoreStatus {
+    OPEN = 'open',
+    CLOSED = 'closed',
+    MAINTENANCE = 'maintenance',
+    HOLIDAY = 'holiday'
+}
+
+interface IStoreSettingsModel {
+    id: number;
+    storeName: string;
+    storeDescription?: string;
+    storeEmail?: string;
+    storePhone?: string;
+    storeAddress?: string;
+    timezone: string;
+    currency: string;
+    language: string;
+    isOpen: boolean;
+    isMaintenanceMode: boolean;
+    isAcceptingOrders: boolean;
+    isProcessingOrders: boolean;
+    maintenanceMessage?: string;
+    holidayMode: boolean;
+    holidayStartDate?: Date;
+    holidayEndDate?: Date;
+    maxOrdersPerDay: number;
+    maxOrdersPerHour: number;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IStoreSettingsCreationAttributes {
+    storeName?: string;
+    storeDescription?: string;
+    storeEmail?: string;
+    storePhone?: string;
+    storeAddress?: string;
+    timezone?: string;
+    currency?: string;
+    language?: string;
+    isOpen?: boolean;
+    isMaintenanceMode?: boolean;
+    isAcceptingOrders?: boolean;
+    isProcessingOrders?: boolean;
+    maintenanceMessage?: string;
+    holidayMode?: boolean;
+    holidayStartDate?: Date;
+    holidayEndDate?: Date;
+    maxOrdersPerDay?: number;
+    maxOrdersPerHour?: number;
+}
+
+@Table({
+    tableName: 'store_settings',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['is_open'], name: 'idx_store_settings_is_open' },
+        { fields: ['is_maintenance_mode'], name: 'idx_store_settings_is_maintenance_mode' },
+        { fields: ['is_accepting_orders'], name: 'idx_store_settings_is_accepting_orders' },
+        { fields: ['is_processing_orders'], name: 'idx_store_settings_is_processing_orders' },
+        { fields: ['holiday_mode'], name: 'idx_store_settings_holiday_mode' },
+        { fields: ['currency'], name: 'idx_store_settings_currency' },
+        { fields: ['language'], name: 'idx_store_settings_language' },
+        { fields: ['created_at'], name: 'idx_store_settings_created_at' },
+    ],
+})
+export class StoreSettingsModel
+    extends Model<StoreSettingsModel, IStoreSettingsCreationAttributes>
+    implements IStoreSettingsModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+        defaultValue: 'Online Store',
+        field: 'store_name',
+    })
+    declare storeName: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'store_description',
+    })
+    declare storeDescription: string;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: true,
+        field: 'store_email',
+    })
+    declare storeEmail: string;
+
+    @Column({
+        type: DataType.STRING(20),
+        allowNull: true,
+        field: 'store_phone',
+    })
+    declare storePhone: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'store_address',
+    })
+    declare storeAddress: string;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: false,
+        defaultValue: 'Europe/Moscow',
+    })
+    declare timezone: string;
+
+    @Column({
+        type: DataType.STRING(3),
+        allowNull: false,
+        defaultValue: 'RUB',
+    })
+    declare currency: string;
+
+    @Column({
+        type: DataType.STRING(10),
+        allowNull: false,
+        defaultValue: 'ru',
+    })
+    declare language: string;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_open',
+    })
+    declare isOpen: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_maintenance_mode',
+    })
+    declare isMaintenanceMode: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_accepting_orders',
+    })
+    declare isAcceptingOrders: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_processing_orders',
+    })
+    declare isProcessingOrders: boolean;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+        field: 'maintenance_message',
+    })
+    declare maintenanceMessage: string;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'holiday_mode',
+    })
+    declare holidayMode: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'holiday_start_date',
+    })
+    declare holidayStartDate: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'holiday_end_date',
+    })
+    declare holidayEndDate: Date;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 1000,
+        field: 'max_orders_per_day',
+    })
+    declare maxOrdersPerDay: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 100,
+        field: 'max_orders_per_hour',
+    })
+    declare maxOrdersPerHour: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'updated_at',
+    })
+    declare updatedAt: Date;
+
+    // Getters для флагов
+    get isStoreOpen(): boolean {
+        return this.isOpen;
+    }
+
+    get isStoreInMaintenanceMode(): boolean {
+        return this.isMaintenanceMode;
+    }
+
+    get isStoreAcceptingOrders(): boolean {
+        return this.isAcceptingOrders;
+    }
+
+    get isStoreProcessingOrders(): boolean {
+        return this.isProcessingOrders;
+    }
+
+    get isStoreInHolidayMode(): boolean {
+        return this.holidayMode;
+    }
+
+    get storeStatus(): StoreStatus {
+        if (this.holidayMode) return StoreStatus.HOLIDAY;
+        if (this.isMaintenanceMode) return StoreStatus.MAINTENANCE;
+        if (!this.isOpen) return StoreStatus.CLOSED;
+        return StoreStatus.OPEN;
+    }
+
+    get canAcceptOrders(): boolean {
+        return this.isOpen && !this.isMaintenanceMode && this.isAcceptingOrders && !this.holidayMode;
+    }
+
+    get canProcessOrders(): boolean {
+        return this.isOpen && !this.isMaintenanceMode && this.isProcessingOrders && !this.holidayMode;
+    }
+
+    get isHolidayActive(): boolean {
+        if (!this.holidayMode) return false;
+        const now = new Date();
+        if (this.holidayStartDate && this.holidayEndDate) {
+            return now >= this.holidayStartDate && now <= this.holidayEndDate;
+        }
+        return this.holidayMode;
+    }
+
+    // Методы для управления флагами
+    async openStore(): Promise<void> {
+        await this.update({ 
+            isOpen: true, 
+            isMaintenanceMode: false,
+            holidayMode: false 
+        });
+    }
+
+    async closeStore(): Promise<void> {
+        await this.update({ 
+            isOpen: false,
+            isAcceptingOrders: false,
+            isProcessingOrders: false 
+        });
+    }
+
+    async enableMaintenanceMode(message?: string): Promise<void> {
+        await this.update({ 
+            isMaintenanceMode: true,
+            isAcceptingOrders: false,
+            isProcessingOrders: false,
+            maintenanceMessage: message 
+        });
+    }
+
+    async disableMaintenanceMode(): Promise<void> {
+        await this.update({ 
+            isMaintenanceMode: false,
+            isAcceptingOrders: true,
+            isProcessingOrders: true,
+            maintenanceMessage: null 
+        });
+    }
+
+    async enableHolidayMode(startDate?: Date, endDate?: Date): Promise<void> {
+        await this.update({ 
+            holidayMode: true,
+            isAcceptingOrders: false,
+            isProcessingOrders: false,
+            holidayStartDate: startDate,
+            holidayEndDate: endDate 
+        });
+    }
+
+    async disableHolidayMode(): Promise<void> {
+        await this.update({ 
+            holidayMode: false,
+            isAcceptingOrders: true,
+            isProcessingOrders: true,
+            holidayStartDate: null,
+            holidayEndDate: null 
+        });
+    }
+
+    async pauseOrderAcceptance(): Promise<void> {
+        await this.update({ isAcceptingOrders: false });
+    }
+
+    async resumeOrderAcceptance(): Promise<void> {
+        await this.update({ isAcceptingOrders: true });
+    }
+
+    async pauseOrderProcessing(): Promise<void> {
+        await this.update({ isProcessingOrders: false });
+    }
+
+    async resumeOrderProcessing(): Promise<void> {
+        await this.update({ isProcessingOrders: true });
+    }
+
+    // Статические методы для работы с флагами
+    static async getStoreSettings(): Promise<StoreSettingsModel> {
+        let settings = await this.findOne();
+        if (!settings) {
+            settings = await this.create({
+                storeName: 'Online Store',
+                timezone: 'Europe/Moscow',
+                currency: 'RUB',
+                language: 'ru',
+            });
+        }
+        return settings;
+    }
+
+    static async isStoreOpen(): Promise<boolean> {
+        const settings = await this.getStoreSettings();
+        return settings.canAcceptOrders;
+    }
+
+    static async isStoreInMaintenanceMode(): Promise<boolean> {
+        const settings = await this.getStoreSettings();
+        return settings.isMaintenanceMode;
+    }
+
+    static async isStoreAcceptingOrders(): Promise<boolean> {
+        const settings = await this.getStoreSettings();
+        return settings.canAcceptOrders;
+    }
+
+    static async isStoreProcessingOrders(): Promise<boolean> {
+        const settings = await this.getStoreSettings();
+        return settings.canProcessOrders;
+    }
+
+    static async getStoreStatus(): Promise<StoreStatus> {
+        const settings = await this.getStoreSettings();
+        return settings.storeStatus;
+    }
+
+    static async getMaintenanceMessage(): Promise<string | null> {
+        const settings = await this.getStoreSettings();
+        return settings.maintenanceMessage;
+    }
+}
+```
+
+## Сервисы
+
+### Store Service
+```typescript
+// src/infrastructure/services/store.service.ts
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { StoreSettingsModel, StoreStatus } from '@app/domain/models/store-settings.model';
+
+@Injectable()
+export class StoreService {
+    private readonly logger = new Logger(StoreService.name);
+
+    constructor(
+        @InjectModel(StoreSettingsModel)
+        private storeSettingsModel: typeof StoreSettingsModel,
+    ) {}
+
+    async getStoreSettings(): Promise<StoreSettingsModel> {
+        return this.storeSettingsModel.getStoreSettings();
+    }
+
+    async updateStoreSettings(settingsData: Partial<IStoreSettingsCreationAttributes>): Promise<StoreSettingsModel> {
+        const settings = await this.storeSettingsModel.getStoreSettings();
+        await settings.update(settingsData);
+        this.logger.log(`Store settings updated: ${JSON.stringify(settingsData)}`);
+        return settings;
+    }
+
+    async openStore(): Promise<void> {
+        const settings = await this.storeSettingsModel.getStoreSettings();
+        await settings.openStore();
+        this.logger.log('Store opened');
+    }
+
+    async closeStore(): Promise<void> {
+        const settings = await this.storeSettingsModel.getStoreSettings();
+        await settings.closeStore();
+        this.logger.log('Store closed');
+    }
+
+    async enableMaintenanceMode(message?: string): Promise<void> {
+        const settings = await this.storeSettingsModel.getStoreSettings();
+        await settings.enableMaintenanceMode(message);
+        this.logger.log(`Maintenance mode enabled: ${message || 'No message'}`);
+    }
+
+    async disableMaintenanceMode(): Promise<void> {
+        const settings = await this.storeSettingsModel.getStoreSettings();
+        await settings.disableMaintenanceMode();
+        this.logger.log('Maintenance mode disabled');
+    }
+
+    async enableHolidayMode(startDate?: Date, endDate?: Date): Promise<void> {
+        const settings = await this.storeSettingsModel.getStoreSettings();
+        await settings.enableHolidayMode(startDate, endDate);
+        this.logger.log(`Holiday mode enabled: ${startDate} - ${endDate}`);
+    }
+
+    async disableHolidayMode(): Promise<void> {
+        const settings = await this.storeSettingsModel.getStoreSettings();
+        await settings.disableHolidayMode();
+        this.logger.log('Holiday mode disabled');
+    }
+
+    async pauseOrderAcceptance(): Promise<void> {
+        const settings = await this.storeSettingsModel.getStoreSettings();
+        await settings.pauseOrderAcceptance();
+        this.logger.log('Order acceptance paused');
+    }
+
+    async resumeOrderAcceptance(): Promise<void> {
+        const settings = await this.storeSettingsModel.getStoreSettings();
+        await settings.resumeOrderAcceptance();
+        this.logger.log('Order acceptance resumed');
+    }
+
+    async pauseOrderProcessing(): Promise<void> {
+        const settings = await this.storeSettingsModel.getStoreSettings();
+        await settings.pauseOrderProcessing();
+        this.logger.log('Order processing paused');
+    }
+
+    async resumeOrderProcessing(): Promise<void> {
+        const settings = await this.storeSettingsModel.getStoreSettings();
+        await settings.resumeOrderProcessing();
+        this.logger.log('Order processing resumed');
+    }
+
+    async canAcceptOrder(): Promise<boolean> {
+        return this.storeSettingsModel.isStoreAcceptingOrders();
+    }
+
+    async canProcessOrder(): Promise<boolean> {
+        return this.storeSettingsModel.isStoreProcessingOrders();
+    }
+
+    async getStoreStatus(): Promise<StoreStatus> {
+        return this.storeSettingsModel.getStoreStatus();
+    }
+
+    async getMaintenanceMessage(): Promise<string | null> {
+        return this.storeSettingsModel.getMaintenanceMessage();
+    }
+
+    async checkOrderLimits(): Promise<{ canAccept: boolean; reason?: string }> {
+        const settings = await this.getStoreSettings();
+        
+        if (!settings.canAcceptOrders) {
+            return { canAccept: false, reason: 'Store is not accepting orders' };
+        }
+
+        // Здесь можно добавить проверку лимитов заказов
+        // const todayOrders = await this.orderService.getTodayOrdersCount();
+        // const hourOrders = await this.orderService.getHourOrdersCount();
+        
+        // if (todayOrders >= settings.maxOrdersPerDay) {
+        //     return { canAccept: false, reason: 'Daily order limit reached' };
+        // }
+        
+        // if (hourOrders >= settings.maxOrdersPerHour) {
+        //     return { canAccept: false, reason: 'Hourly order limit reached' };
+        // }
+
+        return { canAccept: true };
+    }
+}
+```
+
+## DTOs
+
+### Update Store Settings DTO
+```typescript
+// src/infrastructure/dto/store/update-store-settings.dto.ts
+import { IsOptional, IsString, IsBoolean, IsEmail, IsInt, Min, IsDateString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class UpdateStoreSettingsDto {
+    @ApiProperty({ description: 'Название магазина', required: false })
+    @IsOptional()
+    @IsString({ message: 'Название магазина должно быть строкой' })
+    storeName?: string;
+
+    @ApiProperty({ description: 'Описание магазина', required: false })
+    @IsOptional()
+    @IsString({ message: 'Описание магазина должно быть строкой' })
+    storeDescription?: string;
+
+    @ApiProperty({ description: 'Email магазина', required: false })
+    @IsOptional()
+    @IsEmail({}, { message: 'Некорректный email адрес' })
+    storeEmail?: string;
+
+    @ApiProperty({ description: 'Телефон магазина', required: false })
+    @IsOptional()
+    @IsString({ message: 'Телефон должен быть строкой' })
+    storePhone?: string;
+
+    @ApiProperty({ description: 'Адрес магазина', required: false })
+    @IsOptional()
+    @IsString({ message: 'Адрес должен быть строкой' })
+    storeAddress?: string;
+
+    @ApiProperty({ description: 'Часовой пояс', required: false })
+    @IsOptional()
+    @IsString({ message: 'Часовой пояс должен быть строкой' })
+    timezone?: string;
+
+    @ApiProperty({ description: 'Валюта', required: false })
+    @IsOptional()
+    @IsString({ message: 'Валюта должна быть строкой' })
+    currency?: string;
+
+    @ApiProperty({ description: 'Язык', required: false })
+    @IsOptional()
+    @IsString({ message: 'Язык должен быть строкой' })
+    language?: string;
+
+    @ApiProperty({ description: 'Открыт ли магазин', required: false })
+    @IsOptional()
+    @IsBoolean({ message: 'Статус открытия должен быть булевым значением' })
+    isOpen?: boolean;
+
+    @ApiProperty({ description: 'Режим технических работ', required: false })
+    @IsOptional()
+    @IsBoolean({ message: 'Режим технических работ должен быть булевым значением' })
+    isMaintenanceMode?: boolean;
+
+    @ApiProperty({ description: 'Принимает ли заказы', required: false })
+    @IsOptional()
+    @IsBoolean({ message: 'Статус приема заказов должен быть булевым значением' })
+    isAcceptingOrders?: boolean;
+
+    @ApiProperty({ description: 'Обрабатывает ли заказы', required: false })
+    @IsOptional()
+    @IsBoolean({ message: 'Статус обработки заказов должен быть булевым значением' })
+    isProcessingOrders?: boolean;
+
+    @ApiProperty({ description: 'Сообщение о технических работах', required: false })
+    @IsOptional()
+    @IsString({ message: 'Сообщение должно быть строкой' })
+    maintenanceMessage?: string;
+
+    @ApiProperty({ description: 'Режим праздников', required: false })
+    @IsOptional()
+    @IsBoolean({ message: 'Режим праздников должен быть булевым значением' })
+    holidayMode?: boolean;
+
+    @ApiProperty({ description: 'Дата начала праздников', required: false })
+    @IsOptional()
+    @IsDateString({}, { message: 'Некорректная дата начала праздников' })
+    holidayStartDate?: string;
+
+    @ApiProperty({ description: 'Дата окончания праздников', required: false })
+    @IsOptional()
+    @IsDateString({}, { message: 'Некорректная дата окончания праздников' })
+    holidayEndDate?: string;
+
+    @ApiProperty({ description: 'Максимум заказов в день', required: false })
+    @IsOptional()
+    @IsInt({ message: 'Максимум заказов в день должен быть числом' })
+    @Min(1, { message: 'Максимум заказов в день должен быть больше 0' })
+    maxOrdersPerDay?: number;
+
+    @ApiProperty({ description: 'Максимум заказов в час', required: false })
+    @IsOptional()
+    @IsInt({ message: 'Максимум заказов в час должен быть числом' })
+    @Min(1, { message: 'Максимум заказов в час должен быть больше 0' })
+    maxOrdersPerHour?: number;
+}
+```
+
+## Response Classes
+
+### Store Settings Response
+```typescript
+// src/infrastructure/responses/store/store-settings.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+import { StoreStatus } from '@app/domain/models/store-settings.model';
+
+export class StoreSettingsResponse {
+    @ApiProperty({ description: 'ID настроек магазина' })
+    id: number;
+
+    @ApiProperty({ description: 'Название магазина' })
+    storeName: string;
+
+    @ApiProperty({ description: 'Описание магазина', required: false })
+    storeDescription?: string;
+
+    @ApiProperty({ description: 'Email магазина', required: false })
+    storeEmail?: string;
+
+    @ApiProperty({ description: 'Телефон магазина', required: false })
+    storePhone?: string;
+
+    @ApiProperty({ description: 'Адрес магазина', required: false })
+    storeAddress?: string;
+
+    @ApiProperty({ description: 'Часовой пояс' })
+    timezone: string;
+
+    @ApiProperty({ description: 'Валюта' })
+    currency: string;
+
+    @ApiProperty({ description: 'Язык' })
+    language: string;
+
+    @ApiProperty({ description: 'Открыт ли магазин' })
+    isOpen: boolean;
+
+    @ApiProperty({ description: 'Режим технических работ' })
+    isMaintenanceMode: boolean;
+
+    @ApiProperty({ description: 'Принимает ли заказы' })
+    isAcceptingOrders: boolean;
+
+    @ApiProperty({ description: 'Обрабатывает ли заказы' })
+    isProcessingOrders: boolean;
+
+    @ApiProperty({ description: 'Сообщение о технических работах', required: false })
+    maintenanceMessage?: string;
+
+    @ApiProperty({ description: 'Режим праздников' })
+    holidayMode: boolean;
+
+    @ApiProperty({ description: 'Дата начала праздников', required: false })
+    holidayStartDate?: Date;
+
+    @ApiProperty({ description: 'Дата окончания праздников', required: false })
+    holidayEndDate?: Date;
+
+    @ApiProperty({ description: 'Максимум заказов в день' })
+    maxOrdersPerDay: number;
+
+    @ApiProperty({ description: 'Максимум заказов в час' })
+    maxOrdersPerHour: number;
+
+    @ApiProperty({ description: 'Статус магазина', enum: StoreStatus })
+    storeStatus: StoreStatus;
+
+    @ApiProperty({ description: 'Может ли принимать заказы' })
+    canAcceptOrders: boolean;
+
+    @ApiProperty({ description: 'Может ли обрабатывать заказы' })
+    canProcessOrders: boolean;
+
+    @ApiProperty({ description: 'Активен ли режим праздников' })
+    isHolidayActive: boolean;
+
+    @ApiProperty({ description: 'Дата создания' })
+    createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления' })
+    updatedAt: Date;
+}
+```
+
+## Контроллеры
+
+### Store Controller
+```typescript
+// src/infrastructure/controllers/store.controller.ts
+import { Controller, Get, Patch, Post, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { StoreService } from '@app/infrastructure/services/store.service';
+import { UpdateStoreSettingsDto } from '@app/infrastructure/dto/store/update-store-settings.dto';
+import { StoreSettingsResponse } from '@app/infrastructure/responses/store/store-settings.response';
+import { AuthGuard } from '@app/infrastructure/guards/auth.guard';
+import { RoleGuard } from '@app/infrastructure/guards/role.guard';
+import { Roles } from '@app/infrastructure/decorators/roles.decorator';
+
+@ApiTags('Store Management')
+@Controller('store')
+@UseGuards(AuthGuard, RoleGuard)
+@ApiBearerAuth('JWT-auth')
+export class StoreController {
+    // Константы ролей для переиспользования
+    private static readonly ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN'] as const;
+    private static readonly MANAGER_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER'] as const;
+    private static readonly STAFF_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
+    private static readonly CUSTOMER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST'] as const;
+    private static readonly ALL_ROLES = [...StoreController.ADMIN_ROLES, ...StoreController.MANAGER_ROLES, ...StoreController.CUSTOMER_ROLES] as const;
+
+    constructor(private readonly storeService: StoreService) {}
+
+    @Get('settings')
+    @ApiOperation({ summary: 'Получить настройки магазина' })
+    @ApiResponse({ status: 200, description: 'Настройки магазина получены', type: StoreSettingsResponse })
+    async getStoreSettings(): Promise<StoreSettingsResponse> {
+        const settings = await this.storeService.getStoreSettings();
+        return {
+            id: settings.id,
+            storeName: settings.storeName,
+            storeDescription: settings.storeDescription,
+            storeEmail: settings.storeEmail,
+            storePhone: settings.storePhone,
+            storeAddress: settings.storeAddress,
+            timezone: settings.timezone,
+            currency: settings.currency,
+            language: settings.language,
+            isOpen: settings.isOpen,
+            isMaintenanceMode: settings.isMaintenanceMode,
+            isAcceptingOrders: settings.isAcceptingOrders,
+            isProcessingOrders: settings.isProcessingOrders,
+            maintenanceMessage: settings.maintenanceMessage,
+            holidayMode: settings.holidayMode,
+            holidayStartDate: settings.holidayStartDate,
+            holidayEndDate: settings.holidayEndDate,
+            maxOrdersPerDay: settings.maxOrdersPerDay,
+            maxOrdersPerHour: settings.maxOrdersPerHour,
+            storeStatus: settings.storeStatus,
+            canAcceptOrders: settings.canAcceptOrders,
+            canProcessOrders: settings.canProcessOrders,
+            isHolidayActive: settings.isHolidayActive,
+            createdAt: settings.createdAt,
+            updatedAt: settings.updatedAt,
+        };
+    }
+
+    @Patch('settings')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...StoreController.ADMIN_ROLES)
+    @ApiOperation({ summary: 'Обновить настройки магазина' })
+    @ApiResponse({ status: 200, description: 'Настройки магазина обновлены', type: StoreSettingsResponse })
+    async updateStoreSettings(@Body() updateDto: UpdateStoreSettingsDto): Promise<StoreSettingsResponse> {
+        const settings = await this.storeService.updateStoreSettings(updateDto);
+        return {
+            id: settings.id,
+            storeName: settings.storeName,
+            storeDescription: settings.storeDescription,
+            storeEmail: settings.storeEmail,
+            storePhone: settings.storePhone,
+            storeAddress: settings.storeAddress,
+            timezone: settings.timezone,
+            currency: settings.currency,
+            language: settings.language,
+            isOpen: settings.isOpen,
+            isMaintenanceMode: settings.isMaintenanceMode,
+            isAcceptingOrders: settings.isAcceptingOrders,
+            isProcessingOrders: settings.isProcessingOrders,
+            maintenanceMessage: settings.maintenanceMessage,
+            holidayMode: settings.holidayMode,
+            holidayStartDate: settings.holidayStartDate,
+            holidayEndDate: settings.holidayEndDate,
+            maxOrdersPerDay: settings.maxOrdersPerDay,
+            maxOrdersPerHour: settings.maxOrdersPerHour,
+            storeStatus: settings.storeStatus,
+            canAcceptOrders: settings.canAcceptOrders,
+            canProcessOrders: settings.canProcessOrders,
+            isHolidayActive: settings.isHolidayActive,
+            createdAt: settings.createdAt,
+            updatedAt: settings.updatedAt,
+        };
+    }
+
+    @Post('open')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...StoreController.ADMIN_ROLES)
+    @ApiOperation({ summary: 'Открыть магазин' })
+    @ApiResponse({ status: 200, description: 'Магазин открыт' })
+    async openStore(): Promise<{ message: string }> {
+        await this.storeService.openStore();
+        return { message: 'Магазин открыт' };
+    }
+
+    @Post('close')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...StoreController.ADMIN_ROLES)
+    @ApiOperation({ summary: 'Закрыть магазин' })
+    @ApiResponse({ status: 200, description: 'Магазин закрыт' })
+    async closeStore(): Promise<{ message: string }> {
+        await this.storeService.closeStore();
+        return { message: 'Магазин закрыт' };
+    }
+
+    @Post('maintenance/enable')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...StoreController.ADMIN_ROLES)
+    @ApiOperation({ summary: 'Включить режим технических работ' })
+    @ApiResponse({ status: 200, description: 'Режим технических работ включен' })
+    async enableMaintenanceMode(@Body() body: { message?: string }): Promise<{ message: string }> {
+        await this.storeService.enableMaintenanceMode(body.message);
+        return { message: 'Режим технических работ включен' };
+    }
+
+    @Post('maintenance/disable')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...StoreController.ADMIN_ROLES)
+    @ApiOperation({ summary: 'Выключить режим технических работ' })
+    @ApiResponse({ status: 200, description: 'Режим технических работ выключен' })
+    async disableMaintenanceMode(): Promise<{ message: string }> {
+        await this.storeService.disableMaintenanceMode();
+        return { message: 'Режим технических работ выключен' };
+    }
+
+    @Post('holiday/enable')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...StoreController.ADMIN_ROLES)
+    @ApiOperation({ summary: 'Включить режим праздников' })
+    @ApiResponse({ status: 200, description: 'Режим праздников включен' })
+    async enableHolidayMode(@Body() body: { startDate?: string; endDate?: string }): Promise<{ message: string }> {
+        const startDate = body.startDate ? new Date(body.startDate) : undefined;
+        const endDate = body.endDate ? new Date(body.endDate) : undefined;
+        await this.storeService.enableHolidayMode(startDate, endDate);
+        return { message: 'Режим праздников включен' };
+    }
+
+    @Post('holiday/disable')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...StoreController.ADMIN_ROLES)
+    @ApiOperation({ summary: 'Выключить режим праздников' })
+    @ApiResponse({ status: 200, description: 'Режим праздников выключен' })
+    async disableHolidayMode(): Promise<{ message: string }> {
+        await this.storeService.disableHolidayMode();
+        return { message: 'Режим праздников выключен' };
+    }
+
+    @Post('orders/pause-acceptance')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...StoreController.ADMIN_ROLES)
+    @ApiOperation({ summary: 'Приостановить прием заказов' })
+    @ApiResponse({ status: 200, description: 'Прием заказов приостановлен' })
+    async pauseOrderAcceptance(): Promise<{ message: string }> {
+        await this.storeService.pauseOrderAcceptance();
+        return { message: 'Прием заказов приостановлен' };
+    }
+
+    @Post('orders/resume-acceptance')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...StoreController.ADMIN_ROLES)
+    @ApiOperation({ summary: 'Возобновить прием заказов' })
+    @ApiResponse({ status: 200, description: 'Прием заказов возобновлен' })
+    async resumeOrderAcceptance(): Promise<{ message: string }> {
+        await this.storeService.resumeOrderAcceptance();
+        return { message: 'Прием заказов возобновлен' };
+    }
+
+    @Post('orders/pause-processing')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...StoreController.ADMIN_ROLES)
+    @ApiOperation({ summary: 'Приостановить обработку заказов' })
+    @ApiResponse({ status: 200, description: 'Обработка заказов приостановлена' })
+    async pauseOrderProcessing(): Promise<{ message: string }> {
+        await this.storeService.pauseOrderProcessing();
+        return { message: 'Обработка заказов приостановлена' };
+    }
+
+    @Post('orders/resume-processing')
+    @HttpCode(HttpStatus.OK)
+    @Roles(...StoreController.ADMIN_ROLES)
+    @ApiOperation({ summary: 'Возобновить обработку заказов' })
+    @ApiResponse({ status: 200, description: 'Обработка заказов возобновлена' })
+    async resumeOrderProcessing(): Promise<{ message: string }> {
+        await this.storeService.resumeOrderProcessing();
+        return { message: 'Обработка заказов возобновлена' };
+    }
+
+    @Get('status')
+    @ApiOperation({ summary: 'Получить статус магазина' })
+    @ApiResponse({ status: 200, description: 'Статус магазина получен' })
+    async getStoreStatus(): Promise<{ 
+        status: StoreStatus; 
+        canAcceptOrders: boolean; 
+        canProcessOrders: boolean;
+        maintenanceMessage?: string;
+    }> {
+        const status = await this.storeService.getStoreStatus();
+        const canAcceptOrders = await this.storeService.canAcceptOrder();
+        const canProcessOrders = await this.storeService.canProcessOrder();
+        const maintenanceMessage = await this.storeService.getMaintenanceMessage();
+        
+        return {
+            status,
+            canAcceptOrders,
+            canProcessOrders,
+            maintenanceMessage,
+        };
+    }
+
+    @Get('orders/limits-check')
+    @ApiOperation({ summary: 'Проверить лимиты заказов' })
+    @ApiResponse({ status: 200, description: 'Лимиты заказов проверены' })
+    async checkOrderLimits(): Promise<{ canAccept: boolean; reason?: string }> {
+        return this.storeService.checkOrderLimits();
+    }
+}
+```
+
+## Миграции
+
+### Создание таблицы store_settings
+```sql
+-- Migration: 20241201120000-create-store-settings.sql
+CREATE TABLE store_settings (
+    id SERIAL PRIMARY KEY,
+    store_name VARCHAR(255) NOT NULL DEFAULT 'Online Store',
+    store_description TEXT,
+    store_email VARCHAR(255),
+    store_phone VARCHAR(20),
+    store_address TEXT,
+    timezone VARCHAR(50) DEFAULT 'Europe/Moscow',
+    currency VARCHAR(3) DEFAULT 'RUB',
+    language VARCHAR(10) DEFAULT 'ru',
+    is_open BOOLEAN DEFAULT true,
+    is_maintenance_mode BOOLEAN DEFAULT false,
+    is_accepting_orders BOOLEAN DEFAULT true,
+    is_processing_orders BOOLEAN DEFAULT true,
+    maintenance_message TEXT,
+    holiday_mode BOOLEAN DEFAULT false,
+    holiday_start_date TIMESTAMP,
+    holiday_end_date TIMESTAMP,
+    max_orders_per_day INTEGER DEFAULT 1000,
+    max_orders_per_hour INTEGER DEFAULT 100,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Индексы
+CREATE INDEX idx_store_settings_is_open ON store_settings(is_open);
+CREATE INDEX idx_store_settings_is_maintenance_mode ON store_settings(is_maintenance_mode);
+CREATE INDEX idx_store_settings_is_accepting_orders ON store_settings(is_accepting_orders);
+CREATE INDEX idx_store_settings_is_processing_orders ON store_settings(is_processing_orders);
+CREATE INDEX idx_store_settings_holiday_mode ON store_settings(holiday_mode);
+CREATE INDEX idx_store_settings_currency ON store_settings(currency);
+CREATE INDEX idx_store_settings_language ON store_settings(language);
+CREATE INDEX idx_store_settings_created_at ON store_settings(created_at);
+
+-- Начальные данные
+INSERT INTO store_settings (store_name, timezone, currency, language) 
+VALUES ('Online Store', 'Europe/Moscow', 'RUB', 'ru');
+```
+
+## Сиды
+
+### Store Settings Seed
+```typescript
+// src/infrastructure/seeds/store-settings.seed.ts
+import { QueryInterface } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+    await queryInterface.bulkInsert('store_settings', [{
+        store_name: 'Online Store',
+        store_description: 'Современный интернет-магазин',
+        store_email: 'info@onlinestore.ru',
+        store_phone: '+7 (800) 123-45-67',
+        store_address: 'Москва, ул. Примерная, д. 1',
+        timezone: 'Europe/Moscow',
+        currency: 'RUB',
+        language: 'ru',
+        is_open: true,
+        is_maintenance_mode: false,
+        is_accepting_orders: true,
+        is_processing_orders: true,
+        maintenance_message: null,
+        holiday_mode: false,
+        holiday_start_date: null,
+        holiday_end_date: null,
+        max_orders_per_day: 1000,
+        max_orders_per_hour: 100,
+        created_at: new Date(),
+        updated_at: new Date(),
+    }]);
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+    await queryInterface.bulkDelete('store_settings', null, {});
+}
+```
+
+## Документация
+
+### Новые флаги магазина
+
+#### **isOpen** - Открыт ли магазин
+- **Назначение**: Основной флаг работы магазина
+- **Использование**: Контроль доступности магазина для клиентов
+- **Логика**: При `false` - магазин полностью недоступен
+
+#### **isMaintenanceMode** - Режим технических работ
+- **Назначение**: Временное отключение для обновлений
+- **Использование**: Плановые работы, обновления системы
+- **Логика**: Блокирует прием заказов, показывает сообщение
+
+#### **isAcceptingOrders** - Принимает ли заказы
+- **Назначение**: Контроль приема новых заказов
+- **Использование**: Перегрузка склада, логистические проблемы
+- **Логика**: Независимо от других флагов
+
+#### **isProcessingOrders** - Обрабатывает ли заказы
+- **Назначение**: Контроль обработки существующих заказов
+- **Использование**: Проблемы с персоналом, системные сбои
+- **Логика**: Влияет на обработку уже принятых заказов
+
+#### **holidayMode** - Режим праздников
+- **Назначение**: Сезонные отключения магазина
+- **Использование**: Новогодние праздники, отпуска
+- **Логика**: Может иметь даты начала и окончания
+
+### Преимущества системы управления магазином
+
+1. **Гибкое управление**: Независимые флаги для разных аспектов работы
+2. **Безопасность**: Контроль доступа только для администраторов
+3. **Уведомления**: Автоматические сообщения о статусе магазина
+4. **Лимиты**: Контроль нагрузки через ограничения заказов
+5. **Аналитика**: Отслеживание статусов и переходов
+6. **API**: Полный набор endpoints для управления
+7. **Готовность**: к быстрому внедрению в продакшен

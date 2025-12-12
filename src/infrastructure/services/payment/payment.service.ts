@@ -1,11 +1,11 @@
-import { ForbiddenException, HttpStatus, Injectable } from '@nestjs/common';
+import { IPaymentService } from '@app/domain/services';
 import { MakePaymentDto } from '@app/infrastructure/dto';
-import axios from 'axios';
 import {
     GuestMakePaymentResponse,
     UserMakePaymentResponse,
 } from '@app/infrastructure/responses';
-import { IPaymentService } from '@app/domain/services';
+import { ForbiddenException, HttpStatus, Injectable } from '@nestjs/common';
+import axios from 'axios';
 
 @Injectable()
 export class PaymentService implements IPaymentService {
@@ -25,6 +25,11 @@ export class PaymentService implements IPaymentService {
         makePaymentDto: MakePaymentDto,
     ): Promise<GuestMakePaymentResponse | UserMakePaymentResponse> {
         try {
+            // TEST-032: Fix idempotency key to prevent double-charge
+            // OLD: Date.now() - всегда разный!
+            // NEW: deterministic key based on order
+            const idempotenceKey = `order-${makePaymentDto.orderId ?? 'unknown'}-payment`;
+
             const { data } = await axios({
                 method: 'POST',
                 url: 'https://api.yookassa.ru/v3/payments',
@@ -32,7 +37,7 @@ export class PaymentService implements IPaymentService {
                     '217532':
                         'test_2WFQT8WqcG0OE8CrNvwESbkcOc8dsZwD4RnVf5RkwYw',
                     'Content-Type': 'application/json',
-                    'Idempotence-Key': Date.now(),
+                    'Idempotence-Key': idempotenceKey,
                 },
                 auth: {
                     username: '217532',

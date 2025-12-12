@@ -41,7 +41,7 @@ export class UserCreateOrderResponse extends OrderModel {
     declare readonly comment: string;
 
     @ApiProperty({ example: 1, description: 'Идентификатор заказчика' })
-     declare readonly user_id: number;
+    declare readonly user_id: number;
 
     @ApiProperty({ type: () => [OrderItemModel] })
     @IsArray()

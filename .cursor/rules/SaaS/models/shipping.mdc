@@ -1,0 +1,1782 @@
+# Система доставки (Shipping System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы доставки для ecommerce приложения с базовыми функциями расчета стоимости, отслеживания отправлений и управления адресами доставки, фокусом на быструю разработку и готовность к масштабированию.
+
+## Основные требования
+- **Базовые способы доставки** - стандартная, экспресс, самовывоз
+- **Простой расчет стоимости** - фиксированные тарифы по зонам
+- **Базовое отслеживание** - статусы отправления без детального логирования
+- **Адреса доставки** - в заказах без отдельной таблицы
+- **Зоны доставки** - простые по странам/городам
+
+## Структура базы данных
+
+### Таблица `shipping_methods` (основная)
+```sql
+CREATE TABLE shipping_methods (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('standard', 'express', 'pickup')),
+    carrier VARCHAR(100),
+    is_active BOOLEAN DEFAULT true,
+    is_default BOOLEAN DEFAULT false,
+    sort_order INTEGER DEFAULT 0,
+    estimated_days INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `shipping_zones`
+```sql
+CREATE TABLE shipping_zones (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    countries TEXT[] NOT NULL DEFAULT '{}',
+    cities TEXT[] DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `shipping_rates`
+```sql
+CREATE TABLE shipping_rates (
+    id SERIAL PRIMARY KEY,
+    shipping_method_id INTEGER REFERENCES shipping_methods(id) ON DELETE CASCADE,
+    shipping_zone_id INTEGER REFERENCES shipping_zones(id) ON DELETE CASCADE,
+    rate_type VARCHAR(20) NOT NULL CHECK (rate_type IN ('flat', 'free')),
+    base_rate DECIMAL(10,2) NOT NULL DEFAULT 0,
+    free_shipping_threshold DECIMAL(10,2),
+    min_order_amount DECIMAL(10,2),
+    max_order_amount DECIMAL(10,2),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(shipping_method_id, shipping_zone_id)
+);
+```
+
+### Расширение таблицы `orders` (добавить поля)
+```sql
+ALTER TABLE orders ADD COLUMN shipping_method_id INTEGER REFERENCES shipping_methods(id);
+ALTER TABLE orders ADD COLUMN shipping_cost DECIMAL(10,2) DEFAULT 0;
+ALTER TABLE orders ADD COLUMN delivery_address JSONB;
+ALTER TABLE orders ADD COLUMN tracking_number VARCHAR(100);
+ALTER TABLE orders ADD COLUMN shipped_at TIMESTAMP;
+ALTER TABLE orders ADD COLUMN estimated_delivery DATE;
+```
+
+## Модели Sequelize
+
+### Shipping Method Model
+```typescript
+// src/domain/models/shipping-method.model.ts
+import { Model, DataType, Column, Table, HasMany } from 'sequelize-typescript';
+import { ShippingRateModel } from './shipping-rate.model';
+
+export enum ShippingType {
+    STANDARD = 'standard',
+    EXPRESS = 'express',
+    PICKUP = 'pickup',
+}
+
+interface IShippingMethodModel {
+    id: number;
+    name: string;
+    code: string;
+    description?: string;
+    type: ShippingType;
+    carrier?: string;
+    isActive: boolean;
+    isDefault: boolean;
+    sortOrder: number;
+    estimatedDays?: number;
+    rates: ShippingRateModel[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IShippingMethodCreationAttributes {
+    name: string;
+    code: string;
+    description?: string;
+    type: ShippingType;
+    carrier?: string;
+    isActive?: boolean;
+    isDefault?: boolean;
+    sortOrder?: number;
+    estimatedDays?: number;
+}
+
+@Table({
+    tableName: 'shipping_methods',
+    underscored: true,
+    timestamps: true,
+    scopes: {
+        active: {
+            where: { isActive: true },
+        },
+        default: {
+            where: { isDefault: true },
+        },
+        byType: (type: ShippingType) => ({
+            where: { type },
+        }),
+        ordered: {
+            order: [['sort_order', 'ASC'], ['name', 'ASC']],
+        },
+    },
+    indexes: [
+        { fields: ['code'], unique: true, name: 'idx_shipping_methods_code' },
+        { fields: ['type'], name: 'idx_shipping_methods_type' },
+        { fields: ['is_active'], name: 'idx_shipping_methods_is_active' },
+        { fields: ['is_default'], name: 'idx_shipping_methods_is_default' },
+        { fields: ['sort_order'], name: 'idx_shipping_methods_sort_order' },
+    ],
+})
+export class ShippingMethodModel
+    extends Model<ShippingMethodModel, IShippingMethodCreationAttributes>
+    implements IShippingMethodModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+    })
+    declare name: string;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: false,
+        unique: true,
+    })
+    declare code: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare description: string;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(ShippingType)),
+        allowNull: false,
+    })
+    declare type: ShippingType;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true,
+    })
+    declare carrier: string;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        field: 'is_default',
+    })
+    declare isDefault: boolean;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'sort_order',
+    })
+    declare sortOrder: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'estimated_days',
+    })
+    declare estimatedDays: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'updated_at',
+    })
+    declare updatedAt: Date;
+
+    // Связи
+    @HasMany(() => ShippingRateModel)
+    declare rates: ShippingRateModel[];
+
+    // Методы
+    get hasCarrier(): boolean {
+        return !!this.carrier;
+    }
+
+    get isStandard(): boolean {
+        return this.type === ShippingType.STANDARD;
+    }
+
+    get isExpress(): boolean {
+        return this.type === ShippingType.EXPRESS;
+    }
+
+    get isPickup(): boolean {
+        return this.type === ShippingType.PICKUP;
+    }
+
+    // Получить тариф для зоны доставки
+    async getRateForZone(zoneId: number): Promise<ShippingRateModel | null> {
+        return ShippingRateModel.findOne({
+            where: {
+                shippingMethodId: this.id,
+                shippingZoneId: zoneId,
+                isActive: true,
+            },
+        });
+    }
+
+    // Рассчитать стоимость доставки для заказа
+    async calculateShippingCost(orderAmount: number, zoneId: number): Promise<number> {
+        const rate = await this.getRateForZone(zoneId);
+        if (!rate) return 0;
+
+        if (rate.rateType === 'free') {
+            return 0;
+        }
+
+        // Проверка бесплатной доставки
+        if (rate.freeShippingThreshold && orderAmount >= rate.freeShippingThreshold) {
+            return 0;
+        }
+
+        // Проверка минимальной суммы заказа
+        if (rate.minOrderAmount && orderAmount < rate.minOrderAmount) {
+            return 0; // Способ недоступен
+        }
+
+        // Проверка максимальной суммы заказа
+        if (rate.maxOrderAmount && orderAmount > rate.maxOrderAmount) {
+            return 0; // Способ недоступен
+        }
+
+        return rate.baseRate;
+    }
+}
+```
+
+### Shipping Zone Model
+```typescript
+// src/domain/models/shipping-zone.model.ts
+import { Model, DataType, Column, Table, HasMany } from 'sequelize-typescript';
+import { ShippingRateModel } from './shipping-rate.model';
+
+interface IShippingZoneModel {
+    id: number;
+    name: string;
+    countries: string[];
+    cities: string[];
+    isActive: boolean;
+    sortOrder: number;
+    rates: ShippingRateModel[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IShippingZoneCreationAttributes {
+    name: string;
+    countries: string[];
+    cities?: string[];
+    isActive?: boolean;
+    sortOrder?: number;
+}
+
+@Table({
+    tableName: 'shipping_zones',
+    underscored: true,
+    timestamps: true,
+    scopes: {
+        active: {
+            where: { isActive: true },
+        },
+        ordered: {
+            order: [['sort_order', 'ASC'], ['name', 'ASC']],
+        },
+    },
+    indexes: [
+        { fields: ['is_active'], name: 'idx_shipping_zones_is_active' },
+        { fields: ['sort_order'], name: 'idx_shipping_zones_sort_order' },
+        { fields: ['countries'], name: 'idx_shipping_zones_countries', using: 'gin' },
+    ],
+})
+export class ShippingZoneModel
+    extends Model<ShippingZoneModel, IShippingZoneCreationAttributes>
+    implements IShippingZoneModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+    })
+    declare name: string;
+
+    @Column({
+        type: DataType.ARRAY(DataType.TEXT),
+        allowNull: false,
+        defaultValue: [],
+    })
+    declare countries: string[];
+
+    @Column({
+        type: DataType.ARRAY(DataType.TEXT),
+        allowNull: false,
+        defaultValue: [],
+    })
+    declare cities: string[];
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'sort_order',
+    })
+    declare sortOrder: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'updated_at',
+    })
+    declare updatedAt: Date;
+
+    // Связи
+    @HasMany(() => ShippingRateModel)
+    declare rates: ShippingRateModel[];
+
+    // Методы
+    get hasCities(): boolean {
+        return this.cities && this.cities.length > 0;
+    }
+
+    get countryCount(): number {
+        return this.countries ? this.countries.length : 0;
+    }
+
+    get cityCount(): number {
+        return this.cities ? this.cities.length : 0;
+    }
+
+    // Проверить, подходит ли зона для адреса доставки
+    isSuitableForAddress(country: string, city?: string): boolean {
+        // Проверка страны
+        if (!this.countries.includes(country)) {
+            return false;
+        }
+
+        // Проверка города (если указан)
+        if (city && this.hasCities && !this.cities.includes(city)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    // Получить тарифы для способа доставки
+    async getRatesForMethod(methodId: number): Promise<ShippingRateModel[]> {
+        return ShippingRateModel.findAll({
+            where: {
+                shippingZoneId: this.id,
+                shippingMethodId: methodId,
+                isActive: true,
+            },
+        });
+    }
+}
+```
+
+### Shipping Rate Model
+```typescript
+// src/domain/models/shipping-rate.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { ShippingMethodModel } from './shipping-method.model';
+import { ShippingZoneModel } from './shipping-zone.model';
+
+export enum RateType {
+    FLAT = 'flat',
+    FREE = 'free',
+}
+
+interface IShippingRateModel {
+    id: number;
+    shippingMethodId: number;
+    shippingZoneId: number;
+    rateType: RateType;
+    baseRate: number;
+    freeShippingThreshold?: number;
+    minOrderAmount?: number;
+    maxOrderAmount?: number;
+    isActive: boolean;
+    shippingMethod: ShippingMethodModel;
+    shippingZone: ShippingZoneModel;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IShippingRateCreationAttributes {
+    shippingMethodId: number;
+    shippingZoneId: number;
+    rateType: RateType;
+    baseRate: number;
+    freeShippingThreshold?: number;
+    minOrderAmount?: number;
+    maxOrderAmount?: number;
+    isActive?: boolean;
+}
+
+@Table({
+    tableName: 'shipping_rates',
+    underscored: true,
+    timestamps: true,
+    scopes: {
+        active: {
+            where: { isActive: true },
+        },
+        free: {
+            where: { rateType: RateType.FREE },
+        },
+        flat: {
+            where: { rateType: RateType.FLAT },
+        },
+    },
+    indexes: [
+        { fields: ['shipping_method_id'], name: 'idx_shipping_rates_method_id' },
+        { fields: ['shipping_zone_id'], name: 'idx_shipping_rates_zone_id' },
+        { fields: ['rate_type'], name: 'idx_shipping_rates_type' },
+        { fields: ['is_active'], name: 'idx_shipping_rates_is_active' },
+        { fields: ['shipping_method_id', 'shipping_zone_id'], unique: true, name: 'idx_shipping_rates_method_zone_unique' },
+    ],
+})
+export class ShippingRateModel
+    extends Model<ShippingRateModel, IShippingRateCreationAttributes>
+    implements IShippingRateModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => ShippingMethodModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'shipping_method_id',
+    })
+    declare shippingMethodId: number;
+
+    @ForeignKey(() => ShippingZoneModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'shipping_zone_id',
+    })
+    declare shippingZoneId: number;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(RateType)),
+        allowNull: false,
+        field: 'rate_type',
+    })
+    declare rateType: RateType;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+        field: 'base_rate',
+    })
+    declare baseRate: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: true,
+        field: 'free_shipping_threshold',
+    })
+    declare freeShippingThreshold: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: true,
+        field: 'min_order_amount',
+    })
+    declare minOrderAmount: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: true,
+        field: 'max_order_amount',
+    })
+    declare maxOrderAmount: number;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'updated_at',
+    })
+    declare updatedAt: Date;
+
+    // Связи
+    @BelongsTo(() => ShippingMethodModel)
+    declare shippingMethod: ShippingMethodModel;
+
+    @BelongsTo(() => ShippingZoneModel)
+    declare shippingZone: ShippingZoneModel;
+
+    // Методы
+    get isFree(): boolean {
+        return this.rateType === RateType.FREE;
+    }
+
+    get isFlat(): boolean {
+        return this.rateType === RateType.FLAT;
+    }
+
+    get hasFreeShippingThreshold(): boolean {
+        return this.freeShippingThreshold !== null && this.freeShippingThreshold > 0;
+    }
+
+    get hasOrderAmountLimits(): boolean {
+        return this.minOrderAmount !== null || this.maxOrderAmount !== null;
+    }
+
+    // Проверить, доступен ли тариф для суммы заказа
+    isAvailableForOrder(orderAmount: number): boolean {
+        // Проверка минимальной суммы заказа
+        if (this.minOrderAmount && orderAmount < this.minOrderAmount) {
+            return false;
+        }
+
+        // Проверка максимальной суммы заказа
+        if (this.maxOrderAmount && orderAmount > this.maxOrderAmount) {
+            return false;
+        }
+
+        return true;
+    }
+
+    // Рассчитать стоимость доставки
+    calculateCost(orderAmount: number): number {
+        if (this.isFree) {
+            return 0;
+        }
+
+        // Проверка бесплатной доставки
+        if (this.hasFreeShippingThreshold && orderAmount >= this.freeShippingThreshold) {
+            return 0;
+        }
+
+        return this.baseRate;
+    }
+}
+```
+
+## Сервисы
+
+### Shipping Service
+```typescript
+// src/infrastructure/services/shipping.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { ShippingMethodModel, ShippingType } from '@app/domain/models/shipping-method.model';
+import { ShippingZoneModel } from '@app/domain/models/shipping-zone.model';
+import { ShippingRateModel } from '@app/domain/models/shipping-rate.model';
+import { OrderModel } from '@app/domain/models/order.model';
+
+interface DeliveryAddress {
+    firstName: string;
+    lastName: string;
+    company?: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state?: string;
+    postalCode: string;
+    country: string;
+    phone?: string;
+    email?: string;
+    instructions?: string;
+}
+
+interface ShippingCost {
+    shippingMethod: ShippingMethodModel;
+    baseRate: number;
+    totalCost: number;
+    freeShipping: boolean;
+    estimatedDelivery?: Date;
+    isAvailable: boolean;
+}
+
+@Injectable()
+export class ShippingService {
+    private readonly logger = new Logger(ShippingService.name);
+
+    constructor(
+        @InjectModel(ShippingMethodModel)
+        private shippingMethodModel: typeof ShippingMethodModel,
+        @InjectModel(ShippingZoneModel)
+        private shippingZoneModel: typeof ShippingZoneModel,
+        @InjectModel(ShippingRateModel)
+        private shippingRateModel: typeof ShippingRateModel,
+        @InjectModel(OrderModel)
+        private orderModel: typeof OrderModel,
+    ) {}
+
+    async getAllShippingMethods(): Promise<ShippingMethodModel[]> {
+        return this.shippingMethodModel.scope('active', 'ordered').findAll({
+            include: [{ association: 'rates' }],
+        });
+    }
+
+    async getShippingMethodById(methodId: number): Promise<ShippingMethodModel> {
+        const method = await this.shippingMethodModel.findByPk(methodId, {
+            include: [{ association: 'rates' }],
+        });
+
+        if (!method) {
+            throw new NotFoundException('Способ доставки не найден');
+        }
+
+        return method;
+    }
+
+    async getAllShippingZones(): Promise<ShippingZoneModel[]> {
+        return this.shippingZoneModel.scope('active', 'ordered').findAll({
+            include: [{ association: 'rates' }],
+        });
+    }
+
+    async getShippingZoneById(zoneId: number): Promise<ShippingZoneModel> {
+        const zone = await this.shippingZoneModel.findByPk(zoneId, {
+            include: [{ association: 'rates' }],
+        });
+
+        if (!zone) {
+            throw new NotFoundException('Зона доставки не найдена');
+        }
+
+        return zone;
+    }
+
+    async getShippingZoneForAddress(deliveryAddress: DeliveryAddress): Promise<ShippingZoneModel | null> {
+        const zones = await this.shippingZoneModel.scope('active').findAll();
+
+        for (const zone of zones) {
+            if (zone.isSuitableForAddress(deliveryAddress.country, deliveryAddress.city)) {
+                return zone;
+            }
+        }
+
+        return null;
+    }
+
+    async getAvailableShippingMethods(
+        orderAmount: number,
+        deliveryAddress: DeliveryAddress,
+    ): Promise<ShippingCost[]> {
+        const shippingMethods = await this.shippingMethodModel.scope('active').findAll();
+        const shippingZone = await this.getShippingZoneForAddress(deliveryAddress);
+
+        if (!shippingZone) {
+            this.logger.warn(`Зона доставки не найдена для адреса: ${deliveryAddress.country}, ${deliveryAddress.city}`);
+            return [];
+        }
+
+        const availableMethods: ShippingCost[] = [];
+
+        for (const method of shippingMethods) {
+            const rate = await method.getRateForZone(shippingZone.id);
+            
+            if (!rate || !rate.isAvailableForOrder(orderAmount)) {
+                continue;
+            }
+
+            const cost = rate.calculateCost(orderAmount);
+            const freeShipping = cost === 0 && orderAmount > 0;
+            const estimatedDelivery = method.estimatedDays 
+                ? new Date(Date.now() + method.estimatedDays * 24 * 60 * 60 * 1000)
+                : undefined;
+
+            availableMethods.push({
+                shippingMethod: method,
+                baseRate: rate.baseRate,
+                totalCost: cost,
+                freeShipping,
+                estimatedDelivery,
+                isAvailable: true,
+            });
+        }
+
+        // Сортировка по стоимости
+        availableMethods.sort((a, b) => a.totalCost - b.totalCost);
+
+        return availableMethods;
+    }
+
+    async calculateShippingCost(
+        methodId: number,
+        orderAmount: number,
+        deliveryAddress: DeliveryAddress,
+    ): Promise<ShippingCost> {
+        const method = await this.getShippingMethodById(methodId);
+        const shippingZone = await this.getShippingZoneForAddress(deliveryAddress);
+
+        if (!shippingZone) {
+            throw new BadRequestException('Доставка недоступна для указанного адреса');
+        }
+
+        const rate = await method.getRateForZone(shippingZone.id);
+
+        if (!rate) {
+            throw new BadRequestException('Тариф доставки не найден для данного способа и зоны');
+        }
+
+        if (!rate.isAvailableForOrder(orderAmount)) {
+            throw new BadRequestException('Способ доставки недоступен для данной суммы заказа');
+        }
+
+        const cost = rate.calculateCost(orderAmount);
+        const freeShipping = cost === 0 && orderAmount > 0;
+        const estimatedDelivery = method.estimatedDays 
+            ? new Date(Date.now() + method.estimatedDays * 24 * 60 * 60 * 1000)
+            : undefined;
+
+        return {
+            shippingMethod: method,
+            baseRate: rate.baseRate,
+            totalCost: cost,
+            freeShipping,
+            estimatedDelivery,
+            isAvailable: true,
+        };
+    }
+
+    async createShippingMethod(methodData: {
+        name: string;
+        code: string;
+        description?: string;
+        type: ShippingType;
+        carrier?: string;
+        estimatedDays?: number;
+        isDefault?: boolean;
+        sortOrder?: number;
+    }): Promise<ShippingMethodModel> {
+        // Проверяем уникальность кода
+        const existingMethod = await this.shippingMethodModel.findOne({
+            where: { code: methodData.code },
+        });
+
+        if (existingMethod) {
+            throw new BadRequestException('Способ доставки с таким кодом уже существует');
+        }
+
+        // Если устанавливаем как способ по умолчанию, снимаем флаг с других
+        if (methodData.isDefault) {
+            await this.shippingMethodModel.update(
+                { isDefault: false },
+                { where: { isDefault: true } },
+            );
+        }
+
+        const method = await this.shippingMethodModel.create(methodData);
+
+        this.logger.log(`Создан способ доставки ${method.id}: ${method.name}`);
+        return method;
+    }
+
+    async updateShippingMethod(
+        methodId: number,
+        updateData: Partial<{
+            name: string;
+            code: string;
+            description: string;
+            type: ShippingType;
+            carrier: string;
+            estimatedDays: number;
+            isActive: boolean;
+            isDefault: boolean;
+            sortOrder: number;
+        }>,
+    ): Promise<ShippingMethodModel> {
+        const method = await this.getShippingMethodById(methodId);
+
+        // Если устанавливаем как способ по умолчанию, снимаем флаг с других
+        if (updateData.isDefault) {
+            await this.shippingMethodModel.update(
+                { isDefault: false },
+                { where: { isDefault: true } },
+            );
+        }
+
+        await method.update(updateData);
+
+        this.logger.log(`Обновлен способ доставки ${methodId}`);
+        return method;
+    }
+
+    async deleteShippingMethod(methodId: number): Promise<void> {
+        const method = await this.getShippingMethodById(methodId);
+
+        // Проверяем, используется ли способ в заказах
+        const ordersCount = await this.orderModel.count({
+            where: { shippingMethodId: methodId },
+        });
+
+        if (ordersCount > 0) {
+            throw new BadRequestException('Нельзя удалить способ доставки, который используется в заказах');
+        }
+
+        await method.destroy();
+
+        this.logger.log(`Удален способ доставки ${methodId}`);
+    }
+
+    async createShippingZone(zoneData: {
+        name: string;
+        countries: string[];
+        cities?: string[];
+        sortOrder?: number;
+    }): Promise<ShippingZoneModel> {
+        const zone = await this.shippingZoneModel.create(zoneData);
+
+        this.logger.log(`Создана зона доставки ${zone.id}: ${zone.name}`);
+        return zone;
+    }
+
+    async updateShippingZone(
+        zoneId: number,
+        updateData: Partial<{
+            name: string;
+            countries: string[];
+            cities: string[];
+            isActive: boolean;
+            sortOrder: number;
+        }>,
+    ): Promise<ShippingZoneModel> {
+        const zone = await this.getShippingZoneById(zoneId);
+
+        await zone.update(updateData);
+
+        this.logger.log(`Обновлена зона доставки ${zoneId}`);
+        return zone;
+    }
+
+    async deleteShippingZone(zoneId: number): Promise<void> {
+        const zone = await this.getShippingZoneById(zoneId);
+
+        // Проверяем, используется ли зона в тарифах
+        const ratesCount = await this.shippingRateModel.count({
+            where: { shippingZoneId: zoneId },
+        });
+
+        if (ratesCount > 0) {
+            throw new BadRequestException('Нельзя удалить зону доставки, которая используется в тарифах');
+        }
+
+        await zone.destroy();
+
+        this.logger.log(`Удалена зона доставки ${zoneId}`);
+    }
+
+    async createShippingRate(rateData: {
+        shippingMethodId: number;
+        shippingZoneId: number;
+        rateType: 'flat' | 'free';
+        baseRate: number;
+        freeShippingThreshold?: number;
+        minOrderAmount?: number;
+        maxOrderAmount?: number;
+    }): Promise<ShippingRateModel> {
+        // Проверяем существование способа доставки и зоны
+        await this.getShippingMethodById(rateData.shippingMethodId);
+        await this.getShippingZoneById(rateData.shippingZoneId);
+
+        // Проверяем уникальность комбинации способ-зона
+        const existingRate = await this.shippingRateModel.findOne({
+            where: {
+                shippingMethodId: rateData.shippingMethodId,
+                shippingZoneId: rateData.shippingZoneId,
+            },
+        });
+
+        if (existingRate) {
+            throw new BadRequestException('Тариф для данного способа доставки и зоны уже существует');
+        }
+
+        const rate = await this.shippingRateModel.create(rateData);
+
+        this.logger.log(`Создан тариф доставки ${rate.id}`);
+        return rate;
+    }
+
+    async updateShippingRate(
+        rateId: number,
+        updateData: Partial<{
+            rateType: 'flat' | 'free';
+            baseRate: number;
+            freeShippingThreshold: number;
+            minOrderAmount: number;
+            maxOrderAmount: number;
+            isActive: boolean;
+        }>,
+    ): Promise<ShippingRateModel> {
+        const rate = await this.shippingRateModel.findByPk(rateId);
+
+        if (!rate) {
+            throw new NotFoundException('Тариф доставки не найден');
+        }
+
+        await rate.update(updateData);
+
+        this.logger.log(`Обновлен тариф доставки ${rateId}`);
+        return rate;
+    }
+
+    async deleteShippingRate(rateId: number): Promise<void> {
+        const rate = await this.shippingRateModel.findByPk(rateId);
+
+        if (!rate) {
+            throw new NotFoundException('Тариф доставки не найден');
+        }
+
+        await rate.destroy();
+
+        this.logger.log(`Удален тариф доставки ${rateId}`);
+    }
+
+    async getShippingStatistics(): Promise<{
+        totalMethods: number;
+        activeMethods: number;
+        totalZones: number;
+        activeZones: number;
+        totalRates: number;
+        activeRates: number;
+        methodsByType: Record<string, number>;
+    }> {
+        const [
+            totalMethods,
+            activeMethods,
+            totalZones,
+            activeZones,
+            totalRates,
+            activeRates,
+            methodsByTypeResult,
+        ] = await Promise.all([
+            this.shippingMethodModel.count(),
+            this.shippingMethodModel.count({ where: { isActive: true } }),
+            this.shippingZoneModel.count(),
+            this.shippingZoneModel.count({ where: { isActive: true } }),
+            this.shippingRateModel.count(),
+            this.shippingRateModel.count({ where: { isActive: true } }),
+            this.shippingMethodModel.findAll({
+                attributes: [
+                    'type',
+                    [this.shippingMethodModel.sequelize.fn('COUNT', this.shippingMethodModel.sequelize.col('id')), 'count'],
+                ],
+                group: ['type'],
+                raw: true,
+            }),
+        ]);
+
+        const methodsByType = methodsByTypeResult.reduce((acc, item) => {
+            acc[item.type] = parseInt(item.count);
+            return acc;
+        }, {});
+
+        return {
+            totalMethods,
+            activeMethods,
+            totalZones,
+            activeZones,
+            totalRates,
+            activeRates,
+            methodsByType,
+        };
+    }
+}
+```
+
+## Контроллеры
+
+### Shipping Controller
+```typescript
+// src/infrastructure/controllers/shipping.controller.ts
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
+import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
+import { Roles } from '@app/infrastructure/common/decorators/roles.decorator';
+import { ShippingService } from '@app/infrastructure/services/shipping.service';
+import { CreateShippingMethodDto } from '@app/infrastructure/dto/shipping/create-shipping-method.dto';
+import { CreateShippingZoneDto } from '@app/infrastructure/dto/shipping/create-shipping-zone.dto';
+import { CreateShippingRateDto } from '@app/infrastructure/dto/shipping/create-shipping-rate.dto';
+import { CalculateShippingDto } from '@app/infrastructure/dto/shipping/calculate-shipping.dto';
+import { ShippingMethodResponse, ShippingZoneResponse, ShippingRateResponse, ShippingCostResponse } from '@app/infrastructure/responses/shipping/shipping.response';
+
+@ApiTags('Доставка')
+@Controller('shipping')
+export class ShippingController {
+    // Ролевые константы (совместимы с многоарендной моделью)
+    private static readonly ADMIN_ROLES = ['SUPER_ADMIN', 'PLATFORM_ADMIN', 'TENANT_OWNER', 'TENANT_ADMIN'] as const;
+    private static readonly MANAGER_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER'] as const;
+    private static readonly STAFF_ROLES = ['TENANT_OWNER', 'TENANT_ADMIN', 'MANAGER', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'] as const;
+    private static readonly CUSTOMER_ROLES = ['VIP_CUSTOMER', 'WHOLESALE', 'CUSTOMER', 'AFFILIATE', 'GUEST'] as const;
+    private static readonly ALL_ROLES = [
+        ...ShippingController.ADMIN_ROLES,
+        ...ShippingController.MANAGER_ROLES,
+        ...ShippingController.CUSTOMER_ROLES,
+    ] as const;
+
+    constructor(private readonly shippingService: ShippingService) {}
+
+    @Get('methods')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ShippingController.ALL_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить все способы доставки' })
+    @ApiResponse({ status: 200, description: 'Способы доставки получены', type: [ShippingMethodResponse] })
+    async getAllShippingMethods(): Promise<ShippingMethodResponse[]> {
+        const methods = await this.shippingService.getAllShippingMethods();
+        
+        return methods.map(method => ({
+            id: method.id,
+            name: method.name,
+            code: method.code,
+            description: method.description,
+            type: method.type,
+            carrier: method.carrier,
+            isActive: method.isActive,
+            isDefault: method.isDefault,
+            sortOrder: method.sortOrder,
+            estimatedDays: method.estimatedDays,
+            createdAt: method.createdAt,
+            updatedAt: method.updatedAt,
+        }));
+    }
+
+    @Get('methods/:id')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ShippingController.ALL_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить способ доставки по ID' })
+    @ApiResponse({ status: 200, description: 'Способ доставки получен', type: ShippingMethodResponse })
+    @ApiResponse({ status: 404, description: 'Способ доставки не найден' })
+    async getShippingMethodById(@Param('id') methodId: number): Promise<ShippingMethodResponse> {
+        const method = await this.shippingService.getShippingMethodById(methodId);
+        
+        return {
+            id: method.id,
+            name: method.name,
+            code: method.code,
+            description: method.description,
+            type: method.type,
+            carrier: method.carrier,
+            isActive: method.isActive,
+            isDefault: method.isDefault,
+            sortOrder: method.sortOrder,
+            estimatedDays: method.estimatedDays,
+            createdAt: method.createdAt,
+            updatedAt: method.updatedAt,
+        };
+    }
+
+    @Post('methods')
+    @HttpCode(HttpStatus.CREATED)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ShippingController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Создать способ доставки (только для админов)' })
+    @ApiResponse({ status: 201, description: 'Способ доставки создан', type: ShippingMethodResponse })
+    async createShippingMethod(@Body() createMethodDto: CreateShippingMethodDto): Promise<ShippingMethodResponse> {
+        const method = await this.shippingService.createShippingMethod(createMethodDto);
+        
+        return {
+            id: method.id,
+            name: method.name,
+            code: method.code,
+            description: method.description,
+            type: method.type,
+            carrier: method.carrier,
+            isActive: method.isActive,
+            isDefault: method.isDefault,
+            sortOrder: method.sortOrder,
+            estimatedDays: method.estimatedDays,
+            createdAt: method.createdAt,
+            updatedAt: method.updatedAt,
+        };
+    }
+
+    @Put('methods/:id')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+@Roles(...ShippingController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Обновить способ доставки (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Способ доставки обновлен', type: ShippingMethodResponse })
+    @ApiResponse({ status: 404, description: 'Способ доставки не найден' })
+    async updateShippingMethod(
+        @Param('id') methodId: number,
+        @Body() updateData: Partial<CreateShippingMethodDto>,
+    ): Promise<ShippingMethodResponse> {
+        const method = await this.shippingService.updateShippingMethod(methodId, updateData);
+        
+        return {
+            id: method.id,
+            name: method.name,
+            code: method.code,
+            description: method.description,
+            type: method.type,
+            carrier: method.carrier,
+            isActive: method.isActive,
+            isDefault: method.isDefault,
+            sortOrder: method.sortOrder,
+            estimatedDays: method.estimatedDays,
+            createdAt: method.createdAt,
+            updatedAt: method.updatedAt,
+        };
+    }
+
+    @Delete('methods/:id')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @UseGuards(AuthGuard, RoleGuard)
+@Roles(...ShippingController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Удалить способ доставки (только для админов)' })
+    @ApiResponse({ status: 204, description: 'Способ доставки удален' })
+    @ApiResponse({ status: 400, description: 'Нельзя удалить способ, используемый в заказах' })
+    @ApiResponse({ status: 404, description: 'Способ доставки не найден' })
+    async deleteShippingMethod(@Param('id') methodId: number): Promise<void> {
+        await this.shippingService.deleteShippingMethod(methodId);
+    }
+
+    @Get('zones')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить все зоны доставки' })
+    @ApiResponse({ status: 200, description: 'Зоны доставки получены', type: [ShippingZoneResponse] })
+    async getAllShippingZones(): Promise<ShippingZoneResponse[]> {
+        const zones = await this.shippingService.getAllShippingZones();
+        
+        return zones.map(zone => ({
+            id: zone.id,
+            name: zone.name,
+            countries: zone.countries,
+            cities: zone.cities,
+            isActive: zone.isActive,
+            sortOrder: zone.sortOrder,
+            createdAt: zone.createdAt,
+            updatedAt: zone.updatedAt,
+        }));
+    }
+
+    @Post('zones')
+    @HttpCode(HttpStatus.CREATED)
+    @UseGuards(AuthGuard, RoleGuard)
+@Roles(...ShippingController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Создать зону доставки (только для админов)' })
+    @ApiResponse({ status: 201, description: 'Зона доставки создана', type: ShippingZoneResponse })
+    async createShippingZone(@Body() createZoneDto: CreateShippingZoneDto): Promise<ShippingZoneResponse> {
+        const zone = await this.shippingService.createShippingZone(createZoneDto);
+        
+        return {
+            id: zone.id,
+            name: zone.name,
+            countries: zone.countries,
+            cities: zone.cities,
+            isActive: zone.isActive,
+            sortOrder: zone.sortOrder,
+            createdAt: zone.createdAt,
+            updatedAt: zone.updatedAt,
+        };
+    }
+
+    @Put('zones/:id')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+@Roles(...ShippingController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Обновить зону доставки (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Зона доставки обновлена', type: ShippingZoneResponse })
+    @ApiResponse({ status: 404, description: 'Зона доставки не найдена' })
+    async updateShippingZone(
+        @Param('id') zoneId: number,
+        @Body() updateData: Partial<CreateShippingZoneDto>,
+    ): Promise<ShippingZoneResponse> {
+        const zone = await this.shippingService.updateShippingZone(zoneId, updateData);
+        
+        return {
+            id: zone.id,
+            name: zone.name,
+            countries: zone.countries,
+            cities: zone.cities,
+            isActive: zone.isActive,
+            sortOrder: zone.sortOrder,
+            createdAt: zone.createdAt,
+            updatedAt: zone.updatedAt,
+        };
+    }
+
+    @Delete('zones/:id')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @UseGuards(AuthGuard, RoleGuard)
+@Roles(...ShippingController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Удалить зону доставки (только для админов)' })
+    @ApiResponse({ status: 204, description: 'Зона доставки удалена' })
+    @ApiResponse({ status: 400, description: 'Нельзя удалить зону, используемую в тарифах' })
+    @ApiResponse({ status: 404, description: 'Зона доставки не найдена' })
+    async deleteShippingZone(@Param('id') zoneId: number): Promise<void> {
+        await this.shippingService.deleteShippingZone(zoneId);
+    }
+
+    @Post('rates')
+    @HttpCode(HttpStatus.CREATED)
+    @UseGuards(AuthGuard, RoleGuard)
+@Roles(...ShippingController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Создать тариф доставки (только для админов)' })
+    @ApiResponse({ status: 201, description: 'Тариф доставки создан', type: ShippingRateResponse })
+    async createShippingRate(@Body() createRateDto: CreateShippingRateDto): Promise<ShippingRateResponse> {
+        const rate = await this.shippingService.createShippingRate(createRateDto);
+        
+        return {
+            id: rate.id,
+            shippingMethodId: rate.shippingMethodId,
+            shippingZoneId: rate.shippingZoneId,
+            rateType: rate.rateType,
+            baseRate: rate.baseRate,
+            freeShippingThreshold: rate.freeShippingThreshold,
+            minOrderAmount: rate.minOrderAmount,
+            maxOrderAmount: rate.maxOrderAmount,
+            isActive: rate.isActive,
+            createdAt: rate.createdAt,
+            updatedAt: rate.updatedAt,
+        };
+    }
+
+    @Post('calculate')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ShippingController.CUSTOMER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Рассчитать стоимость доставки' })
+    @ApiResponse({ status: 200, description: 'Стоимость доставки рассчитана', type: [ShippingCostResponse] })
+    async calculateShipping(@Body() calculateDto: CalculateShippingDto): Promise<ShippingCostResponse[]> {
+        const shippingCosts = await this.shippingService.getAvailableShippingMethods(
+            calculateDto.orderAmount,
+            calculateDto.deliveryAddress,
+        );
+        
+        return shippingCosts.map(cost => ({
+            shippingMethod: {
+                id: cost.shippingMethod.id,
+                name: cost.shippingMethod.name,
+                code: cost.shippingMethod.code,
+                type: cost.shippingMethod.type,
+                carrier: cost.shippingMethod.carrier,
+                estimatedDays: cost.shippingMethod.estimatedDays,
+            },
+            baseRate: cost.baseRate,
+            totalCost: cost.totalCost,
+            freeShipping: cost.freeShipping,
+            estimatedDelivery: cost.estimatedDelivery,
+            isAvailable: cost.isAvailable,
+        }));
+    }
+
+    @Post('calculate/:methodId')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles(...ShippingController.CUSTOMER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Рассчитать стоимость конкретного способа доставки' })
+    @ApiResponse({ status: 200, description: 'Стоимость доставки рассчитана', type: ShippingCostResponse })
+    @ApiResponse({ status: 400, description: 'Доставка недоступна для указанного адреса' })
+    async calculateSpecificShipping(
+        @Param('methodId') methodId: number,
+        @Body() calculateDto: CalculateShippingDto,
+    ): Promise<ShippingCostResponse> {
+        const cost = await this.shippingService.calculateShippingCost(
+            methodId,
+            calculateDto.orderAmount,
+            calculateDto.deliveryAddress,
+        );
+        
+        return {
+            shippingMethod: {
+                id: cost.shippingMethod.id,
+                name: cost.shippingMethod.name,
+                code: cost.shippingMethod.code,
+                type: cost.shippingMethod.type,
+                carrier: cost.shippingMethod.carrier,
+                estimatedDays: cost.shippingMethod.estimatedDays,
+            },
+            baseRate: cost.baseRate,
+            totalCost: cost.totalCost,
+            freeShipping: cost.freeShipping,
+            estimatedDelivery: cost.estimatedDelivery,
+            isAvailable: cost.isAvailable,
+        };
+    }
+
+    @Get('admin/statistics')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+@Roles(...ShippingController.MANAGER_ROLES)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить статистику доставки (только для админов)' })
+    @ApiResponse({ status: 200, description: 'Статистика получена' })
+    async getShippingStatistics(): Promise<any> {
+        return this.shippingService.getShippingStatistics();
+    }
+}
+```
+
+## DTO
+
+### Create Shipping Method DTO
+```typescript
+// src/infrastructure/dto/shipping/create-shipping-method.dto.ts
+import { IsString, IsOptional, IsBoolean, IsNumber, IsIn, Length, Min } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CreateShippingMethodDto {
+    @ApiProperty({ description: 'Название способа доставки', example: 'Стандартная доставка' })
+    @IsString({ message: 'Название должно быть строкой' })
+    @Length(1, 255, { message: 'Название должно быть от 1 до 255 символов' })
+    name: string;
+
+    @ApiProperty({ description: 'Код способа доставки', example: 'standard' })
+    @IsString({ message: 'Код должен быть строкой' })
+    @Length(1, 50, { message: 'Код должен быть от 1 до 50 символов' })
+    code: string;
+
+    @ApiProperty({ description: 'Описание способа доставки', example: 'Доставка в течение 3-5 дней', required: false })
+    @IsOptional()
+    @IsString({ message: 'Описание должно быть строкой' })
+    description?: string;
+
+    @ApiProperty({ description: 'Тип доставки', example: 'standard', enum: ['standard', 'express', 'pickup'] })
+    @IsIn(['standard', 'express', 'pickup'], { message: 'Тип должен быть одним из: standard, express, pickup' })
+    type: 'standard' | 'express' | 'pickup';
+
+    @ApiProperty({ description: 'Перевозчик', example: 'Почта России', required: false })
+    @IsOptional()
+    @IsString({ message: 'Перевозчик должен быть строкой' })
+    @Length(1, 100, { message: 'Перевозчик должен быть от 1 до 100 символов' })
+    carrier?: string;
+
+    @ApiProperty({ description: 'Примерное время доставки в днях', example: 5, required: false })
+    @IsOptional()
+    @IsNumber({}, { message: 'Время доставки должно быть числом' })
+    @Min(1, { message: 'Время доставки должно быть больше 0' })
+    estimatedDays?: number;
+
+    @ApiProperty({ description: 'Способ по умолчанию', example: false, required: false })
+    @IsOptional()
+    @IsBoolean({ message: 'Способ по умолчанию должен быть булевым значением' })
+    isDefault?: boolean;
+
+    @ApiProperty({ description: 'Порядок сортировки', example: 0, required: false })
+    @IsOptional()
+    @IsNumber({}, { message: 'Порядок сортировки должен быть числом' })
+    sortOrder?: number;
+}
+```
+
+### Create Shipping Zone DTO
+```typescript
+// src/infrastructure/dto/shipping/create-shipping-zone.dto.ts
+import { IsString, IsArray, IsOptional, IsNumber, Length, ArrayMinSize } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CreateShippingZoneDto {
+    @ApiProperty({ description: 'Название зоны доставки', example: 'Москва и область' })
+    @IsString({ message: 'Название должно быть строкой' })
+    @Length(1, 255, { message: 'Название должно быть от 1 до 255 символов' })
+    name: string;
+
+    @ApiProperty({ description: 'Список стран (ISO коды)', example: ['RU'] })
+    @IsArray({ message: 'Список стран должен быть массивом' })
+    @ArrayMinSize(1, { message: 'Необходимо указать хотя бы одну страну' })
+    @IsString({ each: true, message: 'Каждая страна должна быть строкой' })
+    countries: string[];
+
+    @ApiProperty({ description: 'Список городов', example: ['Москва', 'Санкт-Петербург'], required: false })
+    @IsOptional()
+    @IsArray({ message: 'Список городов должен быть массивом' })
+    @IsString({ each: true, message: 'Каждый город должен быть строкой' })
+    cities?: string[];
+
+    @ApiProperty({ description: 'Порядок сортировки', example: 0, required: false })
+    @IsOptional()
+    @IsNumber({}, { message: 'Порядок сортировки должен быть числом' })
+    sortOrder?: number;
+}
+```
+
+### Create Shipping Rate DTO
+```typescript
+// src/infrastructure/dto/shipping/create-shipping-rate.dto.ts
+import { IsNumber, IsOptional, IsIn, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CreateShippingRateDto {
+    @ApiProperty({ description: 'ID способа доставки', example: 1 })
+    @IsNumber({}, { message: 'ID способа доставки должен быть числом' })
+    @Type(() => Number)
+    shippingMethodId: number;
+
+    @ApiProperty({ description: 'ID зоны доставки', example: 1 })
+    @IsNumber({}, { message: 'ID зоны доставки должен быть числом' })
+    @Type(() => Number)
+    shippingZoneId: number;
+
+    @ApiProperty({ description: 'Тип тарифа', example: 'flat', enum: ['flat', 'free'] })
+    @IsIn(['flat', 'free'], { message: 'Тип тарифа должен быть одним из: flat, free' })
+    rateType: 'flat' | 'free';
+
+    @ApiProperty({ description: 'Базовая ставка', example: 300.00 })
+    @IsNumber({}, { message: 'Базовая ставка должна быть числом' })
+    @Min(0, { message: 'Базовая ставка не может быть отрицательной' })
+    @Type(() => Number)
+    baseRate: number;
+
+    @ApiProperty({ description: 'Порог бесплатной доставки', example: 3000.00, required: false })
+    @IsOptional()
+    @IsNumber({}, { message: 'Порог бесплатной доставки должен быть числом' })
+    @Min(0, { message: 'Порог бесплатной доставки не может быть отрицательным' })
+    @Type(() => Number)
+    freeShippingThreshold?: number;
+
+    @ApiProperty({ description: 'Минимальная сумма заказа', example: 500.00, required: false })
+    @IsOptional()
+    @IsNumber({}, { message: 'Минимальная сумма заказа должна быть числом' })
+    @Min(0, { message: 'Минимальная сумма заказа не может быть отрицательной' })
+    @Type(() => Number)
+    minOrderAmount?: number;
+
+    @ApiProperty({ description: 'Максимальная сумма заказа', example: 50000.00, required: false })
+    @IsOptional()
+    @IsNumber({}, { message: 'Максимальная сумма заказа должна быть числом' })
+    @Min(0, { message: 'Максимальная сумма заказа не может быть отрицательной' })
+    @Type(() => Number)
+    maxOrderAmount?: number;
+}
+```
+
+### Calculate Shipping DTO
+```typescript
+// src/infrastructure/dto/shipping/calculate-shipping.dto.ts
+import { IsNumber, IsString, IsOptional, Min, Length } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CalculateShippingDto {
+    @ApiProperty({ description: 'Сумма заказа', example: 2500.00 })
+    @IsNumber({}, { message: 'Сумма заказа должна быть числом' })
+    @Min(0, { message: 'Сумма заказа не может быть отрицательной' })
+    @Type(() => Number)
+    orderAmount: number;
+
+    @ApiProperty({ description: 'Адрес доставки' })
+    deliveryAddress: {
+        @ApiProperty({ description: 'Имя', example: 'Иван' })
+        @IsString({ message: 'Имя должно быть строкой' })
+        @Length(1, 100, { message: 'Имя должно быть от 1 до 100 символов' })
+        firstName: string;
+
+        @ApiProperty({ description: 'Фамилия', example: 'Иванов' })
+        @IsString({ message: 'Фамилия должна быть строкой' })
+        @Length(1, 100, { message: 'Фамилия должна быть от 1 до 100 символов' })
+        lastName: string;
+
+        @ApiProperty({ description: 'Компания', example: 'ООО Ромашка', required: false })
+        @IsOptional()
+        @IsString({ message: 'Компания должна быть строкой' })
+        company?: string;
+
+        @ApiProperty({ description: 'Адресная строка 1', example: 'ул. Ленина, д. 10' })
+        @IsString({ message: 'Адресная строка 1 должна быть строкой' })
+        @Length(1, 255, { message: 'Адресная строка 1 должна быть от 1 до 255 символов' })
+        addressLine1: string;
+
+        @ApiProperty({ description: 'Адресная строка 2', example: 'кв. 5', required: false })
+        @IsOptional()
+        @IsString({ message: 'Адресная строка 2 должна быть строкой' })
+        addressLine2?: string;
+
+        @ApiProperty({ description: 'Город', example: 'Москва' })
+        @IsString({ message: 'Город должен быть строкой' })
+        @Length(1, 100, { message: 'Город должен быть от 1 до 100 символов' })
+        city: string;
+
+        @ApiProperty({ description: 'Область/штат', example: 'Московская область', required: false })
+        @IsOptional()
+        @IsString({ message: 'Область/штат должна быть строкой' })
+        state?: string;
+
+        @ApiProperty({ description: 'Почтовый индекс', example: '101000' })
+        @IsString({ message: 'Почтовый индекс должен быть строкой' })
+        @Length(1, 20, { message: 'Почтовый индекс должен быть от 1 до 20 символов' })
+        postalCode: string;
+
+        @ApiProperty({ description: 'Страна', example: 'RU' })
+        @IsString({ message: 'Страна должна быть строкой' })
+        @Length(2, 3, { message: 'Страна должна быть от 2 до 3 символов' })
+        country: string;
+
+        @ApiProperty({ description: 'Телефон', example: '+7 (495) 123-45-67', required: false })
+        @IsOptional()
+        @IsString({ message: 'Телефон должен быть строкой' })
+        phone?: string;
+
+        @ApiProperty({ description: 'Email', example: 'ivan@example.com', required: false })
+        @IsOptional()
+        @IsString({ message: 'Email должен быть строкой' })
+        email?: string;
+
+        @ApiProperty({ description: 'Инструкции по доставке', example: 'Оставить у соседей', required: false })
+        @IsOptional()
+        @IsString({ message: 'Инструкции должны быть строкой' })
+        instructions?: string;
+    };
+}
+```
+
+## Responses
+
+### Shipping Method Response
+```typescript
+// src/infrastructure/responses/shipping/shipping.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class ShippingMethodResponse {
+    @ApiProperty({ description: 'ID способа доставки', example: 1 })
+    id: number;
+
+    @ApiProperty({ description: 'Название способа доставки', example: 'Стандартная доставка' })
+    name: string;
+
+    @ApiProperty({ description: 'Код способа доставки', example: 'standard' })
+    code: string;
+
+    @ApiProperty({ description: 'Описание способа доставки', example: 'Доставка в течение 3-5 дней', required: false })
+    description?: string;
+
+    @ApiProperty({ description: 'Тип доставки', example: 'standard' })
+    type: string;
+
+    @ApiProperty({ description: 'Перевозчик', example: 'Почта России', required: false })
+    carrier?: string;
+
+    @ApiProperty({ description: 'Активен ли способ', example: true })
+    isActive: boolean;
+
+    @ApiProperty({ description: 'Способ по умолчанию', example: false })
+    isDefault: boolean;
+
+    @ApiProperty({ description: 'Порядок сортировки', example: 0 })
+    sortOrder: number;
+
+    @ApiProperty({ description: 'Примерное время доставки в днях', example: 5, required: false })
+    estimatedDays?: number;
+
+    @ApiProperty({ description: 'Дата создания', example: '2024-01-15T10:00:00Z' })
+    createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления', example: '2024-01-15T10:30:00Z' })
+    updatedAt: Date;
+}
+
+export class ShippingZoneResponse {
+    @ApiProperty({ description: 'ID зоны доставки', example: 1 })
+    id: number;
+
+    @ApiProperty({ description: 'Название зоны доставки', example: 'Москва и область' })
+    name: string;
+
+    @ApiProperty({ description: 'Список стран', example: ['RU'] })
+    countries: string[];
+
+    @ApiProperty({ description: 'Список городов', example: ['Москва', 'Санкт-Петербург'] })
+    cities: string[];
+
+    @ApiProperty({ description: 'Активна ли зона', example: true })
+    isActive: boolean;
+
+    @ApiProperty({ description: 'Порядок сортировки', example: 0 })
+    sortOrder: number;
+
+    @ApiProperty({ description: 'Дата создания', example: '2024-01-15T10:00:00Z' })
+    createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления', example: '2024-01-15T10:30:00Z' })
+    updatedAt: Date;
+}
+
+export class ShippingRateResponse {
+    @ApiProperty({ description: 'ID тарифа доставки', example: 1 })
+    id: number;
+
+    @ApiProperty({ description: 'ID способа доставки', example: 1 })
+    shippingMethodId: number;
+
+    @ApiProperty({ description: 'ID зоны доставки', example: 1 })
+    shippingZoneId: number;
+
+    @ApiProperty({ description: 'Тип тарифа', example: 'flat' })
+    rateType: string;
+
+    @ApiProperty({ description: 'Базовая ставка', example: 300.00 })
+    baseRate: number;
+
+    @ApiProperty({ description: 'Порог бесплатной доставки', example: 3000.00, required: false })
+    freeShippingThreshold?: number;
+
+    @ApiProperty({ description: 'Минимальная сумма заказа', example: 500.00, required: false })
+    minOrderAmount?: number;
+
+    @ApiProperty({ description: 'Максимальная сумма заказа', example: 50000.00, required: false })
+    maxOrderAmount?: number;
+
+    @ApiProperty({ description: 'Активен ли тариф', example: true })
+    isActive: boolean;
+
+    @ApiProperty({ description: 'Дата создания', example: '2024-01-15T10:00:00Z' })
+    createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления', example: '2024-01-15T10:30:00Z' })
+    updatedAt: Date;
+}
+
+export class ShippingCostResponse {
+    @ApiProperty({ description: 'Способ доставки' })
+    shippingMethod: {
+        id: number;
+        name: string;
+        code: string;
+        type: string;
+        carrier?: string;
+        estimatedDays?: number;
+    };
+
+    @ApiProperty({ description: 'Базовая ставка', example: 300.00 })
+    baseRate: number;
+
+    @ApiProperty({ description: 'Общая стоимость', example: 300.00 })
+    totalCost: number;
+
+    @ApiProperty({ description: 'Бесплатная доставка', example: false })
+    freeShipping: boolean;
+
+    @ApiProperty({ description: 'Ожидаемая дата доставки', example: '2024-01-20T10:00:00Z', required: false })
+    estimatedDelivery?: Date;
+
+    @ApiProperty({ description: 'Доступен ли способ', example: true })
+    isAvailable: boolean;
+}
+```
+
+## Критерии готовности
+
+- [ ] Создана миграция для таблицы `shipping_methods`
+- [ ] Создана миграция для таблицы `shipping_zones`
+- [ ] Создана миграция для таблицы `shipping_rates`
+- [ ] Расширена таблица `orders` полями для доставки
+- [ ] Созданы модели `ShippingMethodModel`, `ShippingZoneModel`, `ShippingRateModel`
+- [ ] Добавлены валидации для новых полей
+- [ ] Созданы индексы для производительности
+- [ ] Реализован `ShippingService` с методами для работы с доставкой
+- [ ] Создан `ShippingController` с API endpoints
+- [ ] Созданы DTO для валидации входных данных
+- [ ] Созданы Response классы для API ответов
+- [ ] Написаны тесты для новой функциональности
+- [ ] Обновлена документация API
+- [ ] Проверена обратная совместимость
+
+## Следующие шаги
+
+После завершения улучшений Shipping переходим к:
+1. Technical Models - аудит, логирование, кэширование
+2. Analytics - метрики и отчеты
+3. Search - полнотекстовый поиск
+```

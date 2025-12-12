@@ -1,0 +1,1989 @@
+# Система лояльности и рефералов (Loyalty/Referral System) - Ecommerce Edition
+
+## Контекст и цель
+Создание практичной системы лояльности и рефералов для ecommerce приложения с базовыми баллами, простыми уровнями лояльности и реферальными наградами, фокусом на быструю разработку и готовность к масштабированию.
+
+## Основные требования
+- **Система баллов** - начисление за покупки, трата на скидки
+- **Уровни лояльности** - базовые уровни с привилегиями
+- **Реферальная программа** - приглашение друзей с наградами
+- **История транзакций** - отслеживание всех операций с баллами
+- **Валидация** - проверка доступности баллов и рефералов
+
+## Структура базы данных
+
+### Таблица `loyalty_programs`
+```sql
+CREATE TABLE loyalty_programs (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT true,
+    points_per_ruble DECIMAL(5,2) DEFAULT 1.00,
+    min_order_amount DECIMAL(10,2) DEFAULT 0.00,
+    max_points_per_order INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `loyalty_tiers`
+```sql
+CREATE TABLE loyalty_tiers (
+    id SERIAL PRIMARY KEY,
+    program_id INTEGER REFERENCES loyalty_programs(id) ON DELETE CASCADE,
+    name VARCHAR(50) NOT NULL,
+    min_points INTEGER NOT NULL,
+    max_points INTEGER,
+    discount_percent DECIMAL(5,2) DEFAULT 0.00,
+    benefits TEXT[],
+    color VARCHAR(7),
+    icon VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `user_loyalty`
+```sql
+CREATE TABLE user_loyalty (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    program_id INTEGER REFERENCES loyalty_programs(id),
+    current_points INTEGER DEFAULT 0,
+    total_earned INTEGER DEFAULT 0,
+    total_spent INTEGER DEFAULT 0,
+    tier_id INTEGER REFERENCES loyalty_tiers(id),
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_activity_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, program_id)
+);
+```
+
+### Таблица `loyalty_transactions`
+```sql
+CREATE TABLE loyalty_transactions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    program_id INTEGER REFERENCES loyalty_programs(id),
+    order_id INTEGER REFERENCES orders(id),
+    type VARCHAR(20) NOT NULL CHECK (type IN ('earned', 'spent', 'bonus')),
+    points INTEGER NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Таблица `referrals`
+```sql
+CREATE TABLE referrals (
+    id SERIAL PRIMARY KEY,
+    referrer_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    referred_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    referral_code VARCHAR(20) UNIQUE NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'cancelled')),
+    reward_amount DECIMAL(10,2) DEFAULT 0.00,
+    reward_type VARCHAR(20) DEFAULT 'points' CHECK (reward_type IN ('points', 'discount')),
+    completed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## Модели Sequelize
+
+### LoyaltyProgram Model
+```typescript
+// src/domain/models/loyalty-program.model.ts
+import { Model, DataType, Column, Table, HasMany } from 'sequelize-typescript';
+import { LoyaltyTierModel } from './loyalty-tier.model';
+import { UserLoyaltyModel } from './user-loyalty.model';
+import { LoyaltyTransactionModel } from './loyalty-transaction.model';
+
+interface ILoyaltyProgramModel {
+    id: number;
+    name: string;
+    description?: string;
+    isActive: boolean;
+    pointsPerRuble: number;
+    minOrderAmount: number;
+    maxPointsPerOrder?: number;
+    tiers: LoyaltyTierModel[];
+    userLoyalties: UserLoyaltyModel[];
+    transactions: LoyaltyTransactionModel[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface ILoyaltyProgramCreationAttributes {
+    name: string;
+    description?: string;
+    isActive?: boolean;
+    pointsPerRuble?: number;
+    minOrderAmount?: number;
+    maxPointsPerOrder?: number;
+}
+
+@Table({
+    tableName: 'loyalty_programs',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['is_active'], name: 'idx_loyalty_programs_is_active' },
+        { fields: ['points_per_ruble'], name: 'idx_loyalty_programs_points_per_ruble' },
+    ],
+})
+export class LoyaltyProgramModel
+    extends Model<LoyaltyProgramModel, ILoyaltyProgramCreationAttributes>
+    implements ILoyaltyProgramModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: false,
+    })
+    declare name: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare description: string;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        field: 'is_active',
+    })
+    declare isActive: boolean;
+
+    @Column({
+        type: DataType.DECIMAL(5, 2),
+        allowNull: false,
+        defaultValue: 1.00,
+        field: 'points_per_ruble',
+    })
+    declare pointsPerRuble: number;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00,
+        field: 'min_order_amount',
+    })
+    declare minOrderAmount: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'max_points_per_order',
+    })
+    declare maxPointsPerOrder: number;
+
+    @HasMany(() => LoyaltyTierModel)
+    declare tiers: LoyaltyTierModel[];
+
+    @HasMany(() => UserLoyaltyModel)
+    declare userLoyalties: UserLoyaltyModel[];
+
+    @HasMany(() => LoyaltyTransactionModel)
+    declare transactions: LoyaltyTransactionModel[];
+}
+```
+
+### LoyaltyTier Model
+```typescript
+// src/domain/models/loyalty-tier.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { LoyaltyProgramModel } from './loyalty-program.model';
+
+interface ILoyaltyTierModel {
+    id: number;
+    programId: number;
+    name: string;
+    minPoints: number;
+    maxPoints?: number;
+    discountPercent: number;
+    benefits: string[];
+    color?: string;
+    icon?: string;
+    program: LoyaltyProgramModel;
+    createdAt: Date;
+}
+
+interface ILoyaltyTierCreationAttributes {
+    programId: number;
+    name: string;
+    minPoints: number;
+    maxPoints?: number;
+    discountPercent?: number;
+    benefits?: string[];
+    color?: string;
+    icon?: string;
+}
+
+@Table({
+    tableName: 'loyalty_tiers',
+    underscored: true,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: false,
+    indexes: [
+        { fields: ['program_id'], name: 'idx_loyalty_tiers_program_id' },
+        { fields: ['min_points'], name: 'idx_loyalty_tiers_min_points' },
+        { fields: ['program_id', 'min_points'], name: 'idx_loyalty_tiers_program_min_points' },
+    ],
+})
+export class LoyaltyTierModel
+    extends Model<LoyaltyTierModel, ILoyaltyTierCreationAttributes>
+    implements ILoyaltyTierModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => LoyaltyProgramModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'program_id',
+    })
+    declare programId: number;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: false,
+    })
+    declare name: string;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'min_points',
+    })
+    declare minPoints: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'max_points',
+    })
+    declare maxPoints: number;
+
+    @Column({
+        type: DataType.DECIMAL(5, 2),
+        allowNull: false,
+        defaultValue: 0.00,
+        field: 'discount_percent',
+    })
+    declare discountPercent: number;
+
+    @Column({
+        type: DataType.ARRAY(DataType.TEXT),
+        allowNull: false,
+        defaultValue: [],
+    })
+    declare benefits: string[];
+
+    @Column({
+        type: DataType.STRING(7),
+        allowNull: true,
+    })
+    declare color: string;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: true,
+    })
+    declare icon: string;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @BelongsTo(() => LoyaltyProgramModel)
+    declare program: LoyaltyProgramModel;
+}
+```
+
+### UserLoyalty Model
+```typescript
+// src/domain/models/user-loyalty.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { UserModel } from './user.model';
+import { LoyaltyProgramModel } from './loyalty-program.model';
+import { LoyaltyTierModel } from './loyalty-tier.model';
+
+interface IUserLoyaltyModel {
+    id: number;
+    userId: number;
+    programId: number;
+    currentPoints: number;
+    totalEarned: number;
+    totalSpent: number;
+    tierId?: number;
+    joinedAt: Date;
+    lastActivityAt: Date;
+    user: UserModel;
+    program: LoyaltyProgramModel;
+    tier?: LoyaltyTierModel;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface IUserLoyaltyCreationAttributes {
+    userId: number;
+    programId: number;
+    currentPoints?: number;
+    totalEarned?: number;
+    totalSpent?: number;
+    tierId?: number;
+}
+
+@Table({
+    tableName: 'user_loyalty',
+    underscored: true,
+    timestamps: true,
+    indexes: [
+        { fields: ['user_id'], name: 'idx_user_loyalty_user_id' },
+        { fields: ['program_id'], name: 'idx_user_loyalty_program_id' },
+        { fields: ['tier_id'], name: 'idx_user_loyalty_tier_id' },
+        { fields: ['current_points'], name: 'idx_user_loyalty_current_points' },
+        { fields: ['user_id', 'program_id'], name: 'idx_user_loyalty_user_program', unique: true },
+    ],
+})
+export class UserLoyaltyModel
+    extends Model<UserLoyaltyModel, IUserLoyaltyCreationAttributes>
+    implements IUserLoyaltyModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @ForeignKey(() => LoyaltyProgramModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'program_id',
+    })
+    declare programId: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'current_points',
+    })
+    declare currentPoints: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'total_earned',
+    })
+    declare totalEarned: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'total_spent',
+    })
+    declare totalSpent: number;
+
+    @ForeignKey(() => LoyaltyTierModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'tier_id',
+    })
+    declare tierId: number;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'joined_at',
+    })
+    declare joinedAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'last_activity_at',
+    })
+    declare lastActivityAt: Date;
+
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    @BelongsTo(() => LoyaltyProgramModel)
+    declare program: LoyaltyProgramModel;
+
+    @BelongsTo(() => LoyaltyTierModel)
+    declare tier: LoyaltyTierModel;
+}
+```
+
+### LoyaltyTransaction Model
+```typescript
+// src/domain/models/loyalty-transaction.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { UserModel } from './user.model';
+import { LoyaltyProgramModel } from './loyalty-program.model';
+import { OrderModel } from './order.model';
+
+export enum TransactionType {
+    EARNED = 'earned',
+    SPENT = 'spent',
+    BONUS = 'bonus'
+}
+
+interface ILoyaltyTransactionModel {
+    id: number;
+    userId: number;
+    programId: number;
+    orderId?: number;
+    type: TransactionType;
+    points: number;
+    description?: string;
+    user: UserModel;
+    program: LoyaltyProgramModel;
+    order?: OrderModel;
+    createdAt: Date;
+}
+
+interface ILoyaltyTransactionCreationAttributes {
+    userId: number;
+    programId: number;
+    orderId?: number;
+    type: TransactionType;
+    points: number;
+    description?: string;
+}
+
+@Table({
+    tableName: 'loyalty_transactions',
+    underscored: true,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: false,
+    indexes: [
+        { fields: ['user_id'], name: 'idx_loyalty_transactions_user_id' },
+        { fields: ['program_id'], name: 'idx_loyalty_transactions_program_id' },
+        { fields: ['order_id'], name: 'idx_loyalty_transactions_order_id' },
+        { fields: ['type'], name: 'idx_loyalty_transactions_type' },
+        { fields: ['created_at'], name: 'idx_loyalty_transactions_created_at' },
+    ],
+})
+export class LoyaltyTransactionModel
+    extends Model<LoyaltyTransactionModel, ILoyaltyTransactionCreationAttributes>
+    implements ILoyaltyTransactionModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'user_id',
+    })
+    declare userId: number;
+
+    @ForeignKey(() => LoyaltyProgramModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'program_id',
+    })
+    declare programId: number;
+
+    @ForeignKey(() => OrderModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        field: 'order_id',
+    })
+    declare orderId: number;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(TransactionType)),
+        allowNull: false,
+    })
+    declare type: TransactionType;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    declare points: number;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare description: string;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @BelongsTo(() => UserModel)
+    declare user: UserModel;
+
+    @BelongsTo(() => LoyaltyProgramModel)
+    declare program: LoyaltyProgramModel;
+
+    @BelongsTo(() => OrderModel)
+    declare order: OrderModel;
+}
+```
+
+### Referral Model
+```typescript
+// src/domain/models/referral.model.ts
+import { Model, DataType, Column, Table, BelongsTo, ForeignKey } from 'sequelize-typescript';
+import { UserModel } from './user.model';
+
+export enum ReferralStatus {
+    PENDING = 'pending',
+    COMPLETED = 'completed',
+    CANCELLED = 'cancelled'
+}
+
+export enum RewardType {
+    POINTS = 'points',
+    DISCOUNT = 'discount'
+}
+
+interface IReferralModel {
+    id: number;
+    referrerId: number;
+    referredId: number;
+    referralCode: string;
+    status: ReferralStatus;
+    rewardAmount: number;
+    rewardType: RewardType;
+    completedAt?: Date;
+    referrer: UserModel;
+    referred: UserModel;
+    createdAt: Date;
+}
+
+interface IReferralCreationAttributes {
+    referrerId: number;
+    referredId: number;
+    referralCode: string;
+    status?: ReferralStatus;
+    rewardAmount?: number;
+    rewardType?: RewardType;
+}
+
+@Table({
+    tableName: 'referrals',
+    underscored: true,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: false,
+    indexes: [
+        { fields: ['referrer_id'], name: 'idx_referrals_referrer_id' },
+        { fields: ['referred_id'], name: 'idx_referrals_referred_id' },
+        { fields: ['referral_code'], name: 'idx_referrals_referral_code', unique: true },
+        { fields: ['status'], name: 'idx_referrals_status' },
+        { fields: ['created_at'], name: 'idx_referrals_created_at' },
+    ],
+})
+export class ReferralModel
+    extends Model<ReferralModel, IReferralCreationAttributes>
+    implements IReferralModel
+{
+    @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    })
+    declare id: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'referrer_id',
+    })
+    declare referrerId: number;
+
+    @ForeignKey(() => UserModel)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        field: 'referred_id',
+    })
+    declare referredId: number;
+
+    @Column({
+        type: DataType.STRING(20),
+        allowNull: false,
+        unique: true,
+        field: 'referral_code',
+    })
+    declare referralCode: string;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(ReferralStatus)),
+        allowNull: false,
+        defaultValue: ReferralStatus.PENDING,
+    })
+    declare status: ReferralStatus;
+
+    @Column({
+        type: DataType.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00,
+        field: 'reward_amount',
+    })
+    declare rewardAmount: number;
+
+    @Column({
+        type: DataType.ENUM(...Object.values(RewardType)),
+        allowNull: false,
+        defaultValue: RewardType.POINTS,
+        field: 'reward_type',
+    })
+    declare rewardType: RewardType;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true,
+        field: 'completed_at',
+    })
+    declare completedAt: Date;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: DataType.NOW,
+        field: 'created_at',
+    })
+    declare createdAt: Date;
+
+    @BelongsTo(() => UserModel, 'referrerId')
+    declare referrer: UserModel;
+
+    @BelongsTo(() => UserModel, 'referredId')
+    declare referred: UserModel;
+}
+```
+
+## Сервисы
+
+### Loyalty Service
+```typescript
+// src/infrastructure/services/loyalty.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { LoyaltyProgramModel } from '@app/domain/models/loyalty-program.model';
+import { LoyaltyTierModel } from '@app/domain/models/loyalty-tier.model';
+import { UserLoyaltyModel } from '@app/domain/models/user-loyalty.model';
+import { LoyaltyTransactionModel, TransactionType } from '@app/domain/models/loyalty-transaction.model';
+import { Op } from 'sequelize';
+
+@Injectable()
+export class LoyaltyService {
+    private readonly logger = new Logger(LoyaltyService.name);
+
+    constructor(
+        @InjectModel(LoyaltyProgramModel)
+        private loyaltyProgramModel: typeof LoyaltyProgramModel,
+        @InjectModel(LoyaltyTierModel)
+        private loyaltyTierModel: typeof LoyaltyTierModel,
+        @InjectModel(UserLoyaltyModel)
+        private userLoyaltyModel: typeof UserLoyaltyModel,
+        @InjectModel(LoyaltyTransactionModel)
+        private loyaltyTransactionModel: typeof LoyaltyTransactionModel,
+    ) {}
+
+    async getActiveProgram(): Promise<LoyaltyProgramModel | null> {
+        return this.loyaltyProgramModel.findOne({
+            where: { isActive: true },
+            include: [
+                {
+                    model: LoyaltyTierModel,
+                    order: [['min_points', 'ASC']],
+                },
+            ],
+        });
+    }
+
+    async getUserLoyalty(userId: number, programId?: number): Promise<UserLoyaltyModel | null> {
+        const where: any = { userId };
+        if (programId) {
+            where.programId = programId;
+        }
+
+        return this.userLoyaltyModel.findOne({
+            where,
+            include: ['program', 'tier'],
+        });
+    }
+
+    async getUserBalance(userId: number, programId?: number): Promise<number> {
+        const userLoyalty = await this.getUserLoyalty(userId, programId);
+        return userLoyalty?.currentPoints || 0;
+    }
+
+    async earnPoints(
+        userId: number,
+        orderAmount: number,
+        orderId: number,
+        programId?: number,
+    ): Promise<{ pointsEarned: number; newBalance: number }> {
+        const program = programId 
+            ? await this.loyaltyProgramModel.findByPk(programId)
+            : await this.getActiveProgram();
+
+        if (!program) {
+            throw new NotFoundException('Программа лояльности не найдена');
+        }
+
+        if (orderAmount < program.minOrderAmount) {
+            return { pointsEarned: 0, newBalance: await this.getUserBalance(userId, program.id) };
+        }
+
+        let pointsEarned = Math.floor(orderAmount * program.pointsPerRuble);
+        
+        if (program.maxPointsPerOrder && pointsEarned > program.maxPointsPerOrder) {
+            pointsEarned = program.maxPointsPerOrder;
+        }
+
+        if (pointsEarned <= 0) {
+            return { pointsEarned: 0, newBalance: await this.getUserBalance(userId, program.id) };
+        }
+
+        // Получаем или создаем запись пользователя
+        let userLoyalty = await this.getUserLoyalty(userId, program.id);
+        if (!userLoyalty) {
+            userLoyalty = await this.userLoyaltyModel.create({
+                userId,
+                programId: program.id,
+                currentPoints: 0,
+                totalEarned: 0,
+                totalSpent: 0,
+            });
+        }
+
+        // Обновляем баланс
+        await userLoyalty.update({
+            currentPoints: userLoyalty.currentPoints + pointsEarned,
+            totalEarned: userLoyalty.totalEarned + pointsEarned,
+            lastActivityAt: new Date(),
+        });
+
+        // Создаем транзакцию
+        await this.loyaltyTransactionModel.create({
+            userId,
+            programId: program.id,
+            orderId,
+            type: TransactionType.EARNED,
+            points: pointsEarned,
+            description: `Начисление баллов за заказ #${orderId}`,
+        });
+
+        // Проверяем и обновляем уровень
+        await this.updateUserTier(userId, program.id);
+
+        this.logger.log(`User ${userId} earned ${pointsEarned} points for order ${orderId}`);
+        return { pointsEarned, newBalance: userLoyalty.currentPoints };
+    }
+
+    async spendPoints(
+        userId: number,
+        pointsToSpend: number,
+        orderId: number,
+        programId?: number,
+    ): Promise<{ pointsSpent: number; newBalance: number }> {
+        const userLoyalty = await this.getUserLoyalty(userId, programId);
+        if (!userLoyalty) {
+            throw new NotFoundException('Участие в программе лояльности не найдено');
+        }
+
+        if (userLoyalty.currentPoints < pointsToSpend) {
+            throw new BadRequestException('Недостаточно баллов для списания');
+        }
+
+        // Обновляем баланс
+        await userLoyalty.update({
+            currentPoints: userLoyalty.currentPoints - pointsToSpend,
+            totalSpent: userLoyalty.totalSpent + pointsToSpend,
+            lastActivityAt: new Date(),
+        });
+
+        // Создаем транзакцию
+        await this.loyaltyTransactionModel.create({
+            userId,
+            programId: userLoyalty.programId,
+            orderId,
+            type: TransactionType.SPENT,
+            points: -pointsToSpend,
+            description: `Списание баллов за заказ #${orderId}`,
+        });
+
+        this.logger.log(`User ${userId} spent ${pointsToSpend} points for order ${orderId}`);
+        return { pointsSpent: pointsToSpend, newBalance: userLoyalty.currentPoints };
+    }
+
+    async updateUserTier(userId: number, programId: number): Promise<void> {
+        const userLoyalty = await this.getUserLoyalty(userId, programId);
+        if (!userLoyalty) {
+            return;
+        }
+
+        // Находим подходящий уровень
+        const tier = await this.loyaltyTierModel.findOne({
+            where: {
+                programId,
+                minPoints: { [Op.lte]: userLoyalty.currentPoints },
+            },
+            order: [['min_points', 'DESC']],
+        });
+
+        if (tier && tier.id !== userLoyalty.tierId) {
+            await userLoyalty.update({ tierId: tier.id });
+            this.logger.log(`User ${userId} upgraded to tier ${tier.name}`);
+        }
+    }
+
+    async getUserTransactions(
+        userId: number,
+        programId?: number,
+        page: number = 1,
+        limit: number = 20,
+    ): Promise<{ data: LoyaltyTransactionModel[]; total: number }> {
+        const where: any = { userId };
+        if (programId) {
+            where.programId = programId;
+        }
+
+        const { rows: transactions, count: total } = await this.loyaltyTransactionModel.findAndCountAll({
+            where,
+            include: ['program', 'order'],
+            order: [['created_at', 'DESC']],
+            limit,
+            offset: (page - 1) * limit,
+        });
+
+        return { data: transactions, total };
+    }
+
+    async getTopUsers(programId?: number, limit: number = 10): Promise<UserLoyaltyModel[]> {
+        const where: any = {};
+        if (programId) {
+            where.programId = programId;
+        }
+
+        return this.userLoyaltyModel.findAll({
+            where,
+            include: ['user', 'program', 'tier'],
+            order: [['current_points', 'DESC']],
+            limit,
+        });
+    }
+}
+```
+
+### Referral Service
+```typescript
+// src/infrastructure/services/referral.service.ts
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { ReferralModel, ReferralStatus, RewardType } from '@app/domain/models/referral.model';
+import { LoyaltyService } from './loyalty.service';
+import { Op } from 'sequelize';
+
+@Injectable()
+export class ReferralService {
+    private readonly logger = new Logger(ReferralService.name);
+
+    constructor(
+        @InjectModel(ReferralModel)
+        private referralModel: typeof ReferralModel,
+        private loyaltyService: LoyaltyService,
+    ) {}
+
+    async generateReferralCode(userId: number): Promise<string> {
+        const code = `REF${userId}${Date.now().toString().slice(-6)}`;
+        
+        // Проверяем уникальность
+        const existing = await this.referralModel.findOne({
+            where: { referralCode: code },
+        });
+
+        if (existing) {
+            return this.generateReferralCode(userId); // Рекурсивно генерируем новый код
+        }
+
+        return code;
+    }
+
+    async createReferral(
+        referrerId: number,
+        referredId: number,
+        rewardAmount: number = 100,
+        rewardType: RewardType = RewardType.POINTS,
+    ): Promise<ReferralModel> {
+        // Проверяем, что пользователи разные
+        if (referrerId === referredId) {
+            throw new BadRequestException('Нельзя пригласить самого себя');
+        }
+
+        // Проверяем, что реферал еще не был приглашен
+        const existingReferral = await this.referralModel.findOne({
+            where: { referredId },
+        });
+
+        if (existingReferral) {
+            throw new BadRequestException('Пользователь уже был приглашен');
+        }
+
+        const referralCode = await this.generateReferralCode(referrerId);
+
+        const referral = await this.referralModel.create({
+            referrerId,
+            referredId,
+            referralCode,
+            rewardAmount,
+            rewardType,
+        });
+
+        this.logger.log(`Referral created: ${referrerId} -> ${referredId} (${referralCode})`);
+        return referral;
+    }
+
+    async completeReferral(referredId: number): Promise<void> {
+        const referral = await this.referralModel.findOne({
+            where: {
+                referredId,
+                status: ReferralStatus.PENDING,
+            },
+        });
+
+        if (!referral) {
+            throw new NotFoundException('Реферал не найден');
+        }
+
+        // Обновляем статус
+        await referral.update({
+            status: ReferralStatus.COMPLETED,
+            completedAt: new Date(),
+        });
+
+        // Начисляем награду рефереру
+        if (referral.rewardType === RewardType.POINTS) {
+            await this.loyaltyService.earnPoints(
+                referral.referrerId,
+                0, // Специальное начисление, не связанное с заказом
+                0, // Нет связанного заказа
+            );
+        }
+
+        this.logger.log(`Referral completed: ${referral.referrerId} -> ${referredId}`);
+    }
+
+    async getUserReferrals(userId: number): Promise<ReferralModel[]> {
+        return this.referralModel.findAll({
+            where: { referrerId: userId },
+            include: ['referred'],
+            order: [['created_at', 'DESC']],
+        });
+    }
+
+    async getUserReferralStats(userId: number): Promise<{
+        totalReferrals: number;
+        completedReferrals: number;
+        pendingReferrals: number;
+        totalRewards: number;
+    }> {
+        const referrals = await this.referralModel.findAll({
+            where: { referrerId: userId },
+        });
+
+        const totalReferrals = referrals.length;
+        const completedReferrals = referrals.filter(r => r.status === ReferralStatus.COMPLETED).length;
+        const pendingReferrals = referrals.filter(r => r.status === ReferralStatus.PENDING).length;
+        const totalRewards = referrals
+            .filter(r => r.status === ReferralStatus.COMPLETED)
+            .reduce((sum, r) => sum + r.rewardAmount, 0);
+
+        return {
+            totalReferrals,
+            completedReferrals,
+            pendingReferrals,
+            totalRewards,
+        };
+    }
+
+    async getTopReferrers(limit: number = 10): Promise<ReferralModel[]> {
+        return this.referralModel.findAll({
+            where: { status: ReferralStatus.COMPLETED },
+            include: ['referrer', 'referred'],
+            order: [['completed_at', 'DESC']],
+            limit,
+        });
+    }
+}
+```
+
+## Контроллеры
+
+### Loyalty Controller
+```typescript
+// src/infrastructure/controllers/loyalty.controller.ts
+import { Controller, Get, Post, Param, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
+import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
+import { Roles } from '@app/infrastructure/common/decorators/roles.decorator';
+import { CurrentUser } from '@app/infrastructure/common/decorators/current-user.decorator';
+import { LoyaltyService } from '@app/infrastructure/services/loyalty.service';
+import { SpendPointsDto } from '@app/infrastructure/dto/loyalty/spend-points.dto';
+import { LoyaltyProgramResponse, UserLoyaltyResponse, LoyaltyTransactionResponse } from '@app/infrastructure/responses/loyalty/loyalty.response';
+
+@ApiTags('Программа лояльности')
+@Controller('loyalty')
+export class LoyaltyController {
+    constructor(private readonly loyaltyService: LoyaltyService) {}
+
+    @Get('program')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Получить активную программу лояльности' })
+    @ApiResponse({ status: 200, description: 'Программа лояльности получена', type: LoyaltyProgramResponse })
+    async getActiveProgram(): Promise<LoyaltyProgramResponse | null> {
+        const program = await this.loyaltyService.getActiveProgram();
+        
+        if (!program) {
+            return null;
+        }
+
+        return {
+            id: program.id,
+            name: program.name,
+            description: program.description,
+            isActive: program.isActive,
+            pointsPerRuble: program.pointsPerRuble,
+            minOrderAmount: program.minOrderAmount,
+            maxPointsPerOrder: program.maxPointsPerOrder,
+            tiers: program.tiers.map(tier => ({
+                id: tier.id,
+                name: tier.name,
+                minPoints: tier.minPoints,
+                maxPoints: tier.maxPoints,
+                discountPercent: tier.discountPercent,
+                benefits: tier.benefits,
+                color: tier.color,
+                icon: tier.icon,
+            })),
+            createdAt: program.createdAt,
+            updatedAt: program.updatedAt,
+        };
+    }
+
+    @Get('balance')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить баланс баллов пользователя' })
+    @ApiQuery({ name: 'programId', required: false, description: 'ID программы лояльности' })
+    @ApiResponse({ status: 200, description: 'Баланс баллов получен' })
+    async getUserBalance(
+        @CurrentUser() user: any,
+        @Query('programId') programId?: number,
+    ): Promise<{ balance: number }> {
+        const balance = await this.loyaltyService.getUserBalance(user.id, programId);
+        return { balance };
+    }
+
+    @Get('profile')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить профиль лояльности пользователя' })
+    @ApiQuery({ name: 'programId', required: false, description: 'ID программы лояльности' })
+    @ApiResponse({ status: 200, description: 'Профиль лояльности получен', type: UserLoyaltyResponse })
+    async getUserLoyaltyProfile(
+        @CurrentUser() user: any,
+        @Query('programId') programId?: number,
+    ): Promise<UserLoyaltyResponse | null> {
+        const userLoyalty = await this.loyaltyService.getUserLoyalty(user.id, programId);
+        
+        if (!userLoyalty) {
+            return null;
+        }
+
+        return {
+            id: userLoyalty.id,
+            userId: userLoyalty.userId,
+            programId: userLoyalty.programId,
+            currentPoints: userLoyalty.currentPoints,
+            totalEarned: userLoyalty.totalEarned,
+            totalSpent: userLoyalty.totalSpent,
+            tierId: userLoyalty.tierId,
+            joinedAt: userLoyalty.joinedAt,
+            lastActivityAt: userLoyalty.lastActivityAt,
+            tier: userLoyalty.tier ? {
+                id: userLoyalty.tier.id,
+                name: userLoyalty.tier.name,
+                minPoints: userLoyalty.tier.minPoints,
+                maxPoints: userLoyalty.tier.maxPoints,
+                discountPercent: userLoyalty.tier.discountPercent,
+                benefits: userLoyalty.tier.benefits,
+                color: userLoyalty.tier.color,
+                icon: userLoyalty.tier.icon,
+            } : null,
+            createdAt: userLoyalty.createdAt,
+            updatedAt: userLoyalty.updatedAt,
+        };
+    }
+
+    @Post('spend')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Потратить баллы' })
+    @ApiResponse({ status: 200, description: 'Баллы потрачены' })
+    @ApiResponse({ status: 400, description: 'Недостаточно баллов' })
+    async spendPoints(
+        @Body() spendPointsDto: SpendPointsDto,
+        @CurrentUser() user: any,
+    ): Promise<{ pointsSpent: number; newBalance: number }> {
+        return this.loyaltyService.spendPoints(
+            user.id,
+            spendPointsDto.points,
+            spendPointsDto.orderId,
+            spendPointsDto.programId,
+        );
+    }
+
+    @Get('transactions')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить историю транзакций пользователя' })
+    @ApiQuery({ name: 'programId', required: false, description: 'ID программы лояльности' })
+    @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество элементов на странице' })
+    @ApiResponse({ status: 200, description: 'История транзакций получена', type: [LoyaltyTransactionResponse] })
+    async getUserTransactions(
+        @CurrentUser() user: any,
+        @Query('programId') programId?: number,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 20,
+    ): Promise<{ data: LoyaltyTransactionResponse[]; total: number }> {
+        const result = await this.loyaltyService.getUserTransactions(user.id, programId, page, limit);
+        
+        return {
+            data: result.data.map(transaction => ({
+                id: transaction.id,
+                userId: transaction.userId,
+                programId: transaction.programId,
+                orderId: transaction.orderId,
+                type: transaction.type,
+                points: transaction.points,
+                description: transaction.description,
+                createdAt: transaction.createdAt,
+            })),
+            total: result.total,
+        };
+    }
+
+    @Get('leaderboard')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить таблицу лидеров' })
+    @ApiQuery({ name: 'programId', required: false, description: 'ID программы лояльности' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Количество пользователей' })
+    @ApiResponse({ status: 200, description: 'Таблица лидеров получена', type: [UserLoyaltyResponse] })
+    async getLeaderboard(
+        @Query('programId') programId?: number,
+        @Query('limit') limit: number = 10,
+    ): Promise<UserLoyaltyResponse[]> {
+        const topUsers = await this.loyaltyService.getTopUsers(programId, limit);
+        
+        return topUsers.map(userLoyalty => ({
+            id: userLoyalty.id,
+            userId: userLoyalty.userId,
+            programId: userLoyalty.programId,
+            currentPoints: userLoyalty.currentPoints,
+            totalEarned: userLoyalty.totalEarned,
+            totalSpent: userLoyalty.totalSpent,
+            tierId: userLoyalty.tierId,
+            joinedAt: userLoyalty.joinedAt,
+            lastActivityAt: userLoyalty.lastActivityAt,
+            tier: userLoyalty.tier ? {
+                id: userLoyalty.tier.id,
+                name: userLoyalty.tier.name,
+                minPoints: userLoyalty.tier.minPoints,
+                maxPoints: userLoyalty.tier.maxPoints,
+                discountPercent: userLoyalty.tier.discountPercent,
+                benefits: userLoyalty.tier.benefits,
+                color: userLoyalty.tier.color,
+                icon: userLoyalty.tier.icon,
+            } : null,
+            createdAt: userLoyalty.createdAt,
+            updatedAt: userLoyalty.updatedAt,
+        }));
+    }
+}
+```
+
+### Referral Controller
+```typescript
+// src/infrastructure/controllers/referral.controller.ts
+import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@app/infrastructure/common/guards/auth.guard';
+import { RoleGuard } from '@app/infrastructure/common/guards/role.guard';
+import { Roles } from '@app/infrastructure/common/decorators/roles.decorator';
+import { CurrentUser } from '@app/infrastructure/common/decorators/current-user.decorator';
+import { ReferralService } from '@app/infrastructure/services/referral.service';
+import { CreateReferralDto } from '@app/infrastructure/dto/referral/create-referral.dto';
+import { ReferralResponse } from '@app/infrastructure/responses/referral/referral.response';
+
+@ApiTags('Реферальная программа')
+@Controller('referrals')
+export class ReferralController {
+    constructor(private readonly referralService: ReferralService) {}
+
+    @Get('code')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить реферальный код пользователя' })
+    @ApiResponse({ status: 200, description: 'Реферальный код получен' })
+    async getReferralCode(@CurrentUser() user: any): Promise<{ referralCode: string }> {
+        const referralCode = await this.referralService.generateReferralCode(user.id);
+        return { referralCode };
+    }
+
+    @Post('create')
+    @HttpCode(HttpStatus.CREATED)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN', 'MANAGER')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Создать реферал (только для админов и менеджеров)' })
+    @ApiResponse({ status: 201, description: 'Реферал создан', type: ReferralResponse })
+    @ApiResponse({ status: 400, description: 'Ошибка валидации' })
+    async createReferral(@Body() createReferralDto: CreateReferralDto): Promise<ReferralResponse> {
+        const referral = await this.referralService.createReferral(
+            createReferralDto.referrerId,
+            createReferralDto.referredId,
+            createReferralDto.rewardAmount,
+            createReferralDto.rewardType,
+        );
+
+        return {
+            id: referral.id,
+            referrerId: referral.referrerId,
+            referredId: referral.referredId,
+            referralCode: referral.referralCode,
+            status: referral.status,
+            rewardAmount: referral.rewardAmount,
+            rewardType: referral.rewardType,
+            completedAt: referral.completedAt,
+            createdAt: referral.createdAt,
+        };
+    }
+
+    @Post('complete/:referredId')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard, RoleGuard)
+    @Roles('ADMIN', 'MANAGER')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Завершить реферал (только для админов и менеджеров)' })
+    @ApiResponse({ status: 200, description: 'Реферал завершен' })
+    @ApiResponse({ status: 404, description: 'Реферал не найден' })
+    async completeReferral(@Param('referredId') referredId: number): Promise<{ message: string }> {
+        await this.referralService.completeReferral(referredId);
+        return { message: 'Реферал успешно завершен' };
+    }
+
+    @Get('my-referrals')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить рефералов пользователя' })
+    @ApiResponse({ status: 200, description: 'Рефералы получены', type: [ReferralResponse] })
+    async getUserReferrals(@CurrentUser() user: any): Promise<ReferralResponse[]> {
+        const referrals = await this.referralService.getUserReferrals(user.id);
+        
+        return referrals.map(referral => ({
+            id: referral.id,
+            referrerId: referral.referrerId,
+            referredId: referral.referredId,
+            referralCode: referral.referralCode,
+            status: referral.status,
+            rewardAmount: referral.rewardAmount,
+            rewardType: referral.rewardType,
+            completedAt: referral.completedAt,
+            createdAt: referral.createdAt,
+        }));
+    }
+
+    @Get('stats')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить статистику рефералов пользователя' })
+    @ApiResponse({ status: 200, description: 'Статистика получена' })
+    async getUserReferralStats(@CurrentUser() user: any): Promise<{
+        totalReferrals: number;
+        completedReferrals: number;
+        pendingReferrals: number;
+        totalRewards: number;
+    }> {
+        return this.referralService.getUserReferralStats(user.id);
+    }
+
+    @Get('leaderboard')
+    @HttpCode(HttpStatus.OK)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Получить таблицу лидеров по рефералам' })
+    @ApiResponse({ status: 200, description: 'Таблица лидеров получена', type: [ReferralResponse] })
+    async getReferralLeaderboard(): Promise<ReferralResponse[]> {
+        const topReferrers = await this.referralService.getTopReferrers();
+        
+        return topReferrers.map(referral => ({
+            id: referral.id,
+            referrerId: referral.referrerId,
+            referredId: referral.referredId,
+            referralCode: referral.referralCode,
+            status: referral.status,
+            rewardAmount: referral.rewardAmount,
+            rewardType: referral.rewardType,
+            completedAt: referral.completedAt,
+            createdAt: referral.createdAt,
+        }));
+    }
+}
+```
+
+## Миграции
+
+### Создание таблиц лояльности и рефералов
+```typescript
+// db/migrations/YYYYMMDDHHMMSS-create-loyalty-referral-system.ts
+import { QueryInterface, DataTypes } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+    // Создание таблицы loyalty_programs
+    await queryInterface.createTable('loyalty_programs', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        name: {
+            type: DataTypes.STRING(100),
+            allowNull: false,
+        },
+        description: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        is_active: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+        },
+        points_per_ruble: {
+            type: DataTypes.DECIMAL(5, 2),
+            allowNull: false,
+            defaultValue: 1.00,
+        },
+        min_order_amount: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+            defaultValue: 0.00,
+        },
+        max_points_per_order: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание таблицы loyalty_tiers
+    await queryInterface.createTable('loyalty_tiers', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        program_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'loyalty_programs', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        name: {
+            type: DataTypes.STRING(50),
+            allowNull: false,
+        },
+        min_points: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+        max_points: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        discount_percent: {
+            type: DataTypes.DECIMAL(5, 2),
+            allowNull: false,
+            defaultValue: 0.00,
+        },
+        benefits: {
+            type: DataTypes.ARRAY(DataTypes.TEXT),
+            allowNull: false,
+            defaultValue: [],
+        },
+        color: {
+            type: DataTypes.STRING(7),
+            allowNull: true,
+        },
+        icon: {
+            type: DataTypes.STRING(50),
+            allowNull: true,
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание таблицы user_loyalty
+    await queryInterface.createTable('user_loyalty', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        user_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'users', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        program_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'loyalty_programs', key: 'id' },
+        },
+        current_points: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        },
+        total_earned: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        },
+        total_spent: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+        },
+        tier_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: { model: 'loyalty_tiers', key: 'id' },
+        },
+        joined_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        last_activity_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание таблицы loyalty_transactions
+    await queryInterface.createTable('loyalty_transactions', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        user_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'users', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        program_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'loyalty_programs', key: 'id' },
+        },
+        order_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: { model: 'orders', key: 'id' },
+        },
+        type: {
+            type: DataTypes.ENUM('earned', 'spent', 'bonus'),
+            allowNull: false,
+        },
+        points: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+        description: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание таблицы referrals
+    await queryInterface.createTable('referrals', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        referrer_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'users', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        referred_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'users', key: 'id' },
+            onDelete: 'CASCADE',
+        },
+        referral_code: {
+            type: DataTypes.STRING(20),
+            allowNull: false,
+            unique: true,
+        },
+        status: {
+            type: DataTypes.ENUM('pending', 'completed', 'cancelled'),
+            allowNull: false,
+            defaultValue: 'pending',
+        },
+        reward_amount: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+            defaultValue: 0.00,
+        },
+        reward_type: {
+            type: DataTypes.ENUM('points', 'discount'),
+            allowNull: false,
+            defaultValue: 'points',
+        },
+        completed_at: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+
+    // Создание индексов
+    await queryInterface.addIndex('loyalty_programs', ['is_active']);
+    await queryInterface.addIndex('loyalty_programs', ['points_per_ruble']);
+
+    await queryInterface.addIndex('loyalty_tiers', ['program_id']);
+    await queryInterface.addIndex('loyalty_tiers', ['min_points']);
+    await queryInterface.addIndex('loyalty_tiers', ['program_id', 'min_points']);
+
+    await queryInterface.addIndex('user_loyalty', ['user_id']);
+    await queryInterface.addIndex('user_loyalty', ['program_id']);
+    await queryInterface.addIndex('user_loyalty', ['tier_id']);
+    await queryInterface.addIndex('user_loyalty', ['current_points']);
+    await queryInterface.addIndex('user_loyalty', ['user_id', 'program_id'], { unique: true });
+
+    await queryInterface.addIndex('loyalty_transactions', ['user_id']);
+    await queryInterface.addIndex('loyalty_transactions', ['program_id']);
+    await queryInterface.addIndex('loyalty_transactions', ['order_id']);
+    await queryInterface.addIndex('loyalty_transactions', ['type']);
+    await queryInterface.addIndex('loyalty_transactions', ['created_at']);
+
+    await queryInterface.addIndex('referrals', ['referrer_id']);
+    await queryInterface.addIndex('referrals', ['referred_id']);
+    await queryInterface.addIndex('referrals', ['referral_code'], { unique: true });
+    await queryInterface.addIndex('referrals', ['status']);
+    await queryInterface.addIndex('referrals', ['created_at']);
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+    await queryInterface.dropTable('referrals');
+    await queryInterface.dropTable('loyalty_transactions');
+    await queryInterface.dropTable('user_loyalty');
+    await queryInterface.dropTable('loyalty_tiers');
+    await queryInterface.dropTable('loyalty_programs');
+}
+```
+
+## DTO и валидация
+
+### SpendPointsDto
+```typescript
+// src/infrastructure/dto/loyalty/spend-points.dto.ts
+import { IsNumber, IsOptional, Min } from 'class-validator';
+
+export class SpendPointsDto {
+    @IsNumber({}, { message: 'Количество баллов должно быть числом' })
+    @Min(1, { message: 'Количество баллов должно быть больше 0' })
+    declare readonly points: number;
+
+    @IsNumber({}, { message: 'ID заказа должен быть числом' })
+    @Min(1, { message: 'ID заказа должен быть больше 0' })
+    declare readonly orderId: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'ID программы лояльности должен быть числом' })
+    @Min(1, { message: 'ID программы лояльности должен быть больше 0' })
+    declare readonly programId?: number;
+}
+```
+
+### CreateReferralDto
+```typescript
+// src/infrastructure/dto/referral/create-referral.dto.ts
+import { IsNumber, IsOptional, IsEnum, Min } from 'class-validator';
+import { RewardType } from '@app/domain/models/referral.model';
+
+export class CreateReferralDto {
+    @IsNumber({}, { message: 'ID реферера должен быть числом' })
+    @Min(1, { message: 'ID реферера должен быть больше 0' })
+    declare readonly referrerId: number;
+
+    @IsNumber({}, { message: 'ID реферала должен быть числом' })
+    @Min(1, { message: 'ID реферала должен быть больше 0' })
+    declare readonly referredId: number;
+
+    @IsOptional()
+    @IsNumber({}, { message: 'Размер награды должен быть числом' })
+    @Min(0, { message: 'Размер награды не может быть отрицательным' })
+    declare readonly rewardAmount?: number;
+
+    @IsOptional()
+    @IsEnum(RewardType, { message: 'Тип награды должен быть одним из: points, discount' })
+    declare readonly rewardType?: RewardType;
+}
+```
+
+## Response классы
+
+### LoyaltyProgramResponse
+```typescript
+// src/infrastructure/responses/loyalty/loyalty.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class LoyaltyTierResponse {
+    @ApiProperty({ description: 'ID уровня' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'Название уровня' })
+    declare readonly name: string;
+
+    @ApiProperty({ description: 'Минимальные баллы' })
+    declare readonly minPoints: number;
+
+    @ApiProperty({ description: 'Максимальные баллы', required: false })
+    declare readonly maxPoints?: number;
+
+    @ApiProperty({ description: 'Процент скидки' })
+    declare readonly discountPercent: number;
+
+    @ApiProperty({ description: 'Преимущества' })
+    declare readonly benefits: string[];
+
+    @ApiProperty({ description: 'Цвет', required: false })
+    declare readonly color?: string;
+
+    @ApiProperty({ description: 'Иконка', required: false })
+    declare readonly icon?: string;
+}
+
+export class LoyaltyProgramResponse {
+    @ApiProperty({ description: 'ID программы' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'Название программы' })
+    declare readonly name: string;
+
+    @ApiProperty({ description: 'Описание программы', required: false })
+    declare readonly description?: string;
+
+    @ApiProperty({ description: 'Активна ли программа' })
+    declare readonly isActive: boolean;
+
+    @ApiProperty({ description: 'Баллов за рубль' })
+    declare readonly pointsPerRuble: number;
+
+    @ApiProperty({ description: 'Минимальная сумма заказа' })
+    declare readonly minOrderAmount: number;
+
+    @ApiProperty({ description: 'Максимальные баллы за заказ', required: false })
+    declare readonly maxPointsPerOrder?: number;
+
+    @ApiProperty({ description: 'Уровни лояльности', type: [LoyaltyTierResponse] })
+    declare readonly tiers: LoyaltyTierResponse[];
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления' })
+    declare readonly updatedAt: Date;
+}
+
+export class UserLoyaltyResponse {
+    @ApiProperty({ description: 'ID записи лояльности' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'ID пользователя' })
+    declare readonly userId: number;
+
+    @ApiProperty({ description: 'ID программы' })
+    declare readonly programId: number;
+
+    @ApiProperty({ description: 'Текущие баллы' })
+    declare readonly currentPoints: number;
+
+    @ApiProperty({ description: 'Всего заработано' })
+    declare readonly totalEarned: number;
+
+    @ApiProperty({ description: 'Всего потрачено' })
+    declare readonly totalSpent: number;
+
+    @ApiProperty({ description: 'ID уровня', required: false })
+    declare readonly tierId?: number;
+
+    @ApiProperty({ description: 'Дата присоединения' })
+    declare readonly joinedAt: Date;
+
+    @ApiProperty({ description: 'Последняя активность' })
+    declare readonly lastActivityAt: Date;
+
+    @ApiProperty({ description: 'Уровень лояльности', required: false })
+    declare readonly tier?: LoyaltyTierResponse;
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+
+    @ApiProperty({ description: 'Дата обновления' })
+    declare readonly updatedAt: Date;
+}
+
+export class LoyaltyTransactionResponse {
+    @ApiProperty({ description: 'ID транзакции' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'ID пользователя' })
+    declare readonly userId: number;
+
+    @ApiProperty({ description: 'ID программы' })
+    declare readonly programId: number;
+
+    @ApiProperty({ description: 'ID заказа', required: false })
+    declare readonly orderId?: number;
+
+    @ApiProperty({ description: 'Тип транзакции' })
+    declare readonly type: string;
+
+    @ApiProperty({ description: 'Количество баллов' })
+    declare readonly points: number;
+
+    @ApiProperty({ description: 'Описание', required: false })
+    declare readonly description?: string;
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+}
+```
+
+### ReferralResponse
+```typescript
+// src/infrastructure/responses/referral/referral.response.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class ReferralResponse {
+    @ApiProperty({ description: 'ID реферала' })
+    declare readonly id: number;
+
+    @ApiProperty({ description: 'ID реферера' })
+    declare readonly referrerId: number;
+
+    @ApiProperty({ description: 'ID реферала' })
+    declare readonly referredId: number;
+
+    @ApiProperty({ description: 'Реферальный код' })
+    declare readonly referralCode: string;
+
+    @ApiProperty({ description: 'Статус реферала' })
+    declare readonly status: string;
+
+    @ApiProperty({ description: 'Размер награды' })
+    declare readonly rewardAmount: number;
+
+    @ApiProperty({ description: 'Тип награды' })
+    declare readonly rewardType: string;
+
+    @ApiProperty({ description: 'Дата завершения', required: false })
+    declare readonly completedAt?: Date;
+
+    @ApiProperty({ description: 'Дата создания' })
+    declare readonly createdAt: Date;
+}
+```
+
+## Критерии готовности
+
+### ✅ Обязательные требования:
+- [ ] Созданы миграции для таблиц loyalty_programs, loyalty_tiers, user_loyalty, loyalty_transactions, referrals
+- [ ] Реализованы модели Sequelize (LoyaltyProgramModel, LoyaltyTierModel, UserLoyaltyModel, LoyaltyTransactionModel, ReferralModel)
+- [ ] Создан LoyaltyService с начислением и списанием баллов
+- [ ] Создан ReferralService с управлением рефералами
+- [ ] Реализованы контроллеры с API endpoints
+- [ ] Добавлены DTO классы с валидацией
+- [ ] Созданы Response классы с Swagger
+- [ ] Добавлены индексы для производительности
+- [ ] Реализована валидация баллов и рефералов
+- [ ] Добавлены unit тесты для сервисов
+- [ ] Добавлены integration тесты для API
+- [ ] Интеграция с системой заказов
+
+### 🎯 Дополнительные возможности:
+- [ ] Автоматическое начисление баллов при заказе
+- [ ] Уведомления о достижении новых уровней
+- [ ] Аналитика по лояльности и рефералам
+- [ ] Интеграция с системой уведомлений
+- [ ] Поддержка множественных программ лояльности
+
+## Следующие шаги
+
+### Фаза 1: Базовая реализация (1 неделя)
+1. **Создать миграции** для всех таблиц
+2. **Реализовать модели** Sequelize
+3. **Создать DTO классы** с валидацией
+4. **Создать Response классы** с Swagger
+5. **Реализовать сервисы** с основной логикой
+
+### Фаза 2: API и интеграции (3-4 дня)
+6. **Создать контроллеры** с API endpoints
+7. **Добавить автоматическое начисление** баллов при заказе
+8. **Интегрировать с системой заказов** для списания баллов
+9. **Реализовать реферальную систему**
+
+### Фаза 3: Тестирование и качество (2-3 дня)
+10. **Написать unit тесты** для сервисов
+11. **Написать integration тесты** для API
+12. **Добавить обработку ошибок** и валидацию
+13. **Провести рефакторинг** и оптимизацию
+
+## Риски и альтернативы
+
+### ⚠️ Риски:
+- **Финансовые потери**: неправильный расчет наград
+- **Мошенничество**: фейковые рефералы
+- **Производительность**: сложные запросы для статистики
+
+### 🔄 Альтернативы:
+- **Внешние сервисы**: интеграция с платформами лояльности
+- **Упрощенная система**: только базовые баллы без уровней
+- **Кэширование**: Redis для быстрого доступа к балансам
+
+## Интеграция с другими системами
+
+### 🔗 Связанные системы:
+- **OrderService** - начисление баллов при заказе
+- **UserService** - управление пользователями
+- **NotificationService** - уведомления о наградах
+- **DiscountService** - применение скидок за баллы
+
+### 📊 Аналитика:
+- Популярные уровни лояльности
+- Эффективность реферальной программы
+- Статистика по баллам
+
+## TL;DR
+
+Упрощенная система лояльности и рефералов включает:
+- **5 таблиц**: loyalty_programs, loyalty_tiers, user_loyalty, loyalty_transactions, referrals
+- **5 моделей**: LoyaltyProgramModel, LoyaltyTierModel, UserLoyaltyModel, LoyaltyTransactionModel, ReferralModel
+- **2 сервиса**: LoyaltyService, ReferralService
+- **2 контроллера**: LoyaltyController, ReferralController
+- **Функции**: баллы, уровни лояльности, рефералы
+- **Валидация**: проверка доступности баллов и рефералов
+- **Автоматизация**: начисление баллов при заказе
+- **Готовность**: к масштабированию и дополнительным функциям

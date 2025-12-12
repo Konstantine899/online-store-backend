@@ -6,22 +6,63 @@ import {
     Model,
     Table,
 } from 'sequelize-typescript';
-import { UserRoleModel } from './user-role.model';
-import { RoleModel } from './role.model';
-import { RefreshTokenModel } from './refresh-token.model';
-import { RatingModel } from './rating.model';
-import { ProductModel } from './product.model';
 import { OrderModel } from './order.model';
+import { ProductModel } from './product.model';
+import { RatingModel } from './rating.model';
+import { RefreshTokenModel } from './refresh-token.model';
+import { RoleModel } from './role.model';
+import { UserRoleModel } from './user-role.model';
 
 interface IUserCreationAttributes {
     email: string;
     password: string;
+    tenantId: number; // Обязательное поле для tenant isolation
+    phone?: string;
+    firstName?: string;
+    lastName?: string;
+    // preferences (optional at creation)
+    preferredLanguage?: string;
+    timezone?: string;
+    themePreference?: string;
+    defaultLanguage?: string;
 }
 
 interface IUserModel {
     id: number;
+    tenantId: number;
     email: string;
     password: string;
+    phone?: string;
+    firstName?: string;
+    lastName?: string;
+    dateOfBirth?: Date | null;
+    // flags
+    isActive?: boolean;
+    isNewsletterSubscribed?: boolean;
+    isMarketingConsent?: boolean;
+    isCookieConsent?: boolean;
+    isProfileCompleted?: boolean;
+    isBlocked?: boolean;
+    isVerified?: boolean;
+    isEmailVerified?: boolean;
+    isPhoneVerified?: boolean;
+    isTermsAccepted?: boolean;
+    isPrivacyAccepted?: boolean;
+    isAgeVerified?: boolean;
+    isTwoFactorEnabled?: boolean;
+    isDeleted?: boolean;
+    isSuspended?: boolean;
+    // preferences
+    preferredLanguage?: string;
+    timezone?: string;
+    notificationPreferences?: unknown | null;
+    themePreference?: string;
+    defaultLanguage?: string;
+    translations?: unknown | null;
+    // timestamps meta
+    emailVerifiedAt?: Date | null;
+    phoneVerifiedAt?: Date | null;
+    lastLoginAt?: Date | null;
     roles: RoleModel[];
     refresh_tokens: RefreshTokenModel[];
     products: ProductModel[];
@@ -32,7 +73,44 @@ interface IUserModel {
     tableName: 'user',
     underscored: true,
     defaultScope: {
-        attributes: { exclude: ['updatedAt', 'createdAt'] },
+        attributes: {
+            exclude: ['updatedAt', 'createdAt', 'password'], // Исключаем пароль по умолчанию
+        },
+    },
+    scopes: {
+        // Scope для аутентификации - только необходимые поля
+        forAuth: {
+            attributes: ['id', 'tenantId', 'email'],
+            include: [
+                {
+                    model: RoleModel,
+                    as: 'roles',
+                    attributes: ['id', 'role'],
+                    through: { attributes: [] }, // Исключаем промежуточную таблицу
+                },
+            ],
+        },
+        // Scope для загрузки пользователя с ролями
+        withRoles: {
+            include: [
+                {
+                    model: RoleModel,
+                    as: 'roles',
+                    attributes: ['id', 'role'],
+                    through: { attributes: [] },
+                },
+            ],
+        },
+        active: {
+            where: { isActive: true, isBlocked: false },
+        },
+        verified: {
+            where: { isVerified: true },
+        },
+        // Tenant isolation scope
+        byTenant: (tenantId: number) => ({
+            where: { tenantId },
+        }),
     },
 })
 export class UserModel
@@ -44,20 +122,155 @@ export class UserModel
         primaryKey: true,
         autoIncrement: true,
     })
-   declare id: number;
+    declare id: number;
 
     @Column({
-        type: DataType.STRING,
-        unique: true,
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 1, // Default tenant для тестов и legacy data
+        field: 'tenant_id', // Явное указание имени колонки в БД
     })
-    email!: string;
+    declare tenantId: number;
 
-    @Column({ type: DataType.STRING })
-    password!: string;
+    @Column({
+        type: DataType.STRING(255),
+        unique: true,
+        allowNull: false,
+        validate: {
+            isEmail: true,
+            len: [5, 255],
+        },
+    })
+    declare email: string;
+
+    @Column({
+        type: DataType.STRING(255),
+        allowNull: false,
+        validate: {
+            len: [6, 255],
+        },
+    })
+    declare password: string;
+
+    @Column({
+        type: DataType.STRING(20),
+        allowNull: true,
+        validate: {
+            // E.164: + и цифры, до 16 символов
+            is: /^\+?[1-9]\d{0,15}$/,
+        },
+    })
+    declare phone?: string;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true,
+    })
+    declare firstName?: string;
+
+    @Column({
+        type: DataType.STRING(100),
+        allowNull: true,
+    })
+    declare lastName?: string;
+
+    @Column({
+        type: DataType.DATEONLY,
+        allowNull: true,
+        validate: {
+            // Проверка возраста: дата не должна быть в будущем
+            isDate: true,
+            isBefore: new Date().toISOString().split('T')[0], // Только дата, без времени
+        },
+    })
+    declare dateOfBirth?: Date | null;
+
+    // Флаги
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: true })
+    declare isActive?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isNewsletterSubscribed?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isMarketingConsent?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isCookieConsent?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isProfileCompleted?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isBlocked?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isVerified?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isEmailVerified?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isPhoneVerified?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isTermsAccepted?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isPrivacyAccepted?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isAgeVerified?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isTwoFactorEnabled?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isDeleted?: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare isSuspended?: boolean;
+
+    // Предпочтения
+    @Column({ type: DataType.STRING(10), allowNull: false, defaultValue: 'ru' })
+    declare preferredLanguage?: string;
+
+    @Column({
+        type: DataType.STRING(50),
+        allowNull: false,
+        defaultValue: 'Europe/Moscow',
+    })
+    declare timezone?: string;
+
+    @Column({ type: DataType.JSONB, allowNull: true })
+    declare notificationPreferences?: unknown | null;
+
+    @Column({
+        type: DataType.STRING(20),
+        allowNull: false,
+        defaultValue: 'light',
+    })
+    declare themePreference?: string;
+
+    @Column({ type: DataType.STRING(10), allowNull: false, defaultValue: 'ru' })
+    declare defaultLanguage?: string;
+
+    @Column({ type: DataType.JSONB, allowNull: true })
+    declare translations?: unknown | null;
+
+    // Метадаты
+    @Column({ type: DataType.DATE, allowNull: true })
+    declare emailVerifiedAt?: Date | null;
+
+    @Column({ type: DataType.DATE, allowNull: true })
+    declare phoneVerifiedAt?: Date | null;
+
+    @Column({ type: DataType.DATE, allowNull: true })
+    declare lastLoginAt?: Date | null;
 
     // Многие ко многим через промежуточную таблицу UserRoleModel
-    @BelongsToMany(() => RoleModel, () => UserRoleModel)
-    roles!: RoleModel[];
+    @BelongsToMany(() => RoleModel, () => UserRoleModel, 'user_id', 'role_id')
+    declare roles: RoleModel[];
 
     //У одного пользователя могут быть несколько refresh tokens
 
@@ -65,15 +278,37 @@ export class UserModel
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
     })
-    refresh_tokens!: RefreshTokenModel[];
+    declare refresh_tokens: RefreshTokenModel[];
 
     @BelongsToMany(() => ProductModel, {
         through: () => RatingModel,
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
     })
-    products!: ProductModel[];
+    declare products: ProductModel[];
 
     @HasMany(() => OrderModel, { onDelete: 'SET NULL' })
-    orders!: OrderModel[];
+    declare orders: OrderModel[];
+
+    // Геттеры и методы
+    get fullName(): string {
+        if (this.firstName && this.lastName) {
+            return `${this.firstName} ${this.lastName}`;
+        }
+        if (this.firstName) {
+            return this.firstName;
+        }
+        if (this.lastName) {
+            return this.lastName;
+        }
+        return '';
+    }
+
+    get displayName(): string {
+        return this.fullName || this.email;
+    }
+
+    isCompleteProfile(): boolean {
+        return !!(this.firstName && this.lastName && this.phone);
+    }
 }

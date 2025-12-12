@@ -1,11 +1,11 @@
-import { CreateUserDto, RefreshDto } from '@app/infrastructure/dto';
-import {
+import type { CreateUserDto, RefreshDto } from '@app/infrastructure/dto';
+import type {
     RegistrationResponse,
     LoginResponse,
     LogoutResponse,
     UpdateAccessTokenResponse,
 } from '@app/infrastructure/responses';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 export interface IAuthService {
     registration(dto: CreateUserDto): Promise<RegistrationResponse>;

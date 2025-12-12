@@ -1,22 +1,25 @@
-import {
+import type {
     CreateUserDto,
     AddRoleDto,
     RemoveRoleDto,
 } from '@app/infrastructure/dto';
-import {
+import type {
     CreateUserResponse,
-    GetListUsersResponse,
     GetUserResponse,
     UpdateUserResponse,
     RemoveUserResponse,
     AddRoleResponse,
     RemoveUserRoleResponse,
+    GetPaginatedUsersResponse,
 } from '@app/infrastructure/responses';
 
 export interface IUserController {
     createUser(dto: CreateUserDto): Promise<CreateUserResponse>;
 
-    getListUsers(): Promise<GetListUsersResponse[]>;
+    getListUsers(
+        page?: number,
+        limit?: number,
+    ): Promise<GetPaginatedUsersResponse>;
 
     getUser(id: number): Promise<GetUserResponse>;
 

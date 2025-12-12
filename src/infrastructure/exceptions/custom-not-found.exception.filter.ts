@@ -9,17 +9,18 @@ import { Request, Response } from 'express';
 export class CustomNotFoundExceptionFilter implements ExceptionFilter {
     catch(exception: NotFoundException, host: ArgumentsHost): void {
         const context = host.switchToHttp();
-        const { url, path } = context.getRequest<Request>();
+        const request = context.getRequest<Request>();
         const response = context.getResponse<Response>();
+        const { url, path } = request;
         const statusCode = exception.getStatus();
         const { message, name } = exception;
 
         response.status(statusCode).json({
-            statusCode: statusCode,
-            url: url,
-            path: path,
-            name: name,
-            message: message,
+            statusCode,
+            url,
+            path,
+            name,
+            message,
         });
     }
 }

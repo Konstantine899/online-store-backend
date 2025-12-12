@@ -1,4 +1,4 @@
-import { CartModel } from '@app/domain/models';
+import type { CartModel } from '@app/domain/models';
 
 export interface ICartRepository {
     findCart(cartId: number): Promise<CartModel>;

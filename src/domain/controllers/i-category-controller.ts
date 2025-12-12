@@ -1,5 +1,5 @@
-import { CreateCategoryDto } from '@app/infrastructure/dto';
-import {
+import type { CreateCategoryDto } from '@app/infrastructure/dto';
+import type {
     CreateCategoryResponse,
     CategoryResponse,
     ListAllCategoriesResponse,

@@ -38,7 +38,7 @@ export class UserGetOrderListResponse extends OrderModel {
         example: 'Лучший заказ',
         description: 'Комментарий заказчика',
     })
-     declare readonly comment: string;
+    declare readonly comment: string;
 
     @ApiProperty({ example: 1, description: 'Идентификатор заказчика' })
     declare readonly user_id: number;

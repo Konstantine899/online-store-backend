@@ -1,33 +1,45 @@
+import { CartService } from '@app/infrastructure/services';
 import {
+    Body,
     Controller,
+    Delete,
     Get,
     HttpCode,
     Param,
     ParseIntPipe,
-    Put,
+    Patch,
+    Post,
     Req,
     Res,
 } from '@nestjs/common';
-import { CartService } from '@app/infrastructure/services';
-import { Request, Response } from 'express';
 import { ApiTags } from '@nestjs/swagger';
+import { Request, Response } from 'express';
 
 import {
-    CartResponse,
-    AppendToCartResponse,
-    IncrementResponse,
-    DecrementResponse,
-    RemoveProductFromCartResponse,
-    ClearCartResponse,
-} from '@app/infrastructure/responses';
-import {
+    AppendToCartSwaggerDecorator,
+    ApplyPromoCodeSwaggerDecorator,
+    ClearCartSwaggerDecorator,
+    DecrementSwaggerDecorator,
     GetCartSwaggerDecorator,
     IncrementSwaggerDecorator,
-    DecrementSwaggerDecorator,
     RemoveProductFromCartSwaggerDecorator,
-    ClearCartSwaggerDecorator,
-    AppendToCartSwaggerDecorator,
+    RemovePromoCodeSwaggerDecorator,
 } from '@app/infrastructure/common/decorators';
+import {
+    AddToCartDto,
+    ApplyCouponDto,
+    UpdateCartItemDto,
+} from '@app/infrastructure/dto';
+import {
+    AppendToCartResponse,
+    ApplyPromoCodeResponse,
+    CartResponse,
+    ClearCartResponse,
+    DecrementResponse,
+    IncrementResponse,
+    RemoveProductFromCartResponse,
+    RemovePromoCodeResponse,
+} from '@app/infrastructure/responses';
 
 import { ICartController } from '@app/domain/controllers';
 
@@ -49,58 +61,55 @@ export class CartController implements ICartController {
 
     @AppendToCartSwaggerDecorator()
     @HttpCode(200)
-    @Put('/product/:productId/append/:quantity')
+    @Post('/items')
     public async appendToCart(
         @Req() request: Request,
         @Res({ passthrough: true }) response: Response,
-        @Param('productId', ParseIntPipe) productId: number,
-        @Param('quantity', ParseIntPipe) quantity: number,
+        @Body() dto: AddToCartDto,
     ): Promise<AppendToCartResponse> {
         return this.cartService.appendToCart(
             request,
             response,
-            productId,
-            quantity,
+            dto.productId,
+            dto.quantity,
         );
     }
 
     @IncrementSwaggerDecorator()
     @HttpCode(200)
-    @Put('/product/:productId/increment/:quantity')
+    @Patch('/items/increment')
     public async increment(
         @Req() request: Request,
         @Res({ passthrough: true }) response: Response,
-        @Param('productId', ParseIntPipe) productId: number,
-        @Param('quantity', ParseIntPipe) quantity: number,
+        @Body() dto: UpdateCartItemDto,
     ): Promise<IncrementResponse> {
         return this.cartService.increment(
             request,
             response,
-            productId,
-            quantity,
+            dto.productId,
+            dto.amount,
         );
     }
 
     @DecrementSwaggerDecorator()
     @HttpCode(200)
-    @Put('/product/:productId/decrement/:quantity')
+    @Patch('/items/decrement')
     public async decrement(
         @Req() request: Request,
         @Res({ passthrough: true }) response: Response,
-        @Param('productId', ParseIntPipe) productId: number,
-        @Param('quantity', ParseIntPipe) quantity: number,
+        @Body() dto: UpdateCartItemDto,
     ): Promise<DecrementResponse> {
         return this.cartService.decrement(
             request,
             response,
-            productId,
-            quantity,
+            dto.productId,
+            dto.amount,
         );
     }
 
     @RemoveProductFromCartSwaggerDecorator()
     @HttpCode(200)
-    @Put('/product/:productId/remove')
+    @Delete('/items/:productId')
     public async removeProductFromCart(
         @Req() request: Request,
         @Res({ passthrough: true }) response: Response,
@@ -115,11 +124,32 @@ export class CartController implements ICartController {
 
     @ClearCartSwaggerDecorator()
     @HttpCode(200)
-    @Put('/clear')
+    @Delete()
     public async clearCart(
         @Req() request: Request,
         @Res({ passthrough: true }) response: Response,
     ): Promise<ClearCartResponse> {
         return this.cartService.clearCart(request, response);
+    }
+
+    @ApplyPromoCodeSwaggerDecorator()
+    @HttpCode(200)
+    @Post('/promo-code')
+    public async applyPromoCode(
+        @Req() request: Request,
+        @Res({ passthrough: true }) response: Response,
+        @Body() dto: ApplyCouponDto,
+    ): Promise<ApplyPromoCodeResponse> {
+        return this.cartService.applyPromoCode(request, response, dto.code);
+    }
+
+    @RemovePromoCodeSwaggerDecorator()
+    @HttpCode(200)
+    @Delete('/promo-code')
+    public async removePromoCode(
+        @Req() request: Request,
+        @Res({ passthrough: true }) response: Response,
+    ): Promise<RemovePromoCodeResponse> {
+        return this.cartService.removePromoCode(request, response);
     }
 }

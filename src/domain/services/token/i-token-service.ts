@@ -1,5 +1,10 @@
-import { UserModel, RefreshTokenModel, RoleModel } from '@app/domain/models';
-import { IDecodedAccessToken } from '@app/domain/jwt';
+import type { IDecodedAccessToken } from '@app/domain/jwt';
+import type {
+    RefreshTokenModel,
+    RoleModel,
+    UserModel,
+} from '@app/domain/models';
+import type { Request } from 'express';
 
 export interface ITokenService {
     generateAccessToken(user: UserModel): Promise<string>;
@@ -16,7 +21,7 @@ export interface ITokenService {
 
     decodedAccessToken(
         token: string,
-        request: any,
+        request: Request,
     ): Promise<IDecodedAccessToken>;
 
     decodeRefreshToken(refreshToken: string): Promise<IRefreshTokenPayload>;
@@ -30,6 +35,16 @@ export interface ITokenService {
     ): Promise<{ accessToken: string; user: UserModel }>;
 
     removeRefreshToken(refreshTokenId: number, userId: number): Promise<number>;
+
+    /**
+     * Ротирует refresh токен: удаляет старый, создаёт новый
+     * @param encodedRefreshToken - закодированный refresh токен
+     * @returns новый access токен, новый refresh токен и пользователя
+     * @throws NotFoundException если токен не найден (reuse detection)
+     */
+    rotateRefreshToken(
+        encodedRefreshToken: string,
+    ): Promise<{ accessToken: string; refreshToken: string; user: UserModel }>;
 }
 
 export interface IRefreshTokenPayload {
@@ -40,5 +55,6 @@ export interface IRefreshTokenPayload {
 
 export interface IAccessTokenPayload {
     id: number;
+    tenantId: number;
     roles: RoleModel[];
 }

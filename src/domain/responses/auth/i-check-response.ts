@@ -1,4 +1,4 @@
-import { RoleModel } from '@app/domain/models';
+import type { RoleModel } from '@app/domain/models';
 
 export interface ICheckResponse {
     id: number;

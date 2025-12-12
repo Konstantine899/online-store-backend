@@ -3,10 +3,16 @@
 /node_modules
 /static
 
+# Environment files (NEVER commit secrets!)
+.env
+.env.local
+.env.*.local
 /.development.env
 /.migrate.env
 /.production.env
-
+/.test.env
+*.env
+!*.env.example
 
 # Logs
 logs
@@ -23,6 +29,10 @@ lerna-debug.log*
 # Tests
 /coverage
 /.nyc_output
+/.test.env
+/test-reports
+/test-logs
+/.jest-cache
 
 # IDEs and editors
 /.idea
@@ -40,3 +50,33 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 .history/
+.vscode/
+
+# Cursor IDE - игнорируем кеш, но НЕ игнорируем правила!
+.cursor/*
+!.cursor/rules/
+
+# Security - additional sensitive files
+secrets/
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+.secret
+.secrets
+*secret*.json
+*credentials*.json
+
+# Documentation - prevent scattered .md files
+# Allow only specific documentation files
+*.md
+!README.md
+!PROJECT_CONTEXT.md
+!docs/errors-logging.mdc
+!docs/SECURITY.md
+!docs/TESTING.md
+!docs/secrets-management.md
+!docs/env.example
+!docs/README.md
+!docs/project/*.md

@@ -1,5 +1,5 @@
-import { BrandDto } from '@app/infrastructure/dto';
-import {
+import type { BrandDto } from '@app/infrastructure/dto';
+import type {
     CreateBrandResponse,
     ListAllBrandsResponse,
     BrandResponse,

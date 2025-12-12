@@ -11,6 +11,31 @@ export function RegistrationSwaggerDecorator(): MethodDecorator {
             type: RegistrationDto,
             description:
                 'Структура входных данных для регистрации пользователя',
+            schema: {
+                examples: {
+                    valid: {
+                        summary: 'Валидная регистрация',
+                        value: {
+                            email: 'newuser@example.com',
+                            password: 'MySecure123!',
+                        },
+                    },
+                    invalid_email: {
+                        summary: 'Невалидный email',
+                        value: {
+                            email: 'not-an-email',
+                            password: 'MySecure123!',
+                        },
+                    },
+                    weak_password: {
+                        summary: 'Слабый пароль (не пройдёт IsPasswordStrong)',
+                        value: {
+                            email: 'newuser@example.com',
+                            password: '123456',
+                        },
+                    },
+                },
+            },
         }),
         ApiResponse({
             description: 'Created',

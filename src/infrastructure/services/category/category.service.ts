@@ -1,20 +1,28 @@
+import { SortingEnum } from '@app/domain/dto';
+import { CategoryModel } from '@app/domain/models';
+import { ICategoryService } from '@app/domain/services';
+import {
+    CreateCategoryDto,
+    SearchDto,
+    SortingDto,
+} from '@app/infrastructure/dto';
+import { MetaData } from '@app/infrastructure/paginate';
+import { CategoryRepository } from '@app/infrastructure/repositories';
+import {
+    CategoryResponse,
+    CreateCategoryResponse,
+    ListAllCategoriesResponse,
+    RemoveCategoryResponse,
+    UpdateCategoryResponse,
+} from '@app/infrastructure/responses';
+import { GetListCategoriesV2Response } from '@app/infrastructure/responses/category/get-list-categories-v2.response';
+import { FileService } from '@app/infrastructure/services/file/file.service';
 import {
     ConflictException,
     HttpStatus,
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
-import { CreateCategoryDto } from '@app/infrastructure/dto';
-import { CategoryRepository } from '@app/infrastructure/repositories';
-import {
-    CreateCategoryResponse,
-    ListAllCategoriesResponse,
-    CategoryResponse,
-    UpdateCategoryResponse,
-    RemoveCategoryResponse,
-} from '@app/infrastructure/responses';
-import { ICategoryService } from '@app/domain/services';
-import { FileService } from '@app/infrastructure/services/file/file.service';
 
 @Injectable()
 export class CategoryService implements ICategoryService {
@@ -34,10 +42,34 @@ export class CategoryService implements ICategoryService {
     public async getListAllCategories(): Promise<ListAllCategoriesResponse[]> {
         const categories =
             await this.categoryRepository.findListAllCategories();
-        if (!categories) {
-            this.notFound('Категории товаров не найдены');
-        }
-        return categories;
+        return categories; // Всегда возвращаем массив, даже пустой
+    }
+
+    // SAAS-003: V2 with pagination support
+    public async getListCategoriesV2(
+        searchQuery: SearchDto,
+        sortQuery: SortingDto,
+        page: number,
+        size: number,
+    ): Promise<GetListCategoriesV2Response> {
+        const { search } = searchQuery;
+        const { sort = SortingEnum.DESC } = sortQuery;
+        const { limit, offset } = this.getPaginate(page, size);
+
+        const categories =
+            await this.categoryRepository.findListAllCategoriesV2(
+                search,
+                sort,
+                limit,
+                offset,
+            );
+
+        const metaData = this.getMetadata(categories.count, page, limit);
+
+        return {
+            data: categories.rows,
+            meta: metaData,
+        };
     }
 
     public async getCategory(id: number): Promise<CategoryResponse> {
@@ -53,27 +85,40 @@ export class CategoryService implements ICategoryService {
         dto: CreateCategoryDto,
         image: Express.Multer.File,
     ): Promise<UpdateCategoryResponse> {
-        const category = await this.getCategory(id);
+        const category = await this.categoryRepository.findCategory(id);
         if (!category) {
-            this.notFound('Категория не найдена в БД');
+            this.notFound('Категория товара не найдена');
         }
+        const prevImage = category.image ?? '';
         const updatedNameImage = await this.fileService.updateFile(
-            category.image,
+            prevImage,
             image,
         );
+        // Получаем ORM-модель для обновления без использования any
+        const repoWithModel = this.categoryRepository as unknown as {
+            categoryModel: typeof CategoryModel;
+        };
+        const categoryModel = await repoWithModel.categoryModel.findByPk(id);
+        if (!categoryModel) {
+            this.notFound('Категория товара не найдена');
+        }
+        const ensuredCategoryModel = categoryModel as NonNullable<
+            typeof categoryModel
+        >;
         return this.categoryRepository.updateCategory(
             dto,
-            category,
+            ensuredCategoryModel,
             updatedNameImage,
         );
     }
 
     public async removeCategory(id: number): Promise<RemoveCategoryResponse> {
-        const category = await this.getCategory(id);
+        const category = await this.categoryRepository.findCategory(id);
         if (!category) {
             this.notFound('Категория товара не найдена');
         }
-        const removedFile = await this.fileService.removeFile(category.image);
+        const toRemove = category.image ?? '';
+        const removedFile = await this.fileService.removeFile(toRemove);
 
         await this.categoryRepository.removeCategory(category.id);
         if (!removedFile) {
@@ -82,6 +127,35 @@ export class CategoryService implements ICategoryService {
         return {
             status: HttpStatus.OK,
             message: 'success',
+        };
+    }
+
+    // SAAS-003: Pagination helper methods
+    private getPaginate(
+        page: number,
+        size: number,
+    ): {
+        limit: number;
+        offset: number;
+    } {
+        const limit = size;
+        // Исправляем page=0 на page=1 для корректного offset
+        const correctedPage = Math.max(1, page);
+        const offset = (correctedPage - 1) * limit;
+        return {
+            limit,
+            offset,
+        };
+    }
+
+    private getMetadata(count: number, page: number, limit: number): MetaData {
+        return {
+            totalCount: count,
+            lastPage: Math.ceil(count / limit),
+            currentPage: page,
+            nextPage: page + 1,
+            previousPage: page - 1,
+            limit,
         };
     }
 

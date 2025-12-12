@@ -1,17 +1,53 @@
-export { IUserService } from './user/i-user-service';
-export { ICartService } from './cart/i-cart-service';
 export { IAuthService } from './auth/i-auth-service';
-export { IRoleService } from './role/i-role-service';
+export { IBrandService } from './brand/i-brand-service';
+export { ICartAnalytics, ICartService } from './cart/i-cart-service';
+export { ICategoryService } from './category/i-category-service';
+export { IFileService } from './file/i-file-service';
+export {
+    EmailAttachment,
+    EmailMessage,
+    EmailSendResult,
+    IEmailProvider,
+} from './notification/i-email-provider';
+export {
+    CreateNotificationDto,
+    INotificationService,
+    NotificationFilters,
+    NotificationStatistics,
+    UpdateNotificationDto,
+} from './notification/i-notification-service';
+export {
+    ISmsProvider,
+    SmsDeliveryReport,
+    SmsMessage,
+    SmsSendResult,
+} from './notification/i-sms-provider';
+export {
+    ITemplateRenderer,
+    RenderResult,
+    TemplateVariables,
+} from './notification/i-template-renderer';
 export { IOrderService } from './order/i-order-service';
 export { IPaymentService } from './payment/i-payment-service';
 export { IProductPropertyService } from './product-property/i-product-property-service';
-export { ICategoryService } from './category/i-category-service';
 export { IProductService } from './product/i-product-service';
-export { IBrandService } from './brand/i-brand-service';
+export { IPromoCodeService } from './promo-code/i-promo-code-service';
 export { IRatingService } from './rating/i-rating-service';
-export { IFileService } from './file/i-file-service';
+export { IRoleService } from './role/i-role-service';
+export {
+    IExternalRoleProvider,
+    IExternalUser,
+    IProviderConnectionResult,
+    ISearchUsersResult,
+} from './role/i-external-role-provider';
+export {
+    IExternalRoleSyncService,
+    ISyncResult,
+    ISyncStatus,
+} from './role/i-external-role-sync.service';
 export {
     IAccessTokenPayload,
     IRefreshTokenPayload,
     ITokenService,
 } from './token/i-token-service';
+export { IUserService } from './user/i-user-service';

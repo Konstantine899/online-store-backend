@@ -1,3 +1,16 @@
+import { IDecodedAccessToken } from '@app/domain/jwt';
+import { RefreshTokenModel, UserModel } from '@app/domain/models';
+import {
+    IAccessTokenPayload,
+    IRefreshTokenPayload,
+    ITokenService,
+} from '@app/domain/services';
+import { getConfig } from '@app/infrastructure/config';
+import { JwtSettings } from '@app/infrastructure/config/jwt';
+import {
+    RefreshTokenRepository,
+    UserRepository,
+} from '@app/infrastructure/repositories';
 import {
     HttpStatus,
     Injectable,
@@ -5,19 +18,40 @@ import {
     UnprocessableEntityException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { Request } from 'express';
 import { SignOptions, TokenExpiredError } from 'jsonwebtoken';
-import {
-    RefreshTokenRepository,
-    UserRepository,
-} from '@app/infrastructure/repositories';
-import { RefreshTokenModel, UserModel } from '@app/domain/models';
-import {
-    IAccessTokenPayload,
-    IRefreshTokenPayload,
-    ITokenService,
-} from '@app/domain/services';
-import { IDecodedAccessToken } from '@app/domain/jwt';
-import { JwtSettings } from '@app/infrastructure/config/jwt';
+
+// Ленивая инициализация конфигурации/секретов — чтобы не требовать env при импорте
+let CACHED_ACCESS_SECRET: string | undefined;
+function getAccessSecret(): string {
+    CACHED_ACCESS_SECRET ??= JwtSettings().jwtSecretKey;
+    return CACHED_ACCESS_SECRET;
+}
+
+let CACHED_REFRESH_TTL_SECONDS: number | undefined;
+function getRefreshTtlSeconds(): number {
+    if (CACHED_REFRESH_TTL_SECONDS === undefined) {
+        const cfg = getConfig();
+        const value = cfg.JWT_REFRESH_TTL;
+        const match = /^([0-9]+)\s*([smhd])$/.exec(value);
+        if (!match) {
+            CACHED_REFRESH_TTL_SECONDS = 60 * 60 * 24 * 30; // fallback 30d
+        } else {
+            const amount = Number(match[1]);
+            const unit = match[2];
+            CACHED_REFRESH_TTL_SECONDS =
+                unit === 's'
+                    ? amount
+                    : unit === 'm'
+                      ? amount * 60
+                      : unit === 'h'
+                        ? amount * 60 * 60
+                        : amount * 60 * 60 * 24;
+        }
+    }
+    return CACHED_REFRESH_TTL_SECONDS;
+}
 
 @Injectable()
 export class TokenService implements ITokenService {
@@ -30,6 +64,7 @@ export class TokenService implements ITokenService {
     public async generateAccessToken(user: UserModel): Promise<string> {
         const payload: IAccessTokenPayload = {
             id: user.id,
+            tenantId: user.tenantId,
             roles: user.roles,
         };
         const options: SignOptions = {
@@ -51,7 +86,15 @@ export class TokenService implements ITokenService {
             subject: String(user.id),
             jwtid: String(refresh_token.id),
         };
-        return this.jwtService.signAsync({}, options);
+        // Refresh подписываем отдельным секретом
+        const { JWT_REFRESH_SECRET } = getConfig();
+        return this.jwtService.signAsync(
+            {},
+            {
+                ...options,
+                secret: JWT_REFRESH_SECRET,
+            },
+        );
     }
 
     //Метод получения пользователя из payload refresh token
@@ -82,10 +125,10 @@ export class TokenService implements ITokenService {
 
     public async decodedAccessToken(
         token: string,
-        request: any,
+        request: Request,
     ): Promise<IDecodedAccessToken> {
         return (request.user = await this.jwtService.verifyAsync(token, {
-            secret: JwtSettings().jwtSecretKey,
+            secret: getAccessSecret(),
         }));
     }
 
@@ -94,7 +137,11 @@ export class TokenService implements ITokenService {
         refreshToken: string,
     ): Promise<IRefreshTokenPayload> {
         try {
-            return await this.jwtService.verifyAsync(refreshToken);
+            // Верифицируем тем же секретом, что использовали для подписи refresh
+            const { JWT_REFRESH_SECRET } = getConfig();
+            return await this.jwtService.verifyAsync(refreshToken, {
+                secret: JWT_REFRESH_SECRET,
+            });
         } catch (error) {
             if (error instanceof TokenExpiredError) {
                 throw new UnprocessableEntityException(
@@ -124,9 +171,12 @@ export class TokenService implements ITokenService {
                 'Не верный формат refresh token',
             );
         }
+        const ensuredRefreshToken = refreshToken as NonNullable<
+            typeof refreshToken
+        >;
         return {
             user,
-            refreshToken:refreshToken!,
+            refreshToken: ensuredRefreshToken,
         };
     }
 
@@ -141,6 +191,31 @@ export class TokenService implements ITokenService {
         };
     }
 
+    // Возвращает синхронный хэш refresh токена для сохранения в БД
+    public hashRefreshToken(encoded: string): string {
+        // Соль по умолчанию 10; синхронный чтобы вызывать без await там, где удобно
+        return bcrypt.hashSync(encoded, 10);
+    }
+
+    // Возвращает дату истечения refresh токена из его payload (поле exp)
+    public getRefreshExpiresAt(encoded: string): Date | undefined {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const decoded: any = this.jwtService.decode(encoded);
+        if (decoded && typeof decoded === 'object' && decoded.exp) {
+            // exp в секундах от Unix epoch
+            return new Date(decoded.exp * 1000);
+        }
+        return undefined;
+    }
+
+    /**
+     * Отзывает (удаляет) все refresh токены пользователя
+     * Используется при password reset для force logout
+     */
+    public async revokeAllUserTokens(userId: number): Promise<number> {
+        return this.refreshTokenRepository.removeListRefreshTokens(userId);
+    }
+
     public async removeRefreshToken(
         refreshTokenId: number,
         userId: number,
@@ -151,6 +226,79 @@ export class TokenService implements ITokenService {
             return this.refreshTokenRepository.removeListRefreshTokens(userId);
         }
         return this.refreshTokenRepository.removeRefreshToken(refreshTokenId);
+    }
+
+    public async rotateRefreshToken(
+        encodedRefreshToken: string,
+    ): Promise<{ accessToken: string; refreshToken: string; user: UserModel }> {
+        const payload = await this.decodeRefreshToken(encodedRefreshToken);
+        const userId = Number(payload.sub);
+        const tokenId = Number(payload.jti);
+
+        if (!userId || !tokenId) {
+            throw new UnprocessableEntityException(
+                'Invalid refresh token payload',
+            );
+        }
+
+        // Ищем токен в БД
+        const storedToken =
+            await this.refreshTokenRepository.findRefreshTokenById(tokenId);
+
+        if (!storedToken) {
+            // Удаляем ВСЕ refresh токены пользователя для безопасности
+            await this.refreshTokenRepository
+                .removeListRefreshTokens(userId)
+                .catch(() => {
+                    // Игнорируем ошибки при удалении
+                });
+            throw new NotFoundException(
+                'Refresh token not found or already used (possible theft detected)',
+            );
+        }
+        // Проверяем, что токен принадлежит правильному пользователю
+        if (storedToken.user_id !== userId) {
+            throw new UnprocessableEntityException('Token user mismatch');
+        }
+        //  Проверяем срок действия (если есть поле expires)
+        if (storedToken.expires && storedToken.expires <= new Date()) {
+            await this.refreshTokenRepository.removeRefreshToken(tokenId);
+            throw new UnprocessableEntityException('Refresh token expired');
+        }
+        //  Удаляем старый токен (одноразовость)
+        await this.refreshTokenRepository.removeRefreshToken(tokenId);
+
+        // Загружаем пользователя
+        const user = await this.userRepository.findUserByPkId(userId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+        // Создаём новый refresh токен с TTL из env (лениво кэшированный)
+        const ttlSeconds = getRefreshTtlSeconds();
+        const newRefreshTokenRecord =
+            await this.refreshTokenRepository.createRefreshToken(
+                user,
+                ttlSeconds,
+            );
+        // Подписываем новый refresh токен
+        const newRefreshTokenOptions: SignOptions = {
+            subject: String(user.id),
+            jwtid: String(newRefreshTokenRecord.id),
+        };
+        const { JWT_REFRESH_SECRET } = getConfig();
+        const newRefreshToken = await this.jwtService.signAsync(
+            {},
+            { ...newRefreshTokenOptions, secret: JWT_REFRESH_SECRET },
+        );
+
+        // Генерируем новый access токен
+        const accessToken = await this.generateAccessToken(user);
+
+        return {
+            accessToken,
+            refreshToken: newRefreshToken,
+            user,
+        };
     }
 
     private notFound(message: string): void {

@@ -1,3 +1,5 @@
+import { IDecodedAccessToken } from '@app/domain/jwt';
+import { TokenService } from '@app/infrastructure/services/token/token.service';
 import {
     CanActivate,
     ExecutionContext,
@@ -8,36 +10,60 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles-auth.decorator';
-import { IDecodedAccessToken } from '@app/domain/jwt';
-import { TokenService } from '@app/infrastructure/services/token/token.service';
 
 @Injectable()
 export class RoleGuard implements CanActivate {
+    private static readonly BEARER_PREFIX = 'Bearer ';
+    private static readonly UNAUTHORIZED_MESSAGE =
+        'Пользователь не авторизован';
+    private static readonly FORBIDDEN_MESSAGE =
+        'У вас недостаточно прав доступа';
+
+    private readonly roleSetsCache = new Map<string, Set<string>>();
+
     constructor(
         private readonly tokenService: TokenService,
-        private reflector: Reflector,
+        private readonly reflector: Reflector,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         try {
+            const request = context.switchToHttp().getRequest();
+
             const requiredRoles = this.reflector.getAllAndOverride<string[]>(
                 ROLES_KEY,
                 [context.getHandler(), context.getClass()],
             );
+
             // если роли не найдены, то endpoint доступен для всех пользователей
             if (!requiredRoles) {
                 return true;
             }
+            const authorizationHeader = request.headers.authorization as
+                | string
+                | undefined;
 
-            const request = context.switchToHttp().getRequest();
-            const authorizationHeader: string = request.headers.authorization;
-            const bearer: string = authorizationHeader.split(' ')[0];
-            const accessToken: string = authorizationHeader.split(' ')[1];
-
-            if (bearer !== 'Bearer' || !accessToken) {
+            if (!authorizationHeader) {
                 throw new UnauthorizedException({
-                    status: HttpStatus.UNAUTHORIZED,
-                    message: 'Пользователь не авторизован',
+                    statusCode: HttpStatus.UNAUTHORIZED,
+                    message: RoleGuard.UNAUTHORIZED_MESSAGE,
+                });
+            }
+
+            if (!authorizationHeader.startsWith(RoleGuard.BEARER_PREFIX)) {
+                throw new UnauthorizedException({
+                    statusCode: HttpStatus.UNAUTHORIZED,
+                    message: RoleGuard.UNAUTHORIZED_MESSAGE,
+                });
+            }
+
+            const accessToken = authorizationHeader.slice(
+                RoleGuard.BEARER_PREFIX.length,
+            );
+            if (!accessToken) {
+                throw new UnauthorizedException({
+                    statusCode: HttpStatus.UNAUTHORIZED,
+                    message: RoleGuard.UNAUTHORIZED_MESSAGE,
                 });
             }
 
@@ -46,22 +72,46 @@ export class RoleGuard implements CanActivate {
                     accessToken,
                     request,
                 );
-            const isRole = user.roles?.some((role): boolean => {
-                return requiredRoles.includes(role.role);
-            });
-            if (!isRole) {
+
+            if (!user.roles?.length) {
                 throw new ForbiddenException({
-                    status: HttpStatus.FORBIDDEN,
-                    message: 'У вас недостаточно прав доступа',
+                    statusCode: HttpStatus.FORBIDDEN,
+                    message: RoleGuard.FORBIDDEN_MESSAGE,
                 });
             }
-            return isRole;
+
+            const requiredSet = this.getRoleSet(requiredRoles);
+            const hasAccess = user.roles.some((role) =>
+                requiredSet.has(role.role),
+            );
+
+            return hasAccess;
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    throw new ForbiddenException({
-        status: HttpStatus.FORBIDDEN,
-        message: `${errorMessage}!`,
-    });
+            if (
+                error instanceof UnauthorizedException ||
+                error instanceof ForbiddenException
+            ) {
+                throw error;
+            }
+
+            const message =
+                error instanceof Error ? error.message : 'Неизвестная ошибка';
+            throw new ForbiddenException({
+                statusCode: HttpStatus.FORBIDDEN,
+                message: `Ошибка авторизации: ${message}`,
+            });
         }
+    }
+
+    private getRoleSet(roles: string[]): Set<string> {
+        const key = roles.sort().join(',');
+        if (!this.roleSetsCache.has(key)) {
+            this.roleSetsCache.set(key, new Set(roles));
+        }
+        const cached = this.roleSetsCache.get(key);
+        if (!cached) {
+            throw new Error(`Failed to get cached role set for key: ${key}`);
+        }
+        return cached;
     }
 }

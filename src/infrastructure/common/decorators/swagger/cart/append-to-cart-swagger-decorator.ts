@@ -3,42 +3,48 @@ import {
     ApiCookieAuth,
     ApiNotFoundResponse,
     ApiOperation,
-    ApiParam,
+    ApiBody,
     ApiResponse,
+    ApiBadRequestResponse,
 } from '@nestjs/swagger';
 import { AppendToCartResponse } from '@app/infrastructure/responses';
+import { AddToCartDto } from '@app/infrastructure/dto';
 
 export function AppendToCartSwaggerDecorator(): MethodDecorator {
     return applyDecorators(
         ApiOperation({ summary: 'Добавление продукта в корзину' }),
         ApiCookieAuth(),
-        ApiParam({
-            name: 'productId',
-            type: String,
-            description: 'Идентификатор продукта',
-            required: true,
-        }),
-        ApiParam({
-            name: 'quantity',
-            type: String,
-            description: 'Количество продуктов',
-            required: true,
+        ApiBody({
+            type: AddToCartDto,
+            description: 'Данные для добавления товара в корзину',
         }),
         ApiResponse({
-            description: 'Product added to cart',
+            description: 'Товар успешно добавлен в корзину',
             status: HttpStatus.OK,
             type: AppendToCartResponse,
         }),
+        ApiBadRequestResponse({
+            description: 'Ошибка валидации входных данных',
+            schema: {
+                example: {
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    url: '/online-store/cart/items',
+                    path: '/online-store/cart/items',
+                    name: 'BadRequestException',
+                    message: ['Укажите ID товара', 'Укажите количество товара'],
+                },
+            },
+        }),
         ApiNotFoundResponse({
-            description: 'Not found',
+            description: 'Корзина или продукт не найдены',
             schema: {
                 anyOf: [
                     {
                         title: 'Корзина не найдена в БД',
                         example: {
                             statusCode: HttpStatus.NOT_FOUND,
-                            url: '/online-store/cart/product/55/append/1',
-                            path: '/online-store/cart/product/55/append/1',
+                            url: '/online-store/cart/items',
+                            path: '/online-store/cart/items',
                             name: 'NotFoundException',
                             message: 'Корзина с id:25 не найдена в БД',
                         },
@@ -47,8 +53,8 @@ export function AppendToCartSwaggerDecorator(): MethodDecorator {
                         title: 'Продукт не найден в БД',
                         example: {
                             statusCode: HttpStatus.NOT_FOUND,
-                            url: '/online-store/cart/product/56/append/1',
-                            path: '/online-store/cart/product/56/append/1',
+                            url: '/online-store/cart/items',
+                            path: '/online-store/cart/items',
                             name: 'NotFoundException',
                             message: 'Продукт с id:56 не найден в БД',
                         },

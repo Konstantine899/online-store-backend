@@ -1,0 +1,477 @@
+# Deployment & CI/CD: Концепция и подход
+
+## 🎯 Проблема
+
+Текущее состояние:
+
+- ❌ Нет CI/CD pipeline
+- ❌ Проект не задеплоен
+- ❌ Нет автоматических проверок
+- ❌ Только локальный запуск
+- ❌ Docker для dev, не для production
+
+**Проблема для Middle:**
+
+- Без deployment = "только локально работает"
+- Без CI/CD = "не знает DevOps practices"
+- Middle должен уметь деплоить в production
+
+**Цель:** Live production deployment + CI/CD
+
+---
+
+## 🔍 Компоненты Production Deployment
+
+### 1. CI/CD Pipeline (GitHub Actions)
+
+**Что проверяем:**
+
+- Linting (ESLint)
+- Type checking (TypeScript build)
+- Unit tests
+- Integration tests
+- Coverage thresholds
+- Database migrations
+- Docker build
+
+**Когда запускается:**
+
+- На каждый push в main/develop
+- На каждый PR
+- Блокирует merge при ошибках
+
+**Зачем:**
+
+- Catch bugs до production
+- Автоматическая проверка quality
+- Confidence в каждом merge
+
+### 2. Production Hosting (Railway/Render)
+
+**Почему Railway/Render:**
+
+- ✅ Бесплатный tier для портфолио
+- ✅ PostgreSQL включена
+- ✅ Auto-deploy из GitHub
+- ✅ HTTPS из коробки
+- ✅ Environment variables
+- ✅ Logs и monitoring
+
+**Альтернативы:**
+
+- Heroku: был лучшим, но убрали free tier
+- Vercel: для frontend, serverless functions
+- DigitalOcean: требует настройки
+- AWS/GCP: сложно для первого deployment
+
+### 3. Database (Supabase/Railway PostgreSQL)
+
+**Production requirements:**
+
+- Persistent storage (volumes)
+- Backups
+- Connection pooling
+- Environment variables
+- Migration strategy
+
+### 4. Docker Production
+
+**Development vs Production:**
+
+**Development:**
+
+```dockerfile
+FROM node:18
+WORKDIR /app
+COPY . .
+RUN npm install
+CMD npm run start:dev
+```
+
+- Включает devDependencies
+- Hot reload
+- Большой image
+
+**Production:**
+
+```dockerfile
+# Multi-stage build
+FROM node:18-alpine AS builder
+RUN npm ci && npm run build
+
+FROM node:18-alpine
+COPY --from=builder /app/dist ./dist
+RUN npm ci --only=production
+CMD node dist/src/main.js
+```
+
+- Только production dependencies
+- Optimized image size
+- Faster startup
+
+---
+
+## 🏗️ Deployment Architecture
+
+### CI/CD Flow
+
+```
+┌─────────────┐
+│ Git Push    │
+└──────┬──────┘
+       │
+┌──────▼──────────────────┐
+│ GitHub Actions          │
+│ 1. Lint                 │
+│ 2. Type Check           │
+│ 3. Run Tests            │
+│ 4. Check Coverage       │
+│ 5. Build Docker         │
+└──────┬──────────────────┘
+       │
+┌──────▼──────────────────┐
+│ Pass? ─────────► Merge  │
+│ Fail? ─────────► Block  │
+└─────────────────────────┘
+```
+
+### Deployment Flow
+
+```
+┌─────────────────┐
+│ Merge to main   │
+└────────┬────────┘
+         │
+┌────────▼────────────────┐
+│ Railway Auto-Deploy     │
+│ 1. Pull from GitHub     │
+│ 2. Build                │
+│ 3. Run migrations       │
+│ 4. Start app            │
+│ 5. Health check         │
+└────────┬────────────────┘
+         │
+┌────────▼────────────────┐
+│ Live Production         │
+│ https://api.railway.app │
+└─────────────────────────┘
+```
+
+---
+
+## 🛡️ Production Best Practices
+
+### Environment Variables
+
+**DO:**
+
+- ✅ Все secrets в env (не в коде!)
+- ✅ Разные значения dev/prod
+- ✅ Валидация при старте (Joi)
+- ✅ .env.example для документации
+
+**DON'T:**
+
+- ❌ Secrets в коде
+- ❌ Commit .env файлы
+- ❌ Одинаковые секреты dev/prod
+
+### Database Migrations
+
+**DO:**
+
+- ✅ Автоматические migrations при deploy
+- ✅ Rollback strategy (down методы)
+- ✅ Deterministic seeds
+- ✅ Backup перед migration
+
+**DON'T:**
+
+- ❌ Ручные миграции в production
+- ❌ synchronize: true (опасно!)
+- ❌ Migrations без rollback
+
+### Health Checks
+
+**Endpoints:**
+
+- `GET /health` - basic uptime
+- `GET /health/db` - database connectivity
+- `GET /health/ready` - readiness probe
+
+**Зачем:**
+
+- Railway/K8s проверяет health
+- Monitoring и alerts
+- Graceful shutdown
+
+### Logging
+
+**DO:**
+
+- ✅ Structured JSON logs
+- ✅ Log levels (error/warn/info)
+- ✅ Correlation ID для трекинга
+- ✅ No PII в production logs
+
+**DON'T:**
+
+- ❌ console.log в production
+- ❌ Verbose logging (performance!)
+- ❌ PII в логах
+
+---
+
+## 📊 Deployment Checklist
+
+### Pre-Deployment:
+
+**Code Quality:**
+
+- [ ] All tests passing
+- [ ] Linter clean
+- [ ] TypeScript builds
+- [ ] Coverage ≥ 75%
+
+**Configuration:**
+
+- [ ] .env.example актуален
+- [ ] Joi validation работает
+- [ ] Production env variables подготовлены
+- [ ] Secrets сгенерированы (новые для prod!)
+
+**Database:**
+
+- [ ] All migrations протестированы
+- [ ] Seeds работают
+- [ ] Rollback strategy готова
+- [ ] Backup strategy определена
+
+**Docker:**
+
+- [ ] Dockerfile production-ready
+- [ ] .dockerignore оптимизирован
+- [ ] Multi-stage build работает
+- [ ] Image size разумный (<500MB)
+
+### Post-Deployment:
+
+**Verification:**
+
+- [ ] API доступен по HTTPS
+- [ ] Health checks работают
+- [ ] Database migrations применены
+- [ ] Auth flow функционален
+- [ ] Swagger закрыт (или требует auth)
+
+**Monitoring:**
+
+- [ ] Logs доступны
+- [ ] Error tracking настроен
+- [ ] Performance metrics собираются
+- [ ] Alerts на критичные ошибки
+
+---
+
+## 📋 Разбиение на задачи (High-Level)
+
+### Задача 1: PROD-040 - CI/CD Pipeline
+
+**Проблема:** Нет автоматических проверок, можно merge битый код
+
+**Подзадачи:**
+
+1. Создать базовый CI workflow
+2. Добавить lint step
+3. Добавить migrations check
+4. Добавить coverage threshold check
+5. Добавить cache для node_modules
+
+**Результат:** GitHub Actions pipeline с проверками
+
+**Оценка:** 4-6 часов
+
+---
+
+### Задача 2: PROD-041 - Railway Deployment
+
+**Проблема:** Проект только локально, нет live demo
+
+**Подзадачи:**
+
+1. Создать Railway account
+2. Создать PostgreSQL на Railway
+3. Настроить env variables
+4. Deploy приложения
+5. Запустить migrations на prod БД
+6. Добавить health check endpoint
+7. Verify production deployment
+
+**Результат:** Live production API с HTTPS
+
+**Оценка:** 4-6 часов
+
+---
+
+### Задача 3: PROD-042 - Docker Production
+
+**Проблема:** Docker только для dev, не оптимизирован
+
+**Подзадачи:**
+
+1. Создать multi-stage Dockerfile
+2. Оптимизировать .dockerignore
+3. Docker Compose для production
+4. Verify local production build
+
+**Результат:** Production-ready Docker setup
+
+**Оценка:** 3-4 часа
+
+---
+
+## 🎯 CI/CD Stages
+
+### Stage 1: Code Quality
+
+```yaml
+- Lint (ESLint)
+- Type check (tsc)
+- Format check (Prettier)
+```
+
+**Блокирует:** Код с ошибками стиля
+
+### Stage 2: Testing
+
+```yaml
+- Unit tests
+- Integration tests
+- Coverage check (≥75%)
+```
+
+**Блокирует:** Falling tests или coverage
+
+### Stage 3: Build
+
+```yaml
+- npm run build
+- Docker build
+```
+
+**Блокирует:** Build errors
+
+### Stage 4: Deploy (optional, auto)
+
+```yaml
+- Deploy to Railway (on merge to main)
+- Run migrations
+- Smoke tests
+```
+
+**Rollback:** Если health check fails
+
+---
+
+## 🎓 Middle vs Junior DevOps
+
+### Junior:
+
+- "Запускаю локально через npm start"
+- Нет deployment опыта
+- "Docker Compose иногда использую"
+
+### Middle (твой):
+
+- **CI/CD pipeline:** автоматические проверки на каждый PR
+- **Production deployment:** live API с HTTPS
+- **Docker production:** multi-stage optimized builds
+- **Migrations strategy:** автоматическое применение
+- **Health checks:** monitoring готов
+- **Env management:** разные конфиги dev/prod
+
+**Это показывает DevOps maturity!**
+
+---
+
+## 📚 Ресурсы
+
+### CI/CD:
+
+- [GitHub Actions Docs](https://docs.github.com/en/actions)
+- [CI/CD Best Practices](https://www.atlassian.com/continuous-delivery/principles/continuous-integration-vs-delivery-vs-deployment)
+
+### Deployment:
+
+- [Railway Docs](https://docs.railway.app/)
+- [Render Docs](https://render.com/docs)
+- [12 Factor App](https://12factor.net/) - production principles
+
+### Docker:
+
+- [Docker Multi-stage](https://docs.docker.com/develop/develop-images/multistage-build/)
+- [Node.js Docker Best Practices](https://github.com/nodejs/docker-node/blob/main/docs/BestPractices.md)
+
+---
+
+## ✅ Критерии успеха
+
+### Deployment готов, если:
+
+**CI/CD:**
+
+- [ ] Pipeline работает на каждый PR
+- [ ] All checks passing (lint, tests, coverage)
+- [ ] Cache для быстрых builds
+- [ ] Badge в README (green!)
+
+**Production:**
+
+- [ ] API live на HTTPS
+- [ ] Database persistent
+- [ ] Migrations автоматические
+- [ ] Health checks работают
+- [ ] Logs доступны
+
+**Docker:**
+
+- [ ] Multi-stage Dockerfile
+- [ ] Optimized image size
+- [ ] docker-compose.prod.yml
+- [ ] Works locally и remotely
+
+**Documentation:**
+
+- [ ] Deployment instructions в README
+- [ ] Environment variables документированы
+- [ ] Live demo link в README
+
+---
+
+## 🎯 Для резюме и собесов
+
+**Что говоришь:**
+
+"Настроил полный CI/CD pipeline с GitHub Actions:
+
+- Автоматические lint, tests, coverage checks на каждый PR
+- Блокировка merge при падении тестов или coverage <75%
+
+Задеплоил production-ready API на Railway:
+
+- PostgreSQL managed database
+- Automatic migrations on deploy
+- Health check endpoints для monitoring
+- HTTPS с proper CORS и security headers
+
+Оптимизировал Docker с multi-stage build:
+
+- Production image ~200MB (было ~800MB)
+- Only production dependencies
+- Fast startup time
+
+Могу показать live API: [ссылка]"
+
+**Это strong Middle experience!**
+
+**Детальный план:** см. [deployment.plan.mdc](./deployment.plan.mdc)

@@ -1,11 +1,11 @@
-import { CreateCategoryDto } from '@app/infrastructure/dto';
-import {
+import type { CreateCategoryDto } from '@app/infrastructure/dto';
+import type {
     CreateCategoryResponse,
     ListAllCategoriesResponse,
     CategoryResponse,
     UpdateCategoryResponse,
 } from '@app/infrastructure/responses';
-import { CategoryModel } from '@app/domain/models';
+import type { CategoryModel } from '@app/domain/models';
 
 export interface ICategoryRepository {
     createCategory(
