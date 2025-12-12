@@ -6,11 +6,11 @@
  */
 
 import {
-    ExecutionContext,
+    type ExecutionContext,
     HttpException,
     UnauthorizedException,
 } from '@nestjs/common';
-import { BaseSSOGuard, IPassportError } from '../base-sso.guard';
+import { BaseSSOGuard, type IPassportError } from '../base-sso.guard';
 
 // Создаем тестовый класс, наследующийся от BaseSSOGuard
 class TestSSOGuard extends BaseSSOGuard {
@@ -68,7 +68,9 @@ describe('BaseSSOGuard (unit)', () => {
         });
 
         it('должен пробрасывать HttpException для ошибки с statusCode', () => {
-            const error: IPassportError = new Error('Custom error') as IPassportError;
+            const error: IPassportError = new Error(
+                'Custom error',
+            ) as IPassportError;
             error.statusCode = 403;
             error.response = { message: 'Forbidden' };
 
@@ -85,7 +87,9 @@ describe('BaseSSOGuard (unit)', () => {
         });
 
         it('должен пробрасывать HttpException с message если response отсутствует', () => {
-            const error: IPassportError = new Error('Custom error') as IPassportError;
+            const error: IPassportError = new Error(
+                'Custom error',
+            ) as IPassportError;
             error.statusCode = 400;
 
             expect(() => {
@@ -111,12 +115,16 @@ describe('BaseSSOGuard (unit)', () => {
                 guard.handleRequest(error, null, undefined, mockContext);
             } catch (e) {
                 expect(e).toBeInstanceOf(UnauthorizedException);
-                expect((e as UnauthorizedException).message).toBe('Standard error');
+                expect((e as UnauthorizedException).message).toBe(
+                    'Standard error',
+                );
             }
         });
 
         it('должен обрабатывать ошибку без message', () => {
-            const error = { toString: () => 'String error' } as unknown as Error;
+            const error = {
+                toString: () => 'String error',
+            } as unknown as Error;
 
             expect(() => {
                 guard.handleRequest(error, null, undefined, mockContext);
@@ -140,7 +148,9 @@ describe('BaseSSOGuard (unit)', () => {
                 guard.handleRequest(null, null, info, mockContext);
             } catch (e) {
                 expect(e).toBeInstanceOf(UnauthorizedException);
-                expect((e as UnauthorizedException).message).toBe('User not found');
+                expect((e as UnauthorizedException).message).toBe(
+                    'User not found',
+                );
             }
         });
 
@@ -185,7 +195,12 @@ describe('BaseSSOGuard (unit)', () => {
         it('должен возвращать пользователя если нет ошибок', () => {
             const user = { id: 1, email: 'user@example.com' };
 
-            const result = guard.handleRequest(null, user, undefined, mockContext);
+            const result = guard.handleRequest(
+                null,
+                user,
+                undefined,
+                mockContext,
+            );
 
             expect(result).toBe(user);
         });
@@ -221,4 +236,3 @@ describe('BaseSSOGuard (unit)', () => {
         });
     });
 });
-

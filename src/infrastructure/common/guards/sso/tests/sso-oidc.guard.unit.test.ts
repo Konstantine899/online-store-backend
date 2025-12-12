@@ -5,7 +5,7 @@
  * Related to: SAAS-017-19, Этап 3.1
  */
 
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { type ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { SSOOIDCGuard } from '../sso-oidc.guard';
 
 describe('SSOOIDCGuard (unit)', () => {
@@ -50,7 +50,12 @@ describe('SSOOIDCGuard (unit)', () => {
         it('должен возвращать пользователя при успешной аутентификации', () => {
             const user = { id: 1, email: 'user@example.com' };
 
-            const result = guard.handleRequest(null, user, undefined, mockContext);
+            const result = guard.handleRequest(
+                null,
+                user,
+                undefined,
+                mockContext,
+            );
 
             expect(result).toBe(user);
         });
@@ -62,4 +67,3 @@ describe('SSOOIDCGuard (unit)', () => {
         });
     });
 });
-

@@ -226,7 +226,10 @@ describe('SSOStateService (unit)', () => {
 
             // state1 должен быть удален, state2 остаться
             expect(service.getActiveStatesCount()).toBe(1);
-            
+
+            // Проверяем, что state1 был удален cleanup (validateState вернет null для несуществующего state)
+            expect(service.validateState(state1)).toBeNull();
+
             // Проверяем, что state2 валиден (state1 уже удален cleanup)
             const state2Data = service.validateState(state2);
             expect(state2Data).not.toBeNull();

@@ -10,7 +10,7 @@ import {
 import { NotificationEventHandler } from '@app/infrastructure/common/events/notification.event-handler';
 import { MetricsCollector } from '@app/infrastructure/common/services';
 import { jwtConfig } from '@app/infrastructure/config/jwt';
-import { Module, OnModuleInit, forwardRef } from '@nestjs/common';
+import { forwardRef, Logger, Module, OnModuleInit } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -185,6 +185,8 @@ import { UserService } from './user/user.service';
     ],
 })
 export class ServicesModule implements OnModuleInit {
+    private readonly logger = new Logger(ServicesModule.name);
+
     constructor(
         private readonly roleCacheService: RoleCacheService,
         // Явно инжектируем стратегии, чтобы они были созданы и зарегистрированы в Passport
@@ -194,9 +196,12 @@ export class ServicesModule implements OnModuleInit {
     ) {
         // КРИТИЧНО: Проверяем, что стратегии созданы и зарегистрированы в конструкторе
         // Это должно произойти автоматически через PassportStrategy в конструкторе стратегий
-        console.log(
-            `[ServicesModule constructor] Constructor called. Strategy instances: oauth2=${!!this.oauth2SSOStrategy}, saml=${!!this.samlSSOStrategy}, oidc=${!!this.oidcSSOStrategy}`,
-        );
+        // Логируем только в production
+        if (process.env.NODE_ENV !== 'test') {
+            this.logger.debug(
+                `Constructor called. Strategy instances: oauth2=${!!this.oauth2SSOStrategy}, saml=${!!this.samlSSOStrategy}, oidc=${!!this.oidcSSOStrategy}`,
+            );
+        }
 
         // Явно обращаемся к стратегиям, чтобы гарантировать их создание
         // Это критично для тестового окружения, где стратегии могут не создаваться до использования guards
@@ -212,9 +217,12 @@ export class ServicesModule implements OnModuleInit {
             passportWithStrategies._strategies ?? {},
         );
 
-        console.log(
-            `[ServicesModule constructor] Registered strategies: ${registeredStrategies.join(', ')}`,
-        );
+        // Логируем только в production, в тестах избыточные логи
+        if (process.env.NODE_ENV !== 'test') {
+            this.logger.debug(
+                `Registered strategies: ${registeredStrategies.join(', ')}`,
+            );
+        }
 
         // КРИТИЧНО: Сохраняем callback на прототипе стратегий сразу после их создания
         // Это гарантирует, что _verify будет доступен при Object.create(prototype)
@@ -233,21 +241,24 @@ export class ServicesModule implements OnModuleInit {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         strategyInstance: any,
     ): void {
+        // Определяем isTestEnv на уровне функции для использования в try/catch
+        const isTestEnv = process.env.NODE_ENV === 'test';
         try {
-            console.log(
-                `[ServicesModule.saveCallbackOnPrototype] Processing ${strategyName}`,
-            );
-            console.log(
-                `[ServicesModule.saveCallbackOnPrototype] Instance _verify: ${typeof strategyInstance?._verify}`,
-            );
+            // Логируем только в production для отладки
+            if (!isTestEnv) {
+                this.logger.debug(
+                    `Processing ${strategyName}, instance _verify: ${typeof strategyInstance?._verify}`,
+                );
+            }
 
             // КРИТИЧНО: Получаем callback из экземпляра стратегии (_verify)
             // PassportStrategy устанавливает _verify в конструкторе через super(...args, callback)
             let callback = strategyInstance?._verify;
 
-            console.log(
-                `[ServicesModule.saveCallbackOnPrototype] Callback from instance: ${typeof callback}`,
-            );
+            // Логируем только в production для отладки
+            if (!isTestEnv) {
+                this.logger.debug(`Callback from instance: ${typeof callback}`);
+            }
 
             if (!callback || typeof callback !== 'function') {
                 // Пробуем получить из статического Map по имени стратегии
@@ -255,9 +266,11 @@ export class ServicesModule implements OnModuleInit {
                     CustomPassportStrategy.verifyCallbacksByName?.get(
                         strategyName,
                     );
-                console.log(
-                    `[ServicesModule.saveCallbackOnPrototype] Callback from Map by name: ${typeof callback}`,
-                );
+                if (!isTestEnv) {
+                    this.logger.debug(
+                        `Callback from Map by name: ${typeof callback}`,
+                    );
+                }
             }
 
             // Если все еще не найден, пробуем получить из экземпляра через конструктор
@@ -266,9 +279,11 @@ export class ServicesModule implements OnModuleInit {
                 if (Constructor) {
                     callback =
                         CustomPassportStrategy.verifyCallbacks.get(Constructor);
-                    console.log(
-                        `[ServicesModule.saveCallbackOnPrototype] Callback from Map by constructor: ${typeof callback}, Constructor: ${Constructor.name}`,
-                    );
+                    if (!isTestEnv) {
+                        this.logger.debug(
+                            `Callback from Map by constructor: ${typeof callback}, Constructor: ${Constructor.name}`,
+                        );
+                    }
                 }
             }
 
@@ -287,20 +302,28 @@ export class ServicesModule implements OnModuleInit {
                         strategyName,
                         callback,
                     );
-                    console.log(
-                        `[ServicesModule] Saved callback on prototype for ${strategyName}`,
-                    );
+                    if (!isTestEnv) {
+                        this.logger.debug(
+                            `Saved callback on prototype for ${strategyName}`,
+                        );
+                    }
                 }
             } else {
-                console.warn(
-                    `[ServicesModule] Callback not found for ${strategyName}. Instance has _verify: ${typeof strategyInstance?._verify}, Constructor: ${strategyInstance?.constructor?.name}`,
-                );
+                // В production логируем warning, в тестах только error
+                const warnMsg = `Callback not found for ${strategyName}. Instance has _verify: ${typeof strategyInstance?._verify}, Constructor: ${strategyInstance?.constructor?.name}`;
+                if (isTestEnv) {
+                    console.error(`[ServicesModule] ${warnMsg}`);
+                } else {
+                    this.logger.warn(warnMsg);
+                }
             }
         } catch (error) {
-            console.warn(
-                `[ServicesModule] Failed to save callback on prototype for ${strategyName}:`,
-                error,
-            );
+            const errorMsg = `Failed to save callback on prototype for ${strategyName}: ${error instanceof Error ? error.message : String(error)}`;
+            if (isTestEnv) {
+                console.error(`[ServicesModule] ${errorMsg}`);
+            } else {
+                this.logger.warn(errorMsg);
+            }
         }
     }
 
@@ -348,47 +371,42 @@ export class ServicesModule implements OnModuleInit {
         if (missingStrategies.length > 0) {
             // Явно регистрируем стратегии в Passport, если они не зарегистрированы
             // Это необходимо для тестового окружения, где порядок инициализации может отличаться
-            console.warn(
-                `[ServicesModule] Missing Passport strategies: ${missingStrategies.join(', ')}. Registered: ${registeredStrategies.join(', ')}. Attempting manual registration...`,
-            );
+            // Используем logger только в production, в тестах логируем только при ошибках
+            const isTestEnv = process.env.NODE_ENV === 'test';
+            if (!isTestEnv) {
+                this.logger.warn(
+                    {
+                        missingStrategies,
+                        registeredStrategies,
+                    },
+                    'Missing Passport strategies, attempting manual registration',
+                );
+            }
 
             try {
-                if (
-                    missingStrategies.includes('oauth2') &&
-                    this.oauth2SSOStrategy
-                ) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (passport as any).use('oauth2', this.oauth2SSOStrategy);
-                    console.log(
-                        '[ServicesModule] Manually registered oauth2 strategy',
-                    );
-                    // КРИТИЧНО: Сохраняем callback на прототипе стратегии для работы с Object.create(prototype)
-                    this.saveCallbackOnPrototype(
-                        'oauth2',
-                        this.oauth2SSOStrategy,
-                    );
-                }
-                if (
-                    missingStrategies.includes('saml') &&
-                    this.samlSSOStrategy
-                ) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (passport as any).use('saml', this.samlSSOStrategy);
-                    console.log(
-                        '[ServicesModule] Manually registered saml strategy',
-                    );
-                    this.saveCallbackOnPrototype('saml', this.samlSSOStrategy);
-                }
-                if (
-                    missingStrategies.includes('oidc') &&
-                    this.oidcSSOStrategy
-                ) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (passport as any).use('oidc', this.oidcSSOStrategy);
-                    console.log(
-                        '[ServicesModule] Manually registered oidc strategy',
-                    );
-                    this.saveCallbackOnPrototype('oidc', this.oidcSSOStrategy);
+                // Регистрируем стратегии в едином цикле для упрощения кода
+                const strategiesToRegister = [
+                    {
+                        name: 'oauth2',
+                        strategy: this.oauth2SSOStrategy,
+                    },
+                    {
+                        name: 'saml',
+                        strategy: this.samlSSOStrategy,
+                    },
+                    {
+                        name: 'oidc',
+                        strategy: this.oidcSSOStrategy,
+                    },
+                ];
+
+                for (const { name, strategy } of strategiesToRegister) {
+                    if (missingStrategies.includes(name) && strategy) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        (passport as any).use(name, strategy);
+                        // КРИТИЧНО: Сохраняем callback на прототипе стратегии для работы с Object.create(prototype)
+                        this.saveCallbackOnPrototype(name, strategy);
+                    }
                 }
 
                 // Проверяем регистрацию после ручной регистрации
@@ -400,15 +418,27 @@ export class ServicesModule implements OnModuleInit {
                 );
 
                 if (stillMissing.length > 0) {
-                    const errorMsg = `[ServicesModule] Failed to register Passport strategies: ${stillMissing.join(', ')}. Registered: ${afterRegistration.join(', ')}`;
-                    if (process.env.NODE_ENV === 'test') {
-                        console.error(errorMsg);
+                    const errorMsg = `Failed to register Passport strategies: ${stillMissing.join(', ')}. Registered: ${afterRegistration.join(', ')}`;
+                    if (isTestEnv) {
+                        // В тестах только error, без warn
+                        console.error(`[ServicesModule] ${errorMsg}`);
                     } else {
+                        this.logger.error(
+                            {
+                                stillMissing,
+                                afterRegistration,
+                            },
+                            errorMsg,
+                        );
                         throw new Error(errorMsg);
                     }
-                } else {
-                    console.log(
-                        `[ServicesModule] Successfully registered all strategies: ${afterRegistration.join(', ')}`,
+                } else if (!isTestEnv) {
+                    // В production логируем успешную регистрацию
+                    this.logger.log(
+                        {
+                            registeredStrategies: afterRegistration,
+                        },
+                        'Successfully registered all Passport strategies',
                     );
                 }
             } catch (error) {
@@ -420,9 +450,12 @@ export class ServicesModule implements OnModuleInit {
                 }
             }
         } else {
-            console.log(
-                `[ServicesModule] All Passport strategies registered: ${registeredStrategies.join(', ')}`,
-            );
+            // Логируем только в production
+            if (process.env.NODE_ENV !== 'test') {
+                this.logger.debug(
+                    `All Passport strategies registered: ${registeredStrategies.join(', ')}`,
+                );
+            }
         }
 
         await this.roleCacheService.warmUp([

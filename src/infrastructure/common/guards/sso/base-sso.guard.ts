@@ -1,10 +1,8 @@
 import {
-    ExecutionContext,
+    type ExecutionContext,
     HttpException,
     UnauthorizedException,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import type { IAuthGuard } from '@nestjs/passport';
 
 /**
  * Интерфейс для расширенных ошибок Passport с statusCode
@@ -40,6 +38,7 @@ export abstract class BaseSSOGuard {
         err: Error | null,
         user: TUser,
         info: Error | string | undefined,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         _context: ExecutionContext,
     ): TUser {
         // Если есть ошибка, обрабатываем её
@@ -87,4 +86,3 @@ export abstract class BaseSSOGuard {
         return user;
     }
 }
-

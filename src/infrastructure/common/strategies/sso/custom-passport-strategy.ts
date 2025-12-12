@@ -323,11 +323,14 @@ export class CustomPassportStrategy extends BaseStrategy {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const Constructor = this.constructor as any;
 
-        console.log('[CustomPassportStrategy.constructor]', {
-            constructorName: Constructor.name,
-            argsLength: args.length,
-            hasCallback: typeof callback,
-        });
+        // Логируем только в production для отладки
+        if (process.env.NODE_ENV !== 'test') {
+            console.log('[CustomPassportStrategy.constructor]', {
+                constructorName: Constructor.name,
+                argsLength: args.length,
+                hasCallback: typeof callback,
+            });
+        }
 
         // Сохраняем callback по конструктору
         CustomPassportStrategy.verifyCallbacks.set(Constructor, callback);
@@ -515,24 +518,33 @@ export class CustomPassportStrategy extends BaseStrategy {
                 // Также устанавливаем на текущем экземпляре
                 self._verify = callback;
 
-                console.log(
-                    `[CustomPassportStrategy.authenticate] Created callback dynamically from validate method for ${Constructor.name}`,
-                );
+                // Логируем только в production для отладки
+                if (process.env.NODE_ENV !== 'test') {
+                    console.log(
+                        `[CustomPassportStrategy.authenticate] Created callback dynamically from validate method for ${Constructor.name}`,
+                    );
+                }
             } else {
-                console.warn(
-                    `[CustomPassportStrategy.authenticate] validate method not found for ${Constructor.name}. Available methods: ${Object.getOwnPropertyNames(classProto).join(', ')}`,
-                );
+                // Логируем только в production
+                if (process.env.NODE_ENV !== 'test') {
+                    console.warn(
+                        `[CustomPassportStrategy.authenticate] validate method not found for ${Constructor.name}. Available methods: ${Object.getOwnPropertyNames(classProto).join(', ')}`,
+                    );
+                }
             }
         }
 
-        console.log('[CustomPassportStrategy.authenticate]', {
-            constructorName: Constructor.name,
-            hasProto: !!classProto,
-            protoVerify: typeof classProto?._verify,
-            instanceVerify: typeof self._verify,
-            hasCallbackInMap:
-                CustomPassportStrategy.verifyCallbacks.has(Constructor),
-        });
+        // Логируем только в production для отладки
+        if (process.env.NODE_ENV !== 'test') {
+            console.log('[CustomPassportStrategy.authenticate]', {
+                constructorName: Constructor.name,
+                hasProto: !!classProto,
+                protoVerify: typeof classProto?._verify,
+                instanceVerify: typeof self._verify,
+                hasCallbackInMap:
+                    CustomPassportStrategy.verifyCallbacks.has(Constructor),
+            });
+        }
 
         // Проверяем _verify на экземпляре, затем на прототипе
         let verifyFn = self._verify;
@@ -718,7 +730,7 @@ export class CustomPassportStrategy extends BaseStrategy {
          */
         const callErrorMethod = (error: Error): boolean => {
             const methods = [
-                () => {
+                (): boolean => {
                     // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
                     const BaseStrategy = require('passport-strategy').Strategy;
                     if (
@@ -730,7 +742,7 @@ export class CustomPassportStrategy extends BaseStrategy {
                     }
                     return false;
                 },
-                () => {
+                (): boolean => {
                     if (
                         BaseStrategyProto?.error &&
                         typeof BaseStrategyProto.error === 'function'
@@ -740,7 +752,7 @@ export class CustomPassportStrategy extends BaseStrategy {
                     }
                     return false;
                 },
-                () => {
+                (): boolean => {
                     if (self?.error && typeof self.error === 'function') {
                         self.error.call(self, error);
                         return true;
@@ -767,7 +779,7 @@ export class CustomPassportStrategy extends BaseStrategy {
          */
         const callFailMethod = (challenge?: unknown): boolean => {
             const methods = [
-                () => {
+                (): boolean => {
                     // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
                     const BaseStrategy = require('passport-strategy').Strategy;
                     if (
@@ -779,17 +791,20 @@ export class CustomPassportStrategy extends BaseStrategy {
                     }
                     return false;
                 },
-                () => {
+                (): boolean => {
                     if (
                         BaseStrategyProto?.fail &&
                         typeof BaseStrategyProto.fail === 'function'
                     ) {
-                        BaseStrategyProto.fail.call(self, challenge);
+                        // BaseStrategy.fail принимает challenge как string | number | undefined
+                        // Используем type assertion для совместимости
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        (BaseStrategyProto.fail as any).call(self, challenge);
                         return true;
                     }
                     return false;
                 },
-                () => {
+                (): boolean => {
                     if (self?.fail && typeof self.fail === 'function') {
                         self.fail.call(self, challenge);
                         return true;
@@ -816,7 +831,7 @@ export class CustomPassportStrategy extends BaseStrategy {
          */
         const callSuccessMethod = (user: unknown, info?: unknown): boolean => {
             const methods = [
-                () => {
+                (): boolean => {
                     // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
                     const BaseStrategy = require('passport-strategy').Strategy;
                     if (
@@ -828,7 +843,7 @@ export class CustomPassportStrategy extends BaseStrategy {
                     }
                     return false;
                 },
-                () => {
+                (): boolean => {
                     if (
                         BaseStrategyProto?.success &&
                         typeof BaseStrategyProto.success === 'function'
@@ -838,7 +853,7 @@ export class CustomPassportStrategy extends BaseStrategy {
                     }
                     return false;
                 },
-                () => {
+                (): boolean => {
                     if (self?.success && typeof self.success === 'function') {
                         self.success.call(self, user, info);
                         return true;

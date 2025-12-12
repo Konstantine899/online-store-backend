@@ -198,7 +198,7 @@ export class SSOHealthIndicator extends HealthIndicator {
                 return !!(config.entryPoint && config.cert);
             case 'OIDC':
                 return !!(
-                    (config.issuer || config.authorizationURL) &&
+                    (config.issuer ?? config.authorizationURL) &&
                     config.clientId
                 );
             default:

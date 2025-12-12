@@ -7,14 +7,12 @@
  * Related to: SAAS-017-19, Этап 3
  */
 
-import { PassportStrategy } from '@nestjs/passport';
-import { Strategy as OAuth2Strategy } from 'passport-oauth2';
-import { Injectable } from '@nestjs/common';
-import { OAuth2SSOStrategy } from './oauth2.strategy';
 import { ExternalRoleSyncRepository } from '@app/infrastructure/repositories/role/external-role-sync.repository';
+import { SSORoleSyncService } from '@app/infrastructure/services/role/sso/sso-role-sync.service';
 import { SSOStateService } from '@app/infrastructure/services/role/sso/sso-state.service';
 import { SSOUserProfileMapper } from '@app/infrastructure/services/role/sso/sso-user-profile.mapper';
-import { SSORoleSyncService } from '@app/infrastructure/services/role/sso/sso-role-sync.service';
+import { Injectable } from '@nestjs/common';
+import { OAuth2SSOStrategy } from './oauth2.strategy';
 
 /**
  * Azure AD OAuth 2.0 Strategy
@@ -67,13 +65,6 @@ export class AzureADSSOStrategy extends OAuth2SSOStrategy {
      * Получить стандартные Azure AD scopes
      */
     public static getAzureADScopes(): string[] {
-        return [
-            'openid',
-            'profile',
-            'email',
-            'User.Read',
-            'offline_access',
-        ];
+        return ['openid', 'profile', 'email', 'User.Read', 'offline_access'];
     }
 }
-

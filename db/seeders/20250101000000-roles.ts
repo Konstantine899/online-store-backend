@@ -23,6 +23,7 @@ interface Seeder {
 const seeder: Seeder = {
     async up(queryInterface: QueryInterface): Promise<void> {
         // Идемпотентность: удаляем только системные роли (сохраняем кастомные роли тенантов)
+        // Это предотвращает дубликаты при повторном запуске seeds
         await queryInterface.bulkDelete(
             'roles',
             {

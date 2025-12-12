@@ -260,22 +260,10 @@ export async function setupTestApp(): Promise<INestApplication> {
                 (name) => !registeredStrategies.includes(name),
             );
 
-            console.log(
-                `[setupTestApp] After getting strategies. Registered: ${registeredStrategies.join(', ')}`,
-            );
-
+            // Логируем только при ошибках для уменьшения шума в тестах
             if (missingStrategies.length > 0) {
-                console.warn(
-                    `[setupTestApp] Missing Passport strategies after explicit get: ${missingStrategies.join(', ')}. Registered: ${registeredStrategies.join(', ')}`,
-                );
-
                 // КРИТИЧНО: Если стратегии не зарегистрированы, попробуем явно зарегистрировать их
                 // Это может быть необходимо, если PassportStrategy не регистрирует их автоматически
-                console.warn(
-                    `[setupTestApp] Attempting to manually register strategies...`,
-                );
-
-                // Попробуем явно зарегистрировать стратегии в Passport
                 try {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     (passport as any).use('oauth2', oauth2Strategy);
@@ -286,9 +274,14 @@ export async function setupTestApp(): Promise<INestApplication> {
 
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const afterManualRegister = Object.keys((passport as any)._strategies ?? {});
-                    console.log(
-                        `[setupTestApp] After manual registration. Registered: ${afterManualRegister.join(', ')}`,
+                    const stillMissing = requiredStrategies.filter(
+                        (name) => !afterManualRegister.includes(name),
                     );
+                    if (stillMissing.length > 0) {
+                        console.error(
+                            `[setupTestApp] Failed to register strategies: ${stillMissing.join(', ')}. Registered: ${afterManualRegister.join(', ')}`,
+                        );
+                    }
                 } catch (e) {
                     console.error(
                         `[setupTestApp] Failed to manually register strategies: ${e}`,

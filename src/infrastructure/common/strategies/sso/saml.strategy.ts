@@ -18,6 +18,7 @@ import {
 import { PassportStrategy } from '@nestjs/passport';
 import { MultiSamlStrategy } from '@node-saml/passport-saml';
 import { Request } from 'express';
+import { Strategy as BaseStrategy } from 'passport-strategy';
 
 /**
  * КРИТИЧНО: Переопределяем authenticate на прототипе MultiSamlStrategy глобально
@@ -35,42 +36,44 @@ if (
     MultiSamlStrategyProto._originalAuthenticate = originalAuthenticate;
 
     MultiSamlStrategyProto.authenticate = function (req: Request): void {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const self = this as any;
-
         // КРИТИЧНО: ВСЕГДА восстанавливаем options ПЕРЕД вызовом originalAuthenticate
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const proto = (self.constructor as any).prototype;
 
-        if (proto && proto._samlOptions) {
+        const proto = this.constructor.prototype;
+
+        if (proto?._samlOptions) {
             // Восстанавливаем options из прототипа
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            self.options = proto._samlOptions;
+
+            this.options = proto._samlOptions;
         } else {
             // Если options не найдены, вызываем error
             const errorMsg = 'SAML options not found on prototype';
             try {
-                // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-                const BaseStrategy = require('passport-strategy').Strategy;
-                if (BaseStrategy?.prototype?.error && typeof BaseStrategy.prototype.error === 'function') {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    return (BaseStrategy.prototype.error as any).call(self, new Error(errorMsg));
+                if (
+                    BaseStrategy?.prototype?.error &&
+                    typeof BaseStrategy.prototype.error === 'function'
+                ) {
+                    return BaseStrategy.prototype.error.call(
+                        this,
+                        new Error(errorMsg),
+                    );
                 }
             } catch {
-                // Игнорируем ошибки require
+                // Игнорируем ошибки
             }
-            if (typeof self.error === 'function') {
-                return self.error(new Error(errorMsg));
+            if (typeof this.error === 'function') {
+                return this.error(new Error(errorMsg));
             }
             return;
         }
 
         // Вызываем оригинальный authenticate
-        const originalAuth = MultiSamlStrategyProto._originalAuthenticate ?? originalAuthenticate;
+        const originalAuth =
+            MultiSamlStrategyProto._originalAuthenticate ??
+            originalAuthenticate;
         if (originalAuth && typeof originalAuth === 'function') {
-            return originalAuth.call(self, req);
+            return originalAuth.call(this, req);
         }
-        return originalAuthenticate.call(self, req);
+        return originalAuthenticate.call(this, req);
     };
 
     MultiSamlStrategyProto._samlAuthenticateOverridden = true;
@@ -101,19 +104,19 @@ export class SAMLSSOStrategy extends PassportStrategy(
         private readonly ssoUserProfileMapper: SSOUserProfileMapper,
         private readonly ssoRoleSyncService: SSORoleSyncService,
     ) {
-
         // MultiSamlStrategy требует:
         // 1. Конфигурацию с getSamlOptions
         // 2. Функцию signon (validate) - для обработки профиля после успешной аутентификации
-        // 3. Функцию logout (опционально) - для обработки logout
         // PassportStrategy автоматически создает _verify из метода validate,
-        // но для MultiSamlStrategy нужно передать функции в конструктор
+        // но для MultiSamlStrategy нужно передать функцию signon в конструктор
         super(
             {
                 passReqToCallback: true, // Для получения request в getSamlOptions и validate
                 getSamlOptions: async (
-                    req: Request,
-                    done: (err: Error | null, samlOptions?: unknown) => void,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    req: any,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    done: (err: Error | null, samlOptions?: any) => void,
                 ) => {
                     try {
                         // Извлекаем RelayState из query параметров
@@ -197,27 +200,14 @@ export class SAMLSSOStrategy extends PassportStrategy(
             },
             // Функция signon (validate) - вызывается после успешной аутентификации
             async (
-                req: Request & {
-                    ssoProviderConfig?: ExternalRoleConfigModel;
-                    ssoTenantId?: number;
-                },
-                profile: Record<string, unknown>,
-                done: (error: Error | null, user?: unknown) => void,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                req: any,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                profile: any,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                done: any,
             ) => {
                 // Вызываем метод validate
-                await this.validate(req, profile, done);
-            },
-            // Функция logout (опционально) - вызывается при logout
-            async (
-                req: Request & {
-                    ssoProviderConfig?: ExternalRoleConfigModel;
-                    ssoTenantId?: number;
-                },
-                profile: Record<string, unknown>,
-                done: (error: Error | null, user?: unknown) => void,
-            ) => {
-                // Для logout используем ту же логику, что и для signon
-                // В будущем можно добавить специальную логику для logout
                 await this.validate(req, profile, done);
             },
         );
@@ -251,7 +241,7 @@ export class SAMLSSOStrategy extends PassportStrategy(
         const currentOptions = (this as any).options;
         if (proto && currentOptions) {
             // Сохраняем options на прототипе
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
             Object.defineProperty(proto, '_samlOptions', {
                 value: currentOptions,
                 writable: true,
@@ -276,73 +266,6 @@ export class SAMLSSOStrategy extends PassportStrategy(
 
         // Переопределение authenticate уже выполнено на уровне модуля (до создания экземпляра)
         // Здесь только сохраняем options на прототипе для восстановления при Object.create(prototype)
-
-    /**
-     * Переопределяет authenticate на прототипе MultiSamlStrategy для работы с Object.create(prototype)
-     * Должен вызываться из onModuleInit после создания экземпляра стратегии
-     * @public
-     */
-    public ensureAuthenticateOverride(): void {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const MultiSamlStrategyProto = MultiSamlStrategy.prototype as any;
-
-        // Проверяем, не переопределен ли уже метод (защита от множественных вызовов)
-        if (MultiSamlStrategyProto._samlAuthenticateOverridden) {
-            return;
-        }
-
-        const originalAuthenticate = MultiSamlStrategyProto.authenticate;
-
-        if (
-            originalAuthenticate &&
-            typeof originalAuthenticate === 'function'
-        ) {
-            // Сохраняем оригинальный метод
-            MultiSamlStrategyProto._originalAuthenticate = originalAuthenticate;
-
-            // Переопределяем authenticate на прототипе MultiSamlStrategy
-            MultiSamlStrategyProto.authenticate = function (req: Request): void {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const self = this as any;
-
-                // КРИТИЧНО: ВСЕГДА восстанавливаем options ПЕРЕД вызовом originalAuthenticate
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const proto = (self.constructor as any).prototype;
-
-                if (proto && proto._samlOptions) {
-                    // Восстанавливаем options из прототипа
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    self.options = proto._samlOptions;
-                } else {
-                    // Если options не найдены, вызываем error
-                    const errorMsg = 'SAML options not found on prototype';
-                    try {
-                        // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-                        const BaseStrategy = require('passport-strategy').Strategy;
-                        if (BaseStrategy?.prototype?.error && typeof BaseStrategy.prototype.error === 'function') {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            return (BaseStrategy.prototype.error as any).call(self, new Error(errorMsg));
-                        }
-                    } catch {
-                        // Игнорируем ошибки require
-                    }
-                    if (typeof self.error === 'function') {
-                        return self.error(new Error(errorMsg));
-                    }
-                    return;
-                }
-
-                // Вызываем оригинальный authenticate
-                const originalAuth = MultiSamlStrategyProto._originalAuthenticate ?? originalAuthenticate;
-                if (originalAuth && typeof originalAuth === 'function') {
-                    return originalAuth.call(self, req);
-                }
-                return originalAuthenticate.call(self, req);
-            };
-
-            // Помечаем, что переопределение выполнено
-            MultiSamlStrategyProto._samlAuthenticateOverridden = true;
-        }
     }
 
     /**
@@ -366,55 +289,62 @@ export class SAMLSSOStrategy extends PassportStrategy(
             typeof originalAuthenticate === 'function'
         ) {
             // Сохраняем оригинальный метод только если он еще не сохранен
-            if (!MultiSamlStrategyProto._originalAuthenticate) {
-                MultiSamlStrategyProto._originalAuthenticate = originalAuthenticate;
-            }
+            MultiSamlStrategyProto._originalAuthenticate ??=
+                originalAuthenticate;
 
             // Переопределяем authenticate на прототипе MultiSamlStrategy
-            MultiSamlStrategyProto.authenticate = function (req: Request): void {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const self = this as any;
-
+            MultiSamlStrategyProto.authenticate = function (
+                req: Request,
+            ): void {
                 // КРИТИЧНО: ВСЕГДА восстанавливаем options ПЕРЕД вызовом originalAuthenticate
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const proto = (self.constructor as any).prototype;
 
-                if (proto && proto._samlOptions) {
+                const proto = this.constructor.prototype;
+
+                if (proto?._samlOptions) {
                     // Восстанавливаем options из прототипа
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    self.options = proto._samlOptions;
+
+                    this.options = proto._samlOptions;
                 } else {
                     // Если options не найдены, вызываем error
                     const errorMsg = 'SAML options not found on prototype';
                     try {
-                        // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-                        const BaseStrategy = require('passport-strategy').Strategy;
-                        if (BaseStrategy?.prototype?.error && typeof BaseStrategy.prototype.error === 'function') {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            return (BaseStrategy.prototype.error as any).call(self, new Error(errorMsg));
+                        if (
+                            BaseStrategy?.prototype?.error &&
+                            typeof BaseStrategy.prototype.error === 'function'
+                        ) {
+                            return BaseStrategy.prototype.error.call(
+                                this,
+                                new Error(errorMsg),
+                            );
                         }
                     } catch {
-                        // Игнорируем ошибки require
+                        // Игнорируем ошибки
                     }
-                    if (typeof self.error === 'function') {
-                        return self.error(new Error(errorMsg));
+                    if (typeof this.error === 'function') {
+                        return this.error(new Error(errorMsg));
                     }
                     return;
                 }
 
                 // Вызываем оригинальный authenticate
-                const originalAuth = MultiSamlStrategyProto._originalAuthenticate ?? originalAuthenticate;
+                const originalAuth =
+                    MultiSamlStrategyProto._originalAuthenticate ??
+                    originalAuthenticate;
                 if (originalAuth && typeof originalAuth === 'function') {
-                    return originalAuth.call(self, req);
+                    return originalAuth.call(this, req);
                 }
-                return originalAuthenticate.call(self, req);
+                return originalAuthenticate.call(this, req);
             };
 
             // Помечаем, что переопределение выполнено
             MultiSamlStrategyProto._samlAuthenticateOverridden = true;
-            this.logger.debug('SAML authenticate method overridden on MultiSamlStrategy.prototype');
+            this.logger.debug(
+                'SAML authenticate method overridden on MultiSamlStrategy.prototype',
+            );
         } else {
-            this.logger.warn('Cannot override SAML authenticate - original method not found');
+            this.logger.warn(
+                'Cannot override SAML authenticate - original method not found',
+            );
         }
     }
 
@@ -455,7 +385,8 @@ export class SAMLSSOStrategy extends PassportStrategy(
                 | undefined;
 
             // Provision пользователя (just-in-time)
-            const user = await this.ssoRoleSyncService.provisionUser(ssoProfile);
+            const user =
+                await this.ssoRoleSyncService.provisionUser(ssoProfile);
 
             // Синхронизируем роли
             await this.ssoRoleSyncService.syncRoles(
