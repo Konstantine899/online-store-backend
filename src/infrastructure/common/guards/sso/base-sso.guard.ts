@@ -4,6 +4,7 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import type { IAuthGuard } from '@nestjs/passport';
 
 /**
  * Интерфейс для расширенных ошибок Passport с statusCode
@@ -17,10 +18,14 @@ export interface IPassportError extends Error {
  * Базовый класс для SSO Guards
  * Содержит общую логику обработки ошибок из Passport
  *
- * Наследники должны переопределить:
- * - getStateParameterName() - имя параметра state (для сообщений об ошибках)
+ * Наследники должны:
+ * - Наследоваться от AuthGuard(strategyName) и использовать BaseSSOGuard через композицию
+ * - Переопределить getStateParameterName() - имя параметра state (для сообщений об ошибках)
+ *
+ * @note Используем композицию для совместимости с @nestjs/passport
+ * AuthGuard - это фабрика, которая возвращает класс, поэтому используем композицию вместо наследования
  */
-export abstract class BaseSSOGuard extends AuthGuard<string> {
+export abstract class BaseSSOGuard {
     /**
      * Получить имя параметра state для сообщений об ошибках
      * @protected
