@@ -79,6 +79,7 @@ describe('SSORoleSyncService (unit)', () => {
             findUserByEmail: jest.fn(),
             createUser: jest.fn(),
             findAuthenticatedUser: jest.fn(),
+            updatePassword: jest.fn(),
         } as unknown as jest.Mocked<UserService>;
 
         roleService = {
@@ -138,12 +139,17 @@ describe('SSORoleSyncService (unit)', () => {
             );
             userService.createUser.mockResolvedValue(mockCreateUserResponse);
             userService.findAuthenticatedUser.mockResolvedValue(mockUser);
+            userService.updatePassword.mockResolvedValue(undefined);
 
             const result = await service.provisionUser(mockSSOProfile);
 
             expect(result).toBe(mockUser);
             expect(userService.createUser).toHaveBeenCalled();
             expect(userService.findAuthenticatedUser).toHaveBeenCalledWith(1);
+            expect(userService.updatePassword).toHaveBeenCalledWith(
+                mockUser.id,
+                expect.any(String), // hashedPassword
+            );
         });
 
         it('должен обновить профиль существующего пользователя при изменении данных', async () => {
