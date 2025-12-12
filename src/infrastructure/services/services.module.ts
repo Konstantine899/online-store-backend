@@ -43,6 +43,9 @@ import { ProductPropertyService } from './product-property/product-property.serv
 import { ProductService } from './product/product.service';
 import { PromoCodeService } from './promo-code/promo-code.service';
 import { RatingService } from './rating/rating.service';
+import { ExternalRoleProviderFactory } from './role/external-role-provider.factory';
+import { ExternalRoleSyncScheduler } from './role/external-role-sync-scheduler.service';
+import { ExternalRoleSyncService } from './role/external-role-sync.service';
 import {
     ADProvider,
     LDAPClientService,
@@ -120,6 +123,9 @@ import { UserService } from './user/user.service';
         LDAPProvider,
         ADProvider,
         LDAPRoleSyncService,
+        ExternalRoleProviderFactory,
+        ExternalRoleSyncService,
+        ExternalRoleSyncScheduler,
         SSOStateService,
         SSOUserProfileMapper,
         SSORoleSyncService,
@@ -177,6 +183,10 @@ import { UserService } from './user/user.service';
         LDAPProvider,
         ADProvider,
         LDAPRoleSyncService,
+        ExternalRoleProviderFactory,
+        ExternalRoleSyncService,
+        'IExternalRoleSyncService',
+        ExternalRoleSyncScheduler,
         SSOStateService,
         SSOUserProfileMapper,
         SSORoleSyncService,

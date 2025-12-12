@@ -50,6 +50,25 @@ export class MetricsCollector implements OnModuleDestroy {
         timestamp: number;
     }> = [];
 
+    // Хранилище метрик синхронизаций внешних систем
+    private syncOperations: Array<{
+        providerType: string;
+        syncType: 'FULL' | 'INCREMENTAL' | 'ON_DEMAND';
+        triggerType: 'SCHEDULED' | 'MANUAL' | 'SSO_LOGIN' | 'WEBHOOK';
+        duration: number;
+        success: boolean;
+        statistics: {
+            totalUsers: number;
+            createdUsers: number;
+            updatedUsers: number;
+            mappedUsers: number;
+            failedUsers: number;
+        };
+        configId: number;
+        tenantId: number | null;
+        timestamp: number;
+    }> = [];
+
     // Хранилище метрик создания audit логов (per tenant, per day)
     private auditLogsPerDay: Array<{
         tenantId: number | null;
@@ -283,6 +302,162 @@ export class MetricsCollector implements OnModuleDestroy {
     }
 
     /**
+     * Записать метрику синхронизации внешних систем
+     * @param providerType - Тип провайдера (LDAP, AD, AZURE_AD, etc.)
+     * @param syncType - Тип синхронизации (FULL, INCREMENTAL, ON_DEMAND)
+     * @param triggerType - Тип триггера (SCHEDULED, MANUAL, SSO_LOGIN, WEBHOOK)
+     * @param duration - Длительность синхронизации в миллисекундах
+     * @param success - Успешность синхронизации
+     * @param statistics - Статистика синхронизации
+     * @param configId - ID конфигурации
+     * @param tenantId - ID тенанта (опционально)
+     */
+    public recordSyncOperation(
+        providerType: string,
+        syncType: 'FULL' | 'INCREMENTAL' | 'ON_DEMAND',
+        triggerType: 'SCHEDULED' | 'MANUAL' | 'SSO_LOGIN' | 'WEBHOOK',
+        duration: number,
+        success: boolean,
+        statistics: {
+            totalUsers: number;
+            createdUsers: number;
+            updatedUsers: number;
+            mappedUsers: number;
+            failedUsers: number;
+        },
+        configId: number,
+        tenantId: number | null = null,
+    ): void {
+        // Проверяем размер перед добавлением (FIFO)
+        if (this.syncOperations.length >= this.MAX_METRICS_SIZE) {
+            this.syncOperations.shift(); // Удаляем самую старую запись
+        }
+
+        this.syncOperations.push({
+            providerType,
+            syncType,
+            triggerType,
+            duration,
+            success,
+            statistics,
+            configId,
+            tenantId,
+            timestamp: Date.now(),
+        });
+    }
+
+    /**
+     * Получить метрики синхронизаций за последние 24 часа
+     */
+    public getSyncMetrics(): {
+        totalSyncs: number;
+        successRate: number;
+        avgDuration: number;
+        syncsByProvider: Record<string, number>;
+        syncsByType: Record<string, number>;
+        syncsByTrigger: Record<string, number>;
+        errorRate: number;
+        totalUsersSynced: number;
+        totalUsersCreated: number;
+        totalUsersUpdated: number;
+        totalUsersMapped: number;
+        totalUsersFailed: number;
+        timestamp: string;
+    } {
+        const now = Date.now();
+        const cutoff = now - this.METRICS_TTL_MS;
+
+        // Фильтруем метрики за последние 24 часа
+        const recentSyncs = this.syncOperations.filter(
+            (op) => op.timestamp > cutoff,
+        );
+
+        const totalSyncs = recentSyncs.length;
+        const successfulSyncs = recentSyncs.filter((op) => op.success).length;
+        const successRate = totalSyncs > 0 ? successfulSyncs / totalSyncs : 0;
+
+        const avgDuration =
+            recentSyncs.length > 0
+                ? recentSyncs.reduce((sum, op) => sum + op.duration, 0) /
+                  recentSyncs.length
+                : 0;
+
+        // Группируем по провайдеру
+        const syncsByProvider: Record<string, number> = {};
+        recentSyncs.forEach((op) => {
+            syncsByProvider[op.providerType] =
+                (syncsByProvider[op.providerType] || 0) + 1;
+        });
+
+        // Группируем по типу синхронизации
+        const syncsByType: Record<string, number> = {
+            FULL: 0,
+            INCREMENTAL: 0,
+            ON_DEMAND: 0,
+        };
+        recentSyncs.forEach((op) => {
+            if (syncsByType[op.syncType] !== undefined) {
+                syncsByType[op.syncType]++;
+            }
+        });
+
+        // Группируем по типу триггера
+        const syncsByTrigger: Record<string, number> = {
+            SCHEDULED: 0,
+            MANUAL: 0,
+            SSO_LOGIN: 0,
+            WEBHOOK: 0,
+        };
+        recentSyncs.forEach((op) => {
+            if (syncsByTrigger[op.triggerType] !== undefined) {
+                syncsByTrigger[op.triggerType]++;
+            }
+        });
+
+        // Вычисляем error rate
+        const failedSyncs = recentSyncs.filter((op) => !op.success).length;
+        const errorRate = totalSyncs > 0 ? failedSyncs / totalSyncs : 0;
+
+        // Агрегируем статистику пользователей
+        const totalUsersSynced = recentSyncs.reduce(
+            (sum, op) => sum + op.statistics.totalUsers,
+            0,
+        );
+        const totalUsersCreated = recentSyncs.reduce(
+            (sum, op) => sum + op.statistics.createdUsers,
+            0,
+        );
+        const totalUsersUpdated = recentSyncs.reduce(
+            (sum, op) => sum + op.statistics.updatedUsers,
+            0,
+        );
+        const totalUsersMapped = recentSyncs.reduce(
+            (sum, op) => sum + op.statistics.mappedUsers,
+            0,
+        );
+        const totalUsersFailed = recentSyncs.reduce(
+            (sum, op) => sum + op.statistics.failedUsers,
+            0,
+        );
+
+        return {
+            totalSyncs,
+            successRate: Math.round(successRate * 10000) / 10000, // 4 знака после запятой
+            avgDuration: Math.round(avgDuration * 100) / 100, // 2 знака после запятой
+            syncsByProvider,
+            syncsByType,
+            syncsByTrigger,
+            errorRate: Math.round(errorRate * 10000) / 10000, // 4 знака после запятой
+            totalUsersSynced,
+            totalUsersCreated,
+            totalUsersUpdated,
+            totalUsersMapped,
+            totalUsersFailed,
+            timestamp: new Date().toISOString(),
+        };
+    }
+
+    /**
      * Получить метрики за последние 24 часа
      */
     public getMetrics(): {
@@ -495,10 +670,8 @@ export class MetricsCollector implements OnModuleDestroy {
             durations.length > 0
                 ? durations.reduce((sum, d) => sum + d, 0) / durations.length
                 : 0;
-        const minDuration =
-            durations.length > 0 ? Math.min(...durations) : 0;
-        const maxDuration =
-            durations.length > 0 ? Math.max(...durations) : 0;
+        const minDuration = durations.length > 0 ? Math.min(...durations) : 0;
+        const maxDuration = durations.length > 0 ? Math.max(...durations) : 0;
 
         // Группируем операции по типу
         const operationsByType: Record<string, number> = {
@@ -525,14 +698,12 @@ export class MetricsCollector implements OnModuleDestroy {
         });
 
         // Последние ошибки (максимум 20)
-        const recentErrors = recentSSOErrors
-            .slice(-20)
-            .map((e) => ({
-                providerType: e.providerType,
-                operation: e.operation,
-                error: e.error,
-                timestamp: new Date(e.timestamp).toISOString(),
-            }));
+        const recentErrors = recentSSOErrors.slice(-20).map((e) => ({
+            providerType: e.providerType,
+            operation: e.operation,
+            error: e.error,
+            timestamp: new Date(e.timestamp).toISOString(),
+        }));
 
         // Генерируем алерты
         const alerts: Array<{
@@ -624,6 +795,7 @@ export class MetricsCollector implements OnModuleDestroy {
             roleRenewalsPerDay: this.roleRenewalsPerDay.length,
             ssoOperations: this.ssoOperations.length,
             ssoErrors: this.ssoErrors.length,
+            syncOperations: this.syncOperations.length,
             roleExpirationNotificationsPerDay:
                 this.roleExpirationNotificationsPerDay.length,
             roleExpirationErrors: this.roleExpirationErrors.length,

@@ -746,6 +746,240 @@ npm run test:role-mapping:log
 - Имена файлов соответствуют паттернам: `*.unit.test.ts`
 - Jest настроен правильно (проверьте `jest.config.js`)
 
+## External Role Sync Tests Scripts (Этап 5)
+
+Набор скриптов для запуска тестов External Role Sync (Этап 5: Главный сервис синхронизации) с подробным логированием результатов в файлы.
+
+### Компоненты тестирования
+
+Скрипты запускают unit и integration тесты для следующих компонентов:
+
+- **ExternalRoleSyncService** — главный сервис синхронизации внешних систем управления ролями
+- **ExternalRoleSyncScheduler** — сервис для управления динамическими cron jobs синхронизации
+
+### Доступные скрипты
+
+#### 1. Основной Node.js скрипт
+
+**Файл:** `scripts/run-external-role-sync-tests-with-log.mjs`
+
+Основной скрипт для запуска тестов External Role Sync с логированием.
+
+```bash
+# Все тесты (unit + integration)
+node scripts/run-external-role-sync-tests-with-log.mjs
+
+# Только unit тесты
+node scripts/run-external-role-sync-tests-with-log.mjs --unit
+
+# Только integration тесты
+node scripts/run-external-role-sync-tests-with-log.mjs --integration
+
+# С подробным выводом
+node scripts/run-external-role-sync-tests-with-log.mjs --unit --verbose
+
+# С покрытием кода
+node scripts/run-external-role-sync-tests-with-log.mjs --unit --coverage
+
+# В режиме watch (автоматический перезапуск при изменениях)
+node scripts/run-external-role-sync-tests-with-log.mjs --watch
+
+# С SQL логами (для отладки запросов к БД)
+node scripts/run-external-role-sync-tests-with-log.mjs --debug-sql
+```
+
+### NPM скрипты
+
+Для удобства использования добавлены npm скрипты в `package.json`:
+
+```bash
+# Unit тесты (быстро, без БД)
+npm run test:unit:external-role-sync
+
+# Integration тесты (с реальной БД)
+npm run test:integration:external-role-sync
+
+# Все тесты (unit + integration)
+npm run test:external-role-sync
+
+# Запустить все тесты с логами
+npm run test:external-role-sync:log
+
+# Только unit тесты с логами
+npm run test:external-role-sync:log:unit
+
+# Только integration тесты с логами
+npm run test:external-role-sync:log:integration
+
+# С подробным выводом
+npm run test:external-role-sync:log:verbose
+
+# С покрытием кода
+npm run test:external-role-sync:log:coverage
+
+# В режиме watch для разработки
+npm run test:external-role-sync:log:watch
+
+# С SQL логами
+npm run test:external-role-sync:log:debug-sql
+```
+
+### Формат логов
+
+Логи сохраняются в директории `test-logs/` с именами:
+
+- `external-role-sync-unit-tests-YYYY-MM-DDTHH-mm-ss.log`
+- `external-role-sync-integration-tests-YYYY-MM-DDTHH-mm-ss.log`
+
+**Структура лога:**
+
+```
+=== External Role Sync Unit Tests Execution Log ===
+Date: 2024-01-01T12:00:00.000Z
+Command: npx jest --selectProjects unit --testPathPatterns external-role-sync.*unit.test
+Working Directory: /path/to/project
+Node Version: v20.10.0
+Platform: win32
+Test Type: unit
+============================================================
+
+[полный вывод тестов Jest]
+
+============================================================
+Exit Code: 0
+Duration: 15.23s
+Finished at: 2024-01-01T12:00:15.230Z
+============================================================
+
+Test Results:
+  Total: 25
+  Passed: 25
+  Failed: 0
+  Success Rate: 100.0%
+
+Test Files:
+  1. external-role-sync.service.unit.test.ts
+  2. external-role-sync-scheduler.service.unit.test.ts
+```
+
+### Примеры использования
+
+#### Сценарий 1: Запустить все тесты с логами
+
+```bash
+npm run test:external-role-sync:log
+```
+
+#### Сценарий 2: Запустить только unit тесты с покрытием
+
+```bash
+npm run test:external-role-sync:log:unit -- --coverage
+```
+
+#### Сценарий 3: Запустить в watch режиме для разработки
+
+```bash
+npm run test:external-role-sync:log:watch
+```
+
+#### Сценарий 4: Отладка падающих тестов с подробным выводом
+
+```bash
+npm run test:external-role-sync:log:verbose
+```
+
+#### Сценарий 5: Отладка SQL запросов
+
+```bash
+npm run test:external-role-sync:log:debug-sql
+```
+
+### Тестируемые файлы
+
+Скрипты автоматически находят и запускают следующие тестовые файлы:
+
+**Unit тесты:**
+
+1. `src/infrastructure/services/role/tests/external-role-sync.service.unit.test.ts`
+    - Тесты главного сервиса синхронизации
+    - Методы: syncTenant, syncAllTenants, getSyncStatus, retryFailedSync
+    - Управление синхронизацией: pauseSync, resumeSync, testConnection
+    - Интеграция с MetricsCollector и AuditService
+
+2. `src/infrastructure/services/role/tests/external-role-sync-scheduler.service.unit.test.ts`
+    - Тесты сервиса планировщика cron jobs
+    - Динамическое создание/обновление/удаление cron jobs
+    - Валидация cron выражений
+    - Инициализация при старте приложения
+
+**Integration тесты:**
+
+1. `src/infrastructure/services/role/tests/external-role-sync.service.integration.test.ts`
+    - Интеграционные тесты с реальной БД
+    - Полный цикл синхронизации
+    - Проверка tenant isolation
+    - Проверка метрик и audit логов
+
+2. `src/infrastructure/services/role/tests/external-role-sync-scheduler.service.integration.test.ts`
+    - Интеграционные тесты планировщика
+    - Проверка выполнения scheduled синхронизаций
+    - Проверка обновления cron jobs
+
+### Особенности
+
+1. **Подробное логирование:** Все выводы Jest сохраняются в файл
+2. **Автоматическая статистика:** Подсчёт пройденных/упавших тестов с процентами
+3. **Таймстампы:** Точное время начала и завершения выполнения
+4. **Детальная информация:** Команда, окружение, версия Node.js, платформа
+5. **Цветной вывод:** Консоль сохраняет форматирование Jest
+6. **Кросс-платформенность:** Работает на Windows, Linux, macOS
+7. **UTF-8 поддержка:** Корректная обработка русских символов в логах
+8. **Разделение unit/integration:** Возможность запускать тесты отдельно
+
+### Параметры
+
+#### Node.js скрипт (`run-external-role-sync-tests-with-log.mjs`)
+
+- `--unit` — запустить только unit тесты
+- `--integration` — запустить только integration тесты
+- `--verbose` — подробный вывод Jest (показывает все describe/it блоки)
+- `--coverage` — включить генерацию отчета о покрытии кода
+- `--watch` — режим watch (автоматический перезапуск при изменениях)
+- `--debug-sql` — включить логирование SQL запросов
+
+### Директория логов
+
+Логи сохраняются в `test-logs/` (уже добавлена в `.gitignore`).
+
+**Рекомендации:**
+
+- Регулярно очищайте старые логи (старше 30 дней)
+- Используйте логи для анализа падений тестов
+- Сохраняйте логи для CI/CD анализа
+- Используйте логи для code review и аудита
+
+### Интеграция с CI/CD
+
+Пример использования в GitHub Actions:
+
+```yaml
+- name: Run External Role Sync tests
+  run: npm run test:external-role-sync:log:coverage
+
+- name: Upload test logs
+  uses: actions/upload-artifact@v3
+  if: always()
+  with:
+      name: external-role-sync-test-logs
+      path: test-logs/external-role-sync-*.log
+
+- name: Upload coverage
+  uses: codecov/codecov-action@v3
+  if: always()
+  with:
+      files: coverage/coverage-final.json
+```
+
 ## Поддержка
 
 При возникновении проблем:

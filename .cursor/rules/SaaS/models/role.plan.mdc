@@ -2173,22 +2173,9 @@ tasks:
         - Оценка: 1 час
         - Реализовано: используется `UserService.updatePassword()`, тесты обновлены
 
-    **Средний приоритет:** 5. ✅ **Добавить кэширование конфигураций провайдеров** - ВЫПОЛНЕНО - Цель: уменьшить количество запросов к БД - Решение: кэш с TTL (например, 5 минут) для часто используемых конфигураций - Файл: `src/infrastructure/common/strategies/sso/sso-strategy.factory.ts` - Оценка: 1-2 часа - Реализовано: добавлен in-memory кэш с TTL 5 минут, методы `invalidateConfigCache()`, `getCacheStats()` 6. ✅ **Параллелизовать применение маппингов ролей** - ВЫПОЛНЕНО - Цель: улучшить производительность при множественных маппингах - Решение: использовать `Promise.all()` для независимых операций - Файл: `src/infrastructure/services/role/sso/sso-role-sync.service.ts` - Оценка: 1 час - Реализовано: используется `Promise.allSettled()` для параллельного выполнения, обработка частичных ошибок 7. ✅ **Создать интерфейс для расширенных ошибок Passport** - ВЫПОЛНЕНО - Проблема: использование `any` для `statusCode` и `response` - Решение: создать интерфейс `IPassportError` с типизацией - Файлы: Guards и стратегии - Оценка: 1-2 часа - Реализовано: создан `IPassportError` интерфейс в `BaseSSOGuard`, используется во всех guards 8. ✅ **Добавить unit тесты для edge cases** - ВЫПОЛНЕНО - Истекший state parameter - Невалидная конфигурация провайдера - Ошибки сети при обмене кода на токен - Файлы: `tests/unit/sso/*.test.ts` - Оценка: 2-3 часа - Реализовано: добавлены тесты для всех edge cases, покрытие > 85%
-    9. ✅ **Добавить тесты производительности** - ВЫПОЛНЕНО
-        - Очистка state при высокой нагрузке
-        - Синхронизация ролей для большого количества пользователей
-        - Файлы: `tests/performance/sso/*.test.ts`
-        - Оценка: 2-3 часа
-        - Реализовано: создан `tests/performance/sso/sso-performance.test.ts` с benchmark тестами
+    **Средний приоритет:** 5. ✅ **Добавить кэширование конфигураций провайдеров** - ВЫПОЛНЕНО - Цель: уменьшить количество запросов к БД - Решение: кэш с TTL (например, 5 минут) для часто используемых конфигураций - Файл: `src/infrastructure/common/strategies/sso/sso-strategy.factory.ts` - Оценка: 1-2 часа - Реализовано: добавлен in-memory кэш с TTL 5 минут, методы `invalidateConfigCache()`, `getCacheStats()` 6. ✅ **Параллелизовать применение маппингов ролей** - ВЫПОЛНЕНО - Цель: улучшить производительность при множественных маппингах - Решение: использовать `Promise.all()` для независимых операций - Файл: `src/infrastructure/services/role/sso/sso-role-sync.service.ts` - Оценка: 1 час - Реализовано: используется `Promise.allSettled()` для параллельного выполнения, обработка частичных ошибок 7. ✅ **Создать интерфейс для расширенных ошибок Passport** - ВЫПОЛНЕНО - Проблема: использование `any` для `statusCode` и `response` - Решение: создать интерфейс `IPassportError` с типизацией - Файлы: Guards и стратегии - Оценка: 1-2 часа - Реализовано: создан `IPassportError` интерфейс в `BaseSSOGuard`, используется во всех guards 8. ✅ **Добавить unit тесты для edge cases** - ВЫПОЛНЕНО - Истекший state parameter - Невалидная конфигурация провайдера - Ошибки сети при обмене кода на токен - Файлы: `tests/unit/sso/*.test.ts` - Оценка: 2-3 часа - Реализовано: добавлены тесты для всех edge cases, покрытие > 85% 9. ✅ **Добавить тесты производительности** - ВЫПОЛНЕНО - Очистка state при высокой нагрузке - Синхронизация ролей для большого количества пользователей - Файлы: `tests/performance/sso/*.test.ts` - Оценка: 2-3 часа - Реализовано: создан `tests/performance/sso/sso-performance.test.ts` с benchmark тестами
 
-    **Низкий приоритет:** 10. ✅ **Удалить неиспользуемые параметры** - ВЫПОЛНЕНО - Проблема: `_providerConfig`, `_tenantId` в `provisionUser()` помечены как неиспользуемые - Решение: использовать их или удалить - Файл: `src/infrastructure/services/role/sso/sso-role-sync.service.ts` - Оценка: 0.5 часа - Реализовано: удалены неиспользуемые параметры из `provisionUser()`, обновлены все вызовы 11. ✅ **Добавить диаграммы flow в документацию** - ВЫПОЛНЕНО - OAuth2 Authorization Code flow - SAML SSO flow - OIDC flow - Файл: `docs/project/SSO_SETUP.md` - Оценка: 1-2 часа - Реализовано: добавлены Mermaid диаграммы для всех трех flow в документацию 12. ✅ **Добавить примеры конфигураций для популярных провайдеров** - ВЫПОЛНЕНО - Okta - Auth0 - OneLogin - Файл: `docs/project/SSO_SETUP.md` - Оценка: 1 час - Реализовано: добавлены примеры конфигураций для Okta, Auth0, OneLogin 13. ✅ **Рефакторинг CustomPassportStrategy** - ВЫПОЛНЕНО - Цель: упростить fallback логику в `verified()` - Файл: `src/infrastructure/common/strategies/sso/custom-passport-strategy.ts` - Оценка: 2-3 часа - Реализовано: созданы helper методы `callErrorMethod()`, `callFailMethod()`, `callSuccessMethod()`, `handleErrorViaReqRes()`
-    14. ✅ **Добавить мониторинг и алерты для SSO операций** - ВЫПОЛНЕНО
-        - Метрики успешности
-        - Время выполнения
-        - Частота ошибок
-        - Файл: `src/infrastructure/common/services/metrics-collector.service.ts`
-        - Оценка: 2-3 часа
-        - Реализовано: добавлен метод `getSSOMetrics()`, endpoint `/auth/sso/metrics` в `AuthController`
+    **Низкий приоритет:** 10. ✅ **Удалить неиспользуемые параметры** - ВЫПОЛНЕНО - Проблема: `_providerConfig`, `_tenantId` в `provisionUser()` помечены как неиспользуемые - Решение: использовать их или удалить - Файл: `src/infrastructure/services/role/sso/sso-role-sync.service.ts` - Оценка: 0.5 часа - Реализовано: удалены неиспользуемые параметры из `provisionUser()`, обновлены все вызовы 11. ✅ **Добавить диаграммы flow в документацию** - ВЫПОЛНЕНО - OAuth2 Authorization Code flow - SAML SSO flow - OIDC flow - Файл: `docs/project/SSO_SETUP.md` - Оценка: 1-2 часа - Реализовано: добавлены Mermaid диаграммы для всех трех flow в документацию 12. ✅ **Добавить примеры конфигураций для популярных провайдеров** - ВЫПОЛНЕНО - Okta - Auth0 - OneLogin - Файл: `docs/project/SSO_SETUP.md` - Оценка: 1 час - Реализовано: добавлены примеры конфигураций для Okta, Auth0, OneLogin 13. ✅ **Рефакторинг CustomPassportStrategy** - ВЫПОЛНЕНО - Цель: упростить fallback логику в `verified()` - Файл: `src/infrastructure/common/strategies/sso/custom-passport-strategy.ts` - Оценка: 2-3 часа - Реализовано: созданы helper методы `callErrorMethod()`, `callFailMethod()`, `callSuccessMethod()`, `handleErrorViaReqRes()` 14. ✅ **Добавить мониторинг и алерты для SSO операций** - ВЫПОЛНЕНО - Метрики успешности - Время выполнения - Частота ошибок - Файл: `src/infrastructure/common/services/metrics-collector.service.ts` - Оценка: 2-3 часа - Реализовано: добавлен метод `getSSOMetrics()`, endpoint `/auth/sso/metrics` в `AuthController`
 
     **Шаги реализации:**
 
@@ -2265,14 +2252,37 @@ tasks:
 
     **Коммит:** e04b5abe - feat(role): implement role mapping service with rule engine and validation
 
-    # Этап 5: Главный сервис синхронизации (10-12 часов)
-    - создать ExternalRoleSyncService (координация всех провайдеров)
-    - реализовать scheduled синхронизацию (cron jobs)
-    - реализовать manual синхронизацию
-    - реализовать on-demand синхронизацию (при SSO входе)
-    - добавить retry логику при ошибках
-    - реализовать audit logging всех операций
-    - добавить метрики синхронизаций
+    # Этап 5: Главный сервис синхронизации (10-12 часов) ✅ COMPLETED
+
+    **Статус:** Выполнено (2025-12-12)
+    **Реализовано:**
+    - ✅ ExternalRoleSyncService создан (координация всех провайдеров)
+    - ✅ ExternalRoleSyncScheduler создан (динамические cron jobs)
+    - ✅ Scheduled синхронизация реализована (через ExternalRoleSyncScheduler)
+    - ✅ Manual синхронизация реализована (syncTenant с ON_DEMAND)
+    - ✅ On-demand синхронизация реализована (syncTenant для ручного запуска)
+    - ✅ Retry логика реализована (retryFailedSync с экспоненциальным backoff)
+    - ✅ Audit logging реализован (интеграция с AuditService для всех операций)
+    - ✅ Метрики синхронизаций реализованы (интеграция с MetricsCollector)
+    - ✅ Защита от параллельных запусков (проверка статуса RUNNING)
+    - ✅ Вычисление nextSyncAt (парсинг cron выражений через CronJob)
+    - ✅ Скрипты для запуска тестов с логированием
+    - ✅ Документация обновлена (scripts/README.md)
+
+    **Структура файлов:**
+
+    ```
+    src/infrastructure/services/role/
+    ├── external-role-sync.service.ts              # Главный сервис синхронизации
+    ├── external-role-sync-scheduler.service.ts    # Сервис управления cron jobs
+    └── tests/
+        ├── external-role-sync.service.unit.test.ts           # Unit тесты (TODO)
+        ├── external-role-sync.service.integration.test.ts      # Integration тесты (TODO)
+        ├── external-role-sync-scheduler.service.unit.test.ts  # Unit тесты (TODO)
+        └── external-role-sync-scheduler.service.integration.test.ts # Integration тесты (TODO)
+    ```
+
+    **Коммит:** (будет создан после написания тестов)
 
     # Этап 6: API Endpoints (8-10 часов)
     - создать ExternalRoleIntegrationController
