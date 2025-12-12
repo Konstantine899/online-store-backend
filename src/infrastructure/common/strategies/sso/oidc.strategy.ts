@@ -169,11 +169,7 @@ export class OIDCSSOStrategy extends PassportStrategy(
             ssoProfile.refreshToken = tokenSet.refresh_token;
 
             // Provision пользователя (just-in-time)
-            const user = await this.ssoRoleSyncService.provisionUser(
-                ssoProfile,
-                providerConfig,
-                tenantId,
-            );
+            const user = await this.ssoRoleSyncService.provisionUser(ssoProfile);
 
             // Синхронизируем роли
             await this.ssoRoleSyncService.syncRoles(

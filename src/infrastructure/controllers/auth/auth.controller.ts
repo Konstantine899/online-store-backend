@@ -31,6 +31,7 @@ import {
     Param,
     ParseIntPipe,
     Post,
+    Query,
     Req,
     Res,
     UnauthorizedException,
@@ -773,5 +774,48 @@ export class AuthController {
             );
             throw error;
         }
+    }
+
+    /**
+     * Получить статистику SSO операций с алертами
+     * @access ADMIN_ROLES
+     */
+    @ApiOperation({
+        summary: 'Получить статистику SSO операций',
+        description:
+            'Возвращает детальную статистику SSO операций за указанный период с алертами',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Статистика SSO операций',
+        schema: {
+            type: 'object',
+            properties: {
+                totalOperations: { type: 'number' },
+                successfulOperations: { type: 'number' },
+                failedOperations: { type: 'number' },
+                successRate: { type: 'number' },
+                avgDuration: { type: 'number' },
+                minDuration: { type: 'number' },
+                maxDuration: { type: 'number' },
+                operationsByType: { type: 'object' },
+                operationsByProvider: { type: 'object' },
+                errorRate: { type: 'number' },
+                recentErrors: { type: 'array' },
+                alerts: { type: 'array' },
+                timestamp: { type: 'string' },
+            },
+        },
+    })
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @Get('/sso/stats')
+    @HttpCode(HttpStatus.OK)
+    public async getSSOStats(
+        @Query('periodHours', new ParseIntPipe({ optional: true }))
+        periodHours?: number,
+    ): Promise<ReturnType<typeof this.metricsCollector.getSSOStats>> {
+        const period = periodHours && periodHours > 0 ? periodHours : 24;
+        return this.metricsCollector.getSSOStats(period);
     }
 }

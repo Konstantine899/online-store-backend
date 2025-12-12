@@ -16,6 +16,92 @@ SSO интеграция реализована через:
 - **Just-in-time provisioning** - пользователи создаются автоматически при первом SSO входе
 - **Автоматическая синхронизация ролей** - роли синхронизируются через RoleMapping
 
+## SSO Flow Диаграммы
+
+### OAuth 2.0 Authorization Code Flow
+
+```mermaid
+sequenceDiagram
+    participant User as Пользователь
+    participant App as Приложение
+    participant Provider as OAuth2 Провайдер
+    participant DB as База данных
+
+    User->>App: GET /auth/sso/:providerId
+    App->>DB: Загрузить конфигурацию провайдера
+    DB-->>App: Конфигурация
+    App->>App: Генерировать state (tenantId + providerId)
+    App->>Provider: Редирект на authorization URL<br/>с state parameter
+    Provider->>User: Страница авторизации
+    User->>Provider: Ввод credentials
+    Provider->>App: GET /auth/sso/oauth2/callback<br/>?code=...&state=...
+    App->>App: Валидация state
+    App->>Provider: Обмен code на access token
+    Provider-->>App: Access token + Refresh token
+    App->>Provider: Запрос userInfo (опционально)
+    Provider-->>App: User profile
+    App->>App: Маппинг профиля
+    App->>App: Provision пользователя (JIT)
+    App->>App: Синхронизация ролей
+    App->>User: SSOLoginResponse<br/>(access token + refresh token)
+```
+
+### SAML 2.0 SSO Flow
+
+```mermaid
+sequenceDiagram
+    participant User as Пользователь
+    participant App as Приложение
+    participant Provider as SAML Провайдер
+    participant DB as База данных
+
+    User->>App: GET /auth/sso/:providerId
+    App->>DB: Загрузить конфигурацию провайдера
+    DB-->>App: Конфигурация
+    App->>App: Генерировать RelayState (tenantId + providerId)
+    App->>Provider: Редирект на SAML SSO endpoint<br/>с RelayState
+    Provider->>User: Страница авторизации
+    User->>Provider: Ввод credentials
+    Provider->>App: POST /auth/sso/saml/callback<br/>SAMLResponse + RelayState
+    App->>App: Валидация RelayState
+    App->>App: Валидация SAML assertion<br/>(подпись, сертификат)
+    App->>App: Извлечение атрибутов из assertion
+    App->>App: Маппинг профиля
+    App->>App: Provision пользователя (JIT)
+    App->>App: Синхронизация ролей
+    App->>User: SSOLoginResponse<br/>(access token + refresh token)
+```
+
+### OpenID Connect (OIDC) Flow
+
+```mermaid
+sequenceDiagram
+    participant User as Пользователь
+    participant App as Приложение
+    participant Provider as OIDC Провайдер
+    participant DB as База данных
+
+    User->>App: GET /auth/sso/:providerId
+    App->>DB: Загрузить конфигурацию провайдера
+    DB-->>App: Конфигурация
+    App->>App: Генерировать state (tenantId + providerId)
+    App->>Provider: Редирект на authorization URL<br/>с state parameter
+    Provider->>User: Страница авторизации
+    User->>Provider: Ввод credentials
+    Provider->>App: GET /auth/sso/oidc/callback<br/>?code=...&state=...
+    App->>App: Валидация state
+    App->>Provider: Обмен code на tokens<br/>(access token + ID token)
+    Provider-->>App: Tokens
+    App->>App: Валидация ID token<br/>(подпись, issuer, audience)
+    App->>App: Извлечение claims из ID token
+    App->>Provider: Запрос userInfo (опционально)
+    Provider-->>App: User profile
+    App->>App: Маппинг профиля
+    App->>App: Provision пользователя (JIT)
+    App->>App: Синхронизация ролей
+    App->>User: SSOLoginResponse<br/>(access token + refresh token)
+```
+
 ## Endpoints
 
 ### Инициация SSO
@@ -190,6 +276,27 @@ POST /role/external/configs
 ```json
 {
     "providerType": "GENERIC_OAUTH2",
+    "name": "Generic OAuth2 Provider",
+    "description": "Интеграция с Generic OAuth 2.0 провайдером",
+    "providerConfig": {
+        "clientId": "your-client-id",
+        "clientSecret": "your-client-secret",
+        "authorizationURL": "https://provider.com/oauth2/authorize",
+        "tokenURL": "https://provider.com/oauth2/token",
+        "userInfoURL": "https://provider.com/oauth2/userinfo",
+        "callbackURL": "https://your-app.com/auth/sso/oauth2/callback",
+        "scope": ["openid", "profile", "email"]
+    },
+    "syncEnabled": true,
+    "status": "ACTIVE"
+}
+```
+
+#### Okta
+
+```json
+{
+    "providerType": "GENERIC_OAUTH2",
     "name": "Okta SSO",
     "description": "Интеграция с Okta",
     "providerConfig": {
@@ -205,6 +312,73 @@ POST /role/external/configs
     "status": "ACTIVE"
 }
 ```
+
+**Настройка в Okta:**
+
+1. Создайте Application в Okta Admin Console
+2. Выберите тип приложения: **Web Application**
+3. Настройте **Sign-in redirect URIs**: `https://your-app.com/auth/sso/oauth2/callback`
+4. Скопируйте **Client ID** и **Client Secret**
+5. Убедитесь, что включены scopes: `openid`, `profile`, `email`
+
+#### Auth0
+
+```json
+{
+    "providerType": "GENERIC_OAUTH2",
+    "name": "Auth0 SSO",
+    "description": "Интеграция с Auth0",
+    "providerConfig": {
+        "clientId": "your-auth0-client-id",
+        "clientSecret": "your-auth0-client-secret",
+        "authorizationURL": "https://your-tenant.auth0.com/authorize",
+        "tokenURL": "https://your-tenant.auth0.com/oauth/token",
+        "userInfoURL": "https://your-tenant.auth0.com/userinfo",
+        "callbackURL": "https://your-app.com/auth/sso/oauth2/callback",
+        "scope": ["openid", "profile", "email"]
+    },
+    "syncEnabled": true,
+    "status": "ACTIVE"
+}
+```
+
+**Настройка в Auth0:**
+
+1. Создайте Application в Auth0 Dashboard
+2. Выберите тип приложения: **Regular Web Application**
+3. Настройте **Allowed Callback URLs**: `https://your-app.com/auth/sso/oauth2/callback`
+4. Скопируйте **Client ID** и **Client Secret**
+5. Убедитесь, что включены scopes: `openid`, `profile`, `email`
+6. Включите **OIDC Conformant** для совместимости
+
+#### OneLogin
+
+```json
+{
+    "providerType": "GENERIC_OAUTH2",
+    "name": "OneLogin SSO",
+    "description": "Интеграция с OneLogin",
+    "providerConfig": {
+        "clientId": "your-onelogin-client-id",
+        "clientSecret": "your-onelogin-client-secret",
+        "authorizationURL": "https://your-subdomain.onelogin.com/oidc/2/auth",
+        "tokenURL": "https://your-subdomain.onelogin.com/oidc/2/token",
+        "userInfoURL": "https://your-subdomain.onelogin.com/oidc/2/me",
+        "callbackURL": "https://your-app.com/auth/sso/oauth2/callback",
+        "scope": ["openid", "profile", "email"]
+    },
+    "syncEnabled": true,
+    "status": "ACTIVE"
+}
+```
+
+**Настройка в OneLogin:**
+
+1. Создайте OpenID Connect Application в OneLogin Admin
+2. Настройте **Redirect URI**: `https://your-app.com/auth/sso/oauth2/callback`
+3. Скопируйте **Client ID** и **Client Secret**
+4. Убедитесь, что включены scopes: `openid`, `profile`, `email`
+5. Настройте **Token Endpoint Auth Method**: `client_secret_post` или `client_secret_basic`
 
 ### 3. SAML 2.0 провайдеры
 

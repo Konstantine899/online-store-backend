@@ -168,11 +168,7 @@ export class OAuth2SSOStrategy extends PassportStrategy(
             ) as IOAuth2UserProfile;
 
             // Provision пользователя (just-in-time)
-            const user = await this.ssoRoleSyncService.provisionUser(
-                ssoProfile,
-                providerConfig,
-                tenantId,
-            );
+            const user = await this.ssoRoleSyncService.provisionUser(ssoProfile);
 
             // Синхронизируем роли
             await this.ssoRoleSyncService.syncRoles(

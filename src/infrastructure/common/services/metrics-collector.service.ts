@@ -440,6 +440,171 @@ export class MetricsCollector implements OnModuleDestroy {
     }
 
     /**
+     * Получить детальную статистику SSO операций
+     * @param periodHours - Период в часах (по умолчанию 24)
+     * @returns Детальная статистика SSO операций с алертами
+     */
+    public getSSOStats(periodHours: number = 24): {
+        totalOperations: number;
+        successfulOperations: number;
+        failedOperations: number;
+        successRate: number;
+        avgDuration: number;
+        minDuration: number;
+        maxDuration: number;
+        operationsByType: Record<string, number>;
+        operationsByProvider: Record<string, number>;
+        errorRate: number;
+        recentErrors: Array<{
+            providerType: 'OAUTH2' | 'SAML' | 'OIDC';
+            operation: 'initiate' | 'callback' | 'logout';
+            error: string;
+            timestamp: string;
+        }>;
+        alerts: Array<{
+            level: 'warning' | 'error' | 'critical';
+            message: string;
+            metric: string;
+            value: number;
+            threshold: number;
+        }>;
+        timestamp: string;
+    } {
+        const now = Date.now();
+        const cutoff = now - periodHours * 60 * 60 * 1000;
+
+        const recentSSOOperations = this.ssoOperations.filter(
+            (op) => op.timestamp > cutoff,
+        );
+        const recentSSOErrors = this.ssoErrors.filter(
+            (e) => e.timestamp > cutoff,
+        );
+
+        const totalOperations = recentSSOOperations.length;
+        const successfulOperations = recentSSOOperations.filter(
+            (op) => op.success,
+        ).length;
+        const failedOperations = totalOperations - successfulOperations;
+        const successRate =
+            totalOperations > 0 ? successfulOperations / totalOperations : 0;
+        const errorRate =
+            totalOperations > 0 ? recentSSOErrors.length / totalOperations : 0;
+
+        const durations = recentSSOOperations.map((op) => op.duration);
+        const avgDuration =
+            durations.length > 0
+                ? durations.reduce((sum, d) => sum + d, 0) / durations.length
+                : 0;
+        const minDuration =
+            durations.length > 0 ? Math.min(...durations) : 0;
+        const maxDuration =
+            durations.length > 0 ? Math.max(...durations) : 0;
+
+        // Группируем операции по типу
+        const operationsByType: Record<string, number> = {
+            initiate: 0,
+            callback: 0,
+            logout: 0,
+        };
+        recentSSOOperations.forEach((op) => {
+            if (operationsByType[op.operation] !== undefined) {
+                operationsByType[op.operation]++;
+            }
+        });
+
+        // Группируем операции по провайдеру
+        const operationsByProvider: Record<string, number> = {
+            OAUTH2: 0,
+            SAML: 0,
+            OIDC: 0,
+        };
+        recentSSOOperations.forEach((op) => {
+            if (operationsByProvider[op.providerType] !== undefined) {
+                operationsByProvider[op.providerType]++;
+            }
+        });
+
+        // Последние ошибки (максимум 20)
+        const recentErrors = recentSSOErrors
+            .slice(-20)
+            .map((e) => ({
+                providerType: e.providerType,
+                operation: e.operation,
+                error: e.error,
+                timestamp: new Date(e.timestamp).toISOString(),
+            }));
+
+        // Генерируем алерты
+        const alerts: Array<{
+            level: 'warning' | 'error' | 'critical';
+            message: string;
+            metric: string;
+            value: number;
+            threshold: number;
+        }> = [];
+
+        // Алерт: низкий success rate
+        if (totalOperations > 10 && successRate < 0.95) {
+            alerts.push({
+                level: successRate < 0.8 ? 'critical' : 'error',
+                message: `Низкий success rate SSO операций: ${Math.round(successRate * 100)}%`,
+                metric: 'successRate',
+                value: successRate,
+                threshold: 0.95,
+            });
+        }
+
+        // Алерт: высокий error rate
+        if (totalOperations > 10 && errorRate > 0.1) {
+            alerts.push({
+                level: errorRate > 0.3 ? 'critical' : 'warning',
+                message: `Высокий error rate SSO операций: ${Math.round(errorRate * 100)}%`,
+                metric: 'errorRate',
+                value: errorRate,
+                threshold: 0.1,
+            });
+        }
+
+        // Алерт: медленные операции
+        if (avgDuration > 2000) {
+            alerts.push({
+                level: avgDuration > 5000 ? 'critical' : 'warning',
+                message: `Медленные SSO операции: среднее время ${Math.round(avgDuration)}ms`,
+                metric: 'avgDuration',
+                value: avgDuration,
+                threshold: 2000,
+            });
+        }
+
+        // Алерт: много ошибок за период
+        if (recentSSOErrors.length > 50) {
+            alerts.push({
+                level: recentSSOErrors.length > 100 ? 'critical' : 'error',
+                message: `Много ошибок SSO за последние ${periodHours} часов: ${recentSSOErrors.length}`,
+                metric: 'errorCount',
+                value: recentSSOErrors.length,
+                threshold: 50,
+            });
+        }
+
+        return {
+            totalOperations,
+            successfulOperations,
+            failedOperations,
+            successRate: Math.round(successRate * 10000) / 10000,
+            avgDuration: Math.round(avgDuration * 100) / 100,
+            minDuration,
+            maxDuration,
+            operationsByType,
+            operationsByProvider,
+            errorRate: Math.round(errorRate * 10000) / 10000,
+            recentErrors,
+            alerts,
+            timestamp: new Date().toISOString(),
+        };
+    }
+
+    /**
      * Очистка старых метрик (>24 часа)
      * @private
      */

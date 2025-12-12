@@ -123,11 +123,7 @@ describe('SSORoleSyncService (unit)', () => {
         it('должен вернуть существующего пользователя и обновить профиль', async () => {
             userService.findUserByEmail.mockResolvedValue(mockUser);
 
-            const result = await service.provisionUser(
-                mockSSOProfile,
-                mockProviderConfig,
-                1,
-            );
+            const result = await service.provisionUser(mockSSOProfile);
 
             expect(result).toBe(mockUser);
             expect(userService.findUserByEmail).toHaveBeenCalledWith(
@@ -143,11 +139,7 @@ describe('SSORoleSyncService (unit)', () => {
             userService.createUser.mockResolvedValue(mockCreateUserResponse);
             userService.findAuthenticatedUser.mockResolvedValue(mockUser);
 
-            const result = await service.provisionUser(
-                mockSSOProfile,
-                mockProviderConfig,
-                1,
-            );
+            const result = await service.provisionUser(mockSSOProfile);
 
             expect(result).toBe(mockUser);
             expect(userService.createUser).toHaveBeenCalled();
@@ -165,11 +157,7 @@ describe('SSORoleSyncService (unit)', () => {
                 existingUser as UserModel,
             );
 
-            const result = await service.provisionUser(
-                mockSSOProfile,
-                mockProviderConfig,
-                1,
-            );
+            const result = await service.provisionUser(mockSSOProfile);
 
             expect(result).toBe(existingUser);
             expect(existingUser.update).toHaveBeenCalled();

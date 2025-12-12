@@ -33,17 +33,9 @@ export class SSORoleSyncService {
     /**
      * Provision пользователя из SSO профиля (just-in-time)
      * @param profile - профиль пользователя из SSO
-     * @param providerConfig - конфигурация провайдера
-     * @param tenantId - ID тенанта
      * @returns Пользователь (существующий или созданный)
      */
-    public async provisionUser(
-        profile: ISSOUserProfile,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        _providerConfig: ExternalRoleConfigModel,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        _tenantId: number,
-    ): Promise<UserModel> {
+    public async provisionUser(profile: ISSOUserProfile): Promise<UserModel> {
         // Проверяем существование пользователя
         let user: UserModel | null = null;
         try {
