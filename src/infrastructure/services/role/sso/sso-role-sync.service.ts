@@ -1,12 +1,10 @@
 import { ISSOUserProfile } from '@app/domain/types/sso/sso-user-profile.types';
 import { ExternalRoleConfigModel } from '@app/domain/models/external-role-config.model';
-import { RoleMappingModel } from '@app/domain/models/role-mapping.model';
 import { UserModel } from '@app/domain/models';
 import { Injectable } from '@nestjs/common';
 import { createLogger } from '@app/infrastructure/common/utils/logging';
 import { UserService } from '@app/infrastructure/services/user/user.service';
-import { RoleService } from '@app/infrastructure/services/role/role.service';
-import { RoleMappingRepository } from '@app/infrastructure/repositories/role/role-mapping.repository';
+import { RoleMappingService } from '@app/infrastructure/services/role/mapping/role-mapping.service';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
 
@@ -26,8 +24,7 @@ export class SSORoleSyncService {
 
     constructor(
         private readonly userService: UserService,
-        private readonly roleService: RoleService,
-        private readonly roleMappingRepository: RoleMappingRepository,
+        private readonly roleMappingService: RoleMappingService,
     ) {}
 
     /**
@@ -89,27 +86,47 @@ export class SSORoleSyncService {
             return;
         }
 
-        // Получаем маппинги для этого провайдера
-        const roleMappings = await this.roleMappingRepository.findMappingsByConfig(
+        // Применяем маппинги ролей через RoleMappingService
+        // Передаем attributes из профиля для использования в mapping rules
+        const userAttributes: Record<string, unknown> = {
+            ...profile.attributes,
+            // Добавляем стандартные поля профиля в attributes для удобства использования в rules
+            email: profile.email,
+            firstName: profile.firstName,
+            lastName: profile.lastName,
+            displayName: profile.displayName,
+            phone: profile.phone,
+            providerType: profile.providerType,
+            providerName: profile.providerName,
+        };
+
+        const result = await this.roleMappingService.applyMappings(
+            userId,
+            externalRoles,
+            userAttributes,
             providerConfig.id,
             tenantId,
         );
 
-        if (roleMappings.length === 0) {
-            this.logger.debug(
-                { userId, providerId: providerConfig.id },
-                'No role mappings configured for provider',
+        if (result.applied > 0) {
+            this.logger.info(
+                {
+                    userId,
+                    applied: result.applied,
+                    errors: result.errors,
+                    usedDefault: result.usedDefault,
+                },
+                'SSO roles synced successfully',
             );
-            return;
+        } else if (result.errors > 0) {
+            this.logger.warn(
+                {
+                    userId,
+                    errors: result.errors,
+                },
+                'Some SSO role mappings failed',
+            );
         }
-
-        // Применяем маппинги ролей
-        await this.applyRoleMappings(
-            userId,
-            externalRoles,
-            roleMappings,
-            tenantId,
-        );
     }
 
     /**
@@ -210,130 +227,5 @@ export class SSORoleSyncService {
         return user;
     }
 
-    /**
-     * Применение маппингов ролей к пользователю
-     * @private
-     */
-    private async applyRoleMappings(
-        userId: number,
-        externalRoles: string[],
-        roleMappings: RoleMappingModel[],
-        tenantId: number,
-    ): Promise<void> {
-        if (externalRoles.length === 0 || roleMappings.length === 0) {
-            return;
-        }
-
-        try {
-            // Находим соответствующие маппинги для внешних ролей
-            const applicableMappings = roleMappings.filter(
-                (mapping) =>
-                    mapping.isActive &&
-                    externalRoles.includes(mapping.externalRoleName),
-            );
-
-            if (applicableMappings.length === 0) {
-                this.logger.debug(
-                    { userId, externalRoles },
-                    'No applicable role mappings found',
-                );
-                return;
-            }
-
-            // Сортируем по приоритету (меньше = выше приоритет)
-            applicableMappings.sort(
-                (a, b) => (a.priority ?? 100) - (b.priority ?? 100),
-            );
-
-            // Получаем текущие роли пользователя один раз
-            const userRolesResponse = await this.roleService.getUserRoles(
-                userId,
-                tenantId,
-            );
-            const userRoleIds = userRolesResponse.roles.map((r) => r.roleId);
-            const userRoleNames = userRolesResponse.roles.map((r) => r.roleName);
-
-            // Фильтруем маппинги, которые нужно применить (исключаем уже назначенные роли)
-            const mappingsToApply = applicableMappings.filter(
-                (mapping) => !userRoleIds.includes(mapping.internalRoleId),
-            );
-
-            if (mappingsToApply.length === 0) {
-                this.logger.debug(
-                    { userId, applicableMappings: applicableMappings.length },
-                    'All applicable roles already assigned',
-                );
-                return;
-            }
-
-            // Применяем маппинги параллельно для улучшения производительности
-            const applyPromises = mappingsToApply.map(async (mapping) => {
-                try {
-                    await this.roleService.assignRoleToUser(
-                        {
-                            userId,
-                            roleId: mapping.internalRoleId,
-                            tenantId,
-                        },
-                        tenantId,
-                        userRoleNames,
-                    );
-
-                    this.logger.info(
-                        {
-                            userId,
-                            externalRole: mapping.externalRoleName,
-                            internalRoleId: mapping.internalRoleId,
-                        },
-                        'Role applied via SSO mapping',
-                    );
-                } catch (error: unknown) {
-                    const errorMessage =
-                        error instanceof Error ? error.message : String(error);
-
-                    this.logger.warn(
-                        {
-                            error: errorMessage,
-                            userId,
-                            mappingId: mapping.id,
-                        },
-                        'Failed to apply role mapping',
-                    );
-                    // Не пробрасываем ошибку - продолжаем применять другие маппинги
-                    throw error; // Пробрасываем для Promise.allSettled
-                }
-            });
-
-            // Используем Promise.allSettled для обработки всех маппингов, даже если некоторые упали
-            const results = await Promise.allSettled(applyPromises);
-            const failed = results.filter((r) => r.status === 'rejected').length;
-
-            if (failed > 0) {
-                this.logger.warn(
-                    {
-                        userId,
-                        total: mappingsToApply.length,
-                        failed,
-                        succeeded: mappingsToApply.length - failed,
-                    },
-                    'Some role mappings failed to apply',
-                );
-            }
-        } catch (error: unknown) {
-            const errorMessage =
-                error instanceof Error ? error.message : String(error);
-
-            this.logger.error(
-                {
-                    error: errorMessage,
-                    userId,
-                    externalRoles,
-                },
-                'Failed to apply role mappings',
-            );
-
-            throw error;
-        }
-    }
 }
 

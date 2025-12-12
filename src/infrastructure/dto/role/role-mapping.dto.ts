@@ -15,7 +15,10 @@ import {
     ValidateNested,
 } from 'class-validator';
 import { IMappingRules } from '@app/domain/models';
-import { IsSanitizedString } from '@app/infrastructure/common/validators';
+import {
+    IsSanitizedString,
+    IsValidMappingRules,
+} from '@app/infrastructure/common/validators';
 
 /**
  * DTO для правила маппинга (условие)
@@ -131,6 +134,9 @@ export class CreateRoleMappingDto {
     @IsObject({ message: 'Правила должны быть объектом' })
     @ValidateNested()
     @Type(() => MappingRulesDto)
+    @IsValidMappingRules({
+        message: 'Правила маппинга содержат ошибки',
+    })
     declare mappingRules?: MappingRulesDto;
 
     @ApiPropertyOptional({
@@ -227,6 +233,9 @@ export class UpdateRoleMappingDto {
     @IsObject({ message: 'Правила должны быть объектом' })
     @ValidateNested()
     @Type(() => MappingRulesDto)
+    @IsValidMappingRules({
+        message: 'Правила маппинга содержат ошибки',
+    })
     declare mappingRules?: MappingRulesDto;
 
     @ApiPropertyOptional({

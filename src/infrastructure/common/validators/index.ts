@@ -21,3 +21,7 @@ export {
     IsSanitizedString,
     IsSanitizedStringConstraint,
 } from './sanitize-string.validator';
+export {
+    IsValidMappingRules,
+    IsValidMappingRulesConstraint,
+} from './mapping-rules.validator';

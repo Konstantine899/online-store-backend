@@ -49,6 +49,11 @@ import {
     LDAPProvider,
     LDAPRoleSyncService,
 } from './role/ldap';
+import {
+    MappingRuleEngine,
+    MappingRuleValidator,
+    RoleMappingService,
+} from './role/mapping';
 import { RoleAnalyticsService } from './role/role-analytics.service';
 import { RoleCacheService } from './role/role-cache.service';
 import { RoleExpirationNotificationService } from './role/role-expiration-notification.service';
@@ -108,6 +113,9 @@ import { UserService } from './user/user.service';
         RoleExpirationService,
         RoleExpirationNotificationService,
         UserRolesCacheService,
+        MappingRuleEngine,
+        MappingRuleValidator,
+        RoleMappingService,
         LDAPClientService,
         LDAPProvider,
         ADProvider,
@@ -162,6 +170,9 @@ import { UserService } from './user/user.service';
         RoleExpirationService,
         RoleExpirationNotificationService,
         UserRolesCacheService,
+        MappingRuleEngine,
+        MappingRuleValidator,
+        RoleMappingService,
         LDAPClientService,
         LDAPProvider,
         ADProvider,

@@ -438,6 +438,314 @@ npm run test:sso:log:coverage
 
 **Подробная документация:** см. `scripts/SSO_TESTS_README.md`
 
+## Role Mapping Tests Scripts (Этап 4)
+
+Набор скриптов для запуска тестов Role Mapping (Этап 4: Role Mapping) с подробным логированием результатов в файлы.
+
+### Компоненты тестирования
+
+Скрипты запускают unit тесты для следующих компонентов:
+
+- **MappingRuleEngine** — движок для оценки правил маппинга ролей
+- **MappingRuleValidator** — валидатор правил маппинга
+- **RoleMappingService** — централизованный сервис для применения маппингов
+
+### Доступные скрипты
+
+#### 1. Основной Node.js скрипт
+
+**Файл:** `scripts/run-role-mapping-tests-with-log.mjs`
+
+Основной скрипт для запуска тестов Role Mapping с логированием.
+
+```bash
+# Стандартный запуск
+node scripts/run-role-mapping-tests-with-log.mjs
+
+# С подробным выводом
+node scripts/run-role-mapping-tests-with-log.mjs --verbose
+
+# С покрытием кода
+node scripts/run-role-mapping-tests-with-log.mjs --coverage
+
+# В режиме watch (автоматический перезапуск при изменениях)
+node scripts/run-role-mapping-tests-with-log.mjs --watch
+
+# С SQL логами (для отладки запросов к БД)
+node scripts/run-role-mapping-tests-with-log.mjs --debug-sql
+```
+
+#### 2. Bash скрипт (Linux/macOS)
+
+**Файл:** `scripts/run-role-mapping-tests.sh`
+
+Обертка для удобного запуска в Linux/macOS окружении.
+
+```bash
+# Стандартный запуск
+./scripts/run-role-mapping-tests.sh
+
+# С подробным выводом
+./scripts/run-role-mapping-tests.sh --verbose
+
+# С покрытием кода
+./scripts/run-role-mapping-tests.sh --coverage
+
+# В режиме watch
+./scripts/run-role-mapping-tests.sh --watch
+
+# С SQL логами
+./scripts/run-role-mapping-tests.sh --debug-sql
+```
+
+#### 3. PowerShell скрипт (Windows)
+
+**Файл:** `scripts/run-role-mapping-tests.ps1`
+
+Обертка для удобного запуска в Windows окружении.
+
+```powershell
+# Стандартный запуск
+.\scripts\run-role-mapping-tests.ps1
+
+# С подробным выводом
+.\scripts\run-role-mapping-tests.ps1 -Verbose
+
+# С покрытием кода
+.\scripts\run-role-mapping-tests.ps1 -Coverage
+
+# В режиме watch
+.\scripts\run-role-mapping-tests.ps1 -Watch
+
+# С SQL логами
+.\scripts\run-role-mapping-tests.ps1 -DebugSql
+```
+
+### NPM скрипты
+
+Для удобства использования добавлены npm скрипты в `package.json`:
+
+```bash
+# Стандартный запуск unit тестов Role Mapping
+npm run test:unit:role-mapping
+
+# Запуск всех Role Mapping тестов (unit)
+npm run test:role-mapping
+
+# Запуск с логированием в файл
+npm run test:role-mapping:log
+
+# С подробным выводом
+npm run test:role-mapping:log:verbose
+
+# С покрытием кода
+npm run test:role-mapping:log:coverage
+
+# В режиме watch
+npm run test:role-mapping:log:watch
+
+# С SQL логами
+npm run test:role-mapping:log:debug-sql
+```
+
+### Формат логов
+
+Логи сохраняются в директории `test-logs/` с именами:
+
+- `role-mapping-unit-tests-YYYY-MM-DDTHH-mm-ss.log`
+
+**Структура лога:**
+
+```
+=== Role Mapping Tests Execution Log ===
+Date: 2024-01-01T12:00:00.000Z
+Command: npx jest --selectProjects unit --testPathPatterns mapping-rule-engine.unit.test|mapping-rule-validator.unit.test|role-mapping.service.unit.test
+Working Directory: /path/to/project
+Node Version: v20.10.0
+Platform: win32
+============================================================
+
+[полный вывод тестов Jest]
+
+============================================================
+Exit Code: 0
+Duration: 15.23s
+Finished at: 2024-01-01T12:00:15.230Z
+============================================================
+
+Test Results:
+  Total: 55
+  Passed: 55
+  Failed: 0
+  Success Rate: 100.0%
+
+Test Files:
+  1. mapping-rule-engine.unit.test.ts
+  2. mapping-rule-validator.unit.test.ts
+  3. role-mapping.service.unit.test.ts
+```
+
+### Примеры использования
+
+#### Сценарий 1: Стандартный запуск с логированием
+
+```bash
+npm run test:role-mapping:log
+```
+
+#### Сценарий 2: Отладка падающих тестов
+
+```bash
+npm run test:role-mapping:log:verbose
+```
+
+#### Сценарий 3: Проверка покрытия кода тестами
+
+```bash
+npm run test:role-mapping:log:coverage
+```
+
+Откроется HTML отчет с покрытием кода в браузере после завершения тестов.
+
+#### Сценарий 4: Разработка в режиме watch
+
+```bash
+npm run test:role-mapping:log:watch
+```
+
+Тесты будут автоматически перезапускаться при изменении кода или тестов.
+
+#### Сценарий 5: Отладка SQL запросов
+
+```bash
+npm run test:role-mapping:log:debug-sql
+```
+
+Включит подробные логи всех SQL запросов к базе данных (полезно для отладки проблем с производительностью или логикой запросов).
+
+### Тестируемые файлы
+
+Скрипты автоматически находят и запускают следующие тестовые файлы:
+
+1. `src/infrastructure/services/role/mapping/tests/mapping-rule-engine.unit.test.ts`
+    - Тесты движка оценки правил маппинга
+    - Операторы: $eq, $ne, $in, $contains, $startsWith, $endsWith
+    - Защита от ReDoS
+    - Оценка условий и default ролей
+
+2. `src/infrastructure/services/role/mapping/tests/mapping-rule-validator.unit.test.ts`
+    - Тесты валидатора правил маппинга
+    - Валидация структуры JSON
+    - Проверка операторов и типов
+    - Валидация depth и циклических зависимостей
+
+3. `src/infrastructure/services/role/mapping/tests/role-mapping.service.unit.test.ts`
+    - Тесты сервиса применения маппингов
+    - Применение маппингов к пользователям
+    - Обработка приоритетов
+    - Default роли
+    - Параллельная обработка
+    - Детализация ошибок
+
+### Особенности
+
+1. **Подробное логирование:** Все выводы Jest сохраняются в файл
+2. **Автоматическая статистика:** Подсчёт пройденных/упавших тестов с процентами
+3. **Таймстампы:** Точное время начала и завершения выполнения
+4. **Детальная информация:** Команда, окружение, версия Node.js, платформа
+5. **Цветной вывод:** Консоль сохраняет форматирование Jest
+6. **Кросс-платформенность:** Работает на Windows, Linux, macOS
+7. **UTF-8 поддержка:** Корректная обработка русских символов в логах
+
+### Параметры
+
+#### Node.js скрипт (`run-role-mapping-tests-with-log.mjs`)
+
+- `--verbose` — подробный вывод Jest (показывает все describe/it блоки)
+- `--coverage` — включить генерацию отчета о покрытии кода
+- `--watch` — режим watch (автоматический перезапуск при изменениях)
+- `--debug-sql` — включить логирование SQL запросов
+
+#### Bash скрипт (`run-role-mapping-tests.sh`)
+
+- `--verbose` — подробный вывод
+- `--coverage` — покрытие кода
+- `--watch` — режим watch
+- `--debug-sql` — SQL логи
+
+#### PowerShell скрипт (`run-role-mapping-tests.ps1`)
+
+- `-Verbose` — подробный вывод
+- `-Coverage` — покрытие кода
+- `-Watch` — режим watch
+- `-DebugSql` — SQL логи
+
+### Директория логов
+
+Логи сохраняются в `test-logs/` (уже добавлена в `.gitignore`).
+
+**Рекомендации:**
+
+- Регулярно очищайте старые логи (старше 30 дней)
+- Используйте логи для анализа падений тестов
+- Сохраняйте логи для CI/CD анализа
+- Используйте логи для code review и аудита
+
+### Интеграция с CI/CD
+
+Пример использования в GitHub Actions:
+
+```yaml
+- name: Run Role Mapping tests
+  run: npm run test:role-mapping:log:coverage
+
+- name: Upload test logs
+  uses: actions/upload-artifact@v3
+  if: always()
+  with:
+      name: role-mapping-test-logs
+      path: test-logs/role-mapping-*.log
+
+- name: Upload coverage
+  uses: codecov/codecov-action@v3
+  if: always()
+  with:
+      files: coverage/coverage-final.json
+```
+
+### Устранение проблем
+
+#### Ошибка "Permission denied" (Linux/macOS)
+
+```bash
+chmod +x scripts/run-role-mapping-tests.sh
+chmod +x scripts/run-role-mapping-tests-with-log.mjs
+```
+
+#### Ошибка "Execution Policy" (PowerShell)
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+#### Проблемы с кодировкой в Windows
+
+Скрипт автоматически устанавливает UTF-8 кодировку. Если проблемы остаются:
+
+```powershell
+# Установить кодировку консоли
+chcp 65001
+npm run test:role-mapping:log
+```
+
+#### Тесты не находятся
+
+Убедитесь, что:
+
+- Тестовые файлы находятся в `src/infrastructure/services/role/mapping/tests/`
+- Имена файлов соответствуют паттернам: `*.unit.test.ts`
+- Jest настроен правильно (проверьте `jest.config.js`)
+
 ## Поддержка
 
 При возникновении проблем:

@@ -3,14 +3,12 @@ import {
     ExternalUserSyncLogModel,
     IErrorDetail,
     ISyncMetadata,
-    RoleMappingModel,
     SyncMode,
     SyncTriggerType,
     SyncType,
 } from '@app/domain/models';
 import {
     IExternalRoleSyncRepository,
-    IRoleMappingRepository,
     IUserRepository,
 } from '@app/domain/repositories';
 import { IRoleService } from '@app/domain/services';
@@ -20,6 +18,7 @@ import {
 } from '@app/domain/services/role/i-external-role-provider';
 import { TenantContext } from '@app/infrastructure/common/context';
 import { CreateUserDto, UpdateUserDto } from '@app/infrastructure/dto';
+import { RoleMappingService } from '@app/infrastructure/services/role/mapping/role-mapping.service';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 
 /**
@@ -41,12 +40,11 @@ export class LDAPRoleSyncService {
     constructor(
         @Inject('IExternalRoleSyncRepository')
         private readonly externalRoleSyncRepository: IExternalRoleSyncRepository,
-        @Inject('IRoleMappingRepository')
-        private readonly roleMappingRepository: IRoleMappingRepository,
         @Inject('IUserRepository')
         private readonly userRepository: IUserRepository,
         @Inject('IRoleService')
         private readonly roleService: IRoleService,
+        private readonly roleMappingService: RoleMappingService,
         private readonly tenantContext: TenantContext,
     ) {}
 
@@ -89,13 +87,6 @@ export class LDAPRoleSyncService {
         let failedUsers = 0;
 
         try {
-            // Получаем маппинги ролей для этой конфигурации
-            const roleMappings = await this.roleMappingRepository.findMappings({
-                externalRoleConfigId: config.id,
-                tenantId,
-                isActive: true,
-            });
-
             // Определяем дату последней синхронизации для инкрементального режима
             const modifiedSince =
                 mode === 'INCREMENTAL' && config.lastSyncAt
@@ -146,7 +137,7 @@ export class LDAPRoleSyncService {
                 // Обрабатываем пользователей в батче параллельно (с ограничением)
                 const batchResults = await Promise.allSettled(
                     batch.map((user) =>
-                        this.syncUser(user, tenantId, roleMappings, config.id),
+                        this.syncUser(user, tenantId, config.id),
                     ),
                 );
 
@@ -298,7 +289,6 @@ export class LDAPRoleSyncService {
     private async syncUser(
         externalUser: IExternalUser,
         tenantId: number,
-        roleMappings: RoleMappingModel[],
         configId: number,
     ): Promise<{
         created: boolean;
@@ -401,13 +391,27 @@ export class LDAPRoleSyncService {
                 );
             }
 
-            // Применяем маппинги ролей
-            const mapped = await this.applyRoleMappings(
+            // Применяем маппинги ролей через RoleMappingService
+            // Передаем attributes из externalUser для использования в mapping rules
+            const userAttributes: Record<string, unknown> = {
+                ...externalUser.attributes,
+                // Добавляем стандартные поля в attributes для удобства использования в rules
+                email: externalUser.email,
+                firstName: externalUser.firstName,
+                lastName: externalUser.lastName,
+                displayName: externalUser.displayName,
+                phone: externalUser.phone,
+            };
+
+            const mappingResult = await this.roleMappingService.applyMappings(
                 finalUser.id,
                 externalUser.externalRoles,
-                roleMappings,
+                userAttributes,
+                configId,
                 tenantId,
             );
+
+            const mapped = mappingResult.applied > 0;
 
             return {
                 created,
@@ -434,97 +438,6 @@ export class LDAPRoleSyncService {
         }
     }
 
-    /**
-     * Применить маппинги ролей к пользователю
-     * @private
-     */
-    private async applyRoleMappings(
-        userId: number | undefined,
-        externalRoles: string[],
-        roleMappings: RoleMappingModel[],
-        tenantId: number,
-    ): Promise<boolean> {
-        if (
-            !userId ||
-            externalRoles.length === 0 ||
-            roleMappings.length === 0
-        ) {
-            return false;
-        }
-
-        try {
-            // Находим соответствующие маппинги для внешних ролей
-            const applicableMappings = roleMappings.filter((mapping) =>
-                externalRoles.includes(mapping.externalRoleName),
-            );
-
-            if (applicableMappings.length === 0) {
-                return false;
-            }
-
-            // Сортируем по приоритету (меньше = выше приоритет)
-            applicableMappings.sort(
-                (a, b) => (a.priority ?? 100) - (b.priority ?? 100),
-            );
-
-            // Применяем маппинги (можно применить несколько ролей)
-            for (const mapping of applicableMappings) {
-                try {
-                    // Получаем текущие роли пользователя
-                    const userRolesResponse =
-                        await this.roleService.getUserRoles(userId, tenantId);
-                    const userRoleIds = userRolesResponse.roles.map((r) =>
-                        String(r.roleId),
-                    );
-
-                    // Проверяем, не назначена ли уже эта роль
-                    if (!userRoleIds.includes(String(mapping.internalRoleId))) {
-                        await this.roleService.assignRoleToUser(
-                            {
-                                userId,
-                                roleId: mapping.internalRoleId,
-                                tenantId,
-                            },
-                            tenantId,
-                            userRolesResponse.roles.map((r) => r.roleName),
-                        );
-
-                        this.logger.debug({
-                            userId,
-                            externalRole: mapping.externalRoleName,
-                            internalRoleId: mapping.internalRoleId,
-                            message: 'Роль применена через маппинг',
-                        });
-                    }
-                } catch (error: unknown) {
-                    const errorMessage =
-                        error instanceof Error ? error.message : String(error);
-
-                    this.logger.warn({
-                        error: errorMessage,
-                        userId,
-                        mappingId: mapping.id,
-                        message: 'Ошибка при применении маппинга роли',
-                    });
-                    // Продолжаем применять другие маппинги
-                }
-            }
-
-            return true;
-        } catch (error: unknown) {
-            const errorMessage =
-                error instanceof Error ? error.message : String(error);
-
-            this.logger.error({
-                error: errorMessage,
-                userId,
-                externalRoles,
-                message: 'Ошибка при применении маппингов ролей',
-            });
-
-            return false;
-        }
-    }
 
     /**
      * Разбить массив на чанки для batch обработки
