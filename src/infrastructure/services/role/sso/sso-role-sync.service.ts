@@ -253,37 +253,48 @@ export class SSORoleSyncService {
                 (a, b) => (a.priority ?? 100) - (b.priority ?? 100),
             );
 
-            // Получаем текущие роли пользователя
+            // Получаем текущие роли пользователя один раз
             const userRolesResponse = await this.roleService.getUserRoles(
                 userId,
                 tenantId,
             );
             const userRoleIds = userRolesResponse.roles.map((r) => r.roleId);
+            const userRoleNames = userRolesResponse.roles.map((r) => r.roleName);
 
-            // Применяем маппинги (можно применить несколько ролей)
-            for (const mapping of applicableMappings) {
+            // Фильтруем маппинги, которые нужно применить (исключаем уже назначенные роли)
+            const mappingsToApply = applicableMappings.filter(
+                (mapping) => !userRoleIds.includes(mapping.internalRoleId),
+            );
+
+            if (mappingsToApply.length === 0) {
+                this.logger.debug(
+                    { userId, applicableMappings: applicableMappings.length },
+                    'All applicable roles already assigned',
+                );
+                return;
+            }
+
+            // Применяем маппинги параллельно для улучшения производительности
+            const applyPromises = mappingsToApply.map(async (mapping) => {
                 try {
-                    // Проверяем, не назначена ли уже эта роль
-                    if (!userRoleIds.includes(mapping.internalRoleId)) {
-                        await this.roleService.assignRoleToUser(
-                            {
-                                userId,
-                                roleId: mapping.internalRoleId,
-                                tenantId,
-                            },
+                    await this.roleService.assignRoleToUser(
+                        {
+                            userId,
+                            roleId: mapping.internalRoleId,
                             tenantId,
-                            userRolesResponse.roles.map((r) => r.roleName),
-                        );
+                        },
+                        tenantId,
+                        userRoleNames,
+                    );
 
-                        this.logger.info(
-                            {
-                                userId,
-                                externalRole: mapping.externalRoleName,
-                                internalRoleId: mapping.internalRoleId,
-                            },
-                            'Role applied via SSO mapping',
-                        );
-                    }
+                    this.logger.info(
+                        {
+                            userId,
+                            externalRole: mapping.externalRoleName,
+                            internalRoleId: mapping.internalRoleId,
+                        },
+                        'Role applied via SSO mapping',
+                    );
                 } catch (error: unknown) {
                     const errorMessage =
                         error instanceof Error ? error.message : String(error);
@@ -296,8 +307,25 @@ export class SSORoleSyncService {
                         },
                         'Failed to apply role mapping',
                     );
-                    // Продолжаем применять другие маппинги
+                    // Не пробрасываем ошибку - продолжаем применять другие маппинги
+                    throw error; // Пробрасываем для Promise.allSettled
                 }
+            });
+
+            // Используем Promise.allSettled для обработки всех маппингов, даже если некоторые упали
+            const results = await Promise.allSettled(applyPromises);
+            const failed = results.filter((r) => r.status === 'rejected').length;
+
+            if (failed > 0) {
+                this.logger.warn(
+                    {
+                        userId,
+                        total: mappingsToApply.length,
+                        failed,
+                        succeeded: mappingsToApply.length - failed,
+                    },
+                    'Some role mappings failed to apply',
+                );
             }
         } catch (error: unknown) {
             const errorMessage =

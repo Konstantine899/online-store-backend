@@ -3,6 +3,7 @@ import {
     HttpStatus,
     Injectable,
     NotFoundException,
+    OnModuleDestroy,
 } from '@nestjs/common';
 import { createLogger } from '@app/infrastructure/common/utils/logging';
 import { ExternalRoleSyncRepository } from '@app/infrastructure/repositories/role/external-role-sync.repository';
@@ -17,15 +18,51 @@ import { IProviderConfig } from '@app/domain/models/external-role-config.model';
  * - Генерации authorization URLs с state parameter
  * - Валидации конфигураций провайдеров
  * - Определения типа стратегии по провайдеру
+ * - Кэширование конфигураций провайдеров (TTL 5 минут)
  */
 @Injectable()
-export class SSOStrategyFactory {
+export class SSOStrategyFactory implements OnModuleDestroy {
     private readonly logger = createLogger('SSOStrategyFactory');
+    private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 минут
+    private readonly CACHE_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 минут
+    private cacheCleanupInterval?: NodeJS.Timeout;
+
+    /**
+     * In-memory кэш конфигураций провайдеров
+     * Key: `providerId:tenantId`
+     * Value: { config: ExternalRoleConfigModel, cachedAt: timestamp }
+     */
+    private readonly configCache = new Map<
+        string,
+        { config: ExternalRoleConfigModel; cachedAt: number }
+    >();
 
     constructor(
         private readonly externalRoleSyncRepository: ExternalRoleSyncRepository,
         private readonly ssoStateService: SSOStateService,
-    ) {}
+    ) {
+        // Инициализируем периодическую очистку истекших записей кэша
+        if (process.env.NODE_ENV !== 'test') {
+            this.cacheCleanupInterval = setInterval(
+                () => this.cleanupExpiredCache(),
+                this.CACHE_CLEANUP_INTERVAL_MS,
+            );
+            this.logger.debug(
+                `Config cache cleanup initialized (interval: ${this.CACHE_CLEANUP_INTERVAL_MS}ms)`,
+            );
+        }
+    }
+
+    /**
+     * Lifecycle hook для очистки ресурсов при уничтожении модуля
+     */
+    onModuleDestroy(): void {
+        if (this.cacheCleanupInterval) {
+            clearInterval(this.cacheCleanupInterval);
+            this.cacheCleanupInterval = undefined;
+            this.logger.debug('SSOStrategyFactory cache cleanup interval cleared');
+        }
+    }
 
     /**
      * Создать authorization URL для OAuth 2.0 провайдера
@@ -178,6 +215,7 @@ export class SSOStrategyFactory {
 
     /**
      * Получить активную конфигурацию провайдера
+     * Использует кэш для уменьшения количества запросов к БД
      * @private
      * @param skipStatusCheck - Пропустить проверку статуса (если уже проверено в контроллере)
      */
@@ -186,6 +224,37 @@ export class SSOStrategyFactory {
         tenantId: number,
         skipStatusCheck = false,
     ): Promise<ExternalRoleConfigModel> {
+        const cacheKey = `${providerId}:${tenantId}`;
+
+        // Проверяем кэш
+        const cached = this.configCache.get(cacheKey);
+        if (cached) {
+            const now = Date.now();
+            const age = now - cached.cachedAt;
+
+            // Если запись не истекла - возвращаем из кэша
+            if (age < this.CACHE_TTL_MS) {
+                this.logger.debug(
+                    { providerId, tenantId, cacheAge: age },
+                    'Config retrieved from cache',
+                );
+
+                // Проверяем статус только если не пропущена проверка
+                if (!skipStatusCheck && cached.config.status !== 'ACTIVE') {
+                    throw new BadRequestException({
+                        statusCode: HttpStatus.BAD_REQUEST,
+                        message: `Провайдер ${cached.config.name} неактивен (статус: ${cached.config.status})`,
+                    });
+                }
+
+                return cached.config;
+            }
+
+            // Запись истекла - удаляем из кэша
+            this.configCache.delete(cacheKey);
+        }
+
+        // Загружаем из БД
         const config =
             await this.externalRoleSyncRepository.findConfigById(
                 providerId,
@@ -207,7 +276,83 @@ export class SSOStrategyFactory {
             });
         }
 
+        // Сохраняем в кэш
+        this.configCache.set(cacheKey, {
+            config,
+            cachedAt: Date.now(),
+        });
+
+        this.logger.debug(
+            { providerId, tenantId },
+            'Config loaded from DB and cached',
+        );
+
         return config;
+    }
+
+    /**
+     * Очистка истекших записей из кэша конфигураций
+     * @private
+     */
+    private cleanupExpiredCache(): void {
+        const now = Date.now();
+        let cleaned = 0;
+
+        for (const [key, value] of this.configCache.entries()) {
+            const age = now - value.cachedAt;
+            if (age >= this.CACHE_TTL_MS) {
+                this.configCache.delete(key);
+                cleaned++;
+            }
+        }
+
+        if (cleaned > 0) {
+            this.logger.debug(
+                { cleaned, remaining: this.configCache.size },
+                'Cleaned up expired config cache entries',
+            );
+        }
+    }
+
+    /**
+     * Инвалидировать кэш конфигурации провайдера
+     * Используется при обновлении конфигурации
+     * @public
+     */
+    public invalidateConfigCache(providerId: number, tenantId: number): void {
+        const cacheKey = `${providerId}:${tenantId}`;
+        const deleted = this.configCache.delete(cacheKey);
+
+        if (deleted) {
+            this.logger.debug(
+                { providerId, tenantId },
+                'Config cache invalidated',
+            );
+        }
+    }
+
+    /**
+     * Получить статистику кэша (для мониторинга)
+     * @public
+     */
+    public getCacheStats(): {
+        size: number;
+        entries: Array<{ key: string; age: number }>;
+    } {
+        const now = Date.now();
+        const entries: Array<{ key: string; age: number }> = [];
+
+        for (const [key, value] of this.configCache.entries()) {
+            entries.push({
+                key,
+                age: now - value.cachedAt,
+            });
+        }
+
+        return {
+            size: this.configCache.size,
+            entries,
+        };
     }
 
     /**
