@@ -347,6 +347,193 @@ describe('SSORoleSyncService (unit)', () => {
                 ),
             ).resolves.not.toThrow();
         });
+
+        it('должен применять множественные маппинги параллельно через Promise.allSettled', async () => {
+            const userId = 1;
+            const tenantId = 1;
+
+            const mapping1 = {
+                ...mockRoleMapping,
+                id: 1,
+                externalRoleName: 'Admin',
+                internalRoleId: 2,
+            };
+
+            const mapping2 = {
+                ...mockRoleMapping,
+                id: 2,
+                externalRoleName: 'User',
+                internalRoleId: 3,
+            };
+
+            const mapping3 = {
+                ...mockRoleMapping,
+                id: 3,
+                externalRoleName: 'Moderator',
+                internalRoleId: 4,
+            };
+
+            roleMappingRepository.findMappingsByConfig.mockResolvedValue([
+                mapping1,
+                mapping2,
+                mapping3,
+            ]);
+
+            roleService.getUserRoles.mockResolvedValue({
+                roles: [],
+            } as UserRolesResponse);
+
+            // Мокируем assignRoleToUser с задержкой для проверки параллельности
+            const startTime = Date.now();
+            roleService.assignRoleToUser.mockImplementation(
+                async () => {
+                    // Симулируем задержку 50ms для каждого вызова
+                    await new Promise((resolve) => setTimeout(resolve, 50));
+                    return {
+                        success: true,
+                    } as unknown as Awaited<
+                        ReturnType<typeof roleService.assignRoleToUser>
+                    >;
+                },
+            );
+
+            await service.syncRoles(
+                userId,
+                {
+                    ...mockSSOProfile,
+                    roles: ['Admin', 'User', 'Moderator'],
+                },
+                mockProviderConfig,
+                tenantId,
+            );
+
+            const endTime = Date.now();
+            const duration = endTime - startTime;
+
+            // Если бы маппинги применялись последовательно, время было бы ~150ms (3 * 50ms)
+            // При параллельном выполнении время должно быть ~50ms (максимум из всех)
+            expect(duration).toBeLessThan(100); // С запасом для накладных расходов
+
+            // Все три маппинга должны быть вызваны
+            expect(roleService.assignRoleToUser).toHaveBeenCalledTimes(3);
+        });
+
+        it('должен обрабатывать частичные ошибки при параллельном применении маппингов', async () => {
+            const userId = 1;
+            const tenantId = 1;
+
+            const mapping1 = {
+                ...mockRoleMapping,
+                id: 1,
+                externalRoleName: 'Admin',
+                internalRoleId: 2,
+            };
+
+            const mapping2 = {
+                ...mockRoleMapping,
+                id: 2,
+                externalRoleName: 'User',
+                internalRoleId: 3,
+            };
+
+            roleMappingRepository.findMappingsByConfig.mockResolvedValue([
+                mapping1,
+                mapping2,
+            ]);
+
+            roleService.getUserRoles.mockResolvedValue({
+                roles: [],
+            } as UserRolesResponse);
+
+            // Первый маппинг успешен, второй падает
+            roleService.assignRoleToUser
+                .mockResolvedValueOnce({
+                    success: true,
+                } as unknown as Awaited<
+                    ReturnType<typeof roleService.assignRoleToUser>
+                >)
+                .mockRejectedValueOnce(
+                    new BadRequestException('Role assignment failed'),
+                );
+
+            // Не должно выбрасывать ошибку, должно продолжить
+            await expect(
+                service.syncRoles(
+                    userId,
+                    {
+                        ...mockSSOProfile,
+                        roles: ['Admin', 'User'],
+                    },
+                    mockProviderConfig,
+                    tenantId,
+                ),
+            ).resolves.not.toThrow();
+
+            // Оба маппинга должны быть вызваны
+            expect(roleService.assignRoleToUser).toHaveBeenCalledTimes(2);
+        });
+
+        it('должен пропускать уже назначенные роли при параллельном применении', async () => {
+            const userId = 1;
+            const tenantId = 1;
+
+            const mapping1 = {
+                ...mockRoleMapping,
+                id: 1,
+                externalRoleName: 'Admin',
+                internalRoleId: 2,
+            };
+
+            const mapping2 = {
+                ...mockRoleMapping,
+                id: 2,
+                externalRoleName: 'User',
+                internalRoleId: 3,
+            };
+
+            roleMappingRepository.findMappingsByConfig.mockResolvedValue([
+                mapping1,
+                mapping2,
+            ]);
+
+            // Пользователь уже имеет роль Admin (roleId: 2)
+            roleService.getUserRoles.mockResolvedValue({
+                roles: [
+                    {
+                        roleId: 2, // Admin уже назначена
+                        roleName: 'ADMIN',
+                    },
+                ],
+            } as UserRolesResponse);
+
+            roleService.assignRoleToUser.mockResolvedValue({
+                success: true,
+            } as unknown as Awaited<
+                ReturnType<typeof roleService.assignRoleToUser>
+            >);
+
+            await service.syncRoles(
+                userId,
+                {
+                    ...mockSSOProfile,
+                    roles: ['Admin', 'User'],
+                },
+                mockProviderConfig,
+                tenantId,
+            );
+
+            // Должна быть назначена только роль User (Admin уже есть)
+            expect(roleService.assignRoleToUser).toHaveBeenCalledTimes(1);
+            expect(roleService.assignRoleToUser).toHaveBeenCalledWith(
+                {
+                    userId,
+                    roleId: 3, // User role
+                    tenantId,
+                },
+                tenantId,
+                ['ADMIN'],
+            );
+        });
     });
 });
 

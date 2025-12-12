@@ -432,4 +432,186 @@ describe('SSOStrategyFactory (unit)', () => {
             ).rejects.toThrow(BadRequestException);
         });
     });
+
+    // ============================================================================
+    // TESTS: Edge Cases - Invalid URLs
+    // ============================================================================
+
+    describe('Edge Cases - Invalid URLs', () => {
+        it('должен выбрасывать BadRequestException при невалидном authorizationURL (OAuth2)', async () => {
+            const config = createMockConfig('AZURE_AD', 'ACTIVE', {
+                authorizationURL: 'not-a-valid-url',
+                tokenURL: 'https://oauth2.example.com/token',
+                clientId: 'test-client-id',
+                clientSecret: 'test-client-secret',
+                callbackURL: 'https://example.com/auth/sso/oauth2/callback',
+            });
+            externalRoleSyncRepository.findConfigById.mockResolvedValue(config);
+
+            await expect(
+                factory.createOAuth2AuthorizationUrl(
+                    mockProviderId,
+                    mockTenantId,
+                    mockBaseUrl,
+                ),
+            ).rejects.toThrow(BadRequestException);
+        });
+
+        it('должен выбрасывать BadRequestException при невалидном entryPoint (SAML)', async () => {
+            const config = createMockConfig('SAML', 'ACTIVE', {
+                entryPoint: 'invalid-url-without-protocol',
+                cert: '-----BEGIN CERTIFICATE-----',
+                samlIssuer: 'test-issuer',
+                samlCallbackURL: 'https://example.com/auth/sso/saml/callback',
+            });
+            externalRoleSyncRepository.findConfigById.mockResolvedValue(config);
+
+            await expect(
+                factory.createSAMLAuthorizationUrl(
+                    mockProviderId,
+                    mockTenantId,
+                    mockBaseUrl,
+                ),
+            ).rejects.toThrow(BadRequestException);
+        });
+
+        it('должен выбрасывать BadRequestException при URL с неподдерживаемым протоколом (не http/https)', async () => {
+            const config = createMockConfig('AZURE_AD', 'ACTIVE', {
+                authorizationURL: 'ftp://example.com/auth',
+                tokenURL: 'https://oauth2.example.com/token',
+                clientId: 'test-client-id',
+                clientSecret: 'test-client-secret',
+                callbackURL: 'https://example.com/auth/sso/oauth2/callback',
+            });
+            externalRoleSyncRepository.findConfigById.mockResolvedValue(config);
+
+            await expect(
+                factory.createOAuth2AuthorizationUrl(
+                    mockProviderId,
+                    mockTenantId,
+                    mockBaseUrl,
+                ),
+            ).rejects.toThrow(BadRequestException);
+        });
+
+        it('должен выбрасывать BadRequestException при пустом authorizationURL', async () => {
+            const config = createMockConfig('AZURE_AD', 'ACTIVE', {
+                authorizationURL: '',
+                tokenURL: 'https://oauth2.example.com/token',
+                clientId: 'test-client-id',
+                clientSecret: 'test-client-secret',
+                callbackURL: 'https://example.com/auth/sso/oauth2/callback',
+            });
+            externalRoleSyncRepository.findConfigById.mockResolvedValue(config);
+
+            await expect(
+                factory.createOAuth2AuthorizationUrl(
+                    mockProviderId,
+                    mockTenantId,
+                    mockBaseUrl,
+                ),
+            ).rejects.toThrow(BadRequestException);
+        });
+    });
+
+    // ============================================================================
+    // TESTS: Config Caching
+    // ============================================================================
+
+    describe('Config Caching', () => {
+        it('должен кэшировать конфигурацию провайдера', async () => {
+            const config = createMockConfig('AZURE_AD', 'ACTIVE', {
+                authorizationURL: 'https://oauth2.example.com/authorize',
+                tokenURL: 'https://oauth2.example.com/token',
+                clientId: 'test-client-id',
+                clientSecret: 'test-client-secret',
+                callbackURL: 'https://example.com/auth/sso/oauth2/callback',
+            });
+
+            // Первый вызов - загрузка из БД
+            externalRoleSyncRepository.findConfigById.mockResolvedValueOnce(config);
+            ssoStateService.generateState.mockReturnValue('test-state-1');
+
+            await factory.createOAuth2AuthorizationUrl(
+                mockProviderId,
+                mockTenantId,
+                mockBaseUrl,
+            );
+
+            expect(externalRoleSyncRepository.findConfigById).toHaveBeenCalledTimes(1);
+
+            // Второй вызов - из кэша
+            ssoStateService.generateState.mockReturnValue('test-state-2');
+
+            await factory.createOAuth2AuthorizationUrl(
+                mockProviderId,
+                mockTenantId,
+                mockBaseUrl,
+            );
+
+            // Не должно быть второго вызова к БД
+            expect(externalRoleSyncRepository.findConfigById).toHaveBeenCalledTimes(1);
+        });
+
+        it('должен инвалидировать кэш при вызове invalidateConfigCache', async () => {
+            const config = createMockConfig('AZURE_AD', 'ACTIVE', {
+                authorizationURL: 'https://oauth2.example.com/authorize',
+                tokenURL: 'https://oauth2.example.com/token',
+                clientId: 'test-client-id',
+                clientSecret: 'test-client-secret',
+                callbackURL: 'https://example.com/auth/sso/oauth2/callback',
+            });
+
+            // Первый вызов - загрузка из БД
+            externalRoleSyncRepository.findConfigById.mockResolvedValue(config);
+            ssoStateService.generateState.mockReturnValue('test-state-1');
+
+            await factory.createOAuth2AuthorizationUrl(
+                mockProviderId,
+                mockTenantId,
+                mockBaseUrl,
+            );
+
+            // Инвалидируем кэш
+            factory.invalidateConfigCache(mockProviderId, mockTenantId);
+
+            // Второй вызов - должен загрузить из БД снова
+            ssoStateService.generateState.mockReturnValue('test-state-2');
+
+            await factory.createOAuth2AuthorizationUrl(
+                mockProviderId,
+                mockTenantId,
+                mockBaseUrl,
+            );
+
+            // Должно быть два вызова к БД
+            expect(externalRoleSyncRepository.findConfigById).toHaveBeenCalledTimes(2);
+        });
+
+        it('должен возвращать статистику кэша через getCacheStats', async () => {
+            const config = createMockConfig('AZURE_AD', 'ACTIVE', {
+                authorizationURL: 'https://oauth2.example.com/authorize',
+                tokenURL: 'https://oauth2.example.com/token',
+                clientId: 'test-client-id',
+                clientSecret: 'test-client-secret',
+                callbackURL: 'https://example.com/auth/sso/oauth2/callback',
+            });
+
+            externalRoleSyncRepository.findConfigById.mockResolvedValue(config);
+            ssoStateService.generateState.mockReturnValue('test-state');
+
+            await factory.createOAuth2AuthorizationUrl(
+                mockProviderId,
+                mockTenantId,
+                mockBaseUrl,
+            );
+
+            const stats = factory.getCacheStats();
+
+            expect(stats.size).toBe(1);
+            expect(stats.entries).toHaveLength(1);
+            expect(stats.entries[0].key).toBe(`${mockProviderId}:${mockTenantId}`);
+            expect(stats.entries[0].age).toBeGreaterThanOrEqual(0);
+        });
+    });
 });
