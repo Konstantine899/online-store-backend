@@ -1,6 +1,7 @@
 import { ExternalRoleConfigModel } from '@app/domain/models';
 import { IExternalRoleSyncRepository } from '@app/domain/repositories';
 import { IExternalRoleSyncService } from '@app/domain/services/role/i-external-role-sync.service';
+import { getSyncConfig } from '@app/infrastructure/config/sync';
 import {
     Inject,
     Injectable,
@@ -30,6 +31,7 @@ export class ExternalRoleSyncScheduler
 {
     private readonly logger = new Logger(ExternalRoleSyncScheduler.name);
     private readonly activeJobs = new Map<number, CronJob>();
+    private readonly syncConfig = getSyncConfig();
 
     constructor(
         @Inject('IExternalRoleSyncRepository')
@@ -189,7 +191,7 @@ export class ExternalRoleSyncScheduler
                 },
                 null, // onComplete
                 false, // start сразу
-                'Europe/Moscow', // timezone
+                this.syncConfig.timezone,
             );
         } catch (error) {
             this.logger.error(

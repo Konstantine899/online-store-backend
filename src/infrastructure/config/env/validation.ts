@@ -40,6 +40,15 @@ export interface ValidatedEnv {
     // Role expiration configuration
     ROLE_EXPIRATION_BATCH_SIZE: number; // Размер batch для обработки истекших ролей (default: 1000)
     ROLE_EXPIRATION_WARNING_DAYS: number[]; // Дни до истечения для отправки уведомлений (default: [7, 1])
+    // External Role Sync configuration
+    SYNC_TIMEZONE: string; // IANA timezone для cron jobs (default: 'Europe/Moscow')
+    SYNC_MAX_RETRIES: number; // Максимальное количество попыток retry (default: 3)
+    SYNC_INITIAL_DELAY_MS: number; // Начальная задержка для retry в миллисекундах (default: 1000)
+    SYNC_MAX_DELAY_MS: number; // Максимальная задержка для retry в миллисекундах (default: 30000)
+    SYNC_BACKOFF_MULTIPLIER: number; // Множитель для экспоненциального backoff (default: 2)
+    SYNC_CONCURRENCY_LIMIT: number; // Максимальное количество параллельных синхронизаций (default: 5)
+    SYNC_RATE_LIMIT_POINTS: number; // Количество запросов для rate limiting (default: 10)
+    SYNC_RATE_LIMIT_DURATION: number; // Период для rate limiting в секундах (default: 60)
     // Параметры ротации секретов (опционально)
     JWT_SECRET_ROTATION_DATE?: string; // ISO date когда секрет должен быть заменён
     JWT_SECRET_VERSION?: string; // версия секрета для отслеживания
@@ -301,6 +310,57 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
             return n;
         });
 
+    // External Role Sync configuration
+    const SYNC_TIMEZONE = raw.SYNC_TIMEZONE ?? 'Europe/Moscow';
+    // Валидация IANA timezone (базовая проверка формата)
+    if (!/^[A-Z][a-z]+\/[A-Z][a-z_]+$/.test(SYNC_TIMEZONE)) {
+        throw new Error(
+            `SYNC_TIMEZONE должен быть валидным IANA timezone (например, Europe/Moscow), получено: ${SYNC_TIMEZONE}`,
+        );
+    }
+
+    const SYNC_MAX_RETRIES = asNumber(
+        raw.SYNC_MAX_RETRIES ?? '3',
+        'SYNC_MAX_RETRIES',
+        { min: 1, max: 10 },
+    );
+
+    const SYNC_INITIAL_DELAY_MS = asNumber(
+        raw.SYNC_INITIAL_DELAY_MS ?? '1000',
+        'SYNC_INITIAL_DELAY_MS',
+        { min: 100, max: 60000 },
+    );
+
+    const SYNC_MAX_DELAY_MS = asNumber(
+        raw.SYNC_MAX_DELAY_MS ?? '30000',
+        'SYNC_MAX_DELAY_MS',
+        { min: 1000, max: 300000 },
+    );
+
+    const SYNC_BACKOFF_MULTIPLIER = asNumber(
+        raw.SYNC_BACKOFF_MULTIPLIER ?? '2',
+        'SYNC_BACKOFF_MULTIPLIER',
+        { min: 1.1, max: 10 },
+    );
+
+    const SYNC_CONCURRENCY_LIMIT = asNumber(
+        raw.SYNC_CONCURRENCY_LIMIT ?? '5',
+        'SYNC_CONCURRENCY_LIMIT',
+        { min: 1, max: 50 },
+    );
+
+    const SYNC_RATE_LIMIT_POINTS = asNumber(
+        raw.SYNC_RATE_LIMIT_POINTS ?? '10',
+        'SYNC_RATE_LIMIT_POINTS',
+        { min: 1, max: 100 },
+    );
+
+    const SYNC_RATE_LIMIT_DURATION = asNumber(
+        raw.SYNC_RATE_LIMIT_DURATION ?? '60',
+        'SYNC_RATE_LIMIT_DURATION',
+        { min: 1, max: 3600 },
+    );
+
     // Опциональные параметры ротации секретов
     const JWT_SECRET_ROTATION_DATE = raw.JWT_SECRET_ROTATION_DATE;
     const JWT_SECRET_VERSION = raw.JWT_SECRET_VERSION;
@@ -342,6 +402,14 @@ export function validateEnv(raw: NodeJS.ProcessEnv): ValidatedEnv {
         AUDIT_CACHE_TTL_SECONDS,
         ROLE_EXPIRATION_BATCH_SIZE,
         ROLE_EXPIRATION_WARNING_DAYS,
+        SYNC_TIMEZONE,
+        SYNC_MAX_RETRIES,
+        SYNC_INITIAL_DELAY_MS,
+        SYNC_MAX_DELAY_MS,
+        SYNC_BACKOFF_MULTIPLIER,
+        SYNC_CONCURRENCY_LIMIT,
+        SYNC_RATE_LIMIT_POINTS,
+        SYNC_RATE_LIMIT_DURATION,
         JWT_SECRET_ROTATION_DATE,
         JWT_SECRET_VERSION,
     };

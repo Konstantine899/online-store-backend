@@ -1,4 +1,8 @@
-import { AuditAction, SyncType } from '@app/domain/models';
+import {
+    AuditAction,
+    ExternalRoleConfigModel,
+    SyncType,
+} from '@app/domain/models';
 import { IExternalRoleSyncRepository } from '@app/domain/repositories';
 import {
     IExternalRoleSyncService,
@@ -7,6 +11,7 @@ import {
 } from '@app/domain/services/role/i-external-role-sync.service';
 import { TenantContext } from '@app/infrastructure/common/context';
 import { MetricsCollector } from '@app/infrastructure/common/services';
+import { getSyncConfig } from '@app/infrastructure/config/sync';
 import { AuditService } from '@app/infrastructure/services/audit/audit.service';
 import {
     BadRequestException,
@@ -16,6 +21,7 @@ import {
     NotFoundException,
     Optional,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { CronJob } from 'cron';
 import { ExternalRoleProviderFactory } from './external-role-provider.factory';
 import { LDAPRoleSyncService } from './ldap/ldap-role-sync.service';
@@ -40,6 +46,7 @@ import { LDAPRoleSyncService } from './ldap/ldap-role-sync.service';
 @Injectable()
 export class ExternalRoleSyncService implements IExternalRoleSyncService {
     private readonly logger = new Logger(ExternalRoleSyncService.name);
+    private readonly syncConfig = getSyncConfig();
 
     constructor(
         @Inject('IExternalRoleSyncRepository')
@@ -54,13 +61,23 @@ export class ExternalRoleSyncService implements IExternalRoleSyncService {
 
     /**
      * Синхронизировать пользователей для конкретной конфигурации
+     * Rate limiting: защита от DDoS атак
      */
+    @Throttle({ default: { limit: 10, ttl: 60000 } })
     public async syncTenant(
         configId: number,
         syncType: SyncType,
         tenantId: number,
         triggeredBy?: number | null,
     ): Promise<ISyncResult> {
+        // Валидация входных параметров
+        if (!configId || configId <= 0) {
+            throw new BadRequestException('configId должен быть положительным числом');
+        }
+        if (!tenantId || tenantId <= 0) {
+            throw new BadRequestException('tenantId должен быть положительным числом');
+        }
+
         const startTime = Date.now();
 
         this.logger.log({
@@ -258,103 +275,172 @@ export class ExternalRoleSyncService implements IExternalRoleSyncService {
             message: `Найдено ${configs.length} активных конфигураций для синхронизации`,
         });
 
-        // Синхронизируем каждую конфигурацию
+        // Фильтруем конфигурации (пропускаем SSO провайдеры)
+        const syncableConfigs = configs.filter((config) =>
+            this.providerFactory.supportsBatchSync(config.providerType),
+        );
+
+        this.logger.log({
+            syncableConfigsCount: syncableConfigs.length,
+            message: `${syncableConfigs.length} конфигураций готовы к синхронизации`,
+        });
+
+        // Параллелизация с ограничением concurrency
+        const concurrencyLimit = this.syncConfig.concurrency.limit;
         const results: ISyncResult[] = [];
 
-        for (const config of configs) {
-            try {
-                // Пропускаем SSO провайдеры (они не поддерживают batch синхронизацию)
-                if (
-                    !this.providerFactory.supportsBatchSync(config.providerType)
-                ) {
-                    this.logger.debug({
-                        configId: config.id,
-                        providerType: config.providerType,
-                        message:
-                            'Пропущен SSO провайдер (не поддерживает batch синхронизацию)',
-                    });
-                    continue;
-                }
+        // Разбиваем на батчи для параллельной обработки
+        for (let i = 0; i < syncableConfigs.length; i += concurrencyLimit) {
+            const batch = syncableConfigs.slice(i, i + concurrencyLimit);
 
-                // Используем режим синхронизации из конфигурации
-                const syncType = config.syncMode as SyncType;
+            const batchResults = await Promise.allSettled(
+                batch.map(async (config) => {
+                    try {
+                        // Используем режим синхронизации из конфигурации
+                        const syncType = config.syncMode as SyncType;
 
-                const result = await this.syncTenant(
-                    config.id,
-                    syncType,
-                    config.tenantId,
-                    null, // Scheduled синхронизация
-                );
+                        return await this.syncTenant(
+                            config.id,
+                            syncType,
+                            config.tenantId,
+                            null, // Scheduled синхронизация
+                        );
+                    } catch (error) {
+                        // Логируем ошибку для конкретной конфигурации
+                        this.logger.error(
+                            {
+                                configId: config.id,
+                                error:
+                                    error instanceof Error
+                                        ? error.message
+                                        : String(error),
+                            },
+                            'Ошибка при синхронизации конфигурации',
+                        );
 
-                results.push(result);
-            } catch (error) {
-                this.logger.error(
-                    {
-                        configId: config.id,
-                        error:
+                        // Возвращаем failed результат
+                        const errorMessage =
                             error instanceof Error
                                 ? error.message
-                                : String(error),
-                    },
-                    'Ошибка при синхронизации конфигурации',
-                );
+                                : String(error);
+                        return {
+                            success: false,
+                            syncLogId: 0,
+                            status: 'FAILED' as const,
+                            statistics: {
+                                totalUsers: 0,
+                                createdUsers: 0,
+                                updatedUsers: 0,
+                                deletedUsers: 0,
+                                mappedUsers: 0,
+                                skippedUsers: 0,
+                                failedUsers: 0,
+                            },
+                            errors: [
+                                {
+                                    error: errorMessage,
+                                    timestamp: new Date(),
+                                },
+                            ],
+                            durationMs: 0,
+                        } as ISyncResult;
+                    }
+                }),
+            );
 
-                // Создаем failed результат для ошибки
-                const errorMessage =
-                    error instanceof Error ? error.message : String(error);
-                const failedResult: ISyncResult = {
-                    success: false,
-                    syncLogId: 0,
-                    status: 'FAILED',
-                    statistics: {
-                        totalUsers: 0,
-                        createdUsers: 0,
-                        updatedUsers: 0,
-                        deletedUsers: 0,
-                        mappedUsers: 0,
-                        skippedUsers: 0,
-                        failedUsers: 0,
-                    },
-                    errors: [
+            // Обрабатываем результаты батча
+            for (let j = 0; j < batchResults.length; j++) {
+                const result = batchResults[j];
+                const config = batch[j];
+
+                if (result.status === 'fulfilled') {
+                    results.push(result.value);
+
+                    // Записываем метрики для failed синхронизации, если нужно
+                    if (!result.value.success && config) {
+                        this.metricsCollector.recordSyncOperation(
+                            config.providerType,
+                            config.syncMode as 'FULL' | 'INCREMENTAL' | 'ON_DEMAND',
+                            'SCHEDULED',
+                            result.value.durationMs,
+                            false,
+                            {
+                                totalUsers: result.value.statistics.totalUsers,
+                                createdUsers: result.value.statistics.createdUsers,
+                                updatedUsers: result.value.statistics.updatedUsers,
+                                mappedUsers: result.value.statistics.mappedUsers,
+                                failedUsers: result.value.statistics.failedUsers,
+                            },
+                            config.id,
+                            config.tenantId,
+                        );
+                    }
+                } else {
+                    // Обрабатываем rejected промисы
+                    this.logger.error(
                         {
-                            error: errorMessage,
-                            timestamp: new Date(),
+                            configId: config?.id,
+                            error:
+                                result.reason instanceof Error
+                                    ? result.reason.message
+                                    : String(result.reason),
                         },
-                    ],
-                    durationMs: 0,
-                };
+                        'Критическая ошибка при синхронизации конфигурации',
+                    );
 
-                // Записываем метрики для failed синхронизации
-                // syncMode не может быть 'SSO_LOGIN' для batch синхронизации
-                this.metricsCollector.recordSyncOperation(
-                    config.providerType,
-                    config.syncMode as 'FULL' | 'INCREMENTAL' | 'ON_DEMAND',
-                    'SCHEDULED',
-                    0,
-                    false,
-                    {
-                        totalUsers: 0,
-                        createdUsers: 0,
-                        updatedUsers: 0,
-                        mappedUsers: 0,
-                        failedUsers: 0,
-                    },
-                    config.id,
-                    config.tenantId,
-                );
+                    // Создаем failed результат для rejected промиса
+                    if (config) {
+                        const failedResult: ISyncResult = {
+                            success: false,
+                            syncLogId: 0,
+                            status: 'FAILED',
+                            statistics: {
+                                totalUsers: 0,
+                                createdUsers: 0,
+                                updatedUsers: 0,
+                                deletedUsers: 0,
+                                mappedUsers: 0,
+                                skippedUsers: 0,
+                                failedUsers: 0,
+                            },
+                            errors: [
+                                {
+                                    error:
+                                        result.reason instanceof Error
+                                            ? result.reason.message
+                                            : String(result.reason),
+                                    timestamp: new Date(),
+                                },
+                            ],
+                            durationMs: 0,
+                        };
 
-                // Записываем ошибку в метрики
-                this.metricsCollector.recordError(
-                    'ExternalRoleSyncService',
-                    `Sync failed for config ${config.id}: ${errorMessage}`,
-                );
+                        results.push(failedResult);
 
-                results.push(failedResult);
+                        // Записываем метрики для failed синхронизации
+                        this.metricsCollector.recordSyncOperation(
+                            config.providerType,
+                            config.syncMode as 'FULL' | 'INCREMENTAL' | 'ON_DEMAND',
+                            'SCHEDULED',
+                            0,
+                            false,
+                            {
+                                totalUsers: 0,
+                                createdUsers: 0,
+                                updatedUsers: 0,
+                                mappedUsers: 0,
+                                failedUsers: 0,
+                            },
+                            config.id,
+                            config.tenantId,
+                        );
+                    }
+                }
             }
         }
 
         this.logger.log({
-            totalConfigs: configs.length,
+            totalConfigs: syncableConfigs.length,
             successful: results.filter((r) => r.success).length,
             failed: results.filter((r) => !r.success).length,
             message: 'Синхронизация всех конфигураций завершена',
@@ -473,10 +559,19 @@ export class ExternalRoleSyncService implements IExternalRoleSyncService {
             backoffMultiplier?: number;
         },
     ): Promise<ISyncResult> {
-        const maxRetries = options?.maxRetries ?? 3;
-        const initialDelayMs = options?.initialDelayMs ?? 1000;
-        const maxDelayMs = options?.maxDelayMs ?? 30000;
-        const backoffMultiplier = options?.backoffMultiplier ?? 2;
+        // Валидация входных параметров
+        if (!configId || configId <= 0) {
+            throw new BadRequestException('configId должен быть положительным числом');
+        }
+        if (!tenantId || tenantId <= 0) {
+            throw new BadRequestException('tenantId должен быть положительным числом');
+        }
+
+        // Используем конфигурацию из env, но позволяем переопределить через options
+        const maxRetries = options?.maxRetries ?? this.syncConfig.retry.maxRetries;
+        const initialDelayMs = options?.initialDelayMs ?? this.syncConfig.retry.initialDelayMs;
+        const maxDelayMs = options?.maxDelayMs ?? this.syncConfig.retry.maxDelayMs;
+        const backoffMultiplier = options?.backoffMultiplier ?? this.syncConfig.retry.backoffMultiplier;
 
         this.logger.log({
             configId,
@@ -816,6 +911,70 @@ export class ExternalRoleSyncService implements IExternalRoleSyncService {
                 success: false,
                 error: error instanceof Error ? error.message : String(error),
             };
+        }
+    }
+
+    /**
+     * Парсинг следующей даты синхронизации из cron выражения
+     * @private
+     */
+    private parseNextSyncDate(
+        config: ExternalRoleConfigModel,
+    ): Date | null {
+        if (!config.syncEnabled || !config.syncSchedule) {
+            return null;
+        }
+
+        try {
+            // Используем CronJob для вычисления следующего времени выполнения
+            const cronJob = new CronJob(
+                config.syncSchedule,
+                () => {
+                    // Пустая функция, нам нужен только парсинг
+                },
+                null, // onComplete
+                false, // start сразу
+                this.syncConfig.timezone,
+            );
+
+            // Получаем следующее время выполнения
+            const nextDates = cronJob.nextDates(1);
+            if (!nextDates || nextDates.length === 0) {
+                return null;
+            }
+
+            const nextDate = nextDates[0];
+
+            // Luxon DateTime имеет метод toJSDate() для конвертации в JavaScript Date
+            if (
+                nextDate &&
+                typeof (nextDate as { toJSDate?: () => Date })
+                    .toJSDate === 'function'
+            ) {
+                return (nextDate as { toJSDate: () => Date }).toJSDate();
+            }
+
+            // Если это уже Date объект
+            if (nextDate instanceof Date) {
+                return nextDate;
+            }
+
+            // Fallback: используем значение как timestamp
+            return new Date(
+                (nextDate as { valueOf: () => number }).valueOf(),
+            );
+        } catch (error) {
+            // Если cron выражение невалидно, логируем и возвращаем null
+            this.logger.warn(
+                {
+                    configId: config.id,
+                    syncSchedule: config.syncSchedule,
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                },
+                'Ошибка при вычислении nextSyncAt из cron выражения',
+            );
+            return null;
         }
     }
 }

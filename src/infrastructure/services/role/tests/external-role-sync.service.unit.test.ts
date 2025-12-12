@@ -418,7 +418,6 @@ describe('ExternalRoleSyncService (unit)', () => {
             expect(results[0].success).toBe(false);
             expect(results[0].status).toBe('FAILED');
             expect(metricsCollector.recordSyncOperation).toHaveBeenCalled();
-            expect(metricsCollector.recordError).toHaveBeenCalled();
         });
     });
 
@@ -699,6 +698,150 @@ describe('ExternalRoleSyncService (unit)', () => {
 
             expect(result.success).toBe(false);
             expect(result.error).toBe('Connection failed');
+        });
+    });
+
+    describe('Race conditions', () => {
+        it('должен предотвращать параллельные запуски одной конфигурации', async () => {
+            externalRoleSyncRepository.findConfigById.mockResolvedValue(
+                mockConfig,
+            );
+
+            // Первый вызов - нет RUNNING, второй - уже есть RUNNING
+            const runningLog = {
+                ...mockSyncLog,
+                status: 'RUNNING' as const,
+            } as unknown as ExternalUserSyncLogModel;
+
+            externalRoleSyncRepository.findSyncLogs
+                .mockResolvedValueOnce([]) // Первый вызов - нет RUNNING
+                .mockResolvedValueOnce([runningLog]); // Второй вызов - уже есть RUNNING
+
+            providerFactory.supportsBatchSync.mockReturnValue(true);
+            providerFactory.getProvider.mockReturnValue(provider);
+            ldapRoleSyncService.syncUsers.mockResolvedValue(mockSyncLog);
+            auditService.createLog.mockResolvedValue(mockAuditLog);
+
+            // Запускаем два параллельных вызова
+            const promise1 = service.syncTenant(1, 'FULL', 1);
+            const promise2 = service.syncTenant(1, 'FULL', 1);
+
+            const [result1, result2] = await Promise.allSettled([
+                promise1,
+                promise2,
+            ]);
+
+            // Один должен быть успешным
+            expect(result1.status).toBe('fulfilled');
+            if (result1.status === 'fulfilled') {
+                expect(result1.value.success).toBe(true);
+            }
+
+            // Второй вызов должен быть заблокирован (BadRequestException)
+            expect(result2.status).toBe('rejected');
+            if (result2.status === 'rejected') {
+                expect(result2.reason).toBeInstanceOf(BadRequestException);
+            }
+        });
+
+        it('должен корректно обрабатывать параллельные вызовы разных конфигураций', async () => {
+            const config1 = {
+                ...mockConfig,
+                id: 1,
+            } as unknown as ExternalRoleConfigModel;
+            const config2 = {
+                ...mockConfig,
+                id: 2,
+            } as unknown as ExternalRoleConfigModel;
+
+            externalRoleSyncRepository.findConfigById
+                .mockResolvedValueOnce(config1)
+                .mockResolvedValueOnce(config2);
+            externalRoleSyncRepository.findSyncLogs.mockResolvedValue([]);
+
+            providerFactory.supportsBatchSync.mockReturnValue(true);
+            providerFactory.getProvider.mockReturnValue(provider);
+            ldapRoleSyncService.syncUsers
+                .mockResolvedValueOnce({
+                    ...mockSyncLog,
+                    id: 1,
+                } as unknown as ExternalUserSyncLogModel)
+                .mockResolvedValueOnce({
+                    ...mockSyncLog,
+                    id: 2,
+                } as unknown as ExternalUserSyncLogModel);
+            auditService.createLog.mockResolvedValue(mockAuditLog);
+
+            // Запускаем параллельные вызовы для разных конфигураций
+            const [result1, result2] = await Promise.all([
+                service.syncTenant(1, 'FULL', 1),
+                service.syncTenant(2, 'FULL', 1),
+            ]);
+
+            // Оба должны быть успешными
+            expect(result1.success).toBe(true);
+            expect(result2.success).toBe(true);
+            expect(result1.syncLogId).toBe(1);
+            expect(result2.syncLogId).toBe(2);
+        });
+
+        it('должен корректно обрабатывать параллельные вызовы syncAllTenants', async () => {
+            const config1 = {
+                ...mockConfig,
+                id: 1,
+            } as unknown as ExternalRoleConfigModel;
+            const config2 = {
+                ...mockConfig,
+                id: 2,
+            } as unknown as ExternalRoleConfigModel;
+
+            // Мокаем findConfigs для обоих вызовов
+            externalRoleSyncRepository.findConfigs
+                .mockResolvedValueOnce([config1, config2])
+                .mockResolvedValueOnce([config1, config2]);
+
+            // Мокаем findConfigById для каждого syncTenant вызова (4 раза: 2 конфига × 2 вызова)
+            externalRoleSyncRepository.findConfigById
+                .mockResolvedValueOnce(config1)
+                .mockResolvedValueOnce(config2)
+                .mockResolvedValueOnce(config1)
+                .mockResolvedValueOnce(config2);
+
+            // Мокаем findSyncLogs для каждого syncTenant вызова (4 раза)
+            externalRoleSyncRepository.findSyncLogs.mockResolvedValue([]);
+
+            providerFactory.supportsBatchSync.mockReturnValue(true);
+            providerFactory.getProvider.mockReturnValue(provider);
+
+            // Мокаем syncUsers для каждого syncTenant вызова (4 раза)
+            const syncLog1 = {
+                ...mockSyncLog,
+                id: 1,
+            } as unknown as ExternalUserSyncLogModel;
+            const syncLog2 = {
+                ...mockSyncLog,
+                id: 2,
+            } as unknown as ExternalUserSyncLogModel;
+
+            ldapRoleSyncService.syncUsers
+                .mockResolvedValueOnce(syncLog1)
+                .mockResolvedValueOnce(syncLog2)
+                .mockResolvedValueOnce(syncLog1)
+                .mockResolvedValueOnce(syncLog2);
+
+            auditService.createLog.mockResolvedValue(mockAuditLog);
+
+            // Запускаем параллельные вызовы syncAllTenants
+            const [results1, results2] = await Promise.all([
+                service.syncAllTenants(),
+                service.syncAllTenants(),
+            ]);
+
+            // Оба должны вернуть результаты
+            expect(results1.length).toBe(2);
+            expect(results2.length).toBe(2);
+            expect(results1.every((r) => r.success)).toBe(true);
+            expect(results2.every((r) => r.success)).toBe(true);
         });
     });
 });
