@@ -30,6 +30,31 @@ export {
     IRoleAutoRenewalConfigModel,
     IRoleAutoRenewalConfigCreationAttributes,
 } from './role-auto-renewal-config.model';
+export {
+    ExternalRoleConfigModel,
+    IExternalRoleConfigModel,
+    IExternalRoleConfigCreationAttributes,
+    ExternalRoleProviderType,
+    SyncMode,
+    ExternalRoleConfigStatus,
+    IProviderConfig,
+} from './external-role-config.model';
+export {
+    RoleMappingModel,
+    IRoleMappingModel,
+    IRoleMappingCreationAttributes,
+    IMappingRules,
+} from './role-mapping.model';
+export {
+    ExternalUserSyncLogModel,
+    IExternalUserSyncLogModel,
+    IExternalUserSyncLogCreationAttributes,
+    SyncType,
+    SyncTriggerType,
+    SyncStatus,
+    IErrorDetail,
+    ISyncMetadata,
+} from './external-user-sync-log.model';
 export { TenantModel } from './tenant.model';
 export { UserAddressModel } from './user-address';
 export { UserNotificationSettingsModel } from './user-notification-settings.model';

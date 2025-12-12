@@ -4,6 +4,8 @@ import {
     CartModel,
     CartProductModel,
     CategoryModel,
+    ExternalRoleConfigModel,
+    ExternalUserSyncLogModel,
     LoginHistoryModel,
     OrderItemModel,
     OrderModel,
@@ -14,6 +16,7 @@ import {
     RatingModel,
     RefreshTokenModel,
     RoleAutoRenewalConfigModel,
+    RoleMappingModel,
     RoleModel,
     RolePermissionModel,
     TenantModel,
@@ -39,7 +42,9 @@ import { ProductRepository } from './product/product.repository';
 import { PromoCodeRepository } from './promo-code/promo-code.repository';
 import { RatingRepository } from './rating/rating.repository';
 import { RefreshTokenRepository } from './refresh-token/refresh-token.repository';
+import { ExternalRoleSyncRepository } from './role/external-role-sync.repository';
 import { RoleAnalyticsRepository } from './role/role-analytics.repository';
+import { RoleMappingRepository } from './role/role-mapping.repository';
 import { RoleRepository } from './role/role.repository';
 import { UserAddressRepository } from './user-address/user-address.repository';
 import { UserBulkRepository } from './user/user-bulk.repository';
@@ -72,6 +77,9 @@ import { UserRepository } from './user/user.repository';
             UserAddressModel,
             LoginHistoryModel,
             PasswordResetTokenModel,
+            ExternalRoleConfigModel,
+            RoleMappingModel,
+            ExternalUserSyncLogModel,
         ]),
         forwardRef(() => ServicesModule),
     ],
@@ -89,8 +97,22 @@ import { UserRepository } from './user/user.repository';
         RatingRepository,
         RoleRepository,
         RoleAnalyticsRepository,
+        ExternalRoleSyncRepository,
+        {
+            provide: 'IExternalRoleSyncRepository',
+            useExisting: ExternalRoleSyncRepository,
+        },
+        RoleMappingRepository,
+        {
+            provide: 'IRoleMappingRepository',
+            useExisting: RoleMappingRepository,
+        },
         RefreshTokenRepository,
         UserRepository,
+        {
+            provide: 'IUserRepository',
+            useExisting: UserRepository,
+        },
         UserSearchRepository, // Специализированный репозиторий для поиска пользователей
         UserStatsRepository, // Специализированный репозиторий для статистики пользователей
         UserBulkRepository, // Специализированный репозиторий для bulk операций
@@ -112,8 +134,13 @@ import { UserRepository } from './user/user.repository';
         RatingRepository,
         RoleRepository,
         RoleAnalyticsRepository,
+        ExternalRoleSyncRepository,
+        'IExternalRoleSyncRepository',
+        RoleMappingRepository,
+        'IRoleMappingRepository',
         RefreshTokenRepository,
         UserRepository,
+        'IUserRepository',
         UserSearchRepository, // Экспортируем для использования в тестах
         UserStatsRepository, // Экспортируем для использования в тестах
         UserBulkRepository, // Экспортируем для использования в тестах

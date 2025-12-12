@@ -100,6 +100,9 @@ export class TenantMiddleware implements NestMiddleware {
         // 4. Attach tenant ID to request context
         this.tenantContext.setTenantId(tenantId);
 
+        // Логируем только при ошибках в тестах, в production - debug уровень
+        // Избыточные логи замедляют тесты и засоряют вывод
+
         // Also attach to request for convenience
         req.tenantId = tenantId;
         req.tenant = tenant;

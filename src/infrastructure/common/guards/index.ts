@@ -4,3 +4,4 @@ export { PermissionGuard } from './permission.guard';
 export { RoleHierarchyGuard } from './role-hierarchy.guard';
 export { RoleGuard } from './role.guard';
 export { TenantRoleGuard } from './tenant-role.guard';
+export * from './sso';

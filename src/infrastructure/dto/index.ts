@@ -18,6 +18,18 @@ export { AssignPermissionDto } from './role/assign-permission.dto';
 export { AssignRoleDto } from './role/assign-role.dto';
 export { CreateAutoRenewalConfigDto } from './role/create-auto-renewal-config.dto';
 export { CreateRoleDto } from './role/create-role.dto';
+export {
+    CreateExternalRoleConfigDto,
+    UpdateExternalRoleConfigDto,
+    ProviderConfigDto,
+} from './role/external-role-config.dto';
+export {
+    CreateRoleMappingDto,
+    UpdateRoleMappingDto,
+    MappingRulesDto,
+    MappingRuleConditionDto,
+} from './role/role-mapping.dto';
+export { SyncRequestDto } from './role/sync-request.dto';
 export { RevokePermissionDto } from './role/revoke-permission.dto';
 export { RevokeRoleDto } from './role/revoke-role.dto';
 export { RoleAnalyticsFiltersDto } from './role/role-analytics-filters.dto';

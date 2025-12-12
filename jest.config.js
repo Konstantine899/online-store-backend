@@ -25,12 +25,25 @@ const commonConfig = {
                 diagnostics: false, // TypeScript диагностика уже выполнена линтером
             },
         ],
+        // Трансформируем ESM модули openid-client и oauth4webapi
+        '^.+\\.mjs$': [
+            'ts-jest',
+            {
+                tsconfig: {
+                    moduleResolution: 'node',
+                    esModuleInterop: true,
+                    allowSyntheticDefaultImports: true,
+                },
+            },
+        ],
     },
     moduleNameMapper: {
         '^@app/(.*)$': '<rootDir>/src/$1',
         '^@tests/(.*)$': '<rootDir>/tests/$1',
     },
-    transformIgnorePatterns: ['node_modules/(?!(uuid)/)'],
+    transformIgnorePatterns: [
+        'node_modules/(?!(uuid|openid-client|oauth4webapi|jose|mysql2|sequelize)/)',
+    ],
     setupFilesAfterEnv: ['<rootDir>/tests/jest-setup.ts'],
     clearMocks: true,
     restoreMocks: true,

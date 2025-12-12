@@ -1,0 +1,17 @@
+diff --git a/node_modules/ldapjs/lib/messages/search_response.js b/node_modules/ldapjs/lib/messages/search_response.js
+index c9d88c6..e052971 100644
+--- a/node_modules/ldapjs/lib/messages/search_response.js
++++ b/node_modules/ldapjs/lib/messages/search_response.js
+@@ -64,7 +64,11 @@ SearchResponse.prototype.send = function (entry, nofiltering) {
+         delete entry.attributes[a]
+       } else if (all) {
+         // do nothing
+-      } else if (self.attributes.length && self.attributes.indexOf(_a) === -1) {
++      } else if (self.attributes.length && !self.attributes.some(function (attr) {
++        return attr.toLowerCase() === _a
++      })) {
++        // PATCH: Исправлен баг с indexOf - теперь используется some() для регистронезависимого сравнения
++        // Это позволяет корректно фильтровать атрибуты независимо от регистра
+         savedAttrs[a] = entry.attributes[a]
+         delete entry.attributes[a]
+       }
