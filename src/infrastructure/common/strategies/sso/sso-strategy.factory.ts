@@ -48,8 +48,18 @@ export class SSOStrategyFactory {
         // Генерируем state parameter
         const state = this.ssoStateService.generateState(tenantId, providerId);
 
-        // Строим authorization URL
-        const authURL = new URL(config.providerConfig.authorizationURL ?? '');
+        // Валидируем и строим authorization URL
+        const authorizationURL = config.providerConfig.authorizationURL ?? '';
+        if (!authorizationURL) {
+            throw new BadRequestException(
+                'OAuth 2.0 конфигурация должна содержать authorizationURL',
+            );
+        }
+
+        const authURL = this.validateAndCreateURL(
+            authorizationURL,
+            'authorizationURL',
+        );
         authURL.searchParams.set('client_id', config.providerConfig.clientId ?? '');
         authURL.searchParams.set('redirect_uri', config.providerConfig.callbackURL ?? `${baseUrl}/auth/sso/oauth2/callback`);
         authURL.searchParams.set('response_type', 'code');
@@ -92,7 +102,13 @@ export class SSOStrategyFactory {
 
         // SAML entry point уже содержит все необходимые параметры
         const entryPoint = config.providerConfig.entryPoint ?? '';
-        const entryURL = new URL(entryPoint);
+        if (!entryPoint) {
+            throw new BadRequestException(
+                'SAML конфигурация должна содержать entryPoint',
+            );
+        }
+
+        const entryURL = this.validateAndCreateURL(entryPoint, 'entryPoint');
         entryURL.searchParams.set('RelayState', state);
 
         this.logger.debug(
@@ -141,7 +157,7 @@ export class SSOStrategyFactory {
             );
         }
 
-        const url = new URL(authURL);
+        const url = this.validateAndCreateURL(authURL, 'authorizationURL или issuer');
         url.searchParams.set('client_id', config.providerConfig.clientId ?? '');
         url.searchParams.set('redirect_uri', config.providerConfig.callbackURL ?? `${baseUrl}/auth/sso/oidc/callback`);
         url.searchParams.set('response_type', 'code');
@@ -235,6 +251,37 @@ export class SSOStrategyFactory {
         if (missing.length > 0) {
             throw new BadRequestException(
                 `OIDC конфигурация неполная. Отсутствуют: ${missing.join(', ')}`,
+            );
+        }
+    }
+
+    /**
+     * Валидация и создание URL объекта
+     * @private
+     * @param urlString - строка URL для валидации
+     * @param fieldName - имя поля для сообщения об ошибке
+     * @returns Валидный URL объект
+     * @throws BadRequestException если URL невалиден
+     */
+    private validateAndCreateURL(urlString: string, fieldName: string): URL {
+        try {
+            const url = new URL(urlString);
+            // Дополнительная проверка: URL должен быть http или https
+            if (!['http:', 'https:'].includes(url.protocol)) {
+                throw new BadRequestException(
+                    `${fieldName} должен использовать протокол http или https`,
+                );
+            }
+            return url;
+        } catch (error: unknown) {
+            const errorMessage =
+                error instanceof Error ? error.message : String(error);
+            this.logger.warn(
+                { urlString, fieldName, error: errorMessage },
+                'Invalid URL in SSO configuration',
+            );
+            throw new BadRequestException(
+                `Невалидный URL в поле ${fieldName}: ${errorMessage}`,
             );
         }
     }

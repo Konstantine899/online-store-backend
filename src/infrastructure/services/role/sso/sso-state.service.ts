@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { createLogger } from '@app/infrastructure/common/utils/logging';
 import * as crypto from 'crypto';
 
@@ -13,15 +13,43 @@ import * as crypto from 'crypto';
  * - Валидация state при callback
  * - TTL для state (5 минут по умолчанию)
  * - Хранение в памяти (для production можно использовать Redis)
+ * - Периодическая очистка истекших state (каждые 5 минут)
  */
 @Injectable()
-export class SSOStateService {
+export class SSOStateService implements OnModuleDestroy {
     private readonly logger = createLogger('SSOStateService');
     private readonly stateStore = new Map<
         string,
         { tenantId: number; providerId: number; expiresAt: number }
     >();
     private readonly STATE_TTL_MS = 5 * 60 * 1000; // 5 минут
+    private readonly CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 минут
+    private cleanupInterval?: NodeJS.Timeout;
+
+    constructor() {
+        // Инициализируем периодическую очистку истекших state
+        // Очистка каждые 5 минут предотвращает утечку памяти при низкой нагрузке
+        if (process.env.NODE_ENV !== 'test') {
+            this.cleanupInterval = setInterval(
+                () => this.cleanupExpiredStates(),
+                this.CLEANUP_INTERVAL_MS,
+            );
+            this.logger.debug(
+                `Periodic cleanup initialized (interval: ${this.CLEANUP_INTERVAL_MS}ms)`,
+            );
+        }
+    }
+
+    /**
+     * Lifecycle hook для очистки ресурсов при уничтожении модуля
+     */
+    onModuleDestroy(): void {
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
+            this.cleanupInterval = undefined;
+            this.logger.debug('SSOStateService cleanup interval cleared');
+        }
+    }
 
     /**
      * Генерирует state parameter с tenantId и providerId
@@ -49,7 +77,8 @@ export class SSOStateService {
             'Generated SSO state',
         );
 
-        // Очистка истекших state (раз в 100 запросов для производительности)
+        // Дополнительная очистка истекших state при достижении порога (100 запросов)
+        // Это дополняет периодическую очистку и помогает при высокой нагрузке
         if (this.stateStore.size % 100 === 0) {
             this.cleanupExpiredStates();
         }

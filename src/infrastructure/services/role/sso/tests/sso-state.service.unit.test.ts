@@ -22,6 +22,10 @@ describe('SSOStateService (unit)', () => {
     afterEach(() => {
         // Очищаем state store после каждого теста
         jest.clearAllMocks();
+        // Очищаем интервал если он был создан (для тестов с NODE_ENV !== 'test')
+        if (service && typeof service.onModuleDestroy === 'function') {
+            service.onModuleDestroy();
+        }
     });
 
     // ============================================================================
@@ -195,6 +199,18 @@ describe('SSOStateService (unit)', () => {
 
             // Восстанавливаем
             nowSpy.mockRestore();
+        });
+    });
+
+    // ============================================================================
+    // TESTS: onModuleDestroy()
+    // ============================================================================
+
+    describe('onModuleDestroy', () => {
+        it('должен корректно очищать интервал при уничтожении модуля', () => {
+            // В тестовом окружении интервал не создается (NODE_ENV === 'test')
+            // Но метод должен работать без ошибок
+            expect(() => service.onModuleDestroy()).not.toThrow();
         });
     });
 });

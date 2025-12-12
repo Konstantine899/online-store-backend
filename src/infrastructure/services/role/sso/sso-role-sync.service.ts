@@ -154,8 +154,8 @@ export class SSORoleSyncService {
             );
 
             // Обновляем пароль на случайный (чтобы вход через пароль был невозможен)
-            // Это делается через прямой доступ к модели, так как UserService не имеет метода для этого
-            await user.update({ password: hashedPassword });
+            // Используем метод сервиса для соблюдения архитектуры и инвалидации кэша/токенов
+            await this.userService.updatePassword(user.id, hashedPassword);
 
             // Помечаем пользователя как SSO (можно добавить флаг is_sso_user в будущем)
             this.logger.info(
